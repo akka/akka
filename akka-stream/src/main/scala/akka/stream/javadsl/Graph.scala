@@ -4,7 +4,6 @@
 package akka.stream.javadsl
 
 import akka.stream._
-import akka.stream.scaladsl
 import akka.japi.Pair
 
 /**
@@ -278,10 +277,10 @@ object FlowGraph {
    * The [[Builder]] is mutable and not thread-safe,
    * thus you should construct your Graph and then share the constructed immutable [[FlowGraph]].
    */
-  def builder(): Builder = new Builder()(new scaladsl.FlowGraph.Builder)
+  def builder[M](): Builder[M] = new Builder()(new scaladsl.FlowGraph.Builder[M])
 
-  class Builder()(private implicit val delegate: scaladsl.FlowGraph.Builder) { self ⇒
-    import scaladsl.FlowGraph.Implicits._
+  final class Builder[Mat]()(private implicit val delegate: scaladsl.FlowGraph.Builder[Mat]) { self ⇒
+    import akka.stream.scaladsl.FlowGraph.Implicits._
 
     def flow[A, B, M](from: Outlet[A], via: Flow[A, B, M], to: Inlet[B]): Unit = delegate.addEdge(from, via.asScala, to)
 
@@ -297,6 +296,22 @@ object FlowGraph {
     def source[T](source: Source[T, _]): Outlet[T] = delegate.add(source.asScala)
 
     def sink[T](sink: Sink[T, _]): Inlet[T] = delegate.add(sink.asScala)
+
+    /**
+     * Returns an [[Outlet]] that gives access to the materialized value of this graph. Once the graph is materialized
+     * this outlet will emit exactly one element which is the materialized value. It is possible to expose this
+     * outlet as an externally accessible outlet of a [[Source]], [[Sink]], [[Flow]] or [[BidiFlow]].
+     *
+     * It is possible to call this method multiple times to get multiple [[Outlet]] instances if necessary. All of
+     * the outlets will emit the materialized value.
+     *
+     * Be careful to not to feed the result of this outlet to a stage that produces the materialized value itself (for
+     * example to a [[Sink#fold]] that contributes to the materialized value) since that might lead to an unresolvable
+     * dependency cycle.
+     *
+     * @return The outlet that will emit the materialized value.
+     */
+    def matValue: Outlet[Mat] = delegate.matValue
 
     def run(mat: FlowMaterializer): Unit = delegate.buildRunnable().run()(mat)
 
@@ -314,26 +329,27 @@ object FlowGraph {
     def to[I, O](j: UniformFanInShape[I, O]): ReverseOps[I] = new ReverseOps(findIn(delegate, j, 0))
     def to[I, O](j: UniformFanOutShape[I, O]): ReverseOps[I] = new ReverseOps(j.in)
 
-    class ForwardOps[T](out: Outlet[T]) {
-      def to(in: Inlet[T]): Builder = { out ~> in; self }
-      def to[M](dst: Sink[T, M]): Builder = { out ~> dst.asScala; self }
-      def to(dst: SinkShape[T]): Builder = { out ~> dst; self }
-      def to[U](f: FlowShape[T, U]): Builder = { out ~> f; self }
-      def to[U](j: UniformFanInShape[T, U]): Builder = { out ~> j; self }
-      def to[U](j: UniformFanOutShape[T, U]): Builder = { out ~> j; self }
+    final class ForwardOps[T](out: Outlet[T]) {
+      def to(in: Inlet[T]): Builder[Mat] = { out ~> in; self }
+      def to[M](dst: Sink[T, M]): Builder[Mat] = { out ~> dst.asScala; self }
+      def to(dst: SinkShape[T]): Builder[Mat] = { out ~> dst; self }
+      def to[U](f: FlowShape[T, U]): Builder[Mat] = { out ~> f; self }
+      def to[U](j: UniformFanInShape[T, U]): Builder[Mat] = { out ~> j; self }
+      def to[U](j: UniformFanOutShape[T, U]): Builder[Mat] = { out ~> j; self }
       def via[U, M](f: Flow[T, U, M]): ForwardOps[U] = from((out ~> f.asScala).outlet)
       def via[U](f: FlowShape[T, U]): ForwardOps[U] = from((out ~> f).outlet)
       def via[U](j: UniformFanInShape[T, U]): ForwardOps[U] = from((out ~> j).outlet)
       def via[U](j: UniformFanOutShape[T, U]): ForwardOps[U] = from((out ~> j).outlet)
+      def out(): Outlet[T] = out
     }
 
-    class ReverseOps[T](out: Inlet[T]) {
-      def from(dst: Outlet[T]): Builder = { out <~ dst; self }
-      def from[M](dst: Source[T, M]): Builder = { out <~ dst.asScala; self }
-      def from(dst: SourceShape[T]): Builder = { out <~ dst; self }
-      def from[U](f: FlowShape[U, T]): Builder = { out <~ f; self }
-      def from[U](j: UniformFanInShape[U, T]): Builder = { out <~ j; self }
-      def from[U](j: UniformFanOutShape[U, T]): Builder = { out <~ j; self }
+    final class ReverseOps[T](out: Inlet[T]) {
+      def from(dst: Outlet[T]): Builder[Mat] = { out <~ dst; self }
+      def from[M](dst: Source[T, M]): Builder[Mat] = { out <~ dst.asScala; self }
+      def from(dst: SourceShape[T]): Builder[Mat] = { out <~ dst; self }
+      def from[U](f: FlowShape[U, T]): Builder[Mat] = { out <~ f; self }
+      def from[U](j: UniformFanInShape[U, T]): Builder[Mat] = { out <~ j; self }
+      def from[U](j: UniformFanOutShape[U, T]): Builder[Mat] = { out <~ j; self }
       def via[U, M](f: Flow[U, T, M]): ReverseOps[U] = to((out <~ f.asScala).inlet)
       def via[U](f: FlowShape[U, T]): ReverseOps[U] = to((out <~ f).inlet)
       def via[U](j: UniformFanInShape[U, T]): ReverseOps[U] = to((out <~ j).inlet)

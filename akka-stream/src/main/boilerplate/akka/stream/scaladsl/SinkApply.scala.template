@@ -7,13 +7,13 @@ import akka.stream.{ Inlet, Graph, Shape }
 
 trait SinkApply {
 
-  def apply[In]()(buildBlock: FlowGraph.Builder => Inlet[In]): Sink[In, Unit] = {
+  def apply[In]()(buildBlock: FlowGraph.Builder[Unit] => Inlet[In]): Sink[In, Unit] = {
     val builder = new FlowGraph.Builder
     val inlet = buildBlock(builder)
     builder.buildSink(inlet)
   }
 
-  def apply[In, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder => (g1.Shape) => Inlet[In]): Sink[In, Mat] = {
+  def apply[In, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] => (g1.Shape) => Inlet[In]): Sink[In, Mat] = {
     val builder = new FlowGraph.Builder
     val s = builder.add(g1, Keep.right)
     val inlet = buildBlock(builder)(s)
@@ -21,7 +21,7 @@ trait SinkApply {
   }
 
   [2..#def apply[In, [#M1#], Mat]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(
-    buildBlock: FlowGraph.Builder ⇒ ([#g1.Shape#]) ⇒ Inlet[In]): Sink[In, Mat] = {
+    buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ Inlet[In]): Sink[In, Mat] = {
     val builder = new FlowGraph.Builder
     val curried = combineMat.curried
     val s##1 = builder.add(g##1, (_: Any, m##1: M##1) ⇒ curried(m##1))

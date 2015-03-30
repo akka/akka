@@ -37,9 +37,9 @@ public class BidiFlowTest extends StreamTest {
   private final BidiFlow<Integer, Long, ByteString, String, BoxedUnit> bidi = BidiFlow
       .factory()
       .create(
-          new Function<FlowGraph.Builder, BidiShape<Integer, Long, ByteString, String>>() {
+          new Function<FlowGraph.Builder<BoxedUnit>, BidiShape<Integer, Long, ByteString, String>>() {
             @Override
-            public BidiShape<Integer, Long, ByteString, String> apply(Builder b)
+            public BidiShape<Integer, Long, ByteString, String> apply(Builder<BoxedUnit> b)
                 throws Exception {
               final FlowShape<Integer, Long> top = b.graph(Flow
                   .<Integer> empty().map(new Function<Integer, Long>() {
@@ -63,9 +63,9 @@ public class BidiFlowTest extends StreamTest {
   private final BidiFlow<Long, Integer, String, ByteString, BoxedUnit> inverse = BidiFlow
       .factory()
       .create(
-          new Function<FlowGraph.Builder, BidiShape<Long, Integer, String, ByteString>>() {
+          new Function<FlowGraph.Builder<BoxedUnit>, BidiShape<Long, Integer, String, ByteString>>() {
             @Override
-            public BidiShape<Long, Integer, String, ByteString> apply(Builder b)
+            public BidiShape<Long, Integer, String, ByteString> apply(Builder<BoxedUnit> b)
                 throws Exception {
               final FlowShape<Long, Integer> top = b.graph(Flow.<Long> empty()
                   .map(new Function<Long, Integer>() {
@@ -90,9 +90,9 @@ public class BidiFlowTest extends StreamTest {
       .factory()
       .create(
           Sink.<Integer> head(),
-          new Function2<FlowGraph.Builder, SinkShape<Integer>, BidiShape<Integer, Long, ByteString, String>>() {
+          new Function2<FlowGraph.Builder<Future<Integer>>, SinkShape<Integer>, BidiShape<Integer, Long, ByteString, String>>() {
             @Override
-            public BidiShape<Integer, Long, ByteString, String> apply(Builder b, SinkShape<Integer> sink)
+            public BidiShape<Integer, Long, ByteString, String> apply(Builder<Future<Integer>> b, SinkShape<Integer> sink)
                 throws Exception {
               b.from(Source.single(42)).to(sink);
               final FlowShape<Integer, Long> top = b.graph(Flow
@@ -130,9 +130,9 @@ public class BidiFlowTest extends StreamTest {
         .factory()
         .closed(Sink.<Long> head(), Sink.<String> head(),
             Keep.<Future<Long>, Future<String>> both(),
-            new Procedure3<Builder, SinkShape<Long>, SinkShape<String>>() {
+            new Procedure3<Builder<Pair<Future<Long>, Future<String>>>, SinkShape<Long>, SinkShape<String>>() {
               @Override
-              public void apply(Builder b, SinkShape<Long> st,
+              public void apply(Builder<Pair<Future<Long>, Future<String>>> b, SinkShape<Long> st,
                   SinkShape<String> sb) throws Exception {
                 final BidiShape<Integer, Long, ByteString, String> s = b
                     .graph(bidi);
@@ -198,12 +198,12 @@ public class BidiFlowTest extends StreamTest {
     final Future<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
     assertEquals(Arrays.asList("5", "6", "7"), Await.result(result, oneSec));
   }
-  
+
   @Test
   public void mustMaterializeToItsValue() throws Exception {
-    final Future<Integer> f = FlowGraph.factory().closed(bidiMat, new Procedure2<Builder, BidiShape<Integer, Long, ByteString, String>>() {
+    final Future<Integer> f = FlowGraph.factory().closed(bidiMat, new Procedure2<Builder<Future<Integer> >, BidiShape<Integer, Long, ByteString, String>>() {
       @Override
-      public void apply(Builder b,
+      public void apply(Builder<Future<Integer>> b,
           BidiShape<Integer, Long, ByteString, String> shape) throws Exception {
         final FlowShape<String, Integer> left = b.graph(Flow.<String> empty().map(
             new Function<String, Integer>() {
@@ -223,13 +223,13 @@ public class BidiFlowTest extends StreamTest {
     }).run(materializer);
     assertEquals((Integer) 42, Await.result(f, oneSec));
   }
-  
+
   @Test
   public void mustCombineMaterializationValues() throws Exception {
     final Flow<String, Integer, Future<Integer>> left = Flow.factory().create(
-        Sink.<Integer> head(), new Function2<Builder, SinkShape<Integer>, Pair<Inlet<String>, Outlet<Integer>>>() {
+        Sink.<Integer> head(), new Function2<Builder<Future<Integer> >, SinkShape<Integer>, Pair<Inlet<String>, Outlet<Integer>>>() {
           @Override
-          public Pair<Inlet<String>, Outlet<Integer>> apply(Builder b,
+          public Pair<Inlet<String>, Outlet<Integer>> apply(Builder<Future<Integer>> b,
               SinkShape<Integer> sink) throws Exception {
             final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.<Integer> create(2));
             final UniformFanInShape<Integer, Integer> merge = b.graph(Merge.<Integer> create(2));
@@ -247,9 +247,9 @@ public class BidiFlowTest extends StreamTest {
           }
         });
     final Flow<Long, ByteString, Future<List<Long>>> right = Flow.factory().create(
-        Sink.<List<Long>> head(), new Function2<Builder, SinkShape<List<Long>>, Pair<Inlet<Long>, Outlet<ByteString>>>() {
+        Sink.<List<Long>> head(), new Function2<Builder<Future<List<Long>>>, SinkShape<List<Long>>, Pair<Inlet<Long>, Outlet<ByteString>>>() {
           @Override
-          public Pair<Inlet<Long>, Outlet<ByteString>> apply(Builder b,
+          public Pair<Inlet<Long>, Outlet<ByteString>> apply(Builder<Future<List<Long>>> b,
               SinkShape<List<Long>> sink) throws Exception {
             final FlowShape<Long, List<Long>> flow = b.graph(Flow.<Long> empty().grouped(10));
             b.from(flow).to(sink);

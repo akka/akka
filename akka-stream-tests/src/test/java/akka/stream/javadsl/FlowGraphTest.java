@@ -16,6 +16,7 @@ import akka.stream.javadsl.japi.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
+import akka.testkit.TestProbe;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -100,9 +101,9 @@ public class FlowGraphTest extends StreamTest {
 
     final Sink<String, Publisher<String>> publisher = Sink.publisher();
     
-    final Source<String, BoxedUnit> source = Source.factory().create(new Function<FlowGraph.Builder, Outlet<String>>() {
+    final Source<String, BoxedUnit> source = Source.factory().create(new Function<FlowGraph.Builder<BoxedUnit>, Outlet<String>>() {
       @Override
-      public Outlet<String> apply(Builder b) throws Exception {
+      public Outlet<String> apply(Builder<BoxedUnit> b) throws Exception {
         final UniformFanInShape<String, String> merge = b.graph(Merge.<String> create(2));
         b.flow(b.source(in1), f1, merge.in(0));
         b.flow(b.source(in2), f2, merge.in(1));
@@ -124,10 +125,10 @@ public class FlowGraphTest extends StreamTest {
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<Integer> input2 = Arrays.asList(1, 2, 3);
 
-    final Builder b = FlowGraph.builder();
+    final Builder<BoxedUnit> b = FlowGraph.builder();
     final Source<String, BoxedUnit> in1 = Source.from(input1);
     final Source<Integer, BoxedUnit> in2 = Source.from(input2);
-    final FanInShape2<String, Integer, Pair<String,Integer>> zip = b.graph(Zip.<String, Integer> create());
+    final FanInShape2<String, Integer, Pair<String,Integer>> zip = b.graph(Zip.<String, Integer>create());
     final Sink<Pair<String, Integer>, Future<BoxedUnit>> out = Sink
       .foreach(new Procedure<Pair<String, Integer>>() {
         @Override
@@ -144,7 +145,7 @@ public class FlowGraphTest extends StreamTest {
     List<Object> output = Arrays.asList(probe.receiveN(3));
     @SuppressWarnings("unchecked")
     List<Pair<String, Integer>> expected = Arrays.asList(new Pair<String, Integer>("A", 1), new Pair<String, Integer>(
-      "B", 2), new Pair<String, Integer>("C", 3));
+            "B", 2), new Pair<String, Integer>("C", 3));
     assertEquals(expected, output);
   }
 
@@ -160,9 +161,9 @@ public class FlowGraphTest extends StreamTest {
     final Iterable<String> expected1 = Arrays.asList("A", "B", "C");
     final Iterable<Integer> expected2 = Arrays.asList(1, 2, 3);
 
-    final Builder b = FlowGraph.builder();
+    final Builder<BoxedUnit> b = FlowGraph.builder();
     final Outlet<Pair<String, Integer>> in = b.source(Source.from(input));
-    final FanOutShape2<Pair<String, Integer>, String, Integer> unzip = b.graph(Unzip.<String, Integer> create());
+    final FanOutShape2<Pair<String, Integer>, String, Integer> unzip = b.graph(Unzip.<String, Integer>create());
 
     final Sink<String, Future<BoxedUnit>> out1 = Sink.foreach(new Procedure<String>() {
       @Override
@@ -200,9 +201,9 @@ public class FlowGraphTest extends StreamTest {
       }
     });
     
-    final Future<Integer> future = FlowGraph.factory().closed(Sink.<Integer> head(), new Procedure2<Builder, SinkShape<Integer>>() {
+    final Future<Integer> future = FlowGraph.factory().closed(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer> >, SinkShape<Integer>>() {
       @Override
-      public void apply(Builder b, SinkShape<Integer> out) throws Exception {
+      public void apply(Builder<Future<Integer> > b, SinkShape<Integer> out) throws Exception {
         final FanInShape2<Integer, Integer, Integer> zip = b.graph(sumZip);
         b.edge(b.source(in1), zip.in0());
         b.edge(b.source(in2), zip.in1());
@@ -215,22 +216,22 @@ public class FlowGraphTest extends StreamTest {
   }
 
   @Test
-  public void mustBeAbleToUseZip4With() throws Exception {
+     public void mustBeAbleToUseZip4With() throws Exception {
     final Source<Integer, BoxedUnit> in1 = Source.single(1);
     final Source<Integer, BoxedUnit> in2 = Source.single(10);
     final Source<Integer, BoxedUnit> in3 = Source.single(100);
     final Source<Integer, BoxedUnit> in4 = Source.single(1000);
 
     final Graph<FanInShape4<Integer, Integer, Integer, Integer, Integer>, BoxedUnit> sumZip = ZipWith.create(
-      new Function4<Integer, Integer, Integer, Integer, Integer>() {
-        @Override public Integer apply(Integer i1, Integer i2, Integer i3, Integer i4) throws Exception {
-          return i1 + i2 + i3 + i4;
-      }
-    });
-    
-    final Future<Integer> future = FlowGraph.factory().closed(Sink.<Integer> head(), new Procedure2<Builder, SinkShape<Integer>>() {
+            new Function4<Integer, Integer, Integer, Integer, Integer>() {
+              @Override public Integer apply(Integer i1, Integer i2, Integer i3, Integer i4) throws Exception {
+                return i1 + i2 + i3 + i4;
+              }
+            });
+
+    final Future<Integer> future = FlowGraph.factory().closed(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer>>, SinkShape<Integer>>() {
       @Override
-      public void apply(Builder b, SinkShape<Integer> out) throws Exception {
+      public void apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
         final FanInShape4<Integer, Integer, Integer, Integer, Integer> zip = b.graph(sumZip);
         b.edge(b.source(in1), zip.in0());
         b.edge(b.source(in2), zip.in1());
@@ -242,6 +243,32 @@ public class FlowGraphTest extends StreamTest {
 
     final Integer result = Await.result(future, Duration.create(300, TimeUnit.MILLISECONDS));
     assertEquals(1111, (int) result);
+  }
+
+  @Test
+  public void mustBeAbleToUseMatValue() throws Exception {
+    final Source<Integer, BoxedUnit> in1 = Source.single(1);
+    final TestProbe probe = TestProbe.apply(system);
+
+    final Future<Integer> future = FlowGraph.factory().closed(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer>>, SinkShape<Integer>>() {
+      @Override
+      public void apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
+        b.from(Source.single(1)).to(out);
+        b.from(b.matValue()).to(Sink.foreach(new Procedure<Future<Integer>>(){
+          public void apply(Future<Integer> mat) throws Exception {
+            probe.ref().tell(mat, ActorRef.noSender());
+          }
+        }));
+      }
+    }).run(materializer);
+
+    final Integer result = Await.result(future, Duration.create(300, TimeUnit.MILLISECONDS));
+    assertEquals(1, (int) result);
+
+    final Future<Integer> future2 = probe.expectMsgClass(Future.class);
+
+    final Integer result2 = Await.result(future2, Duration.create(300, TimeUnit.MILLISECONDS));
+    assertEquals(1, (int) result2);
   }
 
 }

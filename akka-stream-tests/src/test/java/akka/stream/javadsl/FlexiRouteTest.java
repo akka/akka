@@ -50,9 +50,9 @@ public class FlexiRouteTest {
             out1,
             out2,
             Keep.<Future<List<String>>, Future<List<String>>> both(),
-            new Procedure3<Builder, SinkShape<List<String>>, SinkShape<List<String>>>() {
+            new Procedure3<Builder<Pair<Future<List<String>>, Future<List<String>>>>, SinkShape<List<String>>, SinkShape<List<String>>>() {
               @Override
-              public void apply(Builder b, SinkShape<List<String>> o1,
+              public void apply(Builder<Pair<Future<List<String>>, Future<List<String>>>> b, SinkShape<List<String>> o1,
                   SinkShape<List<String>> o2) throws Exception {
                 final UniformFanOutShape<String, String> fair = b.graph(new Fair<String>());
                 b.edge(b.source(in), fair.in());
@@ -80,9 +80,9 @@ public class FlexiRouteTest {
             out1,
             out2,
             Keep.<Future<List<String>>, Future<List<String>>> both(),
-            new Procedure3<Builder, SinkShape<List<String>>, SinkShape<List<String>>>() {
+            new Procedure3<Builder<Pair<Future<List<String>>, Future<List<String>>>>, SinkShape<List<String>>, SinkShape<List<String>>>() {
               @Override
-              public void apply(Builder b, SinkShape<List<String>> o1,
+              public void apply(Builder<Pair<Future<List<String>>, Future<List<String>>>> b, SinkShape<List<String>> o1,
                   SinkShape<List<String>> o2) throws Exception {
                 final UniformFanOutShape<String, String> robin = b.graph(new StrictRoundRobin<String>());
                 b.edge(b.source(in), robin.in());
@@ -112,9 +112,9 @@ public class FlexiRouteTest {
             Sink.<List<Integer>> head(),
             out2,
             Keep.<Future<List<Integer>>, Future<List<String>>> both(),
-            new Procedure3<Builder, SinkShape<List<Integer>>, SinkShape<List<String>>>() {
+            new Procedure3<Builder<Pair<Future<List<Integer>>, Future<List<String>>> >, SinkShape<List<Integer>>, SinkShape<List<String>>>() {
               @Override
-              public void apply(Builder b, SinkShape<List<Integer>> o1,
+              public void apply(Builder<Pair<Future<List<Integer>>, Future<List<String>>> > b, SinkShape<List<Integer>> o1,
                   SinkShape<List<String>> o2) throws Exception {
                 final FanOutShape2<Pair<Integer, String>, Integer, String> unzip = b.graph(new Unzip<Integer, String>());
                 final Outlet<Pair<Integer, String>> src = b.source(Source.from(pairs));

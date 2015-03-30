@@ -12,7 +12,7 @@ class GraphZipSpec extends TwoStreamsSetup {
 
   override type Outputs = (Int, Int)
 
-  override def fixture(b: FlowGraph.Builder): Fixture = new Fixture(b: FlowGraph.Builder) {
+  override def fixture(b: FlowGraph.Builder[_]): Fixture = new Fixture(b) {
     val zip = b.add(Zip[Int, Int]())
 
     override def left: Inlet[Int] = zip.in0

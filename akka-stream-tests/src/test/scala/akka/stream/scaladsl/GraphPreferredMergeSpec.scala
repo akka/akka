@@ -14,7 +14,7 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
 
   override type Outputs = Int
 
-  override def fixture(b: FlowGraph.Builder): Fixture = new Fixture(b: FlowGraph.Builder) {
+  override def fixture(b: FlowGraph.Builder[_]): Fixture = new Fixture(b) {
     val merge = b.add(MergePreferred[Outputs](1))
 
     override def left: Inlet[Outputs] = merge.preferred
