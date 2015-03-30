@@ -185,10 +185,10 @@ public abstract class MediaTypes {
             String mainType,
             String subType,
             boolean compressible,
-            boolean binary,
+            akka.http.model.MediaType.Encoding encoding,
             Iterable<String> fileExtensions,
             Map<String, String> params) {
-        return akka.http.model.MediaType.custom(mainType, subType, compressible, binary, Util.<String, String>convertIterable(fileExtensions), Util.convertMapToScala(params), false);
+        return akka.http.model.MediaType.custom(mainType, subType, encoding, compressible, Util.<String, String>convertIterable(fileExtensions), Util.convertMapToScala(params), false);
     }
 
     /**

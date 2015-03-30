@@ -29,9 +29,9 @@ sealed abstract class Marshaller[-A, +B] extends (A ⇒ Future[List[Marshalling[
       import Marshalling._
       this(f(value)).fast map {
         _ map {
-          case WithFixedCharset(_, cs, marshal) if contentType.definedCharset.isEmpty || contentType.charset == cs ⇒
+          case WithFixedCharset(_, cs, marshal) if contentType.hasOpenCharset || contentType.charset == cs ⇒
             WithFixedCharset(contentType.mediaType, cs, () ⇒ mto(marshal(), contentType.mediaType))
-          case WithOpenCharset(_, marshal) if contentType.definedCharset.isEmpty ⇒
+          case WithOpenCharset(_, marshal) if contentType.hasOpenCharset ⇒
             WithOpenCharset(contentType.mediaType, cs ⇒ mto(marshal(cs), contentType.mediaType))
           case WithOpenCharset(_, marshal) ⇒
             WithFixedCharset(contentType.mediaType, contentType.charset, () ⇒ mto(marshal(contentType.charset), contentType.mediaType))

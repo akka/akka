@@ -221,7 +221,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               |Server: akka-http/1.0.0
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
               |Connection: close
-              |Content-Type: application/json; charset=UTF-8
+              |Content-Type: application/json
               |
               |""", close = true)
       }
@@ -233,7 +233,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               |Server: akka-http/1.0.0
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
               |Connection: close
-              |Content-Type: application/json; charset=UTF-8
+              |Content-Type: application/json
               |
               |abcdefg""", close = true)
       }
@@ -261,7 +261,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               |Age: 30
               |Server: akka-http/1.0.0
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
-              |Content-Type: application/json; charset=UTF-8
+              |Content-Type: application/json
               |
               |"""
           }
@@ -332,7 +332,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               |Server: akka-http/1.0.0
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
               |Connection: close
-              |Content-Type: application/json; charset=UTF-8
+              |Content-Type: application/json
               |
               |abcdefg""", close = true)
       }
