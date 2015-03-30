@@ -544,8 +544,10 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     _tempCapacity = _temp.length
   }
 
+  @inline private def shouldResizeTempFor(size: Int): Boolean = _tempCapacity < size || _tempCapacity == 0
+
   private def ensureTempSize(size: Int): Unit = {
-    if (_tempCapacity < size || _tempCapacity == 0) {
+    if (shouldResizeTempFor(size)) {
       var newSize = if (_tempCapacity == 0) 16 else _tempCapacity * 2
       while (newSize < size) newSize *= 2
       resizeTemp(newSize)
@@ -576,6 +578,13 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
         _length += bs.length
       case xs: WrappedArray.ofByte ⇒
         putByteArrayUnsafe(xs.array.clone)
+      case seq: collection.IndexedSeq[Byte] if shouldResizeTempFor(seq.length) ⇒
+        val copied = new Array[Byte](seq.length)
+        seq.copyToArray(copied)
+
+        clearTemp()
+        _builder += ByteString.ByteString1(copied)
+        _length += seq.length
       case seq: collection.IndexedSeq[_] ⇒
         ensureTempSize(_tempLength + xs.size)
         xs.copyToArray(_temp, _tempLength)
