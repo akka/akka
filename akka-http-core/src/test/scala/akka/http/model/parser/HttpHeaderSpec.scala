@@ -17,7 +17,7 @@ import HttpEncodings._
 import HttpMethods._
 
 class HttpHeaderSpec extends FreeSpec with Matchers {
-  val `application/vnd.spray` = MediaType.custom("application/vnd.spray")
+  val `application/vnd.spray` = MediaType.custom("application/vnd.spray", MediaType.Encoding.Binary)
   val PROPFIND = HttpMethod.custom("PROPFIND")
 
   "The HTTP header model must correctly parse and render the headers" - {
@@ -36,9 +36,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Accept: */*, text/*; foo=bar, custom/custom; bar=\"b>az\"" =!=
         Accept(`*/*`,
           MediaRange.custom("text", Map("foo" -> "bar")),
-          MediaType.custom("custom", "custom", params = Map("bar" -> "b>az")))
+          MediaType.custom("custom", "custom", MediaType.Encoding.Binary, params = Map("bar" -> "b>az")))
       "Accept: application/*+xml; version=2" =!=
-        Accept(MediaType.custom("application", "*+xml", params = Map("version" -> "2")))
+        Accept(MediaType.custom("application", "*+xml", MediaType.Encoding.Binary, params = Map("version" -> "2")))
     }
 
     "Accept-Charset" in {
@@ -190,8 +190,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Content-Type`(`application/pdf`)
       "Content-Type: text/plain; charset=utf8" =!=
         `Content-Type`(ContentType(`text/plain`, `UTF-8`)).renderedTo("text/plain; charset=UTF-8")
-      "Content-Type: text/xml; version=3; charset=windows-1252" =!=
-        `Content-Type`(ContentType(MediaType.custom("text", "xml", params = Map("version" -> "3")), HttpCharsets.getForKey("windows-1252")))
+      "Content-Type: text/xml2; version=3; charset=windows-1252" =!=
+        `Content-Type`(ContentType(MediaType.custom("text", "xml2", encoding = MediaType.Encoding.Open,
+          params = Map("version" -> "3")), HttpCharsets.getForKey("windows-1252")))
       "Content-Type: text/plain; charset=fancy-pants" =!=
         `Content-Type`(ContentType(`text/plain`, HttpCharset.custom("fancy-pants")))
       "Content-Type: multipart/mixed; boundary=ABC123" =!=
@@ -199,7 +200,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Content-Type: multipart/mixed; boundary=\"ABC/123\"" =!=
         `Content-Type`(ContentType(`multipart/mixed` withBoundary "ABC/123"))
       "Content-Type: application/*" =!=
-        `Content-Type`(ContentType(MediaType.custom("application", "*", allowArbitrarySubtypes = true)))
+        `Content-Type`(ContentType(MediaType.custom("application", "*", MediaType.Encoding.Binary,
+          allowArbitrarySubtypes = true)))
     }
 
     "Content-Range" in {
