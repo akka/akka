@@ -3,16 +3,16 @@
  */
 package akka.pattern
 
-import language.postfixOps
-
 import akka.actor._
 import akka.testkit.{ TestProbe, AkkaSpec }
 import akka.util.Timeout
+import org.scalatest.concurrent.ScalaFutures
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
 
-class AskSpec extends AkkaSpec {
+class AskSpec extends AkkaSpec with ScalaFutures {
 
   "The “ask” pattern" must {
 
@@ -182,6 +182,26 @@ class AskSpec extends AkkaSpec {
       deadListener.expectMsgClass(200 milliseconds, classOf[DeadLetter])
     }
 
+    "allow watching the promiseActor and send Terminated() when completes" in {
+      implicit val timeout = Timeout(300 millis)
+      val p = TestProbe()
+
+      val act = system.actorOf(Props(new Actor {
+        def receive = {
+          case msg ⇒ p.ref ! sender() -> msg
+        }
+      }))
+
+      val f = (act ? "ask").mapTo[String]
+      val (promiseActorRef, "ask") = p.expectMsgType[(ActorRef, String)]
+
+      watch(promiseActorRef)
+      promiseActorRef ! "complete"
+
+      val completed = f.futureValue
+      completed should ===("complete")
+      expectTerminated(promiseActorRef, 1.second)
+    }
   }
 
 }

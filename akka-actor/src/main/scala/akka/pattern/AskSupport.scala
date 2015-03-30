@@ -3,16 +3,16 @@
  */
 package akka.pattern
 
-import language.implicitConversions
-
 import java.util.concurrent.TimeoutException
+
 import akka.actor._
 import akka.dispatch.sysmsg._
-import scala.annotation.tailrec
-import scala.util.control.NonFatal
-import scala.concurrent.{ Future, Promise, ExecutionContext }
 import akka.util.{ Timeout, Unsafe }
-import scala.util.{ Success, Failure }
+
+import scala.annotation.tailrec
+import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.language.implicitConversions
+import scala.util.{ Failure, Success }
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
@@ -173,9 +173,8 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
  */
 private[akka] final class PromiseActorRef private (val provider: ActorRefProvider, val result: Promise[Any])
   extends MinimalActorRef {
+  import AbstractPromiseActorRef.{ stateOffset, watchedByOffset }
   import PromiseActorRef._
-  import AbstractPromiseActorRef.stateOffset
-  import AbstractPromiseActorRef.watchedByOffset
 
   /**
    * As an optimization for the common (local) case we only register this PromiseActorRef
@@ -301,7 +300,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
         watchers foreach { watcher ⇒
           // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
           watcher.asInstanceOf[InternalActorRef]
-            .sendSystemMessage(DeathWatchNotification(watcher, existenceConfirmed = true, addressTerminated = false))
+            .sendSystemMessage(DeathWatchNotification(this, existenceConfirmed = true, addressTerminated = false))
         }
       }
     }
