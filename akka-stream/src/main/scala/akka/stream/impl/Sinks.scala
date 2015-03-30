@@ -190,13 +190,34 @@ private[akka] final class CancelSink(val attributes: OperationAttributes, shape:
  * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
  */
-private[akka] final class PropsSink[In](props: Props, val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
+private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
-    val subscriberRef = materializer.actorOf(props, name = s"$flowName-props")
+    val subscriberRef = materializer.actorOf(props, name = s"$flowName-actorSubscriber")
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), subscriberRef)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] = new PropsSink[In](props, attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new PropsSink[In](props, attr, amendShape(attr))
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] = new ActorSubscriberSink[In](props, attributes, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new ActorSubscriberSink[In](props, attr, amendShape(attr))
 }
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
+                                           val attributes: OperationAttributes,
+                                           shape: SinkShape[In]) extends SinkModule[In, Unit](shape) {
+
+  override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
+    val subscriberRef = materializer.actorOf(
+      ActorRefSinkActor.props(ref, materializer.settings.maxInputBufferSize, onCompleteMessage),
+      name = s"$flowName-actorRef")
+    (akka.stream.actor.ActorSubscriber[In](subscriberRef), ())
+  }
+
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Unit] =
+    new ActorRefSink[In](ref, onCompleteMessage, attributes, shape)
+  override def withAttributes(attr: OperationAttributes): Module =
+    new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
+}
+

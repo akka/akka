@@ -7,8 +7,12 @@ Integration
 Integrating with Actors
 =======================
 
-:class:`ActorPublisher` and :class:`ActorSubscriber` are two traits that provides support for
-implementing Reactive Streams :class:`Publisher` and :class:`Subscriber` with an :class:`Actor`.
+For piping the elements of a stream as messages to an ordinary actor you can use the
+``Sink.actorRef``.  
+
+For more advanced use cases the :class:`ActorPublisher` and :class:`ActorSubscriber` traits are
+provided to support implementing Reactive Streams :class:`Publisher` and :class:`Subscriber` with
+an :class:`Actor`.
 
 These can be consumed by other Reactive Stream libraries or used as a
 Akka Streams :class:`Source` or :class:`Sink`.
@@ -18,6 +22,21 @@ Akka Streams :class:`Source` or :class:`Sink`.
   :class:`ActorPublisher` and :class:`ActorSubscriber` cannot be used with remote actors,
   because if signals of the Reactive Streams protocol (e.g. ``request``) are lost the
   the stream may deadlock.
+
+Sink.actorRef
+^^^^^^^^^^^^^
+
+The sink sends the elements of the stream to the given `ActorRef`. If the target actor terminates
+the stream will be cancelled. When the stream is completed successfully the given ``onCompleteMessage``
+will be sent to the destination actor. When the stream is completed with failure a ``akka.actor.Status.Failure``
+message will be sent to the destination actor.
+
+.. warning::
+
+   There is no back-pressure signal from the destination actor, i.e. if the actor is not consuming
+   the messages fast enough the mailbox of the actor will grow. For potentially slow consumer actors
+   it is recommended to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
+   limiting stage in front of this stage.
 
 ActorPublisher
 ^^^^^^^^^^^^^^

@@ -208,7 +208,7 @@ public class ActorSubscriberDocTest {
         
         Source.from(data)
           .map(i -> WorkerPoolProtocol.msg(i, replyTo))
-          .runWith(Sink.<WorkerPoolProtocol.Msg>create(WorkerPool.props()), mat);
+          .runWith(Sink.<WorkerPoolProtocol.Msg>actorSubscriber(WorkerPool.props()), mat);
         //#actor-subscriber-usage
 
         List<Object> got = Arrays.asList(receiveN(N));

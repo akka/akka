@@ -254,7 +254,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       val probe = TestProbe()
 
       val source = Source[Int](senderProps)
-      val sink = Sink[String](receiverProps(probe.ref))
+      val sink: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe.ref))
 
       val (snd, rcv) = source.collect {
         case n if n % 2 == 0 ⇒ "elem-" + n
@@ -284,7 +284,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       val source1 = Source(ActorPublisher[Int](senderRef1))
 
       val sink1 = Sink(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
-      val sink2 = Sink[String](receiverProps(probe2.ref))
+      val sink2: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe2.ref))
 
       val senderRef2 = FlowGraph.closed(Source[Int](senderProps)) { implicit b ⇒
         source2 ⇒
