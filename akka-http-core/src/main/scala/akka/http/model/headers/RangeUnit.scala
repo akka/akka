@@ -12,7 +12,7 @@ sealed abstract class RangeUnit extends japi.headers.RangeUnit with ValueRendera
 }
 
 object RangeUnits {
-  object Bytes extends RangeUnit {
+  case object Bytes extends RangeUnit {
     def name = "Bytes"
 
     def render[R <: Rendering](r: R): r.type = r ~~ "bytes"
