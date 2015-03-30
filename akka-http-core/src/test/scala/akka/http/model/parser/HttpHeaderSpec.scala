@@ -67,11 +67,11 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "Access-Control-Allow-Origin" in {
-      "Access-Control-Allow-Origin: *" =!= `Access-Control-Allow-Origin`(HttpOriginRange.`*`)
-      "Access-Control-Allow-Origin: null" =!= `Access-Control-Allow-Origin`(HttpOriginRange())
-      "Access-Control-Allow-Origin: http://spray.io" =!= `Access-Control-Allow-Origin`(HttpOriginRange("http://spray.io"))
+      "Access-Control-Allow-Origin: *" =!= `Access-Control-Allow-Origin`.`*`
+      "Access-Control-Allow-Origin: null" =!= `Access-Control-Allow-Origin`.`null`
+      "Access-Control-Allow-Origin: http://spray.io" =!= `Access-Control-Allow-Origin`("http://spray.io")
       "Access-Control-Allow-Origin: http://akka.io http://spray.io" =!=
-        `Access-Control-Allow-Origin`(HttpOriginRange("http://akka.io", "http://spray.io"))
+        `Access-Control-Allow-Origin`.forRange(HttpOriginRange("http://akka.io", "http://spray.io"))
     }
 
     "Access-Control-Expose-Headers" in {

@@ -229,8 +229,21 @@ final case class `Access-Control-Allow-Methods`(methods: immutable.Seq[HttpMetho
 }
 
 // http://www.w3.org/TR/cors/#access-control-allow-origin-response-header
-object `Access-Control-Allow-Origin` extends ModeledCompanion
-final case class `Access-Control-Allow-Origin`(range: HttpOriginRange) extends japi.headers.AccessControlAllowOrigin with ModeledHeader {
+object `Access-Control-Allow-Origin` extends ModeledCompanion {
+  val `*` = forRange(HttpOriginRange.`*`)
+  val `null` = forRange(HttpOriginRange())
+  def apply(origin: HttpOrigin) = forRange(HttpOriginRange(origin))
+
+  /**
+   * Creates an `Access-Control-Allow-Origin` header for the given origin range.
+   *
+   * CAUTION: Even though allowed by the spec (http://www.w3.org/TR/cors/#access-control-allow-origin-response-header)
+   * `Access-Control-Allow-Origin` headers with more than a single origin appear to be largely unsupported in the field.
+   * Make sure to thoroughly test such usages with all expected clients!
+   */
+  def forRange(range: HttpOriginRange) = new `Access-Control-Allow-Origin`(range)
+}
+final case class `Access-Control-Allow-Origin` private (range: HttpOriginRange) extends japi.headers.AccessControlAllowOrigin with ModeledHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ range
   protected def companion = `Access-Control-Allow-Origin`
 }
