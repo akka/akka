@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.impl
 
 import scala.util.control.NonFatal

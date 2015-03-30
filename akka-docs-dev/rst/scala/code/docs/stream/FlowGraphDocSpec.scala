@@ -8,7 +8,7 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
 import scala.collection.immutable
-import scala.concurrent.Await
+import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 
 class FlowGraphDocSpec extends AkkaSpec {
@@ -20,7 +20,7 @@ class FlowGraphDocSpec extends AkkaSpec {
   "build simple graph" in {
     //format: OFF
     //#simple-flow-graph
-    val g = FlowGraph.closed() { implicit builder: FlowGraph.Builder =>
+    val g = FlowGraph.closed() { implicit builder: FlowGraph.Builder[Unit] =>
       import FlowGraph.Implicits._
       val in = Source(1 to 10)
       val out = Sink.ignore
@@ -43,7 +43,7 @@ class FlowGraphDocSpec extends AkkaSpec {
 
   "build simple graph without implicits" in {
     //#simple-flow-graph-no-implicits
-    val g = FlowGraph.closed() { builder: FlowGraph.Builder =>
+    val g = FlowGraph.closed() { builder: FlowGraph.Builder[Unit] =>
       val in = Source(1 to 10)
       val out = Sink.ignore
 
@@ -217,6 +217,35 @@ class FlowGraphDocSpec extends AkkaSpec {
     }
     //#flow-graph-components-shape2
 
+  }
+
+  "access to materialized value" in {
+    //#flow-graph-matvalue
+    import FlowGraph.Implicits._
+    val foldFlow: Flow[Int, Int, Future[Int]] = Flow(Sink.fold[Int, Int](0)(_ + _)) {
+      implicit builder ⇒
+        fold ⇒
+          (fold.inlet, builder.matValue.mapAsync(identity).outlet)
+    }
+    //#flow-graph-matvalue
+
+    Await.result(Source(1 to 10).via(foldFlow).runWith(Sink.head), 3.seconds) should ===(55)
+
+    //#flow-graph-matvalue-cycle
+    import FlowGraph.Implicits._
+    // This cannot produce any value:
+    val cyclicFold: Source[Int, Future[Int]] = Source(Sink.fold[Int, Int](0)(_ + _)) {
+      implicit builder =>
+        fold =>
+          // - Fold cannot complete until its upstream mapAsync completes
+          // - mapAsync cannot complete until the materialized Future produced by
+          //   fold completes
+          // As a result this Source will never emit anything, and its materialited
+          // Future will never complete
+          builder.matValue.mapAsync(identity) ~> fold
+          builder.matValue.mapAsync(identity).outlet
+    }
+    //#flow-graph-matvalue-cycle
   }
 
 }

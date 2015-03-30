@@ -280,9 +280,9 @@ public class FlowTest extends StreamTest {
 
     final Sink<String, Publisher<String>> publisher = Sink.publisher();
     
-    final Source<String, BoxedUnit> source = Source.factory().create(new Function<FlowGraph.Builder, Outlet<String>>() {
+    final Source<String, BoxedUnit> source = Source.factory().create(new Function<FlowGraph.Builder<BoxedUnit>, Outlet<String>>() {
       @Override
-      public Outlet<String> apply(Builder b) throws Exception {
+      public Outlet<String> apply(Builder<BoxedUnit> b) throws Exception {
         final UniformFanInShape<String, String> merge = b.graph(Merge.<String> create(2));
         b.flow(b.source(in1), f1, merge.in(0));
         b.flow(b.source(in2), f2, merge.in(1));
@@ -304,7 +304,7 @@ public class FlowTest extends StreamTest {
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<Integer> input2 = Arrays.asList(1, 2, 3);
 
-    final Builder b = FlowGraph.builder();
+    final Builder<BoxedUnit> b = FlowGraph.<BoxedUnit>builder();
     final Outlet<String> in1 = b.source(Source.from(input1));
     final Outlet<Integer> in2 = b.source(Source.from(input2));
     final FanInShape2<String, Integer, Pair<String, Integer>> zip = b.graph(Zip.<String, Integer> create());

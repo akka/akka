@@ -206,6 +206,9 @@ resulting values. Some examples of using these combiners are illustrated in the 
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#flow-mat-combine
 
+.. note::
+   In Graphs it is possible to access the materialized value from inside the stream processing graph. For details see
+   :ref:`graph-matvalue-java`
 
 Stream ordering
 ===============
