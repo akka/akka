@@ -6,15 +6,16 @@ package akka.http.engine
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import scala.annotation.tailrec
+import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.http.model.{ ErrorInfo, StatusCode, StatusCodes }
 import akka.http.util.SingletonException
 
+/**
+ * INTERNAL API
+ */
 package object parsing {
 
-  /**
-   * INTERNAL API
-   */
   private[http] def escape(c: Char): String = c match {
     case '\t'                           ⇒ "\\t"
     case '\r'                           ⇒ "\\r"
@@ -23,25 +24,24 @@ package object parsing {
     case x                              ⇒ x.toString
   }
 
-  /**
-   * INTERNAL API
-   */
   private[http] def byteChar(input: ByteString, ix: Int): Char = byteAt(input, ix).toChar
 
-  /**
-   * INTERNAL API
-   */
   private[http] def byteAt(input: ByteString, ix: Int): Byte =
     if (ix < input.length) input(ix) else throw NotEnoughDataException
 
-  /**
-   * INTERNAL API
-   */
   private[http] def asciiString(input: ByteString, start: Int, end: Int): String = {
     @tailrec def build(ix: Int = start, sb: JStringBuilder = new JStringBuilder(end - start)): String =
       if (ix == end) sb.toString else build(ix + 1, sb.append(input(ix).toChar))
     if (start == end) "" else build()
   }
+
+  private[http] def logParsingError(info: ErrorInfo, log: LoggingAdapter,
+                                    setting: ParserSettings.ErrorLoggingVerbosity): Unit =
+    setting match {
+      case ParserSettings.ErrorLoggingVerbosity.Off    ⇒ // nothing to do
+      case ParserSettings.ErrorLoggingVerbosity.Simple ⇒ log.warning(info.summary)
+      case ParserSettings.ErrorLoggingVerbosity.Full   ⇒ log.warning(info.formatPretty)
+    }
 }
 
 package parsing {
