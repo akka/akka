@@ -100,7 +100,7 @@ class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
   "An ActorSubscriber" must {
 
     "receive requested elements" in {
-      val ref = Source(List(1, 2, 3)).runWith(Sink(manualSubscriberProps(testActor)))
+      val ref = Source(List(1, 2, 3)).runWith(Sink.actorSubscriber(manualSubscriberProps(testActor)))
       expectNoMsg(200.millis)
       ref ! "ready" // requesting 2
       expectMsg(OnNext(1))
@@ -113,7 +113,7 @@ class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
 
     "signal error" in {
       val e = new RuntimeException("simulated") with NoStackTrace
-      val ref = Source(() ⇒ throw e).runWith(Sink(manualSubscriberProps(testActor)))
+      val ref = Source(() ⇒ throw e).runWith(Sink.actorSubscriber(manualSubscriberProps(testActor)))
       ref ! "ready"
       expectMsg(OnError(e))
     }
@@ -138,7 +138,7 @@ class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
     }
 
     "not deliver more after cancel" in {
-      val ref = Source(1 to 5).runWith(Sink(manualSubscriberProps(testActor)))
+      val ref = Source(1 to 5).runWith(Sink.actorSubscriber(manualSubscriberProps(testActor)))
       ref ! "ready"
       expectMsg(OnNext(1))
       expectMsg(OnNext(2))
@@ -147,20 +147,20 @@ class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
     }
 
     "work with OneByOneRequestStrategy" in {
-      Source(1 to 17).runWith(Sink(requestStrategySubscriberProps(testActor, OneByOneRequestStrategy)))
+      Source(1 to 17).runWith(Sink.actorSubscriber(requestStrategySubscriberProps(testActor, OneByOneRequestStrategy)))
       for (n ← 1 to 17) expectMsg(OnNext(n))
       expectMsg(OnComplete)
     }
 
     "work with WatermarkRequestStrategy" in {
-      Source(1 to 17).runWith(Sink(requestStrategySubscriberProps(testActor, WatermarkRequestStrategy(highWatermark = 10))))
+      Source(1 to 17).runWith(Sink.actorSubscriber(requestStrategySubscriberProps(testActor, WatermarkRequestStrategy(highWatermark = 10))))
       for (n ← 1 to 17) expectMsg(OnNext(n))
       expectMsg(OnComplete)
     }
 
     "suport custom max in flight request strategy with child workers" in {
       val N = 117
-      Source(1 to N).map(Msg(_, testActor)).runWith(Sink(streamerProps))
+      Source(1 to N).map(Msg(_, testActor)).runWith(Sink.actorSubscriber(streamerProps))
       receiveN(N).toSet should be((1 to N).map(Done).toSet)
     }
 
