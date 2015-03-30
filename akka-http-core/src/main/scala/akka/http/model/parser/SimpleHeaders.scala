@@ -36,10 +36,9 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   }
 
   // http://www.w3.org/TR/cors/#access-control-allow-origin-response-header
-  def `access-control-allow-origin` = rule {
-    (ws('*') ~ push(HttpOriginRange.`*`) | `origin-list-or-null` ~> (HttpOriginRange(_: _*))) ~ EOI ~>
-      (`Access-Control-Allow-Origin`(_))
-  }
+  def `access-control-allow-origin` = rule(
+    ws('*') ~ push(`Access-Control-Allow-Origin`.`*`)
+      | `origin-list-or-null` ~ EOI ~> (origins ⇒ `Access-Control-Allow-Origin`.forRange(HttpOriginRange(origins: _*))))
 
   // http://www.w3.org/TR/cors/#access-control-expose-headers-response-header
   def `access-control-expose-headers` = rule {
