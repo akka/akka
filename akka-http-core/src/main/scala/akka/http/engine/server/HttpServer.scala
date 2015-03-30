@@ -13,12 +13,12 @@ import akka.stream.stage.PushPullStage
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.scaladsl._
 import akka.stream._
-import akka.http.engine.parsing.{ HttpHeaderParser, HttpRequestParser }
+import akka.http.engine.parsing._
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
-import akka.http.engine.parsing.ParserOutput._
 import akka.http.engine.TokenSourceActor
 import akka.http.model._
 import akka.http.util._
+import ParserOutput._
 
 /**
  * INTERNAL API
@@ -50,14 +50,14 @@ private[http] object HttpServer {
 
   def serverBlueprint(settings: ServerSettings,
                       log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[HttpServerPorts, Unit] = {
+    import settings._
 
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-    val rootParser = new HttpRequestParser(
-      settings.parserSettings,
-      settings.rawRequestUriHeader,
-      HttpHeaderParser(settings.parserSettings) { errorInfo ⇒
-        if (settings.parserSettings.illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal request header").formatPretty)
+    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader,
+      HttpHeaderParser(parserSettings) { info ⇒
+        if (parserSettings.illegalHeaderWarnings)
+          logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
       })
 
     val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.responseHeaderSizeHint, log)
@@ -149,7 +149,7 @@ private[http] object HttpServer {
           this.requestStart = requestStart
           ctx.changeCompletionHandling(waitingForApplicationResponseCompletionHandling)
           waitingForApplicationResponse
-        case (ctx, _, MessageStartError(status, info)) ⇒ finishWithError(ctx, "request", status, info)
+        case (ctx, _, MessageStartError(status, info)) ⇒ finishWithError(ctx, status, info)
         case _                                         ⇒ throw new IllegalStateException
       }
 
@@ -181,12 +181,13 @@ private[http] object HttpServer {
         onUpstreamFailure = {
           case (ctx, _, EntityStreamException(errorInfo)) ⇒
             // the application has forwarded a request entity stream error to the response stream
-            finishWithError(ctx, "request", StatusCodes.BadRequest, errorInfo)
+            finishWithError(ctx, StatusCodes.BadRequest, errorInfo)
           case (ctx, _, error) ⇒ { ctx.fail(error); SameState }
         })
 
-      def finishWithError(ctx: MergeLogicContextBase, target: String, status: StatusCode, info: ErrorInfo): State[Any] = {
-        log.warning("Illegal {}, responding with status '{}': {}", target, status, info.formatPretty)
+      def finishWithError(ctx: MergeLogicContextBase, status: StatusCode, info: ErrorInfo): State[Any] = {
+        logParsingError(info withSummaryPrepended s"Illegal request, responding with status '$status'",
+          log, settings.parserSettings.errorLoggingVerbosity)
         val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
         // FIXME this is a workaround that is supposed to be solved by issue #16753
         ctx match {
@@ -195,7 +196,6 @@ private[http] object HttpServer {
             fullCtx.emit(ResponseRenderingContext(HttpResponse(status, entity = msg), closeRequested = true))
           case other ⇒ throw new IllegalStateException(s"Unexpected MergeLogicContext [${other.getClass.getName}]")
         }
-        //
         finish(ctx)
       }
 

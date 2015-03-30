@@ -4,6 +4,7 @@
 
 package akka.http.engine.parsing
 
+import java.util.Locale
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import akka.http.model.{ StatusCode, HttpMethod, Uri }
@@ -21,6 +22,7 @@ final case class ParserSettings(
   maxChunkSize: Int,
   uriParsingMode: Uri.ParsingMode,
   illegalHeaderWarnings: Boolean,
+  errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity,
   headerValueCacheLimits: Map[String, Int],
   customMethods: String ⇒ Option[HttpMethod],
   customStatusCodes: Int ⇒ Option[StatusCode]) extends HttpHeaderParser.Settings {
@@ -66,9 +68,25 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
       c getIntBytes "max-chunk-size",
       Uri.ParsingMode(c getString "uri-parsing-mode"),
       c getBoolean "illegal-header-warnings",
+      ErrorLoggingVerbosity(c getString "error-logging-verbosity"),
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey -> cacheConfig.getInt(kvp.getKey))(collection.breakOut),
       _ ⇒ None,
       _ ⇒ None)
+  }
+
+  sealed trait ErrorLoggingVerbosity
+  object ErrorLoggingVerbosity {
+    case object Off extends ErrorLoggingVerbosity
+    case object Simple extends ErrorLoggingVerbosity
+    case object Full extends ErrorLoggingVerbosity
+
+    def apply(string: String): ErrorLoggingVerbosity =
+      string.toLowerCase(Locale.ROOT) match {
+        case "off"    ⇒ Off
+        case "simple" ⇒ Simple
+        case "full"   ⇒ Full
+        case x        ⇒ throw new IllegalArgumentException(s"[$x] is not a legal `error-logging-verbosity` setting")
+      }
   }
 }
 
