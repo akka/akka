@@ -6,6 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.common._
 import akka.http.impl.util._
@@ -84,17 +85,20 @@ object ParameterDirectives extends ParameterDirectives {
     import FutureDirectives._
     type FSOU[T] = Unmarshaller[Option[String], T]
 
+    private def extractParameter[A, B](f: A ⇒ Directive1[B]): ParamDefAux[A, Directive1[B]] = paramDef(f)
+    private def handleParamResult[T](paramName: String, result: Future[T])(implicit ec: ExecutionContext): Directive1[T] =
+      onComplete(result).flatMap {
+        case Success(x)                               ⇒ provide(x)
+        case Failure(Unmarshaller.NoContentException) ⇒ reject(MissingQueryParamRejection(paramName))
+        case Failure(x)                               ⇒ reject(MalformedQueryParamRejection(paramName, x.getMessage.nullAsEmpty, Option(x.getCause)))
+      }
+
     //////////////////// "regular" parameter extraction //////////////////////
 
-    private def extractParameter[A, B](f: A ⇒ Directive1[B]): ParamDefAux[A, Directive1[B]] = paramDef(f)
     private def filter[T](paramName: String, fsou: FSOU[T]): Directive1[T] =
       extractRequestContext flatMap { ctx ⇒
         import ctx.executionContext
-        onComplete(fsou(ctx.request.uri.query get paramName)) flatMap {
-          case Success(x)                               ⇒ provide(x)
-          case Failure(Unmarshaller.NoContentException) ⇒ reject(MissingQueryParamRejection(paramName))
-          case Failure(x)                               ⇒ reject(MalformedQueryParamRejection(paramName, x.getMessage.nullAsEmpty, Option(x.getCause)))
-        }
+        handleParamResult(paramName, fsou(ctx.request.uri.query get paramName))
       }
     implicit def forString(implicit fsu: FSU[String]): ParamDefAux[String, Directive1[String]] =
       extractParameter[String, String] { string ⇒ filter(string, fsu) }
@@ -127,6 +131,18 @@ object ParameterDirectives extends ParameterDirectives {
       paramDef[RequiredValueReceptacle[T], Directive0] { rvr ⇒ requiredFilter(rvr.name, fsu, rvr.requiredValue) }
     implicit def forRVDR[T]: ParamDefAux[RequiredValueUnmarshallerReceptacle[T], Directive0] =
       paramDef[RequiredValueUnmarshallerReceptacle[T], Directive0] { rvr ⇒ requiredFilter(rvr.name, rvr.um, rvr.requiredValue) }
+
+    //////////////////// repeated parameter support ////////////////////
+
+    private def repeatedFilter[T](paramName: String, fsu: FSU[T]): Directive1[Iterable[T]] =
+      extractRequestContext flatMap { ctx ⇒
+        import ctx.executionContext
+        handleParamResult(paramName, Future.sequence(ctx.request.uri.query.getAll(paramName).map(fsu.apply)))
+      }
+    implicit def forRepVR[T](implicit fsu: FSU[T]): ParamDefAux[RepeatedValueReceptacle[T], Directive1[Iterable[T]]] =
+      extractParameter[RepeatedValueReceptacle[T], Iterable[T]] { rvr ⇒ repeatedFilter(rvr.name, fsu) }
+    implicit def forRepVDR[T]: ParamDefAux[RepeatedValueUnmarshallerReceptacle[T], Directive1[Iterable[T]]] =
+      extractParameter[RepeatedValueUnmarshallerReceptacle[T], Iterable[T]] { rvr ⇒ repeatedFilter(rvr.name, rvr.um) }
 
     //////////////////// tuple support ////////////////////
 
