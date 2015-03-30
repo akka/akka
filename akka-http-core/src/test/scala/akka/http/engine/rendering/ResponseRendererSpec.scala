@@ -76,7 +76,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         }
       }
 
-      "to a transparent HEAD request" in new TestSetup() {
+      "to a transparent HEAD request (Strict response entity)" in new TestSetup() {
         ResponseRenderingContext(
           requestMethod = HttpMethods.HEAD,
           response = HttpResponse(
@@ -92,7 +92,40 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               |""", close = false)
       }
 
-      "to a HEAD request setting a custom Content-Type and Content-Length w/o entity bytes" in new TestSetup() {
+      "to a transparent HEAD request (CloseDelimited response entity)" in new TestSetup() {
+        ResponseRenderingContext(
+          requestMethod = HttpMethods.HEAD,
+          response = HttpResponse(
+            headers = List(Age(30), Connection("Keep-Alive")),
+            entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain(UTF-8)`,
+              Source.single(ByteString("Foo"))))) should renderTo(
+            """HTTP/1.1 200 OK
+              |Age: 30
+              |Server: akka-http/1.0.0
+              |Date: Thu, 25 Aug 2011 09:10:29 GMT
+              |Content-Type: text/plain; charset=UTF-8
+              |
+              |""", close = false)
+      }
+
+      "to a transparent HEAD request (Chunked response entity)" in new TestSetup() {
+        ResponseRenderingContext(
+          requestMethod = HttpMethods.HEAD,
+          response = HttpResponse(
+            headers = List(Age(30), Connection("Keep-Alive")),
+            entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`,
+              Source.single(HttpEntity.Chunk(ByteString("Foo")))))) should renderTo(
+            """HTTP/1.1 200 OK
+              |Age: 30
+              |Server: akka-http/1.0.0
+              |Date: Thu, 25 Aug 2011 09:10:29 GMT
+              |Transfer-Encoding: chunked
+              |Content-Type: text/plain; charset=UTF-8
+              |
+              |""", close = false)
+      }
+
+      "to a HEAD request setting a custom Content-Type and Content-Length (default response entity)" in new TestSetup() {
         ResponseRenderingContext(
           requestMethod = HttpMethods.HEAD,
           response = HttpResponse(
@@ -506,8 +539,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
 
   override def afterAll() = system.shutdown()
 
-  class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0")),
-                  val transparentHeadRequests: Boolean = true)
+  class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0")))
     extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging) {
 
     def renderTo(expected: String): Matcher[HttpResponse] =
