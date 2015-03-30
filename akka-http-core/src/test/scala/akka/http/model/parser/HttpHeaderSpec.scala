@@ -252,6 +252,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Host: [2001:db8::1]:8080" =!= Host("[2001:db8::1]", 8080)
       "Host: [2001:db8::1]" =!= Host("[2001:db8::1]")
       "Host: [::FFFF:129.144.52.38]" =!= Host("[::FFFF:129.144.52.38]")
+      "Host: spray.io:80000" =!= ErrorInfo("Illegal HTTP header 'Host': requirement failed", "Illegal port: 80000")
     }
 
     "If-Match" in {
