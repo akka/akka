@@ -37,19 +37,23 @@ object ContentTypeRange {
     }
 }
 
-final case class ContentType(mediaType: MediaType, definedCharset: Option[HttpCharset]) extends japi.ContentType with ValueRenderable {
+abstract case class ContentType private (mediaType: MediaType, definedCharset: Option[HttpCharset]) extends japi.ContentType with ValueRenderable {
   def render[R <: Rendering](r: R): r.type = definedCharset match {
     case Some(cs) ⇒ r ~~ mediaType ~~ ContentType.`; charset=` ~~ cs
     case _        ⇒ r ~~ mediaType
   }
-  def charset: HttpCharset = definedCharset getOrElse HttpCharsets.`UTF-8`
+  def charset: HttpCharset = definedCharset orElse mediaType.encoding.charset getOrElse HttpCharsets.`UTF-8`
+
+  def hasOpenCharset: Boolean = definedCharset.isEmpty && mediaType.encoding == MediaType.Encoding.Open
 
   def withMediaType(mediaType: MediaType) =
-    if (mediaType != this.mediaType) copy(mediaType = mediaType) else this
+    if (mediaType != this.mediaType) ContentType(mediaType, definedCharset) else this
   def withCharset(charset: HttpCharset) =
-    if (definedCharset.isEmpty || charset != definedCharset.get) copy(definedCharset = Some(charset)) else this
+    if (definedCharset.isEmpty || charset != definedCharset.get) ContentType(mediaType, charset) else this
   def withoutDefinedCharset =
-    if (definedCharset.isDefined) copy(definedCharset = None) else this
+    if (definedCharset.isDefined) ContentType(mediaType, None) else this
+  def withDefaultCharset(charset: HttpCharset) =
+    if (mediaType.encoding == MediaType.Encoding.Open && definedCharset.isEmpty) ContentType(mediaType, charset) else this
 
   /** Java API */
   def getDefinedCharset: JOption[japi.HttpCharset] = definedCharset.asJava
@@ -58,13 +62,27 @@ final case class ContentType(mediaType: MediaType, definedCharset: Option[HttpCh
 object ContentType {
   private[http] case object `; charset=` extends SingletonValueRenderable
 
-  def apply(mediaType: MediaType, charset: HttpCharset): ContentType = apply(mediaType, Some(charset))
   implicit def apply(mediaType: MediaType): ContentType = apply(mediaType, None)
+
+  def apply(mediaType: MediaType, charset: HttpCharset): ContentType = apply(mediaType, Some(charset))
+
+  def apply(mediaType: MediaType, charset: Option[HttpCharset]): ContentType = {
+    val definedCharset =
+      charset match {
+        case None ⇒ None
+        case Some(cs) ⇒ mediaType.encoding match {
+          case MediaType.Encoding.Open        ⇒ charset
+          case MediaType.Encoding.Fixed(`cs`) ⇒ None
+          case x ⇒ throw new IllegalArgumentException(
+            s"MediaType $mediaType has a $x encoding and doesn't allow a custom `charset` $cs")
+        }
+      }
+    new ContentType(mediaType, definedCharset) {}
+  }
 }
 
 object ContentTypes {
-  // RFC4627 defines JSON to always be UTF encoded, we always render JSON to UTF-8
-  val `application/json` = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`)
+  val `application/json` = ContentType(MediaTypes.`application/json`)
   val `text/plain` = ContentType(MediaTypes.`text/plain`)
   val `text/plain(UTF-8)` = ContentType(MediaTypes.`text/plain`, HttpCharsets.`UTF-8`)
   val `application/octet-stream` = ContentType(MediaTypes.`application/octet-stream`)
