@@ -143,6 +143,10 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         Authorization(OAuth2BearerToken("mF_9.B5f-4.1JqM/"))
       "Authorization: NoParamScheme" =!=
         Authorization(GenericHttpCredentials("NoParamScheme", Map.empty[String, String]))
+      "Authorization: QVFJQzV3TTJMWTRTZmN3Zk=" =!=
+        ErrorInfo("Illegal HTTP header 'Authorization': Invalid input '=', expected tchar, '\\r', WSP, token68-start or 'EOI' (line 1, column 23)",
+          """QVFJQzV3TTJMWTRTZmN3Zk=
+            |                      ^""".stripMargin)
     }
 
     "Cache-Control" in {
@@ -551,7 +555,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
   implicit class TestError(expectedError: ErrorInfo) extends TestExample {
     def apply(line: String) = {
       val Array(name, value) = line.split(": ", 2)
-      HttpHeader.parse(name, value) should matchPattern { case HttpHeader.ParsingResult.Ok(_, `expectedError` :: Nil) ⇒ }
+      val HttpHeader.ParsingResult.Ok(_, error :: Nil) = HttpHeader.parse(name, value)
+      error shouldEqual expectedError
     }
   }
 
