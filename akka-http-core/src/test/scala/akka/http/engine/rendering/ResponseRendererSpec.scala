@@ -76,7 +76,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         }
       }
 
-      "to a HEAD request" in new TestSetup() {
+      "to a transparent HEAD request" in new TestSetup() {
         ResponseRenderingContext(
           requestMethod = HttpMethods.HEAD,
           response = HttpResponse(
@@ -88,6 +88,22 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
               |Content-Type: text/plain; charset=UTF-8
               |Content-Length: 23
+              |
+              |""", close = false)
+      }
+
+      "to a HEAD request setting a custom Content-Type and Content-Length w/o entity bytes" in new TestSetup() {
+        ResponseRenderingContext(
+          requestMethod = HttpMethods.HEAD,
+          response = HttpResponse(
+            headers = List(Age(30)),
+            entity = HttpEntity.Default(ContentTypes.`text/plain(UTF-8)`, 100, Source.empty))) should renderTo(
+            """HTTP/1.1 200 OK
+              |Age: 30
+              |Server: akka-http/1.0.0
+              |Date: Thu, 25 Aug 2011 09:10:29 GMT
+              |Content-Type: text/plain; charset=UTF-8
+              |Content-Length: 100
               |
               |""", close = false)
       }
