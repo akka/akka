@@ -23,11 +23,9 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
 import scala.util.Try;
-
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertEquals;
 
 public class SourceTest extends StreamTest {
@@ -458,5 +456,20 @@ public class SourceTest extends StreamTest {
     final List<Integer> result = Await.result(f, FiniteDuration.create(3, TimeUnit.SECONDS));
     assertEquals(result.size(), 10000);
     for (Integer i: result) assertEquals(i, (Integer) 42);
+  }
+  
+  @Test
+  public void mustBeAbleToUseActorRefSource() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<Integer, ActorRef> actorRefSource = Source.actorRef(10, OverflowStrategy.fail());
+    final ActorRef ref = actorRefSource.to(Sink.foreach(new Procedure<Integer>() {
+      public void apply(Integer elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    })).run(materializer);
+    ref.tell(1, ActorRef.noSender());
+    probe.expectMsgEquals(1);
+    ref.tell(2, ActorRef.noSender());
+    probe.expectMsgEquals(2);
   }
 }
