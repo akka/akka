@@ -133,7 +133,7 @@ public class ActorPublisherDocTest {
       {
         //#actor-publisher-usage
         final Source<JobManagerProtocol.Job, ActorRef> jobManagerSource = 
-          Source.from(JobManager.props());
+          Source.actorPublisher(JobManager.props());
 
         final ActorRef ref = jobManagerSource
           .map(job -> job.payload.toUpperCase())

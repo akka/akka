@@ -8,7 +8,8 @@ Integrating with Actors
 =======================
 
 For piping the elements of a stream as messages to an ordinary actor you can use the
-``Sink.actorRef``.  
+``Sink.actorRef``. Messages can be sent to a stream via the :class:`ActorRef` that is 
+materialized by ``Source.actorRef``.
 
 For more advanced use cases the :class:`ActorPublisher` and :class:`ActorSubscriber` traits are
 provided to support implementing Reactive Streams :class:`Publisher` and :class:`Subscriber` with
@@ -27,6 +28,25 @@ Akka Streams :class:`Source` or :class:`Sink`.
   These Actors are designed to be implemented using Java 8 lambda expressions. In case you need to stay on a JVM
   prior to 8, Akka provides :class:`UntypedActorPublisher` and :class:`UntypedActorSubscriber` which can be used
   easily from any language level.
+
+Source.actorRef
+^^^^^^^^^^^^^^^
+
+Messages sent to the actor that is materialized by ``Source.actorRef`` will be emitted to the 
+stream if there is demand from downstream, otherwise they will be buffered until request for 
+demand is received.
+
+Depending on the defined :class:`OverflowStrategy` it might drop elements if there is no space
+available in the buffer.
+
+The stream can be completed successfully by sending ``akka.actor.PoisonPill`` or
+``akka.actor.Status.Success`` to the actor reference.
+
+The stream can be completed with failure by sending ``akka.actor.Status.Failure`` to the 
+actor reference.
+
+The actor will be stopped when the stream is completed, failed or cancelled from downstream,
+i.e. you can watch it to get notified when that happens.
 
 Sink.actorRef
 ^^^^^^^^^^^^^
