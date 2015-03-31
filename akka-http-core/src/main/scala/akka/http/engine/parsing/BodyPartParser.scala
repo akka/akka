@@ -56,7 +56,6 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
 
   private[this] var output = collection.immutable.Queue.empty[Output] // FIXME this probably is too wasteful
   private[this] var state: ByteString ⇒ StateResult = tryParseInitialBoundary
-  private[this] var receivedInitialBoundary = false
   private[this] var terminated = false
 
   def warnOnIllegalHeader(errorInfo: ErrorInfo): Unit =
@@ -79,10 +78,8 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
     if (output.nonEmpty)
       ctx.push(dequeue())
     else if (ctx.isFinishing) {
-      if (terminated || !receivedInitialBoundary)
-        ctx.finish()
-      else
-        ctx.pushAndFinish(ParseError(ErrorInfo("Unexpected end of multipart entity")))
+      if (terminated) ctx.finish()
+      else ctx.pushAndFinish(ParseError(ErrorInfo("Unexpected end of multipart entity")))
     } else
       ctx.pull()
   }
@@ -95,10 +92,8 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
     try {
       if (boundary(input, 0)) {
         val ix = boundaryLength
-        if (crlf(input, ix)) {
-          receivedInitialBoundary = true
-          parseHeaderLines(input, ix + 2)
-        } else if (doubleDash(input, ix)) terminate()
+        if (crlf(input, ix)) parseHeaderLines(input, ix + 2)
+        else if (doubleDash(input, ix)) terminate()
         else parsePreamble(input, 0)
       } else parsePreamble(input, 0)
     } catch {
