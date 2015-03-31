@@ -37,14 +37,6 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
   "The MultipartUnmarshallers." - {
 
     "multipartGeneralUnmarshaller should correctly unmarshal 'multipart/*' content with" - {
-      "an empty entity" in {
-        Unmarshal(HttpEntity(`multipart/mixed` withBoundary "XYZABC", ByteString.empty)).to[Multipart.General] should haveParts()
-      }
-      "an entity without initial boundary" in {
-        Unmarshal(HttpEntity(`multipart/mixed` withBoundary "XYZABC",
-          """this is
-            |just preamble text""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts()
-      }
       "an empty part" in {
         Unmarshal(HttpEntity(`multipart/mixed` withBoundary "XYZABC",
           """--XYZABC
@@ -111,6 +103,16 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
     }
 
     "multipartGeneralUnmarshaller should reject illegal multipart content with" - {
+      "an empty entity" in {
+        Await.result(Unmarshal(HttpEntity(`multipart/mixed` withBoundary "XYZABC", ByteString.empty))
+          .to[Multipart.General].failed, 1.second).getMessage shouldEqual "Unexpected end of multipart entity"
+      }
+      "an entity without initial boundary" in {
+        Await.result(Unmarshal(HttpEntity(`multipart/mixed` withBoundary "XYZABC",
+          """this is
+            |just preamble text""".stripMarginWithNewline("\r\n")))
+          .to[Multipart.General].failed, 1.second).getMessage shouldEqual "Unexpected end of multipart entity"
+      }
       "a stray boundary" in {
         Await.result(Unmarshal(HttpEntity(`multipart/form-data` withBoundary "ABC",
           """--ABC
