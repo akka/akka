@@ -13,6 +13,4 @@ class ConcatTest extends AkkaPublisherVerification[Int] {
     Source(iterable(elements / 2)).concat(Source(iterable((elements + 1) / 2))).runWith(Sink.publisher)
   }
 
-  // FIXME verifyNoAsyncErrors() without delay is wrong in TCK, enable again in RC4
-  override def optional_spec111_maySupportMultiSubscribe(): Unit = ()
 }

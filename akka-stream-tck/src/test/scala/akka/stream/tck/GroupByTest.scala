@@ -23,6 +23,4 @@ class GroupByTest extends AkkaPublisherVerification[Int] {
 
     }
 
-  // FIXME verifyNoAsyncErrors() without delay is wrong in TCK, enable again in RC4
-  override def optional_spec111_maySupportMultiSubscribe(): Unit = ()
 }

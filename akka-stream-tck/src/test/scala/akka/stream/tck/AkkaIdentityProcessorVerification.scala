@@ -25,7 +25,7 @@ abstract class AkkaIdentityProcessorVerification[T](env: TestEnvironment, publis
 
   def this() = this(false)
 
-  override def createErrorStatePublisher(): Publisher[T] =
+  override def createFailedPublisher(): Publisher[T] =
     StreamTestKit.errorPublisher(new Exception("Unable to serve subscribers right now!"))
 
   def processorFromFlow(flow: Flow[T, T, _])(implicit mat: ActorFlowMaterializer): Processor[T, T] = {
