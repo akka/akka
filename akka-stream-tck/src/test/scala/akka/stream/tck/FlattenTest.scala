@@ -16,6 +16,4 @@ class FlattenTest extends AkkaPublisherVerification[Int] {
     Source(List(s1, s2)).flatten(FlattenStrategy.concat).runWith(Sink.publisher)
   }
 
-  // FIXME verifyNoAsyncErrors() without delay is wrong in TCK, enable again in RC4
-  override def optional_spec111_maySupportMultiSubscribe(): Unit = ()
 }
