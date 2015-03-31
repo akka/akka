@@ -101,7 +101,7 @@ object Sink {
    * i.e. if the actor is not consuming the messages fast enough the mailbox
    * of the actor will grow. For potentially slow consumer actors it is recommended
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
-   * limiting stage in front of this stage.
+   * limiting stage in front of this `Sink`.
    *
    */
   def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, Unit] =
