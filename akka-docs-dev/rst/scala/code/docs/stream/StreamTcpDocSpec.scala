@@ -13,6 +13,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.ByteString
 import cookbook.RecipeParseLines
+import docs.utils.TestUtils
 import StreamTcp._
 
 import scala.concurrent.Future
@@ -25,33 +26,41 @@ class StreamTcpDocSpec extends AkkaSpec {
   // silence sysout
   def println(s: String) = ()
 
-  val localhost = new InetSocketAddress("127.0.0.1", 8888)
-
   "simple server connection" ignore {
-    //#echo-server-simple-bind
-    val localhost = new InetSocketAddress("127.0.0.1", 8888)
-    //#echo-server-simple-handle
-    val connections: Source[IncomingConnection, Future[ServerBinding]] = StreamTcp().bind(localhost)
-    //#echo-server-simple-bind
-
-    connections runForeach { connection =>
-      println(s"New connection from: ${connection.remoteAddress}")
-
-      val echo = Flow[ByteString]
-        .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
-        .map(_ + "!!!\n")
-        .map(ByteString(_))
-
-      connection.handleWith(echo)
+    {
+      //#echo-server-simple-bind
+      val localhost = new InetSocketAddress("127.0.0.1", 8888)
+      //#echo-server-simple-bind
     }
-    //#echo-server-simple-handle
+    {
+      val localhost = TestUtils.temporaryServerAddress()
+      //#echo-server-simple-bind
+      val connections: Source[IncomingConnection, Future[ServerBinding]] =
+        StreamTcp().bind(localhost)
+      //#echo-server-simple-bind
+
+      //#echo-server-simple-handle
+      connections runForeach { connection =>
+        println(s"New connection from: ${connection.remoteAddress}")
+
+        val echo = Flow[ByteString]
+          .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
+          .map(_ + "!!!\n")
+          .map(ByteString(_))
+
+        connection.handleWith(echo)
+      }
+      //#echo-server-simple-handle
+    }
   }
 
   "simple repl client" ignore {
     val sys: ActorSystem = ???
 
+    val localhost = TestUtils.temporaryServerAddress()
     //#repl-client
-    val connection: Flow[ByteString, ByteString, Future[OutgoingConnection]] = StreamTcp().outgoingConnection(localhost)
+    val connection: Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+      StreamTcp().outgoingConnection(localhost)
 
     val repl = Flow[ByteString]
       .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
@@ -68,6 +77,7 @@ class StreamTcpDocSpec extends AkkaSpec {
   }
 
   "initial server banner echo server" ignore {
+    val localhost = TestUtils.temporaryServerAddress()
     val connections = StreamTcp().bind(localhost)
     val serverProbe = TestProbe()
 
