@@ -86,7 +86,7 @@ public class IntegrationDocTest {
       return Futures.successful(Optional.of("" + handle.hashCode()));
     }
   }
-  
+
   class AddressSystem2 {
     //#email-address-lookup2
     public Future<String> lookupEmail(String handle)
@@ -95,7 +95,7 @@ public class IntegrationDocTest {
       return Futures.successful(handle + "@somewhere.com");
     }
   }
-  
+
   static class Email {
     public final String to;
     public final String title;
@@ -139,7 +139,7 @@ public class IntegrationDocTest {
       return result;
     }
   }
-  
+
   static class TextMessage {
     public final String to;
     public final String body;
@@ -177,36 +177,36 @@ public class IntegrationDocTest {
       return result;
     }
   }
-  
+
   static class EmailServer {
     public final ActorRef probe;
 
     public EmailServer(ActorRef probe) {
       this.probe = probe;
     }
-    
+
     //#email-server-send
-    public Future<Void> send(Email email) {
-      // ... 
+    public Future<Email> send(Email email) {
+      // ...
       //#email-server-send
       probe.tell(email.to, ActorRef.noSender());
-      return Futures.successful(null);
+      return Futures.successful(email);
       //#email-server-send
     }
     //#email-server-send
   }
-  
-  
+
+
   static class SmsServer {
     public final ActorRef probe;
 
     public SmsServer(ActorRef probe) {
       this.probe = probe;
     }
-    
+
     //#sms-server-send
     public boolean send(TextMessage text) {
-      // ... 
+      // ...
       //#sms-server-send
       probe.tell(text.to, ActorRef.noSender());
       //#sms-server-send
@@ -214,7 +214,7 @@ public class IntegrationDocTest {
     }
     //#sms-server-send
   }
-  
+
   static class Save {
     public final Tweet tweet;
 
@@ -244,27 +244,27 @@ public class IntegrationDocTest {
     public int hashCode() {
       return tweet != null ? tweet.hashCode() : 0;
     }
-  } 
+  }
   static class SaveDone {
     public static SaveDone INSTANCE = new SaveDone();
     private SaveDone() {
     }
-  } 
-  
-  
+  }
+
+
   static class DatabaseService extends AbstractActor {
     public final ActorRef probe;
 
     DatabaseService(ActorRef probe) {
       this.probe = probe;
-      
+
       receive(ReceiveBuilder.match(Save.class, s -> {
         probe.tell(s.tweet.author.handle, ActorRef.noSender());
         sender().tell(SaveDone.INSTANCE, self());
       }).build());
     }
   }
-  
+
   //#sometimes-slow-service
   static class SometimesSlowService {
     private final ExecutionContext ec;
@@ -274,13 +274,13 @@ public class IntegrationDocTest {
     }
 
     private final AtomicInteger runningCount = new AtomicInteger();
-    
+
     public Future<String> convert(String s) {
       System.out.println("running: " + s + "(" + runningCount.incrementAndGet() + ")");
       return Futures.future(() -> {
         if (!s.isEmpty() && Character.isLowerCase(s.charAt(0)))
           Thread.sleep(500);
-        else 
+        else
           Thread.sleep(20);
         System.out.println("completed: " + s + "(" + runningCount.decrementAndGet() + ")");
         return s.toUpperCase();
@@ -302,15 +302,15 @@ public class IntegrationDocTest {
         final Source<Author, BoxedUnit> authors = tweets
           .filter(t -> t.hashtags().contains(AKKA))
           .map(t -> t.author);
-        
+
         //#tweet-authors
-        
+
         //#email-addresses-mapAsync
         final Source<String, BoxedUnit> emailAddresses = authors
           .mapAsync(author -> addressSystem.lookupEmail(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
-        
+
         //#email-addresses-mapAsync
 
         //#send-emails
@@ -318,10 +318,10 @@ public class IntegrationDocTest {
           .mapAsync(address ->
             emailServer.send(new Email(address, "Akka", "I like your tweet")))
           .to(Sink.ignore());
-        
+
         sendEmails.run(mat);
         //#send-emails
-        
+
         probe.expectMsg("rolandkuhn@somewhere.com");
         probe.expectMsg("patriknw@somewhere.com");
         probe.expectMsg("bantonsson@somewhere.com");
@@ -332,7 +332,7 @@ public class IntegrationDocTest {
       }
     };
   }
-  
+
   @Test
   @SuppressWarnings("unused")
   public void callingExternalServiceWithMapAsyncAndSupervision() throws Exception {
@@ -343,18 +343,18 @@ public class IntegrationDocTest {
         final Source<Author, BoxedUnit> authors = tweets
           .filter(t -> t.hashtags().contains(AKKA))
           .map(t -> t.author);
-        
+
         //#email-addresses-mapAsync-supervision
         final OperationAttributes resumeAttrib =
           OperationAttributes.supervisionStrategy(Supervision.getResumingDecider());
         final Source<String, BoxedUnit> emailAddresses = authors.section(resumeAttrib,
           flow -> flow.mapAsync(author -> addressSystem.lookupEmail(author.handle)));
-        
+
         //#email-addresses-mapAsync-supervision
       }
     };
   }
-  
+
   @Test
   public void callingExternalServiceWithMapAsyncUnordered() throws Exception {
     new JavaTestKit(system) {
@@ -380,13 +380,13 @@ public class IntegrationDocTest {
             .mapAsyncUnordered( address ->
               emailServer.send(new Email(address, "Akka", "I like your tweet")))
             .to(Sink.ignore());
-  
+
         sendEmails.run(mat);
         //#external-service-mapAsyncUnordered
       }
     };
   }
-  
+
   @Test
   public void carefulManagedBlockingWithMapAsync() throws Exception {
     new JavaTestKit(system) {
@@ -399,7 +399,7 @@ public class IntegrationDocTest {
           tweets
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
-        
+
         final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(author -> addressSystem.lookupPhoneNumber(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
@@ -409,16 +409,16 @@ public class IntegrationDocTest {
 
         final RunnableFlow sendTextMessages =
           phoneNumbers
-            .mapAsync( phoneNo  -> 
-              Futures.future(() -> 
-                smsServer.send(new TextMessage(phoneNo, "I like your tweet")), 
+            .mapAsync( phoneNo  ->
+              Futures.future(() ->
+                smsServer.send(new TextMessage(phoneNo, "I like your tweet")),
                 blockingEc)
             )
             .to(Sink.ignore());
-          
+
         sendTextMessages.run(mat);
         //#blocking-mapAsync
-        
+
         final Object[] got = receiveN(7);
         final Set<Object> set = new HashSet<>(Arrays.asList(got));
 
@@ -432,7 +432,7 @@ public class IntegrationDocTest {
       }
     };
   }
-  
+
   @Test
   public void carefulManagedBlockingWithMap() throws Exception {
     new JavaTestKit(system) {
@@ -446,7 +446,7 @@ public class IntegrationDocTest {
           tweets
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
-        
+
         final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(author -> addressSystem.lookupPhoneNumber(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
@@ -458,10 +458,10 @@ public class IntegrationDocTest {
               blockingSection
                 .map(phoneNo -> smsServer.send(new TextMessage(phoneNo, "I like your tweet"))))
             .to(Sink.ignore());
-                  
+
         sendTextMessages.run(mat);
         //#blocking-map
-          
+
         probe.expectMsg(String.valueOf("rolandkuhn".hashCode()));
         probe.expectMsg(String.valueOf("patriknw".hashCode()));
         probe.expectMsg(String.valueOf("bantonsson".hashCode()));
@@ -472,7 +472,7 @@ public class IntegrationDocTest {
       }
     };
   }
-  
+
   @Test
   public void callingActorServiceWithMapAsync() throws Exception {
     new JavaTestKit(system) {
@@ -503,7 +503,7 @@ public class IntegrationDocTest {
       }
     };
   }
-  
+
   @Test
   public void illustrateOrderingAndParallelismOfMapAsync() throws Exception {
     new JavaTestKit(system) {
@@ -517,11 +517,11 @@ public class IntegrationDocTest {
               probe.ref().tell(s, ActorRef.noSender());
           }
         }
-      
+
         public final Println out = new Println();
       }
       private final MockSystem System = new MockSystem();
-      
+
       {
         //#sometimes-slow-mapAsync
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
@@ -549,7 +549,7 @@ public class IntegrationDocTest {
       }
     };
   }
-  
+
   @Test
   public void illustrateOrderingAndParallelismOfMapAsyncUnordered() throws Exception {
     new JavaTestKit(system) {
@@ -566,7 +566,7 @@ public class IntegrationDocTest {
         public final Println out = new Println();
       }
       private final MockSystem System = new MockSystem();
-      
+
       {
         //#sometimes-slow-mapAsyncUnordered
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
@@ -597,6 +597,6 @@ public class IntegrationDocTest {
       }
     };
   }
-  
-    
+
+
 }

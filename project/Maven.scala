@@ -15,15 +15,13 @@ object Maven {
   val defaultCommands = settingKey[Seq[String]]("Commands to be called on each maven project")
   val javaHomeOverride = settingKey[Option[File]]("JAVA_HOME to be used while building projects with maven")
   val mavenLocalRepoOverride = settingKey[Option[File]]("Overrides local maven repository location if set")
-  
-  val mvnExec = taskKey[Unit]("Test all maven projects (as listed in projectsToTest)")
 
-  def akkaBuildJava8HomeEnv() = sys.env.get("AKKA_BUILD_JAVA8_HOME").map(file)
+  val mvnExec = taskKey[Unit]("Test all maven projects (as listed in projectsToTest)")
 
   lazy val settings: Seq[Setting[_]] = Seq(
     projects in mvn := Nil,
     defaultCommands in mvn := "clean" :: "test" :: Nil,
-    javaHomeOverride in mvn := akkaBuildJava8HomeEnv(),
+    javaHomeOverride in mvn := AkkaBuild.java8Home.value,
     mvnExec := {
       val javaHome = (javaHomeOverride in mvn).value
       val prjs = (projects in mvn).value
@@ -38,9 +36,9 @@ object Maven {
 
   /** Runs maven commands (blocking) on given project directory (by cd-ing into it) */
   def mvnRun(javaHome: Option[File], proj: String, commands: String*): Unit = {
-    val exportJHome = javaHome.map(h ⇒ s"""export JAVA_HOME="$h" """).getOrElse("")
-    val initialCmd = s"$exportJHome; cd $proj; mvn "
-    
+    val exportJHome = javaHome.map(h ⇒ s"""export JAVA_HOME="$h"; """).getOrElse("")
+    val initialCmd = s"${exportJHome}cd $proj; mvn "
+
     val cmd = List("sh", "-c", commands.mkString(initialCmd, " ", ""))
     if ((cmd.!(MavenLogger)) != 0) throw new Exception(s"Failed building [$proj] using maven!")
   }

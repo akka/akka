@@ -19,6 +19,7 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
+import util.SocketUtils;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -34,7 +35,7 @@ import akka.testkit.TestProbe;
 import akka.util.ByteString;
 
 public class StreamTcpDocTest {
-  
+
   static ActorSystem system;
 
   @BeforeClass
@@ -49,46 +50,53 @@ public class StreamTcpDocTest {
   }
 
   final FlowMaterializer mat = ActorFlowMaterializer.create(system);
-  
-  final InetSocketAddress localhost = new InetSocketAddress("127.0.0.1", 8889);
-  
+
   private final ConcurrentLinkedQueue<String> input = new ConcurrentLinkedQueue<String>();
   {
     input.add("Hello world");
     input.add("What a lovely day");
   }
-  
+
   private String readLine(String prompt) {
     String s = input.poll();
     return (s == null ? "q": s);
   }
-  
+
   @Test
   public void demonstrateSimpleServerConnection() {
-    //#echo-server-simple-bind
-    final InetSocketAddress localhost = 
-        new InetSocketAddress("127.0.0.1", 8889);
-    // IncomingConnection and ServerBinding imported from StreamTcp
-    final Source<IncomingConnection,Future<ServerBinding>> connections =
+    {
+      //#echo-server-simple-bind
+      final InetSocketAddress localhost = new InetSocketAddress("127.0.0.1", 8889);
+      //#echo-server-simple-bind
+    }
+    {
+      final InetSocketAddress localhost = SocketUtils.temporaryServerAddress();
+      //#echo-server-simple-bind
+      // IncomingConnection and ServerBinding imported from StreamTcp
+      final Source<IncomingConnection, Future<ServerBinding>> connections =
         StreamTcp.get(system).bind(localhost);
-    //#echo-server-simple-bind
+      //#echo-server-simple-bind
 
-    //#echo-server-simple-handle
-    connections.runForeach(connection -> {
-      System.out.println("New connection from: " + connection.remoteAddress());
+      //#echo-server-simple-handle
+      connections.runForeach(connection -> {
+        System.out.println("New connection from: " + connection.remoteAddress());
 
-      final Flow<ByteString, ByteString, BoxedUnit> echo = Flow.of(ByteString.class)
-        .transform(() -> RecipeParseLines.parseLines("\n", 256))
-        .map(s -> s + "!!!\n")
-        .map(s -> ByteString.fromString(s));
+        final Flow<ByteString, ByteString, BoxedUnit> echo = Flow.of(ByteString.class)
+          .transform(() -> RecipeParseLines.parseLines("\n", 256))
+          .map(s -> s + "!!!\n")
+          .map(s -> ByteString.fromString(s));
 
-      connection.handleWith(echo, mat);
-    }, mat);
-    //#echo-server-simple-handle
+        connection.handleWith(echo, mat);
+      }, mat);
+      //#echo-server-simple-handle
+    }
   }
-  
+
   @Test
   public void actuallyWorkingClientServerApp() {
+
+    final InetSocketAddress localhost = SocketUtils.temporaryServerAddress();
+
     final TestProbe serverProbe = new TestProbe(system);
 
     final Source<IncomingConnection,Future<ServerBinding>> connections =
@@ -98,25 +106,25 @@ public class StreamTcpDocTest {
       // server logic, parses incoming commands
       final PushStage<String, String> commandParser = new PushStage<String, String>() {
         @Override public Directive onPush(String elem, Context<String> ctx) {
-          if (elem.equals("BYE")) 
+          if (elem.equals("BYE"))
             return ctx.finish();
           else
             return ctx.push(elem + "!");
         }
       };
 
-      final String welcomeMsg = "Welcome to: " + connection.localAddress() + 
+      final String welcomeMsg = "Welcome to: " + connection.localAddress() +
           " you are: " + connection.remoteAddress() + "!\n";
 
-      final Source<ByteString, BoxedUnit> welcome = 
+      final Source<ByteString, BoxedUnit> welcome =
           Source.single(ByteString.fromString(welcomeMsg));
       final Flow<ByteString, ByteString, BoxedUnit> echoFlow =
           Flow.of(ByteString.class)
             .transform(() -> RecipeParseLines.parseLines("\n", 256))
             //#welcome-banner-chat-server
-            .map(command -> { 
-              serverProbe.ref().tell(command, null); 
-              return command; 
+            .map(command -> {
+              serverProbe.ref().tell(command, null);
+              return command;
             })
             //#welcome-banner-chat-server
             .transform(() -> commandParser)
@@ -128,11 +136,11 @@ public class StreamTcpDocTest {
             final UniformFanInShape<ByteString, ByteString> concat =
                 builder.graph(Concat.create());
             final FlowShape<ByteString, ByteString> echo = builder.graph(echoFlow);
-            
+
             builder
               .from(welcome).to(concat)
               .from(echo).to(concat);
-            
+
             return new Pair<>(echo.inlet(), concat.out());
       });
 
@@ -167,5 +175,5 @@ public class StreamTcpDocTest {
     serverProbe.expectMsg("What a lovely day");
     serverProbe.expectMsg("BYE");
   }
-  
+
 }
