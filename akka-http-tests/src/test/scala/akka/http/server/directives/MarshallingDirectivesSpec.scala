@@ -6,6 +6,7 @@ package akka.http.server
 package directives
 
 import scala.xml.NodeSeq
+import org.scalatest.Inside
 import akka.http.marshallers.xml.ScalaXmlSupport
 import akka.http.unmarshalling._
 import akka.http.marshalling._
@@ -16,14 +17,14 @@ import HttpCharsets._
 import headers._
 import spray.json.DefaultJsonProtocol._
 
-class MarshallingDirectivesSpec extends RoutingSpec {
+class MarshallingDirectivesSpec extends RoutingSpec with Inside {
   import ScalaXmlSupport._
 
   private val iso88592 = HttpCharsets.getForKey("iso-8859-2").get
   implicit val IntUnmarshaller: FromEntityUnmarshaller[Int] =
     nodeSeqUnmarshaller(ContentTypeRange(`text/xml`, iso88592), `text/html`) map {
       case NodeSeq.Empty ⇒ throw Unmarshaller.NoContentException
-      case x             ⇒ x.text.toInt
+      case x             ⇒ { val i = x.text.toInt; require(i >= 0); i }
     }
 
   implicit val IntMarshaller: ToEntityMarshaller[Int] =
@@ -59,6 +60,23 @@ class MarshallingDirectivesSpec extends RoutingSpec {
         entity(as[NodeSeq]) { _ ⇒ completeOk } ~
           entity(as[String]) { _ ⇒ validate(false, "Problem") { completeOk } }
       } ~> check { rejection shouldEqual ValidationRejection("Problem") }
+    }
+    "return a ValidationRejection if the request entity is semantically invalid (IllegalArgumentException)" in {
+      Put("/", HttpEntity(ContentType(`text/xml`, iso88592), "<int>-3</int>")) ~> {
+        entity(as[Int]) { _ ⇒ completeOk }
+      } ~> check {
+        inside(rejection) {
+          case ValidationRejection("requirement failed", Some(_: IllegalArgumentException)) ⇒
+        }
+      }
+    }
+    "return a MalformedRequestContentRejection if unmarshalling failed due to a not further classified error" in {
+      Put("/", HttpEntity(`text/xml`, "<foo attr='illegal xml'")) ~> {
+        entity(as[NodeSeq]) { _ ⇒ completeOk }
+      } ~> check {
+        rejection shouldEqual MalformedRequestContentRejection(
+          "XML document structures must start and end within the same entity.", None)
+      }
     }
     "extract an Option[T] from the requests entity using the in-scope Unmarshaller" in {
       Put("/", <p>cool</p>) ~> {

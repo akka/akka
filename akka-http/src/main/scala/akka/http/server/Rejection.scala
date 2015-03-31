@@ -94,7 +94,10 @@ case class TooManyRangesRejection(maxRanges: Int) extends Rejection
 
 /**
  * Rejection created by unmarshallers.
- * Signals that the request was rejected because there was an error while unmarshalling the request content
+ * Signals that the request was rejected because unmarshalling failed with an error that wasn't
+ * an `IllegalArgumentException`. Usually that means that the request content was not of the expected format.
+ * Note that semantic issues with the request content (e.g. because some parameter was out of range)
+ * will usually trigger a `ValidationRejection` instead.
  */
 case class MalformedRequestContentRejection(message: String, cause: Option[Throwable] = None) extends Rejection
 
@@ -161,7 +164,9 @@ case object AuthorizationFailedRejection extends Rejection
 case class MissingCookieRejection(cookieName: String) extends Rejection
 
 /**
- * Rejection created by the `validation` directive.
+ * Rejection created by the `validation` directive as well as for `IllegalArgumentExceptions`
+ * thrown by domain model constructors (e.g. via `require`).
+ * It signals that an expected value was semantically invalid.
  */
 case class ValidationRejection(message: String, cause: Option[Throwable] = None) extends Rejection
 
