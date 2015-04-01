@@ -187,6 +187,19 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       s.expectNoMsg(300.millis)
     }
 
+    "cancel without receiving new elements" in {
+      val ref = watch(system.actorOf(senderProps))
+      val p = ActorPublisher[Int](ref)
+      val s = StreamTestKit.SubscriberProbe[Int]()
+      p.subscribe(s)
+      val sub = s.expectSubscription
+      sub.request(1)
+      ref ! 1
+      s.expectNext(1)
+      sub.cancel()
+      expectTerminated(ref)
+    }
+
     "remember requested after restart" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
