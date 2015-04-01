@@ -145,7 +145,7 @@ object ClusterSingletonManager {
       /**
        * The first event, corresponding to CurrentClusterState.
        */
-      case class InitialOldestState(oldest: Option[Address], memberCount: Int)
+      final case class InitialOldestState(oldest: Option[Address], safeToBeOldest: Boolean)
 
       case class OldestChanged(oldest: Option[Address])
     }
@@ -191,8 +191,9 @@ object ClusterSingletonManager {
 
       def handleInitial(state: CurrentClusterState): Unit = {
         membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
-          m.status == MemberStatus.Up && matchingRole(m))
-        val initial = InitialOldestState(membersByAge.headOption.map(_.address), membersByAge.size)
+          (m.status == MemberStatus.Up || m.status == MemberStatus.Leaving) && matchingRole(m))
+        val safeToBeOldest = !state.members.exists { m ⇒ (m.status == MemberStatus.Down || m.status == MemberStatus.Exiting) }
+        val initial = InitialOldestState(membersByAge.headOption.map(_.address), safeToBeOldest)
         changes :+= initial
       }
 
@@ -421,10 +422,10 @@ class ClusterSingletonManager(
       getNextOldestChanged()
       stay
 
-    case Event(InitialOldestState(oldestOption, memberCount), _) ⇒
+    case Event(InitialOldestState(oldestOption, safeToBeOldest), _) ⇒
       oldestChangedReceived = true
-      if (oldestOption == selfAddressOption && memberCount == 1)
-        // alone, oldest immediately
+      if (oldestOption == selfAddressOption && safeToBeOldest)
+        // oldest immediately
         gotoOldest()
       else if (oldestOption == selfAddressOption)
         goto(BecomingOldest) using BecomingOldestData(None)
