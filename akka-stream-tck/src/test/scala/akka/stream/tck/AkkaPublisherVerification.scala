@@ -29,7 +29,7 @@ abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherS
 
   implicit lazy val materializer = ActorFlowMaterializer(ActorFlowMaterializerSettings(system).copy(maxInputBufferSize = 512))(system)
 
-  override def createErrorStatePublisher(): Publisher[T] =
+  override def createFailedPublisher(): Publisher[T] =
     StreamTestKit.errorPublisher(new Exception("Unable to serve subscribers right now!"))
 
   def iterable(elements: Long): immutable.Iterable[Int] =
