@@ -17,9 +17,8 @@ Download
 --------
 
 There are several ways to download Akka. You can download it as part of the Typesafe Platform
-(as described above). You can download the full distribution with microkernel, which includes
-all modules. Or you can use a build tool like Maven or SBT to download dependencies from the
-Akka Maven repository.
+(as described above). You can download the full distribution, which includes all modules. 
+Or you can use a build tool like Maven or SBT to download dependencies from the Akka Maven repository.
 
 Modules
 -------
@@ -33,9 +32,6 @@ Akka is very modular and consists of several JARs containing different features.
 - ``akka-camel`` – Apache Camel integration
 
 - ``akka-cluster`` – Cluster membership management, elastic routers.
-
-- ``akka-kernel`` – Akka microkernel for running a bare-bones mini application
-  server
 
 - ``akka-osgi`` – base bundle for using Akka in OSGi containers, containing the
   ``akka-actor`` classes
@@ -81,16 +77,6 @@ which includes proxies for several other repositories that Akka modules depend o
 .. warning::
 
   The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unless you know what you are doing.
-
-Microkernel
------------
-
-The Akka distribution includes the microkernel. To run the microkernel put your
-application jar in the ``deploy`` directory and use the scripts in the ``bin``
-directory.
-
-More information is available in the documentation of the
-:ref:`Microkernel (Scala) <microkernel-scala>` / :ref:`Microkernel (Java) <microkernel-java>`.
 
 .. _build-tool:
 
