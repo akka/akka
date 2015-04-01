@@ -59,7 +59,15 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
             |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity.empty(MediaTypes.`text/xml`), List(Age(12))))
       }
-      "one non-empty part" in {
+      "an implicitly typed part (without headers)" in {
+        Unmarshal(HttpEntity(`multipart/mixed` withBoundary "XYZABC",
+          """--XYZABC
+            |
+            |Perfectly fine part content.
+            |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts(
+          Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Perfectly fine part content.")))
+      }
+      "one non-empty form-data part" in {
         Unmarshal(HttpEntity(`multipart/form-data` withBoundary "-",
           """---
               |Content-type: text/plain; charset=UTF8
@@ -100,6 +108,42 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
             HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
             List(`Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email")),
               RawHeader("date", "unknown")))))
+      "a full example (Strict)" in {
+        Unmarshal(HttpEntity(`multipart/mixed` withBoundary "12345",
+          """preamble and
+            |more preamble
+            |--12345
+            |
+            |first part, implicitly typed
+            |--12345
+            |Content-Type: application/octet-stream
+            |
+            |second part, explicitly typed
+            |--12345--
+            |epilogue and
+            |more epilogue""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts(
+          Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first part, implicitly typed")),
+          Multipart.General.BodyPart.Strict(HttpEntity(`application/octet-stream`, "second part, explicitly typed")))
+      }
+      "a full example (Default)" in {
+        val content = """preamble and
+                        |more preamble
+                        |--12345
+                        |
+                        |first part, implicitly typed
+                        |--12345
+                        |Content-Type: application/octet-stream
+                        |
+                        |second part, explicitly typed
+                        |--12345--
+                        |epilogue and
+                        |more epilogue""".stripMarginWithNewline("\r\n")
+        val byteStrings = content.map(c ⇒ ByteString(c.toString)) // one-char ByteStrings
+        Unmarshal(HttpEntity.Default(`multipart/mixed` withBoundary "12345", content.length, Source(byteStrings)))
+          .to[Multipart.General] should haveParts(
+            Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first part, implicitly typed")),
+            Multipart.General.BodyPart.Strict(HttpEntity(`application/octet-stream`, "second part, explicitly typed")))
+      }
     }
 
     "multipartGeneralUnmarshaller should reject illegal multipart content with" - {
@@ -133,6 +177,26 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
             |-----""".stripMarginWithNewline("\r\n")))
           .to[Multipart.General].failed, 1.second).getMessage shouldEqual
           "multipart part must not contain more than one Content-Type header"
+      }
+      "a missing header-separating CRLF (in Strict entity)" in {
+        Await.result(Unmarshal(HttpEntity(`multipart/form-data` withBoundary "-",
+          """---
+            |not good here
+            |-----""".stripMarginWithNewline("\r\n")))
+          .to[Multipart.General].failed, 1.second).getMessage shouldEqual "Illegal character ' ' in header name"
+      }
+      "a missing header-separating CRLF (in Default entity)" in {
+        val content = """---
+                        |
+                        |ok
+                        |---
+                        |not ok
+                        |-----""".stripMarginWithNewline("\r\n")
+        val byteStrings = content.map(c ⇒ ByteString(c.toString)) // one-char ByteStrings
+        val contentType = `multipart/form-data` withBoundary "-"
+        Await.result(Unmarshal(HttpEntity.Default(contentType, content.length, Source(byteStrings)))
+          .to[Multipart.General]
+          .flatMap(_ toStrict 1.second).failed, 1.second).getMessage shouldEqual "Illegal character ' ' in header name"
       }
     }
 
@@ -212,10 +276,15 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
 
   override def afterAll() = system.shutdown()
 
-  def haveParts[T <: Multipart](parts: Multipart.BodyPart*): Matcher[Future[T]] =
-    equal(parts).matcher[Seq[Multipart.BodyPart]] compose { x ⇒
+  def haveParts[T <: Multipart](parts: Multipart.BodyPart.Strict*): Matcher[Future[T]] =
+    equal(parts).matcher[Seq[Multipart.BodyPart.Strict]] compose { x ⇒
       Await.result(x
-        .fast.flatMap(x ⇒ x.parts.grouped(100).runWith(Sink.head))
+        .fast.flatMap {
+          _.parts
+            .mapAsync(1, _ toStrict 1.second)
+            .grouped(100)
+            .runWith(Sink.head)
+        }
         .fast.recover { case _: NoSuchElementException ⇒ Nil }, 1.second)
     }
 }
