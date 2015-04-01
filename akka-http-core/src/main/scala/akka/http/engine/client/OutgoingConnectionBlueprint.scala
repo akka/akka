@@ -25,28 +25,7 @@ import akka.http.util._
  */
 private[http] object OutgoingConnectionBlueprint {
 
-  case class Ports(
-    bytesIn: Inlet[ByteString],
-    bytesOut: Outlet[ByteString],
-    httpRequests: Inlet[HttpRequest],
-    httpResponses: Outlet[HttpResponse]) extends Shape {
-
-    override val inlets: Seq[Inlet[_]] = bytesIn :: httpRequests :: Nil
-    override val outlets: Seq[Outlet[_]] = bytesOut :: httpResponses :: Nil
-
-    override def deepCopy(): Shape = Ports(
-      new Inlet(bytesIn.toString),
-      new Outlet(bytesOut.toString),
-      new Inlet(httpResponses.toString),
-      new Outlet(httpRequests.toString))
-
-    override def copyFromPorts(inlets: Seq[Inlet[_]], outlets: Seq[Outlet[_]]): Shape =
-      Ports(
-        inlets.head.asInstanceOf[Inlet[ByteString]],
-        outlets.head.asInstanceOf[Outlet[ByteString]],
-        inlets.last.asInstanceOf[Inlet[HttpRequest]],
-        outlets.last.asInstanceOf[Outlet[HttpResponse]])
-  }
+  type ClientShape = BidiShape[HttpRequest, ByteString, ByteString, HttpResponse]
 
   /*
     Stream Setup
@@ -67,7 +46,7 @@ private[http] object OutgoingConnectionBlueprint {
   */
   def apply(remoteAddress: InetSocketAddress,
             settings: ClientConnectionSettings,
-            log: LoggingAdapter): Graph[Ports, Unit] = {
+            log: LoggingAdapter): Graph[ClientShape, Unit] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -118,7 +97,11 @@ private[http] object OutgoingConnectionBlueprint {
       responseParsingMerge.out ~> responsePrep ~> terminationFanout.in
       terminationFanout.out(0) ~> terminationMerge.in1
 
-      Ports(bytesIn, bytesOut, methodBypassFanout.in, terminationFanout.out(1))
+      BidiShape[HttpRequest, ByteString, ByteString, HttpResponse](
+        methodBypassFanout.in,
+        bytesOut,
+        bytesIn,
+        terminationFanout.out(1))
     }
   }
 
