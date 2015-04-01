@@ -12,7 +12,7 @@ import akka.actor._
 import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec, EventFilter }
 import akka.io.TcpListener.{ RegisterIncoming, FailedRegisterIncoming }
 import akka.io.SelectionHandler._
-import akka.TestUtils
+import akka.testkit.SocketUtil
 import Tcp._
 
 class TcpListenerSpec extends AkkaSpec("""
@@ -135,7 +135,7 @@ class TcpListenerSpec extends AkkaSpec("""
     val bindCommander = TestProbe()
     val parent = TestProbe()
     val selectorRouter = TestProbe()
-    val endpoint = TestUtils.temporaryServerAddress()
+    val endpoint = SocketUtil.temporaryServerAddress()
 
     var registerCallReceiver = TestProbe()
     var interestCallReceiver = TestProbe()

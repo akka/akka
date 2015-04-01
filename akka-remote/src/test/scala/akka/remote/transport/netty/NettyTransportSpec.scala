@@ -2,7 +2,7 @@ package akka.remote.transport.netty
 
 import java.net.{ InetAddress, InetSocketAddress }
 
-import akka.TestUtils
+import akka.testkit.SocketUtil
 import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.remote.BoundAddressesExtension
 import com.typesafe.config.ConfigFactory
@@ -54,7 +54,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehaviour {
     }
 
     "bind to a random port but remoting accepts from a specified port" in {
-      val address = TestUtils.temporaryServerAddress(InetAddress.getLocalHost.getHostAddress, udp = false)
+      val address = SocketUtil.temporaryServerAddress(InetAddress.getLocalHost.getHostAddress, udp = false)
 
       val bindConfig = ConfigFactory.parseString(s"""
         akka.remote.netty.tcp {
@@ -71,7 +71,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehaviour {
     }
 
     "bind to a specified port and remoting accepts from a bound port" in {
-      val address = TestUtils.temporaryServerAddress(InetAddress.getLocalHost.getHostAddress, udp = false)
+      val address = SocketUtil.temporaryServerAddress(InetAddress.getLocalHost.getHostAddress, udp = false)
 
       val bindConfig = ConfigFactory.parseString(s"""
         akka.remote.netty.tcp {
@@ -124,7 +124,7 @@ trait BindBehaviour { this: WordSpec with Matchers ⇒
 
   def theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress(proto: String) = {
     s"bind to default $proto address" in {
-      val address = TestUtils.temporaryServerAddress(udp = proto == "udp")
+      val address = SocketUtil.temporaryServerAddress(udp = proto == "udp")
 
       val bindConfig = ConfigFactory.parseString(s"""
         akka.remote {
@@ -144,8 +144,8 @@ trait BindBehaviour { this: WordSpec with Matchers ⇒
     }
 
     s"bind to specified $proto address" in {
-      val address = TestUtils.temporaryServerAddress(address = "127.0.0.1", udp = proto == "udp")
-      val bindAddress = TestUtils.temporaryServerAddress(address = "127.0.1.1", udp = proto == "udp")
+      val address = SocketUtil.temporaryServerAddress(address = "127.0.0.1", udp = proto == "udp")
+      val bindAddress = SocketUtil.temporaryServerAddress(address = "127.0.1.1", udp = proto == "udp")
 
       val bindConfig = ConfigFactory.parseString(s"""
         akka.remote {

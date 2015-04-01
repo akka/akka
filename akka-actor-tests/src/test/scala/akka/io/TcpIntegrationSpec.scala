@@ -7,7 +7,7 @@ package akka.io
 import akka.actor.{ ActorRef, PoisonPill }
 import akka.io.Tcp._
 import akka.testkit.{ TestProbe, AkkaSpec }
-import akka.TestUtils._
+import akka.testkit.SocketUtil._
 import akka.util.ByteString
 import java.io.IOException
 import java.net.{ ServerSocket, InetSocketAddress }
@@ -20,6 +20,11 @@ class TcpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.actor.serialize-creators = on
     """) with TcpIntegrationSpecSupport with Timeouts {
+
+  def verifyActorTermination(actor: ActorRef): Unit = {
+    watch(actor)
+    expectTerminated(actor)
+  }
 
   "The TCP transport implementation" should {
 
