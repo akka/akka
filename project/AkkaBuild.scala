@@ -189,7 +189,7 @@ object AkkaBuild extends Build {
     // FIXME osgiDiningHakkersSampleMavenTest temporarily removed from aggregate due to #16703
     aggregate = if (!CommandLineOptions.aggregateSamples) Nil else
       Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala,
-        sampleHelloKernel, sampleMainJava, sampleMainScala, sampleMultiNodeScala,
+        sampleMainJava, sampleMainScala, sampleMultiNodeScala,
         samplePersistenceJava, samplePersistenceScala, sampleRemoteJava, sampleRemoteScala)
   )
 
@@ -200,8 +200,6 @@ object AkkaBuild extends Build {
   lazy val sampleClusterScala = Sample.project("akka-sample-cluster-scala")
 
   lazy val sampleFsmScala = Sample.project("akka-sample-fsm-scala")
-
-  lazy val sampleHelloKernel = Sample.project("akka-sample-hello-kernel")
 
   lazy val sampleMainJava = Sample.project("akka-sample-main-java")
   lazy val sampleMainScala = Sample.project("akka-sample-main-scala")

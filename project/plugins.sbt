@@ -27,3 +27,5 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.1.6")
 
 // stats reporting
 libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
