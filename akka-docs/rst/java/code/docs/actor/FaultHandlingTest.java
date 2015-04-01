@@ -20,7 +20,6 @@ import scala.collection.immutable.Seq;
 import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
 import scala.concurrent.duration.Duration;
-import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
 
 //#testkit
@@ -151,7 +150,7 @@ public class FaultHandlingTest {
 
   @BeforeClass
   public static void start() {
-    system = ActorSystem.create("test", AkkaSpec.testConf());
+    system = ActorSystem.create("test");
   }
 
   @AfterClass
