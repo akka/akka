@@ -48,7 +48,7 @@ class PerformanceSpec extends TypedSpec {
             } ping ! Ping(count, pong, ctx.self)
 
             start
-          }.expectMultipleMessages(15.seconds, pairs * pings) { (msgs, start) ⇒
+          }.expectMultipleMessages(60.seconds, pairs * pings) { (msgs, start) ⇒
             val stop = Deadline.now
 
             val rate = 2L * count * pairs * pings / (stop - start).toMillis
