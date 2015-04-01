@@ -1029,6 +1029,11 @@ private[akka] class Shard(
 
   var handOffStopper: Option[ActorRef] = None
 
+  override def postStop(): Unit = {
+    super.postStop()
+    snapshotTask.cancel()
+  }
+
   def totalBufferSize = messageBuffers.foldLeft(0) { (sum, entry) ⇒ sum + entry._2.size }
 
   def processChange[A](event: A)(handler: A ⇒ Unit): Unit =
@@ -1586,6 +1591,7 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
   override def postStop(): Unit = {
     super.postStop()
     rebalanceTask.cancel()
+    snapshotTask.cancel()
   }
 
   override def receiveRecover: Receive = {
