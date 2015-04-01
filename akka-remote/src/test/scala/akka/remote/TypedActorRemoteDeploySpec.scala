@@ -9,7 +9,6 @@ import scala.concurrent.{ Await, Future }
 import TypedActorRemoteDeploySpec._
 import akka.actor.{ Deploy, ActorSystem, TypedProps, TypedActor }
 import scala.concurrent.duration._
-import akka.TestUtils.verifyActorTermination
 
 object TypedActorRemoteDeploySpec {
   val conf = ConfigFactory.parseString("""
@@ -41,7 +40,8 @@ class TypedActorRemoteDeploySpec extends AkkaSpec(conf) {
     Await.result(f(echoService), 3.seconds) should be(expected)
     val actor = ts.getActorRefFor(echoService)
     system.stop(actor)
-    verifyActorTermination(actor)
+    watch(actor)
+    expectTerminated(actor)
   }
 
   "Typed actors" must {
