@@ -12,7 +12,7 @@ object BidiFlow {
   val factory: BidiFlowCreate = new BidiFlowCreate {}
 
   /**
-   * A graph with the shape of a flow logically is a flow, this method makes
+   * A graph with the shape of a BidiFlow logically is a BidiFlow, this method makes
    * it so also in type.
    */
   def wrap[I1, O1, I2, O2, M](g: Graph[BidiShape[I1, O1, I2, O2], M]): BidiFlow[I1, O1, I2, O2, M] = new BidiFlow(scaladsl.BidiFlow.wrap(g))

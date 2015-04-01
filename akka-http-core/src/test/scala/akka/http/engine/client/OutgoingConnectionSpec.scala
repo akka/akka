@@ -362,10 +362,10 @@ class OutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel
       FlowGraph.closed(OutgoingConnectionBlueprint(remoteAddress, settings, NoLogging)) { implicit b ⇒
         client ⇒
           import FlowGraph.Implicits._
-          Source(netIn) ~> client.bytesIn
-          client.bytesOut ~> Sink(netOut)
-          Source(requests) ~> client.httpRequests
-          client.httpResponses ~> Sink(responses)
+          Source(netIn) ~> client.in2
+          client.out1 ~> Sink(netOut)
+          Source(requests) ~> client.in1
+          client.out2 ~> Sink(responses)
       }.run()
 
       netOut -> netIn

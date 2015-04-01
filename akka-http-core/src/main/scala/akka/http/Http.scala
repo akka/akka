@@ -15,7 +15,7 @@ import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.http.engine.client._
 import akka.http.engine.server._
-import akka.http.model.{ HttpHeader, HttpResponse, HttpRequest }
+import akka.http.model.{ HttpResponse, HttpRequest }
 import akka.actor._
 
 class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.Extension {
@@ -40,17 +40,11 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
 
     val connections: Source[StreamTcp.IncomingConnection, Future[StreamTcp.ServerBinding]] =
       StreamTcp().bind(endpoint, backlog, options, effectiveSettings.timeouts.idleTimeout)
-    val bluePrint = HttpServerBluePrint(effectiveSettings, log)
+    val layer = serverLayer(effectiveSettings, log)
 
-    connections.map { conn ⇒
-      val flow = Flow(conn.flow, bluePrint)(Keep.right) { implicit b ⇒
-        (tcp, http) ⇒
-          import FlowGraph.Implicits._
-          tcp.outlet ~> http.bytesIn
-          http.bytesOut ~> tcp.inlet
-          (http.httpResponses, http.httpRequests)
-      }
-      IncomingConnection(conn.localAddress, conn.remoteAddress, flow)
+    connections.map {
+      case StreamTcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
+        IncomingConnection(localAddress, remoteAddress, layer join flow)
     }.mapMaterialized { tcpBindingFuture ⇒
       import system.dispatcher
       tcpBindingFuture.map { tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()) }
@@ -69,11 +63,10 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                     interface: String, port: Int = 80, backlog: Int = 100,
                     options: immutable.Traversable[Inet.SocketOption] = Nil,
                     settings: Option[ServerSettings] = None,
-                    log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] = {
-    bind(interface, port, backlog, options, settings, log).toMat(Sink.foreach { conn ⇒
-      conn.flow.join(handler).run()
-    })(Keep.left).run()
-  }
+                    log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
+    bind(interface, port, backlog, options, settings, log).to {
+      Sink.foreach { _.flow.join(handler).run() }
+    }.run()
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
@@ -106,22 +99,30 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     bindAndHandle(Flow[HttpRequest].mapAsync(1, handler), interface, port, backlog, options, settings, log)
 
   /**
-   * Transforms a given HTTP-level server [[Flow]] into a lower-level TCP transport flow.
+   * The type of the server-side HTTP layer as a stand-alone BidiStage
+   * that can be put atop the TCP layer to form an HTTP server.
+   *
+   * {{{
+   *                +------+
+   * HttpResponse ~>|      |~> ByteString
+   *                | bidi |
+   * HttpRequest  <~|      |<~ ByteString
+   *                +------+
+   * }}}
    */
-  def serverFlowToTransport[Mat](serverFlow: Flow[HttpRequest, HttpResponse, Mat],
-                                 settings: Option[ServerSettings] = None,
-                                 log: LoggingAdapter = system.log)(implicit mat: FlowMaterializer): Flow[ByteString, ByteString, Mat] = {
-    val effectiveSettings = ServerSettings(settings)
-    val bluePrint = HttpServerBluePrint(effectiveSettings, log)
+  type ServerLayer = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, Any]
 
-    Flow(bluePrint, serverFlow)(Keep.right) { implicit b ⇒
-      (server, user) ⇒
-        import FlowGraph.Implicits._
-        server.httpRequests ~> user.inlet
-        user.outlet ~> server.httpResponses
-        (server.bytesIn, server.bytesOut)
-    }
-  }
+  /**
+   * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]].
+   */
+  def serverLayer()(implicit mat: FlowMaterializer): ServerLayer = serverLayer(ServerSettings(system))
+
+  /**
+   * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]].
+   */
+  def serverLayer(settings: ServerSettings,
+                  log: LoggingAdapter = system.log)(implicit mat: FlowMaterializer): ServerLayer =
+    BidiFlow.wrap(HttpServerBluePrint(settings, log))
 
   /**
    * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
@@ -134,33 +135,44 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                          log: LoggingAdapter = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     val effectiveSettings = ClientConnectionSettings(settings)
     val remoteAddr = new InetSocketAddress(host, port)
-    val transport = StreamTcp().outgoingConnection(remoteAddr, localAddress,
+    val layer = clientLayer(remoteAddr, effectiveSettings, log)
+
+    val transportFlow = StreamTcp().outgoingConnection(remoteAddr, localAddress,
       options, effectiveSettings.connectingTimeout, effectiveSettings.idleTimeout)
-    transportToConnectionClientFlow(transport, remoteAddr, Some(effectiveSettings), log)
-      .mapMaterialized { tcpConnFuture ⇒
-        import system.dispatcher
-        tcpConnFuture.map { tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress) }
-      }
+
+    layer.joinMat(transportFlow) { (_, tcpConnFuture) ⇒
+      import system.dispatcher
+      tcpConnFuture map { tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress) }
+    }
   }
 
   /**
-   * Transforms the given low-level TCP client transport [[Flow]] into a higher-level HTTP client flow.
+   * The type of the client-side HTTP layer as a stand-alone BidiStage
+   * that can be put atop the TCP layer to form an HTTP client.
+   *
+   * {{{
+   *                +------+
+   * HttpRequest  ~>|      |~> ByteString
+   *                | bidi |
+   * HttpResponse <~|      |<~ ByteString
+   *                +------+
+   * }}}
    */
-  def transportToConnectionClientFlow[Mat](transport: Flow[ByteString, ByteString, Mat],
-                                           remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
-                                           settings: Option[ClientConnectionSettings] = None,
-                                           log: LoggingAdapter = system.log): Flow[HttpRequest, HttpResponse, Mat] = {
-    val effectiveSettings = ClientConnectionSettings(settings)
-    val bluePrint = OutgoingConnectionBlueprint(remoteAddress, effectiveSettings, log)
+  type ClientLayer = BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, Any]
 
-    Flow(bluePrint, transport)(Keep.right) { implicit b ⇒
-      (client, tcp) ⇒
-        import FlowGraph.Implicits._
-        client.bytesOut ~> tcp.inlet
-        tcp.outlet ~> client.bytesIn
-        (client.httpRequests, client.httpResponses)
-    }
-  }
+  /**
+   * Constructs a [[ClientLayer]] stage using the configured default [[ClientConnectionSettings]].
+   */
+  def clientLayer(remoteAddress: InetSocketAddress /* TODO: remove after #16168 is cleared */ ): ClientLayer =
+    clientLayer(remoteAddress, ClientConnectionSettings(system))
+
+  /**
+   * Constructs a [[ClientLayer]] stage using the given [[ClientConnectionSettings]].
+   */
+  def clientLayer(remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
+                  settings: ClientConnectionSettings,
+                  log: LoggingAdapter = system.log): ClientLayer =
+    BidiFlow.wrap(OutgoingConnectionBlueprint(remoteAddress, settings, log))
 }
 
 object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
@@ -188,7 +200,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   case class IncomingConnection(
     localAddress: InetSocketAddress,
     remoteAddress: InetSocketAddress,
-    flow: Flow[HttpResponse, HttpRequest, Unit]) {
+    flow: Flow[HttpResponse, HttpRequest, Any]) {
 
     /**
      * Handles the connection with the given flow, which is materialized exactly once

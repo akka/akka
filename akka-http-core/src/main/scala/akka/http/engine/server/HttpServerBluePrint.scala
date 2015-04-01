@@ -4,7 +4,6 @@
 
 package akka.http.engine.server
 
-import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.util.ByteString
 import akka.event.LoggingAdapter
@@ -25,30 +24,10 @@ import ParserOutput._
  */
 private[http] object HttpServerBluePrint {
 
-  case class Ports(
-    bytesIn: Inlet[ByteString],
-    bytesOut: Outlet[ByteString],
-    httpResponses: Inlet[HttpResponse],
-    httpRequests: Outlet[HttpRequest]) extends Shape {
+  type ServerShape = BidiShape[HttpResponse, ByteString, ByteString, HttpRequest]
 
-    override def inlets: immutable.Seq[Inlet[_]] = bytesIn :: httpResponses :: Nil
-    override def outlets: immutable.Seq[Outlet[_]] = bytesOut :: httpRequests :: Nil
-
-    override def deepCopy() = Ports(
-      new Inlet(bytesIn.toString),
-      new Outlet(bytesOut.toString),
-      new Inlet(httpRequests.toString),
-      new Outlet(httpResponses.toString))
-
-    override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
-      require(inlets.size == 2, s"proposed inlets [${inlets.mkString(", ")}] do not fit BidiShape")
-      require(outlets.size == 2, s"proposed outlets [${outlets.mkString(", ")}] do not fit BidiShape")
-      Ports(inlets(0).asInstanceOf[Inlet[ByteString]], outlets(0).asInstanceOf[Outlet[ByteString]],
-        inlets(1).asInstanceOf[Inlet[HttpResponse]], outlets(1).asInstanceOf[Outlet[HttpRequest]])
-    }
-  }
-
-  def apply(settings: ServerSettings, log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[Ports, Unit] = {
+  def apply(settings: ServerSettings, log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[ServerShape, Any] = {
+    import settings._
 
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
@@ -58,7 +37,7 @@ private[http] object HttpServerBluePrint {
           logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
       })
 
-    val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.responseHeaderSizeHint, log)
+    val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
 
     @volatile var oneHundredContinueRef: Option[ActorRef] = None // FIXME: unnecessary after fixing #16168
     val oneHundredContinueSource = Source.actorPublisher[OneHundredContinue.type] {
@@ -80,8 +59,8 @@ private[http] object HttpServerBluePrint {
         .headAndTail
         .map {
           case (RequestStart(method, uri, protocol, headers, createEntity, _, _), entityParts) ⇒
-            val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
-            val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+            val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, defaultHostHeader)
+            val effectiveMethod = if (method == HttpMethods.HEAD && transparentHeadRequests) HttpMethods.GET else method
             HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
           case (_, src) ⇒ src.runWith(Sink.ignore)
         }.collect {
@@ -122,13 +101,12 @@ private[http] object HttpServerBluePrint {
         bypassFanout.out(1) ~> bypass ~> bypassInput
         oneHundredContinueSource ~> bypassOneHundredContinueInput
 
-        Ports(
-          requestParsing.inlet,
-          renderer.outlet,
+        BidiShape[HttpResponse, ByteString, ByteString, HttpRequest](
           bypassApplicationInput,
+          renderer.outlet,
+          requestParsing.inlet,
           requestsIn)
     }
-
   }
 
   class BypassMerge(settings: ServerSettings, log: LoggingAdapter)
