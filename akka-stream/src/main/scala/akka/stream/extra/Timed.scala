@@ -3,14 +3,12 @@
  */
 package akka.stream.extra
 
-import scala.collection.immutable
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.language.existentials
 import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ Keep, Source, Flow }
 import akka.stream.stage._
 
 /**
@@ -28,11 +26,11 @@ private[akka] trait TimedOps {
   def timed[I, O, Mat, Mat2](source: Source[I, Mat], measuredOps: Source[I, Mat] ⇒ Source[O, Mat2], onComplete: FiniteDuration ⇒ Unit): Source[O, Mat2] = {
     val ctx = new TimedFlowContext
 
-    val startTimed = (f: Flow[I, I, Unit]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
-    val stopTimed = (f: Flow[O, O, Unit]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
+    val startTimed = (f: Flow[I, I, Any]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
+    val stopTimed = (f: Flow[O, O, Any]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
 
-    val begin = source.section(name("startTimed"), (originalMat: Mat, _: Unit) ⇒ originalMat)(startTimed)
-    measuredOps(begin).section(name("stopTimed"), (originalMat: Mat2, _: Unit) ⇒ originalMat)(stopTimed)
+    val begin = source.section(name("startTimed"))(startTimed)
+    measuredOps(begin).section(name("stopTimed"))(stopTimed)
   }
 
   /**
@@ -45,11 +43,11 @@ private[akka] trait TimedOps {
     // they do share a super-type (FlowOps), but all operations of FlowOps return path dependant type
     val ctx = new TimedFlowContext
 
-    val startTimed = (f: Flow[O, O, Unit]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
-    val stopTimed = (f: Flow[Out, Out, Unit]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
+    val startTimed = (f: Flow[O, O, Any]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
+    val stopTimed = (f: Flow[Out, Out, Any]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
 
-    val begin: Flow[I, O, Mat] = flow.section(name("startTimed"), (originalMat: Mat, _: Unit) ⇒ originalMat)(startTimed)
-    measuredOps(begin).section(name("stopTimed"), (originalMat: Mat2, _: Unit) ⇒ originalMat)(stopTimed)
+    val begin: Flow[I, O, Mat] = flow.section(name("startTimed"))(startTimed)
+    measuredOps(begin).section(name("stopTimed"))(stopTimed)
   }
 
 }
@@ -67,7 +65,7 @@ private[akka] trait TimedIntervalBetweenOps {
    * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
    */
   def timedIntervalBetween[O, Mat](source: Source[O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[O, Mat] = {
-    source.section(name("timedInterval"), (originalMat: Mat, _: Unit) ⇒ originalMat) {
+    source.section(name("timedInterval")) {
       _.transform(() ⇒ new TimedIntervalTransformer[O](matching, onInterval))
     }
   }
@@ -78,7 +76,7 @@ private[akka] trait TimedIntervalBetweenOps {
   def timedIntervalBetween[I, O, Mat](flow: Flow[I, O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O, Mat] = {
     // todo is there any other way to provide this for Flow / Duct, without duplicating impl?
     // they do share a super-type (FlowOps), but all operations of FlowOps return path dependant type
-    flow.section(name("timedInterval"), (originalMat: Mat, _: Unit) ⇒ originalMat) {
+    flow.section(name("timedInterval")) {
       _.transform(() ⇒ new TimedIntervalTransformer[O](matching, onInterval))
     }
   }

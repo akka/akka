@@ -19,6 +19,7 @@ import akka.testkit.JavaTestKit;
 
 import org.reactivestreams.Publisher;
 
+import scala.runtime.Boxed;
 import scala.runtime.BoxedUnit;
 
 import org.junit.ClassRule;
@@ -245,10 +246,10 @@ public class FlowTest extends StreamTest {
         .of(String.class)
         .section(
             OperationAttributes.name("f1"),
-            new Function<Flow<String, String, BoxedUnit>, Flow<String, String, BoxedUnit>>() {
+            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
               @Override
-              public Flow<String, String, BoxedUnit> apply(
-                  Flow<String, String, BoxedUnit> flow) {
+              public Flow<String, String, Object> apply(
+                  Flow<String, String, Object> flow) {
                 return flow.transform(FlowTest.this.<String> op());
               }
             });
@@ -256,10 +257,10 @@ public class FlowTest extends StreamTest {
         .of(String.class)
         .section(
             OperationAttributes.name("f2"),
-            new Function<Flow<String, String, BoxedUnit>, Flow<String, String, BoxedUnit>>() {
+            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
               @Override
-              public Flow<String, String, BoxedUnit> apply(
-                  Flow<String, String, BoxedUnit> flow) {
+              public Flow<String, String, Object> apply(
+                  Flow<String, String, Object> flow) {
                 return flow.transform(FlowTest.this.<String> op());
               }
             });
@@ -267,10 +268,10 @@ public class FlowTest extends StreamTest {
         .of(String.class)
         .section(
             OperationAttributes.name("f3"),
-            new Function<Flow<String, String, BoxedUnit>, Flow<String, String, BoxedUnit>>() {
+            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
               @Override
-              public Flow<String, String, BoxedUnit> apply(
-                  Flow<String, String, BoxedUnit> flow) {
+              public Flow<String, String, Object> apply(
+                  Flow<String, String, Object> flow) {
                 return flow.transform(FlowTest.this.<String> op());
               }
             });
@@ -375,7 +376,7 @@ public class FlowTest extends StreamTest {
     mainInputs.add(Source.from(input2));
 
     final Flow<Source<Integer, BoxedUnit>, List<Integer>, BoxedUnit> flow = Flow.<Source<Integer, BoxedUnit>>create().
-      flatten(akka.stream.javadsl.FlattenStrategy.<Integer> concat()).grouped(6);
+      flatten(akka.stream.javadsl.FlattenStrategy.<Integer, BoxedUnit> concat()).grouped(6);
     Future<List<Integer>> future = Source.from(mainInputs).via(flow)
         .runWith(Sink.<List<Integer>>head(), materializer);
 
