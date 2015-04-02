@@ -13,5 +13,5 @@ import akka.stream.scaladsl.Source;
  * available for Http responses.
  */
 public abstract class HttpEntityCloseDelimited implements ResponseEntity {
-    public abstract Source<ByteString, scala.Unit> data();
+    public abstract Source<ByteString, ?> data();
 }

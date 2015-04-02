@@ -9,7 +9,7 @@ import scala.annotation.tailrec
 import akka.actor.ActorRef
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.stage.{ Context, PushPullStage }
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Keep, Source }
 import akka.util.ByteString
 import akka.http.model.parser.CharacterClasses
 import akka.http.util.identityFunc
@@ -126,7 +126,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
         emit(RequestStart(method, uri, protocol, allHeaders, createEntity, expect100continue, closeAfterResponseCompletion))
       }
 
-      def expect100continueHandling[T]: Source[T, Unit] ⇒ Source[T, Unit] =
+      def expect100continueHandling[T, Mat]: Source[T, Mat] ⇒ Source[T, Mat] =
         if (expect100continue) {
           _.section(name("expect100continueTrigger"))(_.transform(() ⇒ new PushPullStage[T, T] {
             private var oneHundredContinueSent = false

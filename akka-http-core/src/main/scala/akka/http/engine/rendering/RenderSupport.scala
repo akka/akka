@@ -29,24 +29,24 @@ private object RenderSupport {
 
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
-  def CancelSecond[T](first: Source[T, _], second: Source[T, _]): Source[T, Unit] = {
+  def CancelSecond[T, Mat](first: Source[T, Mat], second: Source[T, Any]): Source[T, Mat] = {
     Source(first) { implicit b ⇒
       frst ⇒
         import FlowGraph.Implicits._
         second ~> Sink.cancelled
         frst.outlet
-    }.mapMaterialized((_) ⇒ ())
+    }
   }
 
   def renderEntityContentType(r: Rendering, entity: HttpEntity) =
     if (entity.contentType != ContentTypes.NoContentType) r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
     else r
 
-  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString, Unit],
-                        skipEntity: Boolean = false): Source[ByteString, Unit] = {
+  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString, Any],
+                        skipEntity: Boolean = false): Source[ByteString, Any] = {
     val messageStart = Source.single(r.get)
     val messageBytes =
-      if (!skipEntity) (messageStart ++ entityBytes).mapMaterialized((_) ⇒ ())
+      if (!skipEntity) (messageStart ++ entityBytes).mapMaterialized(_ ⇒ ())
       else CancelSecond(messageStart, entityBytes)
     messageBytes
   }

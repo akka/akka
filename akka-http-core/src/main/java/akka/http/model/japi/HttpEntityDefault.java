@@ -12,5 +12,5 @@ import akka.stream.scaladsl.Source;
  */
 public abstract class HttpEntityDefault implements BodyPartEntity, RequestEntity, ResponseEntity {
     public abstract long contentLength();
-    public abstract Source<ByteString, scala.Unit> data();
+    public abstract Source<ByteString, ?> data();
 }

@@ -24,19 +24,19 @@ private[http] object BodyPartRenderer {
   def streamed(boundary: String,
                nioCharset: Charset,
                partHeadersSizeHint: Int,
-               log: LoggingAdapter): PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Unit]] =
-    new PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Unit]] {
+               log: LoggingAdapter): PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Any]] =
+    new PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Any]] {
       var firstBoundaryRendered = false
 
-      override def onPush(bodyPart: Multipart.BodyPart, ctx: Context[Source[ChunkStreamPart, Unit]]): SyncDirective = {
+      override def onPush(bodyPart: Multipart.BodyPart, ctx: Context[Source[ChunkStreamPart, Any]]): SyncDirective = {
         val r = new CustomCharsetByteStringRendering(nioCharset, partHeadersSizeHint)
 
-        def bodyPartChunks(data: Source[ByteString, Unit]): Source[ChunkStreamPart, Unit] = {
+        def bodyPartChunks(data: Source[ByteString, Any]): Source[ChunkStreamPart, Any] = {
           val entityChunks = data.map[ChunkStreamPart](Chunk(_))
           (chunkStream(r.get) ++ entityChunks).mapMaterialized((_) ⇒ ())
         }
 
-        def completePartRendering(): Source[ChunkStreamPart, Unit] =
+        def completePartRendering(): Source[ChunkStreamPart, Any] =
           bodyPart.entity match {
             case x if x.isKnownEmpty       ⇒ chunkStream(r.get)
             case Strict(_, data)           ⇒ chunkStream((r ~~ data).get)
@@ -51,7 +51,7 @@ private[http] object BodyPartRenderer {
         ctx.push(completePartRendering())
       }
 
-      override def onPull(ctx: Context[Source[ChunkStreamPart, Unit]]): SyncDirective = {
+      override def onPull(ctx: Context[Source[ChunkStreamPart, Any]]): SyncDirective = {
         val finishing = ctx.isFinishing
         if (finishing && firstBoundaryRendered) {
           val r = new ByteStringRendering(boundary.length + 4)
@@ -63,9 +63,9 @@ private[http] object BodyPartRenderer {
           ctx.pull()
       }
 
-      override def onUpstreamFinish(ctx: Context[Source[ChunkStreamPart, Unit]]): TerminationDirective = ctx.absorbTermination()
+      override def onUpstreamFinish(ctx: Context[Source[ChunkStreamPart, Any]]): TerminationDirective = ctx.absorbTermination()
 
-      private def chunkStream(byteString: ByteString): Source[ChunkStreamPart, Unit] =
+      private def chunkStream(byteString: ByteString): Source[ChunkStreamPart, Any] =
         Source.single(Chunk(byteString))
 
     }

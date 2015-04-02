@@ -143,6 +143,9 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
   /**
    * Resolve this request's URI according to the logic defined at
    * http://tools.ietf.org/html/rfc7230#section-5.5
+   *
+   * Throws an [[IllegalUriException]] if the URI is relative and the `headers` don't
+   * include a valid [[Host]] header or if URI authority and [[Host]] header don't match.
    */
   def effectiveUri(securedConnection: Boolean, defaultHostHeader: Host = Host.empty): Uri =
     HttpRequest.effectiveUri(uri, headers, securedConnection, defaultHostHeader)
@@ -263,6 +266,9 @@ object HttpRequest {
   /**
    * Determines the effective request URI according to the logic defined at
    * http://tools.ietf.org/html/rfc7230#section-5.5
+   *
+   * Throws an [[IllegalUriException]] if the URI is relative and the `headers` don't
+   * include a valid [[Host]] header or if URI authority and [[Host]] header don't match.
    */
   def effectiveUri(uri: Uri, headers: immutable.Seq[HttpHeader], securedConnection: Boolean, defaultHostHeader: Host): Uri = {
     val hostHeader = headers.collectFirst { case x: Host ⇒ x }

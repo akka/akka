@@ -54,7 +54,7 @@ trait MultipartUnmarshallers {
   def multipartUnmarshaller[T <: Multipart, BP <: Multipart.BodyPart, BPS <: Multipart.BodyPart.Strict](mediaRange: MediaRange,
                                                                                                         defaultContentType: ContentType,
                                                                                                         createBodyPart: (BodyPartEntity, List[HttpHeader]) ⇒ BP,
-                                                                                                        createStreamed: (MultipartMediaType, Source[BP, Unit]) ⇒ T,
+                                                                                                        createStreamed: (MultipartMediaType, Source[BP, Any]) ⇒ T,
                                                                                                         createStrictBodyPart: (HttpEntity.Strict, List[HttpHeader]) ⇒ BPS,
                                                                                                         createStrict: (MultipartMediaType, immutable.Seq[BPS]) ⇒ T)(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[T] =
     Unmarshaller { entity ⇒
