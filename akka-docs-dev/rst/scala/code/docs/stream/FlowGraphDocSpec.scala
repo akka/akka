@@ -149,7 +149,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     //#flow-graph-components-create
     object PriorityWorkerPool {
       def apply[In, Out](
-        worker: Flow[In, Out, _],
+        worker: Flow[In, Out, Any],
         workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], Unit] = {
 
         FlowGraph.partial() { implicit b ⇒
