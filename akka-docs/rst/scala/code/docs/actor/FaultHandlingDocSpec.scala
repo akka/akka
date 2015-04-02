@@ -4,12 +4,13 @@
 package docs.actor
 
 import language.postfixOps
+import akka.actor.{ ActorSystem, ActorRef, Props, Terminated }
+import FaultHandlingDocSpec._
 
 //#testkit
-import akka.testkit.{ TestKit, ImplicitSender, EventFilter }
-import akka.actor.{ ActorRef, Props, ActorSystem, Terminated }
-import org.scalatest._
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.{ FlatSpecLike, Matchers, BeforeAndAfterAll }
+import akka.testkit.{ TestActors, TestKit, ImplicitSender, EventFilter }
 
 //#testkit
 object FaultHandlingDocSpec {
@@ -97,14 +98,20 @@ object FaultHandlingDocSpec {
       }
   """)
 }
-
-import FaultHandlingDocSpec._
 //#testkit
-class FaultHandlingDocSpec extends TestKit(ActorSystem("FaultHandlingDocSpec", testConf))
-  with FlatSpecLike with BeforeAndAfterAll with ImplicitSender {
+class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
+  with ImplicitSender with FlatSpecLike with Matchers with BeforeAndAfterAll {
 
-  override def afterAll() {
-    system.terminate()
+  def this() = this(ActorSystem("FaultHandlingDocSpec",
+    ConfigFactory.parseString("""
+      akka {
+        loggers = ["akka.testkit.TestEventListener"]
+        loglevel = "WARNING"
+      }
+      """)))
+
+  override def afterAll {
+    TestKit.shutdownActorSystem(system)
   }
 
   "A supervisor" must "apply the chosen strategy for its child" in {
