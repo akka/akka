@@ -5,9 +5,14 @@
 package akka.http
 
 import java.net.InetSocketAddress
+import java.util.concurrent.ConcurrentHashMap
+import akka.http.util.FastFuture
 import com.typesafe.config.Config
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
+import scala.util.Try
 import scala.collection.immutable
-import scala.concurrent.Future
+import scala.concurrent.{ Promise, Future }
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.io.Inet
@@ -15,7 +20,7 @@ import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.http.engine.client._
 import akka.http.engine.server._
-import akka.http.model.{ HttpResponse, HttpRequest }
+import akka.http.model._
 import akka.actor._
 
 class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.Extension {
@@ -173,6 +178,208 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                   settings: ClientConnectionSettings,
                   log: LoggingAdapter = system.log): ClientLayer =
     BidiFlow.wrap(OutgoingConnectionBlueprint(remoteAddress, settings, log))
+
+  /**
+   * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
+   * the requests from all its materializations across this pool.
+   * While the started host connection pool internally shuts itself down automatically after the configured idle
+   * timeout it will spin itself up again if more requests arrive from an existing or a new client flow
+   * materialization. The returned flow therefore remains usable for the full lifetime of the application.
+   *
+   * Since the underlying transport usually comprises more than a single connection the produced flow might generate
+   * responses in an order that doesn't directly match the consumed requests.
+   * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
+   * response for A.
+   * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
+   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   */
+  def newHostConnectionPool[T](host: String, port: Int = 80,
+                               options: immutable.Traversable[Inet.SocketOption] = Nil,
+                               settings: Option[HostConnectionPoolSettings] = None,
+                               defaultHeaders: List[HttpHeader] = Nil,
+                               log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+    val effectiveSettings = HostConnectionPoolSettings(settings)
+    val cps = ConnectionPoolSetup(encrypted = false, options, effectiveSettings, defaultHeaders, log)
+    val setup = HostConnectionPoolSetup(host, port, cps)
+    newHostConnectionPool(setup)
+  }
+
+  /**
+   * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
+   * the requests from all its materializations across this pool.
+   * While the started host connection pool internally shuts itself down automatically after the configured idle
+   * timeout it will spin itself up again if more requests arrive from an existing or a new client flow
+   * materialization. The returned flow therefore remains usable for the full lifetime of the application.
+   *
+   * Since the underlying transport usually comprises more than a single connection the produced flow might generate
+   * responses in an order that doesn't directly match the consumed requests.
+   * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
+   * response for A.
+   * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
+   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   */
+  def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
+    implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+    val gateway = ConnectionPool.startHostConnectionPool(setup)
+    clientFlow[T]((_, _) ⇒ gateway).mapMaterialized(_ ⇒ HostConnectionPool(setup)(gateway))
+  }
+
+  /**
+   * Returns a [[Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
+   * HTTP connections to the given target host endpoint. For every ActorSystem, target host and pool
+   * configuration a separate connection pool is maintained.
+   * The HTTP layer transparently manages idle shutdown and restarting of connections pools as configured.
+   * The returned [[Flow]] instances therefore remain valid throughout the lifetime of the application.
+   *
+   * Note that the provided caching logic follows a "best-effort" design with regard to pool uniqueness.
+   * I cannot fully guarantee that the application will always run at most one pool for a given host and
+   * configuration.
+   * The cache removes entries for pools that are shut down (e.g. because of an idle timeout) and due to the
+   * inherent raciness of this operation one client might end up re-starting an old pool while another
+   * client starts a new pool if both access the cache around the time of the shutdown.
+   *
+   * Since the underlying transport usually comprises more than a single connection the produced flow might generate
+   * responses in an order that doesn't directly match the consumed requests.
+   * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
+   * response for A.
+   * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
+   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   */
+  def cachedHostConnectionPool[T](host: String, port: Int = 80,
+                                  options: immutable.Traversable[Inet.SocketOption] = Nil,
+                                  settings: Option[HostConnectionPoolSettings] = None,
+                                  defaultHeaders: List[HttpHeader] = Nil,
+                                  log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+    val effectiveSettings = HostConnectionPoolSettings(settings)
+    val cps = ConnectionPoolSetup(encrypted = false, options, effectiveSettings, defaultHeaders, log)
+    val setup = HostConnectionPoolSetup(host, port, cps)
+    cachedHostConnectionPool(setup)
+  }
+
+  // every ActorSystem maintains its own connection pools
+  private[this] val hostPoolCache = new ConcurrentHashMap[HostConnectionPoolSetup, ConnectionPool.Gateway]
+
+  /**
+   * Returns a [[Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
+   * HTTP connections to the given target host endpoint. For every ActorSystem, target host and pool
+   * configuration a separate connection pool is maintained.
+   * The HTTP layer transparently manages idle shutdown and restarting of connections pools as configured.
+   * The returned [[Flow]] instances therefore remain valid throughout the lifetime of the application.
+   *
+   * Note that the provided caching logic follows a "best-effort" design with regard to pool uniqueness.
+   * I cannot fully guarantee that the application will always run at most one pool for a given host and
+   * configuration.
+   * The cache removes entries for pools that are shut down (e.g. because of an idle timeout) and due to the
+   * inherent raciness of this operation one client might end up re-starting an old pool while another
+   * client starts a new pool if both access the cache around the time of the shutdown.
+   *
+   * Since the underlying transport usually comprises more than a single connection the produced flow might generate
+   * responses in an order that doesn't directly match the consumed requests.
+   * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
+   * response for A.
+   * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
+   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   */
+  def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+    val gateway = cachedGateway(setup)
+    clientFlow[T]((_, _) ⇒ gateway).mapMaterialized(_ ⇒ HostConnectionPool(setup)(gateway))
+  }
+
+  /**
+   * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
+   * depending on their respective effective URI. Note that incoming requests must have either an absolute URI or
+   * a valid `Host` header.
+   *
+   * Since the underlying transport usually comprises more than a single connection the produced flow might generate
+   * responses in an order that doesn't directly match the consumed requests.
+   * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
+   * response for A.
+   * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
+   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   */
+  def superPool[T](options: immutable.Traversable[Inet.SocketOption] = Nil,
+                   settings: Option[HostConnectionPoolSettings] = None,
+                   defaultHeaders: List[HttpHeader] = Nil,
+                   log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Any] = {
+    val effectiveSettings = HostConnectionPoolSettings(settings)
+    val setup = ConnectionPoolSetup(encrypted = false, options, effectiveSettings, defaultHeaders, log)
+    clientFlow[T] { (request, userContext) ⇒
+      val effectiveRequest = request.withEffectiveUri(securedConnection = false)
+      val Uri.Authority(host, port, _) = effectiveRequest.uri.authority
+      cachedGateway(HostConnectionPoolSetup(host.toString(), port, setup))
+    }
+  }
+
+  /**
+   * Fires a single [[HttpRequest]] across the (potentially cached) host connection pool for the request's
+   * effective URI to produce a response future.
+   *
+   * Note that the request must have either an absolute URI or a valid `Host` header, otherwise
+   * the future will be completed with an error.
+   */
+  def singleRequest(request: HttpRequest,
+                    options: immutable.Traversable[Inet.SocketOption] = Nil,
+                    settings: Option[HostConnectionPoolSettings] = None,
+                    defaultHeaders: List[HttpHeader] = Nil,
+                    log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[HttpResponse] =
+    try {
+      val effectiveSettings = HostConnectionPoolSettings(settings)
+      val setup = ConnectionPoolSetup(encrypted = false, options, effectiveSettings, defaultHeaders, log)
+      val effectiveRequest = request.withEffectiveUri(securedConnection = false)
+      val uri = effectiveRequest.uri
+      val gateway = cachedGateway(HostConnectionPoolSetup(uri.authority.host.toString(), uri.effectivePort, setup))
+      val responsePromise = Promise[HttpResponse]()
+      gateway.actorRef() ! ConnectionPool.PoolRequest(request, responsePromise)
+      responsePromise.future
+    } catch {
+      case e: IllegalUriException ⇒ FastFuture.failed(e)
+    }
+
+  /**
+   * Triggers an orderly shutdown of all host connections pools currently maintained by the [[ActorSystem]].
+   * The returned future is completed when all pools that were live at the time of this method call
+   * have completed their shutdown process.
+   *
+   * If existing pool client flows are re-used or new ones materialized concurrently with or after this
+   * method call the respective connection pools will be restarted and not contribute to the returned future.
+   */
+  def shutdownAllConnectionPools(): Future[Unit] = {
+    import scala.collection.JavaConverters._
+    import system.dispatcher
+    val gateways = hostPoolCache.values().asScala
+    system.log.info("Initiating orderly shutdown of all active host connections pools (w/ configured grace period)...")
+    Future.sequence(gateways.map(_.shutdown())).map(_ ⇒ ())
+  }
+
+  @tailrec
+  private def cachedGateway(setup: HostConnectionPoolSetup)(implicit fm: FlowMaterializer): ConnectionPool.Gateway =
+    hostPoolCache.putIfAbsent(setup, ConnectionPool.CowboyGateway) match {
+      case null ⇒ // we are the first to attempt starting a pool for this setup
+        try {
+          val gateway = ConnectionPool.startHostConnectionPool(setup)
+          hostPoolCache.put(setup, gateway)
+          gateway.whenShuttingDown.onComplete(_ ⇒ hostPoolCache.remove(setup))(system.dispatcher)
+          gateway
+        } catch {
+          case NonFatal(e) ⇒
+            hostPoolCache.remove(setup) // remove Cowboy entry if we weren't able to properly start the pool
+            throw e
+        }
+
+      case ConnectionPool.CowboyGateway ⇒ cachedGateway(setup) // spin while other thread is starting a pool for this setup
+      case pool                         ⇒ pool // return cached instance
+    }
+
+  private def clientFlow[T](poolGateway: (HttpRequest, Any) ⇒ ConnectionPool.Gateway)(
+    implicit system: ActorSystem, fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Any] =
+    Flow[(HttpRequest, T)].mapAsync(parallelism = 4, {
+      case (request, userContext) ⇒
+        val responsePromise = Promise[HttpResponse]()
+        poolGateway(request, userContext).actorRef() ! ConnectionPool.PoolRequest(request, responsePromise)
+        val result = Promise[(Try[HttpResponse], T)]()
+        responsePromise.future.onComplete(responseTry ⇒ result.success(responseTry -> userContext))(system.dispatcher)
+        result.future
+    })
 }
 
 object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
@@ -228,6 +435,19 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    * Represents a prospective outgoing HTTP connection.
    */
   case class OutgoingConnection(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress)
+
+  /**
+   * Represents a connection pool to a specific target host and pool configuration.
+   */
+  case class HostConnectionPool(setup: HostConnectionPoolSetup)(private val gateway: ConnectionPool.Gateway) {
+
+    /**
+     * Asynchronously triggers the shutdown of the host connection pool.
+     *
+     * The produced [[Future]] is fulfilled when the shutdown has been completed.
+     */
+    def shutdown(): Future[Unit] = gateway.shutdown()
+  }
 
   //////////////////// EXTENSION SETUP ///////////////////
 
