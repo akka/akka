@@ -474,7 +474,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         case _          ⇒ entity.toStrict(awaitAtMost)
       }
 
-    private def compactEntityChunks(data: Source[ChunkStreamPart, Unit]): Future[Seq[ChunkStreamPart]] =
+    private def compactEntityChunks(data: Source[ChunkStreamPart, Any]): Future[Seq[ChunkStreamPart]] =
       data.grouped(100000).runWith(Sink.head)
         .fast.recover { case _: NoSuchElementException ⇒ Nil }
 
