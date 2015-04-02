@@ -798,4 +798,14 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
 
     override def write(b: Array[Byte], off: Int, len: Int): Unit = { builder.putBytes(b, off, len) }
   }
+
+  /**
+   * Tests whether this ByteStringBuilder is empty.
+   */
+  def isEmpty: Boolean = _length == 0
+
+  /**
+   * Tests whether this ByteStringBuilder is not empty.
+   */
+  def nonEmpty: Boolean = _length > 0
 }
