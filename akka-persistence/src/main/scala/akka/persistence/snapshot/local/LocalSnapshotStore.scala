@@ -28,7 +28,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
 
   private val config = context.system.settings.config.getConfig("akka.persistence.snapshot-store.local")
   private val streamDispatcher = context.system.dispatchers.lookup(config.getString("stream-dispatcher"))
-  private val snapshotDir = new File(config.getString("dir"))
+  private val dir = new File(config.getString("dir"))
 
   private val serializationExtension = SerializationExtension(context.system)
   private var saving = immutable.Set.empty[SnapshotMetadata] // saving in progress
@@ -104,19 +104,27 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   private def snapshotFile(metadata: SnapshotMetadata, extension: String = ""): File =
     new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.persistenceId, "UTF-8")}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
-  private def snapshotMetadata(persistenceId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] =
-    snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId)).map(_.getName).collect {
+  private def snapshotMetadata(persistenceId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
+    val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
+    if (files eq null) Nil // if the dir was removed
+    else files.map(_.getName).collect {
       case FilenamePattern(pid, snr, tms) ⇒ SnapshotMetadata(URLDecoder.decode(pid, "UTF-8"), snr.toLong, tms.toLong)
     }.filter(md ⇒ criteria.matches(md) && !saving.contains(md)).toVector
+  }
 
   override def preStart() {
-    if (!snapshotDir.isDirectory) {
+    snapshotDir()
+    super.preStart()
+  }
+
+  private def snapshotDir(): File = {
+    if (!dir.isDirectory) {
       // try to create the directory, on failure double check if someone else beat us to it
-      if (!snapshotDir.mkdirs() && !snapshotDir.isDirectory) {
-        throw new IOException(s"Failed to create snapshot directory [${snapshotDir.getCanonicalPath}]")
+      if (!dir.mkdirs() && !dir.isDirectory) {
+        throw new IOException(s"Failed to create snapshot directory [${dir.getCanonicalPath}]")
       }
     }
-    super.preStart()
+    dir
   }
 
   private class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
