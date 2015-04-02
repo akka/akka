@@ -66,10 +66,10 @@ public class FlowGraphTest extends StreamTest {
         .of(String.class)
         .section(
             OperationAttributes.name("f1"),
-            new Function<Flow<String, String, BoxedUnit>, Flow<String, String, BoxedUnit>>() {
+            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
               @Override
-              public Flow<String, String, BoxedUnit> apply(
-                  Flow<String, String, BoxedUnit> flow) {
+              public Flow<String, String, Object> apply(
+                  Flow<String, String, Object> flow) {
                 return flow.transform(FlowGraphTest.this.<String> op());
               }
             });
@@ -77,10 +77,10 @@ public class FlowGraphTest extends StreamTest {
         .of(String.class)
         .section(
             OperationAttributes.name("f2"),
-            new Function<Flow<String, String, BoxedUnit>, Flow<String, String, BoxedUnit>>() {
+            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
               @Override
-              public Flow<String, String, BoxedUnit> apply(
-                  Flow<String, String, BoxedUnit> flow) {
+              public Flow<String, String, Object> apply(
+                  Flow<String, String, Object> flow) {
                 return flow.transform(FlowGraphTest.this.<String> op());
               }
             });
@@ -88,10 +88,10 @@ public class FlowGraphTest extends StreamTest {
         .of(String.class)
         .section(
             OperationAttributes.name("f3"),
-            new Function<Flow<String, String, BoxedUnit>, Flow<String, String, BoxedUnit>>() {
+            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
               @Override
-              public Flow<String, String, BoxedUnit> apply(
-                  Flow<String, String, BoxedUnit> flow) {
+              public Flow<String, String, Object> apply(
+                  Flow<String, String, Object> flow) {
                 return flow.transform(FlowGraphTest.this.<String> op());
               }
             });
