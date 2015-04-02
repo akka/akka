@@ -110,7 +110,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *                +------+
    * }}}
    */
-  type ServerLayer = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, Any]
+  type ServerLayer = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, Unit]
 
   /**
    * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]].
@@ -158,7 +158,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *                +------+
    * }}}
    */
-  type ClientLayer = BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, Any]
+  type ClientLayer = BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, Unit]
 
   /**
    * Constructs a [[ClientLayer]] stage using the configured default [[ClientConnectionSettings]].
@@ -200,7 +200,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   case class IncomingConnection(
     localAddress: InetSocketAddress,
     remoteAddress: InetSocketAddress,
-    flow: Flow[HttpResponse, HttpRequest, Any]) {
+    flow: Flow[HttpResponse, HttpRequest, Unit]) {
 
     /**
      * Handles the connection with the given flow, which is materialized exactly once
