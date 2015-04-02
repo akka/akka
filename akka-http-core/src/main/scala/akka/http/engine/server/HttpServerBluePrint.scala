@@ -26,7 +26,7 @@ private[http] object HttpServerBluePrint {
 
   type ServerShape = BidiShape[HttpResponse, ByteString, ByteString, HttpRequest]
 
-  def apply(settings: ServerSettings, log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[ServerShape, Any] = {
+  def apply(settings: ServerSettings, log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[ServerShape, Unit] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
