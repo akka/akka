@@ -147,9 +147,8 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
         .replaceShape(SourceShape(subFlow.shape.outlets.head)))
   }
 
-  def section[O, O2 >: Out, Mat2](attributes: OperationAttributes)(section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Mat2]): Source[O, Mat2] = {
-    this.section[O, O2, Mat2, Mat2](attributes, (parentm: Mat, subm: Mat2) ⇒ subm)(section)
-  }
+  def section[O, O2 >: Out](attributes: OperationAttributes)(section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Any]): Source[O, Mat] =
+    this.section[O, O2, Any, Mat](attributes, Keep.left)(section)
 
   override def withAttributes(attr: OperationAttributes): Repr[Out, Mat] =
     new Source(module.withAttributes(attr).wrap())

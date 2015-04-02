@@ -269,7 +269,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   }
 
   // FIXME remove (in favor of .via)
-  def section[O, O2 >: Out, Mat2, Mat3](attributes: OperationAttributes, combine: (Mat, Mat2) ⇒ Mat3)(section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Mat2]): Flow[In, O, Mat3] = {
+  def section[O, O2 >: Out, Mat2, Mat3](attributes: OperationAttributes, combine: (Mat, Mat2) ⇒ Mat3)(
+    section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Mat2]): Flow[In, O, Mat3] = {
     val subFlow = section(Flow[O2]).module.carbonCopy.withAttributes(attributes).wrap()
     if (this.isIdentity) new Flow(subFlow).asInstanceOf[Flow[In, O, Mat3]]
     else new Flow(
@@ -282,8 +283,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * Applies given [[OperationAttributes]] to a given section.
    */
   // FIXME remove (in favor of .via)
-  def section[O, O2 >: Out, Mat2](attributes: OperationAttributes)(section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Mat2]): Flow[In, O, Mat2] = {
-    this.section[O, O2, Mat2, Mat2](attributes, Keep.right)(section)
+  def section[O, O2 >: Out](attributes: OperationAttributes)(section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Any]): Flow[In, O, Mat] = {
+    this.section[O, O2, Any, Mat](attributes, Keep.left)(section)
   }
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
@@ -632,7 +633,7 @@ trait FlowOps[+Out, +Mat] {
    * This operation can be used on a stream of element type [[akka.stream.scaladsl.Source]].
    */
   def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U, Mat] = strategy match {
-    case _: FlattenStrategy.Concat[Out] | _: javadsl.FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll())
+    case _: FlattenStrategy.Concat[Out] | _: javadsl.FlattenStrategy.Concat[Out, _] ⇒ andThen(ConcatAll())
     case _ ⇒
       throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
   }
