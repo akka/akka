@@ -70,7 +70,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       clientSocket.write(ByteBuffer.allocate(1))
       null
     } catch {
-      case NonFatal(e) ⇒ e.getMessage.substring(0, 15)
+      case NonFatal(e) ⇒ e.getMessage.take(15)
     }
   }
 
