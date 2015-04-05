@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration scan="false" debug="false">
+  <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%date{ISO8601} %-5level [%X{akkaSource}] : %m%n</pattern>
+    </encoder>
+  </appender>
+  
+  <appender name="R" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <File>${hello-kernel.log-dir:-logs}/hello-kernel.log</File>
+    <encoder>
+      <pattern>%date{ISO8601} %-5level [%X{akkaSource}] : %m%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${hello-kernel.log-dir:-logs}/hello-kernel.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+  </appender>
+  
+  <root level="DEBUG">
+    <appender-ref ref="R"/>
+    <appender-ref ref="stdout"/>
+  </root>
+</configuration>
