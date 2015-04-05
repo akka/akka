@@ -12,21 +12,50 @@ Akka can be used in different ways:
 - As a library: used as a regular JAR on the classpath and/or in a web app, to
   be put into ``WEB-INF/lib``
 
-- As a stand alone application by instantiating ActorSystem in a main class or
-  using the :ref:`Microkernel (Scala) <microkernel-scala>` / :ref:`Microkernel (Java) <microkernel-java>`
+- Package with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
+
+- Package and deploy using `Typesafe ConductR <http://typesafe.com/products/conductr>`_.
 
 
-Using Akka as library
----------------------
+Native Packager
+===============
 
-This is most likely what you want if you are building Web applications. There
-are several ways you can use Akka in Library mode by adding more and more
-modules to the stack.
+`sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ is a tool for creating
+distributions of any type of application, including an Akka applications.
+
+Define sbt version in ``project/build.properties`` file: 
+
+.. code-block:: none
+
+    sbt.version=0.13.7
+
+Add `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ in ``project/plugins.sbt`` file:
+
+.. code-block:: none
+
+   addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
+
+Use the package settings and optionally specify the mainClass in ``build.sbt`` file:
+
+.. includecode:: ../../../akka-samples/akka-sample-main-scala/build.sbt
 
 
-Using Akka as a stand alone microkernel
-----------------------------------------
+.. note:: Use the ``JavaServerAppPackaging``. Don't use ``AkkaAppPackaging`` (previously named 
+   ``packageArchetype.akka_application``, since it doesn't have the same flexibility and quality
+   as the ``JavaServerAppPackaging``.
 
-Akka can also be run as a stand-alone microkernel. See
-:ref:`Microkernel (Scala) <microkernel-scala>` / :ref:`Microkernel (Java) <microkernel-java>` for
-more information.
+Use sbt task ``dist`` package the application.
+
+To start the application (on a unix-based system):
+
+.. code-block:: none
+
+   cd target/universal/
+   unzip akka-sample-main-scala-2.4-SNAPSHOT.zip
+   chmod u+x akka-sample-main-scala-2.4-SNAPSHOT/bin/akka-sample-main-scala
+   akka-sample-main-scala-2.4-SNAPSHOT/bin/akka-sample-main-scala sample.hello.Main
+
+Use ``Ctrl-C`` to interrupt and exit the application.
+
+On a Windows machine you can also use the ``bin\akka-sample-main-scala.bat`` script.
+

@@ -192,3 +192,13 @@ Router configuration entries have also changed for the module, they use prefix `
 ``cluster-metrics-adaptive-pool`` and ``cluster-metrics-adaptive-group``
 Metrics extension classes and objects are located in the new package ``akka.cluster.metrics``. 
 Please see :ref:`Scala <cluster-metrics-scala>`, :ref:`Java <cluster-metrics-java>` for more information.
+
+Microkernel is Deprecated
+=========================
+
+Akka Microkernel is deprecated and will be removed. It is replaced by using an ordinary
+user defined main class and packaging with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
+or `Typesafe ConductR <http://typesafe.com/products/conductr>`_.
+Please see :ref:`deployment-scenarios` for more information.
+
+

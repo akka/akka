@@ -75,12 +75,14 @@ Akka has both a :ref:`scala-api` and a :ref:`java-api`.
 Akka can be used in two different ways
 ======================================
 
-- As a library: used by a web app, to be put into ``WEB-INF/lib`` or as a regular
-  JAR on your classpath.
+Akka can be used and deployed in different ways:
 
-- As a microkernel: stand-alone kernel to drop your application into.
+- As a library: used as a regular JAR on the classpath and/or in a web app, to
+  be put into ``WEB-INF/lib``
 
-See the :ref:`deployment-scenarios` for details.
+- Package with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
+
+- Package and deploy using `Typesafe ConductR <http://typesafe.com/products/conductr>`_.
 
 Commercial Support
 ==================

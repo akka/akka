@@ -10,4 +10,5 @@ Utilities
    ../common/duration
    ../common/circuitbreaker
    extending-akka
-   microkernel
+   ../intro/deployment-scenarios
+
