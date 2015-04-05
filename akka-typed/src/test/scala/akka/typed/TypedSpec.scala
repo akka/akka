@@ -37,7 +37,8 @@ class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAl
   }
 
   // TODO remove after basing on ScalaTest 3 with async support
-  def await[T](f: Future[T]): T = Await.result(f, 30.seconds)
+  import akka.testkit._
+  def await[T](f: Future[T]): T = Await.result(f, 60.seconds.dilated(system.untyped))
 
   val blackhole = await(system ? Create(Props(ScalaDSL.Full[Any] { case _ ⇒ ScalaDSL.Same }), "blackhole"))
 
