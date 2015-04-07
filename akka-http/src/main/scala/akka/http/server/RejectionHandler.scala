@@ -122,8 +122,8 @@ object RejectionHandler {
         complete(BadRequest, "Uri scheme not allowed, supported schemes: " + schemes)
       }
       .handleAll[MethodRejection] { rejections ⇒
-        val methods = rejections.map(_.supported)
-        complete(MethodNotAllowed, List(Allow(methods)), "HTTP method not allowed, supported methods: " + methods.mkString(", "))
+        val (methods, names) = rejections.map(r ⇒ r.supported -> r.supported.name).unzip
+        complete(MethodNotAllowed, List(Allow(methods)), "HTTP method not allowed, supported methods: " + names.mkString(", "))
       }
       .handle {
         case AuthorizationFailedRejection ⇒
