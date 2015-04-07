@@ -194,6 +194,24 @@ together and also turned around with the ``.reversed()`` method. The test
 simulates both parties of a network communication protocol without actually
 having to open a network connection—the flows can just be connected directly.
 
+.. _graph-matvalue-java:
+
+Accessing the materialized value inside the Graph
+-------------------------------------------------
+
+In certain cases it might be necessary to feed back the materialized value of a Graph (partial, closed or backing a
+Source, Sink, Flow or BidiFlow). This is possible by using ``builder.matValue`` which gives an ``Outlet`` that
+can be used in the graph as an ordinary source or outlet, and which will eventually emit the materialized value.
+If the materialized value is needed at more than one place, it is possible to call ``matValue`` any number of times
+to acquire the necessary number of outlets.
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowGraphDocTest.java#flow-graph-matvalue
+
+Be careful not to introduce a cycle where the materialized value actually contributes to the materialized value.
+The following example demonstrates a case where the materialized ``Future`` of a fold is fed back to the fold itself.
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowGraphDocTest.java#flow-graph-matvalue-cycle
+
 .. _graph-cycles-java:
 
 Graph cycles, liveness and deadlocks

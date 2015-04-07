@@ -210,6 +210,10 @@ resulting values. Some examples of using these combiners are illustrated in the 
 
 .. includecode:: code/docs/stream/FlowDocSpec.scala#flow-mat-combine
 
+.. note::
+   In Graphs it is possible to access the materialized value from inside the stream processing graph. For details see
+   :ref:`graph-matvalue-scala`
+
 Stream ordering
 ===============
 In Akka Streams almost all computation stages *preserve input order* of elements. This means that if inputs ``{IA1,IA2,...,IAn}``

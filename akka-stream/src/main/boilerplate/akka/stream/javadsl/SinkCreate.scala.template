@@ -13,18 +13,18 @@ trait SinkCreate {
    * Creates a `Sink` by using a `FlowGraph.Builder` on a block that expects
    * a [[FlowGraph.Builder]] and returns the `UndefinedSource`.
    */
-  def create[T](block: japi.Function[FlowGraph.Builder, Inlet[T]]): Sink[T, Unit] =
+  def create[T](block: japi.Function[FlowGraph.Builder[Unit], Inlet[T]]): Sink[T, Unit] =
     new Sink(scaladsl.Sink() { b ⇒ block.apply(b.asJava) })
 
   /**
    * Creates a `Sink` by using a `FlowGraph.Builder` on a block that expects
    * a [[FlowGraph.Builder]] and returns the `UndefinedSource`.
    */
-  def create[T, S <: Shape, M](g1: Graph[S, M], block: japi.Function2[FlowGraph.Builder, S, Inlet[T]]): Sink[T, M] =
+  def create[T, S <: Shape, M](g1: Graph[S, M], block: japi.Function2[FlowGraph.Builder[M], S, Inlet[T]]): Sink[T, M] =
     new Sink(scaladsl.Sink(g1) { b ⇒ s => block.apply(b.asJava, s) })
 
   [2..21#def create[T, [#S1 <: Shape#], [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
-      block: japi.Function2[FlowGraph.Builder, [#S1#], Inlet[T]]): Sink[T, M] =
+      block: japi.Function2[FlowGraph.Builder[M], [#S1#], Inlet[T]]): Sink[T, M] =
     new Sink(scaladsl.Sink([#g1#])(combineMat.apply _) { b => ([#s1#]) => block.apply(b.asJava, [#s1#]) })#
   
   ]

@@ -47,9 +47,9 @@ public class FlexiMergeTest {
     final Future<List<String>> all = FlowGraph
         .factory()
         .closed(Sink.<List<String>> head(),
-            new Procedure2<Builder, SinkShape<List<String>>>() {
+            new Procedure2<Builder<Future<List<String>> >, SinkShape<List<String>>>() {
               @Override
-              public void apply(Builder b, SinkShape<List<String>> sink)
+              public void apply(Builder<Future<List<String>> > b, SinkShape<List<String>> sink)
                   throws Exception {
                 final UniformFanInShape<String, String> merge = b.graph(new Fair<String>());
                 b.edge(b.source(in1), merge.in(0));
@@ -69,9 +69,9 @@ public class FlexiMergeTest {
     final Future<List<String>> all = FlowGraph
         .factory()
         .closed(Sink.<List<String>> head(),
-            new Procedure2<Builder, SinkShape<List<String>>>() {
+            new Procedure2<Builder<Future<List<String>>>, SinkShape<List<String>>>() {
               @Override
-              public void apply(Builder b, SinkShape<List<String>> sink)
+              public void apply(Builder<Future<List<String>>> b, SinkShape<List<String>> sink)
                   throws Exception {
                 final UniformFanInShape<String, String> merge = b.graph(new StrictRoundRobin<String>());
                 b.edge(b.source(in1), merge.in(0));
@@ -93,9 +93,9 @@ public class FlexiMergeTest {
     final Future<List<Pair<Integer, String>>> all = FlowGraph
         .factory()
         .closed(Sink.<List<Pair<Integer, String>>>head(),
-                new Procedure2<Builder, SinkShape<List<Pair<Integer, String>>>>() {
+                new Procedure2<Builder<Future<List<Pair<Integer, String>>>>, SinkShape<List<Pair<Integer, String>>>>() {
                     @Override
-                    public void apply(Builder b, SinkShape<List<Pair<Integer, String>>> sink)
+                    public void apply(Builder<Future<List<Pair<Integer, String>>>> b, SinkShape<List<Pair<Integer, String>>> sink)
                             throws Exception {
                         final FanInShape2<Integer, String, Pair<Integer, String>> zip = b.graph(new Zip<Integer, String>());
                         b.edge(b.source(inA), zip.in0());
@@ -120,9 +120,9 @@ public class FlexiMergeTest {
     final Future<List<Triple<Long, Integer, String>>> all = FlowGraph
         .factory()
         .closed(Sink.<List<Triple<Long, Integer, String>>> head(),
-            new Procedure2<Builder, SinkShape<List<Triple<Long, Integer, String>>>>() {
+            new Procedure2<Builder<Future<List<Triple<Long, Integer, String>>>>, SinkShape<List<Triple<Long, Integer, String>>>>() {
               @Override
-              public void apply(Builder b, SinkShape<List<Triple<Long, Integer, String>>> sink)
+              public void apply(Builder<Future<List<Triple<Long, Integer, String>>>> b, SinkShape<List<Triple<Long, Integer, String>>> sink)
                   throws Exception {
                 final FanInShape3<Long, Integer, String, Triple<Long, Integer, String>> zip =
                     b.graph(new TripleZip<Long, Integer, String>());
