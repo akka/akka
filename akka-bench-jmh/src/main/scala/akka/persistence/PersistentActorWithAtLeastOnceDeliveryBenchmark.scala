@@ -3,7 +3,6 @@
  */
 package akka.persistence
 
-
 import org.openjdk.jmh.annotations._
 import akka.actor._
 import akka.testkit.TestProbe
@@ -61,7 +60,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   @Benchmark
   @OperationsPerInvocation(10000)
   def persistentActor_persistAsync_with_AtLeastOnceDelivery() {
-    for (i <- 1 to dataCount)
+    for (i ← 1 to dataCount)
       persistAsyncPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
     probe.expectMsg(20 seconds, Evt(dataCount))
   }
@@ -69,7 +68,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   @Benchmark
   @OperationsPerInvocation(10000)
   def persistentActor_persist_with_AtLeastOnceDelivery() {
-    for (i <- 1 to dataCount)
+    for (i ← 1 to dataCount)
       persistPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
     probe.expectMsg(2 minutes, Evt(dataCount))
   }
@@ -77,7 +76,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   @Benchmark
   @OperationsPerInvocation(10000)
   def persistentActor_noPersist_with_AtLeastOnceDelivery() {
-    for (i <- 1 to dataCount)
+    for (i ← 1 to dataCount)
       noPersistPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
     probe.expectMsg(20 seconds, Evt(dataCount))
   }
@@ -90,29 +89,29 @@ class NoPersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int, val upS
   override def persistenceId: String = self.path.name
 
   override def receiveCommand = {
-    case n: Int =>
-      deliver(downStream, deliveryId =>
+    case n: Int ⇒
+      deliver(downStream, deliveryId ⇒
         Msg(deliveryId, n))
       if (n == respondAfter)
-      //switch to wait all message confirmed
+        //switch to wait all message confirmed
         context.become(waitConfirm)
-    case Confirm(deliveryId) =>
+    case Confirm(deliveryId) ⇒
       confirmDelivery(deliveryId)
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 
   override def receiveRecover = {
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 
   val waitConfirm: Actor.Receive = {
-    case Confirm(deliveryId) =>
+    case Confirm(deliveryId) ⇒
       confirmDelivery(deliveryId)
       if (numberOfUnconfirmed == 0) {
         upStream ! Evt(respondAfter)
         context.unbecome()
       }
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 }
 
@@ -123,31 +122,31 @@ class PersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int, val upStr
   override def persistenceId: String = self.path.name
 
   override def receiveCommand = {
-    case n: Int =>
-      persist(MsgSent(n)) { e =>
-        deliver(downStream, deliveryId =>
+    case n: Int ⇒
+      persist(MsgSent(n)) { e ⇒
+        deliver(downStream, deliveryId ⇒
           Msg(deliveryId, n))
         if (n == respondAfter)
-        //switch to wait all message confirmed
+          //switch to wait all message confirmed
           context.become(waitConfirm)
-    }
-    case Confirm(deliveryId) =>
+      }
+    case Confirm(deliveryId) ⇒
       confirmDelivery(deliveryId)
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 
   override def receiveRecover = {
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 
   val waitConfirm: Actor.Receive = {
-    case Confirm(deliveryId) =>
+    case Confirm(deliveryId) ⇒
       confirmDelivery(deliveryId)
       if (numberOfUnconfirmed == 0) {
         upStream ! Evt(respondAfter)
         context.unbecome()
       }
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 }
 
@@ -158,31 +157,31 @@ class PersistAsyncPersistentActorWithAtLeastOnceDelivery(respondAfter: Int, val 
   override def persistenceId: String = self.path.name
 
   override def receiveCommand = {
-    case n: Int =>
-      persistAsync(MsgSent(n)) { e =>
-        deliver(downStream, deliveryId =>
+    case n: Int ⇒
+      persistAsync(MsgSent(n)) { e ⇒
+        deliver(downStream, deliveryId ⇒
           Msg(deliveryId, n))
         if (n == respondAfter)
-        //switch to wait all message confirmed
+          //switch to wait all message confirmed
           context.become(waitConfirm)
       }
-    case Confirm(deliveryId) =>
+    case Confirm(deliveryId) ⇒
       confirmDelivery(deliveryId)
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 
   override def receiveRecover = {
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 
   val waitConfirm: Actor.Receive = {
-    case Confirm(deliveryId) =>
+    case Confirm(deliveryId) ⇒
       confirmDelivery(deliveryId)
       if (numberOfUnconfirmed == 0) {
         upStream ! Evt(respondAfter)
         context.unbecome()
       }
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 }
 
@@ -200,15 +199,15 @@ class DestinationActor extends Actor {
   var seqNr = 0L
 
   override def receive = {
-    case n: Int =>
+    case n: Int ⇒
       sender() ! Confirm(n)
-    case Msg(deliveryId, _) =>
+    case Msg(deliveryId, _) ⇒
       seqNr += 1
       if (seqNr % 11 == 0) {
         //drop it
       } else {
         sender() ! Confirm(deliveryId)
       }
-    case _ => // do nothing
+    case _ ⇒ // do nothing
   }
 }
