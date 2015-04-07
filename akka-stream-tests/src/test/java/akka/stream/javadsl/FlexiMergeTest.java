@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.HashSet;
 
+import akka.stream.javadsl.japi.Function;
 import org.junit.ClassRule;
 import org.junit.Test;
 

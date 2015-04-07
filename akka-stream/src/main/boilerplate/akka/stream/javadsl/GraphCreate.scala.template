@@ -18,17 +18,23 @@ trait GraphCreate {
   def partial[S <: Shape](block: japi.Function[FlowGraph.Builder[Unit], S]): Graph[S, Unit] =
     scaladsl.FlowGraph.partial() { b ⇒ block.apply(b.asJava) }
 
-  def closed[S1 <: Shape, M](g1: Graph[S1, M], block: japi.Procedure2[FlowGraph.Builder[M], S1]): RunnableFlow[M] =
+  def closed[S1 <: Shape, M](g1: Graph[S1, M],
+      block: japi.Procedure2[FlowGraph.Builder[M], S1]): RunnableFlow[M] =
     scaladsl.FlowGraph.closed(g1) { b ⇒ s => block.apply(b.asJava, s) }
 
-  def partial[S1 <: Shape, S <: Shape, M](g1: Graph[S1, M], block: japi.Function2[FlowGraph.Builder[M], S1, S]): Graph[S, M] =
+  def partial[S1 <: Shape, S <: Shape, M](g1: Graph[S1, M],
+      block: japi.Function2[FlowGraph.Builder[M], S1, S]): Graph[S, M] =
     scaladsl.FlowGraph.partial(g1) { b ⇒ s => block.apply(b.asJava, s) }
 
-  [2..21#def closed[[#S1 <: Shape#], [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
+  def closed[S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: japi.Function2[M1, M2, M],
+      block: japi.Procedure3[FlowGraph.Builder[M], S1, S2]): RunnableFlow[M] =
+    scaladsl.FlowGraph.closed(g1, g2)(combineMat.apply _) { b => (s1, s2) => block.apply(b.asJava, s1, s2) }
+
+  [3..21#def closed1[[#S1 <: Shape#], [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
       block: japi.Procedure2[FlowGraph.Builder[M], [#S1#]]): RunnableFlow[M] =
     scaladsl.FlowGraph.closed([#g1#])(combineMat.apply _) { b => ([#s1#]) => block.apply(b.asJava, [#s1#]) }
     
-  def partial[[#S1 <: Shape#], S <: Shape, [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
+  def partial1[[#S1 <: Shape#], S <: Shape, [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
       block: japi.Function2[FlowGraph.Builder[M], [#S1#], S]): Graph[S, M] =
     scaladsl.FlowGraph.partial([#g1#])(combineMat.apply _) { b => ([#s1#]) => block.apply(b.asJava, [#s1#]) }#
   
