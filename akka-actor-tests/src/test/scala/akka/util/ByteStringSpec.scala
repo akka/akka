@@ -4,12 +4,16 @@
 
 package akka.util
 
+import java.io.{ ByteArrayInputStream, ObjectInputStream, ObjectOutputStream, ByteArrayOutputStream }
+
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.Checkers
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
+
+import org.apache.commons.codec.binary.Hex.{ encodeHex, decodeHex }
 
 import scala.collection.mutable.Builder
 
@@ -54,6 +58,23 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       from ← Gen.choose(0, xs.length)
       until ← Gen.choose(from, xs.length)
     } yield (xs, from, until)
+  }
+
+  def testSer(obj: AnyRef) = {
+    val os = new ByteArrayOutputStream
+    val bos = new ObjectOutputStream(os)
+    bos.writeObject(obj)
+    val arr = os.toByteArray
+    val is = new ObjectInputStream(new ByteArrayInputStream(arr))
+
+    is.readObject == obj
+  }
+
+  def hexFromSer(obj: AnyRef) = {
+    val os = new ByteArrayOutputStream
+    val bos = new ObjectOutputStream(os)
+    bos.writeObject(obj)
+    String valueOf encodeHex(os.toByteArray)
   }
 
   val arbitraryByteArray: Arbitrary[Array[Byte]] = Arbitrary { Gen.sized { n ⇒ Gen.containerOfN[Array, Byte](n, arbitrary[Byte]) } }
@@ -367,6 +388,22 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
               array.toSeq
             })
           }
+        }
+      }
+    }
+
+    "serialize correctly" when {
+      "parsing regular ByteString1C as compat" in {
+        val oldSerd = "aced000573720021616b6b612e7574696c2e42797465537472696e672442797465537472696e67314336e9eed0afcfe4a40200015b000562797465737400025b427872001b616b6b612e7574696c2e436f6d7061637442797465537472696e67fa2925150f93468f0200007870757200025b42acf317f8060854e002000078700000000a74657374737472696e67"
+        val bs = ByteString("teststring", "UTF8")
+        val str = hexFromSer(bs)
+
+        require(oldSerd == str)
+      }
+
+      "given all types of ByteString" in {
+        check { bs: ByteString ⇒
+          testSer(bs)
         }
       }
     }
