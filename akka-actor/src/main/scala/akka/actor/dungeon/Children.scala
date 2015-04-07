@@ -175,10 +175,11 @@ private[akka] trait Children { this: ActorCell ⇒
 
   private def checkName(name: String): String = {
     name match {
-      case null                                    ⇒ throw new InvalidActorNameException("actor name must not be null")
-      case ""                                      ⇒ throw new InvalidActorNameException("actor name must not be empty")
-      case _ if ActorPath.isValidPathElement(name) ⇒ name
-      case _                                       ⇒ throw new InvalidActorNameException(s"Illegal actor name [$name]. Actor paths MUST: not start with `$$`, include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.")
+      case null ⇒ throw new InvalidActorNameException("actor name must not be null")
+      case ""   ⇒ throw new InvalidActorNameException("actor name must not be empty")
+      case _ ⇒
+        ActorPath.validatePathElement(name)
+        name
     }
   }
 

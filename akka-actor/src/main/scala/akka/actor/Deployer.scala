@@ -155,12 +155,8 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   def deploy(d: Deploy): Unit = {
     @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit = {
       for (i ← 0 until path.length) path(i) match {
-        case "" ⇒
-          throw new InvalidActorNameException(s"actor name in deployment [${d.path}] must not be empty")
-        case el if ActorPath.isValidPathElement(el) ⇒ // ok
-        case name ⇒
-          throw new InvalidActorNameException(
-            s"Illegal actor name [$name] in deployment [${d.path}]. Actor paths MUST: not start with `$$`, include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.")
+        case "" ⇒ throw new InvalidActorNameException(s"Actor name in deployment [${d.path}] must not be empty")
+        case el ⇒ ActorPath.validatePathElement(el, fullPath = d.path)
       }
 
       if (!deployments.compareAndSet(w, w.insert(path.iterator, d))) add(path, d)

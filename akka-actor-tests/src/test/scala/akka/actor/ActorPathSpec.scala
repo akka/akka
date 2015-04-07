@@ -5,8 +5,7 @@ package akka.actor
 
 import java.net.MalformedURLException
 
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.{ Matchers, WordSpec }
 
 class ActorPathSpec extends WordSpec with Matchers {
 
@@ -48,6 +47,10 @@ class ActorPathSpec extends WordSpec with Matchers {
       (RootActorPath(a) / "user").toStringWithoutAddress should ===("/user")
       (RootActorPath(a) / "user" / "foo").toStringWithoutAddress should ===("/user/foo")
       (RootActorPath(a) / "user" / "foo" / "bar").toStringWithoutAddress should ===("/user/foo/bar")
+    }
+
+    "validate path elements" in {
+      intercept[InvalidActorNameException](ActorPath.validatePathElement("")).getMessage should include("must not be empty")
     }
 
     "create correct toStringWithAddress" in {
