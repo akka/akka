@@ -36,8 +36,7 @@ class ActorPathValidationBenchmark {
 
   final val ElementRegex = """(?:[-\w:@&=+,.!~*'_;]|%\p{XDigit}{2})(?:[-\w:@&=+,.!~*'$_;]|%\p{XDigit}{2})*""".r
 
-
-//  @Benchmark // blows up with stack overflow, we know
+  //  @Benchmark // blows up with stack overflow, we know
   def old7000: Option[List[String]] = ElementRegex.unapplySeq(s)
 
   @Benchmark
