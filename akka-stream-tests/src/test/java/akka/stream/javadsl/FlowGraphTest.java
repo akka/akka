@@ -222,7 +222,7 @@ public class FlowGraphTest extends StreamTest {
     final Source<Integer, BoxedUnit> in3 = Source.single(100);
     final Source<Integer, BoxedUnit> in4 = Source.single(1000);
 
-    final Graph<FanInShape4<Integer, Integer, Integer, Integer, Integer>, BoxedUnit> sumZip = ZipWith.create(
+    final Graph<FanInShape4<Integer, Integer, Integer, Integer, Integer>, BoxedUnit> sumZip = ZipWith.create4(
             new Function4<Integer, Integer, Integer, Integer, Integer>() {
               @Override public Integer apply(Integer i1, Integer i2, Integer i3, Integer i4) throws Exception {
                 return i1 + i2 + i3 + i4;
