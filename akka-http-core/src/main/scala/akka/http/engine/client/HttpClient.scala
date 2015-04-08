@@ -17,7 +17,7 @@ import akka.stream.scaladsl._
 import akka.stream.scaladsl.OperationAttributes._
 import akka.http.model.{ IllegalResponseException, HttpMethod, HttpRequest, HttpResponse }
 import akka.http.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
-import akka.http.engine.parsing.{ ParserOutput, HttpHeaderParser, HttpResponseParser }
+import akka.http.engine.parsing._
 import akka.http.util._
 
 /**
@@ -58,11 +58,10 @@ private[http] object HttpClient {
 
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-    val rootParser = new HttpResponseParser(
-      parserSettings,
-      HttpHeaderParser(parserSettings) { errorInfo ⇒
-        if (parserSettings.illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal response header").formatPretty)
-      })
+    val rootParser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings) { info ⇒
+      if (parserSettings.illegalHeaderWarnings)
+        logParsingError(info withSummaryPrepended "Illegal response header", log, parserSettings.errorLoggingVerbosity)
+    })
 
     val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
 
