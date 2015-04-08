@@ -23,7 +23,7 @@ import akka.io.Inet.SocketOption
 import akka.actor._
 import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
 import akka.util.{ Helpers, ByteString }
-import akka.TestUtils._
+import akka.testkit.SocketUtil._
 import java.util.Random
 
 object TcpConnectionSpec {
@@ -629,7 +629,8 @@ class TcpConnectionSpec extends AkkaSpec("""
             selector.send(connectionActor, ChannelConnectable)
             userHandler.expectMsg(CommandFailed(Connect(UnboundAddress)))
 
-            verifyActorTermination(connectionActor)
+            watch(connectionActor)
+            expectTerminated(connectionActor)
           } finally sel.close()
         }
       }
@@ -650,7 +651,8 @@ class TcpConnectionSpec extends AkkaSpec("""
         run {
           connectionActor.toString should not be ("")
           userHandler.expectMsg(CommandFailed(Connect(UnboundAddress, timeout = Option(100.millis))))
-          verifyActorTermination(connectionActor)
+          watch(connectionActor)
+          expectTerminated(connectionActor)
         }
       }
 
@@ -661,7 +663,8 @@ class TcpConnectionSpec extends AkkaSpec("""
         selector.send(connectionActor, ChannelConnectable)
         userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
-        verifyActorTermination(connectionActor)
+        watch(connectionActor)
+        expectTerminated(connectionActor)
       }
     }
 
@@ -670,7 +673,8 @@ class TcpConnectionSpec extends AkkaSpec("""
         EventFilter[DeathPactException](occurrences = 1) intercept {
           userHandler.ref ! PoisonPill
 
-          verifyActorTermination(connectionActor)
+          watch(connectionActor)
+          expectTerminated(connectionActor)
         }
       }
     }
@@ -835,7 +839,8 @@ class TcpConnectionSpec extends AkkaSpec("""
       connectionProbe.expectMsgType[Tcp.Connected]
       val connectionActor = connectionProbe.sender()
       connectionActor ! PoisonPill
-      verifyActorTermination(connectionActor)
+      watch(connectionActor)
+      expectTerminated(connectionActor)
       an[IOException] should be thrownBy { socket.getInputStream.read() }
     }
   }
@@ -1055,7 +1060,8 @@ class TcpConnectionSpec extends AkkaSpec("""
     }
 
     def assertThisConnectionActorTerminated(): Unit = {
-      verifyActorTermination(connectionActor)
+      watch(connectionActor)
+      expectTerminated(connectionActor)
       clientSideChannel should not be ('open)
     }
 

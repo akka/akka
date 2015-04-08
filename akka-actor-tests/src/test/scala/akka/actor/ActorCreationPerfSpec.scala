@@ -7,7 +7,6 @@ import scala.language.postfixOps
 
 import akka.testkit.{ PerformanceTest, ImplicitSender, AkkaSpec }
 import scala.concurrent.duration._
-import akka.TestUtils
 import akka.testkit.metrics._
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit.metrics.HeapMemoryUsage
@@ -128,8 +127,8 @@ class ActorCreationPerfSpec extends AkkaSpec("akka.actor.serialize-messages = of
     expectMsgPF(15 seconds, s"$scenarioName waiting for Waited") { case Waited ⇒ }
 
     driver ! PoisonPill
-    TestUtils.verifyActorTermination(driver, 15 seconds)
-
+    watch(driver)
+    expectTerminated(driver, 15.seconds)
     gc()
   }
 
@@ -153,7 +152,8 @@ class ActorCreationPerfSpec extends AkkaSpec("akka.actor.serialize-messages = of
     val after = mem.getHeapSnapshot
 
     driver ! PoisonPill
-    TestUtils.verifyActorTermination(driver, 15 seconds)
+    watch(driver)
+    expectTerminated(driver, 15.seconds)
 
     after diff before
   }

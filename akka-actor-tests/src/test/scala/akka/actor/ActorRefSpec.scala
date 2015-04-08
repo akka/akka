@@ -14,7 +14,6 @@ import java.lang.IllegalStateException
 import scala.concurrent.Promise
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
-import akka.TestUtils.verifyActorTermination
 
 object ActorRefSpec {
 
@@ -324,7 +323,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
       ref ! PoisonPill
 
-      verifyActorTermination(ref)
+      watch(ref)
+      expectTerminated(ref)
 
       JavaSerializer.currentSystem.withValue(sysImpl) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
@@ -403,7 +403,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       Await.result(ffive, timeout.duration) should ===("five")
       Await.result(fnull, timeout.duration) should ===("null")
 
-      verifyActorTermination(ref)
+      watch(ref)
+      expectTerminated(ref)
     }
 
     "restart when Kill:ed" in {
