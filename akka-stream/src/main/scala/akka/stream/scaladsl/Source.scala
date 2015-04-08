@@ -125,7 +125,15 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * emitted by that source is emitted after the last element of this
    * source.
    */
-  def concat[Out2 >: Out, M](second: Source[Out2, M]): Source[Out2, (Mat, M)] = Source.concat(this, second)
+  def concat[Out2 >: Out, M](second: Source[Out2, M]): Source[Out2, (Mat, M)] = concatMat(second)(Keep.both)
+
+  /**
+   * Concatenates a second source so that the first element
+   * emitted by that source is emitted after the last element of this
+   * source.
+   */
+  def concatMat[Out2 >: Out, Mat2, Mat3](second: Source[Out2, Mat2])(
+    combine: (Mat, Mat2) ⇒ Mat3): Source[Out2, Mat3] = Source.concatMat(this, second)(combine)
 
   /**
    * Concatenates a second source so that the first element
@@ -304,7 +312,16 @@ object Source extends SourceApply {
    * source.
    */
   def concat[T, Mat1, Mat2](source1: Source[T, Mat1], source2: Source[T, Mat2]): Source[T, (Mat1, Mat2)] =
-    wrap(FlowGraph.partial(source1, source2)(Keep.both) { implicit b ⇒
+    concatMat(source1, source2)(Keep.both)
+
+  /**
+   * Concatenates two sources so that the first element
+   * emitted by the second source is emitted after the last element of the first
+   * source.
+   */
+  def concatMat[T, Mat1, Mat2, Mat3](source1: Source[T, Mat1], source2: Source[T, Mat2])(
+    combine: (Mat1, Mat2) ⇒ Mat3): Source[T, Mat3] =
+    wrap(FlowGraph.partial(source1, source2)(combine) { implicit b ⇒
       (s1, s2) ⇒
         import FlowGraph.Implicits._
         val c = b.add(Concat[T]())
