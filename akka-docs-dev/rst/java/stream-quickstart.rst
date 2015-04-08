@@ -50,9 +50,9 @@ familiar to anyone who has used the Scala Collections library, however they oper
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#authors-filter-map
 
 Finally in order to :ref:`materialize <stream-materialization-java>` and run the stream computation we need to attach
-the Flow to a :class:`Sink<T>` that will get the flow running. The simplest way to do this is to call
+the Flow to a ``Sink<T>`` that will get the flow running. The simplest way to do this is to call
 ``runWith(sink)`` on a ``Source<Out>``. For convenience a number of common Sinks are predefined and collected as static methods on
-the `Sink class <http://doc.akka.io/japi/akka-stream-and-http-experimental/1.0-M4/akka/stream/javadsl/Sink.html>`_.
+the `Sink class <http://doc.akka.io/japi/akka-stream-and-http-experimental/@version@/akka/stream/javadsl/Sink.html>`_.
 For now let's simply print each author:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#authors-foreachsink-println
