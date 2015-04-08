@@ -1,22 +1,23 @@
 /**
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-
-package akka
+package akka.testkit
 
 import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import java.net.{ SocketAddress, InetSocketAddress }
-import java.nio.channels.{ DatagramChannel, ServerSocketChannel }
-import akka.actor.{ ActorSystem, ActorRef }
-import akka.testkit.TestProbe
+import java.net.InetSocketAddress
+import java.net.SocketAddress
+import java.nio.channels.DatagramChannel
+import java.nio.channels.ServerSocketChannel
 
-import language.reflectiveCalls
+/**
+ * Utilities to get free socket address.
+ */
+object SocketUtil {
 
-object TestUtils {
+  import scala.language.reflectiveCalls
 
   // Structural type needed since DatagramSocket and ServerSocket has no common ancestor apart from Object
-  type GeneralSocket = {
+  private type GeneralSocket = {
     def bind(sa: SocketAddress): Unit
     def close(): Unit
     def getLocalPort(): Int
@@ -34,12 +35,6 @@ object TestUtils {
       serverSocket.bind(new InetSocketAddress(hostname, 0))
       (serverSocket, new InetSocketAddress(hostname, serverSocket.getLocalPort))
     } collect { case (socket, address) ⇒ socket.close(); address }
-  }
-
-  def verifyActorTermination(actor: ActorRef, max: Duration = Duration.Undefined)(implicit system: ActorSystem): Unit = {
-    val watcher = TestProbe()
-    watcher.watch(actor)
-    watcher.expectTerminated(actor, max)
   }
 
 }

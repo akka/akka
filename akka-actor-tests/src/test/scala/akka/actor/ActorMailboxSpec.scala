@@ -7,7 +7,6 @@ package akka.actor
 import com.typesafe.config.ConfigFactory
 import akka.testkit._
 import akka.dispatch._
-import akka.TestUtils.verifyActorTermination
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.ConfigurationException
 import com.typesafe.config.Config
