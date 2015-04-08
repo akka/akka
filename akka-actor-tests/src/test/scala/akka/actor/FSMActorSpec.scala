@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import akka.actor.FSM.StateTimeout
+
 import language.postfixOps
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.testkit._
@@ -338,6 +340,40 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       fsmref ! "go"
       expectMsg(CurrentState(fsmref, 0))
       expectMsg(Transition(fsmref, 0, 1))
+    }
+
+    "allow cancelling stateTimeout by issuing forMax(Duration.Inf)" in {
+      val sys = ActorSystem("fsmEvent")
+      val p = TestProbe()(sys)
+
+      val OverrideTimeoutToInf = "override-timeout-to-inf"
+
+      val fsm = sys.actorOf(Props(new Actor with FSM[String, String] {
+
+        startWith("init", "")
+
+        when("init", stateTimeout = 1.second) {
+          case Event(StateTimeout, _) ⇒
+            p.ref ! StateTimeout
+            stay()
+
+          case Event(OverrideTimeoutToInf, _) ⇒
+            p.ref ! OverrideTimeoutToInf
+            stay() forMax Duration.Inf
+        }
+
+        initialize()
+      }))
+
+      try {
+        p.expectMsg(FSM.StateTimeout)
+
+        fsm ! OverrideTimeoutToInf
+        p.expectMsg(OverrideTimeoutToInf)
+        p.expectNoMsg(3.seconds)
+      } finally {
+        TestKit.shutdownActorSystem(sys)
+      }
     }
 
   }
