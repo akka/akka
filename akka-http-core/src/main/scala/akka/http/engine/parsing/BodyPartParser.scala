@@ -62,7 +62,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
   def warnOnIllegalHeader(errorInfo: ErrorInfo): Unit =
     if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
 
-  override def onPush(input: ByteString, ctx: Context[Output]): Directive = {
+  override def onPush(input: ByteString, ctx: Context[Output]): SyncDirective = {
     try state(input)
     catch {
       case e: ParsingException ⇒ fail(e.info)
@@ -75,7 +75,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
     else ctx.finish()
   }
 
-  override def onPull(ctx: Context[Output]): Directive = {
+  override def onPull(ctx: Context[Output]): SyncDirective = {
     if (output.nonEmpty)
       ctx.push(dequeue())
     else if (ctx.isFinishing) {
@@ -279,4 +279,3 @@ private[http] object BodyPartParser {
     illegalHeaderWarnings = true,
     headerValueCacheLimit = 8)
 }
-

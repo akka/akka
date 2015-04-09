@@ -27,7 +27,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
 
   final class HttpRequestRenderer extends PushStage[RequestRenderingContext, Source[ByteString, Unit]] {
 
-    override def onPush(ctx: RequestRenderingContext, opCtx: Context[Source[ByteString, Unit]]): Directive = {
+    override def onPush(ctx: RequestRenderingContext, opCtx: Context[Source[ByteString, Unit]]): SyncDirective = {
       val r = new ByteStringRendering(requestHeaderSizeHint)
       import ctx.request._
 
