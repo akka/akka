@@ -130,9 +130,10 @@ Finally, sending the emails:
 
 ``mapAsync`` is applying the given function that is calling out to the external service to
 each of the elements as they pass through this processing step. The function returns a :class:`Future`
-and the value of that future will be emitted downstreams. As many futures as requested elements by
-downstream may run in parallel and may complete in any order, but the elements that
-are emitted downstream are in the same order as received from upstream.
+and the value of that future will be emitted downstreams. The number of Futures
+that shall run in parallel is given as the first argument to ``mapAsync``.
+These Futures may complete in any order, but the elements that are emitted
+downstream are in the same order as received from upstream.
 
 That means that back-pressure works as expected. For example if the ``emailServer.send``
 is the bottleneck it will limit the rate at which incoming tweets are retrieved and

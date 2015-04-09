@@ -113,7 +113,7 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
   final class StartTimedFlow[T](timedContext: TimedFlowContext) extends PushStage[T, T] {
     private var started = false
 
-    override def onPush(elem: T, ctx: Context[T]): Directive = {
+    override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
       if (!started) {
         timedContext.start()
         started = true
@@ -124,7 +124,7 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
 
   final class StopTimed[T](timedContext: TimedFlowContext, _onComplete: FiniteDuration ⇒ Unit) extends PushStage[T, T] {
 
-    override def onPush(elem: T, ctx: Context[T]): Directive = ctx.push(elem)
+    override def onPush(elem: T, ctx: Context[T]): SyncDirective = ctx.push(elem)
 
     override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
       stopTime()
@@ -145,7 +145,7 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
     private var prevNanos = 0L
     private var matched = 0L
 
-    override def onPush(elem: T, ctx: Context[T]): Directive = {
+    override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
       if (matching(elem)) {
         val d = updateInterval(elem)
 

@@ -178,8 +178,8 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.mapAsync(f.apply))
+  def mapAsync[T](parallelism: Int, f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.mapAsync(parallelism, f.apply))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -199,8 +199,8 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.mapAsyncUnordered(f.apply))
+  def mapAsyncUnordered[T](parallelism: Int, f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.mapAsyncUnordered(parallelism, f.apply))
 
   /**
    * Only pass on those elements that satisfy the given predicate.

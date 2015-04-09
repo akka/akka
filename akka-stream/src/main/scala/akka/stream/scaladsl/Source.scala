@@ -7,7 +7,6 @@ import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.{ SourceShape, Inlet, Outlet }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushPullStage }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 import akka.actor.Props
@@ -22,6 +21,7 @@ import akka.actor.Cancellable
 import akka.actor.ActorRef
 import scala.concurrent.Promise
 import org.reactivestreams.Subscriber
+import akka.stream.stage.SyncDirective
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -194,6 +194,7 @@ object Source extends SourceApply {
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
+  // TODO optimize if no wrapping needed
   def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = new Source(g.module)
 
   /**
@@ -214,7 +215,7 @@ object Source extends SourceApply {
         def initIterator(): Unit = if (iterator eq null) iterator = iterable.iterator
 
         // Upstream is guaranteed to be empty
-        override def onPush(elem: Nothing, ctx: Context[T]): Directive =
+        override def onPush(elem: Nothing, ctx: Context[T]): SyncDirective =
           throw new UnsupportedOperationException("The IterableSource stage cannot be pushed")
 
         override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
@@ -223,7 +224,7 @@ object Source extends SourceApply {
           else ctx.finish()
         }
 
-        override def onPull(ctx: Context[T]): Directive = {
+        override def onPull(ctx: Context[T]): SyncDirective = {
           if (!ctx.isFinishing) {
             initIterator()
             ctx.pull()

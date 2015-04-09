@@ -48,7 +48,7 @@ object RecipeParseLines {
       private var nextPossibleMatch = 0
 
       def initial = new State {
-        override def onPush(chunk: ByteString, ctx: Context[String]): Directive = {
+        override def onPush(chunk: ByteString, ctx: Context[String]): SyncDirective = {
           buffer ++= chunk
           if (buffer.size > maximumLineBytes)
             ctx.fail(new IllegalStateException(s"Read ${buffer.size} bytes " +

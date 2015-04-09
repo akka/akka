@@ -17,11 +17,12 @@ import akka.actor.Props
 import akka.actor.ActorLogging
 import akka.event.LoggingAdapter
 import akka.actor.DeadLetterSuppression
+import akka.stream.ActorFlowMaterializer
 
 /**
  * INTERNAL API
  */
-private[akka] class BatchingActorInputBoundary(val size: Int)
+private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
   extends BoundaryStage {
 
   require(size > 0, "buffer size cannot be zero")
@@ -60,6 +61,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
   }
 
   private def enqueue(elem: Any): Unit = {
+    if (OneBoundedInterpreter.Debug) println(f" enq $elem%-19s $name")
     if (!upstreamCompleted) {
       if (inputBufferElements == size) throw new IllegalStateException("Input buffer overrun")
       inputBuffer((nextInputElementCursor + inputBufferElements) & IndexMask) = elem.asInstanceOf[AnyRef]
@@ -106,7 +108,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
     if (!upstreamCompleted) {
       upstreamCompleted = true
       // onUpstreamFinish is not back-pressured, stages need to deal with this
-      if (inputBufferElements == 0) enter().finish()
+      if (inputBufferElements == 0) enterAndFinish()
     }
 
   private def onSubscribe(subscription: Subscription): Unit = {
@@ -122,7 +124,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
 
   private def onError(e: Throwable): Unit = {
     upstreamCompleted = true
-    enter().fail(e)
+    enterAndFail(e)
   }
 
   private def waitingForUpstream: Actor.Receive = {
@@ -136,7 +138,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
       enqueue(element)
       if (downstreamWaiting) {
         downstreamWaiting = false
-        enter().push(dequeue())
+        enterAndPush(dequeue())
       }
 
     case OnComplete                ⇒ onComplete()
@@ -194,7 +196,7 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
     if (upstreamWaiting) {
       burstRemaining = outputBurstLimit
       upstreamWaiting = false
-      enter().pull()
+      enterAndPull()
     }
 
   val subreceive = new SubReceive(waitingExposedPublisher)
@@ -264,12 +266,16 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
       subscribePending(exposedPublisher.takePendingSubscribers())
     case RequestMore(subscription, elements) ⇒
       if (elements < 1) {
-        enter().finish()
+        enterAndFinish()
         fail(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
       } else {
         downstreamDemand += elements
         if (downstreamDemand < 0)
           downstreamDemand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
+        if (OneBoundedInterpreter.Debug) {
+          val s = s"$downstreamDemand (+$elements)"
+          println(f" dem $s%-19s ${actor.path}")
+        }
         tryPutBallIn()
       }
 
@@ -280,7 +286,7 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
       downstreamCompleted = true
       subscriber = null
       exposedPublisher.shutdown(Some(new ActorPublisher.NormalShutdownException))
-      enter().finish()
+      enterAndFinish()
   }
 
 }
@@ -289,22 +295,34 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
  * INTERNAL API
  */
 private[akka] object ActorInterpreter {
-  def props(settings: ActorFlowMaterializerSettings, ops: Seq[Stage[_, _]]): Props =
-    Props(new ActorInterpreter(settings, ops))
+  def props(settings: ActorFlowMaterializerSettings, ops: Seq[Stage[_, _]], materializer: ActorFlowMaterializer): Props =
+    Props(new ActorInterpreter(settings, ops, materializer))
+
+  case class AsyncInput(op: AsyncStage[Any, Any, Any], ctx: AsyncContext[Any, Any], event: Any)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings, val ops: Seq[Stage[_, _]])
+private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings, val ops: Seq[Stage[_, _]], val materializer: ActorFlowMaterializer)
   extends Actor with ActorLogging {
+  import ActorInterpreter._
 
-  private val upstream = new BatchingActorInputBoundary(settings.initialInputBufferSize)
+  private val upstream = new BatchingActorInputBoundary(settings.initialInputBufferSize, context.self.path.toString)
   private val downstream = new ActorOutputBoundary(self, settings.debugLogging, log, settings.outputBurstLimit)
-  private val interpreter = new OneBoundedInterpreter(upstream +: ops :+ downstream)
+  private val interpreter =
+    new OneBoundedInterpreter(upstream +: ops :+ downstream,
+      (op, ctx, event) ⇒ self ! AsyncInput(op, ctx, event),
+      materializer,
+      name = context.self.path.toString)
   interpreter.init()
 
-  def receive: Receive = upstream.subreceive.orElse[Any, Unit](downstream.subreceive)
+  def receive: Receive = upstream.subreceive.orElse[Any, Unit](downstream.subreceive).orElse[Any, Unit] {
+    case AsyncInput(op, ctx, event) ⇒
+      ctx.enter()
+      op.onAsyncInput(event, ctx)
+      ctx.execute()
+  }
 
   override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     super.aroundReceive(receive, msg)

@@ -56,7 +56,7 @@ package object util {
 
   def printEvent[T](marker: String): Flow[T, T, Unit] =
     Flow[T].transform(() ⇒ new PushStage[T, T] {
-      override def onPush(element: T, ctx: Context[T]): Directive = {
+      override def onPush(element: T, ctx: Context[T]): SyncDirective = {
         println(s"$marker: $element")
         ctx.push(element)
       }
@@ -87,7 +87,7 @@ package object util {
 
   private[http] def errorLogger(log: LoggingAdapter, msg: String): PushStage[ByteString, ByteString] =
     new PushStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): Directive = ctx.push(element)
+      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective = ctx.push(element)
       override def onUpstreamFailure(cause: Throwable, ctx: Context[ByteString]): TerminationDirective = {
         log.error(cause, msg)
         super.onUpstreamFailure(cause, ctx)
@@ -107,4 +107,3 @@ package object util {
     } else bytes.toString + "  B"
   }
 }
-

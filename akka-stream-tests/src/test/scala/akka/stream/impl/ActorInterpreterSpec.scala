@@ -24,7 +24,7 @@ class ActorInterpreterSpec extends AkkaSpec {
   class Setup(ops: List[Stage[_, _]] = List(fusing.Map({ x: Any ⇒ x }, stoppingDecider))) {
     val up = PublisherProbe[Int]
     val down = SubscriberProbe[Int]
-    private val props = ActorInterpreter.props(mat.settings, ops).withDispatcher("akka.test.stream-dispatcher")
+    private val props = ActorInterpreter.props(mat.settings, ops, mat).withDispatcher("akka.test.stream-dispatcher")
     val actor = system.actorOf(props)
     val processor = ActorProcessorFactory[Int, Int](actor)
   }
