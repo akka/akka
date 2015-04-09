@@ -1,7 +1,8 @@
 package docs.stream.cookbook
 
 import akka.event.Logging
-import akka.stream.scaladsl.{ Sink, Source, Flow }
+import akka.stream.OperationAttributes
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit.{ EventFilter, TestProbe }
 
 class RecipeLoggingElements extends RecipeSpec {
@@ -22,35 +23,23 @@ class RecipeLoggingElements extends RecipeSpec {
       printProbe.expectMsgAllOf("1", "2", "3")
     }
 
-    "work with PushStage" in {
+    "use log()" in {
       val mySource = Source(List("1", "2", "3"))
+      def analyse(s: String) = s
 
-      //#loggingadapter
-      import akka.stream.stage._
-      class LoggingStage[T] extends PushStage[T, T] {
-        private val log = Logging(system, "loggingName")
+      //#log-custom
+      // customise log levels
+      mySource.log("before-map")
+        .withAttributes(OperationAttributes.logLevels(onElement = Logging.WarningLevel))
+        .map(analyse)
 
-        override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
-          log.debug("Element flowing through: {}", elem)
-          ctx.push(elem)
-        }
+      // or provide custom logging adapter
+      implicit val adapter = Logging(system, "customLogger")
+      mySource.log("custom")
+      //#log-custom
 
-        override def onUpstreamFailure(cause: Throwable,
-                                       ctx: Context[T]): TerminationDirective = {
-          log.error(cause, "Upstream failed.")
-          super.onUpstreamFailure(cause, ctx)
-        }
-
-        override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
-          log.debug("Upstream finished")
-          super.onUpstreamFinish(ctx)
-        }
-      }
-
-      val loggedSource = mySource.transform(() => new LoggingStage)
-      //#loggingadapter
-
-      EventFilter.debug(start = "Element flowing").intercept {
+      val loggedSource = mySource.log("custom")
+      EventFilter.debug(start = "[custom] Element: ").intercept {
         loggedSource.runWith(Sink.ignore)
       }
 
