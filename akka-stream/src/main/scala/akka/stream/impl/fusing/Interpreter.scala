@@ -3,13 +3,14 @@
  */
 package akka.stream.impl.fusing
 
-import scala.annotation.{ tailrec, switch }
+import akka.stream.{ FlowMaterializer, Supervision }
+import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.OperationAttributes
+import akka.stream.stage._
+
+import scala.annotation.{ switch, tailrec }
 import scala.collection.breakOut
 import scala.util.control.NonFatal
-import akka.stream.stage._
-import akka.stream.Supervision
-import akka.stream.impl.ReactiveStreamsCompliance
-import akka.stream.FlowMaterializer
 
 // TODO:
 // fix jumpback table with keep-going-on-complete ops (we might jump between otherwise isolated execution regions)
@@ -124,11 +125,12 @@ private[akka] object OneBoundedInterpreter {
 private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
                                           onAsyncInput: (AsyncStage[Any, Any, Any], AsyncContext[Any, Any], Any) ⇒ Unit,
                                           materializer: FlowMaterializer,
+                                          attributes: OperationAttributes = OperationAttributes.none,
                                           val forkLimit: Int = 100,
                                           val overflowToHeap: Boolean = true,
                                           val name: String = "") {
-  import OneBoundedInterpreter._
   import AbstractStage._
+  import OneBoundedInterpreter._
 
   type UntypedOp = AbstractStage[Any, Any, Directive, Directive, Context[Any]]
   require(ops.nonEmpty, "OneBoundedInterpreter cannot be created without at least one Op")
@@ -301,7 +303,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
         mustHave(DownstreamBall)
       }
       removeBits(DownstreamBall | PrecedingWasPull)
-      pipeline(activeOpIndex) = Finished.asInstanceOf[UntypedOp]
+      finishCurrentOp()
       // This MUST be an unsafeFork because the execution of PushFinish MUST strictly come before the finish execution
       // path. Other forks are not order dependent because they execute on isolated execution domains which cannot
       // "cross paths". This unsafeFork is relatively safe here because PushAndFinish simply absorbs all later downstream
@@ -380,6 +382,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     }
 
     override def materializer: FlowMaterializer = OneBoundedInterpreter.this.materializer
+    override def attributes: OperationAttributes = OneBoundedInterpreter.this.attributes
   }
 
   private final val Pushing: State = new State {
@@ -430,7 +433,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
   private final val Completing: State = new State {
     override def advance(): Unit = {
       elementInFlight = null
-      pipeline(activeOpIndex) = Finished.asInstanceOf[UntypedOp]
+      finishCurrentOp()
       activeOpIndex += 1
     }
 
@@ -463,7 +466,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
   private final val Cancelling: State = new State {
     override def advance(): Unit = {
       elementInFlight = null
-      pipeline(activeOpIndex) = Finished.asInstanceOf[UntypedOp]
+      finishCurrentOp()
       activeOpIndex -= 1
     }
 
@@ -485,7 +488,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
   private final case class Failing(cause: Throwable) extends State {
     override def advance(): Unit = {
       elementInFlight = null
-      pipeline(activeOpIndex) = Finished.asInstanceOf[UntypedOp]
+      finishCurrentOp()
       activeOpIndex += 1
     }
 
@@ -630,14 +633,20 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
       (pipeline(op): Any) match {
         case b: BoundaryStage ⇒
           b.context = new EntryState("boundary", op)
+
         case a: AsyncStage[Any, Any, Any] @unchecked ⇒
           a.context = new EntryState("async", op)
           activeOpIndex = op
-          a.initAsyncInput(a.context)
+          a.initAsyncInput(a.context) // TODO remove asyncInput? it's like preStart
+
         case _ ⇒
       }
       op += 1
     }
+  }
+
+  private def finishCurrentOp(): Unit = {
+    pipeline(activeOpIndex) = Finished.asInstanceOf[UntypedOp]
   }
 
   /**

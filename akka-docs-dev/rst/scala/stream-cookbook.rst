@@ -39,7 +39,7 @@ handlers, emitting log information through an Akka :class:`LoggingAdapter`. This
 the elements flowing in the stream, it just emits them unmodified by calling ``ctx.push(elem)`` in its ``onPush``
 event handler logic.
 
-.. includecode:: code/docs/stream/cookbook/RecipeLoggingElements.scala#loggingadapter
+.. includecode:: code/docs/stream/cookbook/RecipeLoggingElements.scala#log-custom
 
 Flattening a stream of sequences
 --------------------------------
