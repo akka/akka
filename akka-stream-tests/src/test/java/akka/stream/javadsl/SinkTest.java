@@ -14,7 +14,6 @@ import org.reactivestreams.Publisher;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-
 import akka.stream.StreamTest;
 import akka.stream.javadsl.japi.Function2;
 import akka.stream.testkit.AkkaSpec;

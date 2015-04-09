@@ -66,7 +66,8 @@ Alternatively they can be set by passing a :class:`ActorFlowMaterializerSettings
 
 .. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#materializer-buffer
 
-If buffer size needs to be set for segments of a Flow only, it is possible by defining a ``section()``:
+If buffer size needs to be set for segments of a :class:`Flow` only, it is possible by defining a separate
+:class:`Flow` with these attributes:
 
 .. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#section-buffer
 

@@ -26,11 +26,10 @@ private[akka] trait TimedOps {
   def timed[I, O, Mat, Mat2](source: Source[I, Mat], measuredOps: Source[I, Mat] ⇒ Source[O, Mat2], onComplete: FiniteDuration ⇒ Unit): Source[O, Mat2] = {
     val ctx = new TimedFlowContext
 
-    val startTimed = (f: Flow[I, I, Any]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
-    val stopTimed = (f: Flow[O, O, Any]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
+    val startTimed = Flow[I].transform(() ⇒ new StartTimed(ctx)).named("startTimed")
+    val stopTimed = Flow[O].transform(() ⇒ new StopTimed(ctx, onComplete)).named("stopTimed")
 
-    val begin = source.section(name("startTimed"))(startTimed)
-    measuredOps(begin).section(name("stopTimed"))(stopTimed)
+    measuredOps(source.via(startTimed)).via(stopTimed)
   }
 
   /**
@@ -43,11 +42,10 @@ private[akka] trait TimedOps {
     // they do share a super-type (FlowOps), but all operations of FlowOps return path dependant type
     val ctx = new TimedFlowContext
 
-    val startTimed = (f: Flow[O, O, Any]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
-    val stopTimed = (f: Flow[Out, Out, Any]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
+    val startTimed = Flow[O].transform(() ⇒ new StartTimed(ctx)).named("startTimed")
+    val stopTimed = Flow[Out].transform(() ⇒ new StopTimed(ctx, onComplete)).named("stopTimed")
 
-    val begin: Flow[I, O, Mat] = flow.section(name("startTimed"))(startTimed)
-    measuredOps(begin).section(name("stopTimed"))(stopTimed)
+    measuredOps(flow.via(startTimed)).via(stopTimed)
   }
 
 }
@@ -65,20 +63,16 @@ private[akka] trait TimedIntervalBetweenOps {
    * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
    */
   def timedIntervalBetween[O, Mat](source: Source[O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[O, Mat] = {
-    source.section(name("timedInterval")) {
-      _.transform(() ⇒ new TimedIntervalTransformer[O](matching, onInterval))
-    }
+    val timedInterval = Flow[O].transform(() ⇒ new TimedInterval[O](matching, onInterval)).named("timedInterval")
+    source.via(timedInterval)
   }
 
   /**
    * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
    */
   def timedIntervalBetween[I, O, Mat](flow: Flow[I, O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O, Mat] = {
-    // todo is there any other way to provide this for Flow / Duct, without duplicating impl?
-    // they do share a super-type (FlowOps), but all operations of FlowOps return path dependant type
-    flow.section(name("timedInterval")) {
-      _.transform(() ⇒ new TimedIntervalTransformer[O](matching, onInterval))
-    }
+    val timedInterval = Flow[O].transform(() ⇒ new TimedInterval[O](matching, onInterval)).named("timedInterval")
+    flow.via(timedInterval)
   }
 }
 
@@ -108,7 +102,7 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
     }
   }
 
-  final class StartTimedFlow[T](timedContext: TimedFlowContext) extends PushStage[T, T] {
+  final class StartTimed[T](timedContext: TimedFlowContext) extends PushStage[T, T] {
     private var started = false
 
     override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
@@ -139,7 +133,7 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
 
   }
 
-  final class TimedIntervalTransformer[T](matching: T ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit) extends PushStage[T, T] {
+  final class TimedInterval[T](matching: T ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit) extends PushStage[T, T] {
     private var prevNanos = 0L
     private var matched = 0L
 
