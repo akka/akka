@@ -37,7 +37,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
     new PushPullStage[ByteString, Output] {
       def onPush(elem: ByteString, ctx: Context[Output]) = handleParserOutput(self.onPush(elem), ctx)
       def onPull(ctx: Context[Output]) = handleParserOutput(self.onPull(), ctx)
-      private def handleParserOutput(output: Output, ctx: Context[Output]): Directive =
+      private def handleParserOutput(output: Output, ctx: Context[Output]): SyncDirective =
         output match {
           case StreamEnd    ⇒ ctx.finish()
           case NeedMoreData ⇒ ctx.pull()

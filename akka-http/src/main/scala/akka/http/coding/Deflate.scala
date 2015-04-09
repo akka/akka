@@ -89,7 +89,7 @@ class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefaul
   def afterInflate: State = StartInflate
 
   protected def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit = {}
-  protected def onTruncation(ctx: Context[ByteString]): Directive = ctx.finish()
+  protected def onTruncation(ctx: Context[ByteString]): SyncDirective = ctx.finish()
 }
 
 abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends ByteStringParserStage[ByteString] {
@@ -101,7 +101,7 @@ abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesP
 
   /** Start inflating */
   case object StartInflate extends State {
-    def onPush(data: ByteString, ctx: Context[ByteString]): Directive = {
+    def onPush(data: ByteString, ctx: Context[ByteString]): SyncDirective = {
       require(inflater.needsInput())
       inflater.setInput(data.toArray)
 
@@ -111,7 +111,7 @@ abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesP
 
   /** Inflate */
   case class Inflate()(data: ByteString) extends IntermediateState {
-    override def onPull(ctx: Context[ByteString]): Directive = {
+    override def onPull(ctx: Context[ByteString]): SyncDirective = {
       val buffer = new Array[Byte](maxBytesPerChunk)
       val read = inflater.inflate(buffer)
       if (read > 0) {
@@ -126,7 +126,7 @@ abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesP
         becomeWithRemaining(next, remaining, ctx)
       }
     }
-    def onPush(elem: ByteString, ctx: Context[ByteString]): Directive =
+    def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
       throw new IllegalStateException("Don't expect a new Element")
   }
 

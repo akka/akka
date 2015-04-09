@@ -4,7 +4,7 @@
 
 package akka.http.coding
 
-import akka.stream.stage.{ Directive, Context, PushStage, Stage }
+import akka.stream.stage.{ SyncDirective, Context, PushStage, Stage }
 import akka.util.ByteString
 import org.scalatest.WordSpec
 import akka.http.model._
@@ -36,7 +36,7 @@ class DecoderSpec extends WordSpec with CodecSpecSupport {
 
     def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ Stage[ByteString, ByteString] =
       () ⇒ new PushStage[ByteString, ByteString] {
-        def onPush(elem: ByteString, ctx: Context[ByteString]): Directive =
+        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
           ctx.push(elem ++ ByteString("compressed"))
       }
   }

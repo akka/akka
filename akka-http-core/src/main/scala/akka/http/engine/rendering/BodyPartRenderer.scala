@@ -28,7 +28,7 @@ private[http] object BodyPartRenderer {
     new PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart, Unit]] {
       var firstBoundaryRendered = false
 
-      override def onPush(bodyPart: Multipart.BodyPart, ctx: Context[Source[ChunkStreamPart, Unit]]): Directive = {
+      override def onPush(bodyPart: Multipart.BodyPart, ctx: Context[Source[ChunkStreamPart, Unit]]): SyncDirective = {
         val r = new CustomCharsetByteStringRendering(nioCharset, partHeadersSizeHint)
 
         def bodyPartChunks(data: Source[ByteString, Unit]): Source[ChunkStreamPart, Unit] = {
@@ -51,7 +51,7 @@ private[http] object BodyPartRenderer {
         ctx.push(completePartRendering())
       }
 
-      override def onPull(ctx: Context[Source[ChunkStreamPart, Unit]]): Directive = {
+      override def onPull(ctx: Context[Source[ChunkStreamPart, Unit]]): SyncDirective = {
         val finishing = ctx.isFinishing
         if (finishing && firstBoundaryRendered) {
           val r = new ByteStringRendering(boundary.length + 4)

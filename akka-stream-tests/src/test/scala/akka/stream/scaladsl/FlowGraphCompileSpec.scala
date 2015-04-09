@@ -22,7 +22,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
 
   def op[In, Out]: () ⇒ PushStage[In, Out] = { () ⇒
     new PushStage[In, Out] {
-      override def onPush(elem: In, ctx: Context[Out]): Directive =
+      override def onPush(elem: In, ctx: Context[Out]): SyncDirective =
         ctx.push(elem.asInstanceOf[Out])
     }
   }

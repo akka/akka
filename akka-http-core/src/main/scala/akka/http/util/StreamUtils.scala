@@ -27,10 +27,10 @@ private[http] object StreamUtils {
    */
   def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): Stage[ByteString, ByteString] = {
     new PushPullStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): Directive =
+      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
         ctx.push(f(element))
 
-      override def onPull(ctx: Context[ByteString]): Directive =
+      override def onPull(ctx: Context[ByteString]): SyncDirective =
         if (ctx.isFinishing) ctx.pushAndFinish(finish())
         else ctx.pull()
 
@@ -43,7 +43,7 @@ private[http] object StreamUtils {
 
   def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString, Unit] = {
     val transformer = new PushStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): Directive =
+      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
         ctx.push(element)
 
       override def onUpstreamFailure(cause: Throwable, ctx: Context[ByteString]): TerminationDirective =
@@ -59,7 +59,7 @@ private[http] object StreamUtils {
       def skipping = new State {
         var toSkip = start
 
-        override def onPush(element: ByteString, ctx: Context[ByteString]): Directive =
+        override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
           if (element.length < toSkip) {
             // keep skipping
             toSkip -= element.length
@@ -74,7 +74,7 @@ private[http] object StreamUtils {
       def taking(initiallyRemaining: Long) = new State {
         var remaining: Long = initiallyRemaining
 
-        override def onPush(element: ByteString, ctx: Context[ByteString]): Directive = {
+        override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective = {
           val data = element.take(math.min(remaining, Int.MaxValue).toInt)
           remaining -= data.size
           if (remaining <= 0) ctx.pushAndFinish(data)
@@ -92,7 +92,7 @@ private[http] object StreamUtils {
       def initial = WaitingForData
 
       case object WaitingForData extends State {
-        def onPush(elem: ByteString, ctx: Context[ByteString]): Directive =
+        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
           if (elem.size <= maxBytesPerChunk) ctx.push(elem)
           else {
             become(DeliveringData(elem.drop(maxBytesPerChunk)))
@@ -101,10 +101,10 @@ private[http] object StreamUtils {
       }
 
       case class DeliveringData(remaining: ByteString) extends State {
-        def onPush(elem: ByteString, ctx: Context[ByteString]): Directive =
+        def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective =
           throw new IllegalStateException("Not expecting data")
 
-        override def onPull(ctx: Context[ByteString]): Directive = {
+        override def onPull(ctx: Context[ByteString]): SyncDirective = {
           val toPush = remaining.take(maxBytesPerChunk)
           val toKeep = remaining.drop(maxBytesPerChunk)
 

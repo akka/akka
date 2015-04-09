@@ -9,7 +9,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.{ OnNext, SubscriberProbe }
 import akka.util.ByteString
 import akka.stream.{ Inlet, Outlet, Shape, Graph }
-import org.scalautils.ConversionCheckedTripleEquals
+import org.scalactic.ConversionCheckedTripleEquals
 
 object GraphOpsIntegrationSpec {
   import FlowGraph.Implicits._
@@ -23,10 +23,12 @@ object GraphOpsIntegrationSpec {
       override def deepCopy() = ShufflePorts(
         new Inlet[In](in1.toString), new Inlet[In](in2.toString),
         new Outlet[Out](out1.toString), new Outlet[Out](out2.toString))
-      override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]) = {
+      override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): ShufflePorts[In, Out] = {
         assert(inlets.size == this.inlets.size)
         assert(outlets.size == this.outlets.size)
-        ShufflePorts(inlets(0), inlets(1), outlets(0), outlets(1))
+        val i = inlets.asInstanceOf[Seq[Inlet[In]]]
+        val o = outlets.asInstanceOf[Seq[Outlet[Out]]]
+        ShufflePorts(i(0), i(1), o(0), o(1))
       }
     }
 

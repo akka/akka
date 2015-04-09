@@ -66,11 +66,11 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
 
   /** No bytes were received yet */
   case object Initial extends State {
-    def onPush(data: ByteString, ctx: Context[ByteString]): Directive =
+    def onPush(data: ByteString, ctx: Context[ByteString]): SyncDirective =
       if (data.isEmpty) ctx.pull()
       else becomeWithRemaining(ReadHeaders, data, ctx)
 
-    override def onPull(ctx: Context[ByteString]): Directive =
+    override def onPull(ctx: Context[ByteString]): SyncDirective =
       if (ctx.isFinishing) {
         ctx.finish()
       } else super.onPull(ctx)
@@ -81,7 +81,7 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
 
   /** Reading the header bytes */
   case object ReadHeaders extends ByteReadingState {
-    def read(reader: ByteReader, ctx: Context[ByteString]): Directive = {
+    def read(reader: ByteReader, ctx: Context[ByteString]): SyncDirective = {
       import reader._
 
       if (readByte() != 0x1F || readByte() != 0x8B) fail("Not in GZIP format") // check magic header
@@ -104,7 +104,7 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
 
   /** Reading the trailer */
   case object ReadTrailer extends ByteReadingState {
-    def read(reader: ByteReader, ctx: Context[ByteString]): Directive = {
+    def read(reader: ByteReader, ctx: Context[ByteString]): SyncDirective = {
       import reader._
 
       if (readInt() != crc32.getValue.toInt) fail("Corrupt data (CRC32 checksum error)")
@@ -122,7 +122,7 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
     crc.getValue.toInt & 0xFFFF
   }
 
-  override protected def onTruncation(ctx: Context[ByteString]): Directive = ctx.fail(new ZipException("Truncated GZIP stream"))
+  override protected def onTruncation(ctx: Context[ByteString]): SyncDirective = ctx.fail(new ZipException("Truncated GZIP stream"))
 
   private def fail(msg: String) = throw new ZipException(msg)
 }

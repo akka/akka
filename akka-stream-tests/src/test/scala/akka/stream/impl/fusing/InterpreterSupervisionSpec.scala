@@ -10,6 +10,7 @@ import akka.stream.stage.Directive
 import akka.stream.stage.PushPullStage
 import akka.stream.stage.Stage
 import akka.stream.stage.TerminationDirective
+import akka.stream.stage.SyncDirective
 
 object InterpreterSupervisionSpec {
   val TE = new Exception("TEST") with NoStackTrace {
@@ -18,12 +19,12 @@ object InterpreterSupervisionSpec {
 
   class RestartTestStage extends PushPullStage[Int, Int] {
     var sum = 0
-    def onPush(elem: Int, ctx: Context[Int]): Directive = {
+    def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
       sum += elem
       ctx.push(sum)
     }
 
-    override def onPull(ctx: Context[Int]): Directive = {
+    override def onPull(ctx: Context[Int]): SyncDirective = {
       ctx.pull()
     }
 
@@ -37,12 +38,12 @@ object InterpreterSupervisionSpec {
 
   case class OneToManyTestStage(decider: Supervision.Decider, absorbTermination: Boolean = false) extends PushPullStage[Int, Int] {
     var buf: List[Int] = Nil
-    def onPush(elem: Int, ctx: Context[Int]): Directive = {
+    def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
       buf = List(elem + 1, elem + 2, elem + 3)
       ctx.push(elem)
     }
 
-    override def onPull(ctx: Context[Int]): Directive = {
+    override def onPull(ctx: Context[Int]): SyncDirective = {
       if (buf.isEmpty && ctx.isFinishing)
         ctx.finish()
       else if (buf.isEmpty)
@@ -198,7 +199,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
 
     "restart when onPush throws" in {
       val stage = new RestartTestStage {
-        override def onPush(elem: Int, ctx: Context[Int]): Directive = {
+        override def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
           if (elem <= 0) throw TE
           else super.onPush(elem, ctx)
         }
@@ -226,7 +227,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
 
     "restart when onPush throws after ctx.push" in {
       val stage = new RestartTestStage {
-        override def onPush(elem: Int, ctx: Context[Int]): Directive = {
+        override def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
           val ret = ctx.push(sum)
           super.onPush(elem, ctx)
           if (elem <= 0) throw TE
@@ -256,7 +257,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
 
     "fail when onPull throws" in {
       val stage = new RestartTestStage {
-        override def onPull(ctx: Context[Int]): Directive = {
+        override def onPull(ctx: Context[Int]): SyncDirective = {
           if (sum < 0) throw TE
           super.onPull(ctx)
         }

@@ -32,3 +32,15 @@ abstract class FlowMaterializer {
   def executionContext: ExecutionContextExecutor
 
 }
+
+/**
+ * INTERNAL API
+ */
+private[akka] object NoFlowMaterializer extends FlowMaterializer {
+  override def withNamePrefix(name: String): FlowMaterializer =
+    throw new UnsupportedOperationException("NoFlowMaterializer cannot be named")
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
+    throw new UnsupportedOperationException("NoFlowMaterializer cannot materialize")
+  override def executionContext: ExecutionContextExecutor =
+    throw new UnsupportedOperationException("NoFlowMaterializer does not provide an ExecutionContext")
+}

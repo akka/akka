@@ -96,7 +96,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                          options: immutable.Traversable[Inet.SocketOption] = Nil,
                          settings: Option[ServerSettings] = None,
                          log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
-    bindAndHandle(Flow[HttpRequest].mapAsync(handler), interface, port, backlog, options, settings, log)
+    bindAndHandle(Flow[HttpRequest].mapAsync(1, handler), interface, port, backlog, options, settings, log)
 
   /**
    * Transforms a given HTTP-level server [[Flow]] into a lower-level TCP transport flow.
@@ -215,7 +215,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * Returns the materialization result of the underlying flow materialization.
      */
     def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: FlowMaterializer): Unit =
-      handleWith(Flow[HttpRequest].mapAsync(handler))
+      handleWith(Flow[HttpRequest].mapAsync(1, handler))
   }
 
   /**

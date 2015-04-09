@@ -66,7 +66,7 @@ private[akka] class TimerTransformerProcessorsImpl(
     override def inputsAvailable: Boolean = !queue.isEmpty
   }
 
-  override def activeReceive = super.activeReceive orElse schedulerInputs.subreceive
+  override def activeReceive = super.activeReceive.orElse[Any, Unit](schedulerInputs.subreceive)
 
   object RunningCondition extends TransferState {
     def isReady = {

@@ -6,6 +6,7 @@ package akka.http.util
 
 import akka.stream.stage.{ Directive, Context, StatefulStage }
 import akka.util.ByteString
+import akka.stream.stage.SyncDirective
 
 /**
  * A helper class for writing parsers from ByteStrings.
@@ -15,15 +16,15 @@ import akka.util.ByteString
  * INTERNAL API
  */
 private[akka] abstract class ByteStringParserStage[Out] extends StatefulStage[ByteString, Out] {
-  protected def onTruncation(ctx: Context[Out]): Directive
+  protected def onTruncation(ctx: Context[Out]): SyncDirective
 
   /**
    * Derive a stage from [[IntermediateState]] and then call `pull(ctx)` instead of
    * `ctx.pull()` to have truncation errors reported.
    */
   abstract class IntermediateState extends State {
-    override def onPull(ctx: Context[Out]): Directive = pull(ctx)
-    def pull(ctx: Context[Out]): Directive =
+    override def onPull(ctx: Context[Out]): SyncDirective = pull(ctx)
+    def pull(ctx: Context[Out]): SyncDirective =
       if (ctx.isFinishing) onTruncation(ctx)
       else ctx.pull()
   }
@@ -37,9 +38,9 @@ private[akka] abstract class ByteStringParserStage[Out] extends StatefulStage[By
    * manipulate any state during reading from the ByteReader.
    */
   trait ByteReadingState extends IntermediateState {
-    def read(reader: ByteReader, ctx: Context[Out]): Directive
+    def read(reader: ByteReader, ctx: Context[Out]): SyncDirective
 
-    def onPush(data: ByteString, ctx: Context[Out]): Directive =
+    def onPush(data: ByteString, ctx: Context[Out]): SyncDirective =
       try {
         val reader = new ByteReader(data)
         read(reader, ctx)
@@ -50,7 +51,7 @@ private[akka] abstract class ByteStringParserStage[Out] extends StatefulStage[By
       }
   }
   case class TryAgain(previousData: ByteString, byteReadingState: ByteReadingState) extends IntermediateState {
-    def onPush(data: ByteString, ctx: Context[Out]): Directive = {
+    def onPush(data: ByteString, ctx: Context[Out]): SyncDirective = {
       become(byteReadingState)
       byteReadingState.onPush(previousData ++ data, ctx)
     }

@@ -5,6 +5,8 @@ package akka.stream.impl.fusing
 
 import akka.stream.testkit.AkkaSpec
 import akka.stream.stage._
+import akka.testkit.TestProbe
+import akka.stream.ActorFlowMaterializer
 
 trait InterpreterSpecKit extends AkkaSpec {
 
@@ -19,13 +21,13 @@ trait InterpreterSpecKit extends AkkaSpec {
     var oneMore: Boolean = false
     var lastElem: T = _
 
-    override def onPush(elem: T, ctx: Context[T]): Directive = {
+    override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
       lastElem = elem
       oneMore = true
       ctx.push(elem)
     }
 
-    override def onPull(ctx: Context[T]): Directive = {
+    override def onPull(ctx: Context[T]): SyncDirective = {
       if (oneMore) {
         oneMore = false
         ctx.push(lastElem)
@@ -36,12 +38,12 @@ trait InterpreterSpecKit extends AkkaSpec {
   private[akka] case class KeepGoing[T]() extends PushPullStage[T, T] {
     var lastElem: T = _
 
-    override def onPush(elem: T, ctx: Context[T]): Directive = {
+    override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
       lastElem = elem
       ctx.push(elem)
     }
 
-    override def onPull(ctx: Context[T]): Directive = {
+    override def onPull(ctx: Context[T]): SyncDirective = {
       if (ctx.isFinishing) {
         ctx.push(lastElem)
       } else ctx.pull()
@@ -55,7 +57,11 @@ trait InterpreterSpecKit extends AkkaSpec {
 
     val upstream = new UpstreamProbe
     val downstream = new DownstreamProbe
-    val interpreter = new OneBoundedInterpreter(upstream +: ops :+ downstream, forkLimit, overflowToHeap)
+    val sidechannel = TestProbe()
+    val interpreter = new OneBoundedInterpreter(upstream +: ops :+ downstream,
+      (op, ctx, event) ⇒ sidechannel.ref ! ActorInterpreter.AsyncInput(op, ctx, event),
+      ActorFlowMaterializer(),
+      forkLimit, overflowToHeap)
     interpreter.init()
 
     def lastEvents(): Set[Any] = {
@@ -64,7 +70,7 @@ trait InterpreterSpecKit extends AkkaSpec {
       result
     }
 
-    class UpstreamProbe extends BoundaryStage {
+    private[akka] class UpstreamProbe extends BoundaryStage {
 
       override def onDownstreamFinish(ctx: BoundaryContext): TerminationDirective = {
         lastEvent += Cancel
@@ -82,13 +88,13 @@ trait InterpreterSpecKit extends AkkaSpec {
       override def onPush(elem: Any, ctx: BoundaryContext): Directive =
         throw new UnsupportedOperationException("Cannot push the boundary")
 
-      def onNext(elem: Any): Unit = enter().push(elem)
-      def onComplete(): Unit = enter().finish()
-      def onError(cause: Throwable): Unit = enter().fail(cause)
+      def onNext(elem: Any): Unit = enterAndPush(elem)
+      def onComplete(): Unit = enterAndFinish()
+      def onError(cause: Throwable): Unit = enterAndFail(cause)
 
     }
 
-    class DownstreamProbe extends BoundaryStage {
+    private[akka] class DownstreamProbe extends BoundaryStage {
       override def onPush(elem: Any, ctx: BoundaryContext): Directive = {
         lastEvent += OnNext(elem)
         ctx.exit()
@@ -107,9 +113,9 @@ trait InterpreterSpecKit extends AkkaSpec {
       override def onPull(ctx: BoundaryContext): Directive =
         throw new UnsupportedOperationException("Cannot pull the boundary")
 
-      def requestOne(): Unit = enter().pull()
+      def requestOne(): Unit = enterAndPull()
 
-      def cancel(): Unit = enter().finish()
+      def cancel(): Unit = enterAndFinish()
     }
 
   }

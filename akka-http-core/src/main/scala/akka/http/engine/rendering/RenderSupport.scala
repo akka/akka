@@ -55,7 +55,7 @@ private object RenderSupport {
     var lastChunkSeen = false
 
     override def initial = new State {
-      override def onPush(chunk: HttpEntity.ChunkStreamPart, ctx: Context[ByteString]): Directive = {
+      override def onPush(chunk: HttpEntity.ChunkStreamPart, ctx: Context[ByteString]): SyncDirective = {
         if (chunk.isLastChunk)
           lastChunkSeen = true
         ctx.push(renderChunk(chunk))
@@ -70,7 +70,7 @@ private object RenderSupport {
   class CheckContentLengthTransformer(length: Long) extends PushStage[ByteString, ByteString] {
     var sent = 0L
 
-    override def onPush(elem: ByteString, ctx: Context[ByteString]): Directive = {
+    override def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective = {
       sent += elem.length
       if (sent > length)
         throw InvalidContentLengthException(s"HTTP message had declared Content-Length $length but entity data stream amounts to more bytes")
