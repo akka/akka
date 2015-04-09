@@ -6,10 +6,7 @@ package docs.stream.cookbook;
 import java.util.ArrayList;
 import java.util.List;
 
-import akka.stream.stage.Context;
-import akka.stream.stage.Directive;
-import akka.stream.stage.StageState;
-import akka.stream.stage.StatefulStage;
+import akka.stream.stage.*;
 import akka.util.ByteString;
 
 public class RecipeParseLines {
@@ -27,7 +24,7 @@ public class RecipeParseLines {
           int nextPossibleMatch = 0;
           
           @Override
-          public Directive onPush(ByteString chunk, Context<String> ctx) {
+          public SyncDirective onPush(ByteString chunk, Context<String> ctx) {
             buffer = buffer.concat(chunk);
             if (buffer.size() > maximumLineBytes) {
               return ctx.fail(new IllegalStateException("Read " + buffer.size()  + " bytes " +

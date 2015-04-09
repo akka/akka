@@ -130,7 +130,7 @@ public class FlowGraphDocTest {
     });
 
     final Flow<Future<Integer>, Integer, BoxedUnit> flatten = Flow.<Future<Integer>>empty()
-      .mapAsync(x -> {
+      .mapAsync(4, x -> {
         return x;
       });
 

@@ -348,8 +348,9 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step. The function returns a `Future` and the
-   * value of that future will be emitted downstreams. As many futures as requested elements by
-   * downstream may run in parallel and may complete in any order, but the elements that
+   * value of that future will be emitted downstream. The number of Futures
+   * that shall run in parallel is given as the first argument to ``mapAsync``.
+   * These Futures may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
    *
    * If the group by function `f` throws an exception or if the `Future` is completed
@@ -362,8 +363,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](f: Out ⇒ Future[T]): Repr[T, Mat] =
-    andThen(MapAsync(f.asInstanceOf[Any ⇒ Future[Any]]))
+  def mapAsync[T](parallelism: Int, f: Out ⇒ Future[T]): Repr[T, Mat] =
+    andThen(MapAsync(parallelism, f.asInstanceOf[Any ⇒ Future[Any]]))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -383,8 +384,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](f: Out ⇒ Future[T]): Repr[T, Mat] =
-    andThen(MapAsyncUnordered(f.asInstanceOf[Any ⇒ Future[Any]]))
+  def mapAsyncUnordered[T](parallelism: Int, f: Out ⇒ Future[T]): Repr[T, Mat] =
+    andThen(MapAsyncUnordered(parallelism, f.asInstanceOf[Any ⇒ Future[Any]]))
 
   /**
    * Only pass on those elements that satisfy the given predicate.

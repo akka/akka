@@ -96,7 +96,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
               }
             }
             lazy val echo: State = new State {
-              def onPush(elem: Int, ctx: Context[Int]): Directive =
+              def onPush(elem: Int, ctx: Context[Int]): SyncDirective =
                 if (elem == 0) {
                   become(inflate)
                   ctx.pull()

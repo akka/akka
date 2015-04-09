@@ -81,7 +81,7 @@ object BidiFlowDocSpec {
         if (stash.isEmpty) ctx.finish()
         else ctx.absorbTermination() // we still have bytes to emit
 
-      private def run(ctx: Context[ByteString]): Directive =
+      private def run(ctx: Context[ByteString]): SyncDirective =
         if (needed == -1) {
           // are we at a boundary? then figure out next length
           if (stash.length < 4) pullOrFinish(ctx)

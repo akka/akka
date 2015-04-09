@@ -58,7 +58,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
     // need this for testing
     private[http] def isComplete = close
 
-    override def onPush(ctx: ResponseRenderingContext, opCtx: Context[Source[ByteString, Unit]]): Directive = {
+    override def onPush(ctx: ResponseRenderingContext, opCtx: Context[Source[ByteString, Unit]]): SyncDirective = {
       val r = new ByteStringRendering(responseHeaderSizeHint)
 
       import ctx.response._

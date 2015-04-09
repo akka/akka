@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.stage.{ PushStage, Directive, Context }
+import akka.stream.stage.{ PushStage, SyncDirective, Context }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.ByteString
@@ -89,7 +89,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
         // server logic, parses incoming commands
         val commandParser = new PushStage[String, String] {
-          override def onPush(elem: String, ctx: Context[String]): Directive = {
+          override def onPush(elem: String, ctx: Context[String]): SyncDirective = {
             elem match {
               case "BYE" ⇒ ctx.finish()
               case _     ⇒ ctx.push(elem + "!")
@@ -136,7 +136,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     val connection = StreamTcp().outgoingConnection(localhost)
 
     val replParser = new PushStage[String, ByteString] {
-      override def onPush(elem: String, ctx: Context[ByteString]): Directive = {
+      override def onPush(elem: String, ctx: Context[ByteString]): SyncDirective = {
         elem match {
           case "q" ⇒ ctx.pushAndFinish(ByteString("BYE\n"))
           case _   ⇒ ctx.push(ByteString(s"$elem\n"))

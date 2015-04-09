@@ -16,10 +16,7 @@ import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.stream.stage.Context;
-import akka.stream.stage.Directive;
-import akka.stream.stage.PushPullStage;
-import akka.stream.stage.TerminationDirective;
+import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteIterator;
 import akka.util.ByteString;
@@ -141,12 +138,12 @@ public class BidiFlowDocTest {
     private int needed = -1;
     
     @Override
-    public Directive onPull(Context<ByteString> ctx) {
+    public SyncDirective onPull(Context<ByteString> ctx) {
       return run(ctx);
     }
 
     @Override
-    public Directive onPush(ByteString bytes, Context<ByteString> ctx) {
+    public SyncDirective onPush(ByteString bytes, Context<ByteString> ctx) {
       stash = stash.concat(bytes);
       return run(ctx);
     }
@@ -157,7 +154,7 @@ public class BidiFlowDocTest {
       else return ctx.absorbTermination(); // we still have bytes to emit
     }
     
-    private Directive run(Context<ByteString> ctx) {
+    private SyncDirective run(Context<ByteString> ctx) {
       if (needed == -1) {
         // are we at a boundary? then figure out next length
         if (stash.size() < 4) return pullOrFinish(ctx);
@@ -182,7 +179,7 @@ public class BidiFlowDocTest {
      * After having called absorbTermination() we cannot pull any more, so if we need
      * more data we will just have to give up.
      */
-    private Directive pullOrFinish(Context<ByteString> ctx) {
+    private SyncDirective pullOrFinish(Context<ByteString> ctx) {
       if (ctx.isFinishing()) return ctx.finish();
       else return ctx.pull();
     }

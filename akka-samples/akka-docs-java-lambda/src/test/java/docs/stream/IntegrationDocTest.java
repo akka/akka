@@ -307,7 +307,7 @@ public class IntegrationDocTest {
 
         //#email-addresses-mapAsync
         final Source<String, BoxedUnit> emailAddresses = authors
-          .mapAsync(author -> addressSystem.lookupEmail(author.handle))
+          .mapAsync(4, author -> addressSystem.lookupEmail(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
 
@@ -315,7 +315,7 @@ public class IntegrationDocTest {
 
         //#send-emails
         final RunnableFlow<BoxedUnit> sendEmails = emailAddresses
-          .mapAsync(address ->
+          .mapAsync(4, address ->
             emailServer.send(new Email(address, "Akka", "I like your tweet")))
           .to(Sink.ignore());
 
@@ -348,7 +348,7 @@ public class IntegrationDocTest {
         final OperationAttributes resumeAttrib =
           OperationAttributes.supervisionStrategy(Supervision.getResumingDecider());
         final Source<String, BoxedUnit> emailAddresses = authors.section(resumeAttrib,
-          flow -> flow.mapAsync(author -> addressSystem.lookupEmail(author.handle)));
+          flow -> flow.mapAsync(4, author -> addressSystem.lookupEmail(author.handle)));
 
         //#email-addresses-mapAsync-supervision
       }
@@ -371,13 +371,13 @@ public class IntegrationDocTest {
 
         final Source<String, BoxedUnit> emailAddresses =
           authors
-            .mapAsyncUnordered(author -> addressSystem.lookupEmail(author.handle))
+            .mapAsyncUnordered(4, author -> addressSystem.lookupEmail(author.handle))
             .filter(o -> o.isPresent())
             .map(o -> o.get());
 
         final RunnableFlow<BoxedUnit> sendEmails =
           emailAddresses
-            .mapAsyncUnordered( address ->
+            .mapAsyncUnordered(4, address ->
               emailServer.send(new Email(address, "Akka", "I like your tweet")))
             .to(Sink.ignore());
 
@@ -400,7 +400,7 @@ public class IntegrationDocTest {
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
 
-        final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(author -> addressSystem.lookupPhoneNumber(author.handle))
+        final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(4, author -> addressSystem.lookupPhoneNumber(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
 
@@ -409,7 +409,7 @@ public class IntegrationDocTest {
 
         final RunnableFlow sendTextMessages =
           phoneNumbers
-            .mapAsync( phoneNo  ->
+            .mapAsync(4, phoneNo  ->
               Futures.future(() ->
                 smsServer.send(new TextMessage(phoneNo, "I like your tweet")),
                 blockingEc)
@@ -447,7 +447,7 @@ public class IntegrationDocTest {
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
 
-        final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(author -> addressSystem.lookupPhoneNumber(author.handle))
+        final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(4, author -> addressSystem.lookupPhoneNumber(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
 
@@ -487,7 +487,7 @@ public class IntegrationDocTest {
 
         final RunnableFlow saveTweets =
           akkaTweets
-            .mapAsync(tweet -> ask(database, new Save(tweet), 300))
+            .mapAsync(4, tweet -> ask(database, new Save(tweet), 300))
             .to(Sink.ignore());
         //#save-tweets
 
@@ -532,7 +532,7 @@ public class IntegrationDocTest {
 
         Source.from(Arrays.asList("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
           .map(elem -> { System.out.println("before: " + elem); return elem; })
-          .mapAsync(service::convert)
+          .mapAsync(4, service::convert)
           .runForeach(elem -> System.out.println("after: " + elem), mat);
         //#sometimes-slow-mapAsync
 
@@ -577,7 +577,7 @@ public class IntegrationDocTest {
 
         Source.from(Arrays.asList("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
           .map(elem -> { System.out.println("before: " + elem); return elem; })
-          .mapAsyncUnordered(service::convert)
+          .mapAsyncUnordered(4, service::convert)
           .runForeach(elem -> System.out.println("after: " + elem), mat);
         //#sometimes-slow-mapAsyncUnordered
 
