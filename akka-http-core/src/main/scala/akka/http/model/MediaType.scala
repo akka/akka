@@ -78,7 +78,7 @@ object MediaRange {
     override def isMultipart = mainType == "multipart"
     override def isText = mainType == "text"
     override def isVideo = mainType == "video"
-    def specimen = MediaType.custom(mainType, "custom")
+    def specimen = MediaType.custom(mainType, "custom", MediaType.Encoding.Binary)
   }
 
   def custom(mainType: String, params: Map[String, String] = Map.empty, qValue: Float = 1.0f): MediaRange = {
@@ -165,7 +165,7 @@ object MediaRanges extends ObjectRegistry[String, MediaRange] {
 sealed abstract case class MediaType private[http] (value: String)(val mainType: String,
                                                                    val subType: String,
                                                                    val compressible: Boolean,
-                                                                   val binary: Boolean,
+                                                                   val encoding: MediaType.Encoding,
                                                                    val fileExtensions: immutable.Seq[String],
                                                                    val params: Map[String, String])
   extends japi.MediaType with LazyValueBytesRenderable with WithQValue[MediaRange] {
@@ -191,7 +191,7 @@ sealed abstract case class MediaType private[http] (value: String)(val mainType:
 }
 
 class MultipartMediaType private[http] (_value: String, _subType: String, _params: Map[String, String])
-  extends MediaType(_value)("multipart", _subType, compressible = true, binary = true, Nil, _params) {
+  extends MediaType(_value)("multipart", _subType, compressible = true, encoding = MediaType.Encoding.Open, Nil, _params) {
   override def isMultipart = true
   def withBoundary(boundary: String): MultipartMediaType = withParams {
     if (boundary.isEmpty) params - "boundary" else params.updated("boundary", boundary)
@@ -200,28 +200,47 @@ class MultipartMediaType private[http] (_value: String, _subType: String, _param
 }
 
 sealed abstract class NonMultipartMediaType private[http] (_value: String, _mainType: String, _subType: String,
-                                                           _compressible: Boolean, _binary: Boolean,
+                                                           _compressible: Boolean, _encoding: MediaType.Encoding,
                                                            _fileExtensions: immutable.Seq[String],
                                                            _params: Map[String, String])
-  extends MediaType(_value)(_mainType, _subType, _compressible, _binary, _fileExtensions, _params) {
-  private[http] def this(mainType: String, subType: String, compressible: Boolean, binary: Boolean, fileExtensions: immutable.Seq[String]) =
-    this(mainType + '/' + subType, mainType, subType, compressible, binary, fileExtensions, Map.empty)
+  extends MediaType(_value)(_mainType, _subType, _compressible, _encoding, _fileExtensions, _params) {
+  private[http] def this(mainType: String, subType: String, compressible: Boolean, encoding: MediaType.Encoding,
+                         fileExtensions: immutable.Seq[String]) =
+    this(mainType + '/' + subType, mainType, subType, compressible, encoding, fileExtensions, Map.empty)
   def withParams(params: Map[String, String]) =
-    MediaType.custom(mainType, subType, compressible, binary, fileExtensions, params)
+    MediaType.custom(mainType, subType, encoding, compressible, fileExtensions, params)
 }
 
 object MediaType {
+  sealed abstract class Encoding(val charset: Option[HttpCharset])
+  object Encoding {
+    /**
+     * Indicates that the media type is non-textual and a character encoding therefore has no meaning.
+     */
+    case object Binary extends Encoding(None)
+
+    /**
+     * Indicates that the media-type allow for flexible character encoding through a `charset` parameter.
+     */
+    case object Open extends Encoding(None)
+
+    /**
+     * Indicates that a media-type is textual and mandates a clearly defined character encoding.
+     */
+    final case class Fixed(cs: HttpCharset) extends Encoding(Some(cs))
+  }
+
   /**
    * Create a custom media type.
    */
-  def custom(mainType: String, subType: String, compressible: Boolean = false, binary: Boolean = false,
-             fileExtensions: immutable.Seq[String] = Nil, params: Map[String, String] = Map.empty,
-             allowArbitrarySubtypes: Boolean = false): MediaType = {
+  def custom(mainType: String, subType: String, encoding: MediaType.Encoding,
+             compressible: Boolean = false, fileExtensions: immutable.Seq[String] = Nil,
+             params: Map[String, String] = Map.empty, allowArbitrarySubtypes: Boolean = false): MediaType = {
     require(mainType != "multipart", "Cannot create a MultipartMediaType here, use `multipart.apply` instead!")
     require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
     val r = new StringRendering ~~ mainType ~~ '/' ~~ subType
     if (params.nonEmpty) params foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
-    new NonMultipartMediaType(r.get, mainType, subType, compressible, binary, fileExtensions, params) {
+    new NonMultipartMediaType(r.get, mainType, subType, compressible, encoding, fileExtensions, params) {
       override def isApplication = mainType == "application"
       override def isAudio = mainType == "audio"
       override def isImage = mainType == "image"
@@ -231,14 +250,16 @@ object MediaType {
     }
   }
 
-  def custom(value: String): MediaType = {
+  def custom(value: String, encoding: MediaType.Encoding): MediaType = {
     val parts = value.split('/')
     if (parts.length != 2) throw new IllegalArgumentException(value + " is not a valid media-type")
-    custom(parts(0), parts(1))
+    custom(parts(0), parts(1), encoding)
   }
 }
 
 object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
+  import MediaType.Encoding
+
   private[this] var extensionMap = Map.empty[String, MediaType]
 
   private def register(mediaType: MediaType): MediaType = {
@@ -253,33 +274,34 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
 
   def forExtension(ext: String): Option[MediaType] = extensionMap.get(ext.toRootLowerCase)
 
-  private def app(subType: String, compressible: Boolean, binary: Boolean, fileExtensions: String*) = register {
-    new NonMultipartMediaType("application", subType, compressible, binary, immutable.Seq(fileExtensions: _*)) {
+  private def app(subType: String, compressible: Boolean, encoding: Encoding, fileExtensions: String*) = register {
+    new NonMultipartMediaType("application", subType, compressible, encoding, immutable.Seq(fileExtensions: _*)) {
       override def isApplication = true
     }
   }
   private def aud(subType: String, compressible: Boolean, fileExtensions: String*) = register {
-    new NonMultipartMediaType("audio", subType, compressible, binary = true, immutable.Seq(fileExtensions: _*)) {
+    new NonMultipartMediaType("audio", subType, compressible, encoding = Encoding.Binary, immutable.Seq(fileExtensions: _*)) {
       override def isAudio = true
     }
   }
-  private def img(subType: String, compressible: Boolean, binary: Boolean, fileExtensions: String*) = register {
-    new NonMultipartMediaType("image", subType, compressible, binary, immutable.Seq(fileExtensions: _*)) {
+  private def img(subType: String, compressible: Boolean, encoding: Encoding, fileExtensions: String*) = register {
+    new NonMultipartMediaType("image", subType, compressible, encoding, immutable.Seq(fileExtensions: _*)) {
       override def isImage = true
     }
   }
   private def msg(subType: String, fileExtensions: String*) = register {
-    new NonMultipartMediaType("message", subType, compressible = true, binary = false, immutable.Seq(fileExtensions: _*)) {
+    new NonMultipartMediaType("message", subType, compressible = true, encoding = Encoding.Binary,
+      immutable.Seq(fileExtensions: _*)) {
       override def isMessage = true
     }
   }
   private def txt(subType: String, fileExtensions: String*) = register {
-    new NonMultipartMediaType("text", subType, compressible = true, binary = false, immutable.Seq(fileExtensions: _*)) {
+    new NonMultipartMediaType("text", subType, compressible = true, encoding = Encoding.Open, immutable.Seq(fileExtensions: _*)) {
       override def isText = true
     }
   }
   private def vid(subType: String, fileExtensions: String*) = register {
-    new NonMultipartMediaType("video", subType, compressible = false, binary = true, immutable.Seq(fileExtensions: _*)) {
+    new NonMultipartMediaType("video", subType, compressible = false, encoding = Encoding.Binary, immutable.Seq(fileExtensions: _*)) {
       override def isVideo = true
     }
   }
@@ -288,21 +310,21 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   // format: OFF
   private final val compressible = true    // compile-time constant
   private final val uncompressible = false // compile-time constant
-  private final val binary = true          // compile-time constant
-  private final val notBinary = false      // compile-time constant
+  private def binary = Encoding.Binary
+  private def openEncoding = Encoding.Open
 
   // dummy value currently only used by ContentType.NoContentType
-  private[http] val NoMediaType = new NonMultipartMediaType("none", "none", false, false, immutable.Seq.empty) {}
+  private[http] val NoMediaType = new NonMultipartMediaType("none", "none", false, Encoding.Binary, immutable.Seq.empty) {}
 
-  val `application/atom+xml`                                                      = app("atom+xml", compressible, notBinary, "atom")
+  val `application/atom+xml`                                                      = app("atom+xml", compressible, openEncoding, "atom")
   val `application/base64`                                                        = app("base64", compressible, binary, "mm", "mme")
   val `application/excel`                                                         = app("excel", uncompressible, binary, "xl", "xla", "xlb", "xlc", "xld", "xlk", "xll", "xlm", "xls", "xlt", "xlv", "xlw")
   val `application/font-woff`                                                     = app("font-woff", uncompressible, binary, "woff")
   val `application/gnutar`                                                        = app("gnutar", uncompressible, binary, "tgz")
   val `application/java-archive`                                                  = app("java-archive", uncompressible, binary, "jar", "war", "ear")
-  val `application/javascript`                                                    = app("javascript", compressible, notBinary, "js")
-  val `application/json`                                                          = app("json", compressible, binary, "json") // we treat JSON as binary, since its encoding is not variable but defined by RFC4627
-  val `application/json-patch+json`                                               = app("json-patch+json", compressible, binary) // we treat JSON as binary, since its encoding is not variable but defined by RFC4627
+  val `application/javascript`                                                    = app("javascript", compressible, openEncoding, "js")
+  val `application/json`                                                          = app("json", compressible, Encoding.Fixed(HttpCharsets.`UTF-8`), "json")
+  val `application/json-patch+json`                                               = app("json-patch+json", compressible, Encoding.Fixed(HttpCharsets.`UTF-8`))
   val `application/lha`                                                           = app("lha", uncompressible, binary, "lha")
   val `application/lzx`                                                           = app("lzx", uncompressible, binary, "lzx")
   val `application/mspowerpoint`                                                  = app("mspowerpoint", uncompressible, binary, "pot", "pps", "ppt", "ppz")
@@ -310,10 +332,10 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/octet-stream`                                                  = app("octet-stream", uncompressible, binary, "a", "bin", "class", "dump", "exe", "lhx", "lzh", "o", "psd", "saveme", "zoo")
   val `application/pdf`                                                           = app("pdf", uncompressible, binary, "pdf")
   val `application/postscript`                                                    = app("postscript", compressible, binary, "ai", "eps", "ps")
-  val `application/rss+xml`                                                       = app("rss+xml", compressible, notBinary, "rss")
-  val `application/soap+xml`                                                      = app("soap+xml", compressible, notBinary)
-  val `application/vnd.api+json`                                                  = app("vnd.api+json", compressible, binary) // we treat JSON as binary, since its encoding is not variable but defined by RFC4627
-  val `application/vnd.google-earth.kml+xml`                                      = app("vnd.google-earth.kml+xml", compressible, notBinary, "kml")
+  val `application/rss+xml`                                                       = app("rss+xml", compressible, openEncoding, "rss")
+  val `application/soap+xml`                                                      = app("soap+xml", compressible, openEncoding)
+  val `application/vnd.api+json`                                                  = app("vnd.api+json", compressible, Encoding.Fixed(HttpCharsets.`UTF-8`))
+  val `application/vnd.google-earth.kml+xml`                                      = app("vnd.google-earth.kml+xml", compressible, openEncoding, "kml")
   val `application/vnd.google-earth.kmz`                                          = app("vnd.google-earth.kmz", uncompressible, binary, "kmz")
   val `application/vnd.ms-fontobject`                                             = app("vnd.ms-fontobject", compressible, binary, "eot")
   val `application/vnd.oasis.opendocument.chart`                                  = app("vnd.oasis.opendocument.chart", compressible, binary, "odc")
@@ -356,13 +378,13 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/x-tar`                                                         = app("x-tar", compressible, binary, "tar")
   val `application/x-tex`                                                         = app("x-tex", compressible, binary, "tex")
   val `application/x-texinfo`                                                     = app("x-texinfo", compressible, binary, "texi", "texinfo")
-  val `application/x-vrml`                                                        = app("x-vrml", compressible, notBinary, "vrml")
-  val `application/x-www-form-urlencoded`                                         = app("x-www-form-urlencoded", compressible, notBinary)
+  val `application/x-vrml`                                                        = app("x-vrml", compressible, openEncoding, "vrml")
+  val `application/x-www-form-urlencoded`                                         = app("x-www-form-urlencoded", compressible, openEncoding)
   val `application/x-x509-ca-cert`                                                = app("x-x509-ca-cert", compressible, binary, "der")
   val `application/x-xpinstall`                                                   = app("x-xpinstall", uncompressible, binary, "xpi")
-  val `application/xhtml+xml`                                                     = app("xhtml+xml", compressible, notBinary)
-  val `application/xml-dtd`                                                       = app("xml-dtd", compressible, notBinary)
-  val `application/xml`                                                           = app("xml", compressible, notBinary)
+  val `application/xhtml+xml`                                                     = app("xhtml+xml", compressible, openEncoding)
+  val `application/xml-dtd`                                                       = app("xml-dtd", compressible, openEncoding)
+  val `application/xml`                                                           = app("xml", compressible, openEncoding)
   val `application/zip`                                                           = app("zip", uncompressible, binary, "zip")
 
   val `audio/aiff`        = aud("aiff", compressible, "aif", "aifc", "aiff")
@@ -384,7 +406,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `image/jpeg`        = img("jpeg", uncompressible, binary, "jpe", "jpeg", "jpg")
   val `image/pict`        = img("pict", compressible, binary, "pic", "pict")
   val `image/png`         = img("png", uncompressible, binary, "png")
-  val `image/svg+xml`     = img("svg+xml", compressible, notBinary, "svg")
+  val `image/svg+xml`     = img("svg+xml", compressible, openEncoding, "svg")
   val `image/tiff`        = img("tiff", compressible, binary, "tif", "tiff")
   val `image/x-icon`      = img("x-icon", compressible, binary, "ico")
   val `image/x-ms-bmp`    = img("x-ms-bmp", compressible, binary, "bmp")
