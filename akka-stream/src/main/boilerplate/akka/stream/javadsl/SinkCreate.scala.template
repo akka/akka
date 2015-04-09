@@ -17,24 +17,27 @@ trait SinkCreate {
     new Sink(scaladsl.Sink() { b ⇒ block.apply(b.asJava) })
 
   /**
-   * Creates a `Sink` by using a `FlowGraph.Builder[M]` on a block that expects
-   * a [[FlowGraph.Builder]] and 1 graph and then returns an [[Inlet]].
+   * Creates a `Sink` by importing the given graph (using `builder.graph()`) and calling the provided create function
+   * with the `FlowGraph.Builder[M]` and the [[Shape]] resulting from importing the graph.
+   * The create function is expected to return the created Sink's [[Inlet]].
    */
   def create[T, S <: Shape, M](g1: Graph[S, M],
       block: japi.Function2[FlowGraph.Builder[M], S, Inlet[T]]): Sink[T, M] =
     new Sink(scaladsl.Sink(g1) { b ⇒ s => block.apply(b.asJava, s) })
 
   /**
-   * Creates a `Sink` by using a `FlowGraph.Builder[M]` on a block that expects
-   * a [[FlowGraph.Builder]] and 2 graphs and then returns an [[Inlet]].
+   * Creates a `Sink` by importing the given graphs (using `builder.graph()`) and calling the provided create function
+   * with the `FlowGraph.Builder[M]` and the [[Shape]]s resulting from importing the graphs.
+   * The create function is expected to return the created Sink's [[Inlet]].
    */
    def create[T, S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: japi.Function2[M1, M2, M],
       block: japi.Function3[FlowGraph.Builder[M], S1, S2, Inlet[T]]): Sink[T, M] =
     new Sink(scaladsl.Sink(g1, g2)(combineMat.apply _) { b => (s1, s2) => block.apply(b.asJava, s1, s2) })
 
   [3..21#/**
-   * Creates a `Sink` by using a `FlowGraph.Builder[M]` on a block that expects
-   * a [[FlowGraph.Builder]] and 1 graphs and then returns an [[Inlet]].
+   * Creates a `Sink` by importing the given graphs (using `builder.graph()`) and calling the provided create function
+   * with the `FlowGraph.Builder[M]` and the [[Shape]]s resulting from importing the graphs.
+   * The create function is expected to return the created Sink's [[Inlet]].
    */
   def create1[T, [#S1 <: Shape#], [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
       block: japi.Function2[FlowGraph.Builder[M], [#S1#], Inlet[T]]): Sink[T, M] =

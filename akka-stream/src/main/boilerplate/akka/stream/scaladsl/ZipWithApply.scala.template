@@ -8,7 +8,13 @@ import akka.stream._
 
 trait ZipWithApply {
 
-  [2..20#def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): Graph[FanInShape1[[#A1#], O], Unit] =
+  [2..20#/**
+   * Create a new `ZipWith` specialized for 1 inputs.
+   *
+   * @param f zipping-function from the input values to the output value
+   * @param attributes optional attributes for this vertex
+   */
+  def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): Graph[FanInShape1[[#A1#], O], Unit] =
     new Graph[FanInShape1[[#A1#], O], Unit] {
       val shape = new FanInShape1[[#A1#], O]("ZipWith1")
       val module = new ZipWith1Module(shape, zipper, OperationAttributes.name("ZipWith1"))
