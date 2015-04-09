@@ -18,5 +18,6 @@ Streams
    stream-io
    stream-parallelism
    stream-testkit
+   ../stages-overview
    stream-cookbook
    ../stream-configuration

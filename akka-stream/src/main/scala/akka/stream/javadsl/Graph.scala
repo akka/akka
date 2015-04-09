@@ -17,6 +17,14 @@ import akka.japi.Pair
  * that multiple flows can be attached to; if you want to have multiple independent
  * junctions within the same `FlowGraph` then you will have to create multiple such
  * instances.
+ *
+ * '''Emits when''' one of the inputs has an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
  */
 object Merge {
 
@@ -44,6 +52,15 @@ object Merge {
  * that multiple flows can be attached to; if you want to have multiple independent
  * junctions within the same `FlowGraph` then you will have to create multiple such
  * instances.
+ *
+ * '''Emits when''' one of the inputs has an element available, preferring
+ * a specified input if multiple have elements available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
  */
 object MergePreferred {
   /**
@@ -60,14 +77,22 @@ object MergePreferred {
 }
 
 /**
- * Fan-out the stream to several streams. Each element is produced to
- * the other streams. It will not shutdown until the subscriptions for at least
+ * Fan-out the stream to several streams. emitting each incoming upstream element to all downstream consumers.
+ * It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
  *
  * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
  * that multiple flows can be attached to; if you want to have multiple independent
  * junctions within the same `FlowGraph` then you will have to create multiple such
  * instances.
+ *
+ * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' any of the outputs backpressure
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' all downstreams cancel
  */
 object Broadcast {
   /**
@@ -84,14 +109,22 @@ object Broadcast {
 }
 
 /**
- * Fan-out the stream to several streams. Each element is produced to
- * one of the other streams. It will not shutdown until the subscriptions for at least
+ * Fan-out the stream to several streams. Each upstream element is emitted to the first available downstream consumer.
+ * It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
  *
  * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
  * that multiple flows can be attached to; if you want to have multiple independent
  * junctions within the same `FlowGraph` then you will have to create multiple such
  * instances.
+ *
+ * '''Emits when''' any of the outputs stops backpressuring; emits the element to the first available output
+ *
+ * '''Backpressures when''' all of the outputs backpressure
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' all downstreams cancel
  */
 object Balance {
   /**
@@ -123,6 +156,19 @@ object Balance {
     create(outputCount, waitForAllDownstreams)
 }
 
+/**
+ * Combine the elements of 2 streams into a stream of tuples.
+ *
+ * A `Zip` has a `left` and a `right` input port and one `out` port
+ *
+ * '''Emits when''' all of the inputs has an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' any upstream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
 object Zip {
   import akka.stream.javadsl.japi.Function2
   import akka.japi.Pair
@@ -139,10 +185,17 @@ object Zip {
 }
 
 /**
- * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
- * that multiple flows can be attached to; if you want to have multiple independent
- * junctions within the same `FlowGraph` then you will have to create multiple such
- * instances.
+ * Takes a stream of pair elements and splits each pair to two output streams.
+ *
+ * An `Unzip` has one `in` port and one `left` and one `right` output port.
+ *
+ * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' any of the outputs backpressures
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' any downstream cancels
  */
 object Unzip {
 
@@ -173,6 +226,14 @@ object Unzip {
  * that multiple flows can be attached to; if you want to have multiple independent
  * junctions within the same `FlowGraph` then you will have to create multiple such
  * instances.
+ *
+ * '''Emits when''' the current stream has an element available; if the current input completes, it tries the next one
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
  */
 object Concat {
   /**
