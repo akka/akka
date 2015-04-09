@@ -57,6 +57,21 @@ class UniformFanInShape[T, O](val n: Int, _init: FanInShape.Init[O]) extends Fan
   def in(n: Int): Inlet[T] = inArray(n)
 }
 
+class FanInShape1N[T0, T1, O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
+  def this(n: Int) = this(n, FanInShape.Name("FanInShape1N"))
+  def this(n: Int, name: String) = this(n, FanInShape.Name(name))
+  def this(outlet: Outlet[O], in0: Inlet[T0], inlets1: Array[Inlet[T1]]) = this(inlets1.length, FanInShape.Ports(outlet, in0 :: inlets1.toList))
+  override protected def construct(init: FanInShape.Init[O]): FanInShape[O] = new FanInShape1N(n, init)
+  override def deepCopy(): FanInShape1N[T0, T1, O] = super.deepCopy().asInstanceOf[FanInShape1N[T0, T1, O]]
+
+  val in0 = newInlet[T0]("in0")
+  val in1Vector: Vector[Inlet[T1]] = Vector.tabulate(n)(i => newInlet[T1](s"in${i+1}"))
+  def in(n: Int): Inlet[T1] = {
+    require(n > 0, "n must be > 0")
+    in1Vector(n - 1)
+  }
+}
+
 [2..#class FanInShape1[[#T0#], O](_init: FanInShape.Init[O]) extends FanInShape[O](_init) {
   def this(name: String) = this(FanInShape.Name(name))
   def this([#in0: Inlet[T0]#], out: Outlet[O]) = this(FanInShape.Ports(out, [#in0# :: ] :: Nil))
