@@ -50,9 +50,11 @@ class FlowErrorDocSpec extends AkkaSpec {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
     }
-    val source = Source(0 to 5).section(OperationAttributes.supervisionStrategy(decider)) {
-      _.filter(100 / _ < 50).map(elem => 100 / (5 - elem))
-    }
+    val flow = Flow[Int]
+      .filter(100 / _ < 50).map(elem => 100 / (5 - elem))
+      .withAttributes(OperationAttributes.supervisionStrategy(decider))
+    val source = Source(0 to 5).via(flow)
+
     val result = source.runWith(Sink.fold(0)(_ + _))
     // the elements causing division by zero will be dropped
     // result here will be a Future completed with Success(150)
@@ -68,13 +70,13 @@ class FlowErrorDocSpec extends AkkaSpec {
       case _: IllegalArgumentException => Supervision.Restart
       case _                           => Supervision.Stop
     }
-    val source = Source(List(1, 3, -1, 5, 7)).section(
-      OperationAttributes.supervisionStrategy(decider)) {
-        _.scan(0) { (acc, elem) =>
-          if (elem < 0) throw new IllegalArgumentException("negative not allowed")
-          else acc + elem
-        }
+    val flow = Flow[Int]
+      .scan(0) { (acc, elem) =>
+        if (elem < 0) throw new IllegalArgumentException("negative not allowed")
+        else acc + elem
       }
+      .withAttributes(OperationAttributes.supervisionStrategy(decider))
+    val source = Source(List(1, 3, -1, 5, 7)).via(flow)
     val result = source.grouped(1000).runWith(Sink.head)
     // the negative element cause the scan stage to be restarted,
     // i.e. start from 0 again

@@ -37,7 +37,7 @@ elements that cause the division by zero are effectively dropped.
   Be aware that dropping elements may result in deadlocks in graphs with
   cycles, as explained in :ref:`graph-cycles-scala`.
 
-The supervision strategy can also be defined for a section of flow operators.
+The supervision strategy can also be defined for all operators of a flow.
 
 .. includecode:: code/docs/stream/FlowErrorDocSpec.scala#resume-section
 

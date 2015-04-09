@@ -28,13 +28,9 @@ class StreamBuffersRateSpec extends AkkaSpec {
     //#materializer-buffer
 
     //#section-buffer
-    val flow =
-      Flow[Int]
-        .section(OperationAttributes.inputBuffer(initial = 1, max = 1)) { sectionFlow =>
-          // the buffer size of this map is 1
-          sectionFlow.map(_ * 2)
-        }
-        .map(_ / 2) // the buffer size of this map is the default
+    val section = Flow[Int].map(_ * 2)
+      .withAttributes(OperationAttributes.inputBuffer(initial = 1, max = 1))
+    val flow = section.via(Flow[Int].map(_ / 2)) // the buffer size of this map is the default
     //#section-buffer
   }
 
