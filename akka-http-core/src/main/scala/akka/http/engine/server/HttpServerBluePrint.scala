@@ -48,10 +48,10 @@ private[http] object HttpServerBluePrint {
       }
     }
 
-    val requestParsingFlow = Flow[ByteString].section(name("rootParser"))(_.transform(() ⇒
+    val requestParsingFlow = Flow[ByteString].transform(() ⇒
       // each connection uses a single (private) request parser instance for all its requests
       // which builds a cache of all header instances seen on that connection
-      rootParser.createShallowCopy(() ⇒ oneHundredContinueRef).stage))
+      rootParser.createShallowCopy(() ⇒ oneHundredContinueRef).stage).named("rootParser")
 
     val requestPreparation =
       Flow[RequestOutput]
@@ -79,10 +79,10 @@ private[http] object HttpServerBluePrint {
 
     val rendererPipeline =
       Flow[ResponseRenderingContext]
-        .section(name("recover"))(_.transform(() ⇒ new ErrorsTo500ResponseRecovery(log))) // FIXME: simplify after #16394 is closed
-        .section(name("renderer"))(_.transform(() ⇒ responseRendererFactory.newRenderer))
+        .via(Flow[ResponseRenderingContext].transform(() ⇒ new ErrorsTo500ResponseRecovery(log)).named("recover")) // FIXME: simplify after #16394 is closed
+        .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
         .flatten(FlattenStrategy.concat)
-        .section(name("errorLogger"))(_.transform(() ⇒ errorLogger(log, "Outgoing response stream error")))
+        .via(Flow[ByteString].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
 
     FlowGraph.partial(requestParsingFlow, rendererPipeline)(Keep.right) { implicit b ⇒
       (requestParsing, renderer) ⇒

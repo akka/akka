@@ -261,7 +261,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           val future =
             Source(input.toList)
               .map(ByteString.apply)
-              .section(name("parser"))(_.transform(() ⇒ newParserStage(requestMethod)))
+              .transform(() ⇒ newParserStage(requestMethod)).named("parser")
               .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
               .headAndTail
               .collect {

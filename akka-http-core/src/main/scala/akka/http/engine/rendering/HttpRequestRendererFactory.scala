@@ -114,12 +114,11 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
 
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderContentLength(contentLength) ~~ CrLf
-            renderByteStrings(r,
-              data.section(name("checkContentLength"))(_.transform(() ⇒ new CheckContentLengthTransformer(contentLength))))
+            renderByteStrings(r, data.via(CheckContentLengthTransformer.flow(contentLength)))
 
           case HttpEntity.Chunked(_, chunks) ⇒
             r ~~ CrLf
-            renderByteStrings(r, chunks.section(name("chunkTransform"))(_.transform(() ⇒ new ChunkTransformer)))
+            renderByteStrings(r, chunks.via(ChunkTransformer.flow))
         }
 
       renderRequestLine()

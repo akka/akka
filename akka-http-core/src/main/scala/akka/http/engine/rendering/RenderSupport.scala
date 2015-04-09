@@ -12,6 +12,7 @@ import akka.stream.stage._
 import akka.http.model._
 import akka.http.util._
 import org.reactivestreams.Subscriber
+import akka.http.model.HttpEntity.ChunkStreamPart
 
 /**
  * INTERNAL API
@@ -51,6 +52,10 @@ private object RenderSupport {
     messageBytes
   }
 
+  object ChunkTransformer {
+    val flow = Flow[ChunkStreamPart].transform(() ⇒ new ChunkTransformer).named("renderChunks")
+  }
+
   class ChunkTransformer extends StatefulStage[HttpEntity.ChunkStreamPart, ByteString] {
     var lastChunkSeen = false
 
@@ -65,6 +70,11 @@ private object RenderSupport {
     override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective =
       if (lastChunkSeen) super.onUpstreamFinish(ctx)
       else terminationEmit(Iterator.single(defaultLastChunkBytes), ctx)
+  }
+
+  object CheckContentLengthTransformer {
+    def flow(contentLength: Long) = Flow[ByteString].transform(() ⇒
+      new CheckContentLengthTransformer(contentLength)).named("checkContentLength")
   }
 
   class CheckContentLengthTransformer(length: Long) extends PushStage[ByteString, ByteString] {

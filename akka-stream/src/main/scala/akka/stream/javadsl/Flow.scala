@@ -408,16 +408,6 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   def concat[M](second: javadsl.Source[Out @uncheckedVariance, M]): javadsl.Flow[In, Out, Mat @uncheckedVariance Pair M] =
     new Flow(delegate.concat(second.asScala).mapMaterialized(p ⇒ Pair(p._1, p._2)))
 
-  /**
-   * Applies given [[OperationAttributes]] to a given section.
-   */
-  def section[O](attributes: OperationAttributes, section: japi.Function[javadsl.Flow[Out, Out, Any], javadsl.Flow[Out, O, Any]] @uncheckedVariance): javadsl.Flow[In, O, Mat] =
-    new Flow(delegate.section(attributes.asScala) {
-      val scalaToJava = (flow: scaladsl.Flow[Out, Out, Any]) ⇒ new javadsl.Flow(flow)
-      val javaToScala = (flow: javadsl.Flow[Out, O, Any]) ⇒ flow.asScala
-      scalaToJava andThen section.apply andThen javaToScala
-    })
-
   def withAttributes(attr: OperationAttributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr.asScala))
 

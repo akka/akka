@@ -143,8 +143,9 @@ class FlowSplitWhenSpec extends AkkaSpec {
     "resume stream when splitWhen function throws" in {
       val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
       val exc = TE("test")
-      val publisher = Source(publisherProbeProbe).section(OperationAttributes.supervisionStrategy(resumingDecider))(
-        _.splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0))
+      val publisher = Source(publisherProbeProbe)
+        .splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
+        .withAttributes(OperationAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[Source[Int, Unit]]()
       publisher.subscribe(subscriber)
