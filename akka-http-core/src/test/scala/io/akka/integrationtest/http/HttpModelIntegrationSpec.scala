@@ -81,7 +81,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       }
       val textHeaders: Seq[(String, String)] = entityTextHeaders ++ partialTextHeaders
       textHeaders shouldEqual Seq(
-        "Content-Type" -> "application/json; charset=UTF-8",
+        "Content-Type" -> "application/json",
         "Content-Length" -> "5",
         "Host" -> "localhost",
         "Origin" -> "null")
