@@ -19,6 +19,8 @@ trait SourceCreate {
   /**
    * Creates a `Source` by using a `FlowGraph.Builder[M]` on a block that expects
    * a [[FlowGraph.Builder]] and 1 graph and then returns an [[Outlet]].
+   * The graph will be imported (using `Builder.graph()`) and the resulting shape
+   * will be passed into the create block.
    */
   def create[T, S <: Shape, M](g1: Graph[S, M],
       block: japi.Function2[FlowGraph.Builder[M], S, Outlet[T]]): Source[T, M] =
@@ -27,6 +29,8 @@ trait SourceCreate {
   /**
    * Creates a `Source` by using a `FlowGraph.Builder[M]` on a block that expects
    * a [[FlowGraph.Builder]] and 2 graphs and then returns an [[Outlet]].
+   * The graphs will be imported (using `Builder.graph()`) and the resulting shapes
+   * will be passed into the create block.
    */
   def create[T, S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: japi.Function2[M1, M2, M],
       block: japi.Function3[FlowGraph.Builder[M], S1, S2, Outlet[T]]): Source[T, M] =
@@ -35,6 +39,8 @@ trait SourceCreate {
   [3..21#/**
    * Creates a `Source` by using a `FlowGraph.Builder[M]` on a block that expects
    * a [[FlowGraph.Builder]] and 1 graphs and then returns an [[Outlet]].
+   * The graphs will be imported (using `Builder.graph()`) and the resulting shapes
+   * will be passed into the create block.
    */
   def create1[T, [#S1 <: Shape#], [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
       block: japi.Function2[FlowGraph.Builder[M], [#S1#], Outlet[T]]): Source[T, M] =
