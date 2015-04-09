@@ -11,7 +11,7 @@ import akka.stream.impl._
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
-import akka.japi.{ function ⇒ japi }
+import akka.japi.function
 
 object ActorFlowMaterializer {
 
@@ -145,13 +145,15 @@ abstract class ActorFlowMaterializer extends FlowMaterializer {
 
   def effectiveSettings(opAttr: OperationAttributes): ActorFlowMaterializerSettings
 
-  /** INTERNAL API */
-  private[akka] def system: ActorSystem
-
   /**
    * INTERNAL API: this might become public later
    */
   private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def system: ActorSystem
 
 }
 
@@ -247,7 +249,7 @@ final case class ActorFlowMaterializerSettings(
    * overridden for specific flows of the stream operations with
    * [[akka.stream.OperationAttributes#supervisionStrategy]].
    */
-  def withSupervisionStrategy(decider: japi.Function[Throwable, Supervision.Directive]): ActorFlowMaterializerSettings = {
+  def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): ActorFlowMaterializerSettings = {
     import Supervision._
     copy(supervisionDecider = decider match {
       case `resumingDecider`   ⇒ resumingDecider
