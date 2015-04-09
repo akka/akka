@@ -27,7 +27,8 @@ private[parser] trait CommonActions {
       case mainLower ⇒
         MediaTypes.getForKey((mainLower, subType.toRootLowerCase)) match {
           case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(params)
-          case None             ⇒ MediaType.custom(mainType, subType, params = params, allowArbitrarySubtypes = true)
+          case None ⇒ MediaType.custom(mainType, subType, encoding = MediaType.Encoding.Open,
+            params = params, allowArbitrarySubtypes = true)
         }
     }
   }
