@@ -78,6 +78,8 @@ and for best results we recommend the following approach:
   point.
 * The bottom-up learners may feel more at home rummaging through the
   :ref:`stream-cookbook-scala`.
+* For a complete overview of the built-in processing stages you can look at the
+  table in :ref:`stages-overview`
 * The other sections can be read sequentially or as needed during the previous
   steps, each digging deeper into specific topics.
 

@@ -31,7 +31,13 @@ object Merge {
  * Merge several streams, taking elements as they arrive from input streams
  * (picking randomly when several have elements ready).
  *
- * A `Merge` has one `out` port and one or more `in` ports.
+ * '''Emits when''' one of the inputs has an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
  */
 class Merge[T] private (inputPorts: Int,
                         override val shape: UniformFanInShape[T, T],
@@ -70,6 +76,17 @@ object MergePreferred {
  * (picking from preferred when several have elements ready).
  *
  * A `MergePreferred` has one `out` port, one `preferred` input port and 0 or more secondary `in` ports.
+ *
+ * '''Emits when''' one of the inputs has an element available, preferring
+ * a specified input if multiple have elements available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
+ *
+ * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
 class MergePreferred[T] private (secondaryPorts: Int,
                                  override val shape: MergePreferred.MergePreferredShape[T],
@@ -95,11 +112,16 @@ object Broadcast {
 }
 
 /**
- * Fan-out the stream to several streams. Each element is produced to
- * the other streams. It will not shut down until the subscriptions
- * for at least two downstream subscribers have been established.
+ * Fan-out the stream to several streams emitting each incoming upstream element to all downstream consumers.
+ * It will not shut down until the subscriptions for at least two downstream subscribers have been established.
  *
- * A `Broadcast` has one `in` port and 2 or more `out` ports.
+ * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' any of the outputs backpressure
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' all downstreams cancel
  */
 class Broadcast[T] private (outputPorts: Int,
                             override val shape: UniformFanOutShape[T, T],
@@ -129,11 +151,19 @@ object Balance {
 }
 
 /**
- * Fan-out the stream to several streams. Each element is produced to
- * one of the other streams. It will not shut down until the subscriptions
+ * Fan-out the stream to several streams. Each upstream element is emitted to the first available downstream consumer.
+ * It will not shut down until the subscriptions
  * for at least two downstream subscribers have been established.
  *
  * A `Balance` has one `in` port and 2 or more `out` ports.
+ *
+ * '''Emits when''' any of the outputs stops backpressuring; emits the element to the first available output
+ *
+ * '''Backpressures when''' all of the outputs backpressure
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' all downstreams cancel
  */
 class Balance[T] private (outputPorts: Int,
                           waitForAllDownstreams: Boolean,
@@ -161,6 +191,14 @@ object Zip {
  * Combine the elements of 2 streams into a stream of tuples.
  *
  * A `Zip` has a `left` and a `right` input port and one `out` port
+ *
+ * '''Emits when''' all of the inputs has an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' any upstream completes
+ *
+ * '''Cancels when''' downstream cancels
  */
 class Zip[A, B] private (override val shape: FanInShape2[A, B, (A, B)],
                          private[stream] override val module: StreamLayout.Module)
@@ -172,12 +210,31 @@ class Zip[A, B] private (override val shape: FanInShape2[A, B, (A, B)],
   override def named(name: String): Zip[A, B] = withAttributes(OperationAttributes.name(name))
 }
 
+/**
+ * Combine the elements of multiple streams into a stream of combined elements using a combiner function.
+ *
+ * '''Emits when''' all of the inputs has an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' any upstream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
 object ZipWith extends ZipWithApply
 
 /**
  * Takes a stream of pair elements and splits each pair to two output streams.
  *
  * An `Unzip` has one `in` port and one `left` and one `right` output port.
+ *
+ * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' any of the outputs backpressures
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' any downstream cancels
  */
 object Unzip {
   /**
@@ -218,6 +275,14 @@ object Concat {
  * all of the elements from the second stream.
  *
  * A `Concat` has one `first` port, one `second` port and one `out` port.
+ *
+ * '''Emits when''' the current stream has an element available; if the current input completes, it tries the next one
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
  */
 class Concat[T] private (override val shape: UniformFanInShape[T, T],
                          private[stream] override val module: StreamLayout.Module)
