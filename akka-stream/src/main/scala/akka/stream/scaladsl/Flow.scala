@@ -343,6 +343,15 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
+   *
+   * '''Emits when''' the mapping function returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
    */
   def map[T](f: Out ⇒ T): Repr[T, Mat] = andThen(Map(f.asInstanceOf[Any ⇒ Any]))
 
@@ -352,6 +361,17 @@ trait FlowOps[+Out, +Mat] {
    *
    * The returned sequence MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
+   *
+   * '''Emits when''' the mapping function returns an element or there are still remaining elements
+   * from the previously calculated collection
+   *
+   * '''Backpressures when''' downstream backpressures or there are still remaining elements from the
+   * previously calculated collection
+   *
+   * '''Completes when''' upstream completes and all remaining elements has been emitted
+   *
+   * '''Cancels when''' downstream cancels
+   *
    */
   def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[T, Mat] = andThen(MapConcat(f.asInstanceOf[Any ⇒ immutable.Seq[Any]]))
 
@@ -370,6 +390,15 @@ trait FlowOps[+Out, +Mat] {
    * If the group by function `f` throws an exception or if the `Future` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision.Resume]] or
    * [[akka.stream.Supervision.Restart]] the element is dropped and the stream continues.
+   *
+   * '''Emits when''' the Future returned by the provided function finishes for the next element in sequence
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
+   * backpressures or the first future is not completed
+   *
+   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   *
+   * '''Cancels when''' downstream cancels
    *
    * @see [[#mapAsyncUnordered]]
    */
@@ -392,6 +421,14 @@ trait FlowOps[+Out, +Mat] {
    * with failure and the supervision decision is [[akka.stream.Supervision.Resume]] or
    * [[akka.stream.Supervision.Restart]] the element is dropped and the stream continues.
    *
+   * '''Emits when''' any of the Futures returned by the provided function complete
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   *
+   * '''Cancels when''' downstream cancels
+   *
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: Out ⇒ Future[T]): Repr[T, Mat] =
@@ -399,6 +436,14 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * Only pass on those elements that satisfy the given predicate.
+   *
+   * '''Emits when''' the given predicate returns true for the element
+   *
+   * '''Backpressures when''' the given predicate returns true for the element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def filter(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(Filter(p.asInstanceOf[Any ⇒ Boolean]))
 
@@ -406,6 +451,14 @@ trait FlowOps[+Out, +Mat] {
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
+   *
+   * '''Emits when''' the provided partial function is defined for the element
+   *
+   * '''Backpressures when''' the partial function is defined for the element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def collect[T](pf: PartialFunction[Out, T]): Repr[T, Mat] = andThen(Collect(pf.asInstanceOf[PartialFunction[Any, Any]]))
 
@@ -414,6 +467,14 @@ trait FlowOps[+Out, +Mat] {
    * possibly smaller than requested due to end-of-stream.
    *
    * `n` must be positive, otherwise IllegalArgumentException is thrown.
+   *
+   * '''Emits when''' the specified number of elements has been accumulated or upstream completed
+   *
+   * '''Backpressures when''' a group has been assembled and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def grouped(n: Int): Repr[immutable.Seq[Out], Mat] = andThen(Grouped(n))
 
@@ -426,6 +487,14 @@ trait FlowOps[+Out, +Mat] {
    * If the function `f` throws an exception and the supervision decision is
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
    * the stream will continue.
+   *
+   * '''Emits when''' the function scanning the element returns a new element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T, Mat] = andThen(Scan(zero, f.asInstanceOf[(Any, Any) ⇒ Any]))
 
@@ -438,6 +507,14 @@ trait FlowOps[+Out, +Mat] {
    *
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted
+   *
+   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
    */
   def groupedWithin(n: Int, d: FiniteDuration): Repr[Out, Mat]#Repr[immutable.Seq[Out], Mat] = {
     require(n > 0, "n must be greater than 0")
@@ -469,11 +546,27 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
+   *
+   * '''Emits when''' the specified number of elements has been dropped already
+   *
+   * '''Backpressures when''' the specified number of elements has been dropped and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def drop(n: Long): Repr[Out, Mat] = andThen(Drop(n))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
+   *
+   * '''Emits when''' the specified time elapsed and a new upstream element arrives
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def dropWithin(d: FiniteDuration): Repr[Out, Mat]#Repr[Out, Mat] =
     withAttributes(name("dropWithin")).timerTransform(() ⇒ new TimerTransformer[Out, Out] {
@@ -499,6 +592,14 @@ trait FlowOps[+Out, +Mat] {
    *
    * The stream will be completed without producing any elements if `n` is zero
    * or negative.
+   *
+   * '''Emits when''' the specified number of elements to take has not yet been reached
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   *
+   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
    */
   def take(n: Long): Repr[Out, Mat] = andThen(Take(n))
 
@@ -510,6 +611,14 @@ trait FlowOps[+Out, +Mat] {
    *
    * Note that this can be combined with [[#take]] to limit the number of elements
    * within the duration.
+   *
+   * '''Emits when''' an upstream element arrives
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or timer fires
+   *
+   * '''Cancels when''' downstream cancels or timer fires
    */
   def takeWithin(d: FiniteDuration): Repr[Out, Mat]#Repr[Out, Mat] =
     withAttributes(name("takeWithin")).timerTransform(() ⇒ new TimerTransformer[Out, Out] {
@@ -533,6 +642,14 @@ trait FlowOps[+Out, +Mat] {
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
+   * '''Emits when''' downstream stops backpressuring and there is a conflated element available
+   *
+   * '''Backpressures when''' never
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
@@ -551,6 +668,14 @@ trait FlowOps[+Out, +Mat] {
    * Expand does not support [[akka.stream.Supervision.Restart]] and [[akka.stream.Supervision.Resume]].
    * Exceptions from the `seed` or `extrapolate` functions will complete the stream with failure.
    *
+   * '''Emits when''' downstream stops backpressuring
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
    * @param seed Provides the first state for extrapolation using the first unconsumed element
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
@@ -562,6 +687,17 @@ trait FlowOps[+Out, +Mat] {
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
    * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements or backpressure the upstream if
    * there is no space available
+   *
+   * '''Emits when''' downstream stops backpressuring and there is a pending element in the buffer
+   *
+   * '''Backpressures when''' depending on OverflowStrategy
+   *  * Backpressure - backpressures when buffer is full
+   *  * DropHead, DropTail, DropBuffer - never backpressures
+   *  * Fail - fails the stream if buffer gets full
+   *
+   * '''Completes when''' upstream completes and buffered elements has been drained
+   *
+   * '''Cancels when''' downstream cancels
    *
    * @param size The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
@@ -584,6 +720,16 @@ trait FlowOps[+Out, +Mat] {
    * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
+   *
+   * '''Emits when''' the configured number of prefix elements are available. Emits this prefix, and the rest
+   * as a substream
+   *
+   * '''Backpressures when''' downstream backpressures or substream backpressures
+   *
+   * '''Completes when''' prefix elements has been consumed and substream has been consumed
+   *
+   * '''Cancels when''' downstream cancels or substream cancels
+   *
    */
   def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, Unit]), Mat] =
     andThen(PrefixAndTail(n))
@@ -606,6 +752,16 @@ trait FlowOps[+Out, +Mat] {
    * If the group by function `f` throws an exception and the supervision decision
    * is [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
    * the element is dropped and the stream and substreams continue.
+   *
+   * '''Emits when''' an element for which the grouping function returns a group that has not yet been created.
+   * Emits the new group
+   *
+   * '''Backpressures when''' there is an element pending for a group whose substream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels and all substreams cancel
+   *
    */
   def groupBy[K, U >: Out](f: Out ⇒ K): Repr[(K, Source[U, Unit]), Mat] =
     andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
@@ -630,6 +786,17 @@ trait FlowOps[+Out, +Mat] {
    * If the split predicate `p` throws an exception and the supervision decision
    * is [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
    * the element is dropped and the stream and substreams continue.
+   *
+   * '''Emits when''' an element for which the provided predicate is true, opening and emitting
+   * a new substream for subsequent element
+   *
+   * '''Backpressures when''' there is an element pending for the next substream, but the previous
+   * is not fully consumed yet, or the substream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels and substreams cancel
+   *
    */
   def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Source[U, Unit], Mat] =
     andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
@@ -637,6 +804,15 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
    * This operation can be used on a stream of element type [[akka.stream.scaladsl.Source]].
+   *
+   * '''Emits when''' (Concat) the current consumed substream has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all consumed substreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   *
    */
   def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U, Mat] = strategy match {
     case _: FlattenStrategy.Concat[Out] | _: javadsl.FlattenStrategy.Concat[Out, _] ⇒ andThen(ConcatAll())
