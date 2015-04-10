@@ -222,7 +222,7 @@ final case class ActorFlowMaterializerSettings(
 
   /**
    * Scala API: Decides how exceptions from application code are to be handled, unless
-   * overridden for specific sections of the stream operations with
+   * overridden for specific flows of the stream operations with
    * [[akka.stream.scaladsl.OperationAttributes#supervisionStrategy]].
    */
   def withSupervisionStrategy(decider: Supervision.Decider): ActorFlowMaterializerSettings =
@@ -230,7 +230,7 @@ final case class ActorFlowMaterializerSettings(
 
   /**
    * Java API: Decides how exceptions from application code are to be handled, unless
-   * overridden for specific sections of the stream operations with
+   * overridden for specific flows of the stream operations with
    * [[akka.stream.javadsl.OperationAttributes#supervisionStrategy]].
    */
   def withSupervisionStrategy(decider: japi.Function[Throwable, Supervision.Directive]): ActorFlowMaterializerSettings = {

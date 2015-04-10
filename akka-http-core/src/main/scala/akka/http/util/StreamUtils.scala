@@ -50,7 +50,7 @@ private[http] object StreamUtils {
         ctx.fail(f(cause))
     }
 
-    Flow[ByteString].section(name("transformError"))(_.transform(() ⇒ transformer))
+    Flow[ByteString].transform(() ⇒ transformer).named("transformError")
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, Unit] = {
@@ -84,7 +84,7 @@ private[http] object StreamUtils {
 
       override def initial: State = if (start > 0) skipping else taking(length)
     }
-    Flow[ByteString].section(name("sliceBytes"))(_.transform(() ⇒ transformer))
+    Flow[ByteString].transform(() ⇒ transformer).named("sliceBytes")
   }
 
   def limitByteChunksStage(maxBytesPerChunk: Int): PushPullStage[ByteString, ByteString] =

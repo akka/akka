@@ -18,23 +18,19 @@ import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
 import org.reactivestreams.Publisher;
-
 import scala.runtime.Boxed;
 import scala.runtime.BoxedUnit;
-
 import org.junit.ClassRule;
 import org.junit.Test;
-
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 import scala.concurrent.duration.Duration;
-
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertEquals;
 
+@SuppressWarnings("serial")
 public class FlowTest extends StreamTest {
   public FlowTest() {
     super(actorSystemResource);
@@ -242,39 +238,13 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMerge() throws Exception {
-    final Flow<String, String, BoxedUnit> f1 = Flow
-        .of(String.class)
-        .section(
-            OperationAttributes.name("f1"),
-            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
-              @Override
-              public Flow<String, String, Object> apply(
-                  Flow<String, String, Object> flow) {
-                return flow.transform(FlowTest.this.<String> op());
-              }
-            });
-    final Flow<String, String, BoxedUnit> f2 = Flow
-        .of(String.class)
-        .section(
-            OperationAttributes.name("f2"),
-            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
-              @Override
-              public Flow<String, String, Object> apply(
-                  Flow<String, String, Object> flow) {
-                return flow.transform(FlowTest.this.<String> op());
-              }
-            });
-    final Flow<String, String, BoxedUnit> f3 = Flow
-        .of(String.class)
-        .section(
-            OperationAttributes.name("f3"),
-            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
-              @Override
-              public Flow<String, String, Object> apply(
-                  Flow<String, String, Object> flow) {
-                return flow.transform(FlowTest.this.<String> op());
-              }
-            });
+    final Flow<String, String, BoxedUnit> f1 =
+        Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f1");
+    final Flow<String, String, BoxedUnit> f2 = 
+        Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f2");
+    @SuppressWarnings("unused")
+    final Flow<String, String, BoxedUnit> f3 = 
+        Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f3");
 
     final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, BoxedUnit> in2 = Source.from(Arrays.asList("d", "e", "f"));

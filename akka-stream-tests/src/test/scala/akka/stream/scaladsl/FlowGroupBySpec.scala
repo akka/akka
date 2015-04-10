@@ -221,8 +221,9 @@ class FlowGroupBySpec extends AkkaSpec {
     "resume stream when groupBy function throws" in {
       val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
       val exc = TE("test")
-      val publisher = Source(publisherProbeProbe).section(OperationAttributes.supervisionStrategy(resumingDecider))(
-        _.groupBy(elem ⇒ if (elem == 2) throw exc else elem % 2))
+      val publisher = Source(publisherProbeProbe)
+        .groupBy(elem ⇒ if (elem == 2) throw exc else elem % 2)
+        .withAttributes(OperationAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, Unit])]()
       publisher.subscribe(subscriber)

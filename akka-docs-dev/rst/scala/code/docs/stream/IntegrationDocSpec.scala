@@ -19,6 +19,7 @@ import scala.concurrent.ExecutionContext
 import akka.stream.ActorFlowMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
 import akka.stream.Supervision
+import akka.stream.scaladsl.Flow
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -173,9 +174,9 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     import Supervision.resumingDecider
 
     val emailAddresses: Source[String, Unit] =
-      authors.section(supervisionStrategy(resumingDecider)) {
-        _.mapAsync(4, author => addressSystem.lookupEmail(author.handle))
-      }
+      authors.via(
+        Flow[Author].mapAsync(4, author => addressSystem.lookupEmail(author.handle))
+          .withAttributes(supervisionStrategy(resumingDecider)))
     //#email-addresses-mapAsync-supervision
   }
 
@@ -263,15 +264,13 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
         .collect { case Some(phoneNo) => phoneNo }
 
     //#blocking-map
+    val send = Flow[String]
+      .map { phoneNo =>
+        smsServer.send(TextMessage(to = phoneNo, body = "I like your tweet"))
+      }
+      .withAttributes(OperationAttributes.dispatcher("blocking-dispatcher"))
     val sendTextMessages: RunnableFlow[Unit] =
-      phoneNumbers
-        .section(OperationAttributes.dispatcher("blocking-dispatcher")) {
-          _.map { phoneNo =>
-            smsServer.send(
-              TextMessage(to = phoneNo, body = "I like your tweet"))
-          }
-        }
-        .to(Sink.ignore)
+      phoneNumbers.via(send).to(Sink.ignore)
 
     sendTextMessages.run()
     //#blocking-map

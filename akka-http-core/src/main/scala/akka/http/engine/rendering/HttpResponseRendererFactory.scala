@@ -172,7 +172,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             renderHeaders(headers.toList)
             renderEntityContentType(r, entity)
             renderContentLengthHeader(contentLength) ~~ CrLf
-            byteStrings(data.section(name("checkContentLength"))(_.transform(() ⇒ new CheckContentLengthTransformer(contentLength))))
+            byteStrings(data.via(CheckContentLengthTransformer.flow(contentLength)))
 
           case HttpEntity.CloseDelimited(_, data) ⇒
             renderHeaders(headers.toList, alwaysClose = ctx.requestMethod != HttpMethods.HEAD)
@@ -185,7 +185,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             else {
               renderHeaders(headers.toList)
               renderEntityContentType(r, entity) ~~ CrLf
-              byteStrings(chunks.section(name("renderChunks"))(_.transform(() ⇒ new ChunkTransformer)))
+              byteStrings(chunks.via(ChunkTransformer.flow))
             }
         }
 

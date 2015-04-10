@@ -15,21 +15,17 @@ import akka.stream.stage.*;
 import akka.stream.javadsl.japi.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
-
 import akka.testkit.TestProbe;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
-
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertEquals;
 
 public class FlowGraphTest extends StreamTest {
@@ -41,6 +37,7 @@ public class FlowGraphTest extends StreamTest {
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowGraphTest",
     AkkaSpec.testConf());
 
+  @SuppressWarnings("serial")
   public <T> Creator<Stage<T, T>> op() {
     return new akka.stream.javadsl.japi.Creator<Stage<T, T>>() {
       @Override
@@ -62,39 +59,13 @@ public class FlowGraphTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMerge() throws Exception {
-    final Flow<String, String, BoxedUnit> f1 = Flow
-        .of(String.class)
-        .section(
-            OperationAttributes.name("f1"),
-            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
-              @Override
-              public Flow<String, String, Object> apply(
-                  Flow<String, String, Object> flow) {
-                return flow.transform(FlowGraphTest.this.<String> op());
-              }
-            });
-    final Flow<String, String, BoxedUnit> f2 = Flow
-        .of(String.class)
-        .section(
-            OperationAttributes.name("f2"),
-            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
-              @Override
-              public Flow<String, String, Object> apply(
-                  Flow<String, String, Object> flow) {
-                return flow.transform(FlowGraphTest.this.<String> op());
-              }
-            });
-    final Flow<String, String, BoxedUnit> f3 = Flow
-        .of(String.class)
-        .section(
-            OperationAttributes.name("f3"),
-            new Function<Flow<String, String, Object>, Flow<String, String, Object>>() {
-              @Override
-              public Flow<String, String, Object> apply(
-                  Flow<String, String, Object> flow) {
-                return flow.transform(FlowGraphTest.this.<String> op());
-              }
-            });
+    final Flow<String, String, BoxedUnit> f1 =
+        Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f1");
+    final Flow<String, String, BoxedUnit> f2 =
+        Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f2");
+    @SuppressWarnings("unused")
+    final Flow<String, String, BoxedUnit> f3 = 
+        Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f3");
 
     final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, BoxedUnit> in2 = Source.from(Arrays.asList("d", "e", "f"));
