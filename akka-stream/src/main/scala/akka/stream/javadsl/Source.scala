@@ -501,10 +501,10 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   /**
    * Applies given [[OperationAttributes]] to a given section.
    */
-  def section[O, M](attributes: OperationAttributes, section: japi.Function[javadsl.Flow[Out, Out, Unit], javadsl.Flow[Out, O, M]] @uncheckedVariance): javadsl.Source[O, M] =
+  def section[O](attributes: OperationAttributes, section: japi.Function[javadsl.Flow[Out, Out, Any], javadsl.Flow[Out, O, Any]] @uncheckedVariance): javadsl.Source[O, Mat] =
     new Source(delegate.section(attributes.asScala) {
-      val scalaToJava = (source: scaladsl.Flow[Out, Out, Unit]) ⇒ new javadsl.Flow(source)
-      val javaToScala = (source: javadsl.Flow[Out, O, M]) ⇒ source.asScala
+      val scalaToJava = (source: scaladsl.Flow[Out, Out, Any]) ⇒ new javadsl.Flow(source)
+      val javaToScala = (source: javadsl.Flow[Out, O, Any]) ⇒ source.asScala
       scalaToJava andThen section.apply andThen javaToScala
     })
 

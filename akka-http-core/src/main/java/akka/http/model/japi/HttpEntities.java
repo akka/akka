@@ -42,19 +42,19 @@ public final class HttpEntities {
         return HttpEntity$.MODULE$.apply((akka.http.model.ContentType) contentType, file);
     }
 
-    public static HttpEntityDefault create(ContentType contentType, long contentLength, Source<ByteString, scala.runtime.BoxedUnit> data) {
+    public static HttpEntityDefault create(ContentType contentType, long contentLength, Source<ByteString, Object> data) {
         return new akka.http.model.HttpEntity.Default((akka.http.model.ContentType) contentType, contentLength, data);
     }
 
-    public static HttpEntityCloseDelimited createCloseDelimited(ContentType contentType, Source<ByteString, scala.runtime.BoxedUnit> data) {
+    public static HttpEntityCloseDelimited createCloseDelimited(ContentType contentType, Source<ByteString, Object> data) {
         return new akka.http.model.HttpEntity.CloseDelimited((akka.http.model.ContentType) contentType, data);
     }
 
-    public static HttpEntityIndefiniteLength createIndefiniteLength(ContentType contentType, Source<ByteString, scala.runtime.BoxedUnit> data) {
+    public static HttpEntityIndefiniteLength createIndefiniteLength(ContentType contentType, Source<ByteString, Object> data) {
         return new akka.http.model.HttpEntity.IndefiniteLength((akka.http.model.ContentType) contentType, data);
     }
 
-    public static HttpEntityChunked createChunked(ContentType contentType, Source<ByteString, scala.runtime.BoxedUnit> data) {
+    public static HttpEntityChunked createChunked(ContentType contentType, Source<ByteString, Object> data) {
         return akka.http.model.HttpEntity.Chunked$.MODULE$.fromData(
                 (akka.http.model.ContentType) contentType,
                 data);
