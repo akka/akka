@@ -327,7 +327,7 @@ object FlowGraph extends GraphApply {
         b.addEdge(importAndGetPort(b), to)
       }
 
-      def ~>[Out](via: Flow[T, Out, _])(implicit b: Builder[_]): PortOps[Out, Unit] = {
+      def ~>[Out](via: Flow[T, Out, Any])(implicit b: Builder[_]): PortOps[Out, Unit] = {
         val s = b.add(via)
         b.addEdge(importAndGetPort(b), s.inlet)
         s.outlet

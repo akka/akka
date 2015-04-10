@@ -221,15 +221,24 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * The resulting Flow’s materialized value is a Tuple2 containing both materialized
    * values (of this Flow and that Source).
    */
-  def concat[Out2 >: Out, Mat2](source: Source[Out2, Mat2]): Flow[In, Out2, (Mat, Mat2)] = {
+  def concat[Out2 >: Out, Mat2](source: Source[Out2, Mat2]): Flow[In, Out2, (Mat, Mat2)] =
+    concatMat[Out2, Mat2, (Mat, Mat2)](source, Keep.both)
+
+  /**
+   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced. Note that the Source is materialized
+   * together with this Flow and just kept from producing elements by asserting
+   * back-pressure until its time comes.
+   */
+  def concatMat[Out2 >: Out, Mat2, Mat3](source: Source[Out2, Mat2], combine: (Mat, Mat2) ⇒ Mat3): Flow[In, Out2, Mat3] =
     this.viaMat(Flow(source) { implicit builder ⇒
       s ⇒
         import FlowGraph.Implicits._
         val concat = builder.add(Concat[Out2]())
         s.outlet ~> concat.in(1)
         (concat.in(0), concat.out)
-    })(Keep.both)
-  }
+    })(combine)
 
   /** INTERNAL API */
   override private[stream] def andThen[U](op: StageModule): Repr[U, Mat] = {
@@ -269,7 +278,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   }
 
   // FIXME remove (in favor of .via)
-  def section[O, O2 >: Out, Mat2, Mat3](attributes: OperationAttributes, combine: (Mat, Mat2) ⇒ Mat3)(section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Mat2]): Flow[In, O, Mat3] = {
+  def section[O, O2 >: Out, Mat2, Mat3](attributes: OperationAttributes, combine: (Mat, Mat2) ⇒ Mat3)(
+    section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Mat2]): Flow[In, O, Mat3] = {
     val subFlow = section(Flow[O2]).module.carbonCopy.withAttributes(attributes).wrap()
     if (this.isIdentity) new Flow(subFlow).asInstanceOf[Flow[In, O, Mat3]]
     else new Flow(
@@ -282,8 +292,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * Applies given [[OperationAttributes]] to a given section.
    */
   // FIXME remove (in favor of .via)
-  def section[O, O2 >: Out, Mat2](attributes: OperationAttributes)(section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Mat2]): Flow[In, O, Mat2] = {
-    this.section[O, O2, Mat2, Mat2](attributes, Keep.right)(section)
+  def section[O, O2 >: Out](attributes: OperationAttributes)(section: Flow[O2, O2, Unit] ⇒ Flow[O2, O, Any]): Flow[In, O, Mat] = {
+    this.section[O, O2, Any, Mat](attributes, Keep.left)(section)
   }
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
@@ -632,7 +642,7 @@ trait FlowOps[+Out, +Mat] {
    * This operation can be used on a stream of element type [[akka.stream.scaladsl.Source]].
    */
   def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U, Mat] = strategy match {
-    case _: FlattenStrategy.Concat[Out] | _: javadsl.FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll())
+    case _: FlattenStrategy.Concat[Out] | _: javadsl.FlattenStrategy.Concat[Out, _] ⇒ andThen(ConcatAll())
     case _ ⇒
       throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
   }

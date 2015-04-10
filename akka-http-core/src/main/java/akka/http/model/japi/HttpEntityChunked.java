@@ -11,5 +11,5 @@ import akka.stream.scaladsl.Source;
  * stream of {@link ChunkStreamPart}.
  */
 public abstract class HttpEntityChunked implements RequestEntity, ResponseEntity {
-    public abstract Source<ChunkStreamPart, scala.Unit> getChunks();
+    public abstract Source<ChunkStreamPart, ?> getChunks();
 }

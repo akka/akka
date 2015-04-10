@@ -5,12 +5,9 @@ package docs.stream
 
 import scala.concurrent.duration._
 import akka.stream.testkit.AkkaSpec
-import akka.stream.scaladsl.Source
-import java.util.Date
+import akka.stream.scaladsl._
 import akka.stream.ActorFlowMaterializer
 import scala.concurrent.Future
-import akka.stream.scaladsl.RunnableFlow
-import akka.stream.scaladsl.Sink
 import akka.testkit.TestProbe
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
@@ -18,7 +15,6 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.stream.scaladsl.OperationAttributes
 import scala.concurrent.ExecutionContext
 import akka.stream.ActorFlowMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger

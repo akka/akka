@@ -17,7 +17,7 @@ class RecipeWorkerPool extends RecipeSpec {
       val worker = Flow[String].map(_ + " done")
 
       //#worker-pool
-      def balancer[In, Out](worker: Flow[In, Out, Unit], workerCount: Int): Flow[In, Out, Unit] = {
+      def balancer[In, Out](worker: Flow[In, Out, Any], workerCount: Int): Flow[In, Out, Unit] = {
         import FlowGraph.Implicits._
 
         Flow() { implicit b =>
