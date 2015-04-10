@@ -10,6 +10,7 @@ import akka.stream.testkit.AkkaSpec
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
+import akka.stream.OperationAttributes
 
 class FlowGraphDocSpec extends AkkaSpec {
 

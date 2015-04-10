@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream._
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes._
 import akka.util.Collections.EmptyImmutableSeq
 import org.reactivestreams.Processor
 import scala.annotation.unchecked.uncheckedVariance

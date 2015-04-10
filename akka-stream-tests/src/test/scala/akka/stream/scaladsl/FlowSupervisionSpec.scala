@@ -13,9 +13,10 @@ import scala.concurrent.Await
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.stream.Supervision
 import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.ActorOperationAttributes
 
 class FlowSupervisionSpec extends AkkaSpec {
-  import OperationAttributes.supervisionStrategy
+  import ActorOperationAttributes.supervisionStrategy
 
   implicit val materializer = ActorFlowMaterializer()(system)
 
