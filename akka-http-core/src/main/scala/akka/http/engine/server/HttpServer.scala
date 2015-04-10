@@ -63,7 +63,7 @@ private[http] object HttpServer {
     val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.responseHeaderSizeHint, log)
 
     @volatile var oneHundredContinueRef: Option[ActorRef] = None // FIXME: unnecessary after fixing #16168
-    val oneHundredContinueSource = Source[OneHundredContinue.type] {
+    val oneHundredContinueSource = Source.actorPublisher[OneHundredContinue.type] {
       Props {
         val actor = new TokenSourceActor(OneHundredContinue)
         oneHundredContinueRef = Some(actor.context.self)

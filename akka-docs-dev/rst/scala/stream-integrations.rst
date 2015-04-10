@@ -7,8 +7,13 @@ Integration
 Integrating with Actors
 =======================
 
-:class:`ActorPublisher` and :class:`ActorSubscriber` are two traits that provides support for
-implementing Reactive Streams :class:`Publisher` and :class:`Subscriber` with an :class:`Actor`.
+For piping the elements of a stream as messages to an ordinary actor you can use the
+``Sink.actorRef``. Messages can be sent to a stream via the :class:`ActorRef` that is 
+materialized by ``Source.actorRef``.
+
+For more advanced use cases the :class:`ActorPublisher` and :class:`ActorSubscriber` traits are
+provided to support implementing Reactive Streams :class:`Publisher` and :class:`Subscriber` with
+an :class:`Actor`.
 
 These can be consumed by other Reactive Stream libraries or used as a
 Akka Streams :class:`Source` or :class:`Sink`.
@@ -18,6 +23,40 @@ Akka Streams :class:`Source` or :class:`Sink`.
   :class:`ActorPublisher` and :class:`ActorSubscriber` cannot be used with remote actors,
   because if signals of the Reactive Streams protocol (e.g. ``request``) are lost the
   the stream may deadlock.
+
+Source.actorRef
+^^^^^^^^^^^^^^^
+
+Messages sent to the actor that is materialized by ``Source.actorRef`` will be emitted to the 
+stream if there is demand from downstream, otherwise they will be buffered until request for 
+demand is received.
+
+Depending on the defined :class:`OverflowStrategy` it might drop elements if there is no space
+available in the buffer.
+
+The stream can be completed successfully by sending ``akka.actor.PoisonPill`` or
+``akka.actor.Status.Success`` to the actor reference.
+
+The stream can be completed with failure by sending ``akka.actor.Status.Failure`` to the 
+actor reference.
+
+The actor will be stopped when the stream is completed, failed or cancelled from downstream,
+i.e. you can watch it to get notified when that happens.
+
+Sink.actorRef
+^^^^^^^^^^^^^
+
+The sink sends the elements of the stream to the given :class:`ActorRef`. If the target actor terminates
+the stream will be cancelled. When the stream is completed successfully the given ``onCompleteMessage``
+will be sent to the destination actor. When the stream is completed with failure a ``akka.actor.Status.Failure``
+message will be sent to the destination actor.
+
+.. warning::
+
+   There is no back-pressure signal from the destination actor, i.e. if the actor is not consuming
+   the messages fast enough the mailbox of the actor will grow. For potentially slow consumer actors
+   it is recommended to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
+   limiting stage in front of this stage.
 
 ActorPublisher
 ^^^^^^^^^^^^^^

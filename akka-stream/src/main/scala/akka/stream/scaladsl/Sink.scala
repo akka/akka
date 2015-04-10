@@ -66,14 +66,6 @@ object Sink extends SinkApply {
     new Sink(new SubscriberSink(subscriber, none, shape("SubscriberSink")))
 
   /**
-   * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
-   * be [[akka.stream.actor.ActorSubscriber]].
-   */
-  def apply[T](props: Props): Sink[T, ActorRef] =
-    new Sink(new PropsSink(props, none, shape("PropsSink")))
-
-  /**
    * A `Sink` that immediately cancels its upstream after materialization.
    */
   def cancelled[T]: Sink[T, Unit] = new Sink[Any, Unit](new CancelSink(none, shape("CancelledSink")))
@@ -206,4 +198,31 @@ object Sink extends SinkApply {
 
     Flow[T].transform(newOnCompleteStage).to(Sink.ignore).named("OnCompleteSink")
   }
+
+  /**
+   * Sends the elements of the stream to the given `ActorRef`.
+   * If the target actor terminates the stream will be cancelled.
+   * When the stream is completed successfully the given `onCompleteMessage`
+   * will be sent to the destination actor.
+   * When the stream is completed with failure a [[akka.actor.Status.Failure]]
+   * message will be sent to the destination actor.
+   *
+   * It will request at most `maxInputBufferSize` number of elements from
+   * upstream, but there is no back-pressure signal from the destination actor,
+   * i.e. if the actor is not consuming the messages fast enough the mailbox
+   * of the actor will grow. For potentially slow consumer actors it is recommended
+   * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
+   * limiting stage in front of this `Sink`.
+   */
+  def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, Unit] =
+    new Sink(new ActorRefSink(ref, onCompleteMessage, none, shape("ActorRefSink")))
+
+  /**
+   * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
+   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
+   * be [[akka.stream.actor.ActorSubscriber]].
+   */
+  def actorSubscriber[T](props: Props): Sink[T, ActorRef] =
+    new Sink(new ActorSubscriberSink(props, none, shape("ActorSubscriberSink")))
+
 }
