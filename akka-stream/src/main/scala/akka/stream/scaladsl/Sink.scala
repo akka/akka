@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.javadsl
 import akka.actor.{ ActorRef, Props }
 import akka.stream.impl._
 import akka.stream.{ SinkShape, Inlet, Outlet, Graph }
@@ -40,6 +41,9 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
     new Sink(module.withAttributes(attr).wrap())
 
   def named(name: String): Sink[In, Mat] = withAttributes(OperationAttributes.name(name))
+
+  /** Converts this Scala DSL element to it's Java DSL counterpart. */
+  def asJava: javadsl.Sink[In, Mat] = new javadsl.Sink(this)
 }
 
 object Sink extends SinkApply {
