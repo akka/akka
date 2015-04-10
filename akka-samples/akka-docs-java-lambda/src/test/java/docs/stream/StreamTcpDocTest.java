@@ -27,9 +27,7 @@ import akka.stream.*;
 import akka.stream.javadsl.FlexiMerge.ReadAllInputs;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.StreamTcp.*;
-import akka.stream.stage.Context;
-import akka.stream.stage.Directive;
-import akka.stream.stage.PushStage;
+import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 import akka.util.ByteString;
@@ -105,7 +103,7 @@ public class StreamTcpDocTest {
     connections.runForeach(connection -> {
       // server logic, parses incoming commands
       final PushStage<String, String> commandParser = new PushStage<String, String>() {
-        @Override public Directive onPush(String elem, Context<String> ctx) {
+        @Override public SyncDirective onPush(String elem, Context<String> ctx) {
           if (elem.equals("BYE"))
             return ctx.finish();
           else
@@ -154,7 +152,7 @@ public class StreamTcpDocTest {
         StreamTcp.get(system).outgoingConnection(localhost);
 
     final PushStage<String, ByteString> replParser = new PushStage<String, ByteString>() {
-      @Override public Directive onPush(String elem, Context<ByteString> ctx) {
+      @Override public SyncDirective onPush(String elem, Context<ByteString> ctx) {
         if (elem.equals("q"))
           return ctx.pushAndFinish(ByteString.fromString("BYE\n"));
         else

@@ -114,12 +114,12 @@ private[stream] object Stages {
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class MapAsync(f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsync) extends StageModule {
+  final case class MapAsync(parallelism: Int, f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsync) extends StageModule {
     def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class MapAsyncUnordered(f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsyncUnordered) extends StageModule {
+  final case class MapAsyncUnordered(parallelism: Int, f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsyncUnordered) extends StageModule {
     def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }

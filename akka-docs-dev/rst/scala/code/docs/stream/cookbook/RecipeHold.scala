@@ -33,12 +33,12 @@ object HoldOps {
     override def onPush(elem: T, ctx: DetachedContext[T]): UpstreamDirective = {
       currentValue = elem
       waitingFirstValue = false
-      if (ctx.isHolding) ctx.pushAndPull(currentValue)
+      if (ctx.isHoldingDownstream) ctx.pushAndPull(currentValue)
       else ctx.pull()
     }
 
     override def onPull(ctx: DetachedContext[T]): DownstreamDirective = {
-      if (waitingFirstValue) ctx.hold()
+      if (waitingFirstValue) ctx.holdDownstream()
       else ctx.push(currentValue)
     }
 

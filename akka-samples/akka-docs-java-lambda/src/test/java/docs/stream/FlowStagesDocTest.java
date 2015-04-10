@@ -47,11 +47,11 @@ public class FlowStagesDocTest {
       this.f = f;
     }
   
-    @Override public Directive onPush(A elem, Context<B> ctx) {
+    @Override public SyncDirective onPush(A elem, Context<B> ctx) {
       return ctx.push(f.apply(elem));
     }
 
-    @Override public Directive onPull(Context<B> ctx) {
+    @Override public SyncDirective onPull(Context<B> ctx) {
       return ctx.pull();
     }
   }
@@ -64,12 +64,12 @@ public class FlowStagesDocTest {
       this.p = p;
     }
   
-    @Override public Directive onPush(A elem, Context<A> ctx) {
+    @Override public SyncDirective onPush(A elem, Context<A> ctx) {
       if (p.test(elem)) return ctx.push(elem);
       else return ctx.pull();
     }
 
-    @Override public Directive onPull(Context<A> ctx) {
+    @Override public SyncDirective onPull(Context<A> ctx) {
       return ctx.pull();
     }
   }
@@ -80,13 +80,13 @@ public class FlowStagesDocTest {
     private A lastElem = null;
     private boolean oneLeft = false;
 
-    @Override public Directive onPush(A elem, Context<A> ctx) {
+    @Override public SyncDirective onPush(A elem, Context<A> ctx) {
       lastElem = elem;
       oneLeft = true;
       return ctx.push(elem);
     }
 
-    @Override public Directive onPull(Context<A> ctx) {
+    @Override public SyncDirective onPull(Context<A> ctx) {
       if (!ctx.isFinishing()) {
         // the main pulling logic is below as it is demonstrated on the illustration
         if (oneLeft) {
@@ -116,7 +116,7 @@ public class FlowStagesDocTest {
       this.f = f;
     }
   
-    @Override public Directive onPush(A elem, Context<B> ctx) {
+    @Override public SyncDirective onPush(A elem, Context<B> ctx) {
       return ctx.push(f.apply(elem));
     }
   }
@@ -127,7 +127,7 @@ public class FlowStagesDocTest {
       this.p = p;
     }
   
-    @Override public Directive onPush(A elem, Context<A> ctx) {
+    @Override public SyncDirective onPush(A elem, Context<A> ctx) {
       if (p.test(elem)) return ctx.push(elem);
       else return ctx.pull();
     }
@@ -138,7 +138,7 @@ public class FlowStagesDocTest {
   public class Duplicator2<A> extends StatefulStage<A, A> {
     @Override public StageState<A, A> initial() {
       return new StageState<A, A>() {
-        @Override public Directive onPush(A elem, Context<A> ctx) {
+        @Override public SyncDirective onPush(A elem, Context<A> ctx) {
           return emit(Arrays.asList(elem, elem).iterator(), ctx);
         }
       };

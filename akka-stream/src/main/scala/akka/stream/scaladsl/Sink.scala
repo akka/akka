@@ -17,6 +17,7 @@ import akka.stream.FlowMaterializer
 import akka.stream.impl.StreamLayout.Module
 import scala.util.control.NonFatal
 import akka.stream.Supervision
+import akka.stream.stage.SyncDirective
 
 /**
  * A `Sink` is a set of stream processing steps that has one open input and an attached output.
@@ -113,7 +114,7 @@ object Sink extends SinkApply {
       val promise = Promise[Unit]()
 
       val stage = new PushStage[T, Unit] {
-        override def onPush(elem: T, ctx: Context[Unit]): Directive = {
+        override def onPush(elem: T, ctx: Context[Unit]): SyncDirective = {
           f(elem)
           ctx.pull()
         }
@@ -154,7 +155,7 @@ object Sink extends SinkApply {
       val stage = new PushStage[T, U] {
         private var aggregator = zero
 
-        override def onPush(elem: T, ctx: Context[U]): Directive = {
+        override def onPush(elem: T, ctx: Context[U]): SyncDirective = {
           aggregator = f(aggregator, elem)
           ctx.pull()
         }
@@ -191,7 +192,7 @@ object Sink extends SinkApply {
 
     def newOnCompleteStage(): PushStage[T, Unit] = {
       new PushStage[T, Unit] {
-        override def onPush(elem: T, ctx: Context[Unit]): Directive = ctx.pull()
+        override def onPush(elem: T, ctx: Context[Unit]): SyncDirective = ctx.pull()
         override def onUpstreamFailure(cause: Throwable, ctx: Context[Unit]): TerminationDirective = {
           callback(Failure(cause))
           ctx.fail(cause)
