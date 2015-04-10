@@ -4,24 +4,24 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
-
 import akka.actor.{ ActorRef, Cancellable, PoisonPill, Props }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.scaladsl.OperationAttributes
 import akka.stream.{ Outlet, OverflowStrategy, Shape, SourceShape }
 import org.reactivestreams._
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success }
+import akka.stream.MaterializationContext
+import akka.stream.ActorFlowMaterializer
 
 /**
  * INTERNAL API
  */
 private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out]) extends Module {
 
-  def create(materializer: ActorFlowMaterializerImpl, flowName: String): (Publisher[Out] @uncheckedVariance, Mat)
+  def create(context: MaterializationContext): (Publisher[Out] @uncheckedVariance, Mat)
 
   override def replaceShape(s: Shape): Module =
     if (s == shape) this
@@ -54,7 +54,7 @@ private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out
  */
 private[akka] final class SubscriberSource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Subscriber[Out]](shape) {
 
-  override def create(materializer: ActorFlowMaterializerImpl, flowName: String): (Publisher[Out], Subscriber[Out]) = {
+  override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
     val processor = new Processor[Out, Out] {
       @volatile private var subscriber: Subscriber[_ >: Out] = null
 
@@ -81,7 +81,7 @@ private[akka] final class SubscriberSource[Out](val attributes: OperationAttribu
  * back-pressure upstream.
  */
 private[akka] final class PublisherSource[Out](p: Publisher[Out], val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) {
-  override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = (p, ())
+  override def create(context: MaterializationContext) = (p, ())
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Unit] = new PublisherSource[Out](p, attributes, shape)
   override def withAttributes(attr: OperationAttributes): Module = new PublisherSource[Out](p, attr, amendShape(attr))
@@ -95,15 +95,17 @@ private[akka] final class PublisherSource[Out](p: Publisher[Out], val attributes
  * The stream terminates with an error if the `Future` is completed with a failure.
  */
 private[akka] final class FutureSource[Out](future: Future[Out], val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) {
-  override def create(materializer: ActorFlowMaterializerImpl, flowName: String) =
+  override def create(context: MaterializationContext) =
     future.value match {
       case Some(Success(element)) ⇒
-        (SynchronousIterablePublisher(List(element), s"$flowName-0-synciterable"), ()) // Option is not Iterable. sigh
+        (SynchronousIterablePublisher(List(element), context.stageName), ()) // Option is not Iterable. sigh
       case Some(Failure(t)) ⇒
-        (ErrorPublisher(t, s"$flowName-0-error").asInstanceOf[Publisher[Out]], ())
+        (ErrorPublisher(t, context.stageName).asInstanceOf[Publisher[Out]], ())
       case None ⇒
-        (ActorPublisher[Out](materializer.actorOf(FuturePublisher.props(future, materializer.settings),
-          name = s"$flowName-0-future")), ()) // FIXME this does not need to be an actor
+        val actorMaterializer = ActorFlowMaterializer.downcast(context.materializer)
+        val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
+        (ActorPublisher[Out](actorMaterializer.actorOf(context,
+          FuturePublisher.props(future, effectiveSettings))), ()) // FIXME this does not need to be an actor
     }
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Unit] = new FutureSource(future, attributes, shape)
@@ -116,7 +118,7 @@ private[akka] final class FutureSource[Out](future: Future[Out], val attributes:
 private[akka] final class LazyEmptySource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Promise[Unit]](shape) {
   import ReactiveStreamsCompliance._
 
-  override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
+  override def create(context: MaterializationContext) = {
     val p = Promise[Unit]()
 
     val pub = new Publisher[Unit] {
@@ -129,7 +131,7 @@ private[akka] final class LazyEmptySource[Out](val attributes: OperationAttribut
         p.future.onComplete {
           case Success(_)  ⇒ tryOnComplete(s)
           case Failure(ex) ⇒ tryOnError(s, ex) // due to external signal
-        }(materializer.executionContext)
+        }(context.materializer.executionContext)
       }
     }
 
@@ -150,11 +152,12 @@ private[akka] final class LazyEmptySource[Out](val attributes: OperationAttribut
  */
 private[akka] final class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Out, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Cancellable](shape) {
 
-  override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
+  override def create(context: MaterializationContext) = {
     val cancelled = new AtomicBoolean(false)
-    val ref =
-      materializer.actorOf(TickPublisher.props(initialDelay, interval, tick, materializer.settings, cancelled),
-        name = s"$flowName-0-tick")
+    val actorMaterializer = ActorFlowMaterializer.downcast(context.materializer)
+    val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
+    val ref = actorMaterializer.actorOf(context,
+      TickPublisher.props(initialDelay, interval, tick, effectiveSettings, cancelled))
     (ActorPublisher[Out](ref), new Cancellable {
       override def cancel(): Boolean = {
         if (!isCancelled) ref ! PoisonPill
@@ -175,8 +178,8 @@ private[akka] final class TickSource[Out](initialDelay: FiniteDuration, interval
  */
 private[akka] final class ActorPublisherSource[Out](props: Props, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, ActorRef](shape) {
 
-  override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
-    val publisherRef = materializer.actorOf(props, name = s"$flowName-0-actorPublisher")
+  override def create(context: MaterializationContext) = {
+    val publisherRef = ActorFlowMaterializer.downcast(context.materializer).actorOf(context, props)
     (akka.stream.actor.ActorPublisher[Out](publisherRef), publisherRef)
   }
 
@@ -191,9 +194,9 @@ private[akka] final class ActorRefSource[Out](
   bufferSize: Int, overflowStrategy: OverflowStrategy, val attributes: OperationAttributes, shape: SourceShape[Out])
   extends SourceModule[Out, ActorRef](shape) {
 
-  override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
-    val ref = materializer.actorOf(ActorRefSourceActor.props(bufferSize, overflowStrategy),
-      name = s"$flowName-0-actorRef")
+  override def create(context: MaterializationContext) = {
+    val ref = ActorFlowMaterializer.downcast(context.materializer).actorOf(context,
+      ActorRefSourceActor.props(bufferSize, overflowStrategy))
     (akka.stream.actor.ActorPublisher[Out](ref), ref)
   }
 

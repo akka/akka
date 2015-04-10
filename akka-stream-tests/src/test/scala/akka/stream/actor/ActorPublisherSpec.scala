@@ -14,21 +14,32 @@ import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestEvent.Mute
 import akka.testkit.TestProbe
-
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import akka.stream.impl.SubscriberSink
+import akka.stream.ActorFlowMaterializerSettings
 
 object ActorPublisherSpec {
 
-  def testPublisherProps(probe: ActorRef): Props =
-    Props(new TestPublisher(probe)).withDispatcher("akka.test.stream-dispatcher")
+  val config =
+    s"""
+      my-dispatcher1 = $${akka.test.stream-dispatcher}
+      my-dispatcher2 = $${akka.test.stream-dispatcher}
+    """
+
+  def testPublisherProps(probe: ActorRef, useTestDispatcher: Boolean = true): Props = {
+    val p = Props(new TestPublisher(probe))
+    if (useTestDispatcher) p.withDispatcher("akka.test.stream-dispatcher")
+    else p
+  }
 
   case class TotalDemand(elements: Long)
   case class Produce(elem: String)
   case class Err(reason: String)
   case object Boom
   case object Complete
+  case object ThreadName
 
   class TestPublisher(probe: ActorRef) extends ActorPublisher[String] {
     import akka.stream.actor.ActorPublisherMessage._
@@ -39,6 +50,7 @@ object ActorPublisherSpec {
       case Err(reason)      ⇒ onError(new RuntimeException(reason) with NoStackTrace)
       case Complete         ⇒ onComplete()
       case Boom             ⇒ throw new RuntimeException("boom") with NoStackTrace
+      case ThreadName       ⇒ probe ! Thread.currentThread.getName
     }
   }
 
@@ -114,7 +126,7 @@ object ActorPublisherSpec {
 
 }
 
-class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
+class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with ImplicitSender {
 
   import akka.stream.actor.ActorPublisherSpec._
 
@@ -347,6 +359,35 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
 
         expectNoMsg()
       }
+    }
+
+    "use dispatcher from materializer settings" in {
+      implicit val materializer = ActorFlowMaterializer(
+        ActorFlowMaterializerSettings(system).withDispatcher("my-dispatcher1"))
+      val s = StreamTestKit.SubscriberProbe[String]()
+      val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false)).to(Sink(s)).run()
+      ref ! ThreadName
+      expectMsgType[String] should include("my-dispatcher1")
+    }
+
+    "use dispatcher from operation attributes" in {
+      implicit val materializer = ActorFlowMaterializer()
+      val s = StreamTestKit.SubscriberProbe[String]()
+      val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false))
+        .withAttributes(OperationAttributes.dispatcher("my-dispatcher1"))
+        .to(Sink(s)).run()
+      ref ! ThreadName
+      expectMsgType[String] should include("my-dispatcher1")
+    }
+
+    "use dispatcher from props" in {
+      implicit val materializer = ActorFlowMaterializer()
+      val s = StreamTestKit.SubscriberProbe[String]()
+      val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false).withDispatcher("my-dispatcher1"))
+        .withAttributes(OperationAttributes.dispatcher("my-dispatcher2"))
+        .to(Sink(s)).run()
+      ref ! ThreadName
+      expectMsgType[String] should include("my-dispatcher1")
     }
 
   }
