@@ -7,7 +7,7 @@ package akka.http.engine.parsing
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import scala.annotation.tailrec
 import akka.actor.ActorRef
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes._
 import akka.stream.stage.{ Context, PushPullStage }
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.{ Keep, Source }

@@ -16,7 +16,7 @@ import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._
 import akka.stream.scaladsl._
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes._
 import akka.stream.ActorFlowMaterializer
 import HttpEntity._
 import HttpMethods._
