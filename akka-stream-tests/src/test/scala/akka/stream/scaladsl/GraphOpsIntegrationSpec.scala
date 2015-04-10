@@ -10,6 +10,7 @@ import akka.stream.testkit.StreamTestKit.{ OnNext, SubscriberProbe }
 import akka.util.ByteString
 import akka.stream.{ Inlet, Outlet, Shape, Graph }
 import org.scalactic.ConversionCheckedTripleEquals
+import akka.stream.OperationAttributes
 
 object GraphOpsIntegrationSpec {
   import FlowGraph.Implicits._

@@ -14,7 +14,6 @@ import akka.actor.Props
 import akka.actor.ActorRef
 import akka.stream.javadsl.japi
 import scala.concurrent.ExecutionContextExecutor
-import akka.stream.scaladsl.OperationAttributes
 
 object ActorFlowMaterializer {
 

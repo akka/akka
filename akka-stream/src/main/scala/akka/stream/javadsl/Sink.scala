@@ -149,7 +149,7 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
     new Sink(delegate.mapMaterialized(f.apply _))
 
   def withAttributes(attr: OperationAttributes): javadsl.Sink[In, Mat] =
-    new Sink(delegate.withAttributes(attr.asScala))
+    new Sink(delegate.withAttributes(attr))
 
   def named(name: String): javadsl.Sink[In, Mat] =
     new Sink(delegate.named(name))

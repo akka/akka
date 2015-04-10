@@ -6,7 +6,7 @@ package akka.stream.impl
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicBoolean, AtomicReference }
 
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.scaladsl.{ Keep, OperationAttributes }
+import akka.stream.scaladsl.Keep
 import akka.stream._
 import org.reactivestreams.{ Subscription, Publisher, Subscriber }
 import akka.event.Logging.simpleName

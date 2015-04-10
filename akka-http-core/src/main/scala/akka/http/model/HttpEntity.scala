@@ -11,7 +11,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
 import akka.util.ByteString
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes._
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.stream.TimerTransformer

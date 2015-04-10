@@ -318,7 +318,7 @@ abstract class FlexiMerge[T, Out, S <: Shape](val shape: S, val attributes: Oper
 
   def createMergeLogic(s: S): MergeLogic[T, Out]
 
-  override def toString = attributes.asScala.nameLifted match {
+  override def toString = attributes.nameLifted match {
     case Some(n) ⇒ n
     case None    ⇒ super.toString
   }

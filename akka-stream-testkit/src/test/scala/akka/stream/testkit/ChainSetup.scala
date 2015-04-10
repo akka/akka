@@ -5,6 +5,7 @@ import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
 import akka.stream.ActorFlowMaterializer
+import akka.stream.OperationAttributes
 
 class ChainSetup[In, Out](
   stream: Flow[In, In, _] ⇒ Flow[In, Out, _],

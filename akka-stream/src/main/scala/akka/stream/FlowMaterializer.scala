@@ -5,7 +5,6 @@ package akka.stream
 
 import scala.concurrent.ExecutionContextExecutor
 import akka.japi
-import akka.stream.scaladsl.OperationAttributes
 
 abstract class FlowMaterializer {
 

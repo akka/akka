@@ -6,7 +6,7 @@ package akka.stream.impl
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.{ ActorRef, Cancellable, PoisonPill, Props }
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.scaladsl.OperationAttributes
+import akka.stream.OperationAttributes
 import akka.stream.{ Outlet, OverflowStrategy, Shape, SourceShape }
 import org.reactivestreams._
 import scala.annotation.unchecked.uncheckedVariance

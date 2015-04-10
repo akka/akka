@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
-
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.Supervision.resumingDecider
@@ -12,6 +11,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.TE
 import org.reactivestreams.Publisher
+import akka.stream.ActorOperationAttributes
 
 class FlowSplitWhenSpec extends AkkaSpec {
 
@@ -145,7 +145,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
       val exc = TE("test")
       val publisher = Source(publisherProbeProbe)
         .splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
-        .withAttributes(OperationAttributes.supervisionStrategy(resumingDecider))
+        .withAttributes(ActorOperationAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[Source[Int, Unit]]()
       publisher.subscribe(subscriber)
