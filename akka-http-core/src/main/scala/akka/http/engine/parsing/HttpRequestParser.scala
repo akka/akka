@@ -9,6 +9,7 @@ import scala.annotation.tailrec
 import akka.actor.ActorRef
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.stage.{ Context, PushPullStage }
+import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.{ Keep, Source }
 import akka.util.ByteString
 import akka.http.model.parser.CharacterClasses
@@ -128,7 +129,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
 
       def expect100continueHandling[T, Mat]: Source[T, Mat] ⇒ Source[T, Mat] =
         if (expect100continue) {
-          _.section(name("expect100continueTrigger"))(_.transform(() ⇒ new PushPullStage[T, T] {
+          _.via(Flow[T].transform(() ⇒ new PushPullStage[T, T] {
             private var oneHundredContinueSent = false
             def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
             def onPull(ctx: Context[T]) = {
@@ -139,7 +140,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
               }
               ctx.pull()
             }
-          }))
+          }).named("expect100continueTrigger"))
         } else identityFunc
 
       teh match {

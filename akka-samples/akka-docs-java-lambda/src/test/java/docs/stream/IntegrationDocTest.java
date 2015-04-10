@@ -347,8 +347,11 @@ public class IntegrationDocTest {
         //#email-addresses-mapAsync-supervision
         final OperationAttributes resumeAttrib =
           OperationAttributes.supervisionStrategy(Supervision.getResumingDecider());
-        final Source<String, BoxedUnit> emailAddresses = authors.section(resumeAttrib,
-          flow -> flow.mapAsync(4, author -> addressSystem.lookupEmail(author.handle)));
+        final Flow<Author, String, BoxedUnit> lookupEmail =
+            Flow.of(Author.class)
+            .mapAsync(4, author -> addressSystem.lookupEmail(author.handle))
+            .withAttributes(resumeAttrib);
+        final Source<String, BoxedUnit> emailAddresses = authors.via(lookupEmail);
 
         //#email-addresses-mapAsync-supervision
       }
@@ -452,12 +455,12 @@ public class IntegrationDocTest {
           .map(o -> o.get());
 
         //#blocking-map
-        final RunnableFlow sendTextMessages =
-          phoneNumbers
-            .section(OperationAttributes.dispatcher("blocking-dispatcher"), blockingSection ->
-              blockingSection
-                .map(phoneNo -> smsServer.send(new TextMessage(phoneNo, "I like your tweet"))))
-            .to(Sink.ignore());
+        final Flow<String, Boolean, BoxedUnit> send =
+          Flow.of(String.class)
+          .map(phoneNo -> smsServer.send(new TextMessage(phoneNo, "I like your tweet")))
+          .withAttributes(OperationAttributes.dispatcher("blocking-dispatcher"));
+        final RunnableFlow<?> sendTextMessages =
+          phoneNumbers.via(send).to(Sink.ignore());
 
         sendTextMessages.run(mat);
         //#blocking-map

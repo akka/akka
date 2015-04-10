@@ -4,24 +4,23 @@
 package docs.stream;
 
 import static org.junit.Assert.assertEquals;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
+
 import akka.actor.ActorSystem;
 import akka.stream.ActorFlowMaterializer;
 import akka.stream.ActorFlowMaterializerSettings;
 import akka.stream.FlowMaterializer;
 import akka.stream.Supervision;
+import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.OperationAttributes;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -93,9 +92,11 @@ public class FlowErrorDocTest {
       else
         return Supervision.stop();
     };
+    final Flow<Integer, Integer, BoxedUnit> flow =
+        Flow.of(Integer.class).filter(elem -> 100 / elem < 50).map(elem -> 100 / (5 - elem))
+        .withAttributes(OperationAttributes.supervisionStrategy(decider));
     final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
-      .section(OperationAttributes.supervisionStrategy(decider), 
-        flow -> flow.filter(elem -> 100 / elem < 50).map(elem -> 100 / (5 - elem)));
+      .via(flow); 
     final Sink<Integer, Future<Integer>> fold =
       Sink.fold(0, (acc, elem) -> acc + elem);
     final Future<Integer> result = source.runWith(fold, mat);
@@ -116,12 +117,14 @@ public class FlowErrorDocTest {
       else
         return Supervision.stop();
     };
+    final Flow<Integer, Integer, BoxedUnit> flow =
+      Flow.of(Integer.class).scan(0, (acc, elem) -> {
+        if (elem < 0) throw new IllegalArgumentException("negative not allowed");
+        else return acc + elem;
+      })
+      .withAttributes(OperationAttributes.supervisionStrategy(decider));
     final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(1, 3, -1, 5, 7))
-      .section(OperationAttributes.supervisionStrategy(decider), 
-        flow -> flow.scan(0, (acc, elem) -> {
-          if (elem < 0) throw new IllegalArgumentException("negative not allowed");
-          else return acc + elem;
-        }));
+      .via(flow);
     final Future<List<Integer>> result = source.grouped(1000)
       .runWith(Sink.<List<Integer>>head(), mat);
     // the negative element cause the scan stage to be restarted,

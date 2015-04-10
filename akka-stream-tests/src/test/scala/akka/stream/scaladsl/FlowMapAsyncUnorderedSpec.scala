@@ -112,10 +112,13 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
     "resume after future failure" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).section(supervisionStrategy(resumingDecider))(_.mapAsyncUnordered(4, n ⇒ Future {
-        if (n == 3) throw new RuntimeException("err3") with NoStackTrace
-        else n
-      })).to(Sink(c)).run()
+      val p = Source(1 to 5)
+        .mapAsyncUnordered(4, n ⇒ Future {
+          if (n == 3) throw new RuntimeException("err3") with NoStackTrace
+          else n
+        })
+        .withAttributes(supervisionStrategy(resumingDecider))
+        .to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       val expected = (OnComplete :: List(1, 2, 4, 5).map(OnNext.apply)).toSet
@@ -125,10 +128,12 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
     "resume when mapAsyncUnordered throws" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).section(supervisionStrategy(resumingDecider))(_.mapAsyncUnordered(4, n ⇒
-        if (n == 3) throw new RuntimeException("err4") with NoStackTrace
-        else Future(n))).
-        to(Sink(c)).run()
+      val p = Source(1 to 5)
+        .mapAsyncUnordered(4, n ⇒
+          if (n == 3) throw new RuntimeException("err4") with NoStackTrace
+          else Future(n))
+        .withAttributes(supervisionStrategy(resumingDecider))
+        .to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       val expected = (OnComplete :: List(1, 2, 4, 5).map(OnNext.apply)).toSet
@@ -145,8 +150,9 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
 
     "resume when future is completed with null" in {
       val c = StreamTestKit.SubscriberProbe[String]()
-      val p = Source(List("a", "b", "c")).section(supervisionStrategy(resumingDecider))(
-        _.mapAsyncUnordered(4, elem ⇒ if (elem == "b") Future.successful(null) else Future.successful(elem)))
+      val p = Source(List("a", "b", "c"))
+        .mapAsyncUnordered(4, elem ⇒ if (elem == "b") Future.successful(null) else Future.successful(elem))
+        .withAttributes(supervisionStrategy(resumingDecider))
         .to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)

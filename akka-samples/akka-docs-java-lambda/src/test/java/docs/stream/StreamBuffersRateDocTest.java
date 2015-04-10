@@ -58,13 +58,14 @@ public class StreamBuffersRateDocTest {
     //#materializer-buffer
 
     //#section-buffer
-    final Flow<Integer, Integer, BoxedUnit> flow =
+    final Flow<Integer, Integer, BoxedUnit> flow1 =
       Flow.of(Integer.class)
-        .section(OperationAttributes.inputBuffer(1, 1), sectionFlow -> 
-          // the buffer size of this map is 1
-          sectionFlow.<Integer>map(elem -> elem * 2)
-        )
-        .map(elem -> elem / 2); // the buffer size of this map is the default
+      .map(elem -> elem * 2) // the buffer size of this map is 1
+      .withAttributes(OperationAttributes.inputBuffer(1, 1));
+    final Flow<Integer, Integer, BoxedUnit> flow2 =
+      flow1.via(
+        Flow.of(Integer.class)
+        .map(elem -> elem / 2)); // the buffer size of this map is the default
     //#section-buffer
   }
   
