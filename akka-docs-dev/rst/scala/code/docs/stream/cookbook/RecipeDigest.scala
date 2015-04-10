@@ -23,12 +23,12 @@ class RecipeDigest extends RecipeSpec {
       def digestCalculator(algorithm: String) = new PushPullStage[ByteString, ByteString] {
         val digest = MessageDigest.getInstance(algorithm)
 
-        override def onPush(chunk: ByteString, ctx: Context[ByteString]): Directive = {
+        override def onPush(chunk: ByteString, ctx: Context[ByteString]): SyncDirective = {
           digest.update(chunk.toArray)
           ctx.pull()
         }
 
-        override def onPull(ctx: Context[ByteString]): Directive = {
+        override def onPull(ctx: Context[ByteString]): SyncDirective = {
           if (ctx.isFinishing) ctx.pushAndFinish(ByteString(digest.digest()))
           else ctx.pull()
         }

@@ -23,21 +23,21 @@ class FlowStagesSpec extends AkkaSpec with ScalaFutures {
 
       //#one-to-one
       class Map[A, B](f: A => B) extends PushPullStage[A, B] {
-        override def onPush(elem: A, ctx: Context[B]): Directive =
+        override def onPush(elem: A, ctx: Context[B]): SyncDirective =
           ctx.push(f(elem))
 
-        override def onPull(ctx: Context[B]): Directive =
+        override def onPull(ctx: Context[B]): SyncDirective =
           ctx.pull()
       }
       //#one-to-one
 
       //#many-to-one
       class Filter[A](p: A => Boolean) extends PushPullStage[A, A] {
-        override def onPush(elem: A, ctx: Context[A]): Directive =
+        override def onPush(elem: A, ctx: Context[A]): SyncDirective =
           if (p(elem)) ctx.push(elem)
           else ctx.pull()
 
-        override def onPull(ctx: Context[A]): Directive =
+        override def onPull(ctx: Context[A]): SyncDirective =
           ctx.pull()
       }
       //#many-to-one
@@ -47,13 +47,13 @@ class FlowStagesSpec extends AkkaSpec with ScalaFutures {
         private var lastElem: A = _
         private var oneLeft = false
 
-        override def onPush(elem: A, ctx: Context[A]): Directive = {
+        override def onPush(elem: A, ctx: Context[A]): SyncDirective = {
           lastElem = elem
           oneLeft = true
           ctx.push(elem)
         }
 
-        override def onPull(ctx: Context[A]): Directive =
+        override def onPull(ctx: Context[A]): SyncDirective =
           if (!ctx.isFinishing) {
             // the main pulling logic is below as it is demonstrated on the illustration
             if (oneLeft) {
@@ -95,12 +95,12 @@ class FlowStagesSpec extends AkkaSpec with ScalaFutures {
 
       //#pushstage
       class Map[A, B](f: A => B) extends PushStage[A, B] {
-        override def onPush(elem: A, ctx: Context[B]): Directive =
+        override def onPush(elem: A, ctx: Context[B]): SyncDirective =
           ctx.push(f(elem))
       }
 
       class Filter[A](p: A => Boolean) extends PushStage[A, A] {
-        override def onPush(elem: A, ctx: Context[A]): Directive =
+        override def onPush(elem: A, ctx: Context[A]): SyncDirective =
           if (p(elem)) ctx.push(elem)
           else ctx.pull()
       }
@@ -112,7 +112,7 @@ class FlowStagesSpec extends AkkaSpec with ScalaFutures {
       //#doubler-stateful
       class Duplicator[A]() extends StatefulStage[A, A] {
         override def initial: StageState[A, A] = new StageState[A, A] {
-          override def onPush(elem: A, ctx: Context[A]): Directive =
+          override def onPush(elem: A, ctx: Context[A]): SyncDirective =
             emit(List(elem, elem).iterator, ctx)
         }
       }

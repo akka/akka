@@ -4,7 +4,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream._
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import org.scalautils.ConversionCheckedTripleEquals
+import org.scalactic.ConversionCheckedTripleEquals
 import akka.stream.testkit.StreamTestKit._
 
 class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {

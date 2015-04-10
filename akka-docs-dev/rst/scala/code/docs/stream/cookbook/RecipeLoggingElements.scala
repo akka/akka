@@ -30,7 +30,7 @@ class RecipeLoggingElements extends RecipeSpec {
       class LoggingStage[T] extends PushStage[T, T] {
         private val log = Logging(system, "loggingName")
 
-        override def onPush(elem: T, ctx: Context[T]): Directive = {
+        override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
           log.debug("Element flowing through: {}", elem)
           ctx.push(elem)
         }

@@ -3,6 +3,9 @@
  */
 package akka.stream.impl
 
+import scala.reflect.classTag
+import scala.reflect.ClassTag
+
 /**
  * INTERNAL API
  */
@@ -17,67 +20,65 @@ private[akka] object FixedSizeBuffer {
    *
    * Returns a specialized instance for power-of-two sized buffers.
    */
-  def apply(size: Int): FixedSizeBuffer =
-    if (((size - 1) & size) == 0) new PowerOfTwoFixedSizeBuffer(size)
+  def apply[T](size: Int): FixedSizeBuffer[T] =
+    if (size < 1) throw new IllegalArgumentException("size must be positive")
+    else if (((size - 1) & size) == 0) new PowerOfTwoFixedSizeBuffer(size)
     else new ModuloFixedSizeBuffer(size)
 
-  sealed abstract class FixedSizeBuffer(val size: Int) {
+  sealed abstract class FixedSizeBuffer[T](val size: Int) {
+    private val buffer = new Array[AnyRef](size)
+
     protected var readIdx = 0
     protected var writeIdx = 0
-    private var remainingCapacity = size
-    private val buffer = Array.ofDim[Any](size)
+    def used: Int = writeIdx - readIdx
 
-    protected def incWriteIdx(): Unit
-    protected def decWriteIdx(): Unit
-    protected def incReadIdx(): Unit
+    def isFull: Boolean = used == size
+    def isEmpty: Boolean = used == 0
 
-    def isFull: Boolean = remainingCapacity == 0
-    def isEmpty: Boolean = remainingCapacity == size
-
-    def enqueue(elem: Any): Unit = {
-      buffer(writeIdx) = elem
-      incWriteIdx()
-      remainingCapacity -= 1
+    def enqueue(elem: T): Int = {
+      put(writeIdx, elem)
+      val ret = writeIdx
+      writeIdx += 1
+      ret
     }
 
-    def dequeue(): Any = {
-      val result = buffer(readIdx)
+    protected def toOffset(idx: Int): Int
+
+    def put(idx: Int, elem: T): Unit = buffer(toOffset(idx)) = elem.asInstanceOf[AnyRef]
+    def get(idx: Int): T = buffer(toOffset(idx)).asInstanceOf[T]
+
+    def peek(): T = get(readIdx)
+
+    def dequeue(): T = {
+      val result = get(readIdx)
       dropHead()
       result
     }
 
     def clear(): Unit = {
-      java.util.Arrays.fill(buffer.asInstanceOf[Array[Object]], null)
+      java.util.Arrays.fill(buffer, null)
       readIdx = 0
       writeIdx = 0
-      remainingCapacity = size
     }
 
     def dropHead(): Unit = {
-      buffer(readIdx) = null
-      incReadIdx()
-      remainingCapacity += 1
+      put(readIdx, null.asInstanceOf[T])
+      readIdx += 1
     }
 
     def dropTail(): Unit = {
-      decWriteIdx()
-      //buffer(writeIdx) = null
-      remainingCapacity += 1
+      writeIdx -= 1
+      put(writeIdx, null.asInstanceOf[T])
     }
   }
 
-  private final class ModuloFixedSizeBuffer(_size: Int) extends FixedSizeBuffer(_size) {
-    override protected def incReadIdx(): Unit = readIdx = (readIdx + 1) % size
-    override protected def decWriteIdx(): Unit = writeIdx = (writeIdx + size - 1) % size
-    override protected def incWriteIdx(): Unit = writeIdx = (writeIdx + 1) % size
+  private final class ModuloFixedSizeBuffer[T](_size: Int) extends FixedSizeBuffer[T](_size) {
+    override protected def toOffset(idx: Int): Int = idx % size
   }
 
-  private final class PowerOfTwoFixedSizeBuffer(_size: Int) extends FixedSizeBuffer(_size) {
+  private final class PowerOfTwoFixedSizeBuffer[T](_size: Int) extends FixedSizeBuffer[T](_size) {
     private val Mask = size - 1
-    override protected def incReadIdx(): Unit = readIdx = (readIdx + 1) & Mask
-    override protected def decWriteIdx(): Unit = writeIdx = (writeIdx - 1) & Mask
-    override protected def incWriteIdx(): Unit = writeIdx = (writeIdx + 1) & Mask
+    override protected def toOffset(idx: Int): Int = idx & Mask
   }
 
 }
-

@@ -20,14 +20,14 @@ class RecipeByteStrings extends RecipeSpec {
       class Chunker(val chunkSize: Int) extends PushPullStage[ByteString, ByteString] {
         private var buffer = ByteString.empty
 
-        override def onPush(elem: ByteString, ctx: Context[ByteString]): Directive = {
+        override def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective = {
           buffer ++= elem
           emitChunkOrPull(ctx)
         }
 
-        override def onPull(ctx: Context[ByteString]): Directive = emitChunkOrPull(ctx)
+        override def onPull(ctx: Context[ByteString]): SyncDirective = emitChunkOrPull(ctx)
 
-        private def emitChunkOrPull(ctx: Context[ByteString]): Directive = {
+        private def emitChunkOrPull(ctx: Context[ByteString]): SyncDirective = {
           if (buffer.isEmpty) ctx.pull()
           else {
             val (emit, nextBuffer) = buffer.splitAt(chunkSize)
@@ -57,7 +57,7 @@ class RecipeByteStrings extends RecipeSpec {
       class ByteLimiter(val maximumBytes: Long) extends PushStage[ByteString, ByteString] {
         private var count = 0
 
-        override def onPush(chunk: ByteString, ctx: Context[ByteString]): Directive = {
+        override def onPush(chunk: ByteString, ctx: Context[ByteString]): SyncDirective = {
           count += chunk.size
           if (count > maximumBytes) ctx.fail(new IllegalStateException("Too much bytes"))
           else ctx.push(chunk)
