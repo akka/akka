@@ -409,7 +409,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
     new Flow(delegate.concat(second.asScala).mapMaterialized(p ⇒ Pair(p._1, p._2)))
 
   def withAttributes(attr: OperationAttributes): javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.withAttributes(attr.asScala))
+    new Flow(delegate.withAttributes(attr))
 
   def named(name: String): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.named(name))

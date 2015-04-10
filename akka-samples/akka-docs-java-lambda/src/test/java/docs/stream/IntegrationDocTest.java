@@ -346,7 +346,7 @@ public class IntegrationDocTest {
 
         //#email-addresses-mapAsync-supervision
         final OperationAttributes resumeAttrib =
-          OperationAttributes.supervisionStrategy(Supervision.getResumingDecider());
+          ActorOperationAttributes.withSupervisionStrategy(Supervision.getResumingDecider());
         final Flow<Author, String, BoxedUnit> lookupEmail =
             Flow.of(Author.class)
             .mapAsync(4, author -> addressSystem.lookupEmail(author.handle))
@@ -458,7 +458,7 @@ public class IntegrationDocTest {
         final Flow<String, Boolean, BoxedUnit> send =
           Flow.of(String.class)
           .map(phoneNo -> smsServer.send(new TextMessage(phoneNo, "I like your tweet")))
-          .withAttributes(OperationAttributes.dispatcher("blocking-dispatcher"));
+          .withAttributes(ActorOperationAttributes.dispatcher("blocking-dispatcher"));
         final RunnableFlow<?> sendTextMessages =
           phoneNumbers.via(send).to(Sink.ignore());
 

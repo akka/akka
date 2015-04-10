@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.scaladsl.FlexiMerge.MergeLogic
-import akka.stream.{ Inlet, Shape, InPort, Graph }
+import akka.stream.{ Inlet, Shape, InPort, Graph, OperationAttributes }
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import akka.stream.impl.StreamLayout

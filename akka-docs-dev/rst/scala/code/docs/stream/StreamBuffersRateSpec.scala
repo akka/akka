@@ -3,6 +3,7 @@ package docs.stream
 import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings, ActorFlowMaterializer }
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
+import akka.stream.OperationAttributes
 
 class StreamBuffersRateSpec extends AkkaSpec {
   implicit val mat = ActorFlowMaterializer()

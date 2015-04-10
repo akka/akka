@@ -9,7 +9,7 @@ import akka.event.LoggingAdapter;
 import akka.event.Logging;
 import akka.japi.pf.ReceiveBuilder;
 import akka.stream.scaladsl.FlexiMerge;
-import akka.stream.scaladsl.OperationAttributes;
+import akka.stream.OperationAttributes;
 import akka.testkit.ErrorFilter;
 import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;

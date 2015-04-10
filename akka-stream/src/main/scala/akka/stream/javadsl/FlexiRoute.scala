@@ -285,7 +285,7 @@ abstract class FlexiRoute[In, S <: Shape](val shape: S, val attributes: Operatio
    */
   def createRouteLogic(s: S): RouteLogic[In]
 
-  override def toString = attributes.asScala.nameLifted match {
+  override def toString = attributes.nameLifted match {
     case Some(n) ⇒ n
     case None    ⇒ super.toString
   }

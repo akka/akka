@@ -7,7 +7,7 @@ import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.impl.ActorFlowMaterializerImpl
 import akka.stream.impl.Stages.Identity
 import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes
 import akka.stream.stage.{ Context, PushStage }
 import org.reactivestreams.{ Processor, Publisher }
 

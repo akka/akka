@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.impl.StreamLayout
-import akka.stream.{ Outlet, Shape, OutPort, Graph }
+import akka.stream.{ Outlet, Shape, OutPort, Graph, OperationAttributes }
 import scala.collection.immutable
 import akka.stream.impl.Junctions.FlexiRouteModule
 

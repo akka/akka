@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.language.existentials
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes._
 import akka.stream.scaladsl.{ Keep, Source, Flow }
 import akka.stream.stage._
 

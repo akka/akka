@@ -13,7 +13,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
-import akka.stream.scaladsl.OperationAttributes.supervisionStrategy
+import akka.stream.ActorOperationAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit.StreamTestKit.OnNext
 import akka.stream.testkit.StreamTestKit.OnComplete
