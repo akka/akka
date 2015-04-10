@@ -26,7 +26,7 @@ class StreamTcpDocSpec extends AkkaSpec {
   // silence sysout
   def println(s: String) = ()
 
-  "simple server connection" ignore {
+  "simple server connection" in {
     {
       //#echo-server-simple-bind
       val localhost = new InetSocketAddress("127.0.0.1", 8888)
@@ -54,29 +54,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     }
   }
 
-  "simple repl client" ignore {
-    val sys: ActorSystem = ???
-
-    val localhost = TestUtils.temporaryServerAddress()
-    //#repl-client
-    val connection: Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-      StreamTcp().outgoingConnection(localhost)
-
-    val repl = Flow[ByteString]
-      .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
-      .map(text => println("Server: " + text))
-      .map(_ => readLine("> "))
-      .map {
-        case "q" =>
-          sys.shutdown(); ByteString("BYE")
-        case text => ByteString(s"$text")
-      }
-
-    connection.join(repl)
-    //#repl-client
-  }
-
-  "initial server banner echo server" ignore {
+  "initial server banner echo server" in {
     val localhost = TestUtils.temporaryServerAddress()
     val connections = StreamTcp().bind(localhost)
     val serverProbe = TestProbe()
@@ -150,7 +128,7 @@ class StreamTcpDocSpec extends AkkaSpec {
       .map(_ => readLine("> "))
       .transform(() ⇒ replParser)
 
-    connection.join(repl)
+    connection.join(repl).run()
     //#repl-client
 
     serverProbe.expectMsg("Hello world")
