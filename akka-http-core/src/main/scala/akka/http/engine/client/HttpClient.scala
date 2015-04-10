@@ -253,8 +253,8 @@ private[http] object HttpClient {
   def recover[A, B >: A](pf: PartialFunction[Throwable, B]): () ⇒ PushPullStage[A, B] = {
     val stage = new PushPullStage[A, B] {
       var recovery: Option[B] = None
-      def onPush(elem: A, ctx: Context[B]): Directive = ctx.push(elem)
-      def onPull(ctx: Context[B]): Directive = recovery match {
+      def onPush(elem: A, ctx: Context[B]): SyncDirective = ctx.push(elem)
+      def onPull(ctx: Context[B]): SyncDirective = recovery match {
         case None    ⇒ ctx.pull()
         case Some(x) ⇒ { recovery = null; ctx.push(x) }
         case null    ⇒ ctx.finish()
