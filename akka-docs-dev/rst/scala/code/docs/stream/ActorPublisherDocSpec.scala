@@ -76,7 +76,7 @@ class ActorPublisherDocSpec extends AkkaSpec {
       testActor ! s
 
     //#actor-publisher-usage
-    val jobManagerSource = Source[JobManager.Job](JobManager.props)
+    val jobManagerSource = Source.actorPublisher[JobManager.Job](JobManager.props)
     val ref = Flow[JobManager.Job]
       .map(_.payload.toUpperCase)
       .map { elem => println(elem); elem }

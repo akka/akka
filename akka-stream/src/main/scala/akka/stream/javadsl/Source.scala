@@ -7,7 +7,7 @@ import java.util.concurrent.Callable
 import akka.actor.{ Cancellable, ActorRef, Props }
 import akka.japi.Util
 import akka.stream._
-import akka.stream.impl.PropsSource
+import akka.stream.impl.ActorPublisherSource
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import scala.annotation.unchecked.uncheckedVariance
@@ -119,14 +119,6 @@ object Source {
     new Source(scaladsl.Source(initialDelay, interval, tick))
 
   /**
-   * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
-   * be [[akka.stream.actor.ActorPublisher]].
-   */
-  def from[T](props: Props): Source[T, ActorRef] =
-    new Source(scaladsl.Source.apply(props))
-
-  /**
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
@@ -156,6 +148,41 @@ object Source {
    */
   def subscriber[T](): Source[T, Subscriber[T]] =
     new Source(scaladsl.Source.subscriber)
+
+  /**
+   * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
+   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
+   * be [[akka.stream.actor.ActorPublisher]].
+   */
+  def actorPublisher[T](props: Props): Source[T, ActorRef] =
+    new Source(scaladsl.Source.actorPublisher(props))
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
+   * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped
+   * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
+   * not matter.
+   *
+   * The stream can be completed successfully by sending [[akka.actor.PoisonPill]] or
+   * [[akka.actor.Status.Success]] to the actor reference.
+   *
+   * The stream can be completed with failure by sending [[akka.actor.Status.Failure]] to the
+   * actor reference.
+   *
+   * The actor will be stopped when the stream is completed, failed or cancelled from downstream,
+   * i.e. you can watch it to get notified when that happens.
+   *
+   * @param bufferSize The size of the buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   */
+  def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
+    new Source(scaladsl.Source.actorRef(bufferSize, overflowStrategy))
 
   /**
    * Concatenates two sources so that the first element

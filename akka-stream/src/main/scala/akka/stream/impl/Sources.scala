@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.{ ActorRef, Cancellable, PoisonPill, Props }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.scaladsl.OperationAttributes
-import akka.stream.{ Outlet, Shape, SourceShape }
+import akka.stream.{ Outlet, OverflowStrategy, Shape, SourceShape }
 import org.reactivestreams._
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -173,13 +173,32 @@ private[akka] final class TickSource[Out](initialDelay: FiniteDuration, interval
  * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
  */
-private[akka] final class PropsSource[Out](props: Props, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, ActorRef](shape) {
+private[akka] final class ActorPublisherSource[Out](props: Props, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, ActorRef](shape) {
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
-    val publisherRef = materializer.actorOf(props, name = s"$flowName-0-props")
+    val publisherRef = materializer.actorOf(props, name = s"$flowName-0-actorPublisher")
     (akka.stream.actor.ActorPublisher[Out](publisherRef), publisherRef)
   }
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] = new PropsSource[Out](props, attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new PropsSource(props, attr, amendShape(attr))
+  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] = new ActorPublisherSource[Out](props, attributes, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new ActorPublisherSource(props, attr, amendShape(attr))
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class ActorRefSource[Out](
+  bufferSize: Int, overflowStrategy: OverflowStrategy, val attributes: OperationAttributes, shape: SourceShape[Out])
+  extends SourceModule[Out, ActorRef](shape) {
+
+  override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
+    val ref = materializer.actorOf(ActorRefSourceActor.props(bufferSize, overflowStrategy),
+      name = s"$flowName-0-actorRef")
+    (akka.stream.actor.ActorPublisher[Out](ref), ref)
+  }
+
+  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] =
+    new ActorRefSource[Out](bufferSize, overflowStrategy, attributes, shape)
+  override def withAttributes(attr: OperationAttributes): Module =
+    new ActorRefSource(bufferSize, overflowStrategy, attr, amendShape(attr))
 }
