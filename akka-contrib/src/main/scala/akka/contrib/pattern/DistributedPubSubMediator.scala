@@ -5,6 +5,7 @@
 package akka.contrib.pattern
 
 import scala.collection.immutable
+import scala.collection.immutable.Set
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import java.net.URLEncoder
@@ -120,11 +121,11 @@ object DistributedPubSubMediator {
   def getTopicsInstance: GetTopics = GetTopics
 
   @SerialVersionUID(1L)
-  final case class CurrentTopics(topics: Map[String, ActorRef]) {
+  final case class CurrentTopics(topics: Set[String]) {
     /**
      * Java API
      */
-    def getTopics(): java.util.Map[String, ActorRef] = {
+    def getTopics(): java.util.Set[String] = {
       import scala.collection.JavaConverters._
       topics.asJava
     }
@@ -213,7 +214,7 @@ object DistributedPubSubMediator {
 
       def business: Receive
 
-      def receive = business orElse defaultReceive
+      def receive = business.orElse[Any, Unit](defaultReceive)
 
       def remove(ref: ActorRef): Unit = {
         if (subscribers.contains(ref))
@@ -574,8 +575,15 @@ class DistributedPubSubMediator(
       content = bucket.content + (key -> ValueHolder(v, valueOption))))
   }
 
-  def getCurrentTopics(): Map[String, ActorRef] = {
-    context.children.map(ref ⇒ (URLDecoder.decode(ref.path.name, "utf-8"), ref)).toMap
+  def getCurrentTopics(): Set[String] = {
+    val topicPrefix = self.path.toStringWithoutAddress
+    (for {
+      (_, bucket) ← registry
+      (key, value) ← bucket.content
+      if key.startsWith(topicPrefix)
+      topic = key.substring(topicPrefix.length + 1)
+      if !topic.contains('/') // exclude group topics
+    } yield URLDecoder.decode(topic, "utf-8")).toSet
   }
 
   def registerTopic(ref: ActorRef): Unit = {
