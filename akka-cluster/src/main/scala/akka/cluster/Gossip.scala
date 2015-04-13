@@ -20,7 +20,7 @@ private[cluster] object Gossip {
     if (members.isEmpty) empty else empty.copy(members = members)
 
   private val leaderMemberStatus = Set[MemberStatus](Up, Leaving)
-  val convergenceMemberStatus = Set[MemberStatus](Up, Leaving) // FIXME private
+  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving)
   val convergenceSkipUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
   val removeUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
 
