@@ -242,7 +242,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   /** INTERNAL API */
   override private[stream] def andThen[U](op: StageModule): Repr[U, Mat] = {
-    //No need to copy here, op is a fresh instanc
+    //No need to copy here, op is a fresh instance
     if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat]]
     else new Flow(module.growConnect(op, shape.outlet, op.inPort).replaceShape(FlowShape(shape.inlet, op.outPort)))
   }

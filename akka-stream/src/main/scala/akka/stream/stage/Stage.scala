@@ -20,7 +20,7 @@ import akka.stream.FlowMaterializer
  *
  * It is possible to keep state in the concrete `Stage` instance with
  * ordinary instance variables. The `Transformer` is executed by an actor and
- * therefore you don not have to add any additional thread safety or memory
+ * therefore you do not have to add any additional thread safety or memory
  * visibility constructs to access the state from the callback methods.
  *
  * @see [[akka.stream.scaladsl.Flow#transform]]
@@ -293,7 +293,7 @@ abstract class AsyncStage[In, Out, Ext]
 
 /**
  * The behavior of [[StatefulStage]] is defined by these two methods, which
- * has the same sematics as corresponding methods in [[PushPullStage]].
+ * has the same semantics as corresponding methods in [[PushPullStage]].
  */
 abstract class StageState[In, Out] {
   def onPush(elem: In, ctx: Context[Out]): SyncDirective
