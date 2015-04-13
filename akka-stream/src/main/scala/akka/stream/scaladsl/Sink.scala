@@ -3,12 +3,15 @@
  */
 package akka.stream.scaladsl
 
+import java.net.InetSocketAddress
+
 import akka.stream.javadsl
 import akka.actor.{ ActorRef, Props }
 import akka.stream.impl._
 import akka.stream.{ SinkShape, Inlet, Outlet, Graph }
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage }
+import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Promise, Future }
@@ -224,5 +227,11 @@ object Sink extends SinkApply {
    */
   def actorSubscriber[T](props: Props): Sink[T, ActorRef] =
     new Sink(new ActorSubscriberSink(props, none, shape("ActorSubscriberSink")))
+
+  /**
+   * Creates a `Sink` which uses Akka-IO's unconnected UDP mode to emit each ByteString it receives to the given target address.
+   */
+  def simpleUdp(host: String, port: Int): Sink[ByteString, Unit] =
+    new Sink(new SimpleUdpSink(new InetSocketAddress(host, port), none, shape("SimpleUdpSink")))
 
 }
