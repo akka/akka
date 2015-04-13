@@ -75,9 +75,9 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
 
 class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import StreamTcp._
-  import system.dispatcher
 
-  private val manager: ActorRef = system.systemActorOf(Props[StreamTcpManager], name = "IO-TCP-STREAM")
+  private val manager: ActorRef = system.systemActorOf(Props[StreamTcpManager]
+    .withDispatcher(Tcp(system).Settings.ManagementDispatcher), name = "IO-TCP-STREAM")
 
   private class BindSource(
     val endpoint: InetSocketAddress,
@@ -106,6 +106,7 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
       }
 
+      import system.dispatcher
       val bindingFuture = unbindPromise.future.zip(localAddressPromise.future).map {
         case (unbindAction, localAddress) ⇒
           ServerBinding(localAddress)(unbindAction)
@@ -157,6 +158,7 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       val localAddressPromise = Promise[InetSocketAddress]()
       manager ! StreamTcpManager.Connect(processorPromise, localAddressPromise, remoteAddress, localAddress, options,
         connectTimeout, idleTimeout)
+      import system.dispatcher
       val outgoingConnection = localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))
       (new DelayedInitProcessor[ByteString, ByteString](processorPromise.future), outgoingConnection)
     })
