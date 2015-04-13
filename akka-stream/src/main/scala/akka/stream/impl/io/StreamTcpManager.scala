@@ -84,9 +84,11 @@ private[akka] class StreamTcpManager extends Actor {
       processorActor ! ExposedProcessor(ActorProcessor[ByteString, ByteString](processorActor))
 
     case Bind(localAddressPromise, unbindPromise, flowSubscriber, endpoint, backlog, options, _) ⇒
-      val publisherActor = context.actorOf(TcpListenStreamActor.props(localAddressPromise, unbindPromise,
-        flowSubscriber, Tcp.Bind(context.system.deadLetters, endpoint, backlog, options, pullMode = true),
-        ActorFlowMaterializerSettings(context.system)), name = encName("server", endpoint))
+      val props = TcpListenStreamActor.props(localAddressPromise, unbindPromise, flowSubscriber,
+        Tcp.Bind(context.system.deadLetters, endpoint, backlog, options, pullMode = true),
+        ActorFlowMaterializerSettings(context.system))
+        .withDispatcher(context.props.dispatcher)
+      val publisherActor = context.actorOf(props, name = encName("server", endpoint))
       // this sends the ExposedPublisher message to the publisher actor automatically
       ActorPublisher[Any](publisherActor)
   }
