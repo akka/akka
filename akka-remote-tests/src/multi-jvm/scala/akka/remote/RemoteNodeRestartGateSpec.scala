@@ -61,9 +61,12 @@ abstract class RemoteNodeRestartGateSpec
   "RemoteNodeRestartGate" must {
 
     "allow restarted node to pass through gate" taggedAs LongRunningTest in {
+
+      system.actorOf(Props[Subject], "subject")
+      enterBarrier("subject-started")
+
       runOn(first) {
         val secondAddress = node(second).address
-        system.actorOf(Props[Subject], "subject")
 
         identify(second, "subject")
 
@@ -89,8 +92,6 @@ abstract class RemoteNodeRestartGateSpec
       runOn(second) {
         val addr = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val firstAddress = node(first).address
-
-        system.actorOf(Props[Subject], "subject")
 
         enterBarrier("gated")
 
