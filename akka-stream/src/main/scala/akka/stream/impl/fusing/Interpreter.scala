@@ -73,7 +73,7 @@ private[akka] object OneBoundedInterpreter {
  *  - The on-stack reentrant implementation by Mathias Doenitz -- the difference here that reentrancy is handled by the
  *  interpreter itself, not user code, and the interpreter is able to use the heap when needed instead of the
  *  callstack.
- *  - The pinball interpreter by Endre Sándor Varga -- the difference here that the restricition for "one ball" is
+ *  - The pinball interpreter by Endre Sándor Varga -- the difference here that the restriction for "one ball" is
  *  lifted by using isolated execution regions, completion handling is introduced and communication with the external
  *  world is done via boundary ops.
  *
@@ -134,8 +134,8 @@ private[akka] object OneBoundedInterpreter {
  *  it is immediately replaced by an artificial Finished op which makes sure that the two execution paths are isolated
  *  forever.
  *  - ctx.fail() which is similar to finish()
- *  - ctx.pushAndPull() which (as a response to a previous ctx.hold()) starts a wawe of downstream push and upstream
- *  pull. The two execution paths are isolated by the op itself since onPull() from downstream can only answered by hold or
+ *  - ctx.pushAndPull() which (as a response to a previous ctx.hold()) starts a wave of downstream push and upstream
+ *  pull. The two execution paths are isolated by the op itself since onPull() from downstream can only be answered by hold or
  *  push, while onPush() from upstream can only answered by hold or pull -- it is impossible to "cross" the op.
  *  - ctx.pushAndFinish() which is different from the forking ops above because the execution of push and finish happens on
  *  the same execution region and they are order dependent, too.
@@ -233,7 +233,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
 
     /**
      * Override this method to enter the current op and execute it. Do NOT put code that should be executed after the
-     * op has been invoked, that should be in the advance() method of the next state resulting from the invokation of
+     * op has been invoked, that should be in the advance() method of the next state resulting from the invocation of
      * the op.
      */
     def run(): Unit
