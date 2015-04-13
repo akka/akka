@@ -124,6 +124,15 @@ object Zip {
       val shape = new FanInShape2[A, B, (A, B)]("Zip")
       val module = new ZipWith2Module[A, B, (A, B)](shape, Keep.both, OperationAttributes.name("Zip") and attributes)
     }
+
+  /**
+   * Create a new unbuffered `Zip` with the specified attributes.
+   * Unbuffered `Zip` is useful for time or rate driven streams.
+   *
+   * @param attributes optional attributes
+   */
+  def unbuffered[A, B](attributes: OperationAttributes = OperationAttributes.none): Graph[FanInShape2[A, B, (A, B)], Unit] =
+    apply(attributes and OperationAttributes.inputBuffer(1, 1))
 }
 
 /**

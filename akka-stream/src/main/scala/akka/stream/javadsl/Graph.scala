@@ -180,8 +180,16 @@ object Zip {
    * Create a new `ZipWith` vertex with the specified input types and zipping-function
    * which creates `akka.japi.Pair`s.
    */
-  def create[A, B]: Graph[FanInShape2[A, B, A Pair B], Unit] =
-    ZipWith.create(_toPair.asInstanceOf[Function2[A, B, A Pair B]])
+  def create[A, B]: Graph[FanInShape2[A, B, A Pair B], Unit] = create(OperationAttributes.none)
+
+  /**
+   * Create a new `ZipWith` vertex with the specified input types and zipping-function
+   * which creates `akka.japi.Pair`s.
+   *
+   * @param attributes optional attributes for this vertex
+   */
+  def create[A, B](attributes: OperationAttributes): Graph[FanInShape2[A, B, A Pair B], Unit] =
+    ZipWith.create(attributes, _toPair.asInstanceOf[Function2[A, B, A Pair B]])
 
   private[this] final val _toPair: Function2[Any, Any, Any Pair Any] =
     new Function2[Any, Any, Any Pair Any] { override def apply(a: Any, b: Any): Any Pair Any = new Pair(a, b) }
