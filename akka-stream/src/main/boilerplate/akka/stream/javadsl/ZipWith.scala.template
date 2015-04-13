@@ -12,18 +12,66 @@ object ZipWith {
    * Create a new `ZipWith` vertex with the specified input types and zipping-function `f`.
    *
    * @param f zipping-function from the input values to the output value
-   * @param attributes optional attributes for this vertex
    */
   def create[A, B, Out](f: japi.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], Unit] =
-    scaladsl.ZipWith(f.apply _)
+    create(OperationAttributes.none, f)
+    
+  /**
+   * Create a new `ZipWith` vertex with the specified input types and zipping-function `f`.
+   *
+   * @param attributes optional attributes for this vertex
+   * @param f zipping-function from the input values to the output value
+   */
+  def create[A, B, Out](attributes: OperationAttributes, f: japi.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], Unit] =
+    scaladsl.ZipWith(attributes.asScala, f.apply _)
+    
+  /**
+   * Create a new unbuffered `ZipWith` vertex with the specified input types and zipping-function `f`.
+   * Unbuffered `ZipWith` is useful for time or rate driven streams.
+   *
+   * @param f zipping-function from the input values to the output value
+   */
+  def createUnbuffered[A, B, Out](f: japi.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], Unit] =
+    createUnbuffered(OperationAttributes.none, f)
+    
+  /**
+   * Create a new unbuffered `ZipWith` vertex with the specified input types and zipping-function `f`.
+   * Unbuffered `ZipWith` is useful for time or rate driven streams.
+   *
+   * @param attributes optional attributes for this vertex
+   * @param f zipping-function from the input values to the output value
+   */
+  def createUnbuffered[A, B, Out](attributes: OperationAttributes, f: japi.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], Unit] =
+    scaladsl.ZipWith.unbuffered(attributes.asScala, f.apply _)
 
   [3..20#/** Create a new `ZipWith` specialized for 1 inputs.
    *
    * @param f zipping-function from the input values to the output value
-   * @param attributes optional attributes for this vertex
    */
   def create1[[#T1#], Out](f: japi.Function1[[#T1#], Out]): Graph[FanInShape1[[#T1#], Out], Unit] =
-    scaladsl.ZipWith(f.apply _)#
+    create1(OperationAttributes.none, f)
+    
+  /** Create a new `ZipWith` specialized for 1 inputs.
+   * @param attributes optional attributes for this vertex
+   * @param f zipping-function from the input values to the output value
+   */
+  def create1[[#T1#], Out](attributes: OperationAttributes, f: japi.Function1[[#T1#], Out]): Graph[FanInShape1[[#T1#], Out], Unit] =
+    scaladsl.ZipWith(attributes.asScala, f.apply _)
+  
+  /** Create a new `ZipWith` specialized for 1 inputs.
+   * Unbuffered `ZipWith` is useful for time or rate driven streams.
+   * @param f zipping-function from the input values to the output value
+   */
+  def createUnbuffered1[[#T1#], Out](f: japi.Function1[[#T1#], Out]): Graph[FanInShape1[[#T1#], Out], Unit] =
+    createUnbuffered1(OperationAttributes.none, f)
+    
+  /** Create a new `ZipWith` specialized for 1 inputs.
+   * Unbuffered `ZipWith` is useful for time or rate driven streams.
+   * @param attributes optional attributes for this vertex
+   * @param f zipping-function from the input values to the output value
+   */
+  def createUnbuffered1[[#T1#], Out](attributes: OperationAttributes, f: japi.Function1[[#T1#], Out]): Graph[FanInShape1[[#T1#], Out], Unit] =
+    scaladsl.ZipWith.unbuffered(attributes.asScala, f.apply _)#
     
   ]
 

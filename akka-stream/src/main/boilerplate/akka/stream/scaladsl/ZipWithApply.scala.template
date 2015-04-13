@@ -12,13 +12,44 @@ trait ZipWithApply {
    * Create a new `ZipWith` specialized for 1 inputs.
    *
    * @param f zipping-function from the input values to the output value
-   * @param attributes optional attributes for this vertex
    */
   def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): Graph[FanInShape1[[#A1#], O], Unit] =
+    apply(OperationAttributes.none, zipper)
+    
+  /**
+   * Create a new `ZipWith` specialized for 1 inputs.
+   *
+   * @param attributes optional attributes for this vertex
+   * @param f zipping-function from the input values to the output value
+   */
+  def apply[[#A1#], O](attributes: OperationAttributes, zipper: ([#A1#]) ⇒ O): Graph[FanInShape1[[#A1#], O], Unit] =
     new Graph[FanInShape1[[#A1#], O], Unit] {
       val shape = new FanInShape1[[#A1#], O]("ZipWith1")
-      val module = new ZipWith1Module(shape, zipper, OperationAttributes.name("ZipWith1"))
+      val module = new ZipWith1Module(shape, zipper, OperationAttributes.name("ZipWith1") and attributes)
     }
+    
+  /**
+   * Create a new unbuffered `ZipWith` specialized for 1 inputs.
+   * Unbuffered `ZipWith` is useful for time or rate driven streams.
+   *
+   * @param f zipping-function from the input values to the output value
+   */
+  def unbuffered[[#A1#], O](zipper: ([#A1#]) ⇒ O): Graph[FanInShape1[[#A1#], O], Unit] =
+    unbuffered(OperationAttributes.none, zipper)
+    
+  /**
+   * Create a new unbuffered `ZipWith` specialized for 1 inputs.
+   * Unbuffered `ZipWith` is useful for time or rate driven streams.
+   *
+   * @param attributes optional attributes for this vertex
+   * @param f zipping-function from the input values to the output value
+   */
+  def unbuffered[[#A1#], O](attributes: OperationAttributes, zipper: ([#A1#]) ⇒ O): Graph[FanInShape1[[#A1#], O], Unit] =
+    new Graph[FanInShape1[[#A1#], O], Unit] {
+      val shape = new FanInShape1[[#A1#], O]("ZipWith1")
+      val module = new ZipWith1Module(shape, zipper, 
+        OperationAttributes.name("ZipWith1") and OperationAttributes.inputBuffer(1, 1) and attributes)
+    }    
     #
 
   ]
