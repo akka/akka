@@ -38,7 +38,7 @@ object AkkaBuild extends Build {
 
   val enableMiMa = true
 
-  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.4")
+  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.5")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
   val streamAndHttpVersion = "1.0-SNAPSHOT"
 
