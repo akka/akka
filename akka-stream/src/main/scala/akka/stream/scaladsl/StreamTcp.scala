@@ -87,7 +87,7 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     val attributes: OperationAttributes,
     _shape: SourceShape[IncomingConnection]) extends SourceModule[IncomingConnection, Future[ServerBinding]](_shape) {
 
-    override def create(materializer: ActorFlowMaterializerImpl, flowName: String): (Publisher[IncomingConnection], Future[ServerBinding]) = {
+    override def create(context: MaterializationContext): (Publisher[IncomingConnection], Future[ServerBinding]) = {
       val localAddressPromise = Promise[InetSocketAddress]()
       val unbindPromise = Promise[() ⇒ Future[Unit]]()
       val publisher = new Publisher[IncomingConnection] {
