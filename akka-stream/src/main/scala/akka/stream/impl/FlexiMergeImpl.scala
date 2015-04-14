@@ -126,8 +126,8 @@ private[akka] class FlexiMergeImpl[T, S <: Shape](
         callOnInput(inputHandle, elem)
         triggerCompletionAfterRead(inputHandle)
       case r: ReadPreferred[t] ⇒
-        val id = indexOf(r.preferred)
-        val elem = inputBunch.dequeuePrefering(id)
+        val elem = inputBunch.dequeuePrefering(indexOf(r.preferred))
+        val id = inputBunch.lastDequeuedId
         val inputHandle = inputMapping(id)
         callOnInput(inputHandle, elem)
         triggerCompletionAfterRead(inputHandle)
