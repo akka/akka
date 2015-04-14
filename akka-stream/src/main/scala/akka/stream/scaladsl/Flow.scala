@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.impl.SplitDecision._
 import akka.event.LoggingAdapter
 import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
@@ -784,6 +785,14 @@ trait FlowOps[+Out, +Mat] {
    * true, false, false // elements go into third substream
    * }}}
    *
+   * In case the *first* element of the stream matches the predicate, the first
+   * substream emitted by splitWhen will start from that element. For example:
+   *
+   * {{{
+   * true, false, false // first substream starts from the split-by element
+   * true, false        // subsequent substreams operate the same way
+   * }}}
+   *
    * If the split predicate `p` throws an exception and the supervision decision
    * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
    * with failure.
@@ -803,8 +812,47 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels and substreams cancel
    *
    */
-  def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Source[U, Unit], Mat] =
-    andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
+  def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Out, Mat]#Repr[Source[U, Unit], Mat] = {
+    val f = p.asInstanceOf[Any ⇒ Boolean]
+    withAttributes(name("splitWhen")).andThen(Split(el ⇒ if (f(el)) SplitBefore else Continue))
+  }
+
+  /**
+   * This operation applies the given predicate to all incoming elements and
+   * emits them to a stream of output streams. It *ends* the current substream when the
+   * predicate is true. This means that for the following series of predicate values,
+   * three substreams will be produced with lengths 2, 2, and 3:
+   *
+   * {{{
+   * false, true,        // elements go into first substream
+   * false, true,        // elements go into second substream
+   * false, false, true  // elements go into third substream
+   * }}}
+   *
+   * If the split predicate `p` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
+   * with failure.
+   *
+   * If the split predicate `p` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
+   * the element is dropped and the stream and substreams continue.
+   *
+   * '''Emits when''' an element passes through. When the provided predicate is true it emitts the element
+   * and opens a new substream for subsequent element
+   *
+   * '''Backpressures when''' there is an element pending for the next substream, but the previous
+   * is not fully consumed yet, or the substream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels and substreams cancel
+   *
+   * See also [[FlowOps.splitAfter]].
+   */
+  def splitAfter[U >: Out](p: Out ⇒ Boolean): Repr[Out, Mat]#Repr[Source[U, Unit], Mat] = {
+    val f = p.asInstanceOf[Any ⇒ Boolean]
+    withAttributes(name("splitAfter")).andThen(Split(el ⇒ if (f(el)) SplitAfter else Continue))
+  }
 
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
