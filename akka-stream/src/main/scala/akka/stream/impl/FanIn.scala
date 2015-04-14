@@ -68,6 +68,8 @@ private[akka] object FanIn {
           |    mark=$markCount pend=$markedPending depl=$markedDepleted pref=$preferredId""".stripMargin
 
     private var preferredId = 0
+    private var _lastDequeuedId = 0
+    def lastDequeuedId = _lastDequeuedId
 
     def cancel(): Unit =
       if (!allCancelled) {
@@ -143,6 +145,7 @@ private[akka] object FanIn {
     def dequeue(id: Int): Any = {
       require(!isDepleted(id), s"Can't dequeue from depleted $id")
       require(isPending(id), s"No pending input at $id")
+      _lastDequeuedId = id
       val input = inputs(id)
       val elem = input.dequeueInputElement()
       if (!input.inputsAvailable) {
@@ -339,4 +342,3 @@ private[akka] final class Concat(_settings: ActorFlowMaterializerSettings) exten
 
   nextPhase(drainFirst)
 }
-

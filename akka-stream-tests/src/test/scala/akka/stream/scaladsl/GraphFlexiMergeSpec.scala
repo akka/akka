@@ -13,6 +13,8 @@ import scala.util.control.NoStackTrace
 import scala.collection.immutable
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object GraphFlexiMergeSpec {
 
@@ -687,6 +689,42 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectComplete()
     }
 
+    "have the correct value for input in ReadPreffered" in {
+      import akka.stream.FanInShape._
+      class MShape[T](_init: Init[T] = Name("mshape")) extends FanInShape[T](_init) {
+        val priority = newInlet[T]("priority")
+        val second = newInlet[T]("second")
+        protected override def construct(i: Init[T]) = new MShape(i)
+      }
+      class MyMerge[T] extends FlexiMerge[T, MShape[T]](
+        new MShape, OperationAttributes.name("cmerge")) {
+        import akka.stream.scaladsl.FlexiMerge._
+        override def createMergeLogic(p: PortT) = new MergeLogic[T] {
+          override def initialState =
+            State[T](ReadPreferred(p.priority, p.second)) {
+              (ctx, input, element) ⇒
+                if (element == 1) assert(input == p.priority)
+                if (element == 2) assert(input == p.second)
+                ctx.emit(element)
+                SameState
+            }
+        }
+      }
+
+      val sink = Sink.fold[Int, Int](0)(_ + _)
+      val graph = FlowGraph.closed(sink) { implicit b ⇒
+        sink ⇒
+          import FlowGraph.Implicits._
+
+          val merge = b.add(new MyMerge[Int]())
+
+          Source.single(1) ~> merge.priority
+          Source.single(2) ~> merge.second
+
+          merge.out ~> sink.inlet
+      }
+      Await.result(graph.run(), 1.second) should equal(3)
+    }
   }
 
 }
