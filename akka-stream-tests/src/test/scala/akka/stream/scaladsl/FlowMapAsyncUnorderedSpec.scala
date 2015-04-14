@@ -122,7 +122,17 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val sub = c.expectSubscription()
       sub.request(10)
       val expected = (OnComplete :: List(1, 2, 4, 5).map(OnNext.apply)).toSet
-      c.probe.receiveN(5).toSet should be(expected)
+      c.probe.receiveWhile(2.seconds, messages = 5) { case x ⇒ x }.toSet should be(expected)
+    }
+
+    "finish after future failure" in {
+      import system.dispatcher
+      Await.result(Source(1 to 3).mapAsyncUnordered(1, n ⇒ Future {
+        if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
+        else n
+      }).withAttributes(supervisionStrategy(resumingDecider))
+        .grouped(10)
+        .runWith(Sink.head), 1.second) should be(Seq(1, 2))
     }
 
     "resume when mapAsyncUnordered throws" in {
