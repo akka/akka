@@ -19,7 +19,7 @@ import scala.util.control.NonFatal
 private[akka] object StreamLayout {
 
   // compile-time constant
-  val debug = true
+  final val Debug = true
 
   // TODO: Materialization order
   // TODO: Special case linear composites
@@ -55,7 +55,7 @@ private[akka] object StreamLayout {
       this.grow(that, f).connect(from, to)
 
     def connect[A, B](from: OutPort, to: InPort): Module = {
-      if (debug) validate()
+      if (Debug) validate()
 
       require(outPorts(from),
         if (downstreams.contains(from)) s"The output port [$from] is already connected"
@@ -73,7 +73,7 @@ private[akka] object StreamLayout {
     }
 
     def transformMaterializedValue(f: Any ⇒ Any): Module = {
-      if (debug) validate()
+      if (Debug) validate()
 
       CompositeModule(
         subModules = if (this.isAtomic) Set(this) else this.subModules,
@@ -86,7 +86,7 @@ private[akka] object StreamLayout {
     def grow(that: Module): Module = grow(that, Keep.left)
 
     def grow[A, B, C](that: Module, f: (A, B) ⇒ C): Module = {
-      if (debug) validate()
+      if (Debug) validate()
 
       require(that ne this, "A module cannot be added to itself. You should pass a separate instance to grow().")
       require(!subModules(that), "An existing submodule cannot be added again. All contained modules must be unique.")
@@ -105,7 +105,7 @@ private[akka] object StreamLayout {
     }
 
     def wrap(): Module = {
-      if (debug) validate()
+      if (Debug) validate()
 
       CompositeModule(
         subModules = Set(this),
