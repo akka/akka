@@ -21,4 +21,8 @@ trait Graph[+S <: Shape, +M] {
    * Every materializable element must be backed by a stream layout module
    */
   private[stream] def module: StreamLayout.Module
+
+  def withAttributes(attr: OperationAttributes): Graph[S, M]
+
+  def named(name: String): Graph[S, M] = withAttributes(OperationAttributes.name(name))
 }
