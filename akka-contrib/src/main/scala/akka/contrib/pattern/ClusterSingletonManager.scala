@@ -267,8 +267,8 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * The actual singleton is started on the oldest node by creating a child
  * actor from the supplied `singletonProps`.
  *
- * The singleton actor is always running on the oldest member, which can
- * be determined by [[akka.cluster.Member#isOlderThan]].
+ * The singleton actor is always running on the oldest member with specified role.
+ * The oldest member is determined by [[akka.cluster.Member#isOlderThan]].
  * This can change when removing members. A graceful hand over can normally
  * be performed when current oldest node is leaving the cluster. Be aware that
  * there is a short time period when there is no active singleton during the
