@@ -148,6 +148,8 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   override def withAttributes(attr: OperationAttributes): Repr[Out, Mat] =
     new Source(module.withAttributes(attr).wrap())
 
+  override def named(name: String): Repr[Out, Mat] = withAttributes(OperationAttributes.name(name))
+
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
 

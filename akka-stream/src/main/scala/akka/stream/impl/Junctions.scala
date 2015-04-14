@@ -63,7 +63,7 @@ private[stream] object Junctions {
   final case class FlexiMergeModule[T, S <: Shape](
     shape: S,
     flexi: S ⇒ MergeLogic[T],
-    override val attributes: OperationAttributes = name("flexiMerge")) extends FanInModule {
+    override val attributes: OperationAttributes) extends FanInModule {
 
     require(shape.outlets.size == 1, "FlexiMerge can have only one output port")
 
@@ -75,7 +75,7 @@ private[stream] object Junctions {
   final case class FlexiRouteModule[T, S <: Shape](
     shape: S,
     flexi: S ⇒ RouteLogic[T],
-    override val attributes: OperationAttributes = name("flexiRoute")) extends FanOutModule {
+    override val attributes: OperationAttributes) extends FanOutModule {
 
     require(shape.inlets.size == 1, "FlexiRoute can have only one input port")
 

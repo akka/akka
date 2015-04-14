@@ -14,32 +14,36 @@ import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 
+object Merge {
+  /**
+   * Create a new `Merge` with the specified number of input ports.
+   *
+   * @param inputPorts number of input ports
+   */
+  def apply[T](inputPorts: Int): Merge[T] = {
+    val shape = new UniformFanInShape[T, T](inputPorts)
+    new Merge(inputPorts, shape, new MergeModule(shape, OperationAttributes.name("Merge")))
+  }
+
+}
+
 /**
  * Merge several streams, taking elements as they arrive from input streams
  * (picking randomly when several have elements ready).
  *
  * A `Merge` has one `out` port and one or more `in` ports.
  */
-object Merge {
-  /**
-   * Create a new `Merge` with the specified number of input ports and attributes.
-   *
-   * @param inputPorts number of input ports
-   * @param attributes optional attributes
-   */
-  def apply[T](inputPorts: Int, attributes: OperationAttributes = OperationAttributes.none): Graph[UniformFanInShape[T, T], Unit] =
-    new Graph[UniformFanInShape[T, T], Unit] {
-      val shape = new UniformFanInShape[T, T](inputPorts)
-      val module = new MergeModule(shape, OperationAttributes.name("Merge") and attributes)
-    }
+class Merge[T] private (inputPorts: Int,
+                        override val shape: UniformFanInShape[T, T],
+                        private[stream] override val module: StreamLayout.Module)
+  extends Graph[UniformFanInShape[T, T], Unit] {
+
+  override def withAttributes(attr: OperationAttributes): Merge[T] =
+    new Merge(inputPorts, shape, module.withAttributes(attr).wrap())
+
+  override def named(name: String): Merge[T] = withAttributes(OperationAttributes.name(name))
 }
 
-/**
- * Merge several streams, taking elements as they arrive from input streams
- * (picking from preferred when several have elements ready).
- *
- * A `MergePreferred` has one `out` port, one `preferred` input port and 0 or more secondary `in` ports.
- */
 object MergePreferred {
   import FanInShape._
   final class MergePreferredShape[T](val secondaryPorts: Int, _init: Init[T]) extends UniformFanInShape[T, T](secondaryPorts, _init) {
@@ -51,16 +55,43 @@ object MergePreferred {
   }
 
   /**
-   * Create a new `PreferredMerge` with the specified number of secondary input ports and attributes.
+   * Create a new `MergePreferred` with the specified number of secondary input ports.
    *
    * @param secondaryPorts number of secondary input ports
-   * @param attributes optional attributes
    */
-  def apply[T](secondaryPorts: Int, attributes: OperationAttributes = OperationAttributes.none): Graph[MergePreferredShape[T], Unit] =
-    new Graph[MergePreferredShape[T], Unit] {
-      val shape = new MergePreferredShape[T](secondaryPorts, "MergePreferred")
-      val module = new MergePreferredModule(shape, OperationAttributes.name("MergePreferred") and attributes)
-    }
+  def apply[T](secondaryPorts: Int): MergePreferred[T] = {
+    val shape = new MergePreferredShape[T](secondaryPorts, "MergePreferred")
+    new MergePreferred(secondaryPorts, shape, new MergePreferredModule(shape, OperationAttributes.name("MergePreferred")))
+  }
+}
+
+/**
+ * Merge several streams, taking elements as they arrive from input streams
+ * (picking from preferred when several have elements ready).
+ *
+ * A `MergePreferred` has one `out` port, one `preferred` input port and 0 or more secondary `in` ports.
+ */
+class MergePreferred[T] private (secondaryPorts: Int,
+                                 override val shape: MergePreferred.MergePreferredShape[T],
+                                 private[stream] override val module: StreamLayout.Module)
+  extends Graph[MergePreferred.MergePreferredShape[T], Unit] {
+
+  override def withAttributes(attr: OperationAttributes): MergePreferred[T] =
+    new MergePreferred(secondaryPorts, shape, module.withAttributes(attr).wrap())
+
+  override def named(name: String): MergePreferred[T] = withAttributes(OperationAttributes.name(name))
+}
+
+object Broadcast {
+  /**
+   * Create a new `Broadcast` with the specified number of output ports.
+   *
+   * @param outputPorts number of output ports
+   */
+  def apply[T](outputPorts: Int): Broadcast[T] = {
+    val shape = new UniformFanOutShape[T, T](outputPorts)
+    new Broadcast(outputPorts, shape, new BroadcastModule(shape, OperationAttributes.name("Broadcast")))
+  }
 }
 
 /**
@@ -70,18 +101,31 @@ object MergePreferred {
  *
  * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
-object Broadcast {
+class Broadcast[T] private (outputPorts: Int,
+                            override val shape: UniformFanOutShape[T, T],
+                            private[stream] override val module: StreamLayout.Module)
+  extends Graph[UniformFanOutShape[T, T], Unit] {
+
+  override def withAttributes(attr: OperationAttributes): Broadcast[T] =
+    new Broadcast(outputPorts, shape, module.withAttributes(attr).wrap())
+
+  override def named(name: String): Broadcast[T] = withAttributes(OperationAttributes.name(name))
+}
+
+object Balance {
   /**
-   * Create a new `Broadcast` with the specified number of output ports and attributes.
+   * Create a new `Balance` with the specified number of output ports.
    *
    * @param outputPorts number of output ports
-   * @param attributes optional attributes
+   * @param waitForAllDownstreams if you use `waitForAllDownstreams = true` it will not start emitting
+   *   elements to downstream outputs until all of them have requested at least one element,
+   *   default value is `false`
    */
-  def apply[T](outputPorts: Int, attributes: OperationAttributes = OperationAttributes.none): Graph[UniformFanOutShape[T, T], Unit] =
-    new Graph[UniformFanOutShape[T, T], Unit] {
-      val shape = new UniformFanOutShape[T, T](outputPorts)
-      val module = new BroadcastModule(shape, OperationAttributes.name("Broadcast") and attributes)
-    }
+  def apply[T](outputPorts: Int, waitForAllDownstreams: Boolean = false): Balance[T] = {
+    val shape = new UniformFanOutShape[T, T](outputPorts)
+    new Balance(outputPorts, waitForAllDownstreams, shape,
+      new BalanceModule(shape, waitForAllDownstreams, OperationAttributes.name("Balance")))
+  }
 }
 
 /**
@@ -91,21 +135,26 @@ object Broadcast {
  *
  * A `Balance` has one `in` port and 2 or more `out` ports.
  */
-object Balance {
+class Balance[T] private (outputPorts: Int,
+                          waitForAllDownstreams: Boolean,
+                          override val shape: UniformFanOutShape[T, T],
+                          private[stream] override val module: StreamLayout.Module)
+  extends Graph[UniformFanOutShape[T, T], Unit] {
+
+  override def withAttributes(attr: OperationAttributes): Balance[T] =
+    new Balance(outputPorts, waitForAllDownstreams, shape, module.withAttributes(attr).wrap())
+
+  override def named(name: String): Balance[T] = withAttributes(OperationAttributes.name(name))
+}
+
+object Zip {
   /**
-   * Create a new `Balance` with the specified number of output ports and attributes.
-   *
-   * @param outputPorts number of output ports
-   * @param waitForAllDownstreams if you use `waitForAllDownstreams = true` it will not start emitting
-   *   elements to downstream outputs until all of them have requested at least one element,
-   *   default value is `false`
-   * @param attributes optional attributes
+   * Create a new `Zip`.
    */
-  def apply[T](outputPorts: Int, waitForAllDownstreams: Boolean = false, attributes: OperationAttributes = OperationAttributes.none): Graph[UniformFanOutShape[T, T], Unit] =
-    new Graph[UniformFanOutShape[T, T], Unit] {
-      val shape = new UniformFanOutShape[T, T](outputPorts)
-      val module = new BalanceModule(shape, waitForAllDownstreams, OperationAttributes.name("Balance") and attributes)
-    }
+  def apply[A, B](): Zip[A, B] = {
+    val shape = new FanInShape2[A, B, (A, B)]("Zip")
+    new Zip(shape, new ZipWith2Module[A, B, (A, B)](shape, Keep.both, OperationAttributes.name("Zip")))
+  }
 }
 
 /**
@@ -113,22 +162,16 @@ object Balance {
  *
  * A `Zip` has a `left` and a `right` input port and one `out` port
  */
-object Zip {
-  /**
-   * Create a new `Zip` with the specified attributes.
-   *
-   * @param attributes optional attributes
-   */
-  def apply[A, B](attributes: OperationAttributes = OperationAttributes.none): Graph[FanInShape2[A, B, (A, B)], Unit] =
-    new Graph[FanInShape2[A, B, (A, B)], Unit] {
-      val shape = new FanInShape2[A, B, (A, B)]("Zip")
-      val module = new ZipWith2Module[A, B, (A, B)](shape, Keep.both, OperationAttributes.name("Zip") and attributes)
-    }
+class Zip[A, B] private (override val shape: FanInShape2[A, B, (A, B)],
+                         private[stream] override val module: StreamLayout.Module)
+  extends Graph[FanInShape2[A, B, (A, B)], Unit] {
+
+  override def withAttributes(attr: OperationAttributes): Zip[A, B] =
+    new Zip(shape, module.withAttributes(attr).wrap())
+
+  override def named(name: String): Zip[A, B] = withAttributes(OperationAttributes.name(name))
 }
 
-/**
- * Combine the elements of multiple streams into a stream of the combined elements.
- */
 object ZipWith extends ZipWithApply
 
 /**
@@ -138,15 +181,35 @@ object ZipWith extends ZipWithApply
  */
 object Unzip {
   /**
-   * Create a new `Unzip` with the specified attributes.
-   *
-   * @param attributes optional attributes
+   * Create a new `Unzip`.
    */
-  def apply[A, B](attributes: OperationAttributes = OperationAttributes.none): Graph[FanOutShape2[(A, B), A, B], Unit] =
-    new Graph[FanOutShape2[(A, B), A, B], Unit] {
-      val shape = new FanOutShape2[(A, B), A, B]("Unzip")
-      val module = new UnzipModule(shape, OperationAttributes.name("Unzip") and attributes)
-    }
+  def apply[A, B](): Unzip[A, B] = {
+    val shape = new FanOutShape2[(A, B), A, B]("Unzip")
+    new Unzip(shape, new UnzipModule(shape, OperationAttributes.name("Unzip")))
+  }
+}
+
+/**
+ * Combine the elements of multiple streams into a stream of the combined elements.
+ */
+class Unzip[A, B] private (override val shape: FanOutShape2[(A, B), A, B],
+                           private[stream] override val module: StreamLayout.Module)
+  extends Graph[FanOutShape2[(A, B), A, B], Unit] {
+
+  override def withAttributes(attr: OperationAttributes): Unzip[A, B] =
+    new Unzip(shape, module.withAttributes(attr).wrap())
+
+  override def named(name: String): Unzip[A, B] = withAttributes(OperationAttributes.name(name))
+}
+
+object Concat {
+  /**
+   * Create a new `Concat`.
+   */
+  def apply[T](): Concat[T] = {
+    val shape = new UniformFanInShape[T, T](2)
+    new Concat(shape, new ConcatModule(shape, OperationAttributes.name("Concat")))
+  }
 }
 
 /**
@@ -156,17 +219,14 @@ object Unzip {
  *
  * A `Concat` has one `first` port, one `second` port and one `out` port.
  */
-object Concat {
-  /**
-   * Create a new `Concat` with the specified attributes.
-   *
-   * @param attributes optional attributes
-   */
-  def apply[A](attributes: OperationAttributes = OperationAttributes.none): Graph[UniformFanInShape[A, A], Unit] =
-    new Graph[UniformFanInShape[A, A], Unit] {
-      val shape = new UniformFanInShape[A, A](2)
-      val module = new ConcatModule(shape, OperationAttributes.name("Concat") and attributes)
-    }
+class Concat[T] private (override val shape: UniformFanInShape[T, T],
+                         private[stream] override val module: StreamLayout.Module)
+  extends Graph[UniformFanInShape[T, T], Unit] {
+
+  override def withAttributes(attr: OperationAttributes): Concat[T] =
+    new Concat(shape, module.withAttributes(attr).wrap())
+
+  override def named(name: String): Concat[T] = withAttributes(OperationAttributes.name(name))
 }
 
 object FlowGraph extends GraphApply {

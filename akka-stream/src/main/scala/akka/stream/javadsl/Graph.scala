@@ -21,30 +21,15 @@ import akka.japi.Pair
 object Merge {
 
   /**
-   * Create a new `Merge` vertex with the specified output type and attributes.
-   *
-   * @param attributes optional attributes for this vertex
-   */
-  def create[T](outputCount: Int, attributes: OperationAttributes): Graph[UniformFanInShape[T, T], Unit] =
-    scaladsl.Merge(outputCount, attributes)
-
-  /**
    * Create a new `Merge` vertex with the specified output type.
    */
-  def create[T](outputCount: Int): Graph[UniformFanInShape[T, T], Unit] = create(outputCount, OperationAttributes.none)
+  def create[T](outputCount: Int): Graph[UniformFanInShape[T, T], Unit] =
+    scaladsl.Merge(outputCount)
 
   /**
    * Create a new `Merge` vertex with the specified output type.
    */
   def create[T](clazz: Class[T], outputCount: Int): Graph[UniformFanInShape[T, T], Unit] = create(outputCount)
-
-  /**
-   * Create a new `Merge` vertex with the specified output type and attributes.
-   *
-   * @param attributes optional attributes for this vertex
-   */
-  def create[T](clazz: Class[T], outputCount: Int, attributes: OperationAttributes): Graph[UniformFanInShape[T, T], Unit] =
-    create(outputCount, attributes)
 
 }
 
@@ -62,30 +47,15 @@ object Merge {
  */
 object MergePreferred {
   /**
-   * Create a new `MergePreferred` vertex with the specified output type and attributes.
-   *
-   * @param attributes optional attributes for this vertex
-   */
-  def create[T](outputCount: Int, attributes: OperationAttributes): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
-    scaladsl.MergePreferred(outputCount, attributes)
-
-  /**
    * Create a new `MergePreferred` vertex with the specified output type.
    */
-  def create[T](outputCount: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] = create(outputCount, OperationAttributes.none)
+  def create[T](outputCount: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
+    scaladsl.MergePreferred(outputCount)
 
   /**
    * Create a new `MergePreferred` vertex with the specified output type.
    */
   def create[T](clazz: Class[T], outputCount: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] = create(outputCount)
-
-  /**
-   * Create a new `MergePreferred` vertex with the specified output type and attributes.
-   *
-   * @param attributes optional attributes for this vertex
-   */
-  def create[T](clazz: Class[T], outputCount: Int, attributes: OperationAttributes): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
-    create(outputCount, attributes)
 
 }
 
@@ -101,30 +71,16 @@ object MergePreferred {
  */
 object Broadcast {
   /**
-   * Create a new `Broadcast` vertex with the specified input type and attributes.
-   *
-   * @param attributes optional attributes for this vertex
-   */
-  def create[T](outputCount: Int, attributes: OperationAttributes): Graph[UniformFanOutShape[T, T], Unit] =
-    scaladsl.Broadcast(outputCount, attributes)
-
-  /**
    * Create a new `Broadcast` vertex with the specified input type.
    */
-  def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount, OperationAttributes.none)
+  def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] =
+    scaladsl.Broadcast(outputCount)
 
   /**
    * Create a new `Broadcast` vertex with the specified input type.
    */
   def create[T](clazz: Class[T], outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount)
 
-  /**
-   * Create a new `Broadcast` vertex with the specified input type and attributes.
-   *
-   * @param attributes optional attributes for this vertex
-   */
-  def create[T](clazz: Class[T], outputCount: Int, attributes: OperationAttributes): Graph[UniformFanOutShape[T, T], Unit] =
-    create(outputCount, attributes)
 }
 
 /**
@@ -139,24 +95,18 @@ object Broadcast {
  */
 object Balance {
   /**
-   * Create a new `Balance` vertex with the specified input type and attributes.
+   * Create a new `Balance` vertex with the specified input type.
    *
    * @param waitForAllDownstreams if `true` it will not start emitting
    *   elements to downstream outputs until all of them have requested at least one element
-   * @param attributes optional attributes for this vertex
    */
-  def create[T](outputCount: Int, waitForAllDownstreams: Boolean, attributes: OperationAttributes): Graph[UniformFanOutShape[T, T], Unit] =
-    scaladsl.Balance(outputCount, waitForAllDownstreams, attributes)
+  def create[T](outputCount: Int, waitForAllDownstreams: Boolean): Graph[UniformFanOutShape[T, T], Unit] =
+    scaladsl.Balance(outputCount, waitForAllDownstreams)
 
   /**
    * Create a new `Balance` vertex with the specified input type.
    */
-  def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount, false, OperationAttributes.none)
-
-  /**
-   * Create a new `Balance` vertex with the specified input type.
-   */
-  def create[T](outputCount: Int, attributes: OperationAttributes): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount, false, attributes)
+  def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount, false)
 
   /**
    * Create a new `Balance` vertex with the specified input type.
@@ -164,12 +114,13 @@ object Balance {
   def create[T](clazz: Class[T], outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount)
 
   /**
-   * Create a new `Balance` vertex with the specified input type and attributes.
+   * Create a new `Balance` vertex with the specified input type.
    *
-   * @param attributes optional attributes for this vertex
+   * @param waitForAllDownstreams if `true` it will not start emitting
+   *   elements to downstream outputs until all of them have requested at least one element
    */
-  def create[T](clazz: Class[T], outputCount: Int, attributes: OperationAttributes): Graph[UniformFanOutShape[T, T], Unit] =
-    create(outputCount, false, attributes)
+  def create[T](clazz: Class[T], outputCount: Int, waitForAllDownstreams: Boolean): Graph[UniformFanOutShape[T, T], Unit] =
+    create(outputCount, waitForAllDownstreams)
 }
 
 object Zip {
@@ -196,35 +147,20 @@ object Zip {
 object Unzip {
 
   /**
-   * Creates a new `Unzip` vertex with the specified output types and attributes.
-   *
-   * @param attributes attributes for this vertex
+   * Creates a new `Unzip` vertex with the specified output types.
    */
-  def create[A, B](attributes: OperationAttributes): Graph[FanOutShape2[A Pair B, A, B], Unit] =
+  def create[A, B](): Graph[FanOutShape2[A Pair B, A, B], Unit] =
     scaladsl.FlowGraph.partial() { implicit b ⇒
-      val unzip = b.add(scaladsl.Unzip[A, B](attributes))
+      val unzip = b.add(scaladsl.Unzip[A, B]())
       val tuple = b.add(scaladsl.Flow[A Pair B].map(p ⇒ (p.first, p.second)))
       b.addEdge(tuple.outlet, unzip.in)
       new FanOutShape2(FanOutShape.Ports(tuple.inlet, unzip.out0 :: unzip.out1 :: Nil))
     }
 
   /**
-   * Creates a new `Unzip` vertex with the specified output types and attributes.
-   */
-  def create[A, B](): Graph[FanOutShape2[A Pair B, A, B], Unit] = create(OperationAttributes.none)
-
-  /**
    * Creates a new `Unzip` vertex with the specified output types.
    */
   def create[A, B](left: Class[A], right: Class[B]): Graph[FanOutShape2[A Pair B, A, B], Unit] = create[A, B]()
-
-  /**
-   * Creates a new `Unzip` vertex with the specified output types and attributes.
-   *
-   * @param attributes optional attributes for this vertex
-   */
-  def create[A, B](left: Class[A], right: Class[B], attributes: OperationAttributes): Graph[FanOutShape2[A Pair B, A, B], Unit] =
-    create[A, B](attributes)
 
 }
 
@@ -245,7 +181,7 @@ object Concat {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): Graph[UniformFanInShape[T, T], Unit] = create(OperationAttributes.none)
+  def create[T](): Graph[UniformFanInShape[T, T], Unit] = scaladsl.Concat[T]()
 
   /**
    * Create a new anonymous `Concat` vertex with the specified input types.
@@ -253,15 +189,7 @@ object Concat {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](attributes: OperationAttributes): Graph[UniformFanInShape[T, T], Unit] = scaladsl.Concat[T](attributes)
-
-  /**
-   * Create a new anonymous `Concat` vertex with the specified input types.
-   * Note that a `Concat` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
-   */
-  def create[T](clazz: Class[T], attributes: OperationAttributes): Graph[UniformFanInShape[T, T], Unit] = create(attributes)
+  def create[T](clazz: Class[T]): Graph[UniformFanInShape[T, T], Unit] = create()
 
 }
 

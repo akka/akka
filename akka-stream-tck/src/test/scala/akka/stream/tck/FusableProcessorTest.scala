@@ -19,7 +19,7 @@ class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
     processorFromFlow(
       // withAttributes "wraps" the underlying identity and protects it from automatic removal
-      Flow[Int].andThen(Identity()).withAttributes(OperationAttributes.name("identity")))
+      Flow[Int].andThen(Identity()).named("identity"))
   }
 
   override def createElement(element: Int): Int = element

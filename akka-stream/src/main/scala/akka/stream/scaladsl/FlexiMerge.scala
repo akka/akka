@@ -9,6 +9,7 @@ import scala.collection.immutable
 import scala.collection.immutable.Seq
 import akka.stream.impl.StreamLayout
 import akka.stream.impl.Junctions.FlexiMergeModule
+import akka.stream.impl.Stages.DefaultAttributes
 
 object FlexiMerge {
 
@@ -223,7 +224,11 @@ object FlexiMerge {
  * @param attributes optional attributes for this junction
  */
 abstract class FlexiMerge[Out, S <: Shape](val shape: S, attributes: OperationAttributes) extends Graph[S, Unit] {
-  val module: StreamLayout.Module = new FlexiMergeModule(shape, createMergeLogic)
+  /**
+   * INTERNAL API
+   */
+  private[stream] val module: StreamLayout.Module =
+    new FlexiMergeModule(shape, createMergeLogic, attributes and DefaultAttributes.flexiMerge)
 
   type PortT = S
 
@@ -233,4 +238,10 @@ abstract class FlexiMerge[Out, S <: Shape](val shape: S, attributes: OperationAt
     case Some(n) ⇒ n
     case None    ⇒ super.toString
   }
+
+  override def withAttributes(attr: OperationAttributes): Graph[S, Unit] =
+    throw new UnsupportedOperationException(
+      "withAttributes not supported by default by FlexiMerge, subclass may override and implement it")
+
+  override def named(name: String): Graph[S, Unit] = withAttributes(OperationAttributes.name(name))
 }

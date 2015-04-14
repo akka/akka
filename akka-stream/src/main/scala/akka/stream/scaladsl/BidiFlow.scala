@@ -7,6 +7,7 @@ import akka.stream.Graph
 import akka.stream.BidiShape
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.FlowShape
+import akka.stream.OperationAttributes
 
 final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val module: Module) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
   override val shape = module.shape.asInstanceOf[BidiShape[I1, O1, I2, O2]]
@@ -119,6 +120,12 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
     val outs = shape.outlets
     new BidiFlow(module.replaceShape(shape.copyFromPorts(ins.reverse, outs.reverse)))
   }
+
+  override def withAttributes(attr: OperationAttributes): BidiFlow[I1, O1, I2, O2, Mat] =
+    new BidiFlow(module.withAttributes(attr).wrap())
+
+  override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
+    withAttributes(OperationAttributes.name(name))
 }
 
 object BidiFlow extends BidiFlowApply {

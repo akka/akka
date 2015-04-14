@@ -11,6 +11,7 @@ import akka.japi.Util.immutableIndexedSeq
 import akka.stream._
 import akka.stream.impl.StreamLayout
 import akka.stream.impl.Junctions.FlexiRouteModule
+import akka.stream.impl.Stages.DefaultAttributes
 
 object FlexiRoute {
 
@@ -277,7 +278,12 @@ object FlexiRoute {
 abstract class FlexiRoute[In, S <: Shape](val shape: S, val attributes: OperationAttributes) extends Graph[S, Unit] {
   import FlexiRoute._
 
-  val module: StreamLayout.Module = new FlexiRouteModule(shape, (s: S) ⇒ new Internal.RouteLogicWrapper(createRouteLogic(s)))
+  /**
+   * INTERNAL API
+   */
+  private[stream] val module: StreamLayout.Module =
+    new FlexiRouteModule(shape, (s: S) ⇒ new Internal.RouteLogicWrapper(createRouteLogic(s)),
+      attributes and DefaultAttributes.flexiRoute)
 
   /**
    * Create the stateful logic that will be used when reading input elements
@@ -289,5 +295,11 @@ abstract class FlexiRoute[In, S <: Shape](val shape: S, val attributes: Operatio
     case Some(n) ⇒ n
     case None    ⇒ super.toString
   }
+
+  override def withAttributes(attr: OperationAttributes): Graph[S, Unit] =
+    throw new UnsupportedOperationException(
+      "withAttributes not supported by default by FlexiRoute, subclass may override and implement it")
+
+  override def named(name: String): Graph[S, Unit] = withAttributes(OperationAttributes.name(name))
 
 }

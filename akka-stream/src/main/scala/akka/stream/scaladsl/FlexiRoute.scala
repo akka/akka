@@ -7,6 +7,7 @@ import akka.stream.impl.StreamLayout
 import akka.stream.{ Outlet, Shape, OutPort, Graph, OperationAttributes }
 import scala.collection.immutable
 import akka.stream.impl.Junctions.FlexiRouteModule
+import akka.stream.impl.Stages.DefaultAttributes
 
 object FlexiRoute {
 
@@ -192,7 +193,11 @@ object FlexiRoute {
 abstract class FlexiRoute[In, S <: Shape](val shape: S, attributes: OperationAttributes) extends Graph[S, Unit] {
   import akka.stream.scaladsl.FlexiRoute._
 
-  val module: StreamLayout.Module = new FlexiRouteModule(shape, createRouteLogic)
+  /**
+   * INTERNAL API
+   */
+  private[stream] val module: StreamLayout.Module =
+    new FlexiRouteModule(shape, createRouteLogic, attributes and DefaultAttributes.flexiRoute)
 
   /**
    * This allows a type-safe mini-DSL for selecting one of several ports, very useful in
@@ -234,4 +239,11 @@ abstract class FlexiRoute[In, S <: Shape](val shape: S, attributes: OperationAtt
     case Some(n) ⇒ n
     case None    ⇒ super.toString
   }
+
+  // FIXME what to do about this?
+  override def withAttributes(attr: OperationAttributes): Graph[S, Unit] =
+    throw new UnsupportedOperationException(
+      "withAttributes not supported by default by FlexiRoute, subclass may override and implement it")
+
+  override def named(name: String): Graph[S, Unit] = withAttributes(OperationAttributes.name(name))
 }
