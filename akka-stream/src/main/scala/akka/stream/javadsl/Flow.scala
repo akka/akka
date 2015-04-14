@@ -562,6 +562,14 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * true, false, false // elements go into third substream
    * }}}
    *
+   * In case the *first* element of the stream matches the predicate, the first
+   * substream emitted by splitWhen will start from that element. For example:
+   *
+   * {{{
+   * true, false, false // first substream starts from the split-by element
+   * true, false        // subsequent substreams operate the same way
+   * }}}
+   *
    * If the split predicate `p` throws an exception and the supervision decision
    * is [[akka.stream.Supervision#stop]] the stream and substreams will be completed
    * with failure.
@@ -582,6 +590,41 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    */
   def splitWhen(p: function.Predicate[Out]): javadsl.Flow[In, Source[Out, Unit], Mat] =
     new Flow(delegate.splitWhen(p.test).map(_.asJava))
+
+  /**
+   * This operation applies the given predicate to all incoming elements and
+   * emits them to a stream of output streams. It *ends* the current substream when the
+   * predicate is true. This means that for the following series of predicate values,
+   * three substreams will be produced with lengths 2, 2, and 3:
+   *
+   * {{{
+   * false, true,        // elements go into first substream
+   * false, true,        // elements go into second substream
+   * false, false, true  // elements go into third substream
+   * }}}
+   *
+   * If the split predicate `p` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
+   * with failure.
+   *
+   * If the split predicate `p` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
+   * the element is dropped and the stream and substreams continue.
+   *
+   * '''Emits when''' an element passes through. When the provided predicate is true it emitts the element
+   * and opens a new substream for subsequent element
+   *
+   * '''Backpressures when''' there is an element pending for the next substream, but the previous
+   * is not fully consumed yet, or the substream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels and substreams cancel
+   *
+   * See also [[Flow.splitWhen]].
+   */
+  def splitAfter[U >: Out](p: function.Predicate[Out]): javadsl.Flow[In, Source[Out, Unit], Mat] =
+    new Flow(delegate.splitAfter(p.test).map(_.asJava))
 
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.

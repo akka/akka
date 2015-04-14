@@ -4,28 +4,28 @@
 
 package akka.http.impl.engine.parsing
 
-import akka.http.ParserSettings
-import akka.http.scaladsl.util.FastFuture
-import com.typesafe.config.{ ConfigFactory, Config }
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
-import org.scalatest.matchers.Matcher
 import akka.actor.ActorSystem
-import akka.util.ByteString
-import akka.stream.scaladsl._
-import akka.stream.scaladsl.FlattenStrategy
-import akka.stream.ActorFlowMaterializer
-import akka.http.scaladsl.util.FastFuture._
-import akka.http.scaladsl.model._
+import akka.http.ParserSettings
+import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.util._
-import headers._
-import MediaTypes._
-import HttpMethods._
-import HttpProtocols._
-import StatusCodes._
-import HttpEntity._
-import ParserOutput._
+import akka.http.scaladsl.model.HttpEntity._
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.HttpProtocols._
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.util.FastFuture
+import akka.http.scaladsl.util.FastFuture._
+import akka.stream.ActorFlowMaterializer
+import akka.stream.scaladsl.{ FlattenStrategy, _ }
+import akka.util.ByteString
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.matchers.Matcher
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
 
 class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
