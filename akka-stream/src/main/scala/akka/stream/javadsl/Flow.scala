@@ -408,10 +408,10 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   def concat[M](second: javadsl.Source[Out @uncheckedVariance, M]): javadsl.Flow[In, Out, Mat @uncheckedVariance Pair M] =
     new Flow(delegate.concat(second.asScala).mapMaterialized(p ⇒ Pair(p._1, p._2)))
 
-  def withAttributes(attr: OperationAttributes): javadsl.Flow[In, Out, Mat] =
+  override def withAttributes(attr: OperationAttributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))
 
-  def named(name: String): javadsl.Flow[In, Out, Mat] =
+  override def named(name: String): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.named(name))
 }
 
@@ -438,4 +438,10 @@ private[akka] class RunnableFlowAdapter[Mat](runnable: scaladsl.RunnableFlow[Mat
   override def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): RunnableFlow[Mat2] =
     new RunnableFlowAdapter(runnable.mapMaterialized(f.apply _))
   override def run(materializer: FlowMaterializer): Mat = runnable.run()(materializer)
+
+  override def withAttributes(attr: OperationAttributes): RunnableFlow[Mat] =
+    new RunnableFlowAdapter(runnable.withAttributes(attr))
+
+  override def named(name: String): RunnableFlow[Mat] =
+    new RunnableFlowAdapter(runnable.named(name))
 }

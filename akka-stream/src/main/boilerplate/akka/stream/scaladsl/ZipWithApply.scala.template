@@ -3,8 +3,9 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.impl.GenJunctions._
 import akka.stream._
+import akka.stream.impl.GenJunctions._
+import akka.stream.impl.StreamLayout
 
 trait ZipWithApply {
 
@@ -14,13 +15,25 @@ trait ZipWithApply {
    * @param f zipping-function from the input values to the output value
    * @param attributes optional attributes for this vertex
    */
-  def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): Graph[FanInShape1[[#A1#], O], Unit] =
-    new Graph[FanInShape1[[#A1#], O], Unit] {
-      val shape = new FanInShape1[[#A1#], O]("ZipWith1")
-      val module = new ZipWith1Module(shape, zipper, OperationAttributes.name("ZipWith1"))
+  def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): ZipWith1[[#A1#], O] = {
+    val shape = new FanInShape1[[#A1#], O]("ZipWith1")
+    new ZipWith1(shape, new ZipWith1Module(shape, zipper, OperationAttributes.name("ZipWith1")))
     }
     #
 
   ]
 
 }
+
+[2..20#/** `ZipWith` specialized for 1 inputs */
+class ZipWith1[[#A1#], O] private[stream] (override val shape: FanInShape1[[#A1#], O],
+                         private[stream] override val module: StreamLayout.Module)
+  extends Graph[FanInShape1[[#A1#], O], Unit] {
+
+  override def withAttributes(attr: OperationAttributes): ZipWith1[[#A1#], O] =
+    new ZipWith1(shape, module.withAttributes(attr).wrap())
+
+  override def named(name: String): ZipWith1[[#A1#], O] = withAttributes(OperationAttributes.name(name))
+}
+#
+]

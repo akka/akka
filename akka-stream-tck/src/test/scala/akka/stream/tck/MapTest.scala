@@ -14,7 +14,7 @@ class MapTest extends AkkaIdentityProcessorVerification[Int] {
     implicit val materializer = ActorFlowMaterializer()(system)
 
     processorFromFlow(
-      Flow[Int].map(elem ⇒ elem).withAttributes(OperationAttributes.name("identity")))
+      Flow[Int].map(elem ⇒ elem).named("identity"))
   }
 
   override def createElement(element: Int): Int = element

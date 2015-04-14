@@ -498,10 +498,10 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   def flatten[U](strategy: FlattenStrategy[Out, U]): javadsl.Source[U, Mat] =
     new Source(delegate.flatten(strategy))
 
-  def withAttributes(attr: OperationAttributes): javadsl.Source[Out, Mat] =
+  override def withAttributes(attr: OperationAttributes): javadsl.Source[Out, Mat] =
     new Source(delegate.withAttributes(attr))
 
-  def named(name: String): javadsl.Source[Out, Mat] =
+  override def named(name: String): javadsl.Source[Out, Mat] =
     new Source(delegate.named(name))
 
 }
