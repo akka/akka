@@ -91,11 +91,13 @@ object FlexiRoute {
    * How to handle completion or failure from upstream input and how to
    * handle cancel from downstream output.
    *
-   * The `onUpstreamFinish` method is called the upstream input was completed successfully.
-   * It returns next behavior or [[#sameState]] to keep current behavior.
+   * The `onUpstreamFinish` method is called when the upstream input was completed successfully.
+   * The completion will be propagated downstreams unless this function throws an exception, in
+   * which case the streams will be completed with that failure.
    *
    * The `onUpstreamFailure` method is called when the upstream input was completed with failure.
-   * It returns next behavior or [[#SameState]] to keep current behavior.
+   * The failure will be propagated downstreams unless this function throws an exception, in
+   * which case the streams will be completed with that failure instead.
    *
    * The `onDownstreamFinish` method is called when a downstream output cancels.
    * It returns next behavior or [[#sameState]] to keep current behavior.
@@ -163,7 +165,6 @@ object FlexiRoute {
 
     /**
      * When an output cancels it continues with remaining outputs.
-     * Failure or completion from upstream are immediately propagated.
      */
     def defaultCompletionHandling: CompletionHandling[In] =
       new CompletionHandling[In] {
@@ -175,7 +176,6 @@ object FlexiRoute {
 
     /**
      * Completes as soon as any output cancels.
-     * Failure or completion from upstream are immediately propagated.
      */
     def eagerClose[A]: CompletionHandling[In] =
       new CompletionHandling[In] {

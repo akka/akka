@@ -136,8 +136,12 @@ object FlexiRoute {
      * handle cancel from downstream output.
      *
      * The `onUpstreamFinish` function is called the upstream input was completed successfully.
+     * The completion will be propagated downstreams unless this function throws an exception, in
+     * which case the streams will be completed with that failure.
      *
      * The `onUpstreamFailure` function is called when the upstream input was completed with failure.
+     * The failure will be propagated downstreams unless this function throws an exception, in
+     * which case the streams will be completed with that failure instead.
      *
      * The `onDownstreamFinish` function is called when a downstream output cancels.
      * It returns next behavior or [[#SameState]] to keep current behavior.
@@ -152,7 +156,6 @@ object FlexiRoute {
 
     /**
      * When an output cancels it continues with remaining outputs.
-     * Failure or completion from upstream are immediately propagated.
      */
     val defaultCompletionHandling: CompletionHandling = CompletionHandling(
       onUpstreamFinish = _ ⇒ (),
@@ -161,7 +164,6 @@ object FlexiRoute {
 
     /**
      * Completes as soon as any output cancels.
-     * Failure or completion from upstream are immediately propagated.
      */
     val eagerClose: CompletionHandling = CompletionHandling(
       onUpstreamFinish = _ ⇒ (),
