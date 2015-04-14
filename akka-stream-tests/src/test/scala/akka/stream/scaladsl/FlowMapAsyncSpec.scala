@@ -171,6 +171,16 @@ class FlowMapAsyncSpec extends AkkaSpec {
       c.expectComplete()
     }
 
+    "finish after future failure" in {
+      import system.dispatcher
+      Await.result(Source(1 to 3).mapAsync(1, n ⇒ Future {
+        if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
+        else n
+      }).withAttributes(supervisionStrategy(resumingDecider))
+        .grouped(10)
+        .runWith(Sink.head), 1.second) should be(Seq(1, 2))
+    }
+
     "resume when mapAsync throws" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher

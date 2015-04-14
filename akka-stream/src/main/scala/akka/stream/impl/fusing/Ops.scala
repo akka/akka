@@ -468,6 +468,7 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
     def ignoreOrFail(ex: Throwable) =
       if (decider(ex) == Supervision.Stop) ctx.fail(ex)
       else if (ctx.isHoldingUpstream) ctx.pull()
+      else if (ctx.isFinishing && todo == 0) ctx.finish()
       else ctx.ignore()
 
     inFlight -= 1
