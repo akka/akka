@@ -5,6 +5,7 @@ package akka.stream
 
 import scala.concurrent.ExecutionContextExecutor
 import akka.japi
+import akka.stream.scaladsl.OperationAttributes
 
 abstract class FlowMaterializer {
 
@@ -44,3 +45,13 @@ private[akka] object NoFlowMaterializer extends FlowMaterializer {
   override def executionContext: ExecutionContextExecutor =
     throw new UnsupportedOperationException("NoFlowMaterializer does not provide an ExecutionContext")
 }
+
+/**
+ * INTERNAL API: this might become public later
+ *
+ * Context parameter to the `create` methods of sources and sinks.
+ */
+private[akka] case class MaterializationContext(
+  materializer: FlowMaterializer,
+  effectiveAttributes: OperationAttributes,
+  stageName: String)
