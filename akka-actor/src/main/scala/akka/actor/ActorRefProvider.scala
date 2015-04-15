@@ -338,6 +338,10 @@ trait ActorRefFactory {
   /**
    * Stop the actor pointed to by the given [[akka.actor.ActorRef]]; this is
    * an asynchronous operation, i.e. involves a message send.
+   * If this method is applied to the `self` reference from inside an Actor
+   * then that Actor is guaranteed to not process any further messages after
+   * this call; please note that the processing of the current message will
+   * continue, this method does not immediately terminate this actor.
    */
   def stop(actor: ActorRef): Unit
 }
