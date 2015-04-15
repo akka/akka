@@ -336,6 +336,9 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Transform each input element into a sequence of output elements that is
    * then flattened into the output stream.
+   *
+   * The returned sequence MUST NOT contain `null` values,
+   * as they are illegal as stream elements - according to the Reactive Streams specification.
    */
   def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[T, Mat] = andThen(MapConcat(f.asInstanceOf[Any ⇒ immutable.Seq[Any]]))
 
