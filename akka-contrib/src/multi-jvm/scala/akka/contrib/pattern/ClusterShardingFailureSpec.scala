@@ -67,7 +67,7 @@ object ClusterShardingFailureSpec extends MultiNodeConfig {
     case m @ Add(id, _) ⇒ (id, m)
   }
 
-  val shardResolver: ShardRegion.ShardResolver = msg ⇒ msg match {
+  val shardResolver: ShardRegion.ShardResolver = {
     case Get(id)    ⇒ id.charAt(0).toString
     case Add(id, _) ⇒ id.charAt(0).toString
   }

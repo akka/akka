@@ -32,6 +32,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberUp
+import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.pattern.ask
@@ -734,7 +735,9 @@ class ShardRegion(
         changeMembers(membersByAge + m)
 
     case MemberRemoved(m, _) ⇒
-      if (matchingRole(m))
+      if (m.uniqueAddress == cluster.selfUniqueAddress)
+        context.stop(self)
+      else if (matchingRole(m))
         changeMembers(membersByAge - m)
 
     case _ ⇒ unhandled(evt)
@@ -1588,10 +1591,13 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
   val rebalanceTask = context.system.scheduler.schedule(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
   val snapshotTask = context.system.scheduler.schedule(snapshotInterval, snapshotInterval, self, SnapshotTick)
 
+  Cluster(context.system).subscribe(self, ClusterShuttingDown.getClass)
+
   override def postStop(): Unit = {
     super.postStop()
     rebalanceTask.cancel()
     snapshotTask.cancel()
+    Cluster(context.system).unsubscribe(self)
   }
 
   override def receiveRecover: Receive = {
@@ -1750,6 +1756,17 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
     //On rebalance, we send ourselves a GetShardHome message to reallocate a
     // shard. This recieve handles the "response" from that message. i.e. Ingores it.
 
+    case ClusterShuttingDown ⇒
+      log.debug("Shutting down ShardCoordinator")
+      // can't stop because supervisor will start it again,
+      // it will soon be stopped when singleton is stopped
+      context.become(shuttingDown)
+
+    case _: CurrentClusterState ⇒
+  }
+
+  def shuttingDown: Receive = {
+    case _ ⇒ // ignore all
   }
 
   def sendHostShardMsg(shard: ShardId, region: ActorRef): Unit = {
