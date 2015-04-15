@@ -154,6 +154,9 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Transform each input element into a sequence of output elements that is
    * then flattened into the output stream.
+   *
+   * The returned list MUST NOT contain `null` values,
+   * as they are illegal as stream elements - according to the Reactive Streams specification.
    */
   def mapConcat[T](f: japi.Function[Out, java.util.List[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapConcat(elem ⇒ Util.immutableSeq(f.apply(elem))))
