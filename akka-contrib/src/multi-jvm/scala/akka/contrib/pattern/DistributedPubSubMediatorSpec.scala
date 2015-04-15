@@ -471,6 +471,49 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       }
       enterBarrier("after-14")
     }
+
+    "get topics after simple publish" in within(15 seconds) {
+      runOn(first) {
+        val s1 = Subscribe("topic_a1", createChatUser("u14"))
+        mediator ! s1
+
+        expectMsg(SubscribeAck(s1))
+
+        val s2 = Subscribe("topic_a1", createChatUser("u15"))
+        mediator ! s2
+        expectMsg(SubscribeAck(s2))
+
+        val s3 = Subscribe("topic_a2", createChatUser("u16"))
+        mediator ! s3
+        expectMsg(SubscribeAck(s3))
+      }
+
+      runOn(second) {
+        val s3 = Subscribe("topic_a1", createChatUser("u17"))
+        mediator ! s3
+        expectMsg(SubscribeAck(s3))
+      }
+
+      enterBarrier("topics-registered")
+
+      runOn(first) {
+        mediator ! GetTopics
+        expectMsgPF() {
+          case CurrentTopics(topics) if topics.contains("topic_a1")
+            && topics.contains("topic_a2") ⇒ true
+        }
+      }
+
+      runOn(second) {
+        mediator ! GetTopics
+        expectMsgPF() {
+          case CurrentTopics(topics) if topics.contains("topic_a1") ⇒ true
+        }
+      }
+
+      enterBarrier("after-get-topics")
+
+    }
   }
 
 }
