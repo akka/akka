@@ -17,8 +17,7 @@ object ActorPath {
     case _                               ⇒ throw new MalformedURLException("cannot parse as ActorPath: " + s)
   }
 
-  /** INTERNAL API */
-  private[akka] final val ValidSymbols = """-_.*$+:@&=,!~';"""
+  private final val ValidSymbols = """-_.*$+:@&=,!~';"""
 
   private final val ValidPathCode = -1
   private final val EmptyPathCode = -2
@@ -28,9 +27,17 @@ object ActorPath {
    * See [[isValidPathElement()]] for a non-throwing version.
    *
    * @param element actor path element to be validated
+   */
+  final def validatePathElement(element: String): Unit = validatePathElement(element, fullPath = null)
+
+  /**
+   * Validates the given actor path element and throws an [[InvalidActorNameException]] if invalid.
+   * See [[isValidPathElement()]] for a non-throwing version.
+   *
+   * @param element actor path element to be validated
    * @param fullPath optional fullPath element that may be included for better error messages; null if not given
    */
-  final def validatePathElement(element: String, fullPath: String = null): Unit = {
+  final def validatePathElement(element: String, fullPath: String): Unit = {
     def fullPathMsg = if (fullPath ne null) s""" (in path [$fullPath])""" else ""
 
     (findInvalidPathElementCharPosition(element): @switch) match {
@@ -98,7 +105,7 @@ object ActorPath {
  * when comparing actor paths.
  */
 @SerialVersionUID(1L)
-sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
+sealed abstract class ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * The Address under which this path can be reached; walks up the tree to
    * the RootActorPath.
