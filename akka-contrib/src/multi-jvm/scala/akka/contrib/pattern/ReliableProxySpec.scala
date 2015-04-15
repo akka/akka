@@ -73,7 +73,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
   def expectN(n: Int) = (1 to n) foreach { n ⇒ expectMsg(n); lastSender should ===(target) }
 
   // avoid too long timeout for expectNoMsg when using dilated timeouts, because
-  // blackhole will trigger failure detection 
+  // blackhole will trigger failure detection
   val expectNoMsgTimeout = {
     val timeFactor = TestKitExtension(system).TestTimeFactor
     if (timeFactor > 1.0) (1.0 / timeFactor).seconds else 1.second
@@ -322,6 +322,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         // Target is not running after previous test, start it
         startTarget()
       }
+      enterBarrier("target-started")
 
       runOn(local) {
         // Get new target's ref
