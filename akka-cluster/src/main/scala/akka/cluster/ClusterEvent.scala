@@ -170,6 +170,17 @@ object ClusterEvent {
   }
 
   /**
+   * This event is published when the cluster node is shutting down,
+   * before the final [[MemberRemoved]] events are published.
+   */
+  case object ClusterShuttingDown extends ClusterDomainEvent
+
+  /**
+   * Java API: get the singleton instance of [[ClusterShuttingDown]] event
+   */
+  def getClusterShuttingDownInstance = ClusterShuttingDown
+
+  /**
    * Marker interface to facilitate subscription of
    * both [[UnreachableMember]] and [[ReachableMember]].
    */
@@ -325,6 +336,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
 
   override def postStop(): Unit = {
     // publish the final removed state before shutting down
+    publish(ClusterShuttingDown)
     publishChanges(Gossip.empty)
   }
 
