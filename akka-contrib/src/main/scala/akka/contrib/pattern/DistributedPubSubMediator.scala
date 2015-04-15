@@ -5,10 +5,13 @@
 package akka.contrib.pattern
 
 import scala.collection.immutable
+import scala.collection.immutable.Set
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import java.net.URLEncoder
+import java.net.URLDecoder
 import akka.actor.Actor
+import akka.actor.ActorContext
 import akka.actor.ActorLogging
 import akka.actor.ActorPath
 import akka.actor.ActorRef
@@ -106,6 +109,26 @@ object DistributedPubSubMediator {
   }
   @SerialVersionUID(1L) final case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false) extends DistributedPubSubMessage {
     def this(path: String, msg: Any) = this(path, msg, allButSelf = false)
+  }
+
+  sealed abstract class GetTopics
+  @SerialVersionUID(1L)
+  case object GetTopics extends GetTopics
+
+  /**
+   * Java API
+   */
+  def getTopicsInstance: GetTopics = GetTopics
+
+  @SerialVersionUID(1L)
+  final case class CurrentTopics(topics: Set[String]) {
+    /**
+     * Java API
+     */
+    def getTopics(): java.util.Set[String] = {
+      import scala.collection.JavaConverters._
+      topics.asJava
+    }
   }
 
   // Only for testing purposes, to poll/await replication
@@ -436,6 +459,10 @@ class DistributedPubSubMediator(
     case msg @ RegisterTopic(t) ⇒
       registerTopic(t)
 
+    case GetTopics ⇒ {
+      sender ! CurrentTopics(getCurrentTopics())
+    }
+
     case msg @ Subscribed(ack, ref) ⇒
       ref ! ack
 
@@ -546,6 +573,17 @@ class DistributedPubSubMediator(
     val v = nextVersion()
     registry += (selfAddress -> bucket.copy(version = v,
       content = bucket.content + (key -> ValueHolder(v, valueOption))))
+  }
+
+  def getCurrentTopics(): Set[String] = {
+    val topicPrefix = self.path.toStringWithoutAddress
+    (for {
+      (_, bucket) ← registry
+      (key, value) ← bucket.content
+      if key.startsWith(topicPrefix)
+      topic = key.substring(topicPrefix.length + 1)
+      if !topic.contains('/') // exclude group topics
+    } yield URLDecoder.decode(topic, "utf-8")).toSet
   }
 
   def registerTopic(ref: ActorRef): Unit = {
