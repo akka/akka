@@ -24,6 +24,7 @@ import scala.concurrent.Promise
 import org.reactivestreams.Subscriber
 import akka.stream.stage.SyncDirective
 import akka.stream.OverflowStrategy
+import akka.stream.OperationAttributes
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise

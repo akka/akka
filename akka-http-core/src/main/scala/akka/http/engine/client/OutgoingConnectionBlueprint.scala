@@ -14,7 +14,7 @@ import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes._
 import akka.http.model.{ IllegalResponseException, HttpMethod, HttpRequest, HttpResponse }
 import akka.http.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
 import akka.http.engine.parsing._

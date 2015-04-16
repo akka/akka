@@ -6,8 +6,8 @@ package akka.stream.scaladsl
 import akka.stream.javadsl
 import akka.actor.{ ActorRef, Props }
 import akka.stream.impl._
-import akka.stream.{ SinkShape, Inlet, Outlet, Graph }
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.{ SinkShape, Inlet, Outlet, Graph, OperationAttributes }
+import akka.stream.OperationAttributes._
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage }
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance

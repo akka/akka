@@ -7,8 +7,8 @@ import akka.actor.Props
 import akka.stream._
 import akka.stream.impl.Junctions.FanInModule
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.scaladsl.OperationAttributes
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes
+import akka.stream.OperationAttributes._
 
 /** INTERNAL API: Boilerplate generated Junctions */
 private[akka] object GenJunctions {

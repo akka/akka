@@ -7,7 +7,7 @@ package akka.http.engine.rendering
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes._
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.http.model._

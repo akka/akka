@@ -5,8 +5,8 @@ package akka.stream.impl
 
 import akka.event.Logging
 import akka.stream.{ OverflowStrategy, TimerTransformer }
-import akka.stream.scaladsl.{ OperationAttributes }
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes
+import akka.stream.OperationAttributes._
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
 import StreamLayout._

@@ -26,7 +26,7 @@ object Merge {
    * @param attributes optional attributes for this vertex
    */
   def create[T](outputCount: Int, attributes: OperationAttributes): Graph[UniformFanInShape[T, T], Unit] =
-    scaladsl.Merge(outputCount, attributes.asScala)
+    scaladsl.Merge(outputCount, attributes)
 
   /**
    * Create a new `Merge` vertex with the specified output type.
@@ -67,7 +67,7 @@ object MergePreferred {
    * @param attributes optional attributes for this vertex
    */
   def create[T](outputCount: Int, attributes: OperationAttributes): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
-    scaladsl.MergePreferred(outputCount, attributes.asScala)
+    scaladsl.MergePreferred(outputCount, attributes)
 
   /**
    * Create a new `MergePreferred` vertex with the specified output type.
@@ -106,7 +106,7 @@ object Broadcast {
    * @param attributes optional attributes for this vertex
    */
   def create[T](outputCount: Int, attributes: OperationAttributes): Graph[UniformFanOutShape[T, T], Unit] =
-    scaladsl.Broadcast(outputCount, attributes.asScala)
+    scaladsl.Broadcast(outputCount, attributes)
 
   /**
    * Create a new `Broadcast` vertex with the specified input type.
@@ -146,7 +146,7 @@ object Balance {
    * @param attributes optional attributes for this vertex
    */
   def create[T](outputCount: Int, waitForAllDownstreams: Boolean, attributes: OperationAttributes): Graph[UniformFanOutShape[T, T], Unit] =
-    scaladsl.Balance(outputCount, waitForAllDownstreams, attributes.asScala)
+    scaladsl.Balance(outputCount, waitForAllDownstreams, attributes)
 
   /**
    * Create a new `Balance` vertex with the specified input type.
@@ -202,7 +202,7 @@ object Unzip {
    */
   def create[A, B](attributes: OperationAttributes): Graph[FanOutShape2[A Pair B, A, B], Unit] =
     scaladsl.FlowGraph.partial() { implicit b ⇒
-      val unzip = b.add(scaladsl.Unzip[A, B](attributes.asScala))
+      val unzip = b.add(scaladsl.Unzip[A, B](attributes))
       val tuple = b.add(scaladsl.Flow[A Pair B].map(p ⇒ (p.first, p.second)))
       b.addEdge(tuple.outlet, unzip.in)
       new FanOutShape2(FanOutShape.Ports(tuple.inlet, unzip.out0 :: unzip.out1 :: Nil))
@@ -253,7 +253,7 @@ object Concat {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](attributes: OperationAttributes): Graph[UniformFanInShape[T, T], Unit] = scaladsl.Concat[T](attributes.asScala)
+  def create[T](attributes: OperationAttributes): Graph[UniformFanInShape[T, T], Unit] = scaladsl.Concat[T](attributes)
 
   /**
    * Create a new anonymous `Concat` vertex with the specified input types.

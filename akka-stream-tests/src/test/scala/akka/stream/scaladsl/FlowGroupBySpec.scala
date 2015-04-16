@@ -5,13 +5,14 @@ package akka.stream.scaladsl
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit._
 import akka.stream.testkit.StreamTestKit.TE
 import org.reactivestreams.Publisher
+import akka.stream.OperationAttributes
+import akka.stream.ActorOperationAttributes
 
 class FlowGroupBySpec extends AkkaSpec {
 
@@ -223,7 +224,7 @@ class FlowGroupBySpec extends AkkaSpec {
       val exc = TE("test")
       val publisher = Source(publisherProbeProbe)
         .groupBy(elem ⇒ if (elem == 2) throw exc else elem % 2)
-        .withAttributes(OperationAttributes.supervisionStrategy(resumingDecider))
+        .withAttributes(ActorOperationAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, Unit])]()
       publisher.subscribe(subscriber)

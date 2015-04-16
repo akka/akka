@@ -9,6 +9,7 @@ import akka.stream.testkit.AkkaSpec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import akka.stream.OperationAttributes
 
 object FlexiDocSpec {
   //#fleximerge-zip-states

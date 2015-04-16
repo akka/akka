@@ -19,6 +19,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.impl.SubscriberSink
 import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorOperationAttributes
 
 object ActorPublisherSpec {
 
@@ -374,7 +375,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       implicit val materializer = ActorFlowMaterializer()
       val s = StreamTestKit.SubscriberProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false))
-        .withAttributes(OperationAttributes.dispatcher("my-dispatcher1"))
+        .withAttributes(ActorOperationAttributes.dispatcher("my-dispatcher1"))
         .to(Sink(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
@@ -384,7 +385,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       implicit val materializer = ActorFlowMaterializer()
       val s = StreamTestKit.SubscriberProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false).withDispatcher("my-dispatcher1"))
-        .withAttributes(OperationAttributes.dispatcher("my-dispatcher2"))
+        .withAttributes(ActorOperationAttributes.dispatcher("my-dispatcher2"))
         .to(Sink(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
