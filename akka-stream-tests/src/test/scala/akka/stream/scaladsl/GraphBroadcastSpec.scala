@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings }
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class GraphBroadcastSpec extends AkkaSpec {
 
@@ -17,7 +18,7 @@ class GraphBroadcastSpec extends AkkaSpec {
   "A broadcast" must {
     import FlowGraph.Implicits._
 
-    "broadcast to other subscriber" in {
+    "broadcast to other subscriber" in assertAllStagesStopped {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
 
@@ -117,7 +118,7 @@ class GraphBroadcastSpec extends AkkaSpec {
       Await.result(result, 3.seconds) should be(List.fill(22)(List(1, 2, 3)))
     }
 
-    "produce to other even though downstream cancels" in {
+    "produce to other even though downstream cancels" in assertAllStagesStopped {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
 
@@ -138,7 +139,7 @@ class GraphBroadcastSpec extends AkkaSpec {
       c2.expectComplete()
     }
 
-    "produce to downstream even though other cancels" in {
+    "produce to downstream even though other cancels" in assertAllStagesStopped {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
 
@@ -159,7 +160,7 @@ class GraphBroadcastSpec extends AkkaSpec {
       c1.expectComplete()
     }
 
-    "cancel upstream when downstreams cancel" in {
+    "cancel upstream when downstreams cancel" in assertAllStagesStopped {
       val p1 = StreamTestKit.PublisherProbe[Int]()
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()

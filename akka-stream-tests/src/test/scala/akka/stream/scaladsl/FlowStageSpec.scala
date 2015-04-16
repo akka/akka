@@ -9,6 +9,7 @@ import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.testkit.{ EventFilter, TestProbe }
 import com.typesafe.config.ConfigFactory
 import akka.stream.stage._
@@ -21,7 +22,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
   implicit val materializer = ActorFlowMaterializer(settings)
 
   "A Flow with transform operations" must {
-    "produce one-to-one transformation as expected" in {
+    "produce one-to-one transformation as expected" in assertAllStagesStopped {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
         transform(() ⇒ new PushStage[Int, Int] {
@@ -44,7 +45,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       subscriber.expectComplete()
     }
 
-    "produce one-to-several transformation as expected" in {
+    "produce one-to-several transformation as expected" in assertAllStagesStopped {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[Int, Int] {
@@ -192,7 +193,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       c2.expectComplete()
     }
 
-    "support emit onUpstreamFinish" in {
+    "support emit onUpstreamFinish" in assertAllStagesStopped {
       val p = Source(List("a")).runWith(Sink.publisher)
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[String, String] {
@@ -215,7 +216,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       c.expectComplete()
     }
 
-    "allow early finish" in {
+    "allow early finish" in assertAllStagesStopped {
       val p = StreamTestKit.PublisherProbe[Int]()
       val p2 = Source(p).
         transform(() ⇒ new PushStage[Int, Int] {
@@ -241,7 +242,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       proc.expectCancellation()
     }
 
-    "report error when exception is thrown" in {
+    "report error when exception is thrown" in assertAllStagesStopped {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[Int, Int] {
@@ -268,7 +269,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       }
     }
 
-    "support emit of final elements when onUpstreamFailure" in {
+    "support emit of final elements when onUpstreamFailure" in assertAllStagesStopped {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
         map(elem ⇒ if (elem == 2) throw new IllegalArgumentException("two not allowed") else elem).
@@ -295,7 +296,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       }
     }
 
-    "support cancel as expected" in {
+    "support cancel as expected" in assertAllStagesStopped {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[Int, Int] {
@@ -317,7 +318,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       subscriber.expectNoMsg(200.millis)
     }
 
-    "support producing elements from empty inputs" in {
+    "support producing elements from empty inputs" in assertAllStagesStopped {
       val p = Source(List.empty[Int]).runWith(Sink.publisher)
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[Int, Int] {

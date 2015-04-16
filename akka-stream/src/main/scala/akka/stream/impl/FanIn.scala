@@ -243,7 +243,7 @@ private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, 
       log.debug("fail due to: {}", e.getMessage)
     inputBunch.cancel()
     primaryOutputs.error(e)
-    context.stop(self)
+    pump()
   }
 
   override def postStop(): Unit = {
