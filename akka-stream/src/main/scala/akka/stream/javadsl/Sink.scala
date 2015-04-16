@@ -8,6 +8,7 @@ import akka.actor.Props
 import akka.stream.javadsl
 import akka.stream.scaladsl
 import akka.stream._
+import akka.util.ByteString
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import scala.concurrent.Future
@@ -114,6 +115,12 @@ object Sink {
    */
   def actorSubscriber[T](props: Props): Sink[T, ActorRef] =
     new Sink(scaladsl.Sink.actorSubscriber(props))
+
+  /**
+   * Creates a `Sink` which uses Akka-IO's unconnected UDP mode to emit each ByteString it receives to the given target address.
+   */
+  def simpleUdp(host: String, port: Int): Sink[ByteString, Unit] =
+    new Sink(scaladsl.Sink.simpleUdp(host, port))
 
   /**
    * A graph with the shape of a sink logically is a sink, this method makes
