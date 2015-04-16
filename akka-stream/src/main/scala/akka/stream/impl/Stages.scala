@@ -54,13 +54,13 @@ private[stream] object Stages {
     val flexiMerge = name("flexiMerge")
     val flexiRoute = name("flexiRoute")
     val identityJunction = name("identityJunction")
+    val repeat = name("repeat")
 
     val publisherSource = name("publisherSource")
     val iterableSource = name("iterableSource")
     val futureSource = name("futureSource")
     val tickSource = name("tickSource")
     val singleSource = name("singleSource")
-    val repeat = name("repeat")
     val emptySource = name("emptySource")
     val lazyEmptySource = name("lazyEmptySource")
     val failedSource = name("failedSource")
@@ -69,6 +69,8 @@ private[stream] object Stages {
     val subscriberSource = name("subscriberSource")
     val actorPublisherSource = name("actorPublisherSource")
     val actorRefSource = name("actorRefSource")
+    val synchronousFileSource = name("synchronousFileSource")
+    val inputStreamSource = name("inputStreamSource")
 
     val subscriberSink = name("subscriberSink")
     val cancelledSink = name("cancelledSink")
@@ -78,6 +80,8 @@ private[stream] object Stages {
     val ignoreSink = name("ignoreSink")
     val actorRefSink = name("actorRefSink")
     val actorSubscriberSink = name("actorSubscriberSink")
+    val synchronousFileSink = name("synchronousFileSink")
+    val outputStreamSink = name("outputStreamSink")
   }
 
   import DefaultAttributes._

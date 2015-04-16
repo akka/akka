@@ -192,9 +192,10 @@ trait ActorSubscriber extends Actor {
     case OnSubscribe(sub) ⇒
       if (subscription.isEmpty) {
         subscription = Some(sub)
-        if (_canceled)
+        if (_canceled) {
+          context.stop(self)
           sub.cancel()
-        else if (requested != 0)
+        } else if (requested != 0)
           sub.request(remainingRequested)
       } else
         sub.cancel()
@@ -260,13 +261,22 @@ trait ActorSubscriber extends Actor {
     }
 
   /**
-   * Cancel upstream subscription. No more elements will
-   * be delivered after cancel.
+   * Cancel upstream subscription.
+   * No more elements will be delivered after cancel.
+   *
+   * The [[ActorSubscriber]] will be stopped immediatly after signalling cancelation.
+   * In case the upstream subscription has not yet arrived the Actor will stay alive
+   * until a subscription arrives, cancel it and then stop itself.
    */
   protected def cancel(): Unit =
     if (!_canceled) {
-      subscription.foreach(_.cancel())
-      _canceled = true
+      subscription match {
+        case Some(s) ⇒
+          context.stop(self)
+          s.cancel()
+        case _ ⇒
+          _canceled = true // cancel will be signalled once a subscription arrives
+      }
     }
 
   /**

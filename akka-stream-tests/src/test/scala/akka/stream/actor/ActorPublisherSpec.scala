@@ -3,23 +3,16 @@
  */
 package akka.stream.actor
 
-import akka.actor.ActorRef
-import akka.actor.PoisonPill
-import akka.actor.Props
+import akka.actor.{ ActorRef, PoisonPill, Props }
+import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, ActorOperationAttributes }
 import akka.stream.scaladsl._
-import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
-import akka.testkit.EventFilter
-import akka.testkit.ImplicitSender
+import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.testkit.TestEvent.Mute
-import akka.testkit.TestProbe
+import akka.testkit.{ EventFilter, ImplicitSender, TestProbe }
+
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.impl.SubscriberSink
-import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.ActorOperationAttributes
 
 object ActorPublisherSpec {
 
@@ -176,6 +169,18 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       s.expectError.getMessage should be("wrong")
     }
 
+    "terminate after signalling error" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
+      s.expectSubscription
+      probe.watch(ref)
+      ref ! Err("wrong")
+      s.expectError.getMessage should be("wrong")
+      probe.expectTerminated(ref, 200.millis)
+    }
+
     "signal error before subscribe" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
@@ -230,6 +235,22 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       ref ! Complete
       s.expectNext("elem-1")
       s.expectComplete
+    }
+
+    "terminate after signalling onComplete" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
+      val sub = s.expectSubscription
+      sub.request(3)
+      probe.expectMsg(TotalDemand(3))
+      probe.watch(ref)
+      ref ! Produce("elem-1")
+      ref ! Complete
+      s.expectNext("elem-1")
+      s.expectComplete
+      probe.expectTerminated(ref, 200.millis)
     }
 
     "signal immediate onComplete" in {

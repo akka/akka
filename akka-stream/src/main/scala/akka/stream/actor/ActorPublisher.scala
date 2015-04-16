@@ -198,14 +198,18 @@ trait ActorPublisher[T] extends Actor {
   /**
    * Complete the stream. After that you are not allowed to
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
+   *
+   * After signalling completion the Actor will then stop itself as it has completed the protocol.
+   * When [[#onComplete]] is called before any [[Subscriber]] has had the chance to subscribe
+   * to this [[ActorPublisher]] the completion signal (and therefore stopping of the Actor as well)
+   * will be delayed until such [[Subscriber]] arrives.
    */
   def onComplete(): Unit = lifecycleState match {
     case Active | PreSubscriber ⇒
       lifecycleState = Completed
-      if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
-        try tryOnComplete(subscriber) finally {
-          subscriber = null // not used after onComplete
-        }
+      if (subscriber ne null) {
+        try tryOnComplete(subscriber) finally context.stop(self)
+      } // otherwise onComplete will be called when the subscription arrives
     case Completed ⇒
       throw new IllegalStateException("onComplete must only be called once")
     case _: ErrorEmitted ⇒
@@ -216,13 +220,18 @@ trait ActorPublisher[T] extends Actor {
   /**
    * Terminate the stream with failure. After that you are not allowed to
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
+   *
+   * After signalling the Error the Actor will then stop itself as it has completed the protocol.
+   * When [[#onError]] is called before any [[Subscriber]] has had the chance to subscribe
+   * to this [[ActorPublisher]] the error signal (and therefore stopping of the Actor as well)
+   * will be delayed until such [[Subscriber]] arrives.
    */
   def onError(cause: Throwable): Unit = lifecycleState match {
     case Active | PreSubscriber ⇒
       lifecycleState = ErrorEmitted(cause)
-      if (subscriber ne null) // otherwise onError will be called when the subscription arrives
-        try tryOnError(subscriber, cause) finally
-          subscriber = null // not used after onError
+      if (subscriber ne null) {
+        try tryOnError(subscriber, cause) finally context.stop(self)
+      } // otherwise onError will be called when the subscription arrives
     case _: ErrorEmitted ⇒
       throw new IllegalStateException("onError must only be called once")
     case Completed ⇒
@@ -255,9 +264,11 @@ trait ActorPublisher[T] extends Actor {
           lifecycleState = Active
           tryOnSubscribe(sub, new ActorPublisherSubscription(self))
         case ErrorEmitted(cause) ⇒
+          context.stop(self)
           tryOnSubscribe(sub, CancelledSubscription)
           tryOnError(sub, cause)
         case Completed ⇒
+          context.stop(self)
           tryOnSubscribe(sub, CancelledSubscription)
           tryOnComplete(sub)
         case Active | Canceled ⇒

@@ -6,10 +6,10 @@ package akka.stream.actor
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.routing.{ ActorRefRoutee, RoundRobinRoutingLogic, Router }
 import akka.stream.ActorFlowMaterializer
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import org.reactivestreams.Subscription
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -31,6 +31,18 @@ object ActorSubscriberSpec {
       case "ready"               ⇒ request(elements = 2)
       case "boom"                ⇒ throw new RuntimeException("boom") with NoStackTrace
       case "requestAndCancel"    ⇒ { request(1); cancel() }
+      case "cancel"              ⇒ cancel()
+    }
+  }
+
+  def immediatelyCancelledSubscriberProps(probe: ActorRef): Props =
+    Props(new ImmediatelyCancelledSubscriber(probe)).withDispatcher("akka.test.stream-dispatcher")
+
+  class ImmediatelyCancelledSubscriber(probe: ActorRef) extends ManualSubscriber(probe) {
+    override val requestStrategy = ZeroRequestStrategy
+    override def preStart() = {
+      cancel()
+      super.preStart()
     }
   }
 
@@ -144,6 +156,27 @@ class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
       expectMsg(OnNext(2))
       ref ! "requestAndCancel"
       expectNoMsg(200.millis)
+    }
+
+    "terminate after cancel" in {
+      val ref = Source(1 to 5).runWith(Sink.actorSubscriber(manualSubscriberProps(testActor)))
+      watch(ref)
+      ref ! "requestAndCancel"
+      expectTerminated(ref, 200.millis)
+    }
+
+    "cancel incoming subscription when cancel() was called before it arrived" in {
+      val ref = system.actorOf(immediatelyCancelledSubscriberProps(testActor))
+      val sub = ActorSubscriber(ref)
+      watch(ref)
+      expectNoMsg(200.millis)
+
+      sub.onSubscribe(new Subscription {
+        override def cancel(): Unit = testActor ! "cancel"
+        override def request(n: Long): Unit = ()
+      })
+      expectMsg("cancel")
+      expectTerminated(ref, 200.millis)
     }
 
     "work with OneByOneRequestStrategy" in {

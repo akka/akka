@@ -1,17 +1,14 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.javadsl
 
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.stream.javadsl
-import akka.stream.scaladsl
-import akka.stream._
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-import scala.concurrent.Future
+import akka.actor.{ ActorRef, Props }
 import akka.stream.impl.StreamLayout
+import akka.stream.{ javadsl, scaladsl, _ }
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import scala.concurrent.Future
 import scala.util.Try
 
 /** Java API */

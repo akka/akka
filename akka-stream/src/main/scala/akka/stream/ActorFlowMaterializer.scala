@@ -5,15 +5,13 @@ package akka.stream
 
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.stream.impl._
-import akka.stream.scaladsl.RunnableFlow
-import com.typesafe.config.Config
-import scala.concurrent.duration._
-import akka.actor.Props
-import akka.actor.ActorRef
 import akka.stream.javadsl.japi
-import scala.concurrent.ExecutionContextExecutor
+import com.typesafe.config.Config
+
+import scala.concurrent.duration._
 
 object ActorFlowMaterializer {
 
@@ -52,6 +50,7 @@ object ActorFlowMaterializer {
     val system = actorSystemOf(context)
 
     new ActorFlowMaterializerImpl(
+      system,
       materializerSettings,
       system.dispatchers,
       context.actorOf(StreamSupervisor.props(materializerSettings).withDispatcher(materializerSettings.dispatcher)),
@@ -145,6 +144,9 @@ abstract class ActorFlowMaterializer extends FlowMaterializer {
   def settings: ActorFlowMaterializerSettings
 
   def effectiveSettings(opAttr: OperationAttributes): ActorFlowMaterializerSettings
+
+  /** INTERNAL API */
+  def system: ActorSystem
 
   /**
    * INTERNAL API: this might become public later

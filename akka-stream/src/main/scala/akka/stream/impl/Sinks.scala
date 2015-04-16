@@ -3,13 +3,17 @@
  */
 package akka.stream.impl
 
+import java.io.File
 import java.util.concurrent.atomic.AtomicReference
 import akka.actor.{ ActorRef, Props }
+import akka.stream.ActorOperationAttributes.Dispatcher
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.OperationAttributes
 import akka.stream.{ Inlet, Shape, SinkShape }
+import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import akka.stream.MaterializationContext
 import akka.stream.ActorFlowMaterializer

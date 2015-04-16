@@ -3,9 +3,12 @@
  */
 package akka.stream.testkit
 
+import akka.stream.FlowMaterializer
+import com.typesafe.config.ConfigFactory
+
 import scala.language.existentials
 import akka.actor.ActorSystem
-import akka.stream.impl.{ EmptyPublisher, ErrorPublisher }
+import akka.stream.impl.{ StreamSupervisor, ActorFlowMaterializerImpl, EmptyPublisher, ErrorPublisher }
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.concurrent.duration.FiniteDuration
@@ -13,6 +16,9 @@ import akka.actor.DeadLetterSuppression
 import scala.util.control.NoStackTrace
 
 object StreamTestKit {
+
+  /** Sets the default-mailbox to the usual [[akka.dispatch.UnboundedMailbox]] instead of [[StreamTestDefaultMailbox]]. */
+  val UnboundedMailboxConfig = ConfigFactory.parseString("""akka.actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"""")
 
   /**
    * Subscribes the subscriber and completes after the first request.
@@ -174,4 +180,20 @@ object StreamTestKit {
   }
 
   case class TE(message: String) extends RuntimeException(message) with NoStackTrace
+
+  def checkThatAllStagesAreStopped[T](block: ⇒ T)(implicit materializer: FlowMaterializer): T =
+    materializer match {
+      case impl: ActorFlowMaterializerImpl ⇒
+        impl.supervisor ! StreamSupervisor.StopChildren
+        val result = block
+        val probe = TestProbe()(impl.system)
+        probe.awaitAssert {
+          impl.supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
+          val children = probe.expectMsgType[StreamSupervisor.Children].children
+          assert(children.isEmpty,
+            s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
+        }
+        result
+      case _ ⇒ block
+    }
 }
