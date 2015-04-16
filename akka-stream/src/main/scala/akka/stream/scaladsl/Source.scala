@@ -1,11 +1,16 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
-import akka.stream.javadsl
+import akka.actor.{ ActorRef, Cancellable, Props }
+import akka.stream._
 import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, SynchronousIterablePublisher, _ }
+import akka.stream.stage.{ Context, PushPullStage, SyncDirective, TerminationDirective }
+import org.reactivestreams.{ Publisher, Subscriber }
+
 import akka.stream.{ SourceShape, Inlet, Outlet }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushPullStage }
@@ -16,6 +21,8 @@ import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, SynchronousIterablePub
 import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ Future, Promise }
+import scala.language.higherKinds
 import scala.concurrent.{ ExecutionContext, Future }
 import akka.stream.{ FlowMaterializer, Graph }
 import akka.stream.impl._
@@ -163,7 +170,8 @@ object Source extends SourceApply {
   private[stream] def apply[Out, Mat](module: SourceModule[Out, Mat]): Source[Out, Mat] =
     new Source(module)
 
-  private def shape[T](name: String): SourceShape[T] = SourceShape(new Outlet(name + ".out"))
+  /** INTERNAL API */
+  private[stream] def shape[T](name: String): SourceShape[T] = SourceShape(new Outlet(name + ".out"))
 
   /**
    * Helper to create [[Source]] from `Publisher`.

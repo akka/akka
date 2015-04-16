@@ -16,7 +16,7 @@ import org.testng.annotations.BeforeClass
 
 trait ActorSystemLifecycle {
 
-  private var _system: ActorSystem = _
+  protected var _system: ActorSystem = _
 
   final def system: ActorSystem = _system
 

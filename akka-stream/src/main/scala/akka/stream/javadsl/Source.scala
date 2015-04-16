@@ -3,12 +3,15 @@
  */
 package akka.stream.javadsl
 
+import java.io.File
 import scala.collection.immutable
 import java.util.concurrent.Callable
 import akka.actor.{ Cancellable, ActorRef, Props }
 import akka.japi.Util
+import akka.stream.OperationAttributes._
 import akka.stream._
-import akka.stream.impl.ActorPublisherSource
+import akka.stream.impl.{ ActorPublisherSource, StreamLayout }
+import akka.util.ByteString
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import scala.annotation.unchecked.uncheckedVariance
