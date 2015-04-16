@@ -67,7 +67,7 @@ class FlowFromFutureSpec extends AkkaSpec {
 
     "produce elements with multiple subscribers" in {
       val promise = Promise[Int]()
-      val p = Source(promise.future).runWith(Sink.publisher)
+      val p = Source(promise.future).runWith(Sink.fanoutPublisher(1, 1))
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c1)
@@ -83,30 +83,9 @@ class FlowFromFutureSpec extends AkkaSpec {
       c2.expectComplete()
     }
 
-    "produce elements to later subscriber" in {
-      val promise = Promise[Int]()
-      val p = Source(promise.future).runWith(Sink.publisher)
-      val keepAlive = StreamTestKit.SubscriberProbe[Int]()
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
-      p.subscribe(keepAlive)
-      p.subscribe(c1)
-
-      val sub1 = c1.expectSubscription()
-      sub1.request(1)
-      promise.success(1)
-      c1.expectNext(1)
-      c1.expectComplete()
-      p.subscribe(c2)
-      val sub2 = c2.expectSubscription()
-      sub2.request(1)
-      c2.expectNext(1)
-      c2.expectComplete()
-    }
-
     "allow cancel before receiving element" in {
       val promise = Promise[Int]()
-      val p = Source(promise.future).runWith(Sink.publisher)
+      val p = Source(promise.future).runWith(Sink.fanoutPublisher(1, 1))
       val keepAlive = StreamTestKit.SubscriberProbe[Int]()
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(keepAlive)

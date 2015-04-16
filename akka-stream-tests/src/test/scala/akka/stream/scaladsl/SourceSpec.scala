@@ -13,12 +13,13 @@ import akka.stream.testkit.StreamTestKit
 import akka.stream.impl.PublisherSource
 import akka.stream.testkit.StreamTestKit.PublisherProbe
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.impl.ReactiveStreamsCompliance
 
 class SourceSpec extends AkkaSpec {
 
   implicit val materializer = ActorFlowMaterializer()
 
-  "Singleton Source" must {
+  "Single Source" must {
     "produce element" in {
       val p = Source.single(1).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
@@ -29,7 +30,7 @@ class SourceSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "produce elements to later subscriber" in {
+    "reject later subscriber" in {
       val p = Source.single(1).runWith(Sink.publisher)
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
@@ -39,11 +40,9 @@ class SourceSpec extends AkkaSpec {
       sub1.request(1)
       c1.expectNext(1)
       c1.expectComplete()
+
       p.subscribe(c2)
-      val sub2 = c2.expectSubscription()
-      sub2.request(3)
-      c2.expectNext(1)
-      c2.expectComplete()
+      c2.expectSubscriptionAndError()
     }
 
   }
@@ -55,9 +54,10 @@ class SourceSpec extends AkkaSpec {
       p.subscribe(c)
       c.expectSubscriptionAndComplete()
 
+      // reject additional subscriber
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c2)
-      c2.expectSubscriptionAndComplete()
+      c2.expectSubscriptionAndError()
     }
   }
 
@@ -69,9 +69,10 @@ class SourceSpec extends AkkaSpec {
       p.subscribe(c)
       c.expectSubscriptionAndError(ex)
 
+      // reject additional subscriber
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c2)
-      c2.expectSubscriptionAndError(ex)
+      c2.expectSubscriptionAndError()
     }
   }
 

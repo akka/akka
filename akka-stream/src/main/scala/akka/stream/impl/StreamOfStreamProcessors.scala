@@ -68,7 +68,6 @@ private[akka] object MultiStreamOutputProcessor {
     override def cancel(): Unit = {
       if (!downstreamCompleted) {
         closePublisher(Cancelled)
-        subscriber = NullSubscriber // FIXME  unreference real subscriber, should not be needed after #16986
         downstreamCompleted = true
       }
     }

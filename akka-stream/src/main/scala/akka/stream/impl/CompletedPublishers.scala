@@ -53,9 +53,15 @@ private[akka] case object CancelledSubscription extends Subscription {
 /**
  * INTERNAL API
  */
-private[akka] case object NullSubscriber extends Subscriber[Any] {
-  def onComplete(): Unit = ()
-  def onError(cause: Throwable): Unit = ()
-  def onNext(elem: Any): Unit = ()
-  def onSubscribe(s: Subscription): Unit = ()
+private[akka] case object RejectAdditionalSubscibers extends Publisher[Nothing] {
+  import ReactiveStreamsCompliance._
+  override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit =
+    try {
+      ReactiveStreamsCompliance.rejectAdditionalSubscriber(subscriber, "Publisher")
+    } catch {
+      case _: SpecViolation ⇒ // nothing we can do
+    }
+  def apply[T]: Publisher[T] = this.asInstanceOf[Publisher[T]]
+  override def toString: String = "already-subscribed-publisher"
 }
+
