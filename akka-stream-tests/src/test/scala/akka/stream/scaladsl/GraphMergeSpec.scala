@@ -8,6 +8,7 @@ import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, Inlet
 import scala.concurrent.duration._
 
 import akka.stream.testkit.{ TwoStreamsSetup, AkkaSpec, StreamTestKit }
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class GraphMergeSpec extends TwoStreamsSetup {
   import FlowGraph.Implicits._
@@ -25,7 +26,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
   "merge" must {
 
-    "work in the happy case" in {
+    "work in the happy case" in assertAllStagesStopped {
       // Different input sizes (4 and 6)
       val source1 = Source(0 to 3)
       val source2 = Source(4 to 9)
@@ -93,7 +94,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
     commonTests()
 
-    "work with one immediately completed and one nonempty publisher" in {
+    "work with one immediately completed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(completedPublisher, nonemptyPublisher(1 to 4))
       val subscription1 = subscriber1.expectSubscription()
       subscription1.request(4)
@@ -113,7 +114,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       subscriber2.expectComplete()
     }
 
-    "work with one delayed completed and one nonempty publisher" in {
+    "work with one delayed completed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 4))
       val subscription1 = subscriber1.expectSubscription()
       subscription1.request(4)

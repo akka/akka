@@ -61,7 +61,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxC
   }
 
   "File Source" must {
-    "read contents from a file" in checkThatAllStagesAreStopped {
+    "read contents from a file" in assertAllStagesStopped {
       val chunkSize = 512
       val bufferAttributes = OperationAttributes.inputBuffer(1, 2)
 
@@ -96,7 +96,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxC
       c.expectComplete()
     }
 
-    "complete only when all contents of a file have been signalled" in checkThatAllStagesAreStopped {
+    "complete only when all contents of a file have been signalled" in assertAllStagesStopped {
       val chunkSize = 256
       val bufferAttributes = OperationAttributes.inputBuffer(4, 8)
 
@@ -130,7 +130,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxC
       c.expectComplete()
     }
 
-    "onError whent trying to read from file which does not exist" in checkThatAllStagesAreStopped {
+    "onError whent trying to read from file which does not exist" in assertAllStagesStopped {
       val p = SynchronousFileSource(notExistingFile).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[ByteString]()
       p.subscribe(c)

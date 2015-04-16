@@ -17,6 +17,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 import akka.stream.scaladsl._
 import akka.stream.testkit.TestUtils.temporaryServerAddress
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class StreamTcpSpec extends AkkaSpec with TcpHelper {
   import akka.stream.io.TcpHelper._
@@ -24,7 +25,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
   "Outgoing TCP stream" must {
 
-    "work in the happy case" in {
+    "work in the happy case" in assertAllStagesStopped {
       val testData = ByteString(1, 2, 3, 4, 5)
 
       val server = new Server()
@@ -75,7 +76,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
     }
 
-    "work when client closes write, then remote closes write" in {
+    "work when client closes write, then remote closes write" in assertAllStagesStopped {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -105,7 +106,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       serverConnection.expectTerminated()
     }
 
-    "work when remote closes write, then client closes write" in {
+    "work when remote closes write, then client closes write" in assertAllStagesStopped {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -133,7 +134,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       serverConnection.expectTerminated()
     }
 
-    "work when client closes read, then client closes write" in {
+    "work when client closes read, then client closes write" in assertAllStagesStopped {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -165,7 +166,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       serverConnection.expectTerminated()
     }
 
-    "work when client closes write, then client closes read" in {
+    "work when client closes write, then client closes read" in assertAllStagesStopped {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -198,7 +199,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       serverConnection.expectTerminated()
     }
 
-    "work when client closes read, then server closes write, then client closes write" in {
+    "work when client closes read, then server closes write, then client closes write" in assertAllStagesStopped {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -227,7 +228,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       serverConnection.expectTerminated()
     }
 
-    "shut everything down if client signals error" in {
+    "shut everything down if client signals error" in assertAllStagesStopped {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -254,7 +255,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       serverConnection.expectTerminated()
     }
 
-    "shut everything down if client signals error after remote has closed write" in {
+    "shut everything down if client signals error after remote has closed write" in assertAllStagesStopped {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -282,7 +283,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       serverConnection.expectTerminated()
     }
 
-    "shut down both streams when connection is aborted remotely" in {
+    "shut down both streams when connection is aborted remotely" in assertAllStagesStopped {
       // Client gets a PeerClosed event and does not know that the write side is also closed
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()

@@ -9,6 +9,7 @@ import scala.util.control.NoStackTrace
 
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 
@@ -19,7 +20,7 @@ class FlowFromFutureSpec extends AkkaSpec {
   implicit val materializer = ActorFlowMaterializer(settings)
 
   "A Flow based on a Future" must {
-    "produce one element from already successful Future" in {
+    "produce one element from already successful Future" in assertAllStagesStopped {
       val p = Source(Future.successful(1)).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
@@ -30,7 +31,7 @@ class FlowFromFutureSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "produce error from already failed Future" in {
+    "produce error from already failed Future" in assertAllStagesStopped {
       val ex = new RuntimeException("test") with NoStackTrace
       val p = Source(Future.failed[Int](ex)).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
@@ -38,7 +39,7 @@ class FlowFromFutureSpec extends AkkaSpec {
       c.expectSubscriptionAndError(ex)
     }
 
-    "produce one element when Future is completed" in {
+    "produce one element when Future is completed" in assertAllStagesStopped {
       val promise = Promise[Int]()
       val p = Source(promise.future).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
@@ -65,7 +66,7 @@ class FlowFromFutureSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "produce elements with multiple subscribers" in {
+    "produce elements with multiple subscribers" in assertAllStagesStopped {
       val promise = Promise[Int]()
       val p = Source(promise.future).runWith(Sink.fanoutPublisher(1, 1))
       val c1 = StreamTestKit.SubscriberProbe[Int]()

@@ -7,6 +7,7 @@ import akka.actor.{ ExtendedActorSystem, ActorIdentity, ActorRef, Identify }
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit._
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.util.Timeout
 
 import scala.concurrent.Await
@@ -38,7 +39,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
   "groupBy" must {
 
-    "timeout and cancel substream publishers when no-one subscribes to them after some time (time them out)" in {
+    "timeout and cancel substream publishers when no-one subscribes to them after some time (time them out)" in assertAllStagesStopped {
       val publisherProbe = StreamTestKit.PublisherProbe[Int]()
       val publisher = Source(publisherProbe).groupBy(_ % 3).runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()
@@ -57,14 +58,16 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
       // should not break normal usage
       val s1SubscriberProbe = StreamTestKit.SubscriberProbe[Int]()
       s1.runWith(Sink.publisher).subscribe(s1SubscriberProbe)
-      s1SubscriberProbe.expectSubscription().request(100)
+      val s1Subscription = s1SubscriberProbe.expectSubscription()
+      s1Subscription.request(100)
       s1SubscriberProbe.expectNext(1)
 
       val (_, s2) = subscriber.expectNext()
       // should not break normal usage
       val s2SubscriberProbe = StreamTestKit.SubscriberProbe[Int]()
       s2.runWith(Sink.publisher).subscribe(s2SubscriberProbe)
-      s2SubscriberProbe.expectSubscription().request(100)
+      val s2Subscription = s2SubscriberProbe.expectSubscription()
+      s2Subscription.request(100)
       s2SubscriberProbe.expectNext(2)
 
       val (_, s3) = subscriber.expectNext()
@@ -74,9 +77,11 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
       val f = s3.runWith(Sink.head).recover { case _: SubscriptionTimeoutException ⇒ "expected" }
       Await.result(f, 300.millis) should equal("expected")
+
+      upstreamSubscription.sendComplete()
     }
 
-    "timeout and stop groupBy parent actor if none of the substreams are actually consumed" in {
+    "timeout and stop groupBy parent actor if none of the substreams are actually consumed" in assertAllStagesStopped {
       val publisherProbe = StreamTestKit.PublisherProbe[Int]()
       val publisher = Source(publisherProbe).groupBy(_ % 2).runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()

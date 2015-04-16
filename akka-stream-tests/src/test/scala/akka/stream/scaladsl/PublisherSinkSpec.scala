@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 import akka.stream.ActorFlowMaterializer
 
 import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import scala.concurrent.duration._
 
 import scala.concurrent.Await
@@ -16,7 +17,7 @@ class PublisherSinkSpec extends AkkaSpec {
 
   "A PublisherSink" must {
 
-    "be unique when created twice" in {
+    "be unique when created twice" in assertAllStagesStopped {
 
       val (pub1, pub2) = FlowGraph.closed(Sink.publisher[Int], Sink.publisher[Int])(Keep.both) { implicit b ⇒
         (p1, p2) ⇒
