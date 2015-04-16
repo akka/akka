@@ -18,6 +18,7 @@ private[akka] object ActorProcessor {
 
   def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
     val p = new ActorProcessor[I, O](impl)
+    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
     impl ! ExposedPublisher(p.asInstanceOf[ActorPublisher[Any]])
     p
   }
