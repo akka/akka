@@ -9,7 +9,7 @@ import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.actor.{ ActorRef, Props }
 import akka.stream.stage.PushPullStage
-import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.OperationAttributes._
 import akka.stream.scaladsl._
 import akka.stream._
 import akka.http.engine.parsing._

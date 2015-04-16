@@ -4,7 +4,7 @@
 package docs.stream;
 
 import akka.stream.*;
-import akka.stream.javadsl.OperationAttributes;
+import akka.stream.OperationAttributes;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

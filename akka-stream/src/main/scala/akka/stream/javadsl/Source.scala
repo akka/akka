@@ -499,7 +499,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     new Source(delegate.flatten(strategy))
 
   def withAttributes(attr: OperationAttributes): javadsl.Source[Out, Mat] =
-    new Source(delegate.withAttributes(attr.asScala))
+    new Source(delegate.withAttributes(attr))
 
   def named(name: String): javadsl.Source[Out, Mat] =
     new Source(delegate.named(name))
