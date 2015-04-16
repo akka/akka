@@ -18,7 +18,7 @@ class InputStreamSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxConfi
   implicit val materializer = ActorFlowMaterializer(settings)
 
   "InputStreamSource" must {
-    "read bytes from InputStream" in checkThatAllStagesAreStopped {
+    "read bytes from InputStream" in assertAllStagesStopped {
       val f = InputStreamSource(() ⇒ new InputStream {
         @volatile var buf = List("a", "b", "c").map(_.charAt(0).toInt)
         override def read(): Int = {

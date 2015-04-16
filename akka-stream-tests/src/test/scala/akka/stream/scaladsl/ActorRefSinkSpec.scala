@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
@@ -24,7 +25,7 @@ class ActorRefSinkSpec extends AkkaSpec {
 
   "A ActorRefSink" must {
 
-    "send the elements to the ActorRef" in {
+    "send the elements to the ActorRef" in assertAllStagesStopped {
       Source(List(1, 2, 3)).runWith(Sink.actorRef(testActor, onCompleteMessage = "done"))
       expectMsg(1)
       expectMsg(2)
@@ -32,7 +33,7 @@ class ActorRefSinkSpec extends AkkaSpec {
       expectMsg("done")
     }
 
-    "cancel stream when actor terminates" in {
+    "cancel stream when actor terminates" in assertAllStagesStopped {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val fw = system.actorOf(Props(classOf[Fw], testActor).withDispatcher("akka.test.stream-dispatcher"))
       Source(publisher).runWith(Sink.actorRef(fw, onCompleteMessage = "done"))

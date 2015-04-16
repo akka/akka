@@ -285,28 +285,30 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
 
     "work together with Flow and ActorSubscriber" in {
       implicit val materializer = ActorFlowMaterializer()
-      val probe = TestProbe()
+      StreamTestKit.assertAllStagesStopped {
+        val probe = TestProbe()
 
-      val source: Source[Int, ActorRef] = Source.actorPublisher(senderProps)
-      val sink: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe.ref))
+        val source: Source[Int, ActorRef] = Source.actorPublisher(senderProps)
+        val sink: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe.ref))
 
-      val (snd, rcv) = source.collect {
-        case n if n % 2 == 0 ⇒ "elem-" + n
-      }.toMat(sink)(Keep.both).run()
+        val (snd, rcv) = source.collect {
+          case n if n % 2 == 0 ⇒ "elem-" + n
+        }.toMat(sink)(Keep.both).run()
 
-      (1 to 3) foreach { snd ! _ }
-      probe.expectMsg("elem-2")
+        (1 to 3) foreach { snd ! _ }
+        probe.expectMsg("elem-2")
 
-      (4 to 500) foreach { n ⇒
-        if (n % 19 == 0) Thread.sleep(50) // simulate bursts
-        snd ! n
+        (4 to 500) foreach { n ⇒
+          if (n % 19 == 0) Thread.sleep(50) // simulate bursts
+          snd ! n
+        }
+
+        (4 to 500 by 2) foreach { n ⇒ probe.expectMsg("elem-" + n) }
+
+        watch(snd)
+        rcv ! PoisonPill
+        expectTerminated(snd)
       }
-
-      (4 to 500 by 2) foreach { n ⇒ probe.expectMsg("elem-" + n) }
-
-      watch(snd)
-      rcv ! PoisonPill
-      expectTerminated(snd)
     }
 
     "work in a FlowGraph" in {
@@ -349,22 +351,24 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
 
     "be able to define a subscription-timeout, after which it should shut down" in {
       implicit val materializer = ActorFlowMaterializer()
-      val timeout = 150.millis
-      val a = system.actorOf(timeoutingProps(testActor, timeout))
-      val pub = ActorPublisher(a)
+      StreamTestKit.assertAllStagesStopped {
+        val timeout = 150.millis
+        val a = system.actorOf(timeoutingProps(testActor, timeout))
+        val pub = ActorPublisher(a)
 
-      // don't subscribe for `timeout` millis, so it will shut itself down
-      expectMsg("timed-out")
+        // don't subscribe for `timeout` millis, so it will shut itself down
+        expectMsg("timed-out")
 
-      // now subscribers will already be rejected, while the actor could perform some clean-up
-      val sub = StreamTestKit.SubscriberProbe()
-      pub.subscribe(sub)
-      sub.expectSubscriptionAndError()
+        // now subscribers will already be rejected, while the actor could perform some clean-up
+        val sub = StreamTestKit.SubscriberProbe()
+        pub.subscribe(sub)
+        sub.expectSubscriptionAndError()
 
-      expectMsg("cleaned-up")
-      // termination is tiggered by user code
-      watch(a)
-      expectTerminated(a)
+        expectMsg("cleaned-up")
+        // termination is tiggered by user code
+        watch(a)
+        expectTerminated(a)
+      }
     }
 
     "be able to define a subscription-timeout, which is cancelled by the first incoming Subscriber" in {

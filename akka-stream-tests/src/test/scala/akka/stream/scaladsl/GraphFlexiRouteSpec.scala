@@ -9,6 +9,7 @@ import akka.stream.testkit.StreamTestKit.AutoPublisher
 import akka.stream.testkit.StreamTestKit.OnNext
 import akka.stream.testkit.StreamTestKit.PublisherProbe
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.actor.ActorRef
@@ -160,7 +161,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
 
   "FlexiRoute" must {
 
-    "build simple fair route" in {
+    "build simple fair route" in assertAllStagesStopped {
       // we can't know exactly which elements that go to each output, because if subscription/request
       // from one of the downstream is delayed the elements will be pushed to the other output
       val s = SubscriberProbe[String]
@@ -244,7 +245,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s2.expectComplete()
     }
 
-    "support finish of downstreams and cancel of upstream" in {
+    "support finish of downstreams and cancel of upstream" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 
@@ -259,7 +260,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s2.expectComplete()
     }
 
-    "support error of outputs" in {
+    "support error of outputs" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 
@@ -275,7 +276,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       autoPublisher.subscription.expectCancellation()
     }
 
-    "support error of a specific output" in {
+    "support error of a specific output" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 
@@ -297,7 +298,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s2.expectComplete()
     }
 
-    "emit error for user thrown exception" in {
+    "emit error for user thrown exception" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 
@@ -316,7 +317,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       autoPublisher.subscription.expectCancellation()
     }
 
-    "emit error for user thrown exception in onUpstreamFinish" in {
+    "emit error for user thrown exception in onUpstreamFinish" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 
@@ -334,7 +335,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s2.expectError().getMessage should be("onUpstreamFinish-exc")
     }
 
-    "handle cancel from output" in {
+    "handle cancel from output" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 
@@ -357,7 +358,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s2.expectComplete()
     }
 
-    "handle finish from upstream input" in {
+    "handle finish from upstream input" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 
@@ -376,7 +377,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s2.expectComplete()
     }
 
-    "handle error from upstream input" in {
+    "handle error from upstream input" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 
@@ -395,7 +396,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s2.expectError().getMessage should be("test err")
     }
 
-    "cancel upstream input when all outputs cancelled" in {
+    "cancel upstream input when all outputs cancelled" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 
@@ -414,7 +415,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       autoPublisher.subscription.expectCancellation()
     }
 
-    "cancel upstream input when all outputs completed" in {
+    "cancel upstream input when all outputs completed" in assertAllStagesStopped {
       val fixture = new TestFixture
       import fixture._
 

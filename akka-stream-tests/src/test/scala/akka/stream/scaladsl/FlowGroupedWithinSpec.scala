@@ -12,6 +12,7 @@ import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 
@@ -21,7 +22,7 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 
   "A GroupedWithin" must {
 
-    "group elements within the duration" in {
+    "group elements within the duration" in assertAllStagesStopped {
       val input = Iterator.from(1)
       val p = StreamTestKit.PublisherProbe[Int]()
       val c = StreamTestKit.SubscriberProbe[immutable.Seq[Int]]()

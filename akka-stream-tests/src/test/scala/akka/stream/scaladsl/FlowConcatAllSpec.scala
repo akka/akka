@@ -8,6 +8,7 @@ import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class FlowConcatAllSpec extends AkkaSpec {
 
@@ -20,7 +21,7 @@ class FlowConcatAllSpec extends AkkaSpec {
 
     val testException = new Exception("test") with NoStackTrace
 
-    "work in the happy case" in {
+    "work in the happy case" in assertAllStagesStopped {
       val s1 = Source(1 to 2)
       val s2 = Source(List.empty[Int])
       val s3 = Source(List(3))
@@ -48,7 +49,7 @@ class FlowConcatAllSpec extends AkkaSpec {
       subscriber.expectComplete()
     }
 
-    "on onError on master stream cancel the current open substream and signal error" in {
+    "on onError on master stream cancel the current open substream and signal error" in assertAllStagesStopped {
       val publisher = StreamTestKit.PublisherProbe[Source[Int, _]]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       Source(publisher).flatten(FlattenStrategy.concat).to(Sink(subscriber)).run()
@@ -68,7 +69,7 @@ class FlowConcatAllSpec extends AkkaSpec {
       subUpstream.expectCancellation()
     }
 
-    "on onError on open substream, cancel the master stream and signal error " in {
+    "on onError on open substream, cancel the master stream and signal error " in assertAllStagesStopped {
       val publisher = StreamTestKit.PublisherProbe[Source[Int, _]]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       Source(publisher).flatten(FlattenStrategy.concat).to(Sink(subscriber)).run()
@@ -88,7 +89,7 @@ class FlowConcatAllSpec extends AkkaSpec {
       upstream.expectCancellation()
     }
 
-    "on cancellation cancel the current open substream and the master stream" in {
+    "on cancellation cancel the current open substream and the master stream" in assertAllStagesStopped {
       val publisher = StreamTestKit.PublisherProbe[Source[Int, _]]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       Source(publisher).flatten(FlattenStrategy.concat).to(Sink(subscriber)).run()

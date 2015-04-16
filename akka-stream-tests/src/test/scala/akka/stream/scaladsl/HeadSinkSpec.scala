@@ -13,6 +13,7 @@ import scala.util.Failure
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.ScriptedTest
 
 class HeadSinkSpec extends AkkaSpec with ScriptedTest {
@@ -24,7 +25,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
 
   "A Flow with Sink.head" must {
 
-    "yield the first value" in {
+    "yield the first value" in assertAllStagesStopped {
       val p = StreamTestKit.PublisherProbe[Int]()
       val f: Future[Int] = Source(p).map(identity).runWith(Sink.head)
       val proc = p.expectSubscription
@@ -48,7 +49,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
       proc.expectCancellation()
     }
 
-    "yield the first error" in {
+    "yield the first error" in assertAllStagesStopped {
       val p = StreamTestKit.PublisherProbe[Int]()
       val f = Source(p).runWith(Sink.head)
       val proc = p.expectSubscription
@@ -59,7 +60,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
       f.value.get should be(Failure(ex))
     }
 
-    "yield NoSuchElementExcption for empty stream" in {
+    "yield NoSuchElementExcption for empty stream" in assertAllStagesStopped {
       val p = StreamTestKit.PublisherProbe[Int]()
       val f = Source(p).runWith(Sink.head)
       val proc = p.expectSubscription

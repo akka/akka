@@ -27,13 +27,14 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
 /**
  * INTERNAL API
  */
-private[akka] case class ActorFlowMaterializerImpl(override val system: ActorSystem,
-                                                   override val settings: ActorFlowMaterializerSettings,
-                                                   dispatchers: Dispatchers,
-                                                   supervisor: ActorRef,
-                                                   flowNameCounter: AtomicLong,
-                                                   namePrefix: String,
-                                                   optimizations: Optimizations)
+private[akka] case class ActorFlowMaterializerImpl(
+  val system: ActorSystem,
+  override val settings: ActorFlowMaterializerSettings,
+  dispatchers: Dispatchers,
+  val supervisor: ActorRef,
+  flowNameCounter: AtomicLong,
+  namePrefix: String,
+  optimizations: Optimizations)
   extends ActorFlowMaterializer {
   import ActorFlowMaterializerImpl._
   import akka.stream.impl.Stages._

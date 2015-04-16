@@ -12,6 +12,7 @@ import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.OnComplete
 import akka.stream.testkit.StreamTestKit.OnError
 import akka.stream.testkit.StreamTestKit.OnNext
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.stream.impl.SynchronousIterablePublisher
 import org.reactivestreams.Subscription
 import akka.testkit.TestProbe
@@ -160,7 +161,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
   def createSource(elements: Int): Source[Int, Unit]
 
   testName must {
-    "produce elements" in {
+    "produce elements" in assertAllStagesStopped {
       val p = createSource(3).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
@@ -174,7 +175,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "complete empty" in {
+    "complete empty" in assertAllStagesStopped {
       val p = createSource(0).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
@@ -182,7 +183,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       c.expectNoMsg(100.millis)
     }
 
-    "produce elements with multiple subscribers" in {
+    "produce elements with multiple subscribers" in assertAllStagesStopped {
       val p = createSource(3).runWith(Sink.fanoutPublisher(2, 4))
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
@@ -206,7 +207,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       c2.expectComplete()
     }
 
-    "produce elements to later subscriber" in {
+    "produce elements to later subscriber" in assertAllStagesStopped {
       val p = createSource(3).runWith(Sink.fanoutPublisher(2, 4))
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
@@ -229,7 +230,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       c1.expectComplete()
     }
 
-    "produce elements with one transformation step" in {
+    "produce elements with one transformation step" in assertAllStagesStopped {
       val p = createSource(3).map(_ * 2).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
@@ -241,7 +242,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "produce elements with two transformation steps" in {
+    "produce elements with two transformation steps" in assertAllStagesStopped {
       val p = createSource(4).filter(_ % 2 == 0).map(_ * 2).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
@@ -252,7 +253,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "not produce after cancel" in {
+    "not produce after cancel" in assertAllStagesStopped {
       val p = createSource(3).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)

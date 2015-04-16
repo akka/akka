@@ -11,6 +11,7 @@ import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 import akka.stream.ActorOperationAttributes.supervisionStrategy
@@ -25,7 +26,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
 
   "A Flow with mapAsyncUnordered" must {
 
-    "produce future elements in the order they are ready" in {
+    "produce future elements in the order they are ready" in assertAllStagesStopped {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
       val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
@@ -73,7 +74,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "signal future failure" in {
+    "signal future failure" in assertAllStagesStopped {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
@@ -90,7 +91,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       latch.countDown()
     }
 
-    "signal error from mapAsyncUnordered" in {
+    "signal error from mapAsyncUnordered" in assertAllStagesStopped {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
@@ -125,7 +126,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       c.probe.receiveWhile(2.seconds, messages = 5) { case x ⇒ x }.toSet should be(expected)
     }
 
-    "finish after future failure" in {
+    "finish after future failure" in assertAllStagesStopped {
       import system.dispatcher
       Await.result(Source(1 to 3).mapAsyncUnordered(1, n ⇒ Future {
         if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
@@ -170,7 +171,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "should handle cancel properly" in {
+    "should handle cancel properly" in assertAllStagesStopped {
       val pub = StreamTestKit.PublisherProbe[Int]()
       val sub = StreamTestKit.SubscriberProbe[Int]()
 

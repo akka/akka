@@ -72,7 +72,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
   "Timed Flow" must {
     import akka.stream.extra.Implicits.TimedFlowDsl
 
-    "measure time it between elements matching a predicate" in {
+    "measure time it between elements matching a predicate" in StreamTestKit.assertAllStagesStopped {
       val probe = TestProbe()
 
       val flow: Flow[Int, Long, _] = Flow[Int].map(_.toLong).timedIntervalBetween(in ⇒ in % 2 == 1, d ⇒ probe.ref ! d)
@@ -91,7 +91,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       info(s"Got duration (first): $duration")
     }
 
-    "measure time from start to complete, by wrapping operations" in {
+    "measure time from start to complete, by wrapping operations" in StreamTestKit.assertAllStagesStopped {
       val probe = TestProbe()
 
       // making sure the types come out as expected

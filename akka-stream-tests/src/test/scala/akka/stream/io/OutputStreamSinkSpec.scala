@@ -21,7 +21,7 @@ class OutputStreamSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxConfig
   implicit val materializer = ActorFlowMaterializer(settings)
 
   "OutputStreamSink" must {
-    "write bytes to void OutputStream" in checkThatAllStagesAreStopped {
+    "write bytes to void OutputStream" in assertAllStagesStopped {
       val p = TestProbe()
       val datas = List(ByteString("a"), ByteString("c"), ByteString("c"))
 
@@ -37,7 +37,7 @@ class OutputStreamSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxConfig
       Await.ready(completion, 3.seconds)
     }
 
-    "close underlying stream when error received" in checkThatAllStagesAreStopped {
+    "close underlying stream when error received" in assertAllStagesStopped {
       val p = TestProbe()
       Source.failed(new TE("Boom!"))
         .runWith(OutputStreamSink(() ⇒ new OutputStream {
@@ -48,7 +48,7 @@ class OutputStreamSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxConfig
       p.expectMsg("closed")
     }
 
-    "close underlying stream when completion received" in checkThatAllStagesAreStopped {
+    "close underlying stream when completion received" in assertAllStagesStopped {
       val p = TestProbe()
       Source.empty
         .runWith(OutputStreamSink(() ⇒ new OutputStream {

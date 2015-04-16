@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class FlowTakeWithinSpec extends AkkaSpec {
 
@@ -37,7 +38,7 @@ class FlowTakeWithinSpec extends AkkaSpec {
       c.expectNoMsg(200.millis)
     }
 
-    "deliver bufferd elements onComplete before the timeout" in {
+    "deliver bufferd elements onComplete before the timeout" in assertAllStagesStopped {
       val c = StreamTestKit.SubscriberProbe[Int]()
       Source(1 to 3).takeWithin(1.second).to(Sink(c)).run()
       val cSub = c.expectSubscription()

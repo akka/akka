@@ -10,13 +10,14 @@ import akka.stream.ActorFlowMaterializer
 import akka.stream.TimerTransformer
 
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class FlowTimerTransformerSpec extends AkkaSpec {
 
   implicit val materializer = ActorFlowMaterializer()
 
   "A Flow with TimerTransformer operations" must {
-    "produce scheduled ticks as expected" in {
+    "produce scheduled ticks as expected" in assertAllStagesStopped {
       val p = StreamTestKit.PublisherProbe[Int]()
       val p2 = Source(p).
         timerTransform(() ⇒ new TimerTransformer[Int, Int] {
@@ -64,7 +65,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
       pSub.sendComplete()
     }
 
-    "propagate error if onTimer throws an exception" in {
+    "propagate error if onTimer throws an exception" in assertAllStagesStopped {
       val exception = new Exception("Expected exception to the rule") with NoStackTrace
       val p = StreamTestKit.PublisherProbe[Int]()
       val p2 = Source(p).

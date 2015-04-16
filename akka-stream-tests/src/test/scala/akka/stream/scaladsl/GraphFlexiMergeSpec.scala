@@ -7,6 +7,7 @@ import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.FlexiMerge._
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, AutoPublisher, OnNext, SubscriberProbe }
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import org.reactivestreams.Publisher
 import akka.stream._
 import scala.util.control.NoStackTrace
@@ -176,7 +177,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
 
   "FlexiMerge" must {
 
-    "build simple fair merge" in {
+    "build simple fair merge" in assertAllStagesStopped {
       val p = FlowGraph.closed(out) { implicit b ⇒
         o ⇒
           val merge = b.add(fairString)
@@ -195,7 +196,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectComplete()
     }
 
-    "be able to have two fleximerges in a graph" in {
+    "be able to have two fleximerges in a graph" in assertAllStagesStopped {
       val p = FlowGraph.closed(in1, in2, out)((i1, i2, o) ⇒ o) { implicit b ⇒
         (in1, in2, o) ⇒
           val m1 = b.add(fairString)
@@ -462,7 +463,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectComplete()
     }
 
-    "support cancel of input" in {
+    "support cancel of input" in assertAllStagesStopped {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
@@ -501,7 +502,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectComplete()
     }
 
-    "finish when all inputs cancelled" in {
+    "finish when all inputs cancelled" in assertAllStagesStopped {
       val publisher1 = PublisherProbe[String]
       val publisher2 = PublisherProbe[String]
       val publisher3 = PublisherProbe[String]
@@ -538,7 +539,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectComplete()
     }
 
-    "handle failure" in {
+    "handle failure" in assertAllStagesStopped {
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
         o ⇒
@@ -568,7 +569,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectComplete()
     }
 
-    "propagate failure" in {
+    "propagate failure" in assertAllStagesStopped {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
@@ -585,7 +586,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectSubscriptionAndError().getMessage should be("ERROR")
     }
 
-    "emit failure" in {
+    "emit failure" in assertAllStagesStopped {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
@@ -605,7 +606,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectError().getMessage should be("err")
     }
 
-    "emit failure for user thrown exception" in {
+    "emit failure for user thrown exception" in assertAllStagesStopped {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
@@ -624,7 +625,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectError().getMessage should be("exc")
     }
 
-    "emit failure for user thrown exception in onComplete" in {
+    "emit failure for user thrown exception in onComplete" in assertAllStagesStopped {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
@@ -643,7 +644,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectError().getMessage should be("onUpstreamFinish-exc")
     }
 
-    "emit failure for user thrown exception in onUpstreamFinish 2" in {
+    "emit failure for user thrown exception in onUpstreamFinish 2" in assertAllStagesStopped {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
@@ -669,7 +670,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectError().getMessage should be("onUpstreamFinish-exc")
     }
 
-    "support finish from onInput" in {
+    "support finish from onInput" in assertAllStagesStopped {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒

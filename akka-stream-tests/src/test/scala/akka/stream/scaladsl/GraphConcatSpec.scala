@@ -10,6 +10,7 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.TwoStreamsSetup
 import scala.concurrent.duration._
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class GraphConcatSpec extends TwoStreamsSetup {
 
@@ -27,7 +28,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
   "Concat" must {
     import FlowGraph.Implicits._
 
-    "work in the happy case" in {
+    "work in the happy case" in assertAllStagesStopped {
       val probe = StreamTestKit.SubscriberProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
@@ -56,7 +57,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
 
     commonTests()
 
-    "work with one immediately completed and one nonempty publisher" in {
+    "work with one immediately completed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(completedPublisher, nonemptyPublisher(1 to 4))
       val subscription1 = subscriber1.expectSubscription()
       subscription1.request(5)
@@ -76,7 +77,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       subscriber2.expectComplete()
     }
 
-    "work with one delayed completed and one nonempty publisher" in {
+    "work with one delayed completed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 4))
       val subscription1 = subscriber1.expectSubscription()
       subscription1.request(5)
@@ -96,7 +97,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       subscriber2.expectComplete()
     }
 
-    "work with one immediately failed and one nonempty publisher" in {
+    "work with one immediately failed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(failedPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectSubscriptionAndError(TestException)
 
@@ -104,7 +105,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       subscriber2.expectSubscriptionAndError(TestException)
     }
 
-    "work with one nonempty and one delayed failed publisher" in {
+    "work with one nonempty and one delayed failed publisher" in assertAllStagesStopped {
       // This test and the next one are materialization order dependent and rely on the fact
       // that there are only 3 submodules in the graph that gets created and that an immutable
       // set (what they are stored in internally) of size 4 or less is an optimized version that
@@ -120,7 +121,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       if (!errorSignalled) subscriber.expectSubscriptionAndError(TestException)
     }
 
-    "work with one delayed failed and one nonempty publisher" in {
+    "work with one delayed failed and one nonempty publisher" in assertAllStagesStopped {
       // This test and the previous one are materialization order dependent and rely on the fact
       // that there are only 3 submodules in the graph that gets created and that an immutable
       // set (what they are stored in internally) of size 4 or less is an optimized version that
@@ -136,7 +137,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       if (!errorSignalled) subscriber.expectSubscriptionAndError(TestException)
     }
 
-    "correctly handle async errors in secondary upstream" in {
+    "correctly handle async errors in secondary upstream" in assertAllStagesStopped {
       val promise = Promise[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 

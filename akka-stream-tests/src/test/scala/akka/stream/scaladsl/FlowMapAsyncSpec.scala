@@ -12,6 +12,7 @@ import akka.stream.ActorFlowMaterializer
 import akka.stream.stage._
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 import akka.stream.ActorOperationAttributes.supervisionStrategy
@@ -66,7 +67,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
 
   "A Flow with mapAsync" must {
 
-    "produce future elements" in {
+    "produce future elements" in assertAllStagesStopped {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 3).mapAsync(4, n ⇒ Future(n)).runWith(Sink(c))
@@ -119,7 +120,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       c.expectNoMsg(200.millis)
     }
 
-    "signal future failure" in {
+    "signal future failure" in assertAllStagesStopped {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
@@ -136,7 +137,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       latch.countDown()
     }
 
-    "signal error from mapAsync" in {
+    "signal error from mapAsync" in assertAllStagesStopped {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
@@ -155,7 +156,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       latch.countDown()
     }
 
-    "resume after future failure" in {
+    "resume after future failure" in assertAllStagesStopped {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 5)
@@ -171,7 +172,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "finish after future failure" in {
+    "finish after future failure" in assertAllStagesStopped {
       import system.dispatcher
       Await.result(Source(1 to 3).mapAsync(1, n ⇒ Future {
         if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
@@ -216,7 +217,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "should handle cancel properly" in {
+    "should handle cancel properly" in assertAllStagesStopped {
       val pub = StreamTestKit.PublisherProbe[Int]()
       val sub = StreamTestKit.SubscriberProbe[Int]()
 

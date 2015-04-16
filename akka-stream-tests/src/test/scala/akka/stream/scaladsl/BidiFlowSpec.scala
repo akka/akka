@@ -12,6 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.stream.OperationAttributes
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   import OperationAttributes._
@@ -91,7 +92,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       Await.result(f, 1.second) should ===(42)
     }
 
-    "combine materialization values" in {
+    "combine materialization values" in assertAllStagesStopped {
       val left = Flow(Sink.head[Int]) { implicit b ⇒
         sink ⇒
           val bcast = b.add(Broadcast[Int](2))

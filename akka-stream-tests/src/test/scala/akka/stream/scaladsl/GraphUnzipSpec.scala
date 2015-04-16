@@ -5,6 +5,7 @@ import scala.concurrent.duration._
 import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings }
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class GraphUnzipSpec extends AkkaSpec {
 
@@ -16,7 +17,7 @@ class GraphUnzipSpec extends AkkaSpec {
   "A unzip" must {
     import FlowGraph.Implicits._
 
-    "unzip to two subscribers" in {
+    "unzip to two subscribers" in assertAllStagesStopped {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[String]()
 
@@ -116,7 +117,7 @@ class GraphUnzipSpec extends AkkaSpec {
       p1Sub.expectCancellation()
     }
 
-    "work with zip" in {
+    "work with zip" in assertAllStagesStopped {
       val c1 = StreamTestKit.SubscriberProbe[(Int, String)]()
       FlowGraph.closed() { implicit b ⇒
         val zip = b.add(Zip[Int, String]())

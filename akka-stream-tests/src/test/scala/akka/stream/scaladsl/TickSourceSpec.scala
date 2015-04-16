@@ -10,6 +10,7 @@ import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.stream.ActorFlowMaterializerSettings
 
 class TickSourceSpec extends AkkaSpec {
@@ -17,7 +18,7 @@ class TickSourceSpec extends AkkaSpec {
   implicit val materializer = ActorFlowMaterializer()
 
   "A Flow based on tick publisher" must {
-    "produce ticks" in {
+    "produce ticks" in assertAllStagesStopped {
       val c = StreamTestKit.SubscriberProbe[String]()
       Source(1.second, 500.millis, "tick").to(Sink(c)).run()
       val sub = c.expectSubscription()
@@ -85,7 +86,7 @@ class TickSourceSpec extends AkkaSpec {
       sub.cancel()
     }
 
-    "be possible to cancel" in {
+    "be possible to cancel" in assertAllStagesStopped {
       val c = StreamTestKit.SubscriberProbe[String]()
       val tickSource = Source(1.second, 500.millis, "tick")
       val cancellable = tickSource.to(Sink(c)).run()

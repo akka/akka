@@ -35,7 +35,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxCon
   val TestByteStrings = TestLines.map(ByteString(_))
 
   "SynchronousFile Sink" must {
-    "write lines to a file" in checkThatAllStagesAreStopped {
+    "write lines to a file" in assertAllStagesStopped {
       targetFile { f ⇒
         val completion = Source(TestByteStrings)
           .runWith(SynchronousFileSink(f))
@@ -46,7 +46,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxCon
       }
     }
 
-    "by default write into existing file" in checkThatAllStagesAreStopped {
+    "by default write into existing file" in assertAllStagesStopped {
       targetFile { f ⇒
         def write(lines: List[String]) =
           Source(lines)
@@ -65,7 +65,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxCon
       }
     }
 
-    "allow appending to file" in checkThatAllStagesAreStopped {
+    "allow appending to file" in assertAllStagesStopped {
       targetFile { f ⇒
         def write(lines: List[String] = TestLines) =
           Source(lines)
@@ -84,7 +84,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxCon
       }
     }
 
-    "use dedicated file-io-dispatcher by default" in checkThatAllStagesAreStopped {
+    "use dedicated file-io-dispatcher by default" in assertAllStagesStopped {
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", StreamTestKit.UnboundedMailboxConfig)
         val mat = ActorFlowMaterializer()(sys)
@@ -99,7 +99,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxCon
       }
     }
 
-    "allow overriding the dispatcher using OperationAttributes" in checkThatAllStagesAreStopped {
+    "allow overriding the dispatcher using OperationAttributes" in assertAllStagesStopped {
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", StreamTestKit.UnboundedMailboxConfig)
         val mat = ActorFlowMaterializer()(sys)
