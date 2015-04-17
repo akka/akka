@@ -146,8 +146,8 @@ class GraphBroadcastSpec extends AkkaSpec {
       FlowGraph.closed() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         Source(List(1, 2, 3)) ~> bcast.in
-        bcast.out(0) ~> Flow[Int] ~> Sink(c1)
-        bcast.out(1) ~> Flow[Int] ~> Sink(c2)
+        bcast.out(0) ~> Flow[Int].named("identity-a") ~> Sink(c1)
+        bcast.out(1) ~> Flow[Int].named("identity-b") ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -187,6 +187,31 @@ class GraphBroadcastSpec extends AkkaSpec {
       sub1.cancel()
       sub2.cancel()
       bsub.expectCancellation()
+    }
+
+    "pass along early cancellation" in assertAllStagesStopped {
+      val c1 = StreamTestKit.SubscriberProbe[Int]()
+      val c2 = StreamTestKit.SubscriberProbe[Int]()
+
+      val sink = Sink() { implicit b ⇒
+        val bcast = b.add(Broadcast[Int](2))
+        bcast.out(0) ~> Sink(c1)
+        bcast.out(1) ~> Sink(c2)
+        bcast.in
+      }
+
+      val s = Source.subscriber[Int].to(sink).run()
+
+      val up = StreamTestKit.PublisherProbe[Int]()
+
+      val downsub1 = c1.expectSubscription()
+      val downsub2 = c2.expectSubscription()
+      downsub1.cancel()
+      downsub2.cancel()
+
+      up.subscribe(s)
+      val upsub = up.expectSubscription()
+      upsub.expectCancellation()
     }
 
   }

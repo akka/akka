@@ -86,7 +86,7 @@ private[akka] class GroupByProcessorImpl(settings: ActorFlowMaterializerSettings
     }
   }
 
-  nextPhase(waitFirst)
+  initialPhase(1, waitFirst)
 
   override def invalidateSubstreamOutput(substream: SubstreamKey): Unit = {
     if ((pendingSubstreamOutput ne null) && substream == pendingSubstreamOutput.key) {

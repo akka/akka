@@ -122,7 +122,7 @@ private[akka] class FlexiRouteImpl[T, S <: Shape](_settings: ActorFlowMaterializ
   changeBehavior(routeLogic.initialState)
   changeCompletionHandling(routeLogic.initialCompletionHandling)
 
-  nextPhase(TransferPhase(precondition) { () ⇒
+  initialPhase(1, TransferPhase(precondition) { () ⇒
     val elem = primaryInputs.dequeueInputElement().asInstanceOf[T]
     behavior.condition match {
       case any: DemandFromAny ⇒

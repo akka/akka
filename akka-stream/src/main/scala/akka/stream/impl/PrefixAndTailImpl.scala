@@ -62,5 +62,5 @@ private[akka] class PrefixAndTailImpl(_settings: ActorFlowMaterializerSettings, 
     nextPhase(streamTailPhase(substreamOutput))
   }
 
-  if (takeMax > 0) nextPhase(take) else nextPhase(takeEmpty)
+  if (takeMax > 0) initialPhase(1, take) else initialPhase(1, takeEmpty)
 }

@@ -394,6 +394,30 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       s2.expectNext(1, 2, 3)
       s2.expectComplete()
     }
+
+    "handle early cancelation" in assertAllStagesStopped {
+      val onDownstreamFinishProbe = TestProbe()
+      val down = StreamTestKit.SubscriberProbe[Int]()
+      val s = Source.subscriber[Int].
+        transform(() ⇒ new PushStage[Int, Int] {
+          override def onPush(elem: Int, ctx: Context[Int]) =
+            ctx.push(elem)
+          override def onDownstreamFinish(ctx: Context[Int]): TerminationDirective = {
+            onDownstreamFinishProbe.ref ! "onDownstreamFinish"
+            ctx.finish()
+          }
+        }).
+        to(Sink(down)).run()
+
+      val downstream = down.expectSubscription()
+      downstream.cancel()
+      onDownstreamFinishProbe.expectMsg("onDownstreamFinish")
+
+      val up = StreamTestKit.PublisherProbe[Int]
+      up.subscribe(s)
+      val upsub = up.expectSubscription()
+      upsub.expectCancellation()
+    }
   }
 
 }

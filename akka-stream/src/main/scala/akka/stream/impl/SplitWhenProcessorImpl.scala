@@ -82,7 +82,7 @@ private[akka] class SplitWhenProcessorImpl(_settings: ActorFlowMaterializerSetti
         Drop
     }
 
-  nextPhase(waitFirst)
+  initialPhase(1, waitFirst)
 
   override def completeSubstreamOutput(substream: SubstreamKey): Unit = {
     if ((currentSubstream ne null) && substream == currentSubstream.key) nextPhase(ignoreUntilNewSubstream)

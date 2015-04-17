@@ -35,6 +35,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
   private var nextInputElementCursor = 0
   private var upstreamCompleted = false
   private var downstreamWaiting = false
+  private var downstreamCanceled = false
   private val IndexMask = size - 1
 
   private def requestBatchSize = math.max(1, inputBuffer.length / 2)
@@ -42,7 +43,9 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
 
   val subreceive: SubReceive = new SubReceive(waitingForUpstream)
 
-  def isFinished = (upstream ne null) && upstreamCompleted
+  def isFinished = upstreamCompleted && ((upstream ne null) || downstreamCanceled)
+
+  def setDownstreamCanceled(): Unit = downstreamCanceled = true
 
   private def dequeue(): Any = {
     val elem = inputBuffer(nextInputElementCursor)
@@ -113,8 +116,12 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
 
   private def onSubscribe(subscription: Subscription): Unit = {
     assert(subscription != null)
-    if (upstreamCompleted) subscription.cancel()
-    else {
+    if (upstreamCompleted)
+      subscription.cancel()
+    else if (downstreamCanceled) {
+      upstreamCompleted = true
+      subscription.cancel()
+    } else {
       upstream = subscription
       // Prefetch
       upstream.request(inputBuffer.length)
@@ -326,7 +333,11 @@ private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings
 
   override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     super.aroundReceive(receive, msg)
-    if (interpreter.isFinished && upstream.isFinished) context.stop(self)
+
+    if (interpreter.isFinished) {
+      if (upstream.isFinished) context.stop(self)
+      else upstream.setDownstreamCanceled()
+    }
   }
 
   override def postStop(): Unit = {

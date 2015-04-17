@@ -27,7 +27,7 @@ private[akka] class TimerTransformerProcessorsImpl(
 
   override def preStart(): Unit = {
     super.preStart()
-    nextPhase(running)
+    initialPhase(1, running)
     transformer.start(context)
   }
 
