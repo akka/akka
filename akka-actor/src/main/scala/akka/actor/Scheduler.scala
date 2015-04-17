@@ -92,7 +92,7 @@ trait Scheduler {
    * (there will be no overlap of executions of the runnable). In such cases,
    * the actual execution interval will differ from the interval passed to this
    * method.
-
+   *
    *
    * Java API
    */
