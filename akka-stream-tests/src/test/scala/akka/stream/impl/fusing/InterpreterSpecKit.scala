@@ -3,6 +3,7 @@
  */
 package akka.stream.impl.fusing
 
+import akka.event.Logging
 import akka.stream.testkit.AkkaSpec
 import akka.stream.stage._
 import akka.testkit.TestProbe
@@ -35,6 +36,28 @@ trait InterpreterSpecKit extends AkkaSpec {
     }
   }
 
+  private[akka] case class PreStartFailer[T](ex: () ⇒ Throwable) extends PushStage[T, T] {
+
+    override def preStart(ctx: LifecycleContext): Unit =
+      throw ex()
+
+    override def onPush(elem: T, ctx: Context[T]): SyncDirective =
+      ctx.push(elem)
+  }
+
+  private[akka] case class PostStopFailer[T](ex: () ⇒ Throwable) extends PushStage[T, T] {
+
+    override def postStop(ctx: LifecycleContext): Unit =
+      throw ex()
+
+    override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
+      ctx.finish()
+    }
+
+    override def onPush(elem: T, ctx: Context[T]): SyncDirective =
+      ctx.push(elem)
+  }
+
   private[akka] case class KeepGoing[T]() extends PushPullStage[T, T] {
     var lastElem: T = _
 
@@ -61,6 +84,7 @@ trait InterpreterSpecKit extends AkkaSpec {
     val interpreter = new OneBoundedInterpreter(upstream +: ops :+ downstream,
       (op, ctx, event) ⇒ sidechannel.ref ! ActorInterpreter.AsyncInput(op, ctx, event),
       ActorFlowMaterializer(),
+      Logging(system, getClass),
       forkLimit, overflowToHeap)
     interpreter.init()
 

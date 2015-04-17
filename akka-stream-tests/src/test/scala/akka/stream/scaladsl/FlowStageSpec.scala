@@ -3,6 +3,10 @@
  */
 package akka.stream.scaladsl
 
+import akka.actor.PoisonPill
+import akka.stream.OperationAttributes
+import akka.stream.OverflowStrategy
+import akka.stream.stage._
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -13,6 +17,9 @@ import akka.stream.testkit.Utils._
 import akka.testkit.{ EventFilter, TestProbe }
 import com.typesafe.config.ConfigFactory
 import akka.stream.stage._
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 

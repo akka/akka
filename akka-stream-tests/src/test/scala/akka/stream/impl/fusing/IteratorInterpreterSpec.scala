@@ -3,6 +3,8 @@
  */
 package akka.stream.impl.fusing
 
+import akka.event.Logging
+
 import scala.collection.immutable
 import akka.stream.testkit.AkkaSpec
 import akka.util.ByteString
@@ -16,14 +18,14 @@ class IteratorInterpreterSpec extends AkkaSpec {
 
     "work in the happy case" in {
       val itr = new IteratorInterpreter[Int, Int]((1 to 10).iterator, Seq(
-        Map((x: Int) ⇒ x + 1, stoppingDecider))).iterator
+        Map((x: Int) ⇒ x + 1, stoppingDecider)), log).iterator
 
       itr.toSeq should be(2 to 11)
     }
 
     "hasNext should not affect elements" in {
       val itr = new IteratorInterpreter[Int, Int]((1 to 10).iterator, Seq(
-        Map((x: Int) ⇒ x, stoppingDecider))).iterator
+        Map((x: Int) ⇒ x, stoppingDecider)), log).iterator
 
       itr.hasNext should be(true)
       itr.hasNext should be(true)
@@ -35,14 +37,14 @@ class IteratorInterpreterSpec extends AkkaSpec {
     }
 
     "work with ops that need extra pull for complete" in {
-      val itr = new IteratorInterpreter[Int, Int]((1 to 10).iterator, Seq(NaiveTake(1))).iterator
+      val itr = new IteratorInterpreter[Int, Int]((1 to 10).iterator, Seq(NaiveTake(1)), log).iterator
 
       itr.toSeq should be(Seq(1))
     }
 
     "throw exceptions on empty iterator" in {
       val itr = new IteratorInterpreter[Int, Int](List(1).iterator, Seq(
-        Map((x: Int) ⇒ x, stoppingDecider))).iterator
+        Map((x: Int) ⇒ x, stoppingDecider)), log).iterator
 
       itr.next() should be(1)
       a[NoSuchElementException] should be thrownBy { itr.next() }
@@ -55,7 +57,7 @@ class IteratorInterpreterSpec extends AkkaSpec {
             if (elem == 2) ctx.fail(new ArithmeticException())
             else ctx.push(elem)
           }
-        })).iterator
+        }), log).iterator
 
       itr.next() should be(1)
       itr.hasNext should be(true)
@@ -70,7 +72,7 @@ class IteratorInterpreterSpec extends AkkaSpec {
             if (elem == 2) throw new ArithmeticException()
             else ctx.push(elem)
           }
-        })).iterator
+        }), log).iterator
 
       itr.next() should be(1)
       itr.hasNext should be(true)
@@ -80,7 +82,7 @@ class IteratorInterpreterSpec extends AkkaSpec {
 
     "work with an empty iterator" in {
       val itr = new IteratorInterpreter[Int, Int](Iterator.empty, Seq(
-        Map((x: Int) ⇒ x + 1, stoppingDecider))).iterator
+        Map((x: Int) ⇒ x + 1, stoppingDecider)), log).iterator
 
       itr.hasNext should be(false)
       a[NoSuchElementException] should be thrownBy { itr.next() }
@@ -90,7 +92,7 @@ class IteratorInterpreterSpec extends AkkaSpec {
       val testBytes = (1 to 10).map(ByteString(_))
 
       def newItr(threshold: Int) =
-        new IteratorInterpreter[ByteString, ByteString](testBytes.iterator, Seq(ByteStringBatcher(threshold))).iterator
+        new IteratorInterpreter[ByteString, ByteString](testBytes.iterator, Seq(ByteStringBatcher(threshold)), log).iterator
 
       val itr1 = newItr(20)
       itr1.next() should be(ByteString(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
@@ -109,7 +111,7 @@ class IteratorInterpreterSpec extends AkkaSpec {
       itr3.hasNext should be(false)
 
       val itr4 =
-        new IteratorInterpreter[ByteString, ByteString](Iterator.empty, Seq(ByteStringBatcher(10))).iterator
+        new IteratorInterpreter[ByteString, ByteString](Iterator.empty, Seq(ByteStringBatcher(10)), log).iterator
 
       itr4.hasNext should be(false)
     }

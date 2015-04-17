@@ -3,6 +3,8 @@
  */
 package akka.stream.impl.fusing
 
+import akka.event.LoggingAdapter
+import akka.event.NoLogging
 import akka.stream.stage._
 import akka.stream._
 
@@ -90,14 +92,15 @@ private[akka] object IteratorInterpreter {
 /**
  * INTERNAL API
  */
-private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: Seq[PushPullStage[_, _]]) {
+private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: Seq[PushPullStage[_, _]], log: LoggingAdapter) {
   import akka.stream.impl.fusing.IteratorInterpreter._
 
   private val upstream = IteratorUpstream(input)
   private val downstream = IteratorDownstream[O]()
   private val interpreter = new OneBoundedInterpreter(upstream +: ops.asInstanceOf[Seq[Stage[_, _]]] :+ downstream,
     (op, ctx, evt) ⇒ throw new UnsupportedOperationException("IteratorInterpreter is fully synchronous"),
-    NoFlowMaterializer)
+    NoFlowMaterializer,
+    log)
   interpreter.init()
 
   def iterator: Iterator[O] = downstream
