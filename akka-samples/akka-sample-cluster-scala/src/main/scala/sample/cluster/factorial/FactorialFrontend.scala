@@ -57,5 +57,12 @@ object FactorialFrontend {
         name = "factorialFrontend")
     }
     //#registerOnUp
+
+    //#registerOnRemoved
+    Cluster(system).registerOnMemberRemoved{
+      system.terminate()
+    }
+    //#registerOnRemoved
+
   }
 }
