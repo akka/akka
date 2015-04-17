@@ -321,6 +321,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         // Target is not running after previous test, start it
         startTarget()
       }
+      enterBarrier("target-started")
 
       runOn(local) {
         // Get new target's ref
