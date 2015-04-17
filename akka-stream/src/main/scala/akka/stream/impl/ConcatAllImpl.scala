@@ -37,7 +37,7 @@ private[akka] class ConcatAllImpl(materializer: ActorFlowMaterializer)
       else primaryOutputs.enqueueOutputElement(substream.dequeueInputElement())
     }
 
-  nextPhase(takeNextSubstream)
+  initialPhase(1, takeNextSubstream)
 
   override def invalidateSubstreamInput(substream: SubstreamKey, e: Throwable): Unit = fail(e)
 

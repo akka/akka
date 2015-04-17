@@ -110,6 +110,19 @@ class FlowConcatAllSpec extends AkkaSpec {
       upstream.expectCancellation()
     }
 
+    "pass along early cancellation" in assertAllStagesStopped {
+      val up = StreamTestKit.PublisherProbe[Source[Int, _]]()
+      val down = StreamTestKit.SubscriberProbe[Int]()
+
+      val flowSubscriber = Source.subscriber[Source[Int, _]].flatten(FlattenStrategy.concat).to(Sink(down)).run()
+
+      val downstream = down.expectSubscription()
+      downstream.cancel()
+      up.subscribe(flowSubscriber)
+      val upsub = up.expectSubscription()
+      upsub.expectCancellation()
+    }
+
   }
 
 }

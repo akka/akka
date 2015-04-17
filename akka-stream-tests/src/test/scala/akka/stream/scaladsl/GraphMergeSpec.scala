@@ -144,6 +144,32 @@ class GraphMergeSpec extends TwoStreamsSetup {
       pending
     }
 
+    "pass along early cancellation" in assertAllStagesStopped {
+      val up1 = StreamTestKit.PublisherProbe[Int]
+      val up2 = StreamTestKit.PublisherProbe[Int]
+      val down = StreamTestKit.SubscriberProbe[Int]()
+
+      val src1 = Source.subscriber[Int]
+      val src2 = Source.subscriber[Int]
+
+      val (graphSubscriber1, graphSubscriber2) = FlowGraph.closed(src1, src2)((_, _)) { implicit b ⇒
+        (s1, s2) ⇒
+          val merge = b.add(Merge[Int](2))
+          s1.outlet ~> merge.in(0)
+          s2.outlet ~> merge.in(1)
+          merge.out ~> Sink(down)
+      }.run()
+
+      val downstream = down.expectSubscription()
+      downstream.cancel()
+      up1.subscribe(graphSubscriber1)
+      up2.subscribe(graphSubscriber2)
+      val upsub1 = up1.expectSubscription()
+      upsub1.expectCancellation()
+      val upsub2 = up2.expectSubscription()
+      upsub2.expectCancellation()
+    }
+
   }
 
 }

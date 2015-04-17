@@ -267,6 +267,19 @@ class FlowGroupBySpec extends AkkaSpec {
       substreamPuppet2.expectComplete()
     }
 
+    "pass along early cancellation" in assertAllStagesStopped {
+      val up = StreamTestKit.PublisherProbe[Int]()
+      val down = StreamTestKit.SubscriberProbe[(Int, Source[Int, Unit])]()
+
+      val flowSubscriber = Source.subscriber[Int].groupBy(_ % 2).to(Sink(down)).run()
+
+      val downstream = down.expectSubscription()
+      downstream.cancel()
+      up.subscribe(flowSubscriber)
+      val upsub = up.expectSubscription()
+      upsub.expectCancellation()
+    }
+
   }
 
 }
