@@ -88,7 +88,7 @@ private[http] object HttpServerBluePrint {
       (requestParsing, renderer) ⇒
         import FlowGraph.Implicits._
 
-        val bypassFanout = b.add(Broadcast[RequestOutput](2, OperationAttributes.name("bypassFanout")))
+        val bypassFanout = b.add(Broadcast[RequestOutput](2).named("bypassFanout"))
         val bypassMerge = b.add(new BypassMerge(settings, log))
         val bypassInput = bypassMerge.in0
         val bypassOneHundredContinueInput = bypassMerge.in1
