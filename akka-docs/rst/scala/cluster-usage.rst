@@ -86,7 +86,7 @@ Joining programatically can be performed with ``Cluster(system).join``.
 
 You can join to any node in the cluster. It does not have to be configured as a seed node.
 Note that you can only join to an existing cluster member, which means that for bootstrapping some
-node must join itself.
+node must join itself,and then the following nodes could join them to make up a cluster.
 
 You may also use ``Cluster(system).joinSeedNodes`` to join programmatically,
 which is attractive when dynamically discovering other nodes at startup by using some external tool or API.
@@ -102,9 +102,9 @@ that the last join request is retried. Retries can be disabled by setting the pr
 
 An actor system can only join a cluster once. Additional attempts will be ignored.
 When it has successfully joined it must be restarted to be able to join another
-cluster or to join the same cluster again. It can use the same host name and port
-after the restart, but it must have been removed from the cluster before the join
-request is accepted.
+cluster or to join the same cluster again.It can use the same host name and port
+after the restart, when it come up as new incarnation of existing member in the cluster,
+trying to join in ,then the existing one will be removed from the cluster and then it will be allowed to join.
 
 .. _automatic-vs-manual-downing-scala:
 
@@ -271,12 +271,24 @@ before the leader changes member status of 'Joining' members to 'Up'.
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/resources/factorial.conf#role-min-nr-of-members
 
 You can start the actors in a ``registerOnMemberUp`` callback, which will 
-be invoked when the current member status is changed tp 'Up', i.e. the cluster
+be invoked when the current member status is changed to 'Up',i.e. the cluster
 has at least the defined number of members.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/FactorialFrontend.scala#registerOnUp
 
 This callback can be used for other things than starting actors.
+
+You can do some clean up in a ``registerOnMemberRemoved`` callback, which will
+be invoked when the current member status is changed to 'Removed' or the cluster have been shutdown,i.e.
+terminate the actor system.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/FactorialFrontend.scala#registerOnRemoved
+
+.. note::
+   Register a OnMemberRemoved callback on a cluster that have been shutdown ,the callback will be invoked immediately on
+   the caller thread,otherwise it will be invoked later when the current member status changed to 'Removed'.You may
+   want to install some cleanup handling after the cluster was started up,but the cluster might already be shutting
+   down when you installing, and depending on the race is not healthy.
 
 Cluster Singleton
 ^^^^^^^^^^^^^^^^^
