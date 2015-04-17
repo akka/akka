@@ -4,20 +4,18 @@
 
 package akka.actor
 
+import java.lang.reflect.{ Constructor, Modifier, ParameterizedType, TypeVariable }
+
+import akka.actor.Deploy.{ NoDispatcherGiven, NoMailboxGiven }
 import akka.dispatch._
 import akka.japi.Creator
-import scala.reflect.ClassTag
 import akka.routing._
 import akka.util.Reflect
+
 import scala.annotation.varargs
-import Deploy.{ NoDispatcherGiven, NoMailboxGiven }
 import scala.collection.immutable
 import scala.language.existentials
-import java.lang.reflect.Constructor
-import java.lang.reflect.Modifier
-import scala.annotation.tailrec
-import java.lang.reflect.ParameterizedType
-import java.lang.reflect.TypeVariable
+import scala.reflect.ClassTag
 
 /**
  * Factory for Props instances.
@@ -215,12 +213,18 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
   /**
    * Returns a new Props with the specified dispatcher set.
    */
-  def withDispatcher(d: String): Props = copy(deploy = deploy.copy(dispatcher = d))
+  def withDispatcher(d: String): Props = deploy.dispatcher match {
+    case NoDispatcherGiven ⇒ copy(deploy = deploy.copy(dispatcher = d))
+    case x                 ⇒ if (x == d) this else copy(deploy = deploy.copy(dispatcher = d))
+  }
 
   /**
    * Returns a new Props with the specified mailbox set.
    */
-  def withMailbox(m: String): Props = copy(deploy = deploy.copy(mailbox = m))
+  def withMailbox(m: String): Props = deploy.mailbox match {
+    case NoMailboxGiven ⇒ copy(deploy = deploy.copy(mailbox = m))
+    case x              ⇒ if (x == m) this else copy(deploy = deploy.copy(mailbox = m))
+  }
 
   /**
    * Returns a new Props with the specified router config set.
