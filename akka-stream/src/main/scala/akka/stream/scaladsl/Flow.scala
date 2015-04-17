@@ -268,6 +268,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     else new Flow(module.withAttributes(attr).wrap())
   }
 
+  override def named(name: String): Repr[Out, Mat] = withAttributes(OperationAttributes.name(name))
+
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
    * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a of a [[Source#subscriber]] and
@@ -317,6 +319,12 @@ case class RunnableFlow[+Mat](private[stream] val module: StreamLayout.Module) e
    * Run this flow and return the materialized instance from the flow.
    */
   def run()(implicit materializer: FlowMaterializer): Mat = materializer.materialize(this)
+
+  override def withAttributes(attr: OperationAttributes): RunnableFlow[Mat] =
+    new RunnableFlow(module.withAttributes(attr).wrap)
+
+  override def named(name: String): RunnableFlow[Mat] = withAttributes(OperationAttributes.name(name))
+
 }
 
 /**
@@ -658,8 +666,6 @@ trait FlowOps[+Out, +Mat] {
     andThen(TimerTransform(mkStage.asInstanceOf[() ⇒ TimerTransformer[Any, Any]]))
 
   def withAttributes(attr: OperationAttributes): Repr[Out, Mat]
-
-  def named(name: String): Repr[Out, Mat] = withAttributes(OperationAttributes.name(name))
 
   /** INTERNAL API */
   private[scaladsl] def andThen[U](op: StageModule): Repr[U, Mat]
