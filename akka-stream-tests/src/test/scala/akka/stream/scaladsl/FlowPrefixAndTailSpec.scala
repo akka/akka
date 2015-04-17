@@ -181,6 +181,19 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     }
 
+    "pass along early cancellation" in assertAllStagesStopped {
+      val up = StreamTestKit.PublisherProbe[Int]()
+      val down = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
+
+      val flowSubscriber = Source.subscriber[Int].prefixAndTail(1).to(Sink(down)).run()
+
+      val downstream = down.expectSubscription()
+      downstream.cancel()
+      up.subscribe(flowSubscriber)
+      val upsub = up.expectSubscription()
+      upsub.expectCancellation()
+    }
+
   }
 
 }

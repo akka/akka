@@ -192,6 +192,19 @@ class FlowSplitWhenSpec extends AkkaSpec {
       substreamPuppet2.expectComplete()
     }
 
+    "pass along early cancellation" in assertAllStagesStopped {
+      val up = StreamTestKit.PublisherProbe[Int]()
+      val down = StreamTestKit.SubscriberProbe[Source[Int, Unit]]()
+
+      val flowSubscriber = Source.subscriber[Int].splitWhen(_ % 3 == 0).to(Sink(down)).run()
+
+      val downstream = down.expectSubscription()
+      downstream.cancel()
+      up.subscribe(flowSubscriber)
+      val upsub = up.expectSubscription()
+      upsub.expectCancellation()
+    }
+
   }
 
 }

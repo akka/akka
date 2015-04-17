@@ -14,7 +14,7 @@ private[akka] final class Zip1With(_settings: ActorFlowMaterializerSettings, f: 
 
   inputBunch.markAllInputs()
 
-  nextPhase(TransferPhase(inputBunch.AllOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
+  initialPhase(inputCount, TransferPhase(inputBunch.AllOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
     val elem##0 = inputBunch.dequeue(##0)
     [2..#val elem0 = inputBunch.dequeue(0)#
     ]

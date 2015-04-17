@@ -128,6 +128,14 @@ private[akka] object NotInitialized extends TransferState {
 /**
  * INTERNAL API
  */
+private[akka] case class WaitingForUpstreamSubscription(remaining: Int, andThen: TransferPhase) extends TransferState {
+  def isReady = false
+  def isCompleted = false
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] object Always extends TransferState {
   def isReady = true
   def isCompleted = false
@@ -146,9 +154,31 @@ private[akka] trait Pump {
   private var currentAction: () ⇒ Unit =
     () ⇒ throw new IllegalStateException("Pump has been not initialized with a phase")
 
-  final def nextPhase(phase: TransferPhase): Unit = {
-    transferState = phase.precondition
-    currentAction = phase.action
+  final def initialPhase(waitForUpstream: Int, andThen: TransferPhase): Unit = {
+    require(waitForUpstream >= 1, s"waitForUpstream must be >= 1 (was $waitForUpstream)")
+    if (transferState != NotInitialized)
+      throw new IllegalStateException(s"initialPhase expected NotInitialized, but was [$transferState]")
+    transferState = WaitingForUpstreamSubscription(waitForUpstream, andThen)
+  }
+
+  def gotUpstreamSubscription(): Unit = {
+    transferState match {
+      case WaitingForUpstreamSubscription(1, andThen) ⇒
+        transferState = andThen.precondition
+        currentAction = andThen.action
+      case WaitingForUpstreamSubscription(remaining, andThen) ⇒
+        transferState = WaitingForUpstreamSubscription(remaining - 1, andThen)
+      case _ ⇒ // ok, initial phase not used, or passed already
+    }
+    pump()
+  }
+
+  final def nextPhase(phase: TransferPhase): Unit = transferState match {
+    case WaitingForUpstreamSubscription(remaining, _) ⇒
+      transferState = WaitingForUpstreamSubscription(remaining, phase)
+    case _ ⇒
+      transferState = phase.precondition
+      currentAction = phase.action
   }
 
   final def isPumpFinished: Boolean = transferState.isCompleted
