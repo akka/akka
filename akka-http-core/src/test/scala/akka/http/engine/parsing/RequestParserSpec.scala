@@ -157,6 +157,13 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
+      "with a request target starting with a double-slash" in new Test {
+        """GET //foo HTTP/1.0
+          |
+          |""" should parseTo(HttpRequest(GET, Uri("http://x//foo").toHttpRequestTargetOriginForm, protocol = `HTTP/1.0`))
+        closeAfterResponseCompletion shouldEqual Seq(true)
+      }
+
       "properly parse a chunked request" - {
         val start =
           """PATCH /data HTTP/1.1
