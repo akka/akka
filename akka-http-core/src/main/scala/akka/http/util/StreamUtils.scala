@@ -23,7 +23,7 @@ import akka.stream.stage._
  * INTERNAL API
  */
 private[http] object StreamUtils {
-  import OperationAttributes._
+  import OperationAttributes.none
 
   /**
    * Creates a transformer that will call `f` for each incoming ByteString and output its result. After the complete
@@ -159,8 +159,6 @@ private[http] object StreamUtils {
   def fromInputStreamSource(inputStream: InputStream,
                             fileIODispatcher: String,
                             defaultChunkSize: Int = 65536): Source[ByteString, Unit] = {
-    import akka.stream.impl._
-
     val onlyOnceFlag = new AtomicBoolean(false)
 
     val iterator = new Iterator[ByteString] {
@@ -183,7 +181,6 @@ private[http] object StreamUtils {
     }
 
     Source(() ⇒ iterator).withAttributes(ActorOperationAttributes.dispatcher(fileIODispatcher))
-
   }
 
   /**
@@ -269,6 +266,25 @@ private[http] object StreamUtils {
 
         override def initialCompletionHandling: CompletionHandling = eagerClose
       }
+  }
+
+  // TODO: remove after #16394 is cleared
+  def recover[A, B >: A](pf: PartialFunction[Throwable, B]): () ⇒ PushPullStage[A, B] = {
+    val stage = new PushPullStage[A, B] {
+      var recovery: Option[B] = None
+      def onPush(elem: A, ctx: Context[B]): SyncDirective = ctx.push(elem)
+      def onPull(ctx: Context[B]): SyncDirective = recovery match {
+        case None    ⇒ ctx.pull()
+        case Some(x) ⇒ { recovery = null; ctx.push(x) }
+        case null    ⇒ ctx.finish()
+      }
+      override def onUpstreamFailure(cause: Throwable, ctx: Context[B]): TerminationDirective =
+        if (pf isDefinedAt cause) {
+          recovery = Some(pf(cause))
+          ctx.absorbTermination()
+        } else super.onUpstreamFailure(cause, ctx)
+    }
+    () ⇒ stage
   }
 }
 
