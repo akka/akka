@@ -140,6 +140,16 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
     Uri(path = if (path.isEmpty) Uri.Path./ else path, query = query, fragment = fragment)
 
   /**
+   * Converts this URI into an HTTP request target "origin-form" as defined by
+   * https://tools.ietf.org/html/rfc7230#section-5.3.
+   *
+   * Note that the resulting URI instance is not a valid RFC 3986 URI! (As it might
+   * be a "relative" URI with a part component starting with a double slash.)
+   */
+  def toHttpRequestTargetOriginForm =
+    create("", Authority.Empty, if (path.isEmpty) Uri.Path./ else path, query, None)
+
+  /**
    * Drops the fragment from this URI
    */
   def withoutFragment =
