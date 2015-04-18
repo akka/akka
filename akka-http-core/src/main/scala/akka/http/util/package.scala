@@ -7,11 +7,13 @@ package akka.http
 import language.implicitConversions
 import language.higherKinds
 import java.nio.charset.Charset
+import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.config.Config
 import akka.stream.scaladsl.{ FlattenStrategy, Flow, Source }
 import akka.stream.stage._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
+import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 import scala.util.matching.Regex
 import akka.event.LoggingAdapter
@@ -62,10 +64,14 @@ package object util {
   }
 
   def printEvent[T](marker: String): Flow[T, T, Unit] =
-    Flow[T].transform(() ⇒ new PushStage[T, T] {
+    Flow[T].transform(() ⇒ new PushPullStage[T, T] {
       override def onPush(element: T, ctx: Context[T]): SyncDirective = {
         println(s"$marker: $element")
         ctx.push(element)
+      }
+      override def onPull(ctx: Context[T]): SyncDirective = {
+        println(s"$marker: PULL")
+        ctx.pull()
       }
       override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
         println(s"$marker: Error $cause")
@@ -80,6 +86,17 @@ package object util {
         super.onDownstreamFinish(ctx)
       }
     })
+
+  private[this] var eventStreamLogger: ActorRef = _
+  private[http] def installEventStreamLoggerFor(channel: Class[_])(implicit system: ActorSystem): Unit = {
+    synchronized {
+      if (eventStreamLogger == null)
+        eventStreamLogger = system.actorOf(Props[util.EventStreamLogger], name = "event-stream-logger")
+    }
+    system.eventStream.subscribe(eventStreamLogger, channel)
+  }
+  private[http] def installEventStreamLoggerFor[T](implicit ct: ClassTag[T], system: ActorSystem): Unit =
+    installEventStreamLoggerFor(ct.runtimeClass)
 
   private[http] implicit class AddFutureAwaitResult[T](future: Future[T]) {
     /** "Safe" Await.result that doesn't throw away half of the stacktrace */
@@ -112,5 +129,28 @@ package object util {
       val pre = if (si) "kMGTPE".charAt(exp - 1).toString else "KMGTPE".charAt(exp - 1).toString + 'i'
       "%.1f %sB" format (bytes / math.pow(unit, exp), pre)
     } else bytes.toString + "  B"
+  }
+}
+
+package util {
+
+  private[http] class EventStreamLogger extends Actor with ActorLogging {
+    def receive = { case x ⇒ log.warning(x.toString) }
+  }
+
+  // Provisioning of actor names composed of a common prefix + a counter. According to #16613 not in scope as public API.
+  private[http] final class SeqActorName(prefix: String) extends AtomicInteger {
+    def next(): String = prefix + '-' + getAndIncrement()
+  }
+
+  private[http] trait LogMessages extends ActorLogging { this: Actor ⇒
+    def logMessages(mark: String = "")(r: Receive): Receive =
+      new Receive {
+        def isDefinedAt(x: Any): Boolean = r.isDefinedAt(x)
+        def apply(x: Any): Unit = {
+          log.debug(s"[$mark] received: $x")
+          r(x)
+        }
+      }
   }
 }
