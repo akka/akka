@@ -53,8 +53,5 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
           throw new ConfigurationException(info.formatPretty)
       },
     ParserSettings fromSubConfig c.getConfig("parsing"))
-
-  def apply(optionalSettings: Option[ServerSettings])(implicit actorRefFactory: ActorRefFactory): ServerSettings =
-    optionalSettings getOrElse apply(actorSystem)
 }
 
