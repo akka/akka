@@ -17,8 +17,8 @@ object TestUtils {
     } finally serverSocket.close()
   }
 
-  def temporaryServerHostnameAndPort(interface: String = "127.0.0.1"): (String, Int) = {
+  def temporaryServerHostnameAndPort(interface: String = "127.0.0.1"): (InetSocketAddress, String, Int) = {
     val socketAddress = temporaryServerAddress(interface)
-    socketAddress.getHostName -> socketAddress.getPort
+    (socketAddress, socketAddress.getHostName, socketAddress.getPort)
   }
 }

@@ -31,7 +31,4 @@ object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettin
       c getIntBytes "request-header-size-hint",
       ParserSettings fromSubConfig c.getConfig("parsing"))
   }
-
-  def apply(optionalSettings: Option[ClientConnectionSettings])(implicit actorRefFactory: ActorRefFactory): ClientConnectionSettings =
-    optionalSettings getOrElse apply(actorSystem)
 }

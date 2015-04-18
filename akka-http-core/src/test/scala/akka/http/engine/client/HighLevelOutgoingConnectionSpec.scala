@@ -19,7 +19,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka
   "The connection-level client implementation" should {
 
     "be able to handle 100 pipelined requests across one connection" in {
-      val (serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
+      val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
 
       Http().bindAndHandleSync(r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
         serverHostName, serverPort)
@@ -37,7 +37,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka
     }
 
     "be able to handle 100 pipelined requests across 4 connections (client-flow is reusable)" in {
-      val (serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
+      val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
 
       Http().bindAndHandleSync(r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
         serverHostName, serverPort)

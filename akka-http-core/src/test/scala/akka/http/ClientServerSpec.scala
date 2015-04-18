@@ -38,7 +38,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   "The low-level HTTP infrastructure" should {
 
     "properly bind a server" in {
-      val (hostname, port) = temporaryServerHostnameAndPort()
+      val (_, hostname, port) = temporaryServerHostnameAndPort()
       val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
       val binding = Http().bind(hostname, port).toMat(Sink(probe))(Keep.left).run()
       val sub = probe.expectSubscription() // if we get it we are bound
@@ -47,7 +47,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
 
     "report failure if bind fails" in {
-      val (hostname, port) = temporaryServerHostnameAndPort()
+      val (_, hostname, port) = temporaryServerHostnameAndPort()
       val binding = Http().bind(hostname, port)
       val probe1 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
@@ -78,7 +78,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
 
     "run with bindAndHandle" in {
-      val (hostname, port) = temporaryServerHostnameAndPort()
+      val (_, hostname, port) = temporaryServerHostnameAndPort()
       val binding = Http().bindAndHandle(Flow[HttpRequest].map(_ ⇒ HttpResponse()), hostname, port)
       val b1 = Await.result(binding, 3.seconds)
 
@@ -186,12 +186,12 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   override def afterAll() = system.shutdown()
 
   class TestSetup {
-    val (hostname, port) = temporaryServerHostnameAndPort()
+    val (_, hostname, port) = temporaryServerHostnameAndPort()
     def configOverrides = ""
 
     // automatically bind a server
     val connSource = {
-      val settings = configOverrides.toOption.map(ServerSettings.apply)
+      val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
       val binding = Http().bind(hostname, port, settings = settings)
       val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]
       binding.runWith(Sink(probe))
@@ -199,7 +199,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
     val connSourceSub = connSource.expectSubscription()
 
-    def openNewClientConnection(settings: Option[ClientConnectionSettings] = None): (PublisherProbe[HttpRequest], SubscriberProbe[HttpResponse]) = {
+    def openNewClientConnection(settings: ClientConnectionSettings = ClientConnectionSettings(system)) = {
       val requestPublisherProbe = StreamTestKit.PublisherProbe[HttpRequest]()
       val responseSubscriberProbe = StreamTestKit.SubscriberProbe[HttpResponse]()
 
