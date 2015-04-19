@@ -6,6 +6,7 @@ package akka.http.server
 package directives
 
 import org.scalatest.{ FreeSpec, Inside }
+import akka.http.unmarshalling.Unmarshaller
 import akka.http.unmarshalling.Unmarshaller.HexInt
 
 class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Inside {
@@ -118,6 +119,23 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
           case MalformedQueryParamRejection("really", "'absolutely' is not a valid Boolean value", None) ⇒
         }
       }
+    }
+  }
+
+  case class CustomClass(id: String)
+  object CustomClass {
+    implicit val customClassUnmarshaller = Unmarshaller.strict[String, CustomClass](apply)
+  }
+  "when used with 'as[CustomClass]' the parameter directive should" - {
+    "extract parameter values as CustomClass" in {
+      Get("/?custom=abc") ~> {
+        parameter('custom.as[CustomClass]) { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "CustomClass(abc)" }
+    }
+    "extract optional parameter values as CustomClass" in {
+      Get() ~> {
+        parameter('custom.as[CustomClass] ?) { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "None" }
     }
   }
 
