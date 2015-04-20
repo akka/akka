@@ -62,9 +62,22 @@ final case class OperationAttributes private (attributes: immutable.Seq[Operatio
    * INTERNAL API
    */
   private[akka] def nameLifted: Option[String] =
-    attributes.collect {
-      case Name(name) ⇒ name
-    }.reduceOption(_ + "-" + _) // FIXME don't do a double-traversal, use a fold instead
+    if (attributes.isEmpty)
+      None
+    else {
+      val sb = new java.lang.StringBuilder
+      val iter = attributes.iterator
+      while (iter.hasNext) {
+        iter.next() match {
+          case Name(name) ⇒
+            if (sb.length == 0) sb.append(name)
+            else sb.append("-").append(name)
+          case _ ⇒
+        }
+      }
+      if (sb.length == 0) None
+      else Some(sb.toString)
+    }
 
   /**
    * INTERNAL API
