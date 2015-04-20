@@ -57,7 +57,7 @@ public class AuthenticationDirectivesTest extends JUnitRouteTest {
         route.run(HttpRequest.GET("/secure"))
             .assertStatusCode(401)
             .assertEntity("The resource requires authentication, which was not supplied with the request")
-            .assertHeaderExists("WWW-Authenticate", "Basic realm=test-realm");
+            .assertHeaderExists("WWW-Authenticate", "Basic realm=\"test-realm\"");
     }
     @Test
     public void testRejectUnknownUser() {
