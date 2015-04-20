@@ -104,6 +104,11 @@ There are various ways to wire up different parts of a stream, the following exa
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#flow-connecting
 
+Illegal stream elements
+^^^^^^^^^^^^^^^^^^^^^^^
+In accordance to the Reactive Streams specification (`Rule 2.13 <https://github.com/reactive-streams/reactive-streams-jvm#2.13>`_)
+Akka Streams do not allow ``null`` to be passed through the stream as an element. In case you want to model the concept
+of absence of a value we recommend using ``akka.japi.Option`` (for Java 6 and 7) or ``java.util.Optional`` which is available since Java 8.
 
 .. _back-pressure-explained-java:
 
