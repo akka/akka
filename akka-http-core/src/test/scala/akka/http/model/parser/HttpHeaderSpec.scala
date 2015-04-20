@@ -337,7 +337,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "Proxy-Authenticate" in {
-      "Proxy-Authenticate: Basic realm=WallyWorld,attr=\"val>ue\", Fancy realm=yeah" =!=
+      "Proxy-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
         `Proxy-Authenticate`(HttpChallenge("Basic", "WallyWorld", Map("attr" -> "val>ue")), HttpChallenge("Fancy", "yeah"))
     }
 
@@ -453,10 +453,10 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "WWW-Authenticate" in {
-      "WWW-Authenticate: Basic realm=WallyWorld" =!=
+      "WWW-Authenticate: Basic realm=\"WallyWorld\"" =!=
         `WWW-Authenticate`(HttpChallenge("Basic", "WallyWorld"))
       "WWW-Authenticate: BaSiC rEaLm=WallyWorld" =!=
-        `WWW-Authenticate`(HttpChallenge("BaSiC", "WallyWorld")).renderedTo("BaSiC realm=WallyWorld")
+        `WWW-Authenticate`(HttpChallenge("BaSiC", "WallyWorld")).renderedTo("BaSiC realm=\"WallyWorld\"")
       "WWW-Authenticate: Basic realm=\"foo<bar\"" =!= `WWW-Authenticate`(HttpChallenge("Basic", "foo<bar"))
       """WWW-Authenticate: Digest
                            realm="testrealm@host.com",
@@ -466,7 +466,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `WWW-Authenticate`(HttpChallenge("Digest", "testrealm@host.com", Map("qop" -> "auth,auth-int",
           "nonce" -> "dcd98b7102dd2f0e8b11d0f600bfb0c093", "opaque" -> "5ccc069c403ebaf9f0171e9517f40e41"))).renderedTo(
           "Digest realm=\"testrealm@host.com\",qop=\"auth,auth-int\",nonce=dcd98b7102dd2f0e8b11d0f600bfb0c093,opaque=5ccc069c403ebaf9f0171e9517f40e41")
-      "WWW-Authenticate: Basic realm=WallyWorld,attr=\"val>ue\", Fancy realm=yeah" =!=
+      "WWW-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
         `WWW-Authenticate`(HttpChallenge("Basic", "WallyWorld", Map("attr" -> "val>ue")), HttpChallenge("Fancy", "yeah"))
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
         `WWW-Authenticate`(HttpChallenge("Fancy", "Secure Area", Map("nonce" -> "42")))
