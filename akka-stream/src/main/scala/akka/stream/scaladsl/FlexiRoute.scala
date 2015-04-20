@@ -240,7 +240,6 @@ abstract class FlexiRoute[In, S <: Shape](val shape: S, attributes: OperationAtt
     case None    ⇒ super.toString
   }
 
-  // FIXME what to do about this?
   override def withAttributes(attr: OperationAttributes): Graph[S, Unit] =
     throw new UnsupportedOperationException(
       "withAttributes not supported by default by FlexiRoute, subclass may override and implement it")

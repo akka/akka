@@ -173,7 +173,7 @@ private[akka] final case class Grouped[T](n: Int) extends PushPullStage[T, immut
   override def onPull(ctx: Context[immutable.Seq[T]]): SyncDirective =
     if (ctx.isFinishing) {
       val elem = buf.result()
-      buf.clear() //FIXME null out the reference to the `buf`?
+      buf.clear()
       left = n
       ctx.pushAndFinish(elem)
     } else ctx.pull()

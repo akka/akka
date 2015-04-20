@@ -79,11 +79,9 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
     case SubscribePending ⇒
       subscribePending()
     case RequestMore(subscription, elements) ⇒
-      // FIXME can we avoid this cast?
       moreRequested(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]], elements)
       pump.pump()
     case Cancel(subscription) ⇒
-      // FIXME can we avoid this cast?
       unregisterSubscription(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]])
       pump.pump()
   }
