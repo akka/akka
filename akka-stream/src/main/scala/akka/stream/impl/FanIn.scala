@@ -155,6 +155,7 @@ private[akka] object FanIn {
       if (input.inputsDepleted) {
         if (marked(id)) markedDepleted += 1
         depleted(id) = true
+        onDepleted(id)
       }
       elem
     }
