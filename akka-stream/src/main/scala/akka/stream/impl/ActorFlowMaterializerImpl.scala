@@ -118,7 +118,7 @@ private[akka] case class ActorFlowMaterializerImpl(override val settings: ActorF
                 (UnfairMerge.props(effectiveSettings, shape.inlets.size), shape.preferred +: shape.inArray.toSeq, shape.out)
 
               case ConcatModule(shape, _) ⇒
-                require(shape.inArray.size == 2, "currently only supporting concatenation of exactly two inputs") // FIXME
+                require(shape.inArray.size == 2, "currently only supporting concatenation of exactly two inputs") // TODO
                 (Concat.props(effectiveSettings), shape.inArray.toSeq, shape.out)
 
               case zip: ZipWithModule ⇒
@@ -269,7 +269,7 @@ private[akka] object ActorProcessorFactory {
       case GroupBy(f, _)              ⇒ (GroupByProcessorImpl.props(settings, f), ())
       case PrefixAndTail(n, _)        ⇒ (PrefixAndTailImpl.props(settings, n), ())
       case SplitWhen(p, _)            ⇒ (SplitWhenProcessorImpl.props(settings, p), ())
-      case ConcatAll(_)               ⇒ (ConcatAllImpl.props(materializer), ()) //FIXME closes over the materializer, is this good?
+      case ConcatAll(_)               ⇒ (ConcatAllImpl.props(materializer), ())
       case StageFactory(mkStage, _)   ⇒ (ActorInterpreter.props(settings, List(mkStage()), materializer), ())
       case TimerTransform(mkStage, _) ⇒ (TimerTransformerProcessorsImpl.props(settings, mkStage()), ())
       case MaterializingStageFactory(mkStageAndMat, _) ⇒
