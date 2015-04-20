@@ -115,11 +115,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
   /**
    * Turn this BidiFlow around by 180 degrees, logically flipping it upside down in a protocol stack.
    */
-  def reversed: BidiFlow[I2, O2, I1, O1, Mat] = {
-    val ins = shape.inlets
-    val outs = shape.outlets
-    new BidiFlow(module.replaceShape(shape.copyFromPorts(ins.reverse, outs.reverse)))
-  }
+  def reversed: BidiFlow[I2, O2, I1, O1, Mat] = new BidiFlow(module.replaceShape(shape.reversed))
 
   override def withAttributes(attr: OperationAttributes): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(module.withAttributes(attr).wrap())

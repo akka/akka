@@ -1,0 +1,449 @@
+/**
+ * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.impl.io
+
+import java.nio.ByteBuffer
+import java.security.Principal
+import java.security.cert.Certificate
+import javax.net.ssl.SSLEngineResult.HandshakeStatus
+import javax.net.ssl.SSLEngineResult.HandshakeStatus._
+import javax.net.ssl.SSLEngineResult.Status._
+import javax.net.ssl._
+import akka.actor.{ Props, Actor, ActorLogging, ActorRef }
+import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.impl.FanIn.InputBunch
+import akka.stream.impl.FanOut.OutputBunch
+import akka.stream.impl._
+import akka.util.ByteString
+import akka.util.ByteStringBuilder
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import scala.annotation.tailrec
+import scala.collection.immutable
+import akka.stream.io._
+import akka.event.LoggingReceive
+
+/**
+ * INTERNAL API.
+ */
+private[akka] object SslTlsCipherActor {
+
+  def props(settings: ActorFlowMaterializerSettings,
+            sslContext: SSLContext,
+            firstSession: NegotiateNewSession,
+            tracing: Boolean,
+            role: Role,
+            closing: Closing): Props =
+    Props(new SslTlsCipherActor(settings, sslContext, firstSession, tracing, role, closing))
+
+  final val TransportIn = 0
+  final val TransportOut = 0
+
+  final val UserOut = 1
+  final val UserIn = 1
+}
+
+/**
+ * INTERNAL API.
+ */
+private[akka] class SslTlsCipherActor(settings: ActorFlowMaterializerSettings, sslContext: SSLContext,
+                                      firstSession: NegotiateNewSession, tracing: Boolean,
+                                      role: Role, closing: Closing)
+  extends Actor with ActorLogging with Pump {
+
+  import SslTlsCipherActor._
+
+  protected val outputBunch = new OutputBunch(outputCount = 2, self, this)
+  outputBunch.markAllOutputs()
+
+  protected val inputBunch = new InputBunch(inputCount = 2, settings.maxInputBufferSize, this) {
+    override def onError(input: Int, e: Throwable): Unit = fail(e)
+  }
+
+  /**
+   * The SSLEngine needs bite-sized chunks of data but we get arbitrary ByteString
+   * from both the UserIn and the TransportIn ports. This is used to chop up such
+   * a ByteString by filling the respective ByteBuffer and taking care to dequeue
+   * a new element when data are demanded and none are left lying on the chopping
+   * block.
+   */
+  class ChoppingBlock(idx: Int, name: String) extends TransferState {
+    override def isReady: Boolean = buffer.nonEmpty
+    override def isCompleted: Boolean = false
+
+    private var buffer = ByteString.empty
+
+    /**
+     * Whether there are no bytes lying on this chopping block.
+     */
+    def isEmpty: Boolean = buffer.isEmpty
+
+    /**
+     * Pour as many bytes as are available either on the chopping block or in
+     * the inputBunch’s next ByteString into the supplied ByteBuffer, which is
+     * expected to be in “read left-overs” mode, i.e. everything between its
+     * position and limit is retained. In order to allocate a fresh ByteBuffer
+     * with these characteristics, use `prepare()`.
+     */
+    def chopInto(b: ByteBuffer): Unit = {
+      b.compact()
+      if (buffer.isEmpty) {
+        buffer = inputBunch.dequeue(idx) match {
+          // this class handles both UserIn and TransportIn
+          case bs: ByteString ⇒ bs
+          case SendBytes(bs)  ⇒ bs
+          case n: NegotiateNewSession ⇒
+            setNewSessionParameters(n)
+            ByteString.empty
+        }
+        if (tracing) log.debug(s"chopping from new chunk of ${buffer.size} into $name (${b.position})")
+      } else {
+        if (tracing) log.debug(s"chopping from old chunk of ${buffer.size} into $name (${b.position})")
+      }
+      val copied = buffer.copyToBuffer(b)
+      buffer = buffer.drop(copied)
+      b.flip()
+    }
+
+    /**
+     * When potentially complete packet data are left after unwrap() we must
+     * put them back onto the chopping block because otherwise the pump will
+     * not know that we are runnable.
+     */
+    def putBack(b: ByteBuffer): Unit =
+      if (b.hasRemaining()) {
+        if (tracing) log.debug(s"putting back ${b.remaining} bytes into $name")
+        val bs = ByteString(b)
+        if (bs.nonEmpty) buffer = bs ++ buffer
+        prepare(b)
+      }
+
+    /**
+     * Prepare a fresh ByteBuffer for receiving a chop of data.
+     */
+    def prepare(b: ByteBuffer): Unit = {
+      b.clear()
+      b.limit(0)
+    }
+  }
+
+  // These are Nettys default values
+  // 16665 + 1024 (room for compressed data) + 1024 (for OpenJDK compatibility)
+  val transportOutBuffer = ByteBuffer.allocate(16665 + 2048)
+  /*
+   * deviating here: chopping multiple input packets into this buffer can lead to
+   * an OVERFLOW signal that also is an UNDERFLOW; avoid unnecessary copying by
+   * increasing this buffer size to host up to two packets
+   */
+  val userOutBuffer = ByteBuffer.allocate(16665 * 2 + 2048)
+  val transportInBuffer = ByteBuffer.allocate(16665 + 2048)
+  val userInBuffer = ByteBuffer.allocate(16665 + 2048)
+
+  val userInChoppingBlock = new ChoppingBlock(UserIn, "UserIn")
+  userInChoppingBlock.prepare(userInBuffer)
+  val transportInChoppingBlock = new ChoppingBlock(TransportIn, "TransportIn")
+  transportInChoppingBlock.prepare(transportInBuffer)
+
+  val engine: SSLEngine = {
+    val e = sslContext.createSSLEngine()
+    e.setUseClientMode(role == Client)
+    e
+  }
+  var currentSession = engine.getSession
+  var currentSessionParameters = firstSession
+  applySessionParameters()
+
+  def applySessionParameters(): Unit = {
+    val csp = currentSessionParameters
+    import csp._
+    enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
+    enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))
+    clientAuth match {
+      case Some(ClientAuth.None) ⇒ engine.setNeedClientAuth(false)
+      case Some(ClientAuth.Want) ⇒ engine.setWantClientAuth(true)
+      case Some(ClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
+      case None                  ⇒ // do nothing
+    }
+    sslParameters foreach (p ⇒ engine.setSSLParameters(p))
+    engine.beginHandshake()
+    lastHandshakeStatus = engine.getHandshakeStatus
+  }
+
+  def setNewSessionParameters(n: NegotiateNewSession): Unit = {
+    if (tracing) log.debug(s"applying $n")
+    currentSession.invalidate()
+    currentSessionParameters = n
+    applySessionParameters()
+    corkUser = true
+  }
+
+  /*
+   * So here’s the big picture summary: the SSLEngine is the boss, and it can
+   * be in several states. Depending on this state, we may want to react to
+   * different input and output conditions.
+   *
+   *  - normal bidirectional operation (does both outbound and inbound)
+   *  - outbound close initiated, inbound still open
+   *  - inbound close initiated, outbound still open
+   *  - fully closed
+   *
+   * Upon reaching the last state we obviously just shut down. In addition to
+   * these user-data states, the engine may at any point in time also be
+   * handshaking. This is mostly transparent, but it has an influence on the
+   * outbound direction:
+   *
+   *  - if the local user triggered a re-negotiation, cork all user data until
+   *    that is finished
+   *  - if the outbound direction has been closed, trigger outbound readiness
+   *    based upon HandshakeStatus.NEED_WRAP
+   *
+   * These conditions lead to the introduction of a synthetic TransferState
+   * representing the Engine.
+   */
+
+  var lastHandshakeStatus: HandshakeStatus = _
+
+  val engineNeedsWrap = new TransferState {
+    def isReady = lastHandshakeStatus == NEED_WRAP
+    def isCompleted = false
+  }
+
+  val engineInboundOpen = new TransferState {
+    def isReady = !engine.isInboundDone()
+    def isCompleted = false
+  }
+
+  var corkUser = true
+
+  val userHasData = new TransferState {
+    private val user = inputBunch.inputsOrCompleteAvailableFor(UserIn) || userInChoppingBlock
+    def isReady = !corkUser && user.isReady && lastHandshakeStatus != NEED_UNWRAP
+    def isCompleted = false
+  }
+
+  val transportHasData = inputBunch.inputsOrCompleteAvailableFor(TransportIn) || transportInChoppingBlock
+  val userOutCancelled = new TransferState {
+    def isReady = outputBunch.isCancelled(UserOut)
+    def isCompleted = inputBunch.isDepleted(TransportIn)
+  }
+
+  // bidirectional case
+  val outbound = (userHasData || engineNeedsWrap) && outputBunch.demandAvailableFor(TransportOut)
+  val inbound = (transportHasData || userOutCancelled) && outputBunch.demandOrCancelAvailableFor(UserOut)
+
+  // half-closed
+  val outboundHalfClosed = engineNeedsWrap && outputBunch.demandAvailableFor(TransportOut)
+  val inboundHalfClosed = transportHasData && engineInboundOpen
+
+  def completeOrFlush(): Unit =
+    if (engine.isOutboundDone()) nextPhase(completedPhase)
+    else nextPhase(flushingOutbound)
+
+  private def doInbound(isOutboundClosed: Boolean, inboundState: TransferState): Boolean =
+    if (inputBunch.isDepleted(TransportIn) && transportInChoppingBlock.isEmpty) {
+      if (tracing) log.debug("closing inbound")
+      try engine.closeInbound()
+      catch { case ex: SSLException ⇒ outputBunch.enqueue(UserOut, SessionTruncated) }
+      completeOrFlush()
+      false
+    } else if (inboundState != inboundHalfClosed && outputBunch.isCancelled(UserOut)) {
+      if (!isOutboundClosed && closing.ignoreCancel) {
+        if (tracing) log.debug("ignoring UserIn cancellation")
+        nextPhase(inboundClosed)
+      } else {
+        if (tracing) log.debug("closing inbound due to UserOut cancellation")
+        engine.closeOutbound() // this is the correct way of shutting down the engine
+        lastHandshakeStatus = engine.getHandshakeStatus
+        nextPhase(flushingOutbound)
+      }
+      true
+    } else if (inboundState.isReady) {
+      transportInChoppingBlock.chopInto(transportInBuffer)
+      try {
+        doUnwrap()
+        true
+      } catch {
+        case ex: SSLException ⇒
+          if (tracing) log.debug(s"SSLException during doUnwrap: $ex")
+          completeOrFlush()
+          false
+      }
+    } else true
+
+  private def doOutbound(isInboundClosed: Boolean): Unit =
+    if (inputBunch.isDepleted(UserIn) && userInChoppingBlock.isEmpty) {
+      if (!isInboundClosed && closing.ignoreComplete) {
+        if (tracing) log.debug("ignoring closeOutbound")
+      } else {
+        if (tracing) log.debug("closing outbound directly")
+        engine.closeOutbound()
+        lastHandshakeStatus = engine.getHandshakeStatus
+      }
+      nextPhase(outboundClosed)
+    } else if (outputBunch.isCancelled(TransportOut)) {
+      nextPhase(completedPhase)
+    } else if (outbound.isReady) {
+      if (userHasData.isReady) userInChoppingBlock.chopInto(userInBuffer)
+      try doWrap()
+      catch {
+        case ex: SSLException ⇒
+          if (tracing) log.debug(s"SSLException during doWrap: $ex")
+          completeOrFlush()
+      }
+    }
+
+  val bidirectional = TransferPhase(outbound || inbound) { () ⇒
+    if (tracing) log.debug("bidirectional")
+    val continue = doInbound(isOutboundClosed = false, inbound)
+    if (continue) {
+      if (tracing) log.debug("bidirectional continue")
+      doOutbound(isInboundClosed = false)
+    }
+  }
+
+  val flushingOutbound = TransferPhase(outboundHalfClosed) { () ⇒
+    if (tracing) log.debug("flushingOutbound")
+    try doWrap()
+    catch { case ex: SSLException ⇒ nextPhase(completedPhase) }
+  }
+
+  val awaitingClose = TransferPhase(inputBunch.inputsAvailableFor(TransportIn)) { () ⇒
+    if (tracing) log.debug("awaitingClose")
+    transportInChoppingBlock.chopInto(transportInBuffer)
+    try doUnwrap(ignoreOutput = true)
+    catch { case ex: SSLException ⇒ nextPhase(completedPhase) }
+  }
+
+  val outboundClosed = TransferPhase(outboundHalfClosed || inbound) { () ⇒
+    if (tracing) log.debug("outboundClosed")
+    val continue = doInbound(isOutboundClosed = true, inbound)
+    if (continue && outboundHalfClosed.isReady) {
+      if (tracing) log.debug("outboundClosed continue")
+      try doWrap()
+      catch { case ex: SSLException ⇒ nextPhase(completedPhase) }
+    }
+  }
+
+  val inboundClosed = TransferPhase(outbound || inboundHalfClosed) { () ⇒
+    if (tracing) log.debug("inboundClosed")
+    val continue = doInbound(isOutboundClosed = false, inboundHalfClosed)
+    if (continue) {
+      if (tracing) log.debug("inboundClosed continue")
+      doOutbound(isInboundClosed = true)
+    }
+  }
+
+  def flushToTransport(): Unit = {
+    if (tracing) log.debug("flushToTransport")
+    transportOutBuffer.flip()
+    if (transportOutBuffer.hasRemaining) {
+      val bs = ByteString(transportOutBuffer)
+      outputBunch.enqueue(TransportOut, bs)
+      if (tracing) log.debug(s"sending ${bs.size} bytes")
+    }
+    transportOutBuffer.clear()
+  }
+
+  def flushToUser(): Unit = {
+    if (tracing) log.debug("flushToUser")
+    userOutBuffer.flip()
+    if (userOutBuffer.hasRemaining) {
+      val bs = ByteString(userOutBuffer)
+      outputBunch.enqueue(UserOut, SessionBytes(currentSession, bs))
+    }
+    userOutBuffer.clear()
+  }
+
+  private def doWrap(): Unit = {
+    val result = engine.wrap(userInBuffer, transportOutBuffer)
+    lastHandshakeStatus = result.getHandshakeStatus
+    if (tracing) log.debug(s"wrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${userInBuffer.remaining} out=${transportOutBuffer.position}")
+    if (lastHandshakeStatus == FINISHED) handshakeFinished()
+    runDelegatedTasks()
+    result.getStatus match {
+      case OK ⇒
+        flushToTransport()
+        userInChoppingBlock.putBack(userInBuffer)
+      case CLOSED ⇒
+        flushToTransport()
+        if (engine.isInboundDone()) nextPhase(completedPhase)
+        else nextPhase(awaitingClose)
+      case s ⇒ fail(new IllegalStateException(s"unexpected status $s in doWrap()"))
+    }
+  }
+
+  @tailrec
+  private def doUnwrap(ignoreOutput: Boolean = false): Unit = {
+    val result = engine.unwrap(transportInBuffer, userOutBuffer)
+    if (ignoreOutput) userOutBuffer.clear()
+    lastHandshakeStatus = result.getHandshakeStatus
+    if (tracing) log.debug(s"unwrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${transportInBuffer.remaining} out=${userOutBuffer.position}")
+    runDelegatedTasks()
+    result.getStatus match {
+      case OK ⇒
+        result.getHandshakeStatus match {
+          case NEED_WRAP ⇒ flushToUser()
+          case FINISHED ⇒
+            flushToUser()
+            handshakeFinished()
+            transportInChoppingBlock.putBack(transportInBuffer)
+          case _ ⇒
+            if (transportInBuffer.hasRemaining()) doUnwrap()
+            else flushToUser()
+        }
+      case CLOSED ⇒
+        flushToUser()
+        if (engine.isOutboundDone()) nextPhase(completedPhase)
+        else nextPhase(flushingOutbound)
+      case BUFFER_UNDERFLOW ⇒
+        flushToUser()
+      case BUFFER_OVERFLOW ⇒
+        flushToUser()
+        transportInChoppingBlock.putBack(transportInBuffer)
+      case s ⇒ fail(new IllegalStateException(s"unexpected status $s in doUnwrap()"))
+    }
+  }
+
+  @tailrec
+  private def runDelegatedTasks(): Unit = {
+    val task = engine.getDelegatedTask
+    if (task != null) {
+      if (tracing) log.debug("running task")
+      task.run()
+      runDelegatedTasks()
+    } else {
+      val st = lastHandshakeStatus
+      lastHandshakeStatus = engine.getHandshakeStatus
+      if (tracing && st != lastHandshakeStatus) log.debug(s"handshake status after tasks: $lastHandshakeStatus")
+    }
+  }
+
+  private def handshakeFinished(): Unit = {
+    if (tracing) log.debug("handshake finished")
+    currentSession = engine.getSession
+    corkUser = false
+  }
+
+  override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive)
+
+  nextPhase(bidirectional)
+
+  protected def fail(e: Throwable): Unit = {
+    // FIXME: escalate to supervisor
+    if (tracing) log.debug("fail {} due to: {}", self, e.getMessage)
+    inputBunch.cancel()
+    outputBunch.error(TransportOut, e)
+    outputBunch.error(UserOut, e)
+    context.stop(self)
+  }
+
+  override protected def pumpFailed(e: Throwable): Unit = fail(e)
+
+  override protected def pumpFinished(): Unit = {
+    inputBunch.cancel()
+    outputBunch.complete()
+    if (tracing) log.debug(s"STOP Outbound Closed: ${engine.isOutboundDone} Inbound closed: ${engine.isInboundDone}")
+    context.stop(self)
+  }
+}

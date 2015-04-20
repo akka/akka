@@ -108,18 +108,27 @@ private[akka] final case class Drop[T](count: Long) extends PushStage[T, T] {
  */
 private[akka] final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out, decider: Supervision.Decider) extends PushPullStage[In, Out] {
   private var aggregator = zero
+  private var pushedZero = false
 
   override def onPush(elem: In, ctx: Context[Out]): SyncDirective = {
-    val old = aggregator
-    aggregator = f(old, elem)
-    ctx.push(old)
+    if (pushedZero) {
+      aggregator = f(aggregator, elem)
+      ctx.push(aggregator)
+    } else {
+      aggregator = f(zero, elem)
+      ctx.push(zero)
+    }
   }
 
   override def onPull(ctx: Context[Out]): SyncDirective =
-    if (ctx.isFinishing) ctx.pushAndFinish(aggregator)
-    else ctx.pull()
+    if (!pushedZero) {
+      pushedZero = true
+      if (ctx.isFinishing) ctx.pushAndFinish(aggregator) else ctx.push(aggregator)
+    } else ctx.pull()
 
-  override def onUpstreamFinish(ctx: Context[Out]): TerminationDirective = ctx.absorbTermination()
+  override def onUpstreamFinish(ctx: Context[Out]): TerminationDirective =
+    if (pushedZero) ctx.finish()
+    else ctx.absorbTermination()
 
   override def decide(t: Throwable): Supervision.Directive = decider(t)
 

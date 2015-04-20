@@ -186,6 +186,16 @@ private[akka] object FanOut {
 
     def onCancel(output: Int): Unit = ()
 
+    def demandAvailableFor(id: Int) = new TransferState {
+      override def isCompleted: Boolean = cancelled(id) || completed(id)
+      override def isReady: Boolean = pending(id)
+    }
+
+    def demandOrCancelAvailableFor(id: Int) = new TransferState {
+      override def isCompleted: Boolean = false
+      override def isReady: Boolean = pending(id) || cancelled(id)
+    }
+
     /**
      * Will only transfer an element when all marked outputs
      * have demand, and will complete as soon as any of the marked

@@ -11,10 +11,15 @@ import akka.pattern.ask
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.GenJunctions.ZipWithModule
 import akka.stream.impl.Junctions._
+import akka.stream.impl.MultiStreamInputProcessor.SubstreamSubscriber
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.ActorInterpreter
+import akka.stream.impl.io.SslTlsCipherActor
 import akka.stream.scaladsl._
 import akka.stream._
+import akka.stream.io._
+import akka.stream.io.SslTls.TlsModule
+import akka.util.ByteString
 import org.reactivestreams._
 
 import scala.concurrent.{ Await, ExecutionContextExecutor }
@@ -82,6 +87,22 @@ private[akka] case class ActorFlowMaterializerImpl(override val settings: ActorF
             assignPort(stage.inPort, processor)
             assignPort(stage.outPort, processor)
             mat
+
+          case tls: TlsModule ⇒
+            val es = effectiveSettings(effectiveAttributes)
+            val props = SslTlsCipherActor.props(es, tls.sslContext, tls.firstSession, tracing = true, tls.role, tls.closing)
+            val impl = actorOf(props, stageName(effectiveAttributes), es.dispatcher)
+            def factory(id: Int) = new ActorPublisher[Any](impl) {
+              override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
+            }
+            val publishers = Vector.tabulate(2)(factory)
+            impl ! FanOut.ExposedPublishers(publishers)
+
+            assignPort(tls.plainOut, publishers(SslTlsCipherActor.UserOut))
+            assignPort(tls.cipherOut, publishers(SslTlsCipherActor.TransportOut))
+
+            assignPort(tls.plainIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.UserIn))
+            assignPort(tls.cipherIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.TransportIn))
 
           case junction: JunctionModule ⇒ materializeJunction(junction, effectiveAttributes, effectiveSettings(effectiveAttributes))
         }

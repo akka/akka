@@ -6,12 +6,12 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
-
 import scala.collection.immutable
-
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
+import akka.stream.ActorOperationAttributes
+import akka.stream.Supervision
 
 class FlowScanSpec extends AkkaSpec {
 
@@ -38,6 +38,21 @@ class FlowScanSpec extends AkkaSpec {
     "Scan empty" in {
       val v = Vector.empty[Int]
       scan(Source(v)) should be(v.scan(0)(_ + _))
+    }
+
+    "emit values promptly" in {
+      val f = Source.single(1).concat(Source.lazyEmpty).scan(0)(_ + _).grouped(2).runWith(Sink.head)
+      Await.result(f, 1.second) should be(Seq(0, 1))
+    }
+
+    "fail properly" in {
+      import ActorOperationAttributes._
+      val scan = Flow[Int].scan(0) { (old, current) ⇒
+        require(current > 0)
+        old + current
+      }.withAttributes(supervisionStrategy(Supervision.restartingDecider))
+      val f = Source(List(1, 3, -1, 5, 7)).via(scan).grouped(1000).runWith(Sink.head)
+      Await.result(f, 1.second) should be(Seq(0, 1, 4, 0, 5, 12))
     }
   }
 }

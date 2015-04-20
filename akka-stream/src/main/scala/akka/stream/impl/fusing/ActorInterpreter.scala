@@ -298,7 +298,7 @@ private[akka] object ActorInterpreter {
   def props(settings: ActorFlowMaterializerSettings, ops: Seq[Stage[_, _]], materializer: ActorFlowMaterializer): Props =
     Props(new ActorInterpreter(settings, ops, materializer))
 
-  case class AsyncInput(op: AsyncStage[Any, Any, Any], ctx: AsyncContext[Any, Any], event: Any)
+  case class AsyncInput(op: AsyncStage[Any, Any, Any], ctx: AsyncContext[Any, Any], event: Any) extends DeadLetterSuppression
 }
 
 /**

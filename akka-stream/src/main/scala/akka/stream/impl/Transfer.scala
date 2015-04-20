@@ -171,4 +171,3 @@ private[akka] trait Pump {
   protected def pumpFinished(): Unit
 
 }
-
