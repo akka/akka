@@ -248,7 +248,6 @@ private[akka] abstract class ActorProcessorImpl(val settings: ActorFlowMateriali
   with ActorLogging
   with Pump {
 
-  // FIXME: make pump a member
   protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.initialInputBufferSize, this) {
     override def inputOnError(e: Throwable): Unit = ActorProcessorImpl.this.onError(e)
   }
