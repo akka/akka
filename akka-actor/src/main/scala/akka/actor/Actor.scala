@@ -28,7 +28,7 @@ trait PossiblyHarmful
  */
 trait NoSerializationVerificationNeeded
 
-abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
+abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
 
 /**
  * A message all Actors will understand, that when processed will terminate the Actor permanently.
@@ -95,7 +95,8 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
 @SerialVersionUID(1L)
 final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
-  @BeanProperty val addressTerminated: Boolean) extends AutoReceivedMessage with PossiblyHarmful
+  @BeanProperty val addressTerminated: Boolean)
+  extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
 
 /**
  * INTERNAL API
@@ -107,7 +108,8 @@ final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
  * and translates this event to [[akka.actor.Terminated]], which is sent itself.
  */
 @SerialVersionUID(1L)
-private[akka] final case class AddressTerminated(address: Address) extends AutoReceivedMessage with PossiblyHarmful
+private[akka] final case class AddressTerminated(address: Address)
+  extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 
