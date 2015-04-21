@@ -40,10 +40,10 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
 
     val connections: Source[StreamTcp.IncomingConnection, Future[StreamTcp.ServerBinding]] =
       StreamTcp().bind(endpoint, backlog, options, effectiveSettings.timeouts.idleTimeout)
-    val layer = serverLayer(effectiveSettings, log)
 
     connections.map {
       case StreamTcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
+        val layer = serverLayer(effectiveSettings, log)
         IncomingConnection(localAddress, remoteAddress, layer join flow)
     }.mapMaterialized { tcpBindingFuture ⇒
       import system.dispatcher
