@@ -315,10 +315,10 @@ private[akka] object MultiStreamInputProcessor {
     }
   }
 
-  case class SubstreamOnComplete(key: SubstreamKey)
-  case class SubstreamOnNext(key: SubstreamKey, element: Any)
-  case class SubstreamOnError(key: SubstreamKey, e: Throwable)
-  case class SubstreamStreamOnSubscribe(key: SubstreamKey, subscription: Subscription)
+  case class SubstreamOnComplete(key: SubstreamKey) extends DeadLetterSuppression
+  case class SubstreamOnNext(key: SubstreamKey, element: Any) extends DeadLetterSuppression
+  case class SubstreamOnError(key: SubstreamKey, e: Throwable) extends DeadLetterSuppression
+  case class SubstreamStreamOnSubscribe(key: SubstreamKey, subscription: Subscription) extends DeadLetterSuppression
 
   class SubstreamInput(val key: SubstreamKey, bufferSize: Int, processor: MultiStreamInputProcessorLike, pump: Pump) extends BatchingInputBuffer(bufferSize, pump) {
     // Not driven directly
