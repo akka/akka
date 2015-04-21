@@ -26,6 +26,7 @@ import akka.ConfigurationException
 import akka.AkkaException
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.actor.Deploy
+import akka.actor.DeadLetterSuppression
 
 /**
  * The conductor is the one orchestrating the test: it governs the
@@ -367,7 +368,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
  * INTERNAL API.
  */
 private[akka] object Controller {
-  case class ClientDisconnected(name: RoleName)
+  case class ClientDisconnected(name: RoleName) extends DeadLetterSuppression
   class ClientDisconnectedException(msg: String) extends AkkaException(msg) with NoStackTrace
   case object GetNodes
   case object GetSockAddr
