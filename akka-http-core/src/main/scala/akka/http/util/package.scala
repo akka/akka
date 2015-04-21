@@ -43,13 +43,21 @@ package object util {
 
   private[http] implicit class SourceWithHeadAndTail[T, Mat](val underlying: Source[Source[T, Any], Mat]) extends AnyVal {
     def headAndTail: Source[(T, Source[T, Unit]), Mat] =
-      underlying.map { _.prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) } }
+      underlying.map {
+        _.prefixAndTail(1)
+          .filter(_._1.nonEmpty)
+          .map { case (prefix, tail) ⇒ (prefix.head, tail) }
+      }
         .flatten(FlattenStrategy.concat)
   }
 
   private[http] implicit class FlowWithHeadAndTail[In, Out, Mat](val underlying: Flow[In, Source[Out, Any], Mat]) extends AnyVal {
     def headAndTail: Flow[In, (Out, Source[Out, Unit]), Mat] =
-      underlying.map { _.prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) } }
+      underlying.map {
+        _.prefixAndTail(1)
+          .filter(_._1.nonEmpty)
+          .map { case (prefix, tail) ⇒ (prefix.head, tail) }
+      }
         .flatten(FlattenStrategy.concat)
   }
 
