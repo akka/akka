@@ -4,6 +4,8 @@
 
 package akka.http.engine.rendering
 
+import akka.http.engine.ws.{ WebsocketSwitch, UpgradeToWebsocketResponseHeader, Handshake }
+
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
@@ -21,7 +23,8 @@ import headers._
  */
 private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
                                                 responseHeaderSizeHint: Int,
-                                                log: LoggingAdapter) {
+                                                log: LoggingAdapter,
+                                                websocketSwitch: Option[WebsocketSwitch] = None) {
 
   private val renderDefaultServerHeader: Rendering ⇒ Unit =
     serverHeader match {
@@ -149,6 +152,11 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
             if (renderConnectionHeader)
               r ~~ Connection ~~ (if (close) CloseBytes else KeepAliveBytes) ~~ CrLf
+            else if (connHeader != null && connHeader.hasUpgrade && websocketSwitch.isDefined) {
+              r ~~ connHeader ~~ CrLf
+              val websocketHeader = headers.collectFirst { case u: UpgradeToWebsocketResponseHeader ⇒ u }
+              websocketHeader.foreach(header ⇒ websocketSwitch.get.switchToWebsocket(header.handlerFlow)(header.mat))
+            }
             if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
         }
