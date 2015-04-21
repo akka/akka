@@ -3,7 +3,7 @@ package docs.camel;
 import akka.actor.UntypedActor;
 import akka.camel.CamelMessage;
 import akka.dispatch.Mapper;
-import akka.japi.Function;
+import akka.japi.function.Function;
 
 public class Responder extends UntypedActor{
 

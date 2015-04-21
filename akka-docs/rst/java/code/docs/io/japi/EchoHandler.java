@@ -19,7 +19,7 @@ import akka.io.Tcp.Received;
 import akka.io.Tcp.Write;
 import akka.io.Tcp.WritingResumed;
 import akka.io.TcpMessage;
-import akka.japi.Procedure;
+import akka.japi.function.Procedure;
 import akka.util.ByteString;
 
 //#echo-handler

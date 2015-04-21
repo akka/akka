@@ -7,7 +7,7 @@ import static org.junit.Assert.*;
 
 import akka.actor.*;
 import akka.japi.Creator;
-import akka.japi.Function;
+import akka.japi.function.Function;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestProbe;

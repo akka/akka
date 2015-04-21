@@ -17,7 +17,7 @@ import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
 import scala.concurrent.Future;
 import akka.japi.Option;
-import akka.japi.Procedure;
+import akka.japi.function.Procedure;
 
 //#plugin-imports
 import akka.persistence.*;

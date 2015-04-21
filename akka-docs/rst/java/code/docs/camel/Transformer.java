@@ -3,7 +3,7 @@ package docs.camel;
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedProducerActor;
 import akka.dispatch.Mapper;
-import akka.japi.Function;
+import akka.japi.function.Function;
 
 public class Transformer extends UntypedProducerActor{
   private String uri;

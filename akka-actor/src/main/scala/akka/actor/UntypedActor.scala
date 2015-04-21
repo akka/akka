@@ -4,8 +4,6 @@
 
 package akka.actor
 
-import akka.japi.{ Creator }
-
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
  * <a href="http://en.wikipedia.org/wiki/Actor_model">http://en.wikipedia.org/wiki/Actor_model</a>

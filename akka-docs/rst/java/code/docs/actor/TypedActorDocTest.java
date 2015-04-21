@@ -7,7 +7,9 @@ package docs.actor;
 
 import akka.actor.TypedActor;
 import akka.actor.*;
-import akka.japi.*;
+import akka.japi.function.*;
+import akka.japi.Creator;
+import akka.japi.Option;
 import akka.dispatch.Futures;
 
 import scala.concurrent.Await;

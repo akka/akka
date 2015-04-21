@@ -29,7 +29,7 @@ import akka.testkit.TestEvent;
 import akka.testkit.JavaTestKit;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static akka.japi.Util.immutableSeq;
-import akka.japi.Function;
+import akka.japi.function.Function;
 import scala.Option;
 
 import org.junit.Test;

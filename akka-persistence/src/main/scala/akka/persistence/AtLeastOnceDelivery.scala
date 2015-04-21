@@ -346,6 +346,10 @@ abstract class UntypedPersistentActorWithAtLeastOnceDelivery extends UntypedPers
    * This method will throw [[AtLeastOnceDelivery.MaxUnconfirmedMessagesExceededException]]
    * if [[numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
+  def deliver(destination: ActorPath, deliveryIdToMessage: akka.japi.function.Function[java.lang.Long, Object]): Unit =
+    super.deliver(destination, id ⇒ deliveryIdToMessage.apply(id))
+
+  @deprecated("Use deliver with akka.japi.function.Function parameter", "2.4")
   def deliver(destination: ActorPath, deliveryIdToMessage: akka.japi.Function[java.lang.Long, Object]): Unit =
     super.deliver(destination, id ⇒ deliveryIdToMessage.apply(id))
 }
@@ -380,6 +384,8 @@ abstract class AbstractPersistentActorWithAtLeastOnceDelivery extends AbstractPe
    * This method will throw [[AtLeastOnceDelivery.MaxUnconfirmedMessagesExceededException]]
    * if [[numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
-  def deliver(destination: ActorPath, deliveryIdToMessage: akka.japi.Function[java.lang.Long, Object]): Unit =
+  def deliver(destination: ActorPath, deliveryIdToMessage: akka.japi.function.Function[java.lang.Long, Object]): Unit =
     super.deliver(destination, id ⇒ deliveryIdToMessage.apply(id))
+
+  // FIXME @deprecated deliver with akka.japi.Function. How would java8 know which one to pick when param is lambda?
 }

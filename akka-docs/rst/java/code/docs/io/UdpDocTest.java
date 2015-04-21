@@ -12,7 +12,7 @@ import akka.io.Udp;
 import akka.io.UdpConnected;
 import akka.io.UdpConnectedMessage;
 import akka.io.UdpMessage;
-import akka.japi.Procedure;
+import akka.japi.function.Procedure;
 import akka.util.ByteString;
 
 import java.net.InetSocketAddress;

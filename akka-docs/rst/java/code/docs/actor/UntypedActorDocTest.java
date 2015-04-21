@@ -69,9 +69,9 @@ import akka.actor.UntypedActorWithStash;
 import akka.dispatch.Futures;
 import akka.dispatch.Mapper;
 //#import-ask
-import akka.japi.Function;
+import akka.japi.function.Function;
 //#import-procedure
-import akka.japi.Procedure;
+import akka.japi.function.Procedure;
 //#import-procedure
 //#import-gracefulStop
 import akka.pattern.AskTimeoutException;

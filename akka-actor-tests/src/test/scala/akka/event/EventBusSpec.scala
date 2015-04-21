@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.atomic._
 
 import akka.actor.{ Props, Actor, ActorRef, ActorSystem, PoisonPill, RootActorPath }
-import akka.japi.{ Procedure, Function }
+import akka.japi.function.{ Procedure, Function }
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Await
 
