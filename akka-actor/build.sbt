@@ -14,3 +14,6 @@ OSGi.actor
 libraryDependencies ++= Dependencies.actor
 
 MimaKeys.previousArtifact := akkaPreviousArtifact("akka-actor").value
+
+spray.boilerplate.BoilerplatePlugin.Boilerplate.settings
+
