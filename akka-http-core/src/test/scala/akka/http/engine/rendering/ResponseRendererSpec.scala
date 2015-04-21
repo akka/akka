@@ -540,7 +540,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   override def afterAll() = system.shutdown()
 
   class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0")))
-    extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging) {
+    extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging, None) {
 
     def renderTo(expected: String): Matcher[HttpResponse] =
       renderTo(expected, close = false) compose (ResponseRenderingContext(_))
