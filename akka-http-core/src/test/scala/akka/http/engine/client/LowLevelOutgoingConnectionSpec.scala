@@ -17,10 +17,10 @@ import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._
 
-class OutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
+class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
   implicit val materializer = ActorFlowMaterializer()
 
-  "The client implementation" should {
+  "The connection-level client implementation" should {
 
     "handle a request/response round-trip" which {
 
