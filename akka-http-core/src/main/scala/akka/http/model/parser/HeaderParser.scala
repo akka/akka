@@ -26,7 +26,8 @@ private[http] class HeaderParser(val input: ParserInput) extends Parser with Dyn
   with IpAddressParsing
   with LinkHeader
   with SimpleHeaders
-  with StringBuilding {
+  with StringBuilding
+  with WebsocketHeaders {
   import CharacterClasses._
 
   // http://www.rfc-editor.org/errata_search.php?rfc=7230 errata id 4189
@@ -111,8 +112,14 @@ private[http] object HeaderParser {
     "range",
     "referer",
     "server",
+    "sec-websocket-accept",
+    "sec-websocket-extensions",
+    "sec-websocket-key",
+    "sec-websocket-protocol",
+    "sec-websocket-version",
     "set-cookie",
     "transfer-encoding",
+    "upgrade",
     "user-agent",
     "www-authenticate",
     "x-forwarded-for")

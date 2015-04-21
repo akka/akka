@@ -5,13 +5,17 @@
 package akka.http.util
 
 import java.io.InputStream
-import java.util.concurrent.atomic.AtomicBoolean
-import org.reactivestreams.Publisher
+import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
+import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.{ SourceModule, SinkModule, ActorFlowMaterializerImpl, PublisherSink }
+import akka.stream.scaladsl.FlexiMerge._
+import org.reactivestreams.{ Subscription, Processor, Subscriber, Publisher }
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import akka.util.ByteString
 import akka.http.model.RequestEntity
-import akka.stream.{ FlowMaterializer, impl, OperationAttributes, ActorOperationAttributes }
+import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 
@@ -192,6 +196,79 @@ private[http] object StreamUtils {
         throw new IllegalStateException("One time source can only be instantiated once")
       elem
     }
+  }
+
+  def oneTimePublisherSink[In](cell: OneTimeWriteCell[Publisher[In]], name: String): Sink[In, Publisher[In]] =
+    new Sink[In, Publisher[In]](new OneTimePublisherSink(none, SinkShape(new Inlet(name)), cell))
+  def oneTimeSubscriberSource[Out](cell: OneTimeWriteCell[Subscriber[Out]], name: String): Source[Out, Subscriber[Out]] =
+    new Source[Out, Subscriber[Out]](new OneTimeSubscriberSource(none, SourceShape(new Outlet(name)), cell))
+
+  /** A copy of PublisherSink that allows access to the publisher through the cell but can only materialized once */
+  private class OneTimePublisherSink[In](attributes: OperationAttributes, shape: SinkShape[In], cell: OneTimeWriteCell[Publisher[In]])
+    extends PublisherSink[In](attributes, shape) {
+    override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
+      val results = super.create(context)
+      cell.set(results._2)
+      results
+    }
+    override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
+      new OneTimePublisherSink[In](attributes, shape, cell)
+
+    override def withAttributes(attr: OperationAttributes): Module =
+      new OneTimePublisherSink[In](attr, amendShape(attr), cell)
+  }
+  /** A copy of SubscriberSource that allows access to the subscriber through the cell but can only materialized once */
+  private class OneTimeSubscriberSource[Out](val attributes: OperationAttributes, shape: SourceShape[Out], cell: OneTimeWriteCell[Subscriber[Out]])
+    extends SourceModule[Out, Subscriber[Out]](shape) {
+
+    override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
+      val processor = new Processor[Out, Out] {
+        @volatile private var subscriber: Subscriber[_ >: Out] = null
+
+        override def subscribe(s: Subscriber[_ >: Out]): Unit = subscriber = s
+
+        override def onError(t: Throwable): Unit = subscriber.onError(t)
+        override def onSubscribe(s: Subscription): Unit = subscriber.onSubscribe(s)
+        override def onComplete(): Unit = subscriber.onComplete()
+        override def onNext(t: Out): Unit = subscriber.onNext(t)
+      }
+      cell.setValue(processor)
+
+      (processor, processor)
+    }
+
+    override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] =
+      new OneTimeSubscriberSource[Out](attributes, shape, cell)
+    override def withAttributes(attr: OperationAttributes): Module =
+      new OneTimeSubscriberSource[Out](attr, amendShape(attr), cell)
+  }
+
+  trait ReadableCell[+T] {
+    def value: T
+  }
+  /** A one time settable cell */
+  class OneTimeWriteCell[T <: AnyRef] extends AtomicReference[T] with ReadableCell[T] {
+    def value: T = {
+      val value = get()
+      require(value != null, "Value wasn't set yet")
+      value
+    }
+
+    def setValue(value: T): Unit =
+      if (!compareAndSet(null.asInstanceOf[T], value))
+        throw new IllegalStateException("Value can be only set once.")
+  }
+
+  /** A merge for two streams that just forwards all elements and closes the connection eagerly. */
+  class EagerCloseMerge2[T](name: String) extends FlexiMerge[T, FanInShape2[T, T, T]](new FanInShape2(name), OperationAttributes.name(name)) {
+    def createMergeLogic(s: FanInShape2[T, T, T]): MergeLogic[T] =
+      new MergeLogic[T] {
+        def initialState: State[T] = State[T](ReadAny(s.in0, s.in1)) {
+          case (ctx, port, in) ⇒ ctx.emit(in); SameState
+        }
+
+        override def initialCompletionHandling: CompletionHandling = eagerClose
+      }
   }
 }
 
