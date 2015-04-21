@@ -311,7 +311,13 @@ private[stream] class VirtualSubscriber[T](val owner: VirtualPublisher[T]) exten
  */
 private[stream] class VirtualPublisher[T]() extends Publisher[T] {
   @volatile var realPublisher: Publisher[T] = null
-  override def subscribe(s: Subscriber[_ >: T]): Unit = realPublisher.subscribe(s)
+  override def subscribe(s: Subscriber[_ >: T]): Unit = {
+    val sub = realPublisher.subscribe(s)
+    // unreference the realPublisher to facilitate GC and
+    // Sink.publisher is supposed to reject additional subscribers anyway
+    realPublisher = RejectAdditionalSubscibers[T]
+    sub
+  }
 }
 
 /**
