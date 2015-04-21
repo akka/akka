@@ -88,10 +88,10 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
       if (readByte() != 8) fail("Unsupported GZIP compression method") // check compression method
       val flags = readByte()
       skip(6) // skip MTIME, XFL and OS fields
-      if ((flags & 4) > 0) skip(readShort()) // skip optional extra fields
+      if ((flags & 4) > 0) skip(readShortLE()) // skip optional extra fields
       if ((flags & 8) > 0) skipZeroTerminatedString() // skip optional file name
       if ((flags & 16) > 0) skipZeroTerminatedString() // skip optional file comment
-      if ((flags & 2) > 0 && crc16(fromStartToHere) != readShort()) fail("Corrupt GZIP header")
+      if ((flags & 2) > 0 && crc16(fromStartToHere) != readShortLE()) fail("Corrupt GZIP header")
 
       inflater.reset()
       crc32.reset()
@@ -107,8 +107,8 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
     def read(reader: ByteReader, ctx: Context[ByteString]): SyncDirective = {
       import reader._
 
-      if (readInt() != crc32.getValue.toInt) fail("Corrupt data (CRC32 checksum error)")
-      if (readInt() != inflater.getBytesWritten.toInt /* truncated to 32bit */ ) fail("Corrupt GZIP trailer ISIZE")
+      if (readIntLE() != crc32.getValue.toInt) fail("Corrupt data (CRC32 checksum error)")
+      if (readIntLE() != inflater.getBytesWritten.toInt /* truncated to 32bit */ ) fail("Corrupt GZIP trailer ISIZE")
 
       becomeWithRemaining(Initial, remainingData, ctx)
     }

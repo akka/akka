@@ -18,6 +18,8 @@ private[akka] class ByteReader(input: ByteString) {
 
   private[this] var off = 0
 
+  def hasRemaining: Boolean = off < input.size
+
   def currentOffset: Int = off
   def remainingData: ByteString = input.drop(off)
   def fromStartToHere: ByteString = input.take(currentOffset)
@@ -28,8 +30,14 @@ private[akka] class ByteReader(input: ByteString) {
       off += 1
       x.toInt & 0xFF
     } else throw NeedMoreData
-  def readShort(): Int = readByte() | (readByte() << 8)
-  def readInt(): Int = readShort() | (readShort() << 16)
+  def readShortLE(): Int = readByte() | (readByte() << 8)
+  def readIntLE(): Int = readShortLE() | (readShortLE() << 16)
+  def readLongLE(): Long = (readIntBE() & 0xffffffffL) | ((readIntLE() & 0xffffffffL) << 32)
+
+  def readShortBE(): Int = (readByte() << 8) | readByte()
+  def readIntBE(): Int = (readShortBE() << 16) | readShortBE()
+  def readLongBE(): Long = ((readIntBE() & 0xffffffffL) << 32) | (readIntBE() & 0xffffffffL)
+
   def skip(numBytes: Int): Unit =
     if (off + numBytes <= input.length) off += numBytes
     else throw NeedMoreData
