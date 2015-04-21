@@ -5,6 +5,8 @@
 package akka.http.engine.parsing
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import akka.http.engine.ws.Handshake
+
 import scala.annotation.tailrec
 import akka.actor.ActorRef
 import akka.stream.OperationAttributes._
@@ -121,9 +123,18 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
     if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
       def emitRequestStart(createEntity: Source[RequestOutput, Unit] ⇒ RequestEntity,
                            headers: List[HttpHeader] = headers) = {
-        val allHeaders =
+        val allHeaders0 =
           if (rawRequestUriHeader) `Raw-Request-URI`(new String(uriBytes, HttpCharsets.`US-ASCII`.nioCharset)) :: headers
           else headers
+
+        val allHeaders =
+          if (method == HttpMethods.GET) {
+            Handshake.isWebsocketUpgrade(headers, hostHeaderPresent) match {
+              case Some(upgrade) ⇒ upgrade :: allHeaders0
+              case None          ⇒ allHeaders0
+            }
+          } else allHeaders0
+
         emit(RequestStart(method, uri, protocol, allHeaders, createEntity, expect100continue, closeAfterResponseCompletion))
       }
 
