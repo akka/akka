@@ -6,12 +6,9 @@ package akka.util
 
 import java.nio.{ ByteBuffer, ByteOrder }
 
-import scala.collection.{ LinearSeq, IndexedSeqOptimized }
-import scala.collection.mutable.{ Builder, WrappedArray }
-import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
-import scala.collection.generic.CanBuildFrom
-import scala.collection.mutable.{ ListBuffer }
 import scala.annotation.tailrec
+import scala.collection.LinearSeq
+import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
 object ByteIterator {
@@ -203,7 +200,7 @@ object ByteIterator {
     final override def len: Int = iterators.foldLeft(0) { _ + _.len }
 
     final override def length: Int = {
-      var result = len
+      val result = len
       clear()
       result
     }
@@ -555,6 +552,26 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
    * copyToArray, this method will fail if length < n or if (xs.length - offset) < n.
    */
   def getBytes(xs: Array[Byte], offset: Int, n: Int): this.type
+
+  /**
+   * Get a specific number of Bytes from this iterator. In contrast to
+   * copyToArray, this method will fail if this.len < n.
+   */
+  def getBytes(n: Int): Array[Byte] = {
+    val bytes = new Array[Byte](n)
+    getBytes(bytes, 0, n)
+    bytes
+  }
+
+  /**
+   * Get a ByteString with specific number of Bytes from this iterator. In contrast to
+   * copyToArray, this method will fail if this.len < n.
+   */
+  def getByteString(n: Int): ByteString = {
+    val bs = clone.take(n).toByteString
+    drop(n)
+    bs
+  }
 
   /**
    * Get a number of Shorts from this iterator.
