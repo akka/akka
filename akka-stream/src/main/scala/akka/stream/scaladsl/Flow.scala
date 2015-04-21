@@ -300,6 +300,11 @@ object Flow extends FlowApply {
    */
   def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] = new Flow(g.module)
 
+  /**
+   * Helper to create `Flow` from a pair of sink and source.
+   */
+  def wrap[I, O, M1, M2, M](sink: Sink[I, M1], source: Source[O, M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
+    Flow(sink, source)(f) { implicit b ⇒ (in, out) ⇒ (in.inlet, out.outlet) }
 }
 
 /**
