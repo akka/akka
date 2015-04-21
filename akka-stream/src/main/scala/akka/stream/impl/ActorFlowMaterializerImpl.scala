@@ -126,6 +126,7 @@ private[akka] case class ActorFlowMaterializerImpl(override val settings: ActorF
             }
             val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
             val publisher = new ActorPublisher[Any](impl)
+            // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
             impl ! ExposedPublisher(publisher)
             for ((in, id) ← inputs.zipWithIndex) {
               assignPort(in, FanIn.SubInput[Any](impl, id))
@@ -281,6 +282,7 @@ private[akka] object ActorProcessorFactory {
 
   def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
     val p = new ActorProcessor[I, O](impl)
+    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
     impl ! ExposedPublisher(p.asInstanceOf[ActorPublisher[Any]])
     p
   }
