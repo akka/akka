@@ -164,6 +164,11 @@ case object AuthorizationFailedRejection extends Rejection
 case class MissingCookieRejection(cookieName: String) extends Rejection
 
 /**
+ * Rejection created when a websocket request was expected but none was found.
+ */
+case object ExpectedWebsocketRequestRejection extends Rejection
+
+/**
  * Rejection created by the `validation` directive as well as for `IllegalArgumentExceptions`
  * thrown by domain model constructors (e.g. via `require`).
  * It signals that an expected value was semantically invalid.

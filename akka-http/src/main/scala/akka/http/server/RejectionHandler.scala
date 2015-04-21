@@ -206,6 +206,7 @@ object RejectionHandler {
         val supported = rejections.map(_.supported.value).mkString(" or ")
         complete(BadRequest, "The request's Content-Encoding is not supported. Expected:\n" + supported)
       }
+      .handle { case ExpectedWebsocketRequestRejection ⇒ complete(BadRequest, "Expected Websocket Upgrade request") }
       .handle { case ValidationRejection(msg, _) ⇒ complete(BadRequest, msg) }
       .handle { case x ⇒ sys.error("Unhandled rejection: " + x) }
       .handleNotFound { complete(NotFound, "The requested resource could not be found.") }
