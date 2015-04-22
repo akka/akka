@@ -29,6 +29,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberUp
+import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.pattern.ask
@@ -676,7 +677,9 @@ class ShardRegion(
         changeMembers(membersByAge + m)
 
     case MemberRemoved(m, _) ⇒
-      if (matchingRole(m))
+      if (m.uniqueAddress == cluster.selfUniqueAddress)
+        context.stop(self)
+      else if (matchingRole(m))
         changeMembers(membersByAge - m)
 
     case _ ⇒ unhandled(evt)
@@ -770,7 +773,7 @@ class ShardRegion(
       entries -= ref
       if (passivatingBuffers.contains(ref)) {
         log.debug("Passivating completed {}, buffered [{}]", ref, passivatingBuffers(ref).size)
-        // deliver messages that were received between Passivate and Terminated, 
+        // deliver messages that were received between Passivate and Terminated,
         // will create new entry instance and deliver the messages to it
         passivatingBuffers(ref) foreach {
           case (msg, snd) ⇒ deliverMessage(msg, snd)
@@ -1090,7 +1093,7 @@ object ShardCoordinator {
      * Persistent state of the event sourced ShardCoordinator.
      */
     @SerialVersionUID(1L) case class State private (
-      // region for each shard   
+      // region for each shard
       val shards: Map[ShardId, ActorRef] = Map.empty,
       // shards for each region
       val regions: Map[ActorRef, Vector[ShardId]] = Map.empty,
@@ -1205,12 +1208,15 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
   val rebalanceTask = context.system.scheduler.schedule(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
   val snapshotTask = context.system.scheduler.schedule(snapshotInterval, snapshotInterval, self, SnapshotTick)
 
+  Cluster(context.system).subscribe(self, ClusterShuttingDown.getClass)
+
   // this will be stashed and received when the recovery is completed
   self ! AfterRecover
 
   override def postStop(): Unit = {
     super.postStop()
     rebalanceTask.cancel()
+    Cluster(context.system).unsubscribe(self)
   }
 
   override def receiveRecover: Receive = {
@@ -1331,6 +1337,18 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
       persistentState.regionProxies.foreach(context.watch)
       persistentState.regions.foreach { case (a, _) ⇒ context.watch(a) }
 
+    case ClusterShuttingDown ⇒
+      log.debug("Shutting down ShardCoordinator")
+      // can't stop because supervisor will start it again,
+      // it will soon be stopped when singleton is stopped
+      context.become(shuttingDown)
+
+    case _: CurrentClusterState ⇒
+
+  }
+
+  def shuttingDown: Receive = {
+    case _ ⇒ // ignore all
   }
 
 }

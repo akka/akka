@@ -61,6 +61,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
     memberSubscriber = TestProbe()
     system.eventStream.subscribe(memberSubscriber.ref, classOf[MemberEvent])
     system.eventStream.subscribe(memberSubscriber.ref, classOf[LeaderChanged])
+    system.eventStream.subscribe(memberSubscriber.ref, ClusterShuttingDown.getClass)
 
     publisher = system.actorOf(Props[ClusterDomainEventPublisher])
     publisher ! PublishChanges(g0)
@@ -167,8 +168,9 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       subscriber.expectNoMsg(500 millis)
     }
 
-    "publish Removed when stopped" in {
+    "publish ClusterShuttingDown and Removed when stopped" in {
       publisher ! PoisonPill
+      memberSubscriber.expectMsg(ClusterShuttingDown)
       memberSubscriber.expectMsg(MemberRemoved(aRemoved, Up))
     }
 
