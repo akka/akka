@@ -116,7 +116,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
 
   val numberOfShards = 12
 
-  val shardResolver: ShardRegion.ShardResolver = msg ⇒ msg match {
+  val shardResolver: ShardRegion.ShardResolver = {
     case EntryEnvelope(id, _) ⇒ (id % numberOfShards).toString
     case Get(id)              ⇒ (id % numberOfShards).toString
   }
@@ -135,7 +135,7 @@ object ClusterShardingDocCode {
 
   val numberOfShards = 100
 
-  val shardResolver: ShardRegion.ShardResolver = msg ⇒ msg match {
+  val shardResolver: ShardRegion.ShardResolver = {
     case EntryEnvelope(id, _) ⇒ (id % numberOfShards).toString
     case Get(id)              ⇒ (id % numberOfShards).toString
   }
