@@ -14,6 +14,8 @@ import akka.http.util.Rendering
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
 
+import scala.collection.immutable.Seq
+
 class WebsocketDirectivesSpec extends RoutingSpec {
   "the handleWebsocketMessages directive" should {
     "handle websocket requests" in {
@@ -39,7 +41,9 @@ class WebsocketDirectivesSpec extends RoutingSpec {
     }
   def upgradeToWebsocketHeaderMock: UpgradeToWebsocket =
     new InternalCustomHeader("UpgradeToWebsocketMock") with UpgradeToWebsocket {
-      def handleMessages(handlerFlow: Flow[Message, Message, Any])(implicit mat: FlowMaterializer): HttpResponse =
+      def requestedProtocols: Seq[String] = Nil
+
+      def handleMessages(handlerFlow: Flow[Message, Message, Any], subprotocol: Option[String])(implicit mat: FlowMaterializer): HttpResponse =
         HttpResponse(StatusCodes.SwitchingProtocols)
     }
 }
