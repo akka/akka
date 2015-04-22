@@ -11,6 +11,7 @@ import akka.parboiled2.util.Base64
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
 
+import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
 
 /**
@@ -70,6 +71,7 @@ private[http] object Handshake {
     val version = find[`Sec-WebSocket-Version`]
     val origin = find[Origin]
     val protocol = find[`Sec-WebSocket-Protocol`]
+    val supportedProtocols = protocol.toList.flatMap(_.protocols)
     val extensions = find[`Sec-WebSocket-Extensions`]
 
     def isValidKey(key: String): Boolean = Base64.rfc2045().decode(key).length == 16
@@ -80,8 +82,13 @@ private[http] object Handshake {
       key.exists(k ⇒ isValidKey(k.key))) {
 
       val header = new UpgradeToWebsocketLowLevel {
-        def handleFrames(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: FlowMaterializer): HttpResponse =
-          buildResponse(key.get, handlerFlow)
+        def requestedProtocols: Seq[String] = supportedProtocols
+
+        def handleFrames(handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String])(implicit mat: FlowMaterializer): HttpResponse = {
+          require(subprotocol.forall(chosen ⇒ supportedProtocols.contains(chosen)),
+            s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
+          buildResponse(key.get, handlerFlow, subprotocol)
+        }
       }
       Some(header)
     } else None
@@ -106,12 +113,13 @@ private[http] object Handshake {
         concatenated value to obtain a 20-byte value and base64-
         encoding (see Section 4 of [RFC4648]) this 20-byte hash.
    */
-  def buildResponse(key: `Sec-WebSocket-Key`, handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: FlowMaterializer): HttpResponse =
+  def buildResponse(key: `Sec-WebSocket-Key`, handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String])(implicit mat: FlowMaterializer): HttpResponse =
     HttpResponse(
       StatusCodes.SwitchingProtocols,
-      List(
-        Upgrade(List(UpgradeProtocol("websocket"))),
-        Connection(List("upgrade")),
-        `Sec-WebSocket-Accept`.forKey(key),
-        UpgradeToWebsocketResponseHeader(handlerFlow)))
+      subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(Seq(p))).toList :::
+        List(
+          Upgrade(List(UpgradeProtocol("websocket"))),
+          Connection(List("upgrade")),
+          `Sec-WebSocket-Accept`.forKey(key),
+          UpgradeToWebsocketResponseHeader(handlerFlow)))
 }
