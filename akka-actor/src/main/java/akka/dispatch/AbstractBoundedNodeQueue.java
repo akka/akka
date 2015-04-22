@@ -167,9 +167,17 @@ public abstract class AbstractBoundedNodeQueue<T> {
             final Node<T> deq = getDeq();
             final Node<T> next = deq.next();
             if (next != null) {
+                //Can't rely on next.value after casDeq because 'next' can be popped by another thread already
+                //before this one finishes. 
+                //Thus reading and storing the value before casDeq is needed. 
+                T nextVal = next.value;
                 if (casDeq(deq, next)) {
-                    deq.value = next.value;
-                    next.value = null;
+                    deq.value = nextVal;
+                    
+                    //Only set this to null if next still contains the expected
+                    //value. If not, "deq.value = nextVal" has already happened on a different thread.
+                    //and we don't want to override that since that's another value popping.
+                    next.casNullValue(nextVal);
                     return deq;
                 } // else we retry (concurrent consumers)
             } else if (getEnq() == deq) return null; // If we got a null and head meets tail, we are empty
@@ -188,7 +196,9 @@ public abstract class AbstractBoundedNodeQueue<T> {
     }
 
     public static class Node<T> {
-        protected T value;
+        //must be volatile, writes from other threads otherwise can be missed since values
+        //can allready be cached by the current thread. Effectively returning a stale/different value.
+        protected volatile T value;
         @SuppressWarnings("unused")
         private volatile Node<T> _nextDoNotCallMeDirectly;
         protected int count;
@@ -202,11 +212,17 @@ public abstract class AbstractBoundedNodeQueue<T> {
           Unsafe.instance.putOrderedObject(this, nextOffset, newNext);
         }
         
+        protected void casNullValue(T expected) {
+           Unsafe.instance.compareAndSwapObject(this, valueOffset, expected, null); 
+        }
+        
         private final static long nextOffset;
+        private final static long valueOffset;
         
         static {
             try {
                 nextOffset = Unsafe.instance.objectFieldOffset(Node.class.getDeclaredField("_nextDoNotCallMeDirectly"));
+                valueOffset = Unsafe.instance.objectFieldOffset(Node.class.getDeclaredField("value"));
             } catch(Throwable t){
                 throw new ExceptionInInitializerError(t);
             } 
