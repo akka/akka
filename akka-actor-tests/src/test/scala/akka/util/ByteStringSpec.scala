@@ -4,23 +4,19 @@
 
 package akka.util
 
-import java.io.{ ByteArrayInputStream, ObjectInputStream, ObjectOutputStream, ByteArrayOutputStream }
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream }
+import java.lang.Double.doubleToRawLongBits
+import java.lang.Float.floatToRawIntBits
+import java.nio.{ ByteBuffer, ByteOrder }
+import java.nio.ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
-import org.scalatest.prop.Checkers
-import org.scalacheck.Arbitrary
+import org.apache.commons.codec.binary.Hex.encodeHex
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Gen
-
-import org.apache.commons.codec.binary.Hex.{ encodeHex, decodeHex }
+import org.scalacheck.{ Arbitrary, Gen }
+import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.prop.Checkers
 
 import scala.collection.mutable.Builder
-
-import java.nio.{ ByteBuffer }
-import java.nio.ByteOrder, ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
-import java.lang.Float.floatToRawIntBits
-import java.lang.Double.doubleToRawLongBits
 
 class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
@@ -479,6 +475,24 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           input.getBytes(output, from, to - from)
           for (i ← to until bytes.length) output(i) = input.getByte
           (output.toSeq == bytes) && (input.isEmpty)
+        }
+      }
+
+      "getting Bytes with a given length" in {
+        check {
+          slice: ByteStringSlice ⇒
+            val (bytes, _, _) = slice
+            val input = bytes.iterator
+            (input.getBytes(bytes.length).toSeq == bytes) && input.isEmpty
+        }
+      }
+
+      "getting ByteString with a given length" in {
+        check {
+          slice: ByteStringSlice ⇒
+            val (bytes, _, _) = slice
+            val input = bytes.iterator
+            (input.getByteString(bytes.length) == bytes) && input.isEmpty
         }
       }
 
