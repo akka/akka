@@ -5,6 +5,8 @@ package akka.dispatch.sysmsg
 
 import scala.annotation.tailrec
 import akka.actor.{ ActorInitializationException, InternalActorRef, ActorRef, PossiblyHarmful }
+import akka.actor.DeadLetterSuppression
+import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
@@ -227,7 +229,7 @@ private[akka] case class Resume(causedByFailure: Throwable) extends SystemMessag
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
+private[akka] case class Terminate() extends SystemMessage with DeadLetterSuppression // sent to self from ActorCell.stop
 /**
  * INTERNAL API
  */
@@ -261,4 +263,4 @@ private[akka] case class Failed(child: ActorRef, cause: Throwable, uid: Int) ext
 private[akka] case class DeathWatchNotification(
   actor: ActorRef,
   existenceConfirmed: Boolean,
-  addressTerminated: Boolean) extends SystemMessage
+  addressTerminated: Boolean) extends SystemMessage with DeadLetterSuppression
