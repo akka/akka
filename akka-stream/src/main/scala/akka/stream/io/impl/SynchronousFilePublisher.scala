@@ -50,7 +50,7 @@ private[akka] class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[
       readAndSignal(initialBuffer)
     } catch {
       case ex: Exception ⇒
-        onError(ex)
+        onErrorThenStop(ex)
     }
 
     super.preStart()
@@ -85,7 +85,7 @@ private[akka] class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[
 
         if (totalDemand > 0) signalOnNexts()
       }
-    } else if (eofEncountered) onComplete()
+    } else if (eofEncountered) onCompleteThenStop()
 
   /** BLOCKING I/O READ */
   def loadChunk() = try {
@@ -106,7 +106,7 @@ private[akka] class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[
     }
   } catch {
     case ex: Exception ⇒
-      onError(ex)
+      onErrorThenStop(ex)
   }
 
   private final def eofEncountered: Boolean = eofReachedAtOffset != Long.MinValue
@@ -115,7 +115,7 @@ private[akka] class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[
     super.postStop()
     bytesReadPromise.trySuccess(readBytesTotal)
 
-    if (chan ne null) chan.close()
-    if (raf ne null) raf.close()
+    try if (chan ne null) chan.close()
+    finally if (raf ne null) raf.close()
   }
 }

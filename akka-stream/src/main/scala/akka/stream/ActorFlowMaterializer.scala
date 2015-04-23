@@ -146,7 +146,7 @@ abstract class ActorFlowMaterializer extends FlowMaterializer {
   def effectiveSettings(opAttr: OperationAttributes): ActorFlowMaterializerSettings
 
   /** INTERNAL API */
-  def system: ActorSystem
+  private[akka] def system: ActorSystem
 
   /**
    * INTERNAL API: this might become public later
