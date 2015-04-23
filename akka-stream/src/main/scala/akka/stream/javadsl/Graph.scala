@@ -124,7 +124,7 @@ object Balance {
 }
 
 object Zip {
-  import akka.stream.javadsl.japi.Function2
+  import akka.japi.function.Function2
   import akka.japi.Pair
 
   /**

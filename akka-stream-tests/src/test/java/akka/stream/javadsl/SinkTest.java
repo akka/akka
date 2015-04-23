@@ -15,7 +15,7 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.stream.StreamTest;
-import akka.stream.javadsl.japi.Function2;
+import akka.japi.function.Function2;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 

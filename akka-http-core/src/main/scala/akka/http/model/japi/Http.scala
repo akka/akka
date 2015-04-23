@@ -8,7 +8,7 @@ import java.lang.{ Iterable ⇒ JIterable }
 
 import akka.japi.Util._
 import akka.japi.{ Option ⇒ JOption }
-import akka.stream.javadsl.japi.Function
+import akka.japi.function.Function
 
 import scala.concurrent.Future
 

@@ -21,6 +21,7 @@ import akka.stream.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.javadsl.FlowGraph.Builder;
 import akka.stream.javadsl.japi.*;
+import akka.japi.function.*;
 import akka.util.ByteString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;

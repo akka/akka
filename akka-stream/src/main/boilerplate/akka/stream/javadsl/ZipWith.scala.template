@@ -14,7 +14,7 @@ object ZipWith {
    * @param f zipping-function from the input values to the output value
    * @param attributes optional attributes for this vertex
    */
-  def create[A, B, Out](f: japi.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], Unit] =
+  def create[A, B, Out](f: akka.japi.function.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], Unit] =
     scaladsl.ZipWith(f.apply _)
 
   [3..20#/** Create a new `ZipWith` specialized for 1 inputs.

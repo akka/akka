@@ -3,6 +3,7 @@
  */
 package akka.stream.javadsl
 
+import akka.japi.function
 import akka.stream.scaladsl
 import akka.stream.Graph
 import akka.stream.BidiShape
@@ -22,7 +23,7 @@ object BidiFlow {
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
    * stage each, expressed by the two functions.
    */
-  def fromFunctions[I1, O1, I2, O2](top: japi.Function[I1, O1], bottom: japi.Function[I2, O2]): BidiFlow[I1, O1, I2, O2, Unit] =
+  def fromFunctions[I1, O1, I2, O2](top: function.Function[I1, O1], bottom: function.Function[I2, O2]): BidiFlow[I1, O1, I2, O2, Unit] =
     new BidiFlow(scaladsl.BidiFlow(top.apply _, bottom.apply _))
 
 }
@@ -73,7 +74,7 @@ class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O1, I2,
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting BidiFlow.
    */
-  def atop[OO1, II2, Mat2, M](bidi: BidiFlow[O1, OO1, II2, I2, Mat2], combine: japi.Function2[Mat, Mat2, M]): BidiFlow[I1, OO1, II2, O2, M] =
+  def atop[OO1, II2, Mat2, M](bidi: BidiFlow[O1, OO1, II2, I2, Mat2], combine: function.Function2[Mat, Mat2, M]): BidiFlow[I1, OO1, II2, O2, M] =
     new BidiFlow(delegate.atopMat(bidi.asScala)(combinerToScala(combine)))
 
   /**
@@ -116,7 +117,7 @@ class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O1, I2,
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting [[Flow]].
    */
-  def join[Mat2, M](flow: Flow[O1, I2, Mat2], combine: japi.Function2[Mat, Mat2, M]): Flow[I1, O2, M] =
+  def join[Mat2, M](flow: Flow[O1, I2, Mat2], combine: function.Function2[Mat, Mat2, M]): Flow[I1, O2, M] =
     new Flow(delegate.joinMat(flow.asScala)(combinerToScala(combine)))
 
   /**

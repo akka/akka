@@ -5,13 +5,13 @@
 package akka.http.model.japi;
 
 import akka.actor.ActorSystem;
+import akka.japi.function.Function;
+import akka.japi.function.Procedure;
 import akka.http.engine.server.ServerSettings;
 import akka.stream.ActorFlowMaterializer;
 import akka.stream.FlowMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.javadsl.japi.Function;
-import akka.stream.javadsl.japi.Procedure;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;

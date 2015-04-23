@@ -4,6 +4,7 @@
 package akka.stream.javadsl
 
 import java.io.File
+import akka.japi.function
 import scala.collection.immutable
 import java.util.concurrent.Callable
 import akka.actor.{ Cancellable, ActorRef, Props }
@@ -81,7 +82,7 @@ object Source {
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
-  def fromIterator[O](f: japi.Creator[java.util.Iterator[O]]): javadsl.Source[O, Unit] =
+  def fromIterator[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, Unit] =
     new Source(scaladsl.Source(() ⇒ f.create().asScala))
 
   /**
@@ -233,7 +234,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   /**
    * Transform only the materialized value of this Source, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): Source[Out, Mat2] =
+  def mapMaterialized[Mat2](f: function.Function[Mat, Mat2]): Source[Out, Mat2] =
     new Source(delegate.mapMaterialized(f.apply _))
 
   /**
@@ -245,7 +246,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   /**
    * Transform this [[Source]] by appending the given processing stages.
    */
-  def via[T, M, M2](flow: javadsl.Flow[Out, T, M], combine: japi.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+  def via[T, M, M2](flow: javadsl.Flow[Out, T, M], combine: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
     new Source(delegate.viaMat(flow.asScala)(combinerToScala(combine)))
 
   /**
@@ -257,7 +258,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   /**
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def to[M, M2](sink: javadsl.Sink[Out, M], combine: japi.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
+  def to[M, M2](sink: javadsl.Sink[Out, M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
     new RunnableFlowAdapter(delegate.toMat(sink.asScala)(combinerToScala(combine)))
 
   /**
@@ -275,7 +276,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
    */
-  def runFold[U](zero: U, f: japi.Function2[U, Out, U], materializer: FlowMaterializer): Future[U] =
+  def runFold[U](zero: U, f: function.Function2[U, Out, U], materializer: FlowMaterializer): Future[U] =
     runWith(Sink.fold(zero, f), materializer)
 
   /**
@@ -293,7 +294,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
    * the stream.
    */
-  def runForeach(f: japi.Procedure[Out], materializer: FlowMaterializer): Future[Unit] =
+  def runForeach(f: function.Procedure[Out], materializer: FlowMaterializer): Future[Unit] =
     runWith(Sink.foreach(f), materializer)
 
   // COMMON OPS //
@@ -302,7 +303,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    */
-  def map[T](f: japi.Function[Out, T]): javadsl.Source[T, Mat] =
+  def map[T](f: function.Function[Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.map(f.apply))
 
   /**
@@ -312,7 +313,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * The returned list MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
    */
-  def mapConcat[T](f: japi.Function[Out, java.util.List[T]]): javadsl.Source[T, Mat] =
+  def mapConcat[T](f: function.Function[Out, java.util.List[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.mapConcat(elem ⇒ Util.immutableSeq(f.apply(elem))))
 
   /**
@@ -324,7 +325,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](parallelism: Int, f: japi.Function[Out, Future[T]]): javadsl.Source[T, Mat] =
+  def mapAsync[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.mapAsync(parallelism, f.apply))
 
   /**
@@ -337,13 +338,13 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](parallelism: Int, f: japi.Function[Out, Future[T]]): javadsl.Source[T, Mat] =
+  def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.mapAsyncUnordered(parallelism, f.apply))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
    */
-  def filter(p: japi.Predicate[Out]): javadsl.Source[Out, Mat] =
+  def filter(p: function.Predicate[Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.filter(p.test))
 
   /**
@@ -369,7 +370,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * applies the current and next value to the given function `f`,
    * yielding the next current value.
    */
-  def scan[T](zero: T)(f: japi.Function2[T, Out, T]): javadsl.Source[T, Mat] =
+  def scan[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.scan(zero)(f.apply))
 
   /**
@@ -431,7 +432,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
-  def conflate[S](seed: japi.Function[Out, S], aggregate: japi.Function2[S, Out, S]): javadsl.Source[S, Mat] =
+  def conflate[S](seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): javadsl.Source[S, Mat] =
     new Source(delegate.conflate(seed.apply)(aggregate.apply))
 
   /**
@@ -447,7 +448,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: japi.Function[Out, S], extrapolate: japi.Function[S, akka.japi.Pair[U, S]]): javadsl.Source[U, Mat] =
+  def expand[S, U](seed: function.Function[Out, S], extrapolate: function.Function[S, akka.japi.Pair[U, S]]): javadsl.Source[U, Mat] =
     new Source(delegate.expand(seed(_))(s ⇒ {
       val p = extrapolate(s)
       (p.first, p.second)
@@ -469,7 +470,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
-  def transform[U](mkStage: japi.Creator[Stage[Out, U]]): javadsl.Source[U, Mat] =
+  def transform[U](mkStage: function.Creator[Stage[Out, U]]): javadsl.Source[U, Mat] =
     new Source(delegate.transform(() ⇒ mkStage.create()))
 
   /**
@@ -491,7 +492,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * care to unblock (or cancel) all of the produced streams even if you want
    * to consume only one of them.
    */
-  def groupBy[K](f: japi.Function[Out, K]): javadsl.Source[akka.japi.Pair[K, javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
+  def groupBy[K](f: function.Function[Out, K]): javadsl.Source[akka.japi.Pair[K, javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
     new Source(delegate.groupBy(f.apply).map { case (k, p) ⇒ akka.japi.Pair(k, p.asJava) }) // TODO optimize to one step
 
   /**
@@ -507,7 +508,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * true, false, false // elements go into third substream
    * }}}
    */
-  def splitWhen(p: japi.Predicate[Out]): javadsl.Source[javadsl.Source[Out, Unit], Mat] =
+  def splitWhen(p: function.Predicate[Out]): javadsl.Source[javadsl.Source[Out, Unit], Mat] =
     new Source(delegate.splitWhen(p.test).map(_.asJava))
 
   /**

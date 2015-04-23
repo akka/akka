@@ -17,7 +17,7 @@ trait GraphCreate {
    * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
    */
   @throws(classOf[IllegalArgumentException])
-  def closed(block: japi.Procedure[FlowGraph.Builder[Unit]]): RunnableFlow[Unit] =
+  def closed(block: akka.japi.function.Procedure[FlowGraph.Builder[Unit]]): RunnableFlow[Unit] =
     scaladsl.FlowGraph.closed() { b ⇒ block.apply(b.asJava) }
 
   /**
@@ -25,7 +25,7 @@ trait GraphCreate {
    *
    * Partial graphs are allowed to have unconnected ports.
    */
-  def partial[S <: Shape](block: japi.Function[FlowGraph.Builder[Unit], S]): Graph[S, Unit] =
+  def partial[S <: Shape](block: akka.japi.function.Function[FlowGraph.Builder[Unit], S]): Graph[S, Unit] =
     scaladsl.FlowGraph.partial() { b ⇒ block.apply(b.asJava) }
 
   /**
@@ -46,7 +46,7 @@ trait GraphCreate {
    * Partial graphs are allowed to have unconnected ports.
    */
   def partial[S1 <: Shape, S <: Shape, M](g1: Graph[S1, M],
-      block: japi.Function2[FlowGraph.Builder[M], S1, S]): Graph[S, M] =
+      block: akka.japi.function.Function2[FlowGraph.Builder[M], S1, S]): Graph[S, M] =
     scaladsl.FlowGraph.partial(g1) { b ⇒ s => block.apply(b.asJava, s) }
 
   /**
@@ -56,7 +56,7 @@ trait GraphCreate {
    * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
    */
   @throws(classOf[IllegalArgumentException])
-  def closed[S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: japi.Function2[M1, M2, M],
+  def closed[S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: akka.japi.function.Function2[M1, M2, M],
       block: japi.Procedure3[FlowGraph.Builder[M], S1, S2]): RunnableFlow[M] =
     scaladsl.FlowGraph.closed(g1, g2)(combineMat.apply _) { b => (s1, s2) => block.apply(b.asJava, s1, s2) }
 
@@ -66,7 +66,7 @@ trait GraphCreate {
    *
    * Partial graphs are allowed to have unconnected ports.
    */
-  def partial[S1 <: Shape, S2 <: Shape, S <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: japi.Function2[M1, M2, M],
+  def partial[S1 <: Shape, S2 <: Shape, S <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: akka.japi.function.Function2[M1, M2, M],
       block: japi.Function3[FlowGraph.Builder[M], S1, S2, S]): Graph[S, M] =
     scaladsl.FlowGraph.partial(g1, g2)(combineMat.apply _) { b => (s1, s2) => block.apply(b.asJava, s1, s2) }
 

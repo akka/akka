@@ -5,6 +5,7 @@ package akka.stream.io
 
 import java.io.InputStream
 
+import akka.japi.function.Creator
 import akka.stream.io.impl.InputStreamSource
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Source._
@@ -35,7 +36,7 @@ object InputStreamSource {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def create(createInputStream: javadsl.japi.Creator[InputStream]): javadsl.Source[ByteString, Future[Long]] =
+  def create(createInputStream: Creator[InputStream]): javadsl.Source[ByteString, Future[Long]] =
     create(createInputStream, DefaultChunkSize)
 
   /**
@@ -46,7 +47,7 @@ object InputStreamSource {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def create(createInputStream: javadsl.japi.Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, Future[Long]] =
+  def create(createInputStream: Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, Future[Long]] =
     apply(() ⇒ createInputStream.create(), chunkSize).asJava
 
 }

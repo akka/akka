@@ -7,12 +7,13 @@ import akka.actor.ActorRef;
 import akka.japi.*;
 import akka.stream.*;
 import akka.stream.javadsl.FlowGraph.Builder;
-import akka.stream.javadsl.japi.Creator;
-import akka.stream.javadsl.japi.Function;
-import akka.stream.javadsl.japi.Function2;
-import akka.stream.javadsl.japi.Procedure;
-import akka.stream.stage.*;
 import akka.stream.javadsl.japi.*;
+import akka.japi.function.Creator;
+import akka.japi.function.Function;
+import akka.japi.function.Function2;
+import akka.japi.function.Procedure;
+import akka.stream.stage.*;
+import akka.japi.function.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
@@ -39,7 +40,7 @@ public class FlowGraphTest extends StreamTest {
 
   @SuppressWarnings("serial")
   public <T> Creator<Stage<T, T>> op() {
-    return new akka.stream.javadsl.japi.Creator<Stage<T, T>>() {
+    return new akka.japi.function.Creator<Stage<T, T>>() {
       @Override
       public PushPullStage<T, T> create() throws Exception {
         return new PushPullStage<T, T>() {

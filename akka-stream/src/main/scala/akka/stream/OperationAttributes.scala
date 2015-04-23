@@ -4,7 +4,7 @@
 package akka.stream
 
 import scala.collection.immutable
-import akka.stream.javadsl.japi
+import akka.japi.{ function ⇒ japi }
 import akka.stream.impl.Stages.StageModule
 
 /**
