@@ -4,7 +4,7 @@
 
 package akka.http.model.japi;
 
-import akka.stream.scaladsl.Source;
+import akka.stream.javadsl.Source;
 
 /**
  * Represents an entity transferred using `Transfer-Encoding: chunked`. It consists of a
