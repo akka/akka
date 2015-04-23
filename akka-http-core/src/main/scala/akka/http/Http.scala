@@ -8,8 +8,8 @@ import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import akka.http.util.FastFuture
 import com.typesafe.config.Config
-import scala.util.control.NonFatal
 import scala.util.Try
+import scala.util.control.NonFatal
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Promise, Future }
 import akka.event.LoggingAdapter
@@ -59,13 +59,20 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * connections are being accepted at maximum rate, which, depending on the applications, might
    * present a DoS risk!
    */
-  def bindAndHandle(handler: Flow[HttpRequest, HttpResponse, _],
+  def bindAndHandle(handler: Flow[HttpRequest, HttpResponse, Any],
                     interface: String, port: Int = 80, backlog: Int = 100,
                     options: immutable.Traversable[Inet.SocketOption] = Nil,
                     settings: ServerSettings = ServerSettings(system),
                     log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
     bind(interface, port, backlog, options, settings, log).to {
-      Sink.foreach { _.flow.join(handler).run() }
+      Sink.foreach { incomingConnection ⇒
+        try incomingConnection.flow.joinMat(handler)(Keep.both).run()
+        catch {
+          case NonFatal(e) ⇒
+            log.error(e, "Could not materialize handling flow for {}", incomingConnection)
+            throw e
+        }
+      }
     }.run()
 
   /**
