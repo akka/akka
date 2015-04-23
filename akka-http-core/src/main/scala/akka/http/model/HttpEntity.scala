@@ -14,6 +14,7 @@ import akka.util.ByteString
 import akka.stream.OperationAttributes._
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
+import akka.stream
 import akka.stream.TimerTransformer
 import akka.http.util._
 import japi.JavaMapping.Implicits._
@@ -80,7 +81,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
   def withContentType(contentType: ContentType): HttpEntity
 
   /** Java API */
-  def getDataBytes: Source[ByteString, _] = dataBytes
+  def getDataBytes: stream.javadsl.Source[ByteString, _] = stream.javadsl.Source.adapt(dataBytes)
 
   // default implementations, should be overridden
   def isCloseDelimited: Boolean = false
@@ -277,7 +278,7 @@ object HttpEntity {
     override def productPrefix = "HttpEntity.Chunked"
 
     /** Java API */
-    def getChunks: Source[japi.ChunkStreamPart, Any] = chunks.asInstanceOf[Source[japi.ChunkStreamPart, Any]]
+    def getChunks: stream.javadsl.Source[japi.ChunkStreamPart, Any] = stream.javadsl.Source.adapt(chunks)
   }
   object Chunked {
     /**

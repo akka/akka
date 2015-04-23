@@ -7,7 +7,7 @@ package akka.http.model.japi;
 import java.io.File;
 
 import akka.util.ByteString;
-import akka.stream.scaladsl.Source;
+import akka.stream.javadsl.Source;
 import akka.http.model.HttpEntity$;
 
 /** Constructors for HttpEntity instances */
@@ -43,20 +43,20 @@ public final class HttpEntities {
     }
 
     public static HttpEntityDefault create(ContentType contentType, long contentLength, Source<ByteString, Object> data) {
-        return new akka.http.model.HttpEntity.Default((akka.http.model.ContentType) contentType, contentLength, data);
+        return new akka.http.model.HttpEntity.Default((akka.http.model.ContentType) contentType, contentLength, data.asScala());
     }
 
     public static HttpEntityCloseDelimited createCloseDelimited(ContentType contentType, Source<ByteString, Object> data) {
-        return new akka.http.model.HttpEntity.CloseDelimited((akka.http.model.ContentType) contentType, data);
+        return new akka.http.model.HttpEntity.CloseDelimited((akka.http.model.ContentType) contentType, data.asScala());
     }
 
     public static HttpEntityIndefiniteLength createIndefiniteLength(ContentType contentType, Source<ByteString, Object> data) {
-        return new akka.http.model.HttpEntity.IndefiniteLength((akka.http.model.ContentType) contentType, data);
+        return new akka.http.model.HttpEntity.IndefiniteLength((akka.http.model.ContentType) contentType, data.asScala());
     }
 
     public static HttpEntityChunked createChunked(ContentType contentType, Source<ByteString, Object> data) {
         return akka.http.model.HttpEntity.Chunked$.MODULE$.fromData(
                 (akka.http.model.ContentType) contentType,
-                data);
+                data.asScala());
     }
 }
