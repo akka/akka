@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 import akka.stream.javadsl
 import akka.actor.{ ActorRef, Props }
 import akka.stream.impl._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.{ SinkShape, Inlet, Outlet, Graph, OperationAttributes }
 import akka.stream.OperationAttributes._
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage }
@@ -63,36 +64,39 @@ object Sink extends SinkApply {
    * Helper to create [[Sink]] from `Subscriber`.
    */
   def apply[T](subscriber: Subscriber[T]): Sink[T, Unit] =
-    new Sink(new SubscriberSink(subscriber, none, shape("SubscriberSink")))
+    new Sink(new SubscriberSink(subscriber, DefaultAttributes.subscriberSink, shape("SubscriberSink")))
 
   /**
    * A `Sink` that immediately cancels its upstream after materialization.
    */
-  def cancelled[T]: Sink[T, Unit] = new Sink[Any, Unit](new CancelSink(none, shape("CancelledSink")))
+  def cancelled[T]: Sink[T, Unit] =
+    new Sink[Any, Unit](new CancelSink(DefaultAttributes.cancelledSink, shape("CancelledSink")))
 
   /**
    * A `Sink` that materializes into a `Future` of the first value received.
    */
-  def head[T]: Sink[T, Future[T]] = new Sink(new HeadSink[T](none, shape("HeadSink")))
+  def head[T]: Sink[T, Future[T]] = new Sink(new HeadSink[T](DefaultAttributes.headSink, shape("HeadSink")))
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
    * that can handle one [[org.reactivestreams.Subscriber]].
    */
-  def publisher[T]: Sink[T, Publisher[T]] = new Sink(new PublisherSink[T](none, shape("PublisherSink")))
+  def publisher[T]: Sink[T, Publisher[T]] =
+    new Sink(new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]]
    * that can handle more than one [[org.reactivestreams.Subscriber]].
    */
   def fanoutPublisher[T](initialBufferSize: Int, maximumBufferSize: Int): Sink[T, Publisher[T]] =
-    new Sink(new FanoutPublisherSink[T](initialBufferSize, maximumBufferSize, none, shape("FanoutPublisherSink")))
+    new Sink(new FanoutPublisherSink[T](initialBufferSize, maximumBufferSize, DefaultAttributes.fanoutPublisherSink,
+      shape("FanoutPublisherSink")))
 
   /**
    * A `Sink` that will consume the stream and discard the elements.
    */
   def ignore: Sink[Any, Unit] =
-    new Sink(new BlackholeSink(none, shape("BlackholeSink")))
+    new Sink(new BlackholeSink(DefaultAttributes.ignoreSink, shape("BlackholeSink")))
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
@@ -129,7 +133,7 @@ object Sink extends SinkApply {
       (stage, promise.future)
     }
 
-    Flow[T].transformMaterializing(newForeachStage).to(Sink.ignore).named("ForeachSink")
+    Flow[T].transformMaterializing(newForeachStage).to(Sink.ignore).named("foreachSink")
   }
 
   /**
@@ -172,7 +176,7 @@ object Sink extends SinkApply {
       (stage, promise.future)
     }
 
-    Flow[T].transformMaterializing(newFoldStage).to(Sink.ignore).named("FoldSink")
+    Flow[T].transformMaterializing(newFoldStage).to(Sink.ignore).named("foldSink")
   }
 
   /**
@@ -196,7 +200,7 @@ object Sink extends SinkApply {
       }
     }
 
-    Flow[T].transform(newOnCompleteStage).to(Sink.ignore).named("OnCompleteSink")
+    Flow[T].transform(newOnCompleteStage).to(Sink.ignore).named("onCompleteSink")
   }
 
   /**
@@ -215,7 +219,7 @@ object Sink extends SinkApply {
    * limiting stage in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, Unit] =
-    new Sink(new ActorRefSink(ref, onCompleteMessage, none, shape("ActorRefSink")))
+    new Sink(new ActorRefSink(ref, onCompleteMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
 
   /**
    * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
@@ -223,6 +227,6 @@ object Sink extends SinkApply {
    * be [[akka.stream.actor.ActorSubscriber]].
    */
   def actorSubscriber[T](props: Props): Sink[T, ActorRef] =
-    new Sink(new ActorSubscriberSink(props, none, shape("ActorSubscriberSink")))
+    new Sink(new ActorSubscriberSink(props, DefaultAttributes.actorSubscriberSink, shape("ActorSubscriberSink")))
 
 }
