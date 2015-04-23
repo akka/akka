@@ -1,20 +1,22 @@
 /**
  * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
  */
-package docs.stream
+package docs.stream.io
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
-import akka.actor.ActorSystem
+
 import akka.stream._
+import akka.stream.scaladsl.StreamTcp._
 import akka.stream.scaladsl._
-import akka.stream.stage.{ PushStage, SyncDirective, Context }
+import akka.stream.stage.Context
+import akka.stream.stage.PushStage
+import akka.stream.stage.SyncDirective
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.ByteString
-import cookbook.RecipeParseLines
+import docs.stream.cookbook.RecipeParseLines
 import docs.utils.TestUtils
-import StreamTcp._
 
 import scala.concurrent.Future
 
