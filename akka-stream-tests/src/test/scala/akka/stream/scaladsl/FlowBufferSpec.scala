@@ -12,6 +12,7 @@ import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.OverflowStrategy
 import akka.stream.OverflowStrategy.Fail.BufferOverflowException
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class FlowBufferSpec extends AkkaSpec {
 
@@ -35,7 +36,7 @@ class FlowBufferSpec extends AkkaSpec {
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
-    "pass elements through a chain of backpressured buffers of different size" in {
+    "pass elements through a chain of backpressured buffers of different size" in assertAllStagesStopped {
       val future = Source(1 to 1000)
         .buffer(1, overflowStrategy = OverflowStrategy.backpressure)
         .buffer(10, overflowStrategy = OverflowStrategy.backpressure)
@@ -155,7 +156,7 @@ class FlowBufferSpec extends AkkaSpec {
       sub.cancel()
     }
 
-    "fail upstream if buffer is full and configured so" in {
+    "fail upstream if buffer is full and configured so" in assertAllStagesStopped {
       val publisher = StreamTestKit.PublisherProbe[Int]
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 

@@ -13,6 +13,7 @@ import akka.stream.testkit.StreamTestKit.TE
 import org.reactivestreams.Publisher
 import akka.stream.OperationAttributes
 import akka.stream.ActorOperationAttributes
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class FlowGroupBySpec extends AkkaSpec {
 
@@ -56,59 +57,62 @@ class FlowGroupBySpec extends AkkaSpec {
   }
 
   "groupBy" must {
-    "work in the happy case" in new SubstreamsSupport(groupCount = 2) {
-      val s1 = StreamPuppet(getSubFlow(1).runWith(Sink.publisher))
-      masterSubscriber.expectNoMsg(100.millis)
+    "work in the happy case" in assertAllStagesStopped {
+      new SubstreamsSupport(groupCount = 2) {
+        val s1 = StreamPuppet(getSubFlow(1).runWith(Sink.publisher))
+        masterSubscriber.expectNoMsg(100.millis)
 
-      s1.expectNoMsg(100.millis)
-      s1.request(1)
-      s1.expectNext(1)
-      s1.expectNoMsg(100.millis)
+        s1.expectNoMsg(100.millis)
+        s1.request(1)
+        s1.expectNext(1)
+        s1.expectNoMsg(100.millis)
 
-      val s2 = StreamPuppet(getSubFlow(0).runWith(Sink.publisher))
+        val s2 = StreamPuppet(getSubFlow(0).runWith(Sink.publisher))
 
-      s2.expectNoMsg(100.millis)
-      s2.request(2)
-      s2.expectNext(2)
+        s2.expectNoMsg(100.millis)
+        s2.request(2)
+        s2.expectNext(2)
 
-      // Important to request here on the OTHER stream because the buffer space is exactly one without the fanout box
-      s1.request(1)
-      s2.expectNext(4)
+        // Important to request here on the OTHER stream because the buffer space is exactly one without the fanout box
+        s1.request(1)
+        s2.expectNext(4)
 
-      s2.expectNoMsg(100.millis)
+        s2.expectNoMsg(100.millis)
 
-      s1.expectNext(3)
+        s1.expectNext(3)
 
-      s2.request(1)
-      // Important to request here on the OTHER stream because the buffer space is exactly one without the fanout box
-      s1.request(1)
-      s2.expectNext(6)
-      s2.expectComplete()
+        s2.request(1)
+        // Important to request here on the OTHER stream because the buffer space is exactly one without the fanout box
+        s1.request(1)
+        s2.expectNext(6)
+        s2.expectComplete()
 
-      s1.expectNext(5)
-      s1.expectComplete()
+        s1.expectNext(5)
+        s1.expectComplete()
 
-      masterSubscriber.expectComplete()
+        masterSubscriber.expectComplete()
+      }
     }
 
-    "accept cancellation of substreams" in new SubstreamsSupport(groupCount = 2) {
-      StreamPuppet(getSubFlow(1).runWith(Sink.publisher)).cancel()
+    "accept cancellation of substreams" in assertAllStagesStopped {
+      new SubstreamsSupport(groupCount = 2) {
+        StreamPuppet(getSubFlow(1).runWith(Sink.publisher)).cancel()
 
-      val substream = StreamPuppet(getSubFlow(0).runWith(Sink.publisher))
-      substream.request(2)
-      substream.expectNext(2)
-      substream.expectNext(4)
-      substream.expectNoMsg(100.millis)
+        val substream = StreamPuppet(getSubFlow(0).runWith(Sink.publisher))
+        substream.request(2)
+        substream.expectNext(2)
+        substream.expectNext(4)
+        substream.expectNoMsg(100.millis)
 
-      substream.request(2)
-      substream.expectNext(6)
-      substream.expectComplete()
+        substream.request(2)
+        substream.expectNext(6)
+        substream.expectComplete()
 
-      masterSubscriber.expectComplete()
-
+        masterSubscriber.expectComplete()
+      }
     }
 
-    "accept cancellation of master stream when not consumed anything" in {
+    "accept cancellation of master stream when not consumed anything" in assertAllStagesStopped {
       val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
       val publisher = Source(publisherProbeProbe).groupBy(_ % 2).runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()
@@ -120,25 +124,27 @@ class FlowGroupBySpec extends AkkaSpec {
       upstreamSubscription.expectCancellation()
     }
 
-    "accept cancellation of master stream when substreams are open" in new SubstreamsSupport(groupCount = 3, elementCount = 13) {
-      val substream = StreamPuppet(getSubFlow(1).runWith(Sink.publisher))
+    "accept cancellation of master stream when substreams are open" in assertAllStagesStopped {
+      new SubstreamsSupport(groupCount = 3, elementCount = 13) {
+        val substream = StreamPuppet(getSubFlow(1).runWith(Sink.publisher))
 
-      substream.request(1)
-      substream.expectNext(1)
+        substream.request(1)
+        substream.expectNext(1)
 
-      masterSubscription.cancel()
-      masterSubscriber.expectNoMsg(100.millis)
+        masterSubscription.cancel()
+        masterSubscriber.expectNoMsg(100.millis)
 
-      // Open substreams still work, others are discarded
-      substream.request(4)
-      substream.expectNext(4)
-      substream.expectNext(7)
-      substream.expectNext(10)
-      substream.expectNext(13)
-      substream.expectComplete()
+        // Open substreams still work, others are discarded
+        substream.request(4)
+        substream.expectNext(4)
+        substream.expectNext(7)
+        substream.expectNext(10)
+        substream.expectNext(13)
+        substream.expectComplete()
+      }
     }
 
-    "work with empty input stream" in {
+    "work with empty input stream" in assertAllStagesStopped {
       val publisher = Source(List.empty[Int]).groupBy(_ % 2).runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()
       publisher.subscribe(subscriber)
@@ -146,7 +152,7 @@ class FlowGroupBySpec extends AkkaSpec {
       subscriber.expectSubscriptionAndComplete()
     }
 
-    "abort on onError from upstream" in {
+    "abort on onError from upstream" in assertAllStagesStopped {
       val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
       val publisher = Source(publisherProbeProbe).groupBy(_ % 2).runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()
@@ -163,7 +169,7 @@ class FlowGroupBySpec extends AkkaSpec {
       subscriber.expectError(e)
     }
 
-    "abort on onError from upstream when substreams are running" in {
+    "abort on onError from upstream when substreams are running" in assertAllStagesStopped {
       val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
       val publisher = Source(publisherProbeProbe).groupBy(_ % 2).runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()
@@ -190,7 +196,7 @@ class FlowGroupBySpec extends AkkaSpec {
 
     }
 
-    "fail stream when groupBy function throws" in {
+    "fail stream when groupBy function throws" in assertAllStagesStopped {
       val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
       val exc = TE("test")
       val publisher = Source(publisherProbeProbe)
@@ -259,6 +265,19 @@ class FlowGroupBySpec extends AkkaSpec {
       subscriber.expectComplete()
       substreamPuppet1.expectComplete()
       substreamPuppet2.expectComplete()
+    }
+
+    "pass along early cancellation" in assertAllStagesStopped {
+      val up = StreamTestKit.PublisherProbe[Int]()
+      val down = StreamTestKit.SubscriberProbe[(Int, Source[Int, Unit])]()
+
+      val flowSubscriber = Source.subscriber[Int].groupBy(_ % 2).to(Sink(down)).run()
+
+      val downstream = down.expectSubscription()
+      downstream.cancel()
+      up.subscribe(flowSubscriber)
+      val upsub = up.expectSubscription()
+      upsub.expectCancellation()
     }
 
   }

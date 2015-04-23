@@ -272,7 +272,7 @@ private[akka] abstract class FanOut(val settings: ActorFlowMaterializerSettings,
       log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
     outputBunch.cancel(e)
-    context.stop(self)
+    pump()
   }
 
   override def postStop(): Unit = {
@@ -302,7 +302,7 @@ private[akka] object Broadcast {
 private[akka] class Broadcast(_settings: ActorFlowMaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
   outputBunch.markAllOutputs()
 
-  nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
+  initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
     val elem = primaryInputs.dequeueInputElement()
     outputBunch.enqueueMarked(elem)
   })
@@ -328,11 +328,11 @@ private[akka] class Balance(_settings: ActorFlowMaterializerSettings, _outputPor
   }
 
   if (waitForAllDownstreams)
-    nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
+    initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
       nextPhase(runningPhase)
     })
   else
-    nextPhase(runningPhase)
+    initialPhase(1, runningPhase)
 }
 
 /**
@@ -349,7 +349,7 @@ private[akka] object Unzip {
 private[akka] class Unzip(_settings: ActorFlowMaterializerSettings) extends FanOut(_settings, outputCount = 2) {
   outputBunch.markAllOutputs()
 
-  nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
+  initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
     primaryInputs.dequeueInputElement() match {
       case (a, b) ⇒
         outputBunch.enqueue(0, a)

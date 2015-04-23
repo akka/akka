@@ -7,11 +7,13 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.testkit.StreamTestKit.PublisherProbe
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import org.reactivestreams.Subscriber
 
 class FlowPrefixAndTailSpec extends AkkaSpec {
 
@@ -46,7 +48,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       tailSubscriber.expectSubscriptionAndComplete()
     }
 
-    "work on longer inputs" in {
+    "work on longer inputs" in assertAllStagesStopped {
       val futureSink = newHeadSink
       val fut = Source(1 to 10).prefixAndTail(5).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
@@ -57,7 +59,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       Await.result(fut2, 3.seconds) should be(6 to 10)
     }
 
-    "handle zero take count" in {
+    "handle zero take count" in assertAllStagesStopped {
       val futureSink = newHeadSink
       val fut = Source(1 to 10).prefixAndTail(0).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
@@ -79,7 +81,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
-    "work if size of take is equal to stream size" in {
+    "work if size of take is equal to stream size" in assertAllStagesStopped {
       val futureSink = newHeadSink
       val fut = Source(1 to 10).prefixAndTail(10).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
@@ -90,7 +92,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       subscriber.expectSubscriptionAndComplete()
     }
 
-    "handle onError when no substream open" in {
+    "handle onError when no substream open" in assertAllStagesStopped {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
 
@@ -108,7 +110,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       subscriber.expectError(testException)
     }
 
-    "handle onError when substream is open" in {
+    "handle onError when substream is open" in assertAllStagesStopped {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
 
@@ -135,7 +137,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     }
 
-    "handle master stream cancellation" in {
+    "handle master stream cancellation" in assertAllStagesStopped {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
 
@@ -153,7 +155,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       upstream.expectCancellation()
     }
 
-    "handle substream cancellation" in {
+    "handle substream cancellation" in assertAllStagesStopped {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
 
@@ -177,6 +179,19 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
       upstream.expectCancellation()
 
+    }
+
+    "pass along early cancellation" in assertAllStagesStopped {
+      val up = StreamTestKit.PublisherProbe[Int]()
+      val down = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
+
+      val flowSubscriber = Source.subscriber[Int].prefixAndTail(1).to(Sink(down)).run()
+
+      val downstream = down.expectSubscription()
+      downstream.cancel()
+      up.subscribe(flowSubscriber)
+      val upsub = up.expectSubscription()
+      upsub.expectCancellation()
     }
 
   }

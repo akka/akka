@@ -16,6 +16,7 @@ import akka.stream.ActorFlowMaterializer
 import akka.stream.impl._
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 import akka.stream.testkit.ChainSetup
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.testkit._
 import akka.testkit.TestEvent.{ UnMute, Mute }
 import com.typesafe.config.ConfigFactory
@@ -247,7 +248,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       c1.expectComplete
     }
 
-    "be materializable several times with fanout publisher" in {
+    "be materializable several times with fanout publisher" in assertAllStagesStopped {
       val flow = Source(List(1, 2, 3)).map(_.toString)
       val p1 = flow.runWith(Sink.fanoutPublisher(2, 2))
       val p2 = flow.runWith(Sink.fanoutPublisher(2, 2))
