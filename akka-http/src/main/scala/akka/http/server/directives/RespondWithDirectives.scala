@@ -28,7 +28,7 @@ trait RespondWithDirectives {
    * Unconditionally adds the given response headers to all HTTP responses of its inner Route.
    */
   def respondWithHeaders(responseHeaders: HttpHeader*): Directive0 =
-    respondWithHeaders(responseHeaders.toVector)
+    respondWithHeaders(responseHeaders.toList)
 
   /**
    * Unconditionally adds the given response headers to all HTTP responses of its inner Route.
@@ -41,7 +41,7 @@ trait RespondWithDirectives {
    * if a header already exists it is not added again.
    */
   def respondWithDefaultHeaders(responseHeaders: HttpHeader*): Directive0 =
-    respondWithDefaultHeaders(responseHeaders.toVector)
+    respondWithDefaultHeaders(responseHeaders.toList)
 
   /* Adds the given response headers to all HTTP responses of its inner Route,
    * if a header already exists it is not added again.
