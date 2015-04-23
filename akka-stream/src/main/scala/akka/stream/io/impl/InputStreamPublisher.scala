@@ -48,7 +48,7 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
       readAndSignal(initialBuffer)
     } catch {
       case ex: Exception ⇒
-        onError(ex)
+        onErrorThenStop(ex)
     }
 
     super.preStart()
@@ -83,7 +83,7 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
 
         if (totalDemand > 0) signalOnNexts()
       }
-    } else if (eofEncountered) onComplete()
+    } else if (eofEncountered) onCompleteThenStop()
 
   /** BLOCKING I/O READ */
   def loadChunk() = try {
@@ -107,7 +107,7 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
     }
   } catch {
     case ex: Exception ⇒
-      onError(ex)
+      onErrorThenStop(ex)
   }
 
   private final def eofEncountered: Boolean = eofReachedAtOffset != Long.MinValue
