@@ -67,7 +67,7 @@ private[http] object OutgoingConnectionBlueprint {
 
     import ParserOutput._
     val responsePrep = Flow[List[ResponseOutput]]
-      .transform(recover { case x: ResponseParsingError ⇒ x.error :: Nil }) // FIXME after #16565
+      .transform(StreamUtils.recover { case x: ResponseParsingError ⇒ x.error :: Nil }) // FIXME after #16565
       .mapConcat(identityFunc)
       .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
       .headAndTail
@@ -227,23 +227,4 @@ private[http] object OutgoingConnectionBlueprint {
   }
 
   private class ResponseParsingError(val error: ErrorOutput) extends RuntimeException
-
-  // TODO: remove after #16394 is cleared
-  def recover[A, B >: A](pf: PartialFunction[Throwable, B]): () ⇒ PushPullStage[A, B] = {
-    val stage = new PushPullStage[A, B] {
-      var recovery: Option[B] = None
-      def onPush(elem: A, ctx: Context[B]): SyncDirective = ctx.push(elem)
-      def onPull(ctx: Context[B]): SyncDirective = recovery match {
-        case None    ⇒ ctx.pull()
-        case Some(x) ⇒ { recovery = null; ctx.push(x) }
-        case null    ⇒ ctx.finish()
-      }
-      override def onUpstreamFailure(cause: Throwable, ctx: Context[B]): TerminationDirective =
-        if (pf isDefinedAt cause) {
-          recovery = Some(pf(cause))
-          ctx.absorbTermination()
-        } else super.onUpstreamFailure(cause, ctx)
-    }
-    () ⇒ stage
-  }
 }

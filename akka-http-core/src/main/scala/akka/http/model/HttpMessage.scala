@@ -31,7 +31,7 @@ sealed trait HttpMessage extends japi.HttpMessage {
   def protocol: HttpProtocol
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
-  def withHeaders(headers: HttpHeader*): Self = withHeaders(immutable.Seq(headers: _*))
+  def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
   def withHeaders(headers: immutable.Seq[HttpHeader]): Self
@@ -40,9 +40,16 @@ sealed trait HttpMessage extends japi.HttpMessage {
    * Returns a new message that contains all of the given default headers which didn't already
    * exist (by case-insensitive header name) in this message.
    */
-  def withDefaultHeaders(defaultHeaders: immutable.Seq[HttpHeader]) =
+  def withDefaultHeaders(defaultHeaders: HttpHeader*): Self = withDefaultHeaders(defaultHeaders.toList)
+
+  /**
+   * Returns a new message that contains all of the given default headers which didn't already
+   * exist (by case-insensitive header name) in this message.
+   */
+  def withDefaultHeaders(defaultHeaders: immutable.Seq[HttpHeader]): Self =
     withHeaders {
-      defaultHeaders.foldLeft(headers) { (acc, h) ⇒ if (acc.exists(_ is h.lowercaseName)) acc else acc :+ h }
+      if (headers.isEmpty) defaultHeaders
+      else defaultHeaders.foldLeft(headers) { (acc, h) ⇒ if (headers.exists(_ is h.lowercaseName)) acc else h +: acc }
     }
 
   /** Returns a copy of this message with the entity set to the given one. */

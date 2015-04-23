@@ -170,12 +170,14 @@ trait ActorSubscriber extends Actor {
   import ActorSubscriber._
   import ActorSubscriberMessage._
 
-  private val state = ActorSubscriberState(context.system)
-  private var subscription: Option[Subscription] = None
-  private var requested: Long = 0
-  private var canceled = false
+  private[this] val state = ActorSubscriberState(context.system)
+  private[this] var subscription: Option[Subscription] = None
+  private[this] var requested: Long = 0
+  private[this] var _canceled = false
 
   protected def requestStrategy: RequestStrategy
+
+  final def canceled: Boolean = _canceled
 
   /**
    * INTERNAL API
@@ -183,21 +185,24 @@ trait ActorSubscriber extends Actor {
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
     case _: OnNext ⇒
       requested -= 1
-      if (!canceled) {
+      if (!_canceled) {
         super.aroundReceive(receive, msg)
         request(requestStrategy.requestDemand(remainingRequested))
       }
     case OnSubscribe(sub) ⇒
       if (subscription.isEmpty) {
         subscription = Some(sub)
-        if (canceled)
+        if (_canceled)
           sub.cancel()
         else if (requested != 0)
           sub.request(remainingRequested)
       } else
         sub.cancel()
-    case _: OnError ⇒
-      if (!canceled) super.aroundReceive(receive, msg)
+    case OnComplete | OnError(_) ⇒
+      if (!_canceled) {
+        _canceled = true
+        super.aroundReceive(receive, msg)
+      }
     case _ ⇒
       super.aroundReceive(receive, msg)
       request(requestStrategy.requestDemand(remainingRequested))
@@ -219,7 +224,7 @@ trait ActorSubscriber extends Actor {
       // restore previous state
       subscription = s.subscription
       requested = s.requested
-      canceled = s.canceled
+      _canceled = s.canceled
     }
     state.remove(self)
     super.aroundPostRestart(reason)
@@ -231,7 +236,7 @@ trait ActorSubscriber extends Actor {
    */
   protected[akka] override def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     // some state must survive restart
-    state.set(self, ActorSubscriberState.State(subscription, requested, canceled))
+    state.set(self, ActorSubscriberState.State(subscription, requested, _canceled))
     super.aroundPreRestart(reason, message)
   }
 
@@ -240,7 +245,7 @@ trait ActorSubscriber extends Actor {
    */
   protected[akka] override def aroundPostStop(): Unit = {
     state.remove(self)
-    if (!canceled) subscription.foreach(_.cancel())
+    if (!_canceled) subscription.foreach(_.cancel())
     super.aroundPostStop()
   }
 
@@ -248,7 +253,7 @@ trait ActorSubscriber extends Actor {
    * Request a number of elements from upstream.
    */
   protected def request(elements: Long): Unit =
-    if (elements > 0 && !canceled) {
+    if (elements > 0 && !_canceled) {
       // if we don't have a subscription yet, it will be requested when it arrives
       subscription.foreach(_.request(elements))
       requested += elements
@@ -258,12 +263,17 @@ trait ActorSubscriber extends Actor {
    * Cancel upstream subscription. No more elements will
    * be delivered after cancel.
    */
-  protected def cancel(): Unit = {
-    subscription.foreach(_.cancel())
-    canceled = true
-  }
+  protected def cancel(): Unit =
+    if (!_canceled) {
+      subscription.foreach(_.cancel())
+      _canceled = true
+    }
 
-  private def remainingRequested: Int = longToIntMax(requested)
+  /**
+   * The number of stream elements that have already been requested from upstream
+   * but not yet received.
+   */
+  protected def remainingRequested: Int = longToIntMax(requested)
 
   private def longToIntMax(n: Long): Int =
     if (n > Int.MaxValue) Int.MaxValue

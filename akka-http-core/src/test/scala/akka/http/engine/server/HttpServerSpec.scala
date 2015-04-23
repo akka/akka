@@ -648,6 +648,15 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       requests.expectComplete()
       netOut.expectComplete()
     }
+
+    "deliver a request with a non-RFC3986 request-target" in new TestSetup {
+      send("""GET //foo HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      expectRequest shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
+    }
   }
 
   class TestSetup {
