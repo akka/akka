@@ -4,6 +4,13 @@
 
 package akka.http.engine.server
 
+import akka.stream.scaladsl.FlexiMerge.{ ReadAny, MergeLogic }
+import akka.stream.scaladsl._
+
+import akka.http.engine.ws._
+import akka.stream.scaladsl.FlexiRoute.{ DemandFrom, RouteLogic }
+import org.reactivestreams.{ Subscriber, Publisher }
+
 import scala.util.control.NonFatal
 import akka.util.ByteString
 import akka.event.LoggingAdapter
@@ -18,6 +25,7 @@ import akka.http.engine.TokenSourceActor
 import akka.http.model._
 import akka.http.util._
 import ParserOutput._
+import akka.http.engine.ws.Websocket.{ SwitchToWebsocketToken }
 
 /**
  * INTERNAL API
@@ -37,7 +45,8 @@ private[http] object HttpServerBluePrint {
           logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
       })
 
-    val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
+    val ws = websocketPipeline
+    val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log, Some(ws))
 
     @volatile var oneHundredContinueRef: Option[ActorRef] = None // FIXME: unnecessary after fixing #16168
     val oneHundredContinueSource = Source.actorPublisher[OneHundredContinue.type] {
@@ -94,17 +103,43 @@ private[http] object HttpServerBluePrint {
         val bypassOneHundredContinueInput = bypassMerge.in1
         val bypassApplicationInput = bypassMerge.in2
 
+        // HTTP pipeline
         requestParsing.outlet ~> bypassFanout.in
         bypassMerge.out ~> renderer.inlet
         val requestsIn = (bypassFanout.out(0) ~> requestPreparation).outlet
 
         bypassFanout.out(1) ~> bypass ~> bypassInput
         oneHundredContinueSource ~> bypassOneHundredContinueInput
+        val http = FlowShape(requestParsing.inlet, renderer.outlet)
+
+        // Websocket pipeline
+        val websocket = b.add(ws.flow)
+
+        // protocol routing
+        val protocolRouter = b.add(new WebsocketSwitchRouter())
+        val protocolMerge = b.add(new WebsocketMerge)
+
+        protocolRouter.out0 ~> http ~> protocolMerge.in0
+        protocolRouter.out1 ~> websocket ~> protocolMerge.in1
+
+        // protocol switching
+        val wsSwitchTokenMerge = b.add(new StreamUtils.EagerCloseMerge2[AnyRef]("protocolSwitchWsTokenMerge"))
+        val switchTokenBroadcast = b.add(Broadcast[SwitchToWebsocketToken.type](2))
+        ws.switchSource ~> switchTokenBroadcast.in
+        switchTokenBroadcast.out(0) ~> wsSwitchTokenMerge.in1
+        wsSwitchTokenMerge.out /*~> printEvent[AnyRef]("netIn")*/ ~> protocolRouter.in
+        switchTokenBroadcast.out(1) ~> protocolMerge.in2
+        val netIn = wsSwitchTokenMerge.in0
+
+        val netOutPrint = b.add( /*printEvent[ByteString]("netOut")*/ Flow[ByteString])
+        protocolMerge.out ~> netOutPrint.inlet
+        val netOut = netOutPrint.outlet
 
         BidiShape[HttpResponse, ByteString, ByteString, HttpRequest](
           bypassApplicationInput,
-          renderer.outlet,
-          requestParsing.inlet,
+          netOut,
+          netIn,
+
           requestsIn)
     }
   }
@@ -238,6 +273,111 @@ private[http] object HttpServerBluePrint {
             closeRequested = true)
           ctx.absorbTermination()
         case _ ⇒ ctx.fail(error)
+      }
+  }
+
+  case class WebsocketSetup(
+    flow: Flow[ByteString, ByteString, Any],
+    publisherKey: StreamUtils.ReadableCell[Publisher[FrameEvent]],
+    subscriberKey: StreamUtils.ReadableCell[Subscriber[FrameEvent]],
+    switchSource: Source[SwitchToWebsocketToken.type, Any]) extends WebsocketSwitch {
+    @volatile var switchToWebsocketRef: Option[ActorRef] = None
+
+    def switchToWebsocket(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: FlowMaterializer): Unit = {
+      // 1. fill processing hole in the websocket pipeline with user-provided handler
+      Source(publisherKey.value)
+        .via(handlerFlow)
+        .to(Sink(subscriberKey.value))
+        .run()
+
+      // 1. and 2. could be racy in which case incoming data could arrive because of 2. before
+      // the pipeline in 1. has been established. The `PublisherSink`, should then, however, backpressure
+      // until the subscriber has connected (i.e. 1. has run).
+
+      // 2. flip the switch
+      switchToWebsocketRef.get ! TokenSourceActor.Trigger
+    }
+  }
+  def websocketPipeline: WebsocketSetup = {
+    val sinkCell = new StreamUtils.OneTimeWriteCell[Publisher[FrameEvent]]
+    val sourceCell = new StreamUtils.OneTimeWriteCell[Subscriber[FrameEvent]]
+
+    val sink = StreamUtils.oneTimePublisherSink[FrameEvent](sinkCell, "frameHandler.in")
+    val source = StreamUtils.oneTimeSubscriberSource[FrameEvent](sourceCell, "frameHandler.out")
+
+    val flow =
+      Flow[ByteString]
+        .transform[FrameEvent](() ⇒ new FrameEventParser)
+        .via(Flow.wrap(sink, source)((_, _) ⇒ ()))
+        .transform(() ⇒ new FrameEventRenderer)
+
+    lazy val setup = WebsocketSetup(flow, sinkCell, sourceCell, switchToWebsocketSource)
+    lazy val switchToWebsocketSource: Source[SwitchToWebsocketToken.type, ActorRef] =
+      Source.actorPublisher[SwitchToWebsocketToken.type] {
+        Props {
+          val actor = new TokenSourceActor(SwitchToWebsocketToken)
+          setup.switchToWebsocketRef = Some(actor.context.self)
+          actor
+        }
+      }
+    setup
+  }
+  class WebsocketSwitchRouter
+    extends FlexiRoute[AnyRef, FanOutShape2[AnyRef, ByteString, ByteString]](new FanOutShape2("websocketSplit"), OperationAttributes.name("websocketSplit")) {
+
+    override def createRouteLogic(shape: FanOutShape2[AnyRef, ByteString, ByteString]): RouteLogic[AnyRef] =
+      new RouteLogic[AnyRef] {
+        def initialState: State[_] = http
+
+        def http: State[_] = State[Any](DemandFrom(shape.out0)) { (ctx, _, element) ⇒
+          element match {
+            case b: ByteString ⇒
+              // route to HTTP processing
+              ctx.emit(shape.out0)(b)
+              SameState
+
+            case SwitchToWebsocketToken ⇒
+              // switch to websocket protocol
+              websockets
+          }
+        }
+        def websockets: State[_] = State[Any](DemandFrom(shape.out1)) { (ctx, _, element) ⇒
+          // route to Websocket processing
+          ctx.emit(shape.out1)(element.asInstanceOf[ByteString])
+          SameState
+        }
+      }
+  }
+  class WebsocketMerge extends FlexiMerge[ByteString, FanInShape3[ByteString, ByteString, SwitchToWebsocketToken.type, ByteString]](new FanInShape3("websocketMerge"), OperationAttributes.name("websocketMerge")) {
+    def createMergeLogic(s: FanInShape3[ByteString, ByteString, SwitchToWebsocketToken.type, ByteString]): MergeLogic[ByteString] =
+      new MergeLogic[ByteString] {
+        def httpIn = s.in0
+        def wsIn = s.in1
+        def tokenIn = s.in2
+
+        def initialState: State[_] = http
+
+        def http: State[_] = State[AnyRef](ReadAny(httpIn.asInstanceOf[Inlet[AnyRef]], tokenIn.asInstanceOf[Inlet[AnyRef]])) { (ctx, in, element) ⇒
+          element match {
+            case b: ByteString ⇒
+              ctx.emit(b); SameState
+            case SwitchToWebsocketToken ⇒
+              ctx.changeCompletionHandling(closeWhenInCloses(wsIn))
+              websockets
+          }
+        }
+        def websockets: State[_] = State[ByteString](ReadAny(httpIn /* otherwise we won't read the websocket upgrade response */ , wsIn)) { (ctx, _, element) ⇒
+          ctx.emit(element)
+          SameState
+        }
+
+        def closeWhenInCloses(in: Inlet[_]): CompletionHandling =
+          defaultCompletionHandling.copy(onUpstreamFinish = { (ctx, closingIn) ⇒
+            if (closingIn == in) ctx.finish()
+            SameState
+          })
+
+        override def initialCompletionHandling: CompletionHandling = closeWhenInCloses(httpIn)
       }
   }
 }

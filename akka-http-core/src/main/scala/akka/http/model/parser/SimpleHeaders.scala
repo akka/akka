@@ -187,6 +187,15 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     `cookie-pair` ~ zeroOrMore(ws(';') ~ `cookie-av`) ~ EOI ~> (`Set-Cookie`(_))
   }
 
+  // http://tools.ietf.org/html/rfc7230#section-6.7
+  def upgrade = rule {
+    oneOrMore(protocol).separatedBy(listSep) ~> (Upgrade(_))
+  }
+
+  def protocol = rule {
+    token ~ optional(ws("/") ~ token) ~> (UpgradeProtocol(_, _))
+  }
+
   // http://tools.ietf.org/html/rfc7231#section-5.5.3
   def `user-agent` = rule { products ~> (`User-Agent`(_)) }
 
