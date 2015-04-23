@@ -4,8 +4,10 @@
 
 package akka.http.javadsl.server.directives
 
-import java.lang.reflect.Method
 import scala.annotation.varargs
+import java.lang.reflect.Method
+
+import akka.http.javadsl.model.{ StatusCode, HttpResponse }
 import akka.http.javadsl.server._
 import akka.http.impl.server.RouteStructure._
 import akka.http.impl.server._
@@ -24,6 +26,22 @@ abstract class BasicDirectives {
   def complete(text: String): Route =
     new OpaqueRoute() {
       def handle(ctx: RequestContext): RouteResult = ctx.complete(text)
+    }
+
+  /**
+   * A route that completes the request with a static text
+   */
+  def complete(response: HttpResponse): Route =
+    new OpaqueRoute() {
+      def handle(ctx: RequestContext): RouteResult = ctx.complete(response)
+    }
+
+  /**
+   * A route that completes the request with a status code.
+   */
+  def completeWithStatus(code: StatusCode): Route =
+    new OpaqueRoute() {
+      def handle(ctx: RequestContext): RouteResult = ctx.completeWithStatus(code)
     }
 
   /**
