@@ -29,7 +29,7 @@ abstract class FlowMaterializer {
    * can be used by parts of the flow to submit processing jobs for execution,
    * run Future callbacks, etc.
    */
-  def executionContext: ExecutionContextExecutor
+  implicit def executionContext: ExecutionContextExecutor
 
 }
 
