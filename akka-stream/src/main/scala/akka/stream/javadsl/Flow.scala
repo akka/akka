@@ -223,7 +223,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * `n` must be positive, otherwise IllegalArgumentException is thrown.
    */
   def grouped(n: Int): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
-    new Flow(delegate.grouped(n).map(_.asJava)) // FIXME optimize to one step
+    new Flow(delegate.grouped(n).map(_.asJava)) // TODO optimize to one step
 
   /**
    * Similar to `fold` but is not a terminal operation,
@@ -249,7 +249,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * IllegalArgumentException is thrown.
    */
   def groupedWithin(n: Int, d: FiniteDuration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
-    new Flow(delegate.groupedWithin(n, d).map(_.asJava)) // FIXME optimize to one step
+    new Flow(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
 
   /**
    * Discard the given number of elements at the beginning of the stream.
@@ -371,7 +371,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * the element is dropped and the stream and substreams continue.
    */
   def groupBy[K](f: japi.Function[Out, K]): javadsl.Flow[In, akka.japi.Pair[K, javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
-    new Flow(delegate.groupBy(f.apply).map { case (k, p) ⇒ akka.japi.Pair(k, p.asJava) }) // FIXME optimize to one step
+    new Flow(delegate.groupBy(f.apply).map { case (k, p) ⇒ akka.japi.Pair(k, p.asJava) }) // TODO optimize to one step
 
   /**
    * This operation applies the given predicate to all incoming elements and
