@@ -312,7 +312,7 @@ private[stream] class VirtualPublisher[T]() extends Publisher[T] {
     val sub = realPublisher.subscribe(s)
     // unreference the realPublisher to facilitate GC and
     // Sink.publisher is supposed to reject additional subscribers anyway
-    realPublisher = RejectAdditionalSubscibers[T]
+    realPublisher = RejectAdditionalSubscribers[T]
     sub
   }
 }
