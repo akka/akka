@@ -6,7 +6,10 @@ package akka.http
 
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
-
+import akka.testkit.EventFilter
+import scala.annotation.tailrec
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.http.TestUtils._
 import akka.http.engine.client.ClientConnectionSettings
@@ -23,14 +26,12 @@ import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
-import scala.annotation.tailrec
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
-    akka.event-handlers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = WARNING""")
+    akka.loggers = ["akka.testkit.TestEventListener"]
+    akka.loglevel = ERROR
+    akka.stdout-loglevel = ERROR
+    akka.log-dead-letters = OFF""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit val materializer = ActorFlowMaterializer()
@@ -77,9 +78,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       }
     }
 
-    "run with bindAndHandle" in {
+    "run with bindAndHandleSync" in {
       val (_, hostname, port) = temporaryServerHostnameAndPort()
-      val binding = Http().bindAndHandle(Flow[HttpRequest].map(_ ⇒ HttpResponse()), hostname, port)
+      val binding = Http().bindAndHandleSync(_ ⇒ HttpResponse(), hostname, port)
       val b1 = Await.result(binding, 3.seconds)
 
       val (_, f) = Http().outgoingConnection(hostname, port)
@@ -87,6 +88,33 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       Await.result(f, 1.second)
       Await.result(b1.unbind(), 1.second)
+    }
+
+    "log materialization errors in `bindAndHandle`" which {
+      "are triggered in `transform`" in {
+        val (_, hostname, port) = temporaryServerHostnameAndPort()
+        val flow = Flow[HttpRequest].transform[HttpResponse](() ⇒ sys.error("BOOM"))
+        val binding = Http().bindAndHandle(flow, hostname, port)
+        val b1 = Await.result(binding, 3.seconds)
+
+        EventFilter[RuntimeException](message = "BOOM", occurrences = 1) intercept {
+          val (_, responseFuture) = Http().outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)
+          Await.result(responseFuture.failed, 1.second) shouldBe a[NoSuchElementException]
+        }
+        Await.result(b1.unbind(), 1.second)
+      }
+      "are triggered in `mapMaterialized`" in {
+        val (_, hostname, port) = temporaryServerHostnameAndPort()
+        val flow = Flow[HttpRequest].map(_ ⇒ HttpResponse()).mapMaterialized(_ ⇒ sys.error("BOOM"))
+        val binding = Http().bindAndHandle(flow, hostname, port)
+        val b1 = Await.result(binding, 3.seconds)
+
+        EventFilter[RuntimeException](message = "BOOM", occurrences = 1) intercept {
+          val (_, responseFuture) = Http().outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)
+          Await.result(responseFuture.failed, 1.second) shouldBe a[NoSuchElementException]
+        }
+        Await.result(b1.unbind(), 1.second)
+      }
     }
 
     "properly complete a simple request/response cycle" in new TestSetup {
