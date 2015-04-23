@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.javadsl.server;
+package akka.http.javadsl.server.directives;
 
 import static akka.http.javadsl.server.Directives.*;
 
@@ -11,6 +11,7 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.model.headers.ContentEncoding;
 import akka.http.javadsl.model.headers.HttpEncodings;
+import akka.http.javadsl.server.Coder;
 import akka.stream.ActorMaterializer;
 import akka.util.ByteString;
 import org.junit.*;
