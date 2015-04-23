@@ -142,7 +142,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMate
     }
   }
 
-  override def postStop(): Unit = // FIXME if something blows up, are the subscribers onErrored?
+  override def postStop(): Unit =
     if (exposedPublisher ne null)
       exposedPublisher.shutdown(shutdownReason)
 
