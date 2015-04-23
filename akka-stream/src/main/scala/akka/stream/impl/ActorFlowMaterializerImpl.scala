@@ -27,13 +27,14 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
 /**
  * INTERNAL API
  */
-private[akka] case class ActorFlowMaterializerImpl(override val system: ActorSystem,
-                                                   override val settings: ActorFlowMaterializerSettings,
-                                                   dispatchers: Dispatchers,
-                                                   supervisor: ActorRef,
-                                                   flowNameCounter: AtomicLong,
-                                                   namePrefix: String,
-                                                   optimizations: Optimizations)
+private[akka] case class ActorFlowMaterializerImpl(
+  val system: ActorSystem,
+  override val settings: ActorFlowMaterializerSettings,
+  dispatchers: Dispatchers,
+  val supervisor: ActorRef,
+  flowNameCounter: AtomicLong,
+  namePrefix: String,
+  optimizations: Optimizations)
   extends ActorFlowMaterializer {
   import ActorFlowMaterializerImpl._
   import akka.stream.impl.Stages._
@@ -205,19 +206,21 @@ private[akka] case class ActorFlowMaterializerImpl(override val system: ActorSys
     actorOf(props, context.stageName, dispatcher)
   }
 
-  private[akka] def actorOf(props: Props, name: String, dispatcher: String): ActorRef = supervisor match {
-    case ref: LocalActorRef ⇒
-      ref.underlying.attachChild(props.withDispatcher(dispatcher), name, systemService = false)
-    case ref: RepointableActorRef ⇒
-      if (ref.isStarted)
-        ref.underlying.asInstanceOf[ActorCell].attachChild(props.withDispatcher(dispatcher), name, systemService = false)
-      else {
-        implicit val timeout = ref.system.settings.CreationTimeout
-        val f = (supervisor ? StreamSupervisor.Materialize(props.withDispatcher(dispatcher), name)).mapTo[ActorRef]
-        Await.result(f, timeout.duration)
-      }
-    case unknown ⇒
-      throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
+  private[akka] def actorOf(props: Props, name: String, dispatcher: String): ActorRef = {
+    supervisor match {
+      case ref: LocalActorRef ⇒
+        ref.underlying.attachChild(props.withDispatcher(dispatcher), name, systemService = false)
+      case ref: RepointableActorRef ⇒
+        if (ref.isStarted)
+          ref.underlying.asInstanceOf[ActorCell].attachChild(props.withDispatcher(dispatcher), name, systemService = false)
+        else {
+          implicit val timeout = ref.system.settings.CreationTimeout
+          val f = (supervisor ? StreamSupervisor.Materialize(props.withDispatcher(dispatcher), name)).mapTo[ActorRef]
+          Await.result(f, timeout.duration)
+        }
+      case unknown ⇒
+        throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
+    }
   }
 
 }

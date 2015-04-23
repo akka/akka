@@ -8,6 +8,7 @@ import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.stream.ActorFlowMaterializer
 
 class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
@@ -32,13 +33,15 @@ class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
       val settings = ActorFlowMaterializerSettings(system)
         .withInputBuffer(initialSize = 2, maxSize = 2)
       implicit val materializer = ActorFlowMaterializer(settings)
-      val s = SubscriberProbe[Int]
-      val input = (1 to 20).grouped(5).toList
-      Source(input).mapConcat(identity).map(x ⇒ { Thread.sleep(10); x }).runWith(Sink(s))
-      val sub = s.expectSubscription()
-      sub.request(100)
-      for (i ← 1 to 20) s.expectNext(i)
-      s.expectComplete()
+      assertAllStagesStopped {
+        val s = SubscriberProbe[Int]
+        val input = (1 to 20).grouped(5).toList
+        Source(input).mapConcat(identity).map(x ⇒ { Thread.sleep(10); x }).runWith(Sink(s))
+        val sub = s.expectSubscription()
+        sub.request(100)
+        for (i ← 1 to 20) s.expectNext(i)
+        s.expectComplete()
+      }
     }
 
   }

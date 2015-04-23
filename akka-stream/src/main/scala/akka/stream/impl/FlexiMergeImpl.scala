@@ -117,7 +117,7 @@ private[akka] class FlexiMergeImpl[T, S <: Shape](
   changeBehavior(mergeLogic.initialState)
   changeCompletionHandling(mergeLogic.initialCompletionHandling)
 
-  nextPhase(TransferPhase(precondition) { () ⇒
+  initialPhase(inputCount, TransferPhase(precondition) { () ⇒
     behavior.condition match {
       case read: ReadAny[t] ⇒
         suppressCompletion()

@@ -120,5 +120,5 @@ private[akka] class FanoutProcessorImpl(
 
   def afterFlush(): Unit = context.stop(self)
 
-  nextPhase(running)
+  initialPhase(1, running)
 }

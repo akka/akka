@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.TwoStreamsSetup
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.stream._
 
 class GraphZipSpec extends TwoStreamsSetup {
@@ -22,7 +23,7 @@ class GraphZipSpec extends TwoStreamsSetup {
 
   "Zip" must {
 
-    "work in the happy case" in {
+    "work in the happy case" in assertAllStagesStopped {
       val probe = StreamTestKit.SubscriberProbe[(Int, String)]()
 
       FlowGraph.closed() { implicit b ⇒
@@ -50,7 +51,7 @@ class GraphZipSpec extends TwoStreamsSetup {
 
     commonTests()
 
-    "work with one immediately completed and one nonempty publisher" in {
+    "work with one immediately completed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(completedPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectSubscriptionAndComplete()
 
@@ -58,7 +59,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       subscriber2.expectSubscriptionAndComplete()
     }
 
-    "work with one delayed completed and one nonempty publisher" in {
+    "work with one delayed completed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectSubscriptionAndComplete()
 
@@ -66,7 +67,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       subscriber2.expectSubscriptionAndComplete()
     }
 
-    "work with one immediately failed and one nonempty publisher" in {
+    "work with one immediately failed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(failedPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectSubscriptionAndError(TestException)
 
@@ -74,7 +75,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       subscriber2.expectSubscriptionAndError(TestException)
     }
 
-    "work with one delayed failed and one nonempty publisher" in {
+    "work with one delayed failed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(soonToFailPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectSubscriptionAndError(TestException)
 
