@@ -3,18 +3,18 @@
  */
 package akka.stream.impl
 
+import java.io.{ InputStream, File }
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.{ ActorRef, Cancellable, PoisonPill, Props }
+import akka.stream.ActorOperationAttributes.Dispatcher
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.OperationAttributes
-import akka.stream.{ Outlet, OverflowStrategy, Shape, SourceShape }
+import akka.stream._
+import akka.util.ByteString
 import org.reactivestreams._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success }
-import akka.stream.MaterializationContext
-import akka.stream.ActorFlowMaterializer
 
 /**
  * INTERNAL API

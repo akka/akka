@@ -1,24 +1,22 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.scaladsl
 
 import akka.stream.javadsl
 import akka.actor.{ ActorRef, Props }
+import akka.stream._
+import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage.SyncDirective
 import akka.stream.{ SinkShape, Inlet, Outlet, Graph, OperationAttributes }
 import akka.stream.OperationAttributes._
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage }
 import org.reactivestreams.{ Publisher, Subscriber }
-import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.{ Promise, Future }
-import scala.util.{ Success, Failure, Try }
-import akka.stream.FlowMaterializer
-import akka.stream.impl.StreamLayout.Module
-import scala.util.control.NonFatal
-import akka.stream.Supervision
-import akka.stream.stage.SyncDirective
+
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
 
 /**
  * A `Sink` is a set of stream processing steps that has one open input and an attached output.
@@ -52,7 +50,8 @@ object Sink extends SinkApply {
 
   import OperationAttributes.none
 
-  private def shape[T](name: String): SinkShape[T] = SinkShape(new Inlet(name + ".in"))
+  /** INTERNAL API */
+  private[stream] def shape[T](name: String): SinkShape[T] = SinkShape(new Inlet(name + ".in"))
 
   /**
    * A graph with the shape of a sink logically is a sink, this method makes
