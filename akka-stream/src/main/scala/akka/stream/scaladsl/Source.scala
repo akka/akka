@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream.javadsl
 import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.{ SourceShape, Inlet, Outlet }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushPullStage }
@@ -173,7 +174,7 @@ object Source extends SourceApply {
    * back-pressure upstream.
    */
   def apply[T](publisher: Publisher[T]): Source[T, Unit] =
-    new Source(new PublisherSource(publisher, none, shape("PublisherSource")))
+    new Source(new PublisherSource(publisher, DefaultAttributes.publisherSource, shape("PublisherSource")))
 
   /**
    * Helper to create [[Source]] from `Iterator`.
@@ -237,7 +238,7 @@ object Source extends SourceApply {
         }
       }
 
-    }).named("IterableSource")
+    }).withAttributes(DefaultAttributes.iterableSource)
   }
 
   /**
@@ -247,7 +248,7 @@ object Source extends SourceApply {
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
   def apply[T](future: Future[T]): Source[T, Unit] =
-    new Source(new FutureSource(future, none, shape("FutureSource")))
+    new Source(new FutureSource(future, DefaultAttributes.futureSource, shape("FutureSource")))
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -257,26 +258,26 @@ object Source extends SourceApply {
    * receive new tick elements as soon as it has requested more elements.
    */
   def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): Source[T, Cancellable] =
-    new Source(new TickSource(initialDelay, interval, tick, none, shape("TickSource")))
+    new Source(new TickSource(initialDelay, interval, tick, DefaultAttributes.tickSource, shape("TickSource")))
 
   /**
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
   def single[T](element: T): Source[T, Unit] =
-    apply(SynchronousIterablePublisher(List(element), "SingleSource")) // FIXME optimize
+    apply(SynchronousIterablePublisher(List(element), "SingleSource")).withAttributes(DefaultAttributes.singleSource) // FIXME optimize
 
   /**
    * Create a `Source` that will continually emit the given element.
    */
   def repeat[T](element: T): Source[T, Unit] =
-    apply(() ⇒ Iterator.continually(element)) // FIXME optimize
+    apply(() ⇒ Iterator.continually(element)).withAttributes(DefaultAttributes.repeat) // FIXME optimize
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
    */
   def empty[T]: Source[T, Unit] = _empty
-  private[this] val _empty: Source[Nothing, Unit] = apply(EmptyPublisher)
+  private[this] val _empty: Source[Nothing, Unit] = apply(EmptyPublisher).withAttributes(DefaultAttributes.emptySource)
 
   /**
    * Create a `Source` with no elements, which does not complete its downstream,
@@ -288,12 +289,13 @@ object Source extends SourceApply {
    * to its downstream.
    */
   def lazyEmpty[T]: Source[T, Promise[Unit]] =
-    new Source(new LazyEmptySource[T](none, shape("LazyEmptySource")))
+    new Source(new LazyEmptySource[T](DefaultAttributes.lazyEmptySource, shape("LazyEmptySource")))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
-  def failed[T](cause: Throwable): Source[T, Unit] = apply(ErrorPublisher(cause, "FailedSource"))
+  def failed[T](cause: Throwable): Source[T, Unit] =
+    apply(ErrorPublisher(cause, "FailedSource")).withAttributes(DefaultAttributes.failedSource)
 
   /**
    * Concatenates two sources so that the first element
@@ -301,7 +303,7 @@ object Source extends SourceApply {
    * source.
    */
   def concat[T, Mat1, Mat2](source1: Source[T, Mat1], source2: Source[T, Mat2]): Source[T, (Mat1, Mat2)] =
-    concatMat(source1, source2)(Keep.both)
+    concatMat(source1, source2)(Keep.both).withAttributes(DefaultAttributes.concatSource)
 
   /**
    * Concatenates two sources so that the first element
@@ -317,13 +319,13 @@ object Source extends SourceApply {
         s1.outlet ~> c.in(0)
         s2.outlet ~> c.in(1)
         SourceShape(c.out)
-    })
+    }).withAttributes(DefaultAttributes.concatMatSource)
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
   def subscriber[T]: Source[T, Subscriber[T]] =
-    new Source(new SubscriberSource[T](none, shape("SubscriberSource")))
+    new Source(new SubscriberSource[T](DefaultAttributes.subscriberSource, shape("SubscriberSource")))
 
   /**
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
@@ -331,7 +333,7 @@ object Source extends SourceApply {
    * be [[akka.stream.actor.ActorPublisher]].
    */
   def actorPublisher[T](props: Props): Source[T, ActorRef] =
-    new Source(new ActorPublisherSource(props, none, shape("ActorPublisherSource")))
+    new Source(new ActorPublisherSource(props, DefaultAttributes.actorPublisherSource, shape("ActorPublisherSource")))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -360,7 +362,7 @@ object Source extends SourceApply {
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
     require(overflowStrategy != OverflowStrategy.Backpressure, "Backpressure overflowStrategy not supported")
-    new Source(new ActorRefSource(bufferSize, overflowStrategy, none, shape("ActorRefSource")))
+    new Source(new ActorRefSource(bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
   }
 
 }
