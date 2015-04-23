@@ -120,22 +120,26 @@ private[akka] class FlexiMergeImpl[T, S <: Shape](
   nextPhase(TransferPhase(precondition) { () ⇒
     behavior.condition match {
       case read: ReadAny[t] ⇒
+        suppressCompletion()
         val id = inputBunch.idToDequeue()
         val elem = inputBunch.dequeueAndYield(id)
         val inputHandle = inputMapping(id)
         callOnInput(inputHandle, elem)
         triggerCompletionAfterRead(inputHandle)
       case r: ReadPreferred[t] ⇒
+        suppressCompletion()
         val elem = inputBunch.dequeuePrefering(indexOf(r.preferred))
         val id = inputBunch.lastDequeuedId
         val inputHandle = inputMapping(id)
         callOnInput(inputHandle, elem)
         triggerCompletionAfterRead(inputHandle)
       case Read(input) ⇒
+        suppressCompletion()
         val elem = inputBunch.dequeue(indexOf(input))
         callOnInput(input, elem)
         triggerCompletionAfterRead(input)
       case read: ReadAll[t] ⇒
+        suppressCompletion()
         val inputs = read.inputs
         val values = inputs.collect {
           case input if include(input) ⇒ input → inputBunch.dequeue(indexOf(input))
@@ -160,15 +164,22 @@ private[akka] class FlexiMergeImpl[T, S <: Shape](
     }
   }
 
-  private def triggerCompletionAfterRead(inputHandle: InPort): Unit =
+  private var completionEnabled = true
+
+  private def suppressCompletion(): Unit = completionEnabled = false
+
+  private def triggerCompletionAfterRead(inputHandle: InPort): Unit = {
+    completionEnabled = true
     if (inputBunch.isDepleted(indexOf(inputHandle)))
       triggerCompletion(inputHandle)
+  }
 
   private def triggerCompletion(in: InPort): Unit =
-    changeBehavior(
-      try completion.onUpstreamFinish(ctx, in)
-      catch {
-        case NonFatal(e) ⇒ fail(e); mergeLogic.SameState
-      })
+    if (completionEnabled)
+      changeBehavior(
+        try completion.onUpstreamFinish(ctx, in)
+        catch {
+          case NonFatal(e) ⇒ fail(e); mergeLogic.SameState
+        })
 
 }

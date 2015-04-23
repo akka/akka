@@ -343,9 +343,11 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
     "resume when Scan throws" in new TestSetup(Seq(
       Scan(1, (acc: Int, x: Int) ⇒ if (x == 10) throw TE else acc + x, resumingDecider))) {
       downstream.requestOne()
+      lastEvents() should be(Set(OnNext(1)))
+      downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)
-      lastEvents() should be(Set(OnNext(1)))
+      lastEvents() should be(Set(OnNext(3)))
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -353,15 +355,17 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(4)
-      lastEvents() should be(Set(OnNext(3))) // 1 + 2
+      lastEvents() should be(Set(OnNext(7))) // 1 + 2 + 4
     }
 
     "restart when Scan throws" in new TestSetup(Seq(
       Scan(1, (acc: Int, x: Int) ⇒ if (x == 10) throw TE else acc + x, restartingDecider))) {
       downstream.requestOne()
+      lastEvents() should be(Set(OnNext(1)))
+      downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)
-      lastEvents() should be(Set(OnNext(1)))
+      lastEvents() should be(Set(OnNext(3)))
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -372,9 +376,11 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnNext(1))) // starts over again
 
       downstream.requestOne()
+      lastEvents() should be(Set(OnNext(5)))
+      downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(20)
-      lastEvents() should be(Set(OnNext(5))) // 1+4
+      lastEvents() should be(Set(OnNext(25))) // 1 + 4 + 20
     }
 
     "restart when Conflate `seed` throws" in new TestSetup(Seq(Conflate(

@@ -213,6 +213,7 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1],
     require(outlets.size == 2, s"proposed outlets [${outlets.mkString(", ")}] do not fit BidiShape")
     BidiShape(inlets(0), outlets(0), inlets(1), outlets(1))
   }
+  def reversed: Shape = copyFromPorts(inlets.reverse, outlets.reverse)
   //#implementation-details-elided
 }
 //#bidi-shape
