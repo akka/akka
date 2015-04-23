@@ -13,6 +13,7 @@ import akka.stream.StreamTest;
 import akka.stream.stage.*;
 import akka.stream.javadsl.FlowGraph.Builder;
 import akka.stream.javadsl.japi.*;
+import akka.japi.function.*;
 import akka.stream.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
@@ -218,7 +219,7 @@ public class FlowTest extends StreamTest {
   }
 
   public <T> Creator<Stage<T, T>> op() {
-    return new akka.stream.javadsl.japi.Creator<Stage<T, T>>() {
+    return new akka.japi.function.Creator<Stage<T, T>>() {
       @Override
       public PushPullStage<T, T> create() throws Exception {
         return new PushPullStage<T, T>() {  

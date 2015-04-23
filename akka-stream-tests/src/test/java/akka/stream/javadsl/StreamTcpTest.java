@@ -18,7 +18,7 @@ import scala.runtime.BoxedUnit;
 
 import akka.stream.*;
 import akka.stream.javadsl.StreamTcp.*;
-import akka.stream.javadsl.japi.*;
+import akka.japi.function.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.testkit.TestUtils;
 import akka.util.ByteString;

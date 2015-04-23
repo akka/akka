@@ -17,7 +17,7 @@ trait FlowCreate {
    *
    * The create function is expected to return a pair of [[Inlet]] and [[Outlet]] which correspond to the created Flows input and output ports.
    */
-  def create[I, O](block: japi.Function[FlowGraph.Builder[Unit], Inlet[I] Pair Outlet[O]]): Flow[I, O, Unit] =
+  def create[I, O](block: akka.japi.function.Function[FlowGraph.Builder[Unit], Inlet[I] Pair Outlet[O]]): Flow[I, O, Unit] =
     new Flow(scaladsl.Flow() { b ⇒ block.apply(b.asJava) })
 
   /**
@@ -26,7 +26,7 @@ trait FlowCreate {
    *
    * The create function is expected to return a pair of [[Inlet]] and [[Outlet]] which correspond to the created Flows input and output ports.
    */
-  def create[I, O, S <: Shape, M](g1: Graph[S, M], block: japi.Function2[FlowGraph.Builder[M], S, Inlet[I] Pair Outlet[O]]): Flow[I, O, M] =
+  def create[I, O, S <: Shape, M](g1: Graph[S, M], block: akka.japi.function.Function2[FlowGraph.Builder[M], S, Inlet[I] Pair Outlet[O]]): Flow[I, O, M] =
     new Flow(scaladsl.Flow(g1) { b ⇒ s => block.apply(b.asJava, s) })
 
   /**
@@ -35,7 +35,7 @@ trait FlowCreate {
    *
    * The create function is expected to return a pair of [[Inlet]] and [[Outlet]] which correspond to the created Flows input and output ports.
    */
-  def create[I, O, S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: japi.Function2[M1, M2, M],
+  def create[I, O, S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: akka.japi.function.Function2[M1, M2, M],
       block: japi.Function3[FlowGraph.Builder[M], S1, S2, Inlet[I] Pair Outlet[O]]): Flow[I, O, M] =
     new Flow(scaladsl.Flow(g1, g2)(combineMat.apply _) { b => (s1, s2) => block.apply(b.asJava, s1, s2) })
 

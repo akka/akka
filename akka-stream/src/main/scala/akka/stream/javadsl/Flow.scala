@@ -5,6 +5,7 @@ package akka.stream.javadsl
 
 import akka.stream._
 import akka.japi.{ Util, Pair }
+import akka.japi.function
 import akka.stream.scaladsl
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Future
@@ -52,7 +53,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Transform only the materialized value of this Flow, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): Flow[In, Out, Mat2] =
+  def mapMaterialized[Mat2](f: function.Function[Mat, Mat2]): Flow[In, Out, Mat2] =
     new Flow(delegate.mapMaterialized(f.apply _))
 
   /**
@@ -64,7 +65,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    */
-  def via[T, M, M2](flow: javadsl.Flow[Out, T, M], combine: japi.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
+  def via[T, M, M2](flow: javadsl.Flow[Out, T, M], combine: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
     new Flow(delegate.viaMat(flow.asScala)(combinerToScala(combine)))
 
   /**
@@ -76,7 +77,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def to[M, M2](sink: javadsl.Sink[Out, M], combine: japi.Function2[Mat, M, M2]): javadsl.Sink[In, M2] =
+  def to[M, M2](sink: javadsl.Sink[Out, M], combine: function.Function2[Mat, M, M2]): javadsl.Sink[In, M2] =
     new Sink(delegate.toMat(sink.asScala)(combinerToScala(combine)))
 
   /**
@@ -88,7 +89,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
    */
-  def join[M, M2](flow: javadsl.Flow[Out, In, M], combine: japi.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
+  def join[M, M2](flow: javadsl.Flow[Out, In, M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
     new RunnableFlowAdapter(delegate.joinMat(flow.asScala)(combinerToScala(combine)))
 
   /**
@@ -127,7 +128,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * The `combine` function is used to compose the materialized values of this flow and that
    * [[BidiFlow]] into the materialized value of the resulting [[Flow]].
    */
-  def join[I2, O2, Mat2, M](bidi: BidiFlow[Out, O2, I2, In, Mat2], combine: japi.Function2[Mat, Mat2, M]): Flow[I2, O2, M] =
+  def join[I2, O2, Mat2, M](bidi: BidiFlow[Out, O2, I2, In, Mat2], combine: function.Function2[Mat, Mat2, M]): Flow[I2, O2, M] =
     new Flow(delegate.joinMat(bidi.asScala)(combinerToScala(combine)))
 
   /**
@@ -148,7 +149,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    */
-  def map[T](f: japi.Function[Out, T]): javadsl.Flow[In, T, Mat] =
+  def map[T](f: function.Function[Out, T]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.map(f.apply))
 
   /**
@@ -158,7 +159,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * The returned list MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
    */
-  def mapConcat[T](f: japi.Function[Out, java.util.List[T]]): javadsl.Flow[In, T, Mat] =
+  def mapConcat[T](f: function.Function[Out, java.util.List[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapConcat(elem ⇒ Util.immutableSeq(f.apply(elem))))
 
   /**
@@ -178,7 +179,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](parallelism: Int, f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
+  def mapAsync[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapAsync(parallelism, f.apply))
 
   /**
@@ -199,13 +200,13 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](parallelism: Int, f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
+  def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapAsyncUnordered(parallelism, f.apply))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
    */
-  def filter(p: japi.Predicate[Out]): javadsl.Flow[In, Out, Mat] =
+  def filter(p: function.Predicate[Out]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.filter(p.test))
 
   /**
@@ -235,7 +236,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * [[akka.stream.Supervision#restart]] current value starts at `zero` again
    * the stream will continue.
    */
-  def scan[T](zero: T)(f: japi.Function2[T, Out, T]): javadsl.Flow[In, T, Mat] =
+  def scan[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.scan(zero)(f.apply))
 
   /**
@@ -299,7 +300,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
-  def conflate[S](seed: japi.Function[Out, S], aggregate: japi.Function2[S, Out, S]): javadsl.Flow[In, S, Mat] =
+  def conflate[S](seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): javadsl.Flow[In, S, Mat] =
     new Flow(delegate.conflate(seed.apply)(aggregate.apply))
 
   /**
@@ -318,7 +319,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: japi.Function[Out, S], extrapolate: japi.Function[S, akka.japi.Pair[U, S]]): javadsl.Flow[In, U, Mat] =
+  def expand[S, U](seed: function.Function[Out, S], extrapolate: function.Function[S, akka.japi.Pair[U, S]]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.expand(seed(_))(s ⇒ {
       val p = extrapolate(s)
       (p.first, p.second)
@@ -340,7 +341,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
-  def transform[U](mkStage: japi.Creator[Stage[Out, U]]): javadsl.Flow[In, U, Mat] =
+  def transform[U](mkStage: function.Creator[Stage[Out, U]]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.transform(() ⇒ mkStage.create()))
 
   /**
@@ -370,7 +371,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * is [[akka.stream.Supervision#resume]] or [[akka.stream.Supervision#restart]]
    * the element is dropped and the stream and substreams continue.
    */
-  def groupBy[K](f: japi.Function[Out, K]): javadsl.Flow[In, akka.japi.Pair[K, javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
+  def groupBy[K](f: function.Function[Out, K]): javadsl.Flow[In, akka.japi.Pair[K, javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
     new Flow(delegate.groupBy(f.apply).map { case (k, p) ⇒ akka.japi.Pair(k, p.asJava) }) // TODO optimize to one step
 
   /**
@@ -394,7 +395,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * is [[akka.stream.Supervision#resume]] or [[akka.stream.Supervision#restart]]
    * the element is dropped and the stream and substreams continue.
    */
-  def splitWhen(p: japi.Predicate[Out]): javadsl.Flow[In, Source[Out, Unit], Mat] =
+  def splitWhen(p: function.Predicate[Out]): javadsl.Flow[In, Source[Out, Unit], Mat] =
     new Flow(delegate.splitWhen(p.test).map(_.asJava))
 
   /**
@@ -431,14 +432,14 @@ trait RunnableFlow[+Mat] extends Graph[ClosedShape, Mat] {
   /**
    * Transform only the materialized value of this RunnableFlow, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): RunnableFlow[Mat2]
+  def mapMaterialized[Mat2](f: function.Function[Mat, Mat2]): RunnableFlow[Mat2]
 }
 
 /** INTERNAL API */
 private[akka] class RunnableFlowAdapter[Mat](runnable: scaladsl.RunnableFlow[Mat]) extends RunnableFlow[Mat] {
   def shape = ClosedShape
   def module = runnable.module
-  override def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): RunnableFlow[Mat2] =
+  override def mapMaterialized[Mat2](f: function.Function[Mat, Mat2]): RunnableFlow[Mat2] =
     new RunnableFlowAdapter(runnable.mapMaterialized(f.apply _))
   override def run(materializer: FlowMaterializer): Mat = runnable.run()(materializer)
 

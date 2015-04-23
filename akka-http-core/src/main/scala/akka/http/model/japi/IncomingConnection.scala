@@ -6,7 +6,7 @@ package akka.http.model.japi
 
 import java.net.InetSocketAddress
 
-import akka.stream.javadsl.japi.Function
+import akka.japi.function.Function
 
 import scala.concurrent.Future
 
