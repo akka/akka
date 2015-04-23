@@ -55,7 +55,7 @@ class RespondWithDirectivesSpec extends RoutingSpec {
     "add the given header to a response if the header was missing before" in {
       Get() ~> route() ~> check { response shouldEqual HttpResponse(headers = customHeader :: Nil) }
     }
-    "don't change a response if the header already existed" in {
+    "not change a response if the header already existed" in {
       Get() ~> route(existingHeader) ~> check { response shouldEqual HttpResponse(headers = existingHeader :: Nil) }
     }
   }
@@ -69,9 +69,9 @@ class RespondWithDirectivesSpec extends RoutingSpec {
     "add the given headers to a response if the header was missing before" in {
       Get() ~> route() ~> check { response shouldEqual HttpResponse(headers = customHeader :: customHeader2 :: Nil) }
     }
-    "don't update an existing header" in {
+    "not update an existing header" in {
       Get() ~> route(existingHeader) ~> check {
-        response shouldEqual HttpResponse(headers = existingHeader :: customHeader2 :: Nil)
+        response shouldEqual HttpResponse(headers = List(customHeader2, existingHeader))
       }
     }
   }
