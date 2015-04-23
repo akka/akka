@@ -82,10 +82,10 @@ class FlowErrorDocSpec extends AkkaSpec {
     val result = source.grouped(1000).runWith(Sink.head)
     // the negative element cause the scan stage to be restarted,
     // i.e. start from 0 again
-    // result here will be a Future completed with Success(Vector(0, 1, 0, 5, 12))
+    // result here will be a Future completed with Success(Vector(0, 1, 4, 0, 5, 12))
     //#restart-section
 
-    Await.result(result, remaining) should be(Vector(0, 1, 0, 5, 12))
+    Await.result(result, remaining) should be(Vector(0, 1, 4, 0, 5, 12))
   }
 
 }

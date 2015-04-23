@@ -130,11 +130,11 @@ public class FlowErrorDocTest {
       .runWith(Sink.<List<Integer>>head(), mat);
     // the negative element cause the scan stage to be restarted,
     // i.e. start from 0 again
-    // result here will be a Future completed with Success(List(0, 1, 0, 5, 12))
+    // result here will be a Future completed with Success(List(0, 1, 4, 0, 5, 12))
     //#restart-section
     
     assertEquals(
-      Arrays.asList(0, 1, 0, 5, 12), 
+      Arrays.asList(0, 1, 4, 0, 5, 12), 
       Await.result(result, Duration.create(3, TimeUnit.SECONDS)));
   }
 
