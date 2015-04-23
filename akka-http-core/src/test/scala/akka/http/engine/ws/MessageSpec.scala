@@ -433,7 +433,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         messageIn.expectComplete()
 
-        netIn.expectNoMsg(1.second) // especially the cancellation not yet
+        netIn.expectNoMsg(100.millis) // especially the cancellation not yet
         expectNoNetworkData()
         messageOutSub.sendComplete()
 
@@ -478,6 +478,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         netOut.expectComplete()
       }
       "after receiving regular close frame when fragmented message is still open" in pendingUntilFixed {
+        pending
         new ServerTestSetup {
           netOutSub.request(10)
           messageInSub.request(10)
@@ -534,7 +535,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         messageOutSub.sendComplete()
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
 
-        netOut.expectNoMsg(1.second) // wait for peer to close regularly
+        netOut.expectNoMsg(100.millis) // wait for peer to close regularly
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
 
         messageIn.expectComplete()
@@ -562,7 +563,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         dataSub.sendComplete()
         expectFrameOnNetwork(Opcode.Continuation, ByteString.empty, fin = true)
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
-        netOut.expectNoMsg(1.second) // wait for peer to close regularly
+        netOut.expectNoMsg(100.millis) // wait for peer to close regularly
 
         val mask = Random.nextInt()
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
@@ -596,6 +597,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "reason is no valid utf8 data" in pending
       }
       "timeout if user handler closes and peer doesn't send a close frame" in new ServerTestSetup {
+        override protected def closeTimeout: FiniteDuration = 100.millis
+
         netInSub.expectRequest()
         messageOutSub.sendComplete()
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
@@ -604,6 +607,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         netInSub.expectCancellation()
       }
       "timeout after we close after error and peer doesn't send a close frame" in new ServerTestSetup {
+        override protected def closeTimeout: FiniteDuration = 100.millis
+
         netInSub.expectRequest()
 
         pushInput(frameHeader(Opcode.Binary, 0, fin = true, rsv1 = true))
