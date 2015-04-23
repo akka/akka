@@ -40,6 +40,8 @@ private[http] object RouteStructure {
 
   case class Conditional(entityTag: EntityTag, lastModified: DateTime, children: immutable.Seq[Route]) extends DirectiveRoute
 
+  case class HandleExceptions(handler: ExceptionHandler, children: immutable.Seq[Route]) extends DirectiveRoute
+
   abstract class OpaqueRoute(extractions: RequestVal[_]*) extends Route {
     def handle(ctx: RequestContext): RouteResult
   }
