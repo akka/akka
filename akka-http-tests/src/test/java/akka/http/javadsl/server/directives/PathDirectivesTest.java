@@ -2,26 +2,29 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.javadsl.server;
+package akka.http.javadsl.server.directives;
 
-import static akka.http.javadsl.server.Directives.*;
-import akka.http.javadsl.testkit.*;
-import akka.http.scaladsl.model.HttpRequest;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.UUID;
+
+import akka.http.javadsl.server.*;
+import akka.http.javadsl.testkit.*;
+import akka.http.scaladsl.model.HttpRequest;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class PathDirectivesTest extends JUnitRouteTest {
     @Test
     public void testPathPrefixAndPath() {
         TestRoute route =
             testRoute(
-                    pathPrefix("pet").route(
-                            path("cat").route(complete("The cat!")),
-                            path("dog").route(complete("The dog!")),
-                            pathSingleSlash().route(complete("Here are only pets."))
-                    )
+                pathPrefix("pet").route(
+                    path("cat").route(complete("The cat!")),
+                    path("dog").route(complete("The dog!")),
+                    pathSingleSlash().route(complete("Here are only pets."))
+                )
             );
 
         route.run(HttpRequest.GET("/pet/"))
@@ -41,9 +44,9 @@ public class PathDirectivesTest extends JUnitRouteTest {
     public void testRawPathPrefix() {
         TestRoute route1 =
             testRoute(
-                    rawPathPrefix(PathMatchers.SLASH(), "pet", PathMatchers.SLASH(), "", PathMatchers.SLASH(), "cat").route(
-                            complete("The cat!")
-                    )
+                rawPathPrefix(PathMatchers.SLASH(), "pet", PathMatchers.SLASH(), "", PathMatchers.SLASH(), "cat").route(
+                        complete("The cat!")
+                )
             );
 
         route1.run(HttpRequest.GET("/pet//cat"))
