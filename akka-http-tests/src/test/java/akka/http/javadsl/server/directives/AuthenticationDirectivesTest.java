@@ -7,6 +7,8 @@ package akka.http.javadsl.server.directives;
 import org.junit.Test;
 import scala.Option;
 import scala.concurrent.Future;
+
+import akka.http.javadsl.server.*;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.Authorization;
 import akka.http.javadsl.testkit.*;

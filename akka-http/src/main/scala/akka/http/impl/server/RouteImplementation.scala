@@ -119,6 +119,12 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
     case Conditional(eTag, lastModified, children) ⇒
       conditional(eTag.asScala, lastModified.asScala).apply(apply(RouteAlternatives(children)))
 
+    case HandleExceptions(handler, children) ⇒
+      val pf: akka.http.scaladsl.server.ExceptionHandler = akka.http.scaladsl.server.ExceptionHandler {
+        case e: RuntimeException ⇒ apply(handler.handle(e))
+      }
+      handleExceptions(pf).apply(apply(RouteAlternatives(children)))
+
     case o: OpaqueRoute ⇒
       (ctx ⇒ o.handle(new RequestContextImpl(ctx)).asInstanceOf[RouteResultImpl].underlying)
 
