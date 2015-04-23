@@ -65,7 +65,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * flow into the materialized value of the resulting Flow.
    */
   def viaMat[T, Mat2, Mat3](flow: Flow[Out, T, Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
-    if (this.isIdentity) flow.asInstanceOf[Flow[In, T, Mat3]]
+    if (this.isIdentity) flow.asInstanceOf[Flow[In, T, Mat2]].mapMaterialized(combine(().asInstanceOf[Mat], _))
     else {
       val flowCopy = flow.module.carbonCopy
       new Flow(

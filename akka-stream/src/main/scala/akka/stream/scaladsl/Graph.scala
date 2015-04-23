@@ -265,6 +265,19 @@ object FlowGraph extends GraphApply {
      * This is only used by the materialization-importing apply methods of Source,
      * Flow, Sink and Graph.
      */
+    private[stream] def add[S <: Shape, A](graph: Graph[S, _], transform: (A) ⇒ Any): S = {
+      if (StreamLayout.Debug) graph.module.validate()
+      val copy = graph.module.carbonCopy
+      moduleInProgress = moduleInProgress.grow(copy.transformMaterializedValue(transform.asInstanceOf[Any ⇒ Any]))
+      graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
+    }
+
+    /**
+     * INTERNAL API.
+     *
+     * This is only used by the materialization-importing apply methods of Source,
+     * Flow, Sink and Graph.
+     */
     private[stream] def add[S <: Shape, A, B](graph: Graph[S, _], combine: (A, B) ⇒ Any): S = {
       if (StreamLayout.Debug) graph.module.validate()
       val copy = graph.module.carbonCopy

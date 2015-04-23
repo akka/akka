@@ -3,12 +3,13 @@
  */
 package akka.stream.scaladsl
 
-import scala.concurrent.Promise
+import scala.concurrent.{ Await, Promise }
 
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.TwoStreamsSetup
+import scala.concurrent.duration._
 
 class GraphConcatSpec extends TwoStreamsSetup {
 
@@ -153,6 +154,33 @@ class GraphConcatSpec extends TwoStreamsSetup {
       subscriber.expectNext(3)
       promise.failure(TestException)
       subscriber.expectError(TestException)
+    }
+
+    "work with Source DSL" in {
+      val testSource = Source(1 to 5).concat(Source(6 to 10)).grouped(1000)
+      Await.result(testSource.runWith(Sink.head), 3.seconds) should ===(1 to 10)
+
+      val runnable = testSource.toMat(Sink.ignore)(Keep.left)
+      val (m1, m2) = runnable.run()
+      m1.isInstanceOf[Unit] should be(true)
+      m2.isInstanceOf[Unit] should be(true)
+
+      runnable.mapMaterialized((_) ⇒ "boo").run() should be("boo")
+
+    }
+
+    "work with Flow DSL" in {
+      val testFlow = Flow[Int].concat(Source(6 to 10)).grouped(1000)
+      Await.result(Source(1 to 5).viaMat(testFlow)(Keep.both).runWith(Sink.head), 3.seconds) should ===(1 to 10)
+
+      val runnable = Source(1 to 5).viaMat(testFlow)(Keep.both).to(Sink.ignore)
+      val (m1, (m2, m3)) = runnable.run()
+      m1.isInstanceOf[Unit] should be(true)
+      m2.isInstanceOf[Unit] should be(true)
+      m3.isInstanceOf[Unit] should be(true)
+
+      runnable.mapMaterialized((_) ⇒ "boo").run() should be("boo")
+
     }
   }
 }
