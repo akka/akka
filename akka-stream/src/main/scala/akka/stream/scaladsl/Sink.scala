@@ -6,9 +6,12 @@ package akka.stream.scaladsl
 import akka.stream.javadsl
 import akka.actor.{ ActorRef, Props }
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage.Context
+import akka.stream.stage.PushStage
 import akka.stream.stage.SyncDirective
 import akka.stream.{ SinkShape, Inlet, Outlet, Graph, OperationAttributes }
 import akka.stream.OperationAttributes._
@@ -47,8 +50,6 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
 }
 
 object Sink extends SinkApply {
-
-  import OperationAttributes.none
 
   /** INTERNAL API */
   private[stream] def shape[T](name: String): SinkShape[T] = SinkShape(new Inlet(name + ".in"))

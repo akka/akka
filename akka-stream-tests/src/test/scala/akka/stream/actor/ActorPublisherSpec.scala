@@ -31,20 +31,24 @@ object ActorPublisherSpec {
   case class TotalDemand(elements: Long)
   case class Produce(elem: String)
   case class Err(reason: String)
+  case class ErrThenStop(reason: String)
   case object Boom
   case object Complete
+  case object CompleteThenStop
   case object ThreadName
 
   class TestPublisher(probe: ActorRef) extends ActorPublisher[String] {
     import akka.stream.actor.ActorPublisherMessage._
 
     def receive = {
-      case Request(element) ⇒ probe ! TotalDemand(totalDemand)
-      case Produce(elem)    ⇒ onNext(elem)
-      case Err(reason)      ⇒ onError(new RuntimeException(reason) with NoStackTrace)
-      case Complete         ⇒ onComplete()
-      case Boom             ⇒ throw new RuntimeException("boom") with NoStackTrace
-      case ThreadName       ⇒ probe ! Thread.currentThread.getName
+      case Request(element)    ⇒ probe ! TotalDemand(totalDemand)
+      case Produce(elem)       ⇒ onNext(elem)
+      case Err(reason)         ⇒ onError(new RuntimeException(reason) with NoStackTrace)
+      case ErrThenStop(reason) ⇒ onErrorThenStop(new RuntimeException(reason) with NoStackTrace)
+      case Complete            ⇒ onComplete()
+      case CompleteThenStop    ⇒ onCompleteThenStop()
+      case Boom                ⇒ throw new RuntimeException("boom") with NoStackTrace
+      case ThreadName          ⇒ probe ! Thread.currentThread.getName
     }
   }
 
@@ -169,7 +173,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       s.expectError.getMessage should be("wrong")
     }
 
-    "terminate after signalling error" in {
+    "not terminate after signalling onError" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val s = StreamTestKit.SubscriberProbe[String]()
@@ -178,7 +182,19 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       probe.watch(ref)
       ref ! Err("wrong")
       s.expectError.getMessage should be("wrong")
-      probe.expectTerminated(ref, 200.millis)
+      probe.expectNoMsg(200.millis)
+    }
+
+    "terminate after signalling onErrorThenStop" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
+      s.expectSubscription
+      probe.watch(ref)
+      ref ! ErrThenStop("wrong")
+      s.expectError.getMessage should be("wrong")
+      probe.expectTerminated(ref, 3.seconds)
     }
 
     "signal error before subscribe" in {
@@ -237,7 +253,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       s.expectComplete
     }
 
-    "terminate after signalling onComplete" in {
+    "not terminate after signalling onComplete" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val s = StreamTestKit.SubscriberProbe[String]()
@@ -250,7 +266,23 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       ref ! Complete
       s.expectNext("elem-1")
       s.expectComplete
-      probe.expectTerminated(ref, 200.millis)
+      probe.expectNoMsg(200.millis)
+    }
+
+    "terminate after signalling onCompleteThenStop" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
+      val sub = s.expectSubscription
+      sub.request(3)
+      probe.expectMsg(TotalDemand(3))
+      probe.watch(ref)
+      ref ! Produce("elem-1")
+      ref ! CompleteThenStop
+      s.expectNext("elem-1")
+      s.expectComplete
+      probe.expectTerminated(ref, 3.seconds)
     }
 
     "signal immediate onComplete" in {
