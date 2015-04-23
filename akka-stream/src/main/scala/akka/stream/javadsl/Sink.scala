@@ -4,6 +4,7 @@
 package akka.stream.javadsl
 
 import akka.actor.{ ActorRef, Props }
+import akka.japi.function
 import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
@@ -27,7 +28,7 @@ object Sink {
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
    */
-  def fold[U, In](zero: U, f: japi.Function2[U, In, U]): javadsl.Sink[In, Future[U]] =
+  def fold[U, In](zero: U, f: function.Function2[U, In, U]): javadsl.Sink[In, Future[U]] =
     new Sink(scaladsl.Sink.fold[U, In](zero)(f.apply))
 
   /**
@@ -61,7 +62,7 @@ object Sink {
    * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
    * the stream..
    */
-  def foreach[T](f: japi.Procedure[T]): Sink[T, Future[Unit]] =
+  def foreach[T](f: function.Procedure[T]): Sink[T, Future[Unit]] =
     new Sink(scaladsl.Sink.foreach(f.apply))
 
   /**
@@ -76,7 +77,7 @@ object Sink {
    * completion, apply the provided function with [[scala.util.Success]]
    * or [[scala.util.Failure]].
    */
-  def onComplete[In](callback: japi.Procedure[Try[Unit]]): Sink[In, Unit] =
+  def onComplete[In](callback: function.Procedure[Try[Unit]]): Sink[In, Unit] =
     new Sink(scaladsl.Sink.onComplete[In](x ⇒ callback.apply(x)))
 
   /**
@@ -142,7 +143,7 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
   /**
    * Transform only the materialized value of this Sink, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): Sink[In, Mat2] =
+  def mapMaterialized[Mat2](f: function.Function[Mat, Mat2]): Sink[In, Mat2] =
     new Sink(delegate.mapMaterialized(f.apply _))
 
   override def withAttributes(attr: OperationAttributes): javadsl.Sink[In, Mat] =

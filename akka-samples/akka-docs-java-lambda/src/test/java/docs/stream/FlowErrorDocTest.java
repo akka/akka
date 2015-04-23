@@ -21,11 +21,10 @@ import akka.stream.ActorFlowMaterializerSettings;
 import akka.stream.FlowMaterializer;
 import akka.stream.Supervision;
 import akka.stream.javadsl.Flow;
-import akka.stream.OperationAttributes;
 import akka.stream.ActorOperationAttributes;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.javadsl.japi.Function;
+import akka.japi.function.Function;
 import akka.testkit.JavaTestKit;
 
 public class FlowErrorDocTest {

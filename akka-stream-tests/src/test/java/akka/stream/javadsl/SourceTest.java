@@ -12,7 +12,7 @@ import akka.japi.Pair;
 import akka.stream.OverflowStrategy;
 import akka.stream.StreamTest;
 import akka.stream.stage.*;
-import akka.stream.javadsl.japi.*;
+import akka.japi.function.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
@@ -253,7 +253,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseCallableInput() {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input1 = Arrays.asList(4, 3, 2, 1, 0);
-    final akka.stream.javadsl.japi.Creator<Iterator<Integer>> input = new akka.stream.javadsl.japi.Creator<Iterator<Integer>>() {
+    final Creator<Iterator<Integer>> input = new Creator<Iterator<Integer>>() {
       @Override
       public Iterator<Integer> create() {
         return input1.iterator();

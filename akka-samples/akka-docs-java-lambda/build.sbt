@@ -10,7 +10,7 @@ javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
 
-val publishedAkkaVersion = "2.3.9"
+val publishedAkkaVersion = "2.3.10"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %%      "akka-actor" % publishedAkkaVersion,

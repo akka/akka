@@ -1502,7 +1502,8 @@ object Dependencies {
 
     val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0.RC5")
 
-    val publishedAkkaVersion = "2.3.9"
+    // also change pom.xml and build.sbt in akka-samples/akka-docs-java-lambda
+    val publishedAkkaVersion = "2.3.10"
   }
 
   object Compile {

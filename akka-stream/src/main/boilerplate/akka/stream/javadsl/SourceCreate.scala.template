@@ -12,7 +12,7 @@ trait SourceCreate {
    * Creates a `Source` by using a `FlowGraph.Builder[Unit]` on a block that expects
    * a [[FlowGraph.Builder]] and returns an [[Outlet]].
    */
-  def create[T](block: japi.Function[FlowGraph.Builder[Unit], Outlet[T]]): Source[T, Unit] =
+  def create[T](block: akka.japi.function.Function[FlowGraph.Builder[Unit], Outlet[T]]): Source[T, Unit] =
     new Source(scaladsl.Source() { b ⇒ block.apply(b.asJava) })
 
   /**
@@ -22,7 +22,7 @@ trait SourceCreate {
    * will be passed into the create block.
    */
   def create[T, S <: Shape, M](g1: Graph[S, M],
-      block: japi.Function2[FlowGraph.Builder[M], S, Outlet[T]]): Source[T, M] =
+      block: akka.japi.function.Function2[FlowGraph.Builder[M], S, Outlet[T]]): Source[T, M] =
     new Source(scaladsl.Source(g1) { b ⇒ s => block.apply(b.asJava, s) })
 
   /**
@@ -31,7 +31,7 @@ trait SourceCreate {
    * The graphs will be imported (using `Builder.graph()`) and the resulting shapes
    * will be passed into the create block.
    */
-  def create[T, S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: japi.Function2[M1, M2, M],
+  def create[T, S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: akka.japi.function.Function2[M1, M2, M],
       block: japi.Function3[FlowGraph.Builder[M], S1, S2, Outlet[T]]): Source[T, M] =
     new Source(scaladsl.Source(g1, g2)(combineMat.apply _) { b => (s1, s2) => block.apply(b.asJava, s1, s2) })
 

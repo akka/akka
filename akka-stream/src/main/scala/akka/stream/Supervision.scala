@@ -4,7 +4,7 @@
 package akka.stream
 
 import scala.util.control.NonFatal
-import akka.stream.javadsl.japi
+import akka.japi.{ function ⇒ japi }
 
 object Supervision {
   sealed trait Directive
