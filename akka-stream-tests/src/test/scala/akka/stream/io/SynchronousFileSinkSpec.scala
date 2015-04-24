@@ -5,12 +5,19 @@ package akka.stream.io
 
 import java.io.File
 
-import akka.actor.{ ActorCell, ActorSystem, RepointableActorRef }
+import akka.actor.ActorSystem
+import akka.stream.impl.ActorFlowMaterializerImpl
+import akka.stream.impl.StreamSupervisor
+import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.scaladsl.Source
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, ActorOperationAttributes }
-import akka.util.{ ByteString, Timeout }
+import akka.stream.testkit.StreamTestKit
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorOperationAttributes
+import akka.util.ByteString
+import akka.util.Timeout
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
@@ -93,8 +100,9 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         try {
           Source(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(SynchronousFileSink(f))(mat)
 
-          val ref = Await.result(sys.actorSelection("/user/$a/flow-1-2*").resolveOne(), timeout.duration)
-          ref.asInstanceOf[RepointableActorRef].underlying.asInstanceOf[ActorCell].dispatcher.id should ===("akka.stream.default-file-io-dispatcher")
+          mat.asInstanceOf[ActorFlowMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
+          assertDispatcher(ref, "akka.stream.default-file-io-dispatcher")
         } finally shutdown(sys)
       }
     }
@@ -111,8 +119,9 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
             .withAttributes(ActorOperationAttributes.dispatcher("akka.actor.default-dispatcher"))
             .run()(mat)
 
-          val ref = Await.result(sys.actorSelection("/user/$a/flow-1-2*").resolveOne(), timeout.duration)
-          ref.asInstanceOf[RepointableActorRef].underlying.asInstanceOf[ActorCell].dispatcher.id should ===("akka.actor.default-dispatcher")
+          mat.asInstanceOf[ActorFlowMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
+          assertDispatcher(ref, "akka.actor.default-dispatcher")
         } finally shutdown(sys)
       }
     }
@@ -132,3 +141,4 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
   }
 
 }
+

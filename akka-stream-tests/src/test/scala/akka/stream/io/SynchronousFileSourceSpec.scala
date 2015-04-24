@@ -3,16 +3,25 @@
  */
 package akka.stream.io
 
-import java.io.{ File, FileWriter }
+import java.io.File
+import java.io.FileWriter
 import java.util.Random
 
-import akka.actor.{ ActorCell, RepointableActorRef, ActorSystem }
+import akka.actor.ActorSystem
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorOperationAttributes
+import akka.stream.OperationAttributes
+import akka.stream.impl.ActorFlowMaterializerImpl
+import akka.stream.impl.StreamSupervisor
+import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.io.SynchronousFileSourceSpec.Settings
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.{ ActorOperationAttributes, ActorFlowMaterializer, ActorFlowMaterializerSettings, OperationAttributes }
-import akka.util.{ Timeout, ByteString }
+import akka.stream.testkit.scaladsl.TestSink
+import akka.util.ByteString
+import akka.util.Timeout
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -157,16 +166,17 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
         }
       }
 
-    "use dedicated file-io-dispatcher by default" in {
+    "use dedicated file-io-dispatcher by default" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val mat = ActorFlowMaterializer()(sys)
       implicit val timeout = Timeout(500.millis)
 
       try {
-        SynchronousFileSource(manyLines).runWith(Sink.ignore)(mat)
+        val p = SynchronousFileSource(manyLines).runWith(TestSink.probe())(mat)
 
-        val ref = Await.result(sys.actorSelection("/user/$a/flow-*").resolveOne(), timeout.duration)
-        ref.asInstanceOf[RepointableActorRef].underlying.asInstanceOf[ActorCell].dispatcher.id should ===("akka.stream.default-file-io-dispatcher")
+        mat.asInstanceOf[ActorFlowMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
+        try assertDispatcher(ref, "akka.stream.default-file-io-dispatcher") finally p.cancel()
       } finally shutdown(sys)
     }
 
@@ -176,12 +186,13 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       implicit val timeout = Timeout(500.millis)
 
       try {
-        SynchronousFileSource(manyLines)
+        val p = SynchronousFileSource(manyLines)
           .withAttributes(ActorOperationAttributes.dispatcher("akka.actor.default-dispatcher"))
-          .runWith(Sink.ignore)(mat)
+          .runWith(TestSink.probe())(mat)
 
-        val ref = Await.result(sys.actorSelection("/user/$a/flow-*").resolveOne(), timeout.duration)
-        ref.asInstanceOf[RepointableActorRef].underlying.asInstanceOf[ActorCell].dispatcher.id should ===("akka.actor.default-dispatcher")
+        mat.asInstanceOf[ActorFlowMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
+        try assertDispatcher(ref, "akka.actor.default-dispatcher") finally p.cancel()
       } finally shutdown(sys)
     }
   }
