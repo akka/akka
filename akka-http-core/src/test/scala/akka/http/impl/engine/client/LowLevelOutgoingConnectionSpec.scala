@@ -5,6 +5,7 @@
 package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
+import akka.http.ClientConnectionSettings
 import org.scalatest.Inside
 import akka.util.ByteString
 import akka.event.NoLogging
