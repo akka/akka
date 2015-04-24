@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.marshallers.xml
+package akka.http.scaladsl.marshallers.xml
 
 import java.io.{ ByteArrayInputStream, InputStreamReader }
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.xml.{ XML, NodeSeq }
 import akka.stream.FlowMaterializer
-import akka.http.unmarshalling._
-import akka.http.marshalling._
-import akka.http.model._
+import akka.http.scaladsl.unmarshalling._
+import akka.http.scaladsl.marshalling._
+import akka.http.scaladsl.model._
 import MediaTypes._
 
 trait ScalaXmlSupport {
