@@ -7,7 +7,7 @@ import akka.actor.{ ExtendedActorSystem, ActorIdentity, ActorRef, Identify }
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit._
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit.Utils._
 import akka.util.Timeout
 
 import scala.concurrent.Await
@@ -40,9 +40,9 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
   "groupBy" must {
 
     "timeout and cancel substream publishers when no-one subscribes to them after some time (time them out)" in assertAllStagesStopped {
-      val publisherProbe = StreamTestKit.PublisherProbe[Int]()
+      val publisherProbe = TestPublisher.manualProbe[Int]()
       val publisher = Source(publisherProbe).groupBy(_ % 3).runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()
+      val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbe.expectSubscription()
@@ -56,7 +56,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
       val (_, s1) = subscriber.expectNext()
       // should not break normal usage
-      val s1SubscriberProbe = StreamTestKit.SubscriberProbe[Int]()
+      val s1SubscriberProbe = TestSubscriber.manualProbe[Int]()
       s1.runWith(Sink.publisher).subscribe(s1SubscriberProbe)
       val s1Subscription = s1SubscriberProbe.expectSubscription()
       s1Subscription.request(100)
@@ -64,7 +64,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
       val (_, s2) = subscriber.expectNext()
       // should not break normal usage
-      val s2SubscriberProbe = StreamTestKit.SubscriberProbe[Int]()
+      val s2SubscriberProbe = TestSubscriber.manualProbe[Int]()
       s2.runWith(Sink.publisher).subscribe(s2SubscriberProbe)
       val s2Subscription = s2SubscriberProbe.expectSubscription()
       s2Subscription.request(100)
@@ -82,9 +82,9 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
     }
 
     "timeout and stop groupBy parent actor if none of the substreams are actually consumed" in assertAllStagesStopped {
-      val publisherProbe = StreamTestKit.PublisherProbe[Int]()
+      val publisherProbe = TestPublisher.manualProbe[Int]()
       val publisher = Source(publisherProbe).groupBy(_ % 2).runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()
+      val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbe.expectSubscription()
@@ -107,9 +107,9 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
     }
 
     "not timeout and cancel substream publishers when they have been subscribed to" in {
-      val publisherProbe = StreamTestKit.PublisherProbe[Int]()
+      val publisherProbe = TestPublisher.manualProbe[Int]()
       val publisher = Source(publisherProbe).groupBy(_ % 2).runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()
+      val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbe.expectSubscription()
@@ -122,7 +122,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
       val (_, s1) = subscriber.expectNext()
       // should not break normal usage
-      val s1SubscriberProbe = StreamTestKit.SubscriberProbe[Int]()
+      val s1SubscriberProbe = TestSubscriber.manualProbe[Int]()
       s1.runWith(Sink.publisher).subscribe(s1SubscriberProbe)
       val s1Sub = s1SubscriberProbe.expectSubscription()
       s1Sub.request(1)
@@ -130,7 +130,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
       val (_, s2) = subscriber.expectNext()
       // should not break normal usage
-      val s2SubscriberProbe = StreamTestKit.SubscriberProbe[Int]()
+      val s2SubscriberProbe = TestSubscriber.manualProbe[Int]()
       s2.runWith(Sink.publisher).subscribe(s2SubscriberProbe)
       val s2Sub = s2SubscriberProbe.expectSubscription()
 

@@ -22,8 +22,8 @@ class ChainSetup[In, Out](
            toPublisher: (Source[Out, _], ActorFlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
     this(stream, settings, materializerCreator(settings, system), toPublisher)(system)
 
-  val upstream = StreamTestKit.PublisherProbe[In]()
-  val downstream = StreamTestKit.SubscriberProbe[Out]()
+  val upstream = TestPublisher.manualProbe[In]()
+  val downstream = TestSubscriber.probe[Out]()
   private val s = Source(upstream).via(stream(Flow[In].map(x ⇒ x).named("buh")))
   val publisher = toPublisher(s, materializer)
   val upstreamSubscription = upstream.expectSubscription()

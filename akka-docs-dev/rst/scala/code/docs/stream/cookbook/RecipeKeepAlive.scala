@@ -1,8 +1,7 @@
 package docs.stream.cookbook
 
 import akka.stream.scaladsl._
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.{ SubscriberProbe, PublisherProbe }
+import akka.stream.testkit._
 import akka.util.ByteString
 
 class RecipeKeepAlive extends RecipeSpec {
@@ -13,9 +12,9 @@ class RecipeKeepAlive extends RecipeSpec {
 
       type Tick = Unit
 
-      val tickPub = PublisherProbe[Tick]()
-      val dataPub = PublisherProbe[ByteString]()
-      val sub = SubscriberProbe[ByteString]()
+      val tickPub = TestPublisher.probe[Tick]()
+      val dataPub = TestPublisher.probe[ByteString]()
+      val sub = TestSubscriber.manualProbe[ByteString]()
       val ticks = Source(tickPub)
 
       val dataStream = Source(dataPub)
@@ -38,17 +37,14 @@ class RecipeKeepAlive extends RecipeSpec {
 
       graph.run()
 
-      val manualTicks = new StreamTestKit.AutoPublisher(tickPub)
-      val manualData = new StreamTestKit.AutoPublisher(dataPub)
-
       val subscription = sub.expectSubscription()
 
-      manualTicks.sendNext(())
+      tickPub.sendNext(())
 
       // pending data will overcome the keepalive
-      manualData.sendNext(ByteString(1))
-      manualData.sendNext(ByteString(2))
-      manualData.sendNext(ByteString(3))
+      dataPub.sendNext(ByteString(1))
+      dataPub.sendNext(ByteString(2))
+      dataPub.sendNext(ByteString(3))
 
       subscription.request(1)
       sub.expectNext(ByteString(1))
@@ -60,11 +56,11 @@ class RecipeKeepAlive extends RecipeSpec {
       sub.expectNext(keepaliveMessage)
 
       subscription.request(1)
-      manualTicks.sendNext(())
+      tickPub.sendNext(())
       sub.expectNext(keepaliveMessage)
 
-      manualData.sendComplete()
-      manualTicks.sendComplete()
+      dataPub.sendComplete()
+      tickPub.sendComplete()
 
       sub.expectComplete()
 

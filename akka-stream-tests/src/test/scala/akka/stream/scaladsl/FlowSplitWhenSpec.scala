@@ -7,10 +7,8 @@ import scala.concurrent.duration._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.Supervision.resumingDecider
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.TE
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import org.reactivestreams.Publisher
 import akka.stream.ActorOperationAttributes
 
@@ -22,7 +20,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
   implicit val materializer = ActorFlowMaterializer(settings)
 
   case class StreamPuppet(p: Publisher[Int]) {
-    val probe = StreamTestKit.SubscriberProbe[Int]()
+    val probe = TestSubscriber.manualProbe[Int]()
     p.subscribe(probe)
     val subscription = probe.expectSubscription()
 
@@ -37,7 +35,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
   class SubstreamsSupport(splitWhen: Int = 3, elementCount: Int = 6) {
     val source = Source(1 to elementCount)
     val groupStream = source.splitWhen(_ == splitWhen).runWith(Sink.publisher)
-    val masterSubscriber = StreamTestKit.SubscriberProbe[Source[Int, _]]()
+    val masterSubscriber = TestSubscriber.manualProbe[Source[Int, _]]()
 
     groupStream.subscribe(masterSubscriber)
     val masterSubscription = masterSubscriber.expectSubscription()
@@ -116,12 +114,12 @@ class FlowSplitWhenSpec extends AkkaSpec {
     }
 
     "fail stream when splitWhen function throws" in assertAllStagesStopped {
-      val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
+      val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source(publisherProbeProbe)
         .splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
         .runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Source[Int, Unit]]()
+      val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbeProbe.expectSubscription()
@@ -148,13 +146,13 @@ class FlowSplitWhenSpec extends AkkaSpec {
     }
 
     "resume stream when splitWhen function throws" in {
-      val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
+      val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source(publisherProbeProbe)
         .splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
         .withAttributes(ActorOperationAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Source[Int, Unit]]()
+      val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
       publisher.subscribe(subscriber)
 
       val upstreamSubscription = publisherProbeProbe.expectSubscription()
@@ -193,8 +191,8 @@ class FlowSplitWhenSpec extends AkkaSpec {
     }
 
     "pass along early cancellation" in assertAllStagesStopped {
-      val up = StreamTestKit.PublisherProbe[Int]()
-      val down = StreamTestKit.SubscriberProbe[Source[Int, Unit]]()
+      val up = TestPublisher.manualProbe[Int]()
+      val down = TestSubscriber.manualProbe[Source[Int, Unit]]()
 
       val flowSubscriber = Source.subscriber[Int].splitWhen(_ % 3 == 0).to(Sink(down)).run()
 

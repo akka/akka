@@ -1652,7 +1652,7 @@ object Dependencies {
 
   val streamTestkit = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
-    "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
+    "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion,
     Test.scalatest, Test.scalacheck, Test.junit)
 
   val streamTest = Seq(Test.scalatest, Test.scalacheck, Test.junit, Test.junitIntf, Test.commonsIo)

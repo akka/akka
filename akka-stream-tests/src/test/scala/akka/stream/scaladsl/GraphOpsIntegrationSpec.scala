@@ -5,8 +5,7 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit.{ OnNext, SubscriberProbe }
+import akka.stream.testkit._
 import akka.util.ByteString
 import akka.stream.{ Inlet, Outlet, Shape, Graph }
 import org.scalactic.ConversionCheckedTripleEquals
@@ -156,7 +155,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
 
     "be able to run plain flow" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
-      val s = SubscriberProbe[Int]
+      val s = TestSubscriber.manualProbe[Int]
       val flow = Flow[Int].map(_ * 2)
       FlowGraph.closed() { implicit builder ⇒
         Source(p) ~> flow ~> Sink(s)

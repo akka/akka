@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
-import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
+import akka.stream.testkit._
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -22,7 +22,7 @@ class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INF
       val (even, odd) = (0 to end).partition(_ % 2 == 0)
       val result = Set() ++ even ++ odd ++ odd.map(_ * 10)
       val source = Source(0 to end)
-      val probe = StreamTestKit.SubscriberProbe[Seq[Int]]()
+      val probe = TestSubscriber.manualProbe[Seq[Int]]()
 
       val flow1 = Flow() { implicit b ⇒
         import FlowGraph.Implicits._

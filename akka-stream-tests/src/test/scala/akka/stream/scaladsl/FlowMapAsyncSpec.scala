@@ -10,9 +10,8 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
 import akka.stream.stage._
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 import akka.stream.ActorOperationAttributes.supervisionStrategy
@@ -68,7 +67,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
   "A Flow with mapAsync" must {
 
     "produce future elements" in assertAllStagesStopped {
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 3).mapAsync(4, n ⇒ Future(n)).runWith(Sink(c))
       val sub = c.expectSubscription()
@@ -82,7 +81,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     }
 
     "produce future elements in order" in {
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 50).mapAsync(4, n ⇒ Future {
         Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
@@ -96,7 +95,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
 
     "not run more futures than requested parallelism" in {
       val probe = TestProbe()
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 20).mapAsync(8, n ⇒ Future {
         probe.ref ! n
@@ -122,7 +121,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
 
     "signal future failure" in assertAllStagesStopped {
       val latch = TestLatch(1)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 5).mapAsync(4, n ⇒ Future {
         if (n == 3) throw new RuntimeException("err1") with NoStackTrace
@@ -139,7 +138,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
 
     "signal error from mapAsync" in assertAllStagesStopped {
       val latch = TestLatch(1)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 5).mapAsync(4, n ⇒
         if (n == 3) throw new RuntimeException("err2") with NoStackTrace
@@ -157,7 +156,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     }
 
     "resume after future failure" in assertAllStagesStopped {
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 5)
         .mapAsync(4, n ⇒ Future {
@@ -183,7 +182,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     }
 
     "resume when mapAsync throws" in {
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 5)
         .mapAsync(4, n ⇒
@@ -198,7 +197,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     }
 
     "signal NPE when future is completed with null" in {
-      val c = StreamTestKit.SubscriberProbe[String]()
+      val c = TestSubscriber.manualProbe[String]()
       val p = Source(List("a", "b")).mapAsync(4, elem ⇒ Future.successful(null)).to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
@@ -206,7 +205,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     }
 
     "resume when future is completed with null" in {
-      val c = StreamTestKit.SubscriberProbe[String]()
+      val c = TestSubscriber.manualProbe[String]()
       val p = Source(List("a", "b", "c"))
         .mapAsync(4, elem ⇒ if (elem == "b") Future.successful(null) else Future.successful(elem))
         .withAttributes(supervisionStrategy(resumingDecider))
@@ -218,8 +217,8 @@ class FlowMapAsyncSpec extends AkkaSpec {
     }
 
     "should handle cancel properly" in assertAllStagesStopped {
-      val pub = StreamTestKit.PublisherProbe[Int]()
-      val sub = StreamTestKit.SubscriberProbe[Int]()
+      val pub = TestPublisher.manualProbe[Int]()
+      val sub = TestSubscriber.manualProbe[Int]()
 
       Source(pub).mapAsync(4, Future.successful).runWith(Sink(sub))
 
@@ -250,7 +249,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     }
 
     "work when futures fail" in {
-      val probe = StreamTestKit.SubscriberProbe[Int]
+      val probe = TestSubscriber.manualProbe[Int]
       val ex = new Exception("KABOOM")
       Source.single(1)
         .transform(() ⇒ new MapAsyncOne(_ ⇒ Future.failed(ex)))
@@ -261,7 +260,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     }
 
     "work when futures fail later" in {
-      val probe = StreamTestKit.SubscriberProbe[Int]
+      val probe = TestSubscriber.manualProbe[Int]
       val ex = new Exception("KABOOM")
       Source(List(1, 2))
         .transform(() ⇒ new MapAsyncOne(x ⇒ if (x == 1) Future.successful(1) else Future.failed(ex)))

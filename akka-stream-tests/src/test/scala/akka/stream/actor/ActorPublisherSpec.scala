@@ -6,7 +6,8 @@ package akka.stream.actor
 import akka.actor.{ ActorRef, PoisonPill, Props }
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, ActorOperationAttributes }
 import akka.stream.scaladsl._
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.testkit.TestEvent.Mute
 import akka.testkit.{ EventFilter, ImplicitSender, TestProbe }
 
@@ -136,37 +137,35 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val p = ActorPublisher[String](ref)
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.probe[String]()
       p.subscribe(s)
-      val sub = s.expectSubscription
-      sub.request(2)
+      s.request(2)
       probe.expectMsg(TotalDemand(2))
-      sub.request(3)
+      s.request(3)
       probe.expectMsg(TotalDemand(5))
-      sub.cancel()
+      s.cancel()
     }
 
     "allow onNext up to requested elements, but not more" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val p = ActorPublisher[String](ref)
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.probe[String]()
       p.subscribe(s)
-      val sub = s.expectSubscription
-      sub.request(2)
+      s.request(2)
       ref ! Produce("elem-1")
       ref ! Produce("elem-2")
       ref ! Produce("elem-3")
       s.expectNext("elem-1")
       s.expectNext("elem-2")
       s.expectNoMsg(300.millis)
-      sub.cancel()
+      s.cancel()
     }
 
     "signal error" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       ref ! Err("wrong")
       s.expectSubscription
@@ -176,7 +175,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     "not terminate after signalling onError" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       s.expectSubscription
       probe.watch(ref)
@@ -188,7 +187,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     "terminate after signalling onErrorThenStop" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       s.expectSubscription
       probe.watch(ref)
@@ -201,7 +200,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       ref ! Err("early err")
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       s.expectSubscriptionAndError.getMessage should be("early err")
     }
@@ -210,12 +209,11 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val p = ActorPublisher[String](ref)
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.probe[String]()
       p.subscribe(s)
-      val sub = s.expectSubscription
-      sub.request(2)
+      s.request(2)
       ref ! Produce("elem-1")
-      sub.cancel()
+      s.cancel()
       ref ! Produce("elem-2")
       s.expectNext("elem-1")
       s.expectNoMsg(300.millis)
@@ -225,28 +223,26 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val p = ActorPublisher[String](ref)
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.probe[String]()
       p.subscribe(s)
-      val sub = s.expectSubscription
-      sub.request(3)
+      s.request(3)
       probe.expectMsg(TotalDemand(3))
       ref ! Produce("elem-1")
       ref ! Boom
       ref ! Produce("elem-2")
       s.expectNext("elem-1")
       s.expectNext("elem-2")
-      sub.request(5)
+      s.request(5)
       probe.expectMsg(TotalDemand(6))
-      sub.cancel()
+      s.cancel()
     }
 
     "signal onComplete" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.probe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      val sub = s.expectSubscription
-      sub.request(3)
+      s.request(3)
       ref ! Produce("elem-1")
       ref ! Complete
       s.expectNext("elem-1")
@@ -256,7 +252,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     "not terminate after signalling onComplete" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       val sub = s.expectSubscription
       sub.request(3)
@@ -272,7 +268,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     "terminate after signalling onCompleteThenStop" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       val sub = s.expectSubscription
       sub.request(3)
@@ -289,7 +285,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       ref ! Complete
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       s.expectSubscriptionAndComplete
     }
@@ -297,10 +293,10 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     "only allow one subscriber" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       s.expectSubscription
-      val s2 = StreamTestKit.SubscriberProbe[String]()
+      val s2 = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s2)
       s2.expectSubscriptionAndError.getClass should be(classOf[IllegalStateException])
     }
@@ -308,7 +304,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     "signal onCompete when actor is stopped" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       s.expectSubscription
       ref ! PoisonPill
@@ -317,7 +313,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
 
     "work together with Flow and ActorSubscriber" in {
       implicit val materializer = ActorFlowMaterializer()
-      StreamTestKit.assertAllStagesStopped {
+      assertAllStagesStopped {
         val probe = TestProbe()
 
         val source: Source[Int, ActorRef] = Source.actorPublisher(senderProps)
@@ -383,7 +379,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
 
     "be able to define a subscription-timeout, after which it should shut down" in {
       implicit val materializer = ActorFlowMaterializer()
-      StreamTestKit.assertAllStagesStopped {
+      Utils.assertAllStagesStopped {
         val timeout = 150.millis
         val a = system.actorOf(timeoutingProps(testActor, timeout))
         val pub = ActorPublisher(a)
@@ -392,7 +388,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
         expectMsg("timed-out")
 
         // now subscribers will already be rejected, while the actor could perform some clean-up
-        val sub = StreamTestKit.SubscriberProbe()
+        val sub = TestSubscriber.manualProbe()
         pub.subscribe(sub)
         sub.expectSubscriptionAndError()
 
@@ -406,7 +402,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     "be able to define a subscription-timeout, which is cancelled by the first incoming Subscriber" in {
       implicit val materializer = ActorFlowMaterializer()
       val timeout = 500.millis
-      val sub = StreamTestKit.SubscriberProbe[Int]()
+      val sub = TestSubscriber.manualProbe[Int]()
 
       within(2 * timeout) {
         val pub = ActorPublisher(system.actorOf(timeoutingProps(testActor, timeout)))
@@ -422,7 +418,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     "use dispatcher from materializer settings" in {
       implicit val materializer = ActorFlowMaterializer(
         ActorFlowMaterializerSettings(system).withDispatcher("my-dispatcher1"))
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false)).to(Sink(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
@@ -430,7 +426,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
 
     "use dispatcher from operation attributes" in {
       implicit val materializer = ActorFlowMaterializer()
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false))
         .withAttributes(ActorOperationAttributes.dispatcher("my-dispatcher1"))
         .to(Sink(s)).run()
@@ -440,7 +436,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
 
     "use dispatcher from props" in {
       implicit val materializer = ActorFlowMaterializer()
-      val s = StreamTestKit.SubscriberProbe[String]()
+      val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false).withDispatcher("my-dispatcher1"))
         .withAttributes(ActorOperationAttributes.dispatcher("my-dispatcher2"))
         .to(Sink(s)).run()

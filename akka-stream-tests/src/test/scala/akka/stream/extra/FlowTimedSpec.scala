@@ -6,7 +6,8 @@ package akka.stream.extra
 import akka.stream.{ ActorFlowMaterializerSettings, ActorFlowMaterializer }
 import akka.stream.scaladsl.{ Source, Flow }
 import akka.stream.scaladsl.Sink
-import akka.stream.testkit.{ AkkaSpec, ScriptedTest, StreamTestKit }
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -72,12 +73,12 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
   "Timed Flow" must {
     import akka.stream.extra.Implicits.TimedFlowDsl
 
-    "measure time it between elements matching a predicate" in StreamTestKit.assertAllStagesStopped {
+    "measure time it between elements matching a predicate" in assertAllStagesStopped {
       val probe = TestProbe()
 
       val flow: Flow[Int, Long, _] = Flow[Int].map(_.toLong).timedIntervalBetween(in ⇒ in % 2 == 1, d ⇒ probe.ref ! d)
 
-      val c1 = StreamTestKit.SubscriberProbe[Long]()
+      val c1 = TestSubscriber.manualProbe[Long]()
       Source(List(1, 2, 3)).via(flow).runWith(Sink(c1))
 
       val s = c1.expectSubscription()
@@ -91,7 +92,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       info(s"Got duration (first): $duration")
     }
 
-    "measure time from start to complete, by wrapping operations" in StreamTestKit.assertAllStagesStopped {
+    "measure time from start to complete, by wrapping operations" in assertAllStagesStopped {
       val probe = TestProbe()
 
       // making sure the types come out as expected
@@ -105,7 +106,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
 
       val (flowIn: Subscriber[Int], flowOut: Publisher[String]) = flow.runWith(Source.subscriber[Int], Sink.publisher[String])
 
-      val c1 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[String]()
       val c2 = flowOut.subscribe(c1)
 
       val p = Source(0 to 100).runWith(Sink.publisher)
@@ -122,4 +123,3 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
   }
 
 }
-

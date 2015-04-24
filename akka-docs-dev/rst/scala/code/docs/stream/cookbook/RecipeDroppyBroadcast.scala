@@ -2,7 +2,7 @@ package docs.stream.cookbook
 
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl._
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.testkit._
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -14,8 +14,8 @@ class RecipeDroppyBroadcast extends RecipeSpec {
     "work" in {
       val myElements = Source(immutable.Iterable.tabulate(100)(_ + 1))
 
-      val sub1 = SubscriberProbe[Int]()
-      val sub2 = SubscriberProbe[Int]()
+      val sub1 = TestSubscriber.manualProbe[Int]()
+      val sub2 = TestSubscriber.manualProbe[Int]()
       val futureSink = Sink.head[Seq[Int]]
       val mySink1 = Sink(sub1)
       val mySink2 = Sink(sub2)

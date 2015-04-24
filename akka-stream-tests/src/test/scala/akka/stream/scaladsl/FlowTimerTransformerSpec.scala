@@ -9,8 +9,8 @@ import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
 import akka.stream.TimerTransformer
 
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 
 class FlowTimerTransformerSpec extends AkkaSpec {
 
@@ -18,7 +18,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
 
   "A Flow with TimerTransformer operations" must {
     "produce scheduled ticks as expected" in assertAllStagesStopped {
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       val p2 = Source(p).
         timerTransform(() ⇒ new TimerTransformer[Int, Int] {
           schedulePeriodically("tick", 100.millis)
@@ -32,7 +32,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
           override def isComplete: Boolean = !isTimerActive("tick")
         }).
         runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(5)
@@ -43,7 +43,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
     }
 
     "schedule ticks when last transformation step (consume)" in {
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       val p2 = Source(p).
         timerTransform(() ⇒ new TimerTransformer[Int, Int] {
           schedulePeriodically("tick", 100.millis)
@@ -67,7 +67,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
 
     "propagate error if onTimer throws an exception" in assertAllStagesStopped {
       val exception = new Exception("Expected exception to the rule") with NoStackTrace
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       val p2 = Source(p).
         timerTransform(() ⇒ new TimerTransformer[Int, Int] {
           scheduleOnce("tick", 100.millis)
@@ -77,7 +77,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
             throw exception
         }).runWith(Sink.publisher)
 
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(5)

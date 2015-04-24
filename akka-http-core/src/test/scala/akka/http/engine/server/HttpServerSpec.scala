@@ -12,7 +12,7 @@ import akka.event.NoLogging
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit._
 import akka.http.model._
 import akka.http.util._
 import headers._
@@ -43,7 +43,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -87,7 +87,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -139,7 +139,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -162,7 +162,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -211,7 +211,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -248,7 +248,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -284,7 +284,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -307,7 +307,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -328,7 +328,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |abcdef""".stripMarginWithNewline("\r\n"))
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -349,7 +349,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |""".stripMarginWithNewline("\r\n"))
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -403,7 +403,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |
              |""".stripMarginWithNewline("\r\n"))
-      val data = StreamTestKit.PublisherProbe[ByteString]
+      val data = TestPublisher.manualProbe[ByteString]
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responsesSub.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain`, 4, Source(data))))
@@ -426,7 +426,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |
              |""".stripMarginWithNewline("\r\n"))
-      val data = StreamTestKit.PublisherProbe[ByteString]
+      val data = TestPublisher.manualProbe[ByteString]
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responsesSub.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain`, Source(data))))
@@ -450,7 +450,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |
              |""".stripMarginWithNewline("\r\n"))
-      val data = StreamTestKit.PublisherProbe[ChunkStreamPart]
+      val data = TestPublisher.manualProbe[ChunkStreamPart]
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responsesSub.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain`, Source(data))))
@@ -474,7 +474,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Connection: close
              |
              |""".stripMarginWithNewline("\r\n"))
-      val data = StreamTestKit.PublisherProbe[ByteString]
+      val data = TestPublisher.manualProbe[ByteString]
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responsesSub.sendNext(HttpResponse(entity = CloseDelimited(ContentTypes.`text/plain`, Source(data))))
@@ -495,7 +495,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |""".stripMarginWithNewline("\r\n"))
       inside(expectRequest) {
         case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
           val dataSub = dataProbe.expectSubscription()
           netOutSub.request(2)
@@ -532,7 +532,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |""".stripMarginWithNewline("\r\n"))
       inside(expectRequest) {
         case HttpRequest(POST, _, _, Chunked(ContentType(`application/octet-stream`, None), data), _) ⇒
-          val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
           val dataSub = dataProbe.expectSubscription()
           netOutSub.request(2)
@@ -660,14 +660,14 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
   }
 
   class TestSetup {
-    val requests = StreamTestKit.SubscriberProbe[HttpRequest]
-    val responses = StreamTestKit.PublisherProbe[HttpResponse]
+    val requests = TestSubscriber.manualProbe[HttpRequest]
+    val responses = TestPublisher.manualProbe[HttpResponse]
 
     def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
 
     val (netIn, netOut) = {
-      val netIn = StreamTestKit.PublisherProbe[ByteString]
-      val netOut = StreamTestKit.SubscriberProbe[ByteString]
+      val netIn = TestPublisher.manualProbe[ByteString]
+      val netOut = TestSubscriber.manualProbe[ByteString]
 
       FlowGraph.closed(HttpServerBluePrint(settings, NoLogging)) { implicit b ⇒
         server ⇒

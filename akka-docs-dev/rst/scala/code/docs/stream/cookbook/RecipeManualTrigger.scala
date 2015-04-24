@@ -1,8 +1,7 @@
 package docs.stream.cookbook
 
 import akka.stream.scaladsl._
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.{ SubscriberProbe, PublisherProbe }
+import akka.stream.testkit._
 import scala.concurrent.duration._
 
 class RecipeManualTrigger extends RecipeSpec {
@@ -12,8 +11,8 @@ class RecipeManualTrigger extends RecipeSpec {
     "work" in {
 
       val elements = Source(List("1", "2", "3", "4"))
-      val pub = PublisherProbe[Trigger]()
-      val sub = SubscriberProbe[Message]()
+      val pub = TestPublisher.probe[Trigger]()
+      val sub = TestSubscriber.manualProbe[Message]()
       val triggerSource = Source(pub)
       val sink = Sink(sub)
 
@@ -28,22 +27,21 @@ class RecipeManualTrigger extends RecipeSpec {
       //#manually-triggered-stream
 
       graph.run()
-      val manualSource = new StreamTestKit.AutoPublisher(pub)
 
       sub.expectSubscription().request(1000)
       sub.expectNoMsg(100.millis)
 
-      manualSource.sendNext(())
+      pub.sendNext(())
       sub.expectNext("1")
       sub.expectNoMsg(100.millis)
 
-      manualSource.sendNext(())
-      manualSource.sendNext(())
+      pub.sendNext(())
+      pub.sendNext(())
       sub.expectNext("2")
       sub.expectNext("3")
       sub.expectNoMsg(100.millis)
 
-      manualSource.sendNext(())
+      pub.sendNext(())
       sub.expectNext("4")
       sub.expectComplete()
     }
@@ -51,8 +49,8 @@ class RecipeManualTrigger extends RecipeSpec {
     "work with ZipWith" in {
 
       val elements = Source(List("1", "2", "3", "4"))
-      val pub = PublisherProbe[Trigger]()
-      val sub = SubscriberProbe[Message]()
+      val pub = TestPublisher.probe[Trigger]()
+      val sub = TestSubscriber.manualProbe[Message]()
       val triggerSource = Source(pub)
       val sink = Sink(sub)
 
@@ -68,22 +66,21 @@ class RecipeManualTrigger extends RecipeSpec {
       //#manually-triggered-stream-zipwith
 
       graph.run()
-      val manualSource = new StreamTestKit.AutoPublisher(pub)
 
       sub.expectSubscription().request(1000)
       sub.expectNoMsg(100.millis)
 
-      manualSource.sendNext(())
+      pub.sendNext(())
       sub.expectNext("1")
       sub.expectNoMsg(100.millis)
 
-      manualSource.sendNext(())
-      manualSource.sendNext(())
+      pub.sendNext(())
+      pub.sendNext(())
       sub.expectNext("2")
       sub.expectNext("3")
       sub.expectNoMsg(100.millis)
 
-      manualSource.sendNext(())
+      pub.sendNext(())
       sub.expectNext("4")
       sub.expectComplete()
     }

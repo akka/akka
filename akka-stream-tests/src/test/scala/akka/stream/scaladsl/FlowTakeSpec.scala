@@ -10,9 +10,7 @@ import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.actor.ActorSubscriberMessage.OnComplete
 import akka.stream.actor.ActorSubscriberMessage.OnNext
 import akka.stream.impl.RequestMore
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.ScriptedTest
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit._
 
 class FlowTakeSpec extends AkkaSpec with ScriptedTest {
 
@@ -34,7 +32,7 @@ class FlowTakeSpec extends AkkaSpec with ScriptedTest {
     }
 
     "not take anything for negative n" in {
-      val probe = StreamTestKit.SubscriberProbe[Int]()
+      val probe = TestSubscriber.manualProbe[Int]()
       Source(List(1, 2, 3)).take(-1).to(Sink(probe)).run()
       probe.expectSubscription().request(10)
       probe.expectComplete()
