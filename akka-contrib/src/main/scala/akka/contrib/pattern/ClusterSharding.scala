@@ -1341,14 +1341,9 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
       log.debug("Shutting down ShardCoordinator")
       // can't stop because supervisor will start it again,
       // it will soon be stopped when singleton is stopped
-      context.become(shuttingDown)
+      context.become(Actor.ignoringBehavior)
 
     case _: CurrentClusterState ⇒
-
-  }
-
-  def shuttingDown: Receive = {
-    case _ ⇒ // ignore all
   }
 
 }
