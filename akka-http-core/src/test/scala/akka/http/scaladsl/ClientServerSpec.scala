@@ -6,6 +6,7 @@ package akka.http.scaladsl
 
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
+import akka.http.ServerSettings
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
 import scala.concurrent.Await

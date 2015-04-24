@@ -5,6 +5,8 @@
 package akka.http.impl.engine.parsing
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import akka.http.ParserSettings
+
 import scala.annotation.tailrec
 import akka.actor.ActorRef
 import akka.stream.stage.{ Context, PushPullStage }

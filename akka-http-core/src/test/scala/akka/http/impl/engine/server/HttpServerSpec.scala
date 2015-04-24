@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.server
 
+import akka.http.ServerSettings
+
 import scala.util.Random
 import scala.annotation.tailrec
 import scala.concurrent.duration._
@@ -13,7 +15,6 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit._
-import akka.http.scaladsl.ServerSettings
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import headers._
