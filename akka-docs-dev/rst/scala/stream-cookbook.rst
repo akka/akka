@@ -192,6 +192,7 @@ element. If this function would return a pair of the two argument it would be ex
 
 .. includecode:: code/docs/stream/cookbook/RecipeManualTrigger.scala#manually-triggered-stream-zipwith
 
+.. _cookbook-balance-scala:
 
 Balancing jobs to a fixed pool of workers
 -----------------------------------------
