@@ -69,6 +69,8 @@ private[akka] object FanOut {
 
     def isCancelled(output: Int): Boolean = cancelled(output)
 
+    def isErrored(output: Int): Boolean = errored(output)
+
     def complete(): Unit =
       if (!bunchCancelled) {
         bunchCancelled = true
@@ -187,7 +189,7 @@ private[akka] object FanOut {
     def onCancel(output: Int): Unit = ()
 
     def demandAvailableFor(id: Int) = new TransferState {
-      override def isCompleted: Boolean = cancelled(id) || completed(id)
+      override def isCompleted: Boolean = cancelled(id) || completed(id) || errored(id)
       override def isReady: Boolean = pending(id)
     }
 
