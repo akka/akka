@@ -59,6 +59,8 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
    * INTERNAL API
    */
   private[stream] def enterAndPush(elem: Out): Unit = {
+    //    println("enterAndPush context = " + context)
+    //    println("enterAndPush this = " + this + " " + this.context.attributes.nameOption)
     context.enter()
     context.push(elem)
     context.execute()
@@ -68,6 +70,8 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
    * INTERNAL API
    */
   private[stream] def enterAndPull(): Unit = {
+    //    println("enterAndPull context = " + context)
+    //    println("enterAndPull this = " + this + " " + this.context.attributes.nameOption)
     context.enter()
     context.pull()
     context.execute()
@@ -77,6 +81,8 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
    * INTERNAL API
    */
   private[stream] def enterAndFinish(): Unit = {
+    //    println("enterAndFinish context = " + context)
+    //    println("enterAndFinish this = " + this + " " + this.context.attributes.nameOption)
     context.enter()
     context.finish()
     context.execute()
@@ -86,6 +92,8 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
    * INTERNAL API
    */
   private[stream] def enterAndFail(e: Throwable): Unit = {
+    //    println("enterAndFail this = " + this)
+    //    println("enterAndFail context = " + context)
     context.enter()
     context.fail(e)
     context.execute()

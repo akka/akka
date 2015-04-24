@@ -39,6 +39,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
   private val IndexMask = size - 1
 
   private def requestBatchSize = math.max(1, inputBuffer.length / 2)
+
   private var batchRemaining = requestBatchSize
 
   val subreceive: SubReceive = new SubReceive(waitingForUpstream)
@@ -156,10 +157,12 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
 }
 
 private[akka] object ActorOutputBoundary {
+
   /**
    * INTERNAL API.
    */
   private case object ContinuePulling extends DeadLetterSuppression
+
 }
 
 /**
@@ -170,6 +173,7 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
                                         val log: LoggingAdapter,
                                         val outputBurstLimit: Int)
   extends BoundaryStage {
+
   import ReactiveStreamsCompliance._
   import ActorOutputBoundary._
 
@@ -271,6 +275,7 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
   protected def downstreamRunning: Actor.Receive = {
     case SubscribePending ⇒
       subscribePending(exposedPublisher.takePendingSubscribers())
+
     case RequestMore(subscription, elements) ⇒
       if (elements < 1) {
         enterAndFinish()
@@ -306,6 +311,7 @@ private[akka] object ActorInterpreter {
     Props(new ActorInterpreter(settings, ops, materializer))
 
   case class AsyncInput(op: AsyncStage[Any, Any, Any], ctx: AsyncContext[Any, Any], event: Any) extends DeadLetterSuppression
+
 }
 
 /**
@@ -321,7 +327,10 @@ private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings
     new OneBoundedInterpreter(upstream +: ops :+ downstream,
       (op, ctx, event) ⇒ self ! AsyncInput(op, ctx, event),
       materializer,
+      Logging(context.system, getClass),
+      attributes,
       name = context.self.path.toString)
+
   interpreter.init()
 
   def receive: Receive = upstream.subreceive.orElse[Any, Unit](downstream.subreceive).orElse[Any, Unit] {

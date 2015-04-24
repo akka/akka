@@ -70,7 +70,7 @@ trait MultipartUnmarshallers {
                 case HttpEntity.Strict(ContentType(mediaType: MultipartMediaType, _), data) ⇒
                   val builder = new VectorBuilder[BPS]()
                   val iter = new IteratorInterpreter[ByteString, BodyPartParser.Output](
-                    Iterator.single(data), List(parser)).iterator
+                    Iterator.single(data), List(parser), log).iterator
                   // note that iter.next() will throw exception if stream fails
                   iter.foreach {
                     case BodyPartStart(headers, createEntity) ⇒

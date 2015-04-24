@@ -4,7 +4,11 @@
 package akka.stream.impl.fusing
 
 import scala.annotation.{ tailrec, switch }
+import akka.event.LoggingAdapter
+import akka.stream.OperationAttributes.LogLevels
+import akka.util.Reflect
 import scala.collection.breakOut
+import scala.util.Try
 import scala.util.control.NonFatal
 import akka.stream.stage._
 import akka.stream.Supervision
@@ -124,6 +128,8 @@ private[akka] object OneBoundedInterpreter {
 private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
                                           onAsyncInput: (AsyncStage[Any, Any, Any], AsyncContext[Any, Any], Any) ⇒ Unit,
                                           materializer: FlowMaterializer,
+                                          log: LoggingAdapter,
+                                          attributes: OperationAttributes = OperationAttributes.none,
                                           val forkLimit: Int = 100,
                                           val overflowToHeap: Boolean = true,
                                           val name: String = "") {
@@ -436,7 +442,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
 
     override def run(): Unit = {
       if (hasBits(TerminationPending)) exit()
-      else currentOp.onUpstreamFinish(ctx = this)
+      else try currentOp.onUpstreamFinish(ctx = this) finally finishActiveOp()
     }
 
     override def finish(): FreeDirective = {
@@ -469,7 +475,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
 
     def run(): Unit = {
       if (hasBits(TerminationPending)) exit()
-      else currentOp.onDownstreamFinish(ctx = this)
+      else try currentOp.onDownstreamFinish(ctx = this) finally finishActiveOp()
     }
 
     override def finish(): FreeDirective = {

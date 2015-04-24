@@ -52,7 +52,6 @@ object ActorFlowMaterializer {
     new ActorFlowMaterializerImpl(
       system,
       materializerSettings,
-      system.dispatchers,
       context.actorOf(StreamSupervisor.props(materializerSettings).withDispatcher(materializerSettings.dispatcher)),
       FlowNameCounter(system).counter,
       namePrefix,
