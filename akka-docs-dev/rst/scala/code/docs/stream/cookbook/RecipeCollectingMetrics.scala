@@ -2,8 +2,7 @@ package docs.stream.cookbook
 
 import akka.stream.{ ActorFlowMaterializerSettings, ActorFlowMaterializer }
 import akka.stream.scaladsl._
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.{ SubscriberProbe, PublisherProbe }
+import akka.stream.testkit._
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -18,8 +17,8 @@ class RecipeCollectingMetrics extends RecipeSpec {
     "work" in {
       //      type Tick = Unit
       //
-      //      val loadPub = PublisherProbe[Int]()
-      //      val tickPub = PublisherProbe[Tick]()
+      //      val loadPub = TestPublisher.manualProbe[Int]()
+      //      val tickPub = TestPublisher.manualProbe[Tick]()
       //      val reportTicks = Source(tickPub)
       //      val loadUpdates = Source(loadPub)
       //      val futureSink = Sink.head[immutable.Seq[String]]

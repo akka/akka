@@ -7,8 +7,8 @@ import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, Inlet
 
 import scala.concurrent.duration._
 
-import akka.stream.testkit.{ TwoStreamsSetup, AkkaSpec, StreamTestKit }
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 
 class GraphMergeSpec extends TwoStreamsSetup {
   import FlowGraph.Implicits._
@@ -31,7 +31,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val source1 = Source(0 to 3)
       val source2 = Source(4 to 9)
       val source3 = Source(List[Int]())
-      val probe = StreamTestKit.SubscriberProbe[Int]()
+      val probe = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val m1 = b.add(Merge[Int](2))
@@ -65,7 +65,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val source5 = Source(List(5))
       val source6 = Source(List[Int]())
 
-      val probe = StreamTestKit.SubscriberProbe[Int]()
+      val probe = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val merge = b.add(Merge[Int](6))
@@ -145,9 +145,9 @@ class GraphMergeSpec extends TwoStreamsSetup {
     }
 
     "pass along early cancellation" in assertAllStagesStopped {
-      val up1 = StreamTestKit.PublisherProbe[Int]
-      val up2 = StreamTestKit.PublisherProbe[Int]
-      val down = StreamTestKit.SubscriberProbe[Int]()
+      val up1 = TestPublisher.manualProbe[Int]
+      val up2 = TestPublisher.manualProbe[Int]
+      val down = TestSubscriber.manualProbe[Int]()
 
       val src1 = Source.subscriber[Int]
       val src2 = Source.subscriber[Int]

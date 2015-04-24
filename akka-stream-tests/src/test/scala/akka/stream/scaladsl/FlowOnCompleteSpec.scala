@@ -9,10 +9,8 @@ import scala.util.control.NoStackTrace
 
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.ScriptedTest
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.testkit.TestProbe
 
 class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
@@ -26,7 +24,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
     "invoke callback on normal completion" in assertAllStagesStopped {
       val onCompleteProbe = TestProbe()
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       Source(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
       val proc = p.expectSubscription
       proc.expectRequest()
@@ -38,7 +36,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first error" in assertAllStagesStopped {
       val onCompleteProbe = TestProbe()
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       Source(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
       val proc = p.expectSubscription
       proc.expectRequest()
@@ -50,7 +48,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
     "invoke callback for an empty stream" in assertAllStagesStopped {
       val onCompleteProbe = TestProbe()
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       Source(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
       val proc = p.expectSubscription
       proc.expectRequest()
@@ -61,7 +59,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
     "invoke callback after transform and foreach steps " in assertAllStagesStopped {
       val onCompleteProbe = TestProbe()
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       import system.dispatcher // for the Future.onComplete
       val foreachSink = Sink.foreach[Int] {
         x ⇒ onCompleteProbe.ref ! ("foreach-" + x)

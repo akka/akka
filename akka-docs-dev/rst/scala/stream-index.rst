@@ -17,6 +17,6 @@ Streams
    stream-error
    stream-io
    stream-parallelism
+   stream-testkit
    stream-cookbook
    ../stream-configuration
-

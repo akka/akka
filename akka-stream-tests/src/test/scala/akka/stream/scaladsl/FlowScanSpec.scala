@@ -10,9 +10,9 @@ import scala.collection.immutable
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit.Utils._
 import akka.stream.ActorOperationAttributes
 import akka.stream.Supervision
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class FlowScanSpec extends AkkaSpec {
 

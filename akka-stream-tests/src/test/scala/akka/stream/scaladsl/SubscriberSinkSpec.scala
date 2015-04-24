@@ -5,9 +5,8 @@ package akka.stream.scaladsl
 
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 
 class SubscriberSinkSpec extends AkkaSpec {
 
@@ -19,7 +18,7 @@ class SubscriberSinkSpec extends AkkaSpec {
   "A Flow with SubscriberSink" must {
 
     "publish elements to the subscriber" in assertAllStagesStopped {
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       Source(List(1, 2, 3)).to(Sink(c)).run()
       val s = c.expectSubscription()
       s.request(3)

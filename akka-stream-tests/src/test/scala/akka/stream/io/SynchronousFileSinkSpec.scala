@@ -7,8 +7,8 @@ import java.io.File
 
 import akka.actor.{ ActorCell, ActorSystem, RepointableActorRef }
 import akka.stream.scaladsl.Source
-import akka.stream.testkit.StreamTestKit._
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, ActorOperationAttributes }
 import akka.util.{ ByteString, Timeout }
 
@@ -16,7 +16,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SynchronousFileSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxConfig) {
+class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   val settings = ActorFlowMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorFlowMaterializer(settings)
@@ -86,7 +86,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxCon
 
     "use dedicated file-io-dispatcher by default" in assertAllStagesStopped {
       targetFile { f ⇒
-        val sys = ActorSystem("dispatcher-testing", StreamTestKit.UnboundedMailboxConfig)
+        val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
         val mat = ActorFlowMaterializer()(sys)
         implicit val timeout = Timeout(3.seconds)
 
@@ -101,7 +101,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxCon
 
     "allow overriding the dispatcher using OperationAttributes" in assertAllStagesStopped {
       targetFile { f ⇒
-        val sys = ActorSystem("dispatcher-testing", StreamTestKit.UnboundedMailboxConfig)
+        val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
         val mat = ActorFlowMaterializer()(sys)
         implicit val timeout = Timeout(3.seconds)
 
@@ -132,4 +132,3 @@ class SynchronousFileSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxCon
   }
 
 }
-

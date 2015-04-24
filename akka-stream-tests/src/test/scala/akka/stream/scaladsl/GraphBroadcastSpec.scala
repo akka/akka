@@ -5,8 +5,8 @@ import scala.concurrent.duration._
 
 import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings }
 import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 
 class GraphBroadcastSpec extends AkkaSpec {
 
@@ -19,8 +19,8 @@ class GraphBroadcastSpec extends AkkaSpec {
     import FlowGraph.Implicits._
 
     "broadcast to other subscriber" in assertAllStagesStopped {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
@@ -119,8 +119,8 @@ class GraphBroadcastSpec extends AkkaSpec {
     }
 
     "produce to other even though downstream cancels" in assertAllStagesStopped {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
@@ -140,8 +140,8 @@ class GraphBroadcastSpec extends AkkaSpec {
     }
 
     "produce to downstream even though other cancels" in assertAllStagesStopped {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
@@ -161,9 +161,9 @@ class GraphBroadcastSpec extends AkkaSpec {
     }
 
     "cancel upstream when downstreams cancel" in assertAllStagesStopped {
-      val p1 = StreamTestKit.PublisherProbe[Int]()
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val p1 = TestPublisher.manualProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
@@ -190,8 +190,8 @@ class GraphBroadcastSpec extends AkkaSpec {
     }
 
     "pass along early cancellation" in assertAllStagesStopped {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
 
       val sink = Sink() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
@@ -202,7 +202,7 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       val s = Source.subscriber[Int].to(sink).run()
 
-      val up = StreamTestKit.PublisherProbe[Int]()
+      val up = TestPublisher.manualProbe[Int]()
 
       val downsub1 = c1.expectSubscription()
       val downsub2 = c2.expectSubscription()

@@ -1,8 +1,7 @@
 package docs.stream.cookbook
 
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.{ SubscriberProbe, PublisherProbe }
+import akka.stream.testkit._
 
 import scala.concurrent.duration._
 
@@ -13,8 +12,8 @@ class RecipeMissedTicks extends RecipeSpec {
     "work" in {
       type Tick = Unit
 
-      val pub = PublisherProbe[Tick]()
-      val sub = SubscriberProbe[Int]()
+      val pub = TestPublisher.probe[Tick]()
+      val sub = TestSubscriber.manualProbe[Int]()
       val tickStream = Source(pub)
       val sink = Sink(sub)
 
@@ -26,12 +25,11 @@ class RecipeMissedTicks extends RecipeSpec {
       //#missed-ticks
 
       missedTicks.to(sink).run()
-      val manualSource = new StreamTestKit.AutoPublisher(pub)
 
-      manualSource.sendNext(())
-      manualSource.sendNext(())
-      manualSource.sendNext(())
-      manualSource.sendNext(())
+      pub.sendNext(())
+      pub.sendNext(())
+      pub.sendNext(())
+      pub.sendNext(())
 
       val subscription = sub.expectSubscription()
       subscription.request(1)
@@ -40,10 +38,10 @@ class RecipeMissedTicks extends RecipeSpec {
       subscription.request(1)
       sub.expectNoMsg(100.millis)
 
-      manualSource.sendNext(())
+      pub.sendNext(())
       sub.expectNext(0)
 
-      manualSource.sendComplete()
+      pub.sendComplete()
       subscription.request(1)
       sub.expectComplete()
     }

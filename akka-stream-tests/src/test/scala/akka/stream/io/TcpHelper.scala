@@ -6,7 +6,7 @@ package akka.stream.io
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.io.Tcp.{ ResumeReading, Register, ConnectionClosed, Closed }
 import akka.io.{ IO, Tcp }
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit._
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import akka.testkit.{ TestKitBase, TestProbe }
 import akka.util.ByteString
@@ -158,7 +158,7 @@ trait TcpHelper { this: TestKitBase ⇒
   }
 
   class TcpReadProbe() {
-    val subscriberProbe = StreamTestKit.SubscriberProbe[ByteString]()
+    val subscriberProbe = TestSubscriber.manualProbe[ByteString]()
     lazy val tcpReadSubscription = subscriberProbe.expectSubscription()
 
     def read(count: Int): ByteString = {
@@ -174,7 +174,7 @@ trait TcpHelper { this: TestKitBase ⇒
   }
 
   class TcpWriteProbe() {
-    val publisherProbe = StreamTestKit.PublisherProbe[ByteString]()
+    val publisherProbe = TestPublisher.manualProbe[ByteString]()
     lazy val tcpWriteSubscription = publisherProbe.expectSubscription()
     var demand = 0L
 

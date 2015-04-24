@@ -9,7 +9,7 @@ import org.scalatest.Inside
 import akka.util.ByteString
 import akka.event.NoLogging
 import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit._
 import akka.stream.scaladsl._
 import akka.http.model.HttpEntity._
 import akka.http.model.HttpMethods._
@@ -50,7 +50,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       }
 
       "has a request with default entity" in new TestSetup {
-        val probe = StreamTestKit.PublisherProbe[ByteString]()
+        val probe = TestPublisher.manualProbe[ByteString]()
         requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source(probe))))
         expectWireData(
           """PUT / HTTP/1.1
@@ -106,7 +106,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         val HttpResponse(_, _, HttpEntity.Chunked(ct, chunks), _) = responses.expectNext()
         ct shouldEqual ContentTypes.`application/octet-stream`
 
-        val probe = StreamTestKit.SubscriberProbe[ChunkStreamPart]()
+        val probe = TestSubscriber.manualProbe[ChunkStreamPart]()
         chunks.runWith(Sink(probe))
         val sub = probe.expectSubscription()
 
@@ -175,7 +175,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         responsesSub.request(1)
         val HttpResponse(_, _, HttpEntity.Chunked(ct, chunks), _) = responses.expectNext()
 
-        val probe = StreamTestKit.SubscriberProbe[ChunkStreamPart]()
+        val probe = TestSubscriber.manualProbe[ChunkStreamPart]()
         chunks.runWith(Sink(probe))
         val sub = probe.expectSubscription()
 
@@ -216,7 +216,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
     "produce proper errors" which {
 
       "catch the entity stream being shorter than the Content-Length" in new TestSetup {
-        val probe = StreamTestKit.PublisherProbe[ByteString]()
+        val probe = TestPublisher.manualProbe[ByteString]()
         requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source(probe))))
         expectWireData(
           """PUT / HTTP/1.1
@@ -242,7 +242,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       }
 
       "catch the entity stream being longer than the Content-Length" in new TestSetup {
-        val probe = StreamTestKit.PublisherProbe[ByteString]()
+        val probe = TestPublisher.manualProbe[ByteString]()
         requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source(probe))))
         expectWireData(
           """PUT / HTTP/1.1
@@ -308,7 +308,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         val HttpResponse(_, _, HttpEntity.Chunked(ct, chunks), _) = responses.expectNext()
         ct shouldEqual ContentTypes.`application/octet-stream`
 
-        val probe = StreamTestKit.SubscriberProbe[ChunkStreamPart]()
+        val probe = TestSubscriber.manualProbe[ChunkStreamPart]()
         chunks.runWith(Sink(probe))
         val sub = probe.expectSubscription()
 
@@ -348,16 +348,16 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
   }
 
   class TestSetup {
-    val requests = StreamTestKit.PublisherProbe[HttpRequest]
-    val responses = StreamTestKit.SubscriberProbe[HttpResponse]
+    val requests = TestPublisher.manualProbe[HttpRequest]
+    val responses = TestSubscriber.manualProbe[HttpResponse]
     val remoteAddress = new InetSocketAddress("example.com", 80)
 
     def settings = ClientConnectionSettings(system)
       .copy(userAgentHeader = Some(`User-Agent`(List(ProductVersion("akka-http", "test")))))
 
     val (netOut, netIn) = {
-      val netOut = StreamTestKit.SubscriberProbe[ByteString]
-      val netIn = StreamTestKit.PublisherProbe[ByteString]
+      val netOut = TestSubscriber.manualProbe[ByteString]
+      val netIn = TestPublisher.manualProbe[ByteString]
 
       FlowGraph.closed(OutgoingConnectionBlueprint(remoteAddress, settings, NoLogging)) { implicit b ⇒
         client ⇒

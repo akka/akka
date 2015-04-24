@@ -10,7 +10,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.TestPublisher
 import org.reactivestreams.Publisher
 import org.reactivestreams.tck.{ PublisherVerification, TestEnvironment }
 import org.scalatest.testng.TestNGSuiteLike
@@ -30,7 +30,7 @@ abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherS
   implicit lazy val materializer = ActorFlowMaterializer(ActorFlowMaterializerSettings(system).copy(maxInputBufferSize = 512))(system)
 
   override def createFailedPublisher(): Publisher[T] =
-    StreamTestKit.errorPublisher(new Exception("Unable to serve subscribers right now!"))
+    TestPublisher.error(new Exception("Unable to serve subscribers right now!"))
 
   def iterable(elements: Long): immutable.Iterable[Int] =
     if (elements > Int.MaxValue)
