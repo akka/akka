@@ -5,7 +5,7 @@
 package docs.http.server
 package directives
 
-import akka.http.server._
+import akka.http.scaladsl.server._
 
 class PathDirectivesExamplesSpec extends RoutingSpec {
 

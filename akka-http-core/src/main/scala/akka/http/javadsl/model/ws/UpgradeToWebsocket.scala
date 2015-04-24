@@ -5,9 +5,8 @@
 package akka.http.javadsl.model.ws
 
 import java.lang.{ Iterable ⇒ JIterable }
-
-import akka.http.model
-import akka.http.model.japi.HttpResponse
+import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.javadsl.model._
 import akka.stream.FlowMaterializer
 import akka.stream.javadsl.Flow
 
@@ -15,7 +14,7 @@ import akka.stream.javadsl.Flow
  * A virtual header that Websocket requests will contain. Use [[UpgradeToWebsocket.handleMessagesWith]] to
  * create a Websocket handshake response and handle the Websocket message stream with the given handler.
  */
-trait UpgradeToWebsocket extends model.HttpHeader {
+trait UpgradeToWebsocket extends sm.HttpHeader {
   /**
    * Returns the sequence of protocols the client accepts.
    *

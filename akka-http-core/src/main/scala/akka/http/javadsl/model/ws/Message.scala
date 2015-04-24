@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.model.ws
 
-import akka.http.model.ws
+import akka.http.scaladsl.{ model ⇒ sm }
 import akka.stream.javadsl.Source
 import akka.util.ByteString
 
@@ -28,13 +28,13 @@ sealed abstract class Message {
    */
   def asBinaryMessage: BinaryMessage
 
-  def asScala: ws.Message
+  def asScala: sm.ws.Message
 }
 
 object Message {
-  def adapt(msg: ws.Message): Message = msg match {
-    case t: ws.TextMessage   ⇒ TextMessage.adapt(t)
-    case b: ws.BinaryMessage ⇒ BinaryMessage.adapt(b)
+  def adapt(msg: sm.ws.Message): Message = msg match {
+    case t: sm.ws.TextMessage   ⇒ TextMessage.adapt(t)
+    case b: sm.ws.BinaryMessage ⇒ BinaryMessage.adapt(b)
   }
 }
 
@@ -60,7 +60,7 @@ abstract class TextMessage extends Message {
   def isText: Boolean = true
   def asTextMessage: TextMessage = this
   def asBinaryMessage: BinaryMessage = throw new ClassCastException("This message is not a binary message.")
-  def asScala: ws.TextMessage
+  def asScala: sm.ws.TextMessage
 }
 
 object TextMessage {
@@ -73,7 +73,7 @@ object TextMessage {
       def getStreamedText: Source[String, _] = Source.single(text)
       def getStrictText: String = text
 
-      def asScala: ws.TextMessage = ws.TextMessage.Strict(text)
+      def asScala: sm.ws.TextMessage = sm.ws.TextMessage.Strict(text)
     }
   /**
    * Creates a streamed text message.
@@ -84,12 +84,12 @@ object TextMessage {
       def getStrictText: String = throw new IllegalStateException("Cannot get strict text for streamed message.")
       def getStreamedText: Source[String, _] = textStream
 
-      def asScala: ws.TextMessage = ws.TextMessage.Streamed(textStream.asScala)
+      def asScala: sm.ws.TextMessage = sm.ws.TextMessage.Streamed(textStream.asScala)
     }
 
-  def adapt(msg: ws.TextMessage): TextMessage = msg match {
-    case ws.TextMessage.Strict(text)     ⇒ create(text)
-    case ws.TextMessage.Streamed(stream) ⇒ create(stream.asJava)
+  def adapt(msg: sm.ws.TextMessage): TextMessage = msg match {
+    case sm.ws.TextMessage.Strict(text)     ⇒ create(text)
+    case sm.ws.TextMessage.Streamed(stream) ⇒ create(stream.asJava)
   }
 }
 
@@ -110,7 +110,7 @@ abstract class BinaryMessage extends Message {
   def isText: Boolean = false
   def asTextMessage: TextMessage = throw new ClassCastException("This message is not a text message.")
   def asBinaryMessage: BinaryMessage = this
-  def asScala: ws.BinaryMessage
+  def asScala: sm.ws.BinaryMessage
 }
 
 object BinaryMessage {
@@ -123,7 +123,7 @@ object BinaryMessage {
       def getStreamedData: Source[ByteString, _] = Source.single(data)
       def getStrictData: ByteString = data
 
-      def asScala: ws.BinaryMessage = ws.BinaryMessage.Strict(data)
+      def asScala: sm.ws.BinaryMessage = sm.ws.BinaryMessage.Strict(data)
     }
 
   /**
@@ -135,11 +135,11 @@ object BinaryMessage {
       def getStrictData: ByteString = throw new IllegalStateException("Cannot get strict data for streamed message.")
       def getStreamedData: Source[ByteString, _] = dataStream
 
-      def asScala: ws.BinaryMessage = ws.BinaryMessage.Streamed(dataStream.asScala)
+      def asScala: sm.ws.BinaryMessage = sm.ws.BinaryMessage.Streamed(dataStream.asScala)
     }
 
-  def adapt(msg: ws.BinaryMessage): BinaryMessage = msg match {
-    case ws.BinaryMessage.Strict(data)     ⇒ create(data)
-    case ws.BinaryMessage.Streamed(stream) ⇒ create(stream.asJava)
+  def adapt(msg: sm.ws.BinaryMessage): BinaryMessage = msg match {
+    case sm.ws.BinaryMessage.Strict(data)     ⇒ create(data)
+    case sm.ws.BinaryMessage.Streamed(stream) ⇒ create(stream.asJava)
   }
 }

@@ -5,14 +5,14 @@
 package docs.http.server
 package directives
 
-import akka.http.model.headers.RawHeader
-import akka.http.server.RouteResult.Rejected
-import akka.http.server._
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.server.RouteResult.Rejected
+import akka.http.scaladsl.server._
 import akka.util.ByteString
 
 import scala.util.control.NonFatal
 
-import akka.http.model._
+import akka.http.scaladsl.model._
 
 class BasicDirectivesExamplesSpec extends RoutingSpec {
   "0extract" in {

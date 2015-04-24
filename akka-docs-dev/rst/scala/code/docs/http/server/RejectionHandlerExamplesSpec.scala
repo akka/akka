@@ -7,14 +7,14 @@ package docs.http.server
 import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializer
 
-import akka.http.server.{ Route, MissingCookieRejection }
+import akka.http.scaladsl.server.{ Route, MissingCookieRejection }
 
 import scala.concurrent.ExecutionContext
 
 object MyRejectionHandler {
   //# example-1
-  import akka.http.model._
-  import akka.http.server._
+  import akka.http.scaladsl.model._
+  import akka.http.scaladsl.server._
   import StatusCodes._
   import Directives._
 
@@ -47,7 +47,7 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
   }
 
   "example-2" in {
-    import akka.http.coding.Gzip
+    import akka.http.scaladsl.coding.Gzip
 
     val route =
       path("order") {

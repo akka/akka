@@ -5,11 +5,11 @@
 package docs.http.server
 package directives
 
-import akka.http.coding._
-import akka.http.model.{ HttpResponse, StatusCodes }
-import akka.http.model.headers.{ HttpEncodings, HttpEncoding, `Accept-Encoding`, `Content-Encoding` }
-import akka.http.model.headers.HttpEncodings._
-import akka.http.server._
+import akka.http.scaladsl.coding._
+import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
+import akka.http.scaladsl.model.headers.{ HttpEncodings, HttpEncoding, `Accept-Encoding`, `Content-Encoding` }
+import akka.http.scaladsl.model.headers.HttpEncodings._
+import akka.http.scaladsl.server._
 import akka.util.ByteString
 import org.scalatest.matchers.Matcher
 
