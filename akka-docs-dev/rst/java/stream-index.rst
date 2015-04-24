@@ -16,6 +16,7 @@ Streams
    stream-integrations
    stream-error
    stream-io
+   stream-parallelism
    stream-cookbook
    ../stream-configuration
 
