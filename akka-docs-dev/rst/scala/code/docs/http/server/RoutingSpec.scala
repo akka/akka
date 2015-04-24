@@ -4,8 +4,8 @@
 
 package docs.http.server
 
-import akka.http.server.Directives
-import akka.http.testkit.ScalatestRouteTest
+import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{ Matchers, WordSpec }
 
 abstract class RoutingSpec extends WordSpec with Matchers with Directives with ScalatestRouteTest

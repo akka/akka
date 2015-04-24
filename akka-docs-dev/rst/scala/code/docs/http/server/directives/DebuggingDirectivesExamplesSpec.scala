@@ -5,11 +5,11 @@
 package docs.http.server
 package directives
 
-import akka.http.model.{ HttpResponse, HttpRequest }
-import akka.http.server._
+import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+import akka.http.scaladsl.server._
 
 import akka.event.Logging
-import akka.http.server.directives.{ LoggingMagnet, LogEntry, DebuggingDirectives }
+import akka.http.scaladsl.server.directives.{ LoggingMagnet, LogEntry, DebuggingDirectives }
 
 class DebuggingDirectivesExamplesSpec extends RoutingSpec {
   "logRequest-0" in {
