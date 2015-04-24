@@ -14,10 +14,10 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.util.ByteString
 import akka.stream.scaladsl.Flow
-import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.scaladsl._
 import akka.stream.testkit.TestUtils.temporaryServerAddress
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class StreamTcpSpec extends AkkaSpec with TcpHelper {
   import akka.stream.io.TcpHelper._
@@ -400,18 +400,18 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
     "bind and unbind correctly" in {
       val address = temporaryServerAddress()
-      val probe1 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
+      val probe1 = TestSubscriber.manualProbe[StreamTcp.IncomingConnection]()
       val bind = StreamTcp(system).bind(address)
       // Bind succeeded, we have a local address
       val binding1 = Await.result(bind.to(Sink(probe1)).run(), 3.second)
 
       probe1.expectSubscription()
 
-      val probe2 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
+      val probe2 = TestSubscriber.manualProbe[StreamTcp.IncomingConnection]()
       val binding2F = bind.to(Sink(probe2)).run()
       probe2.expectSubscriptionAndError(BindFailedException)
 
-      val probe3 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
+      val probe3 = TestSubscriber.manualProbe[StreamTcp.IncomingConnection]()
       val binding3F = bind.to(Sink(probe3)).run()
       probe3.expectSubscriptionAndError()
 
@@ -422,7 +422,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       Await.result(binding1.unbind(), 1.second)
       probe1.expectComplete()
 
-      val probe4 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
+      val probe4 = TestSubscriber.manualProbe[StreamTcp.IncomingConnection]()
       // Bind succeeded, we have a local address
       val binding4 = Await.result(bind.to(Sink(probe4)).run(), 3.second)
       probe4.expectSubscription()

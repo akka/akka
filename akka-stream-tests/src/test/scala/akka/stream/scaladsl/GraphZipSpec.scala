@@ -3,9 +3,8 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.TwoStreamsSetup
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream._
 
 class GraphZipSpec extends TwoStreamsSetup {
@@ -24,7 +23,7 @@ class GraphZipSpec extends TwoStreamsSetup {
   "Zip" must {
 
     "work in the happy case" in assertAllStagesStopped {
-      val probe = StreamTestKit.SubscriberProbe[(Int, String)]()
+      val probe = TestSubscriber.manualProbe[(Int, String)]()
 
       FlowGraph.closed() { implicit b ⇒
         val zip = b.add(Zip[Int, String]())

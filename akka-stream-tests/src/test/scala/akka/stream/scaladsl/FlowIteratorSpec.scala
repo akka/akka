@@ -7,12 +7,8 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.OnComplete
-import akka.stream.testkit.StreamTestKit.OnError
-import akka.stream.testkit.StreamTestKit.OnNext
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.impl.SynchronousIterablePublisher
 import org.reactivestreams.Subscription
 import akka.testkit.TestProbe
@@ -37,7 +33,7 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
         (1 to 3).iterator.map(x ⇒ if (x == 2) throw new IllegalStateException("not two") else x)
     }
     val p = Source(iterable).runWith(Sink.publisher)
-    val c = StreamTestKit.SubscriberProbe[Int]()
+    val c = TestSubscriber.manualProbe[Int]()
     p.subscribe(c)
     val sub = c.expectSubscription()
     sub.request(1)
@@ -54,7 +50,7 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
       override def iterator: Iterator[Int] = throw new IllegalStateException("no good iterator")
     }
     val p = Source(iterable).runWith(Sink.publisher)
-    val c = StreamTestKit.SubscriberProbe[Int]()
+    val c = TestSubscriber.manualProbe[Int]()
     p.subscribe(c)
     c.expectSubscriptionAndError().getMessage should be("no good iterator")
     c.expectNoMsg(100.millis)
@@ -68,7 +64,7 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
       }
     }
     val p = Source(iterable).runWith(Sink.publisher)
-    val c = StreamTestKit.SubscriberProbe[Int]()
+    val c = TestSubscriber.manualProbe[Int]()
     p.subscribe(c)
     c.expectSubscriptionAndError().getMessage should be("no next")
     c.expectNoMsg(100.millis)
@@ -109,7 +105,7 @@ class SynchronousIterableSpec extends AbstractFlowIteratorSpec {
         (1 to 3).iterator.map(x ⇒ if (x == 2) throw new IllegalStateException("not two") else x)
     }
     val p = SynchronousIterablePublisher(iterable, "iterable")
-    val c = StreamTestKit.SubscriberProbe[Int]()
+    val c = TestSubscriber.manualProbe[Int]()
     p.subscribe(c)
     val sub = c.expectSubscription()
     sub.request(1)
@@ -163,7 +159,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
   testName must {
     "produce elements" in assertAllStagesStopped {
       val p = createSource(3).runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
       sub.request(1)
@@ -177,7 +173,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
     "complete empty" in assertAllStagesStopped {
       val p = createSource(0).runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       c.expectSubscriptionAndComplete()
       c.expectNoMsg(100.millis)
@@ -185,8 +181,8 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
     "produce elements with multiple subscribers" in assertAllStagesStopped {
       val p = createSource(3).runWith(Sink.fanoutPublisher(2, 4))
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
       p.subscribe(c1)
       p.subscribe(c2)
       val sub1 = c1.expectSubscription()
@@ -209,8 +205,8 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
     "produce elements to later subscriber" in assertAllStagesStopped {
       val p = createSource(3).runWith(Sink.fanoutPublisher(2, 4))
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
       p.subscribe(c1)
 
       val sub1 = c1.expectSubscription()
@@ -232,7 +228,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
     "produce elements with one transformation step" in assertAllStagesStopped {
       val p = createSource(3).map(_ * 2).runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
       sub.request(10)
@@ -244,7 +240,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
     "produce elements with two transformation steps" in assertAllStagesStopped {
       val p = createSource(4).filter(_ % 2 == 0).map(_ * 2).runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
       sub.request(10)
@@ -255,7 +251,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
     "not produce after cancel" in assertAllStagesStopped {
       val p = createSource(3).runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
       sub.request(1)

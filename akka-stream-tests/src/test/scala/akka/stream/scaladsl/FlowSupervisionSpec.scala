@@ -7,10 +7,9 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit._
 import scala.util.control.NoStackTrace
 import scala.concurrent.Await
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.stream.Supervision
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.ActorOperationAttributes

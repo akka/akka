@@ -4,6 +4,7 @@
 
 package akka.http.engine.client
 
+import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicInteger
 import akka.http.engine.client.PoolGateway
 
@@ -14,7 +15,7 @@ import akka.http.engine.server.ServerSettings
 import akka.http.util.{ SingletonException, StreamUtils }
 import akka.util.ByteString
 import akka.stream.{ BidiShape, ActorFlowMaterializer }
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit._
 import akka.stream.scaladsl._
 import akka.http.{ Http, TestUtils }
 import akka.http.model.headers._
@@ -33,7 +34,7 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
       acceptIncomingConnection()
       responseOutSub.request(1)
       val (Success(response), 42) = responseOut.expectNext()
-      response.headers should contain(RawHeader("Req-Host", s"localhost:$serverPort"))
+      response.headers should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
     }
 
     "open a second connection if the first one is loaded" in new TestSetup {
@@ -179,7 +180,7 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
       val request = HttpRequest(uri = "/abc", headers = List(Host(serverHostName, serverPort)))
       val responseFuture = Http().singleRequest(request)
       val responseHeaders = Await.result(responseFuture, 1.second).headers
-      responseHeaders should contain(RawHeader("Req-Uri", s"http://localhost:$serverPort/abc"))
+      responseHeaders should contain(RawHeader("Req-Uri", s"http://$serverHostName:$serverPort/abc"))
       responseHeaders should contain(RawHeader("Req-Raw-Request-URI", "/abc"))
     }
 
@@ -188,7 +189,7 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
       val responseFuture = Http().singleRequest(request)
       val responseHeaders = Await.result(responseFuture, 1.second).headers
       responseHeaders should contain(RawHeader("Req-Raw-Request-URI", "/abc?query"))
-      responseHeaders should contain(RawHeader("Req-Host", s"localhost:$serverPort"))
+      responseHeaders should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
     }
 
     "support absolute request URIs without path component" in new LocalTestSetup {
@@ -202,7 +203,7 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
       val request = HttpRequest(uri = s"http://$serverHostName:$serverPort//foo")
       val responseFuture = Http().singleRequest(request)
       val responseHeaders = Await.result(responseFuture, 1.second).headers
-      responseHeaders should contain(RawHeader("Req-Uri", s"http://localhost:$serverPort//foo"))
+      responseHeaders should contain(RawHeader("Req-Uri", s"http://$serverHostName:$serverPort//foo"))
       responseHeaders should contain(RawHeader("Req-Raw-Request-URI", "//foo"))
     }
 
@@ -249,7 +250,7 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
     def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString = bytes
 
     val incomingConnectionCounter = new AtomicInteger
-    val incomingConnections = StreamTestKit.SubscriberProbe[Http.IncomingConnection]
+    val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]
     val incomingConnectionsSub = {
       val rawBytesInjection = BidiFlow() { b ⇒
         val top = b.add(Flow[ByteString].map(mapServerSideOutboundRawBytes)
@@ -298,11 +299,11 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
     }
 
     def flowTestBench[T, Mat](poolFlow: Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat]) = {
-      val requestIn = StreamTestKit.PublisherProbe[(HttpRequest, T)]
-      val responseOut = StreamTestKit.SubscriberProbe[(Try[HttpResponse], T)]
+      val requestIn = TestPublisher.probe[(HttpRequest, T)]()
+      val responseOut = TestSubscriber.manualProbe[(Try[HttpResponse], T)]
       val hcp = Source(requestIn).viaMat(poolFlow)(Keep.right).toMat(Sink(responseOut))(Keep.left).run()
       val responseOutSub = responseOut.expectSubscription()
-      (new StreamTestKit.AutoPublisher(requestIn), responseOut, responseOutSub, hcp)
+      (requestIn, responseOut, responseOutSub, hcp)
     }
 
     def connNr(r: HttpResponse): Int = r.headers.find(_ is "conn-nr").get.value.toInt

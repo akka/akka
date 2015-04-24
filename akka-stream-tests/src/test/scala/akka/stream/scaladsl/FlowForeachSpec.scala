@@ -5,9 +5,9 @@ package akka.stream.scaladsl
 
 import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import scala.concurrent.Await
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class FlowForeachSpec extends AkkaSpec {
 
@@ -34,7 +34,7 @@ class FlowForeachSpec extends AkkaSpec {
     }
 
     "yield the first error" in assertAllStagesStopped {
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       Source(p).runForeach(testActor ! _) onFailure {
         case ex ⇒ testActor ! ex
       }

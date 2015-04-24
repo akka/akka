@@ -8,11 +8,8 @@ import scala.concurrent.duration._
 import scala.util.{ Success, Failure }
 import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit._
 import akka.stream.impl.PublisherSource
-import akka.stream.testkit.StreamTestKit.PublisherProbe
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.stream.impl.ReactiveStreamsCompliance
 
 class SourceSpec extends AkkaSpec {
@@ -22,7 +19,7 @@ class SourceSpec extends AkkaSpec {
   "Single Source" must {
     "produce element" in {
       val p = Source.single(1).runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
       sub.request(1)
@@ -32,8 +29,8 @@ class SourceSpec extends AkkaSpec {
 
     "reject later subscriber" in {
       val p = Source.single(1).runWith(Sink.publisher)
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
       p.subscribe(c1)
 
       val sub1 = c1.expectSubscription()
@@ -50,12 +47,12 @@ class SourceSpec extends AkkaSpec {
   "Empty Source" must {
     "complete immediately" in {
       val p = Source.empty.runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       c.expectSubscriptionAndComplete()
 
       // reject additional subscriber
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
       p.subscribe(c2)
       c2.expectSubscriptionAndError()
     }
@@ -65,12 +62,12 @@ class SourceSpec extends AkkaSpec {
     "emit error immediately" in {
       val ex = new RuntimeException with NoStackTrace
       val p = Source.failed(ex).runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       c.expectSubscriptionAndError(ex)
 
       // reject additional subscriber
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
       p.subscribe(c2)
       c2.expectSubscriptionAndError()
     }
@@ -83,7 +80,7 @@ class SourceSpec extends AkkaSpec {
 
       val (f, neverPub) = neverSource.toMat(pubSink)(Keep.both).run()
 
-      val c = StreamTestKit.SubscriberProbe()
+      val c = TestSubscriber.manualProbe()
       neverPub.subscribe(c)
       val subs = c.expectSubscription()
 
@@ -125,9 +122,9 @@ class SourceSpec extends AkkaSpec {
 
   "Composite Source" must {
     "merge from many inputs" in {
-      val probes = Seq.fill(5)(PublisherProbe[Int])
+      val probes = Seq.fill(5)(TestPublisher.manualProbe[Int])
       val source = Source.subscriber[Int]
-      val out = SubscriberProbe[Int]
+      val out = TestSubscriber.manualProbe[Int]
 
       val s = Source(source, source, source, source, source)(Seq(_, _, _, _, _)) { implicit b ⇒
         (i0, i1, i2, i3, i4) ⇒

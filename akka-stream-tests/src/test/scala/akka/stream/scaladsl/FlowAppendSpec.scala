@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit.{ AkkaSpec, TestSubscriber }
 import org.reactivestreams.Subscriber
 import org.scalatest.Matchers
 
@@ -49,13 +49,15 @@ trait River { self: Matchers ⇒
   val otherFlow = Flow[Int].map(_.toString)
 
   def riverOf[T](flowConstructor: Subscriber[T] ⇒ Unit)(implicit system: ActorSystem) = {
-    val subscriber = StreamTestKit.SubscriberProbe[T]()
+    val subscriber = TestSubscriber.manualProbe[T]()
 
     flowConstructor(subscriber)
 
     val subscription = subscriber.expectSubscription()
     subscription.request(elements.size)
-    subscriber.probe.receiveN(elements.size) should be(elements.map(_.toString).map(StreamTestKit.OnNext(_)))
+    elements.foreach { el ⇒
+      subscriber.expectNext() shouldBe el.toString
+    }
     subscription.request(1)
     subscriber.expectComplete()
   }

@@ -4,12 +4,13 @@
 package akka.stream.scaladsl
 
 import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl._
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.stream.OverflowStrategy
 
 object ActorRefSinkSpec {
   case class Fw(ref: ActorRef) extends Actor {
@@ -34,16 +35,12 @@ class ActorRefSinkSpec extends AkkaSpec {
     }
 
     "cancel stream when actor terminates" in assertAllStagesStopped {
-      val publisher = StreamTestKit.PublisherProbe[Int]()
       val fw = system.actorOf(Props(classOf[Fw], testActor).withDispatcher("akka.test.stream-dispatcher"))
-      Source(publisher).runWith(Sink.actorRef(fw, onCompleteMessage = "done"))
-      val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
-      autoPublisher.sendNext(1)
-      autoPublisher.sendNext(2)
+      val publisher = TestSource.probe[Int].to(Sink.actorRef(fw, onCompleteMessage = "done")).run().sendNext(1).sendNext(2)
       expectMsg(1)
       expectMsg(2)
       system.stop(fw)
-      autoPublisher.subscription.expectCancellation()
+      publisher.expectCancellation()
     }
 
   }

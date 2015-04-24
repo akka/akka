@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit.Utils._
 import org.scalactic.ConversionCheckedTripleEquals
 import akka.util.ByteString
 import akka.stream.BidiShape
@@ -12,7 +13,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.stream.OperationAttributes
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 
 class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   import OperationAttributes._

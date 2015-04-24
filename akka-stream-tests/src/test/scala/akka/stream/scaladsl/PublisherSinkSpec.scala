@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.stream.ActorFlowMaterializer
 
 import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit.Utils._
 import scala.concurrent.duration._
 
 import scala.concurrent.Await

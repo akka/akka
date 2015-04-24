@@ -9,7 +9,8 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.io.SynchronousFileSource
 import akka.stream.scaladsl.Sink
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.testkit.{ EventFilter, TestEvent }
 import akka.util.ByteString
 import org.reactivestreams.Publisher
@@ -22,7 +23,7 @@ class SynchronousFilePublisherTest extends AkkaPublisherVerification[ByteString]
 
   @BeforeClass
   override def createActorSystem(): Unit = {
-    _system = ActorSystem(Logging.simpleName(getClass), StreamTestKit.UnboundedMailboxConfig.withFallback(AkkaSpec.testConf))
+    _system = ActorSystem(Logging.simpleName(getClass), UnboundedMailboxConfig.withFallback(AkkaSpec.testConf))
     _system.eventStream.publish(TestEvent.Mute(EventFilter[RuntimeException]("Test exception")))
   }
 
@@ -45,4 +46,3 @@ class SynchronousFilePublisherTest extends AkkaPublisherVerification[ByteString]
 
   override def maxElementsFromPublisher(): Long = Elements
 }
-

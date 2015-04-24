@@ -1,11 +1,10 @@
 package akka.stream.scaladsl
 
-import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit._
 import akka.stream._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalactic.ConversionCheckedTripleEquals
-import akka.stream.testkit.StreamTestKit._
 
 class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   import FlowGraph.Implicits._
@@ -31,7 +30,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work from Sink" in {
-      val sub = SubscriberProbe[Int]
+      val sub = TestSubscriber.manualProbe[Int]
       FlowGraph.closed() { implicit b ⇒
         Sink(sub) <~ source
       }.run()

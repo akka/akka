@@ -6,8 +6,7 @@ package akka.stream.scaladsl
 import akka.stream.OperationAttributes._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.OverflowStrategy
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
+import akka.stream.testkit._
 import akka.stream.stage._
 
 object FlowGraphCompileSpec {
@@ -216,7 +215,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
     }
 
     "build with variance" in {
-      val out = Sink(SubscriberProbe[Fruit]())
+      val out = Sink(TestSubscriber.manualProbe[Fruit]())
       FlowGraph.closed() { b ⇒
         val merge = b.add(Merge[Fruit](2))
         b.addEdge(b add Source[Fruit](apples), Flow[Fruit], merge.in(0))
@@ -227,10 +226,10 @@ class FlowGraphCompileSpec extends AkkaSpec {
 
     "build with implicits and variance" in {
       FlowGraph.closed() { implicit b ⇒
-        def appleSource = b.add(Source(PublisherProbe[Apple]))
-        def fruitSource = b.add(Source(PublisherProbe[Fruit]))
-        val outA = b add Sink(SubscriberProbe[Fruit]())
-        val outB = b add Sink(SubscriberProbe[Fruit]())
+        def appleSource = b.add(Source(TestPublisher.manualProbe[Apple]))
+        def fruitSource = b.add(Source(TestPublisher.manualProbe[Fruit]))
+        val outA = b add Sink(TestSubscriber.manualProbe[Fruit]())
+        val outB = b add Sink(TestSubscriber.manualProbe[Fruit]())
         val merge = b add Merge[Fruit](11)
         val unzip = b add Unzip[Int, String]()
         val whatever = b add Sink.publisher[Any]

@@ -5,7 +5,7 @@ import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit.Utils._
 
 abstract class TwoStreamsSetup extends AkkaSpec {
 
@@ -27,7 +27,7 @@ abstract class TwoStreamsSetup extends AkkaSpec {
   def fixture(b: FlowGraph.Builder[_]): Fixture
 
   def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
-    val subscriber = StreamTestKit.SubscriberProbe[Outputs]()
+    val subscriber = TestSubscriber.probe[Outputs]()
     FlowGraph.closed() { implicit b ⇒
       import FlowGraph.Implicits._
       val f = fixture(b)
@@ -41,15 +41,15 @@ abstract class TwoStreamsSetup extends AkkaSpec {
     subscriber
   }
 
-  def failedPublisher[T]: Publisher[T] = StreamTestKit.errorPublisher[T](TestException)
+  def failedPublisher[T]: Publisher[T] = TestPublisher.error[T](TestException)
 
-  def completedPublisher[T]: Publisher[T] = StreamTestKit.emptyPublisher[T]
+  def completedPublisher[T]: Publisher[T] = TestPublisher.empty[T]
 
   def nonemptyPublisher[T](elems: immutable.Iterable[T]): Publisher[T] = Source(elems).runWith(Sink.publisher)
 
-  def soonToFailPublisher[T]: Publisher[T] = StreamTestKit.lazyErrorPublisher[T](TestException)
+  def soonToFailPublisher[T]: Publisher[T] = TestPublisher.lazyError[T](TestException)
 
-  def soonToCompletePublisher[T]: Publisher[T] = StreamTestKit.lazyEmptyPublisher[T]
+  def soonToCompletePublisher[T]: Publisher[T] = TestPublisher.lazyEmpty[T]
 
   def commonTests() = {
     "work with two immediately completed publishers" in assertAllStagesStopped {

@@ -7,8 +7,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.stream.testkit.ScriptedTest
+import akka.stream.testkit._
 
 class FlowFilterSpec extends AkkaSpec with ScriptedTest {
 
@@ -27,7 +26,7 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
         .withInputBuffer(initialSize = 1, maxSize = 1)
       implicit val materializer = ActorFlowMaterializer(settings)
 
-      val probe = StreamTestKit.SubscriberProbe[Int]()
+      val probe = TestSubscriber.manualProbe[Int]()
       Source(List.fill(1000)(0) ::: List(1)).filter(_ != 0).runWith(Sink(probe))
 
       val subscription = probe.expectSubscription()

@@ -4,8 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit._
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -25,7 +24,7 @@ class GraphMatValueSpec extends AkkaSpec {
     val foldSink = Sink.fold[Int, Int](0)(_ + _)
 
     "expose the materialized value as source" in {
-      val sub = StreamTestKit.SubscriberProbe[Int]()
+      val sub = TestSubscriber.manualProbe[Int]()
       val f = FlowGraph.closed(foldSink) { implicit b ⇒
         fold ⇒
           Source(1 to 10) ~> fold
@@ -40,7 +39,7 @@ class GraphMatValueSpec extends AkkaSpec {
     }
 
     "expose the materialized value as source multiple times" in {
-      val sub = StreamTestKit.SubscriberProbe[Int]()
+      val sub = TestSubscriber.manualProbe[Int]()
 
       val f = FlowGraph.closed(foldSink) { implicit b ⇒
         fold ⇒

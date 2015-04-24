@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.TestPublisher
 import org.reactivestreams.{ Subscriber, Subscription, Processor, Publisher }
 import org.reactivestreams.tck.IdentityProcessorVerification
 import org.reactivestreams.tck.TestEnvironment
@@ -26,7 +26,7 @@ abstract class AkkaIdentityProcessorVerification[T](env: TestEnvironment, publis
   def this() = this(false)
 
   override def createFailedPublisher(): Publisher[T] =
-    StreamTestKit.errorPublisher(new Exception("Unable to serve subscribers right now!"))
+    TestPublisher.error(new Exception("Unable to serve subscribers right now!"))
 
   def processorFromFlow(flow: Flow[T, T, _])(implicit mat: ActorFlowMaterializer): Processor[T, T] = {
     val (sub: Subscriber[T], pub: Publisher[T]) = flow.runWith(Source.subscriber[T], Sink.publisher[T])

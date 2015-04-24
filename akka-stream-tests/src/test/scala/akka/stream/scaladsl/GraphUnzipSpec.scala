@@ -4,8 +4,8 @@ import scala.concurrent.duration._
 
 import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings }
 import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 
 class GraphUnzipSpec extends AkkaSpec {
 
@@ -18,8 +18,8 @@ class GraphUnzipSpec extends AkkaSpec {
     import FlowGraph.Implicits._
 
     "unzip to two subscribers" in assertAllStagesStopped {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[String]()
 
       FlowGraph.closed() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
@@ -47,8 +47,8 @@ class GraphUnzipSpec extends AkkaSpec {
     }
 
     "produce to right downstream even though left downstream cancels" in {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[String]()
 
       FlowGraph.closed() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
@@ -68,8 +68,8 @@ class GraphUnzipSpec extends AkkaSpec {
     }
 
     "produce to left downstream even though right downstream cancels" in {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[String]()
 
       FlowGraph.closed() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
@@ -89,9 +89,9 @@ class GraphUnzipSpec extends AkkaSpec {
     }
 
     "cancel upstream when downstreams cancel" in {
-      val p1 = StreamTestKit.PublisherProbe[(Int, String)]()
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[String]()
+      val p1 = TestPublisher.manualProbe[(Int, String)]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[String]()
 
       FlowGraph.closed() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
@@ -118,7 +118,7 @@ class GraphUnzipSpec extends AkkaSpec {
     }
 
     "work with zip" in assertAllStagesStopped {
-      val c1 = StreamTestKit.SubscriberProbe[(Int, String)]()
+      val c1 = TestSubscriber.manualProbe[(Int, String)]()
       FlowGraph.closed() { implicit b ⇒
         val zip = b.add(Zip[Int, String]())
         val unzip = b.add(Unzip[Int, String]())

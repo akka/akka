@@ -14,9 +14,8 @@ import akka.actor._
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.ActorFlowMaterializer
 import akka.stream.impl._
-import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
-import akka.stream.testkit.ChainSetup
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.testkit._
 import akka.testkit.TestEvent.{ UnMute, Mute }
 import com.typesafe.config.ConfigFactory
@@ -155,7 +154,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val flow = Flow[String]
       val (flowIn: Subscriber[String], flowOut: Publisher[String]) = materializeIntoSubscriberAndPublisher(flow)
 
-      val c1 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[String]()
       flowOut.subscribe(c1)
 
       val source: Publisher[String] = Source(List("1", "2", "3")).runWith(Sink.publisher)
@@ -173,7 +172,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val flow = Flow[Int].map((i: Int) ⇒ i.toString)
       val (flowIn: Subscriber[Int], flowOut: Publisher[String]) = materializeIntoSubscriberAndPublisher(flow)
 
-      val c1 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[String]()
       flowOut.subscribe(c1)
       val sub1 = c1.expectSubscription
       sub1.request(3)
@@ -192,7 +191,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val flow = Flow[Int].map(_.toString).map("elem-" + _)
       val (flowIn, flowOut) = materializeIntoSubscriberAndPublisher(flow)
 
-      val c1 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[String]()
       flowOut.subscribe(c1)
       val sub1 = c1.expectSubscription
       sub1.request(3)
@@ -209,7 +208,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "subscribe Subscriber" in {
       val flow: Flow[String, String, _] = Flow[String]
-      val c1 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[String]()
       val sink: Sink[String, _] = flow.to(Sink(c1))
       val publisher: Publisher[String] = Source(List("1", "2", "3")).runWith(Sink.publisher)
       Source(publisher).to(sink).run()
@@ -235,7 +234,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "perform transformation operation and subscribe Subscriber" in {
       val flow = Flow[Int].map(_.toString)
-      val c1 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[String]()
       val sink: Sink[Int, _] = flow.to(Sink(c1))
       val publisher: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.publisher)
       Source(publisher).to(sink).run()
@@ -252,9 +251,9 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val flow = Source(List(1, 2, 3)).map(_.toString)
       val p1 = flow.runWith(Sink.fanoutPublisher(2, 2))
       val p2 = flow.runWith(Sink.fanoutPublisher(2, 2))
-      val s1 = StreamTestKit.SubscriberProbe[String]()
-      val s2 = StreamTestKit.SubscriberProbe[String]()
-      val s3 = StreamTestKit.SubscriberProbe[String]()
+      val s1 = TestSubscriber.manualProbe[String]()
+      val s2 = TestSubscriber.manualProbe[String]()
+      val s3 = TestSubscriber.manualProbe[String]()
       p1.subscribe(s1)
       p2.subscribe(s2)
       p2.subscribe(s3)
@@ -297,7 +296,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val s1: Source[Int, _] = Source(List(1, 2, 3))
       val s2: Source[String, _] = Source(List(4, 5, 6)).map(_.toString + "-s")
 
-      val subs = StreamTestKit.SubscriberProbe[Any]()
+      val subs = TestSubscriber.manualProbe[Any]()
       val subSink = Sink.publisher[Any]
 
       val (_, res) = f1.concat(s2).runWith(s1, subSink)
@@ -319,7 +318,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "adapt speed to the currently slowest subscriber" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 1)) {
-        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        val downstream2 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
@@ -346,7 +345,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "support slow subscriber with fan-out 2" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
         toFanoutPublisher(initialBufferSize = 2, maximumBufferSize = 2)) {
-        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        val downstream2 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
@@ -398,7 +397,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         upstream.expectRequest(upstreamSubscription, 1)
 
         // link now while an upstream element is already requested
-        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        val downstream2 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
@@ -424,7 +423,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "be unblocked when blocking subscriber cancels subscription" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 1)) {
-        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        val downstream2 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
@@ -461,7 +460,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "call future subscribers' onError after onSubscribe if initial upstream was completed" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 1)) {
-        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        val downstream2 = TestSubscriber.manualProbe[Any]()
         // don't link it just yet
 
         downstreamSubscription.request(5)
@@ -490,7 +489,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         downstream2.expectNext("a3")
         downstream2.expectComplete()
 
-        val downstream3 = StreamTestKit.SubscriberProbe[Any]()
+        val downstream3 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream3)
         downstream3.expectSubscription()
         downstream3.expectError() should ===(ActorPublisher.NormalShutdownReason)
@@ -508,7 +507,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         upstreamSubscription.expectCancellation()
         downstream.expectError(TestException)
 
-        val downstream2 = StreamTestKit.SubscriberProbe[String]()
+        val downstream2 = TestSubscriber.manualProbe[String]()
         publisher.subscribe(downstream2)
         downstream2.expectSubscriptionAndError() should be(TestException)
       }
@@ -521,7 +520,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         downstreamSubscription.cancel()
         upstreamSubscription.expectCancellation()
 
-        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        val downstream2 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream2)
         // IllegalStateException shut down
         downstream2.expectSubscriptionAndError().isInstanceOf[IllegalStateException] should be(true)
@@ -533,13 +532,13 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "cancel upstream and call onError on current and future downstream subscribers if an internal error occurs" in {
       new ChainSetup(faultyFlow, settings.copy(initialInputBufferSize = 1), toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 16)) {
 
-        def checkError(sprobe: StreamTestKit.SubscriberProbe[Any]): Unit = {
+        def checkError(sprobe: TestSubscriber.ManualProbe[Any]): Unit = {
           val error = sprobe.expectError()
           error.isInstanceOf[IllegalStateException] should be(true)
           error.getMessage should be("Processor actor terminated abruptly")
         }
 
-        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        val downstream2 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
@@ -570,7 +569,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
           checkError(downstream)
           checkError(downstream2)
 
-          val downstream3 = StreamTestKit.SubscriberProbe[Any]()
+          val downstream3 = TestSubscriber.manualProbe[Any]()
           publisher.subscribe(downstream3)
           downstream3.expectSubscription()
           // IllegalStateException terminated abruptly

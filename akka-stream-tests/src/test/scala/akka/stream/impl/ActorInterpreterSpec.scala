@@ -7,7 +7,7 @@ import akka.stream.Supervision._
 import akka.stream.testkit.AkkaSpec
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.testkit.StreamTestKit._
+import akka.stream.testkit._
 import akka.stream.impl.fusing.ActorInterpreter
 import akka.stream.stage.Stage
 import akka.stream.stage.PushPullStage
@@ -22,8 +22,8 @@ class ActorInterpreterSpec extends AkkaSpec {
   implicit val mat = ActorFlowMaterializer()
 
   class Setup(ops: List[Stage[_, _]] = List(fusing.Map({ x: Any ⇒ x }, stoppingDecider))) {
-    val up = PublisherProbe[Int]
-    val down = SubscriberProbe[Int]
+    val up = TestPublisher.manualProbe[Int]
+    val down = TestSubscriber.manualProbe[Int]
     private val props = ActorInterpreter.props(mat.settings, ops, mat).withDispatcher("akka.test.stream-dispatcher")
     val actor = system.actorOf(props)
     val processor = ActorProcessorFactory[Int, Int](actor)

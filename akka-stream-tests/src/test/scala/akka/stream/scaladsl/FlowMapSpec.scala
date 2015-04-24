@@ -7,8 +7,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.stream.testkit.ScriptedTest
+import akka.stream.testkit._
 
 class FlowMapSpec extends AkkaSpec with ScriptedTest {
 
@@ -25,7 +24,7 @@ class FlowMapSpec extends AkkaSpec with ScriptedTest {
     }
 
     "not blow up with high request counts" in {
-      val probe = StreamTestKit.SubscriberProbe[Int]()
+      val probe = TestSubscriber.manualProbe[Int]()
       Source(List(1)).
         map(_ + 1).map(_ + 1).map(_ + 1).map(_ + 1).map(_ + 1).
         runWith(Sink.publisher).subscribe(probe)

@@ -6,8 +6,7 @@ package akka.stream.scaladsl
 import akka.stream.OperationAttributes._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit._
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
