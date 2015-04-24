@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package docs.stream;
+package docs.stream.io;
 
 import static org.junit.Assert.assertEquals;
 import java.util.concurrent.ConcurrentLinkedQueue;
