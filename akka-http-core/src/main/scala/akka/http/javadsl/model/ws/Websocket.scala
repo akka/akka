@@ -6,10 +6,8 @@ package akka.http.javadsl.model.ws
 
 import akka.stream.FlowMaterializer
 import akka.stream.javadsl.Flow
-
-import akka.http.model.japi.JavaMapping.Implicits._
-
-import akka.http.model.japi.{ StatusCodes, HttpResponse, HttpRequest }
+import akka.http.javadsl.model._
+import akka.http.impl.util.JavaMapping.Implicits._
 
 object Websocket {
   /**
