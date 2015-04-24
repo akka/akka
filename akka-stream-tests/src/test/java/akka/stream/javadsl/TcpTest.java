@@ -17,19 +17,19 @@ import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
 
 import akka.stream.*;
-import akka.stream.javadsl.StreamTcp.*;
+import akka.stream.javadsl.Tcp.*;
 import akka.japi.function.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.testkit.TestUtils;
 import akka.util.ByteString;
 
-public class StreamTcpTest extends StreamTest {
-  public StreamTcpTest() {
+public class TcpTest extends StreamTest {
+  public TcpTest() {
     super(actorSystemResource);
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("StreamTcpTest",
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("TcpTest",
     AkkaSpec.testConf());
   
   final Sink<IncomingConnection, Future<BoxedUnit>> echoHandler =
@@ -49,7 +49,7 @@ public class StreamTcpTest extends StreamTest {
   @Test
   public void mustWorkInHappyCase() throws Exception {
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
-    final Source<IncomingConnection, Future<ServerBinding>> binding = StreamTcp.get(system)
+    final Source<IncomingConnection, Future<ServerBinding>> binding = Tcp.get(system)
         .bind(serverAddress.getHostName(), serverAddress.getPort()); // TODO getHostString in Java7
     
     final Future<ServerBinding> future = binding.to(echoHandler).run(materializer);
@@ -59,7 +59,7 @@ public class StreamTcpTest extends StreamTest {
     final Future<ByteString> resultFuture = Source
         .from(testInput)
         // TODO getHostString in Java7
-        .via(StreamTcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort())) 
+        .via(Tcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort())) 
         .runFold(ByteString.empty(),
             new Function2<ByteString, ByteString, ByteString>() {
               public ByteString apply(ByteString acc, ByteString elem) {
@@ -76,7 +76,7 @@ public class StreamTcpTest extends StreamTest {
   @Test
   public void mustReportServerBindFailure() throws Exception {
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
-    final Source<IncomingConnection, Future<ServerBinding>> binding = StreamTcp.get(system)
+    final Source<IncomingConnection, Future<ServerBinding>> binding = Tcp.get(system)
         .bind(serverAddress.getHostName(), serverAddress.getPort()); // TODO getHostString in Java7
     
     final Future<ServerBinding> future = binding.to(echoHandler).run(materializer);
@@ -99,7 +99,7 @@ public class StreamTcpTest extends StreamTest {
       Await.result(
           Source.from(testInput)
               // TODO getHostString in Java7
-              .via(StreamTcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort()), 
+              .via(Tcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort()), 
                   Keep.<BoxedUnit, Future<OutgoingConnection>> right())
               .to(Sink.<ByteString> ignore())
               .run(materializer),

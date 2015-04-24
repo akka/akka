@@ -7,7 +7,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.stream._
-import akka.stream.scaladsl.StreamTcp._
+import akka.stream.scaladsl.Tcp._
 import akka.stream.scaladsl._
 import akka.stream.stage.Context
 import akka.stream.stage.PushStage
@@ -32,13 +32,13 @@ class StreamTcpDocSpec extends AkkaSpec {
     {
       //#echo-server-simple-bind
       val connections: Source[IncomingConnection, Future[ServerBinding]] =
-        StreamTcp().bind("127.0.0.1", 8888)
+        Tcp().bind("127.0.0.1", 8888)
       //#echo-server-simple-bind
     }
     {
       val localhost = TestUtils.temporaryServerAddress()
       val connections: Source[IncomingConnection, Future[ServerBinding]] =
-        StreamTcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
+        Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
 
       //#echo-server-simple-handle
       connections runForeach { connection =>
@@ -57,7 +57,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
   "initial server banner echo server" in {
     val localhost = TestUtils.temporaryServerAddress()
-    val connections = StreamTcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
+    val connections = Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
     val serverProbe = TestProbe()
 
     //#welcome-banner-chat-server
@@ -113,12 +113,12 @@ class StreamTcpDocSpec extends AkkaSpec {
 
     {
       //#repl-client
-      val connection = StreamTcp().outgoingConnection("127.0.0.1", 8888)
+      val connection = Tcp().outgoingConnection("127.0.0.1", 8888)
       //#repl-client
     }
 
     {
-      val connection = StreamTcp().outgoingConnection(localhost)
+      val connection = Tcp().outgoingConnection(localhost)
       //#repl-client
 
       val replParser = new PushStage[String, ByteString] {
