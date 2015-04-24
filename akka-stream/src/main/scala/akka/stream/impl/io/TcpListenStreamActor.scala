@@ -13,7 +13,7 @@ import akka.io.Tcp._
 import akka.stream.{ FlowMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.impl._
 import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.StreamTcp
+import akka.stream.scaladsl.{ Tcp ⇒ StreamTcp }
 import akka.util.ByteString
 import org.reactivestreams.Subscriber
 import akka.stream.ConnectionException

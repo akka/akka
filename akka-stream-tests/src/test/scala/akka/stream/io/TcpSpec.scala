@@ -3,7 +3,7 @@
  */
 package akka.stream.io
 
-import akka.stream.scaladsl.StreamTcp.OutgoingConnection
+import akka.stream.scaladsl.Tcp.OutgoingConnection
 
 import scala.concurrent.{ Future, Await }
 import akka.io.Tcp._
@@ -19,7 +19,7 @@ import akka.stream.testkit.Utils._
 import akka.stream.scaladsl._
 import akka.stream.testkit.TestUtils.temporaryServerAddress
 
-class StreamTcpSpec extends AkkaSpec with TcpHelper {
+class TcpSpec extends AkkaSpec with TcpHelper {
   import akka.stream.io.TcpHelper._
   var demand = 0L
 
@@ -32,7 +32,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
       val tcpReadProbe = new TcpReadProbe()
       val tcpWriteProbe = new TcpWriteProbe()
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       validateServerClientCommunication(testData, serverConnection, tcpReadProbe, tcpWriteProbe)
@@ -48,7 +48,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Source(testInput).via(StreamTcp().outgoingConnection(server.address)).to(Sink.ignore).run()
+      Source(testInput).via(Tcp().outgoingConnection(server.address)).to(Sink.ignore).run()
 
       val serverConnection = server.waitAccept()
       serverConnection.read(256)
@@ -63,7 +63,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val idle = new TcpWriteProbe() // Just register an idle upstream
       val resultFuture =
         Source(idle.publisherProbe)
-          .via(StreamTcp().outgoingConnection(server.address))
+          .via(Tcp().outgoingConnection(server.address))
           .runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
       val serverConnection = server.waitAccept()
 
@@ -82,7 +82,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       // Client can still write
@@ -112,7 +112,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       // Server can still write
@@ -140,7 +140,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       // Server can still write
@@ -172,7 +172,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       // Client can still write
@@ -205,7 +205,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       // Server can still write
@@ -235,7 +235,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
 
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       // Server can still write
@@ -262,7 +262,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
 
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       // Server can still write
@@ -291,7 +291,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
 
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       serverConnection.abort()
@@ -310,7 +310,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val tcpWriteProbe1 = new TcpWriteProbe()
       val tcpReadProbe2 = new TcpReadProbe()
       val tcpWriteProbe2 = new TcpWriteProbe()
-      val outgoingConnection = StreamTcp().outgoingConnection(server.address)
+      val outgoingConnection = Tcp().outgoingConnection(server.address)
 
       val conn1F =
         Source(tcpWriteProbe1.publisherProbe)
@@ -346,12 +346,12 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
   "TCP listen stream" must {
 
     // Reusing handler
-    val echoHandler = Sink.foreach[StreamTcp.IncomingConnection] { _.flow.join(Flow[ByteString]).run() }
+    val echoHandler = Sink.foreach[Tcp.IncomingConnection] { _.flow.join(Flow[ByteString]).run() }
 
     "be able to implement echo" in {
       val serverAddress = temporaryServerAddress()
       val (bindingFuture, echoServerFinish) =
-        StreamTcp()
+        Tcp()
           .bind(serverAddress.getHostName, serverAddress.getPort) // TODO getHostString in Java7
           .toMat(echoHandler)(Keep.both)
           .run()
@@ -362,7 +362,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
       val resultFuture =
-        Source(testInput).via(StreamTcp().outgoingConnection(serverAddress)).runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
+        Source(testInput).via(Tcp().outgoingConnection(serverAddress)).runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
       Await.result(binding.unbind(), 3.seconds)
@@ -372,7 +372,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
     "work with a chain of echoes" in {
       val serverAddress = temporaryServerAddress()
       val (bindingFuture, echoServerFinish) =
-        StreamTcp()
+        Tcp()
           .bind(serverAddress.getHostName, serverAddress.getPort) // TODO getHostString in Java7
           .toMat(echoHandler)(Keep.both)
           .run()
@@ -380,7 +380,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       // make sure that the server has bound to the socket
       val binding = Await.result(bindingFuture, 100.millis)
 
-      val echoConnection = StreamTcp().outgoingConnection(serverAddress)
+      val echoConnection = Tcp().outgoingConnection(serverAddress)
 
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
@@ -400,18 +400,18 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
     "bind and unbind correctly" in {
       val address = temporaryServerAddress()
-      val probe1 = TestSubscriber.manualProbe[StreamTcp.IncomingConnection]()
-      val bind = StreamTcp(system).bind(address.getHostName, address.getPort) // TODO getHostString in Java7
+      val probe1 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
+      val bind = Tcp(system).bind(address.getHostName, address.getPort) // TODO getHostString in Java7
       // Bind succeeded, we have a local address
       val binding1 = Await.result(bind.to(Sink(probe1)).run(), 3.second)
 
       probe1.expectSubscription()
 
-      val probe2 = TestSubscriber.manualProbe[StreamTcp.IncomingConnection]()
+      val probe2 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
       val binding2F = bind.to(Sink(probe2)).run()
       probe2.expectSubscriptionAndError(BindFailedException)
 
-      val probe3 = TestSubscriber.manualProbe[StreamTcp.IncomingConnection]()
+      val probe3 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
       val binding3F = bind.to(Sink(probe3)).run()
       probe3.expectSubscriptionAndError()
 
@@ -422,7 +422,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       Await.result(binding1.unbind(), 1.second)
       probe1.expectComplete()
 
-      val probe4 = TestSubscriber.manualProbe[StreamTcp.IncomingConnection]()
+      val probe4 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
       // Bind succeeded, we have a local address
       val binding4 = Await.result(bind.to(Sink(probe4)).run(), 3.second)
       probe4.expectSubscription()
