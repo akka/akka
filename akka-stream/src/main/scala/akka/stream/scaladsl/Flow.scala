@@ -46,7 +46,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * value of the current flow (ignoring the other Flow’s value), use
    * [[Flow#viaMat viaMat]] if a different strategy is needed.
    */
-  def via[T, Mat2](flow: Flow[Out, T, Mat2]): Flow[In, T, Mat] = viaMat(flow)(Keep.left)
+  def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Flow[In, T, Mat] = viaMat(flow)(Keep.left)
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
@@ -64,7 +64,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting Flow.
    */
-  def viaMat[T, Mat2, Mat3](flow: Flow[Out, T, Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
+  def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
     if (this.isIdentity) flow.asInstanceOf[Flow[In, T, Mat2]].mapMaterialized(combine(().asInstanceOf[Mat], _))
     else {
       val flowCopy = flow.module.carbonCopy
@@ -92,7 +92,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * value of the current flow (ignoring the given Sink’s value), use
    * [[Flow#toMat[Mat2* toMat]] if a different strategy is needed.
    */
-  def to[Mat2](sink: Sink[Out, Mat2]): Sink[In, Mat] = {
+  def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Sink[In, Mat] = {
     toMat(sink)(Keep.left)
   }
 
@@ -112,7 +112,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * The `combine` function is used to compose the materialized values of this flow and that
    * Sink into the materialized value of the resulting Sink.
    */
-  def toMat[Mat2, Mat3](sink: Sink[Out, Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Sink[In, Mat3] = {
+  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Sink[In, Mat3] = {
     if (isIdentity) sink.asInstanceOf[Sink[In, Mat3]]
     else {
       val sinkCopy = sink.module.carbonCopy
@@ -142,7 +142,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * value of the current flow (ignoring the other Flow’s value), use
    * [[Flow#joinMat[Mat2* joinMat]] if a different strategy is needed.
    */
-  def join[Mat2](flow: Flow[Out, In, Mat2]): RunnableFlow[Mat] = joinMat(flow)(Keep.left)
+  def join[Mat2](flow: Graph[FlowShape[Out, In], Mat2]): RunnableFlow[Mat] = joinMat(flow)(Keep.left)
 
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
@@ -156,7 +156,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * The `combine` function is used to compose the materialized values of this flow and that
    * Flow into the materialized value of the resulting Flow.
    */
-  def joinMat[Mat2, Mat3](flow: Flow[Out, In, Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableFlow[Mat3] = {
+  def joinMat[Mat2, Mat3](flow: Graph[FlowShape[Out, In], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableFlow[Mat3] = {
     val flowCopy = flow.module.carbonCopy
     RunnableFlow(
       module
@@ -182,7 +182,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * value of the current flow (ignoring the [[BidiFlow]]’s value), use
    * [[Flow#joinMat[I2* joinMat]] if a different strategy is needed.
    */
-  def join[I2, O2, Mat2](bidi: BidiFlow[Out, O2, I2, In, Mat2]): Flow[I2, O2, Mat] = joinMat(bidi)(Keep.left)
+  def join[I2, O2, Mat2](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2]): Flow[I2, O2, Mat] = joinMat(bidi)(Keep.left)
 
   /**
    * Join this [[Flow]] to a [[BidiFlow]] to close off the “top” of the protocol stack:
@@ -200,7 +200,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * The `combine` function is used to compose the materialized values of this flow and that
    * [[BidiFlow]] into the materialized value of the resulting [[Flow]].
    */
-  def joinMat[I2, O2, Mat2, M](bidi: BidiFlow[Out, O2, I2, In, Mat2])(combine: (Mat, Mat2) ⇒ M): Flow[I2, O2, M] = {
+  def joinMat[I2, O2, Mat2, M](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2])(combine: (Mat, Mat2) ⇒ M): Flow[I2, O2, M] = {
     val copy = bidi.module.carbonCopy
     val ins = copy.shape.inlets
     val outs = copy.shape.outlets
@@ -221,8 +221,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * The resulting Flow’s materialized value is a Tuple2 containing both materialized
    * values (of this Flow and that Source).
    */
-  def concat[Out2 >: Out, Mat2](source: Source[Out2, Mat2]): Flow[In, Out2, (Mat, Mat2)] =
-    concatMat[Out2, Mat2, (Mat, Mat2)](source, Keep.both)
+  def concat[Out2 >: Out, Mat2](source: Graph[SourceShape[Out2], Mat2]): Flow[In, Out2, (Mat, Mat2)] =
+    concatMat[Out2, Mat2, (Mat, Mat2)](source)(Keep.both)
 
   /**
    * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
@@ -231,7 +231,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * together with this Flow and just kept from producing elements by asserting
    * back-pressure until its time comes.
    */
-  def concatMat[Out2 >: Out, Mat2, Mat3](source: Source[Out2, Mat2], combine: (Mat, Mat2) ⇒ Mat3): Flow[In, Out2, Mat3] =
+  def concatMat[Out2 >: Out, Mat2, Mat3](source: Graph[SourceShape[Out2], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, Out2, Mat3] =
     this.viaMat(Flow(source) { implicit builder ⇒
       s ⇒
         import FlowGraph.Implicits._
@@ -275,8 +275,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a of a [[Source#subscriber]] and
    * and `Publisher` of a [[Sink#publisher]].
    */
-  def runWith[Mat1, Mat2](source: Source[In, Mat1], sink: Sink[Out, Mat2])(implicit materializer: FlowMaterializer): (Mat1, Mat2) = {
-    source.via(this).toMat(sink)(Keep.both).run()
+  def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(implicit materializer: FlowMaterializer): (Mat1, Mat2) = {
+    Source.wrap(source).via(this).toMat(sink)(Keep.both).run()
   }
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
@@ -303,7 +303,7 @@ object Flow extends FlowApply {
   /**
    * Helper to create `Flow` from a pair of sink and source.
    */
-  def wrap[I, O, M1, M2, M](sink: Sink[I, M1], source: Source[O, M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
+  def wrap[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
     Flow(sink, source)(f) { implicit b ⇒ (in, out) ⇒ (in.inlet, out.outlet) }
 }
 

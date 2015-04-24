@@ -34,8 +34,8 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
    * of the `Source`, e.g. the `Subscriber` of a [[Source#subscriber]].
    */
-  def runWith[Mat2](source: Source[In, Mat2])(implicit materializer: FlowMaterializer): Mat2 =
-    source.to(this).run()
+  def runWith[Mat2](source: Graph[SourceShape[In], Mat2])(implicit materializer: FlowMaterializer): Mat2 =
+    Source.wrap(source).to(this).run()
 
   def mapMaterialized[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
     new Sink(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
