@@ -5,9 +5,9 @@
 package docs.http.server
 package directives
 
-import akka.http.server._
-import akka.http.model.headers.{ HttpCookie, Cookie, `Set-Cookie` }
-import akka.http.util.DateTime
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.model.headers.{ HttpCookie, Cookie, `Set-Cookie` }
+import akka.http.scaladsl.model.DateTime
 
 class CookieDirectivesExamplesSpec extends RoutingSpec {
   "cookie" in {
