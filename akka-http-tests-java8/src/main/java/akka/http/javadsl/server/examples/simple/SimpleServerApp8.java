@@ -2,11 +2,10 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.server.japi.examples.simple;
+package akka.http.javadsl.server.examples.simple;
 
 import akka.actor.ActorSystem;
-import akka.http.server.japi.*;
-
+import akka.http.javadsl.server.*;
 import java.io.IOException;
 
 public class SimpleServerApp8 extends HttpApp {
