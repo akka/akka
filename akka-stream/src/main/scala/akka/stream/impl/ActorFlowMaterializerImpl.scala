@@ -92,7 +92,7 @@ private[akka] case class ActorFlowMaterializerImpl(
 
           case tls: TlsModule ⇒
             val es = effectiveSettings(effectiveAttributes)
-            val props = SslTlsCipherActor.props(es, tls.sslContext, tls.firstSession, tracing = true, tls.role, tls.closing)
+            val props = SslTlsCipherActor.props(es, tls.sslContext, tls.firstSession, tracing = false, tls.role, tls.closing)
             val impl = actorOf(props, stageName(effectiveAttributes), es.dispatcher)
             def factory(id: Int) = new ActorPublisher[Any](impl) {
               override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)

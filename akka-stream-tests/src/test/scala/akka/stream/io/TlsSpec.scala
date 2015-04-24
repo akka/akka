@@ -1,27 +1,31 @@
 package akka.stream.io
 
-import java.security.{ KeyStore, SecureRandom }
-import javax.net.ssl.{ TrustManagerFactory, KeyManagerFactory, SSLContext }
-import akka.stream.{ Graph, BidiShape, ActorFlowMaterializer }
-import akka.stream.scaladsl._
-import akka.stream.io._
-import akka.stream.testkit.{ TestUtils, AkkaSpec }
-import akka.util.ByteString
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.collection.immutable
-import scala.util.Random
-import akka.stream.stage.AsyncStage
-import akka.stream.stage.AsyncContext
-import java.util.concurrent.TimeoutException
-import akka.actor.ActorSystem
-import javax.net.ssl.SSLSession
-import akka.pattern.{ after ⇒ later }
-import scala.concurrent.Future
 import java.net.InetSocketAddress
+import java.security.KeyStore
+import java.security.SecureRandom
+import java.util.concurrent.TimeoutException
+
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Random
+
+import akka.actor.ActorSystem
+import akka.pattern.{ after ⇒ later }
+import akka.stream.ActorFlowMaterializer
+import akka.stream.scaladsl._
+import akka.stream.scaladsl.FlowGraph.Implicits._
+import akka.stream.stage._
+import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit.StreamTestKit.PublisherProbe
+import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
 import akka.testkit.EventFilter
-import akka.stream.stage.PushStage
-import akka.stream.stage.Context
+import akka.util.ByteString
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSession
+import javax.net.ssl.TrustManagerFactory
 
 object TlsSpec {
 
@@ -107,7 +111,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
 
   import FlowGraph.Implicits._
 
-  "StreamTLS" must {
+  "SslTls" must {
 
     val sslContext = initSslContext()
 
@@ -359,7 +363,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
       commPattern ← communicationPatterns
       scenario ← scenarios
     } {
-      s"work in mode ${commPattern.name} while sending ${scenario.name}" in {
+      s"work in mode ${commPattern.name} while sending ${scenario.name}" in assertAllStagesStopped {
         val onRHS = debug.via(scenario.flow)
         val f =
           Source(scenario.inputs)
@@ -389,6 +393,40 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
             log.debug("stopgap")
           }
       }
+    }
+
+    "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {
+      val ex = new Exception("hello")
+      val (sub, out1, out2) =
+        FlowGraph.closed(Source.subscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
+          (s, o1, o2) ⇒
+            val tls = b.add(clientTls(EagerClose))
+            s ~> tls.in1; tls.out1 ~> o1
+            o2 <~ tls.out2; tls.in2 <~ Source.failed(ex)
+        }.run()
+      the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
+      the[Exception] thrownBy Await.result(out2, 1.second) should be(ex)
+      Thread.sleep(500)
+      val pub = PublisherProbe()
+      pub.subscribe(sub)
+      pub.expectSubscription().expectCancellation()
+    }
+
+    "reliably cancel subscriptions when UserIn fails early" in assertAllStagesStopped {
+      val ex = new Exception("hello")
+      val (sub, out1, out2) =
+        FlowGraph.closed(Source.subscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
+          (s, o1, o2) ⇒
+            val tls = b.add(clientTls(EagerClose))
+            Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1
+            o2 <~ tls.out2; tls.in2 <~ s
+        }.run()
+      the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
+      the[Exception] thrownBy Await.result(out2, 1.second) should be(ex)
+      Thread.sleep(500)
+      val pub = PublisherProbe()
+      pub.subscribe(sub)
+      pub.expectSubscription().expectCancellation()
     }
 
   }

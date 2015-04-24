@@ -186,7 +186,7 @@ private[akka] object FanIn {
     }
 
     def inputsAvailableFor(id: Int) = new TransferState {
-      override def isCompleted: Boolean = depleted(id)
+      override def isCompleted: Boolean = depleted(id) || cancelled(id)
       override def isReady: Boolean = pending(id)
     }
 
