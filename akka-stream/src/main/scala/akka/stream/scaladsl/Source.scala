@@ -50,13 +50,13 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   /**
    * Transform this [[akka.stream.scaladsl.Source]] by appending the given processing stages.
    */
-  def via[T, Mat2](flow: Flow[Out, T, Mat2]): Source[T, Mat] = viaMat(flow)(Keep.left)
+  def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Source[T, Mat] = viaMat(flow)(Keep.left)
 
   /**
    * Transform this [[akka.stream.scaladsl.Source]] by appending the given processing stages.
    */
-  def viaMat[T, Mat2, Mat3](flow: Flow[Out, T, Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    if (flow.isIdentity) this.asInstanceOf[Source[T, Mat3]]
+  def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
+    if (flow.module.isInstanceOf[Stages.Identity]) this.asInstanceOf[Source[T, Mat3]]
     else {
       val flowCopy = flow.module.carbonCopy
       new Source(
@@ -70,13 +70,13 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * Connect this [[akka.stream.scaladsl.Source]] to a [[akka.stream.scaladsl.Sink]],
    * concatenating the processing steps of both.
    */
-  def to[Mat2](sink: Sink[Out, Mat2]): RunnableFlow[Mat] = toMat(sink)(Keep.left)
+  def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): RunnableFlow[Mat] = toMat(sink)(Keep.left)
 
   /**
    * Connect this [[akka.stream.scaladsl.Source]] to a [[akka.stream.scaladsl.Sink]],
    * concatenating the processing steps of both.
    */
-  def toMat[Mat2, Mat3](sink: Sink[Out, Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableFlow[Mat3] = {
+  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableFlow[Mat3] = {
     val sinkCopy = sink.module.carbonCopy
     RunnableFlow(module.growConnect(sinkCopy, shape.outlet, sinkCopy.shape.inlets.head, combine))
   }
@@ -107,7 +107,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl.Sink#publisher]].
    */
-  def runWith[Mat2](sink: Sink[Out, Mat2])(implicit materializer: FlowMaterializer): Mat2 = toMat(sink)(Keep.right).run()
+  def runWith[Mat2](sink: Graph[SinkShape[Out], Mat2])(implicit materializer: FlowMaterializer): Mat2 = toMat(sink)(Keep.right).run()
 
   /**
    * Shortcut for running this `Source` with a fold function.
@@ -134,14 +134,14 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * emitted by that source is emitted after the last element of this
    * source.
    */
-  def concat[Out2 >: Out, M](second: Source[Out2, M]): Source[Out2, (Mat, M)] = concatMat(second)(Keep.both)
+  def concat[Out2 >: Out, M](second: Graph[SourceShape[Out2], M]): Source[Out2, (Mat, M)] = concatMat(second)(Keep.both)
 
   /**
    * Concatenates a second source so that the first element
    * emitted by that source is emitted after the last element of this
    * source.
    */
-  def concatMat[Out2 >: Out, Mat2, Mat3](second: Source[Out2, Mat2])(
+  def concatMat[Out2 >: Out, Mat2, Mat3](second: Graph[SourceShape[Out2], Mat2])(
     combine: (Mat, Mat2) ⇒ Mat3): Source[Out2, Mat3] = Source.concatMat(this, second)(combine)
 
   /**
@@ -151,7 +151,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    *
    * This is a shorthand for [[concat]]
    */
-  def ++[Out2 >: Out, M](second: Source[Out2, M]): Source[Out2, (Mat, M)] = concat(second)
+  def ++[Out2 >: Out, M](second: Graph[SourceShape[Out2], M]): Source[Out2, (Mat, M)] = concat(second)
 
   override def withAttributes(attr: OperationAttributes): Repr[Out, Mat] =
     new Source(module.withAttributes(attr).wrap())
@@ -310,7 +310,7 @@ object Source extends SourceApply {
    * emitted by the second source is emitted after the last element of the first
    * source.
    */
-  def concat[T, Mat1, Mat2](source1: Source[T, Mat1], source2: Source[T, Mat2]): Source[T, (Mat1, Mat2)] =
+  def concat[T, Mat1, Mat2](source1: Graph[SourceShape[T], Mat1], source2: Graph[SourceShape[T], Mat2]): Source[T, (Mat1, Mat2)] =
     concatMat(source1, source2)(Keep.both).withAttributes(DefaultAttributes.concatSource)
 
   /**
@@ -318,7 +318,7 @@ object Source extends SourceApply {
    * emitted by the second source is emitted after the last element of the first
    * source.
    */
-  def concatMat[T, Mat1, Mat2, Mat3](source1: Source[T, Mat1], source2: Source[T, Mat2])(
+  def concatMat[T, Mat1, Mat2, Mat3](source1: Graph[SourceShape[T], Mat1], source2: Graph[SourceShape[T], Mat2])(
     combine: (Mat1, Mat2) ⇒ Mat3): Source[T, Mat3] =
     wrap(FlowGraph.partial(source1, source2)(combine) { implicit b ⇒
       (s1, s2) ⇒

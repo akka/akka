@@ -18,6 +18,7 @@ object Sink {
   val factory: SinkCreate = new SinkCreate {}
 
   /** Adapt [[scaladsl.Sink]] for use within Java DSL */
+  //FIXME: Is this needed now?
   def adapt[O, M](sink: scaladsl.Sink[O, M]): javadsl.Sink[O, M] =
     new Sink(sink)
 
@@ -137,8 +138,8 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
   /**
    * Connect this `Sink` to a `Source` and run it.
    */
-  def runWith[M](source: javadsl.Source[In, M], materializer: FlowMaterializer): M =
-    asScala.runWith(source.asScala)(materializer)
+  def runWith[M](source: Graph[SourceShape[In], M], materializer: FlowMaterializer): M =
+    asScala.runWith(source)(materializer)
 
   /**
    * Transform only the materialized value of this Sink, leaving all other properties as they were.
