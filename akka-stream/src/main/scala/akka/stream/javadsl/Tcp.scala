@@ -19,12 +19,12 @@ import akka.util.ByteString
 import akka.japi.Util.immutableSeq
 import akka.io.Inet.SocketOption
 
-object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
+object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   /**
    * Represents a prospective TCP server binding.
    */
-  class ServerBinding private[akka] (delegate: scaladsl.StreamTcp.ServerBinding) {
+  class ServerBinding private[akka] (delegate: scaladsl.Tcp.ServerBinding) {
     /**
      * The local address of the endpoint bound by the materialization of the `connections` [[Source]].
      */
@@ -42,7 +42,7 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
   /**
    * Represents an accepted incoming TCP connection.
    */
-  class IncomingConnection private[akka] (delegate: scaladsl.StreamTcp.IncomingConnection) {
+  class IncomingConnection private[akka] (delegate: scaladsl.Tcp.IncomingConnection) {
     /**
      * The local address this connection is bound to.
      */
@@ -72,7 +72,7 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
   /**
    * Represents a prospective outgoing TCP connection.
    */
-  class OutgoingConnection private[akka] (delegate: scaladsl.StreamTcp.OutgoingConnection) {
+  class OutgoingConnection private[akka] (delegate: scaladsl.Tcp.OutgoingConnection) {
     /**
      * The remote address this connection is or will be bound to.
      */
@@ -84,41 +84,42 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
     def localAddress: InetSocketAddress = delegate.localAddress
   }
 
-  override def get(system: ActorSystem): StreamTcp = super.get(system)
+  override def get(system: ActorSystem): Tcp = super.get(system)
 
-  def lookup() = StreamTcp
+  def lookup() = Tcp
 
-  def createExtension(system: ExtendedActorSystem): StreamTcp = new StreamTcp(system)
+  def createExtension(system: ExtendedActorSystem): Tcp = new Tcp(system)
 }
 
-class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
-  import StreamTcp._
+class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
+  import Tcp._
   import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ ec }
 
-  private lazy val delegate: scaladsl.StreamTcp = scaladsl.StreamTcp(system)
+  private lazy val delegate: scaladsl.Tcp = scaladsl.Tcp(system)
 
   /**
-   * Creates a [[StreamTcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
+   * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
    */
-  def bind(endpoint: InetSocketAddress,
+  def bind(interface: String,
+           port: Int,
            backlog: Int,
            options: JIterable[SocketOption],
            idleTimeout: Duration): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(endpoint, backlog, immutableSeq(options), idleTimeout)
+    Source.adapt(delegate.bind(interface, port, backlog, immutableSeq(options), idleTimeout)
       .map(new IncomingConnection(_))
       .mapMaterialized(_.map(new ServerBinding(_))(ec)))
 
   /**
-   * Creates a [[StreamTcp.ServerBinding]] without specifying options.
+   * Creates a [[Tcp.ServerBinding]] without specifying options.
    * It represents a prospective TCP server binding on the given `endpoint`.
    */
-  def bind(endpoint: InetSocketAddress): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(endpoint)
+  def bind(interface: String, port: Int): Source[IncomingConnection, Future[ServerBinding]] =
+    Source.adapt(delegate.bind(interface, port)
       .map(new IncomingConnection(_))
       .mapMaterialized(_.map(new ServerBinding(_))(ec)))
 
   /**
-   * Creates an [[StreamTcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
+   * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
    */
   def outgoingConnection(remoteAddress: InetSocketAddress,
                          localAddress: Option[InetSocketAddress],
@@ -129,11 +130,11 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       .mapMaterialized(_.map(new OutgoingConnection(_))(ec)))
 
   /**
-   * Creates an [[StreamTcp.OutgoingConnection]] without specifying options.
+   * Creates an [[Tcp.OutgoingConnection]] without specifying options.
    * It represents a prospective TCP client connection to the given endpoint.
    */
-  def outgoingConnection(remoteAddress: InetSocketAddress): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    Flow.adapt(delegate.outgoingConnection(remoteAddress)
+  def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    Flow.adapt(delegate.outgoingConnection(new InetSocketAddress(host, port))
       .mapMaterialized(_.map(new OutgoingConnection(_))(ec)))
 
 }

@@ -18,7 +18,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.Props
 import akka.io.Inet.SocketOption
-import akka.io.Tcp
+import akka.io.{ Tcp ⇒ IoTcp }
 import akka.stream._
 import akka.stream.impl._
 import akka.stream.impl.ReactiveStreamsCompliance._
@@ -31,7 +31,7 @@ import akka.stream.impl.io.TcpListenStreamActor
 import akka.stream.impl.io.DelayedInitProcessor
 import akka.stream.impl.io.StreamTcpManager
 
-object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
+object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   /**
    * * Represents a succdessful TCP server binding.
@@ -64,20 +64,20 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
    */
   case class OutgoingConnection(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress)
 
-  def apply()(implicit system: ActorSystem): StreamTcp = super.apply(system)
+  def apply()(implicit system: ActorSystem): Tcp = super.apply(system)
 
-  override def get(system: ActorSystem): StreamTcp = super.get(system)
+  override def get(system: ActorSystem): Tcp = super.get(system)
 
-  def lookup() = StreamTcp
+  def lookup() = Tcp
 
-  def createExtension(system: ExtendedActorSystem): StreamTcp = new StreamTcp(system)
+  def createExtension(system: ExtendedActorSystem): Tcp = new Tcp(system)
 }
 
-class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
-  import StreamTcp._
+class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
+  import Tcp._
 
   private val manager: ActorRef = system.systemActorOf(Props[StreamTcpManager]
-    .withDispatcher(Tcp(system).Settings.ManagementDispatcher), name = "IO-TCP-STREAM")
+    .withDispatcher(IoTcp(system).Settings.ManagementDispatcher), name = "IO-TCP-STREAM")
 
   private class BindSource(
     val endpoint: InetSocketAddress,
@@ -122,28 +122,31 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   }
 
   /**
-   * Creates a [[StreamTcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
+   * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
    */
-  def bind(endpoint: InetSocketAddress,
+  def bind(interface: String,
+           port: Int,
            backlog: Int = 100,
            options: immutable.Traversable[SocketOption] = Nil,
            idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
-    new Source(new BindSource(endpoint, backlog, options, idleTimeout, OperationAttributes.none, SourceShape(new Outlet("BindSource.out"))))
+    new Source(new BindSource(new InetSocketAddress(interface, port), backlog, options, idleTimeout,
+      OperationAttributes.none, SourceShape(new Outlet("BindSource.out"))))
   }
 
   def bindAndHandle(
     handler: Flow[ByteString, ByteString, _],
-    endpoint: InetSocketAddress,
+    interface: String,
+    port: Int,
     backlog: Int = 100,
     options: immutable.Traversable[SocketOption] = Nil,
     idleTimeout: Duration = Duration.Inf)(implicit m: FlowMaterializer): Future[ServerBinding] = {
-    bind(endpoint, backlog, options, idleTimeout).to(Sink.foreach { conn: IncomingConnection ⇒
+    bind(interface, port, backlog, options, idleTimeout).to(Sink.foreach { conn: IncomingConnection ⇒
       conn.flow.join(handler).run()
     }).run()
   }
 
   /**
-   * Creates an [[StreamTcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
+   * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
    */
   def outgoingConnection(remoteAddress: InetSocketAddress,
                          localAddress: Option[InetSocketAddress] = None,
@@ -164,5 +167,12 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     })
 
   }
+
+  /**
+   * Creates an [[Tcp.OutgoingConnection]] without specifying options.
+   * It represents a prospective TCP client connection to the given endpoint.
+   */
+  def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    outgoingConnection(new InetSocketAddress(host, port))
 }
 

@@ -26,7 +26,7 @@ import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.FlexiMerge.ReadAllInputs;
 import akka.stream.javadsl.*;
-import akka.stream.javadsl.StreamTcp.*;
+import akka.stream.javadsl.Tcp.*;
 import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
@@ -64,16 +64,16 @@ public class StreamTcpDocTest {
   public void demonstrateSimpleServerConnection() {
     {
       //#echo-server-simple-bind
-      final InetSocketAddress localhost = new InetSocketAddress("127.0.0.1", 8889);
+      // IncomingConnection and ServerBinding imported from Tcp
+      final Source<IncomingConnection, Future<ServerBinding>> connections =
+          Tcp.get(system).bind("127.0.0.1", 8889);
       //#echo-server-simple-bind
     }
     {
+      
       final InetSocketAddress localhost = SocketUtils.temporaryServerAddress();
-      //#echo-server-simple-bind
-      // IncomingConnection and ServerBinding imported from StreamTcp
       final Source<IncomingConnection, Future<ServerBinding>> connections =
-        StreamTcp.get(system).bind(localhost);
-      //#echo-server-simple-bind
+        Tcp.get(system).bind(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
 
       //#echo-server-simple-handle
       connections.runForeach(connection -> {
@@ -98,7 +98,7 @@ public class StreamTcpDocTest {
     final TestProbe serverProbe = new TestProbe(system);
 
     final Source<IncomingConnection,Future<ServerBinding>> connections =
-        StreamTcp.get(system).bind(localhost);
+        Tcp.get(system).bind(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
     //#welcome-banner-chat-server
     connections.runForeach(connection -> {
       // server logic, parses incoming commands
@@ -147,27 +147,36 @@ public class StreamTcpDocTest {
 
     //#welcome-banner-chat-server
 
+    {
     //#repl-client
-    final Flow<ByteString, ByteString, Future<OutgoingConnection>> connection =
-        StreamTcp.get(system).outgoingConnection(localhost);
-
-    final PushStage<String, ByteString> replParser = new PushStage<String, ByteString>() {
-      @Override public SyncDirective onPush(String elem, Context<ByteString> ctx) {
-        if (elem.equals("q"))
-          return ctx.pushAndFinish(ByteString.fromString("BYE\n"));
-        else
-          return ctx.push(ByteString.fromString(elem + "\n"));
-      }
-    };
-
-    final Flow<ByteString, ByteString, BoxedUnit> repl = Flow.of(ByteString.class)
-      .transform(() -> RecipeParseLines.parseLines("\n", 256))
-      .map(text -> {System.out.println("Server: " + text); return "next";})
-      .map(elem -> readLine("> "))
-      .transform(() -> replParser);
-
-    connection.join(repl).run(mat);
+      final Flow<ByteString, ByteString, Future<OutgoingConnection>> connection =
+          Tcp.get(system).outgoingConnection("127.0.0.1", 8889);
+      //#repl-client
+    }
+    
+    {
+      final Flow<ByteString, ByteString, Future<OutgoingConnection>> connection =
+          Tcp.get(system).outgoingConnection(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
+      //#repl-client
+  
+      final PushStage<String, ByteString> replParser = new PushStage<String, ByteString>() {
+        @Override public SyncDirective onPush(String elem, Context<ByteString> ctx) {
+          if (elem.equals("q"))
+            return ctx.pushAndFinish(ByteString.fromString("BYE\n"));
+          else
+            return ctx.push(ByteString.fromString(elem + "\n"));
+        }
+      };
+  
+      final Flow<ByteString, ByteString, BoxedUnit> repl = Flow.of(ByteString.class)
+        .transform(() -> RecipeParseLines.parseLines("\n", 256))
+        .map(text -> {System.out.println("Server: " + text); return "next";})
+        .map(elem -> readLine("> "))
+        .transform(() -> replParser);
+  
+      connection.join(repl).run(mat);
     //#repl-client
+    }
 
     serverProbe.expectMsg("Hello world");
     serverProbe.expectMsg("What a lovely day");

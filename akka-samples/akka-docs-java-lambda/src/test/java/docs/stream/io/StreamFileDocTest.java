@@ -28,7 +28,6 @@ import scala.runtime.BoxedUnit;
 
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.stream.javadsl.StreamTcp.*;
 import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
@@ -40,7 +39,7 @@ public class StreamFileDocTest {
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("StreamTcpDocTest");
+    system = ActorSystem.create("StreamFileDocTest");
   }
 
   @AfterClass

@@ -154,29 +154,29 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     }
 
     def server(flow: Flow[ByteString, ByteString, Any]) = {
-      val server = StreamTcp()
-        .bind(new InetSocketAddress("localhost", 0))
+      val server = Tcp()
+        .bind("localhost", 0)
         .to(Sink.foreach(c ⇒ c.flow.join(flow).run()))
         .run()
       Await.result(server, 2.seconds)
     }
 
     object ClientInitiatesViaTcp extends CommunicationSetup {
-      var binding: StreamTcp.ServerBinding = null
+      var binding: Tcp.ServerBinding = null
       def decorateFlow(leftClosing: Closing, rightClosing: Closing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(serverTls(rightClosing).reversed join rhs)
-        clientTls(leftClosing) join StreamTcp().outgoingConnection(binding.localAddress)
+        clientTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
       }
       override def cleanup(): Unit = binding.unbind()
     }
 
     object ServerInitiatesViaTcp extends CommunicationSetup {
-      var binding: StreamTcp.ServerBinding = null
+      var binding: Tcp.ServerBinding = null
       def decorateFlow(leftClosing: Closing, rightClosing: Closing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(clientTls(rightClosing).reversed join rhs)
-        serverTls(leftClosing) join StreamTcp().outgoingConnection(binding.localAddress)
+        serverTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
       }
       override def cleanup(): Unit = binding.unbind()
     }
