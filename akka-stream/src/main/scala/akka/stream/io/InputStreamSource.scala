@@ -36,7 +36,7 @@ object InputStreamSource {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def create(createInputStream: Creator[InputStream]): javadsl.Source[ByteString, Future[Long]] =
+  def create(createInputStream: Creator[InputStream]): javadsl.Source[ByteString, Future[java.lang.Long]] =
     create(createInputStream, DefaultChunkSize)
 
   /**
@@ -47,7 +47,7 @@ object InputStreamSource {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def create(createInputStream: Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, Future[Long]] =
-    apply(() ⇒ createInputStream.create(), chunkSize).asJava
+  def create(createInputStream: Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, Future[java.lang.Long]] =
+    apply(() ⇒ createInputStream.create(), chunkSize).asJava.asInstanceOf[javadsl.Source[ByteString, Future[java.lang.Long]]]
 
 }

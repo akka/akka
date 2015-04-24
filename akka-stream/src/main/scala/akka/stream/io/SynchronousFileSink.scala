@@ -28,7 +28,7 @@ object SynchronousFileSink {
    * unless configured otherwise by using [[ActorOperationAttributes]].
    */
   def apply(f: File, append: Boolean = false): Sink[ByteString, Future[Long]] =
-    new Sink(new SynchronousFileSink(f, append, DefaultAttributes, Sink.shape("SynchronousFileSink")))
+    new Sink(new impl.SynchronousFileSink(f, append, DefaultAttributes, Sink.shape("SynchronousFileSink")))
 
   /**
    * Java API
@@ -41,8 +41,8 @@ object SynchronousFileSink {
    * This source is backed by an Actor which will use the dedicated `akka.stream.file-io-dispatcher`,
    * unless configured otherwise by using [[ActorOperationAttributes]].
    */
-  def create(f: File): javadsl.Sink[ByteString, Future[Long]] =
-    apply(f, append = false).asJava
+  def create(f: File): javadsl.Sink[ByteString, Future[java.lang.Long]] =
+    apply(f, append = false).asJava.asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
 
   /**
    * Java API
@@ -54,7 +54,7 @@ object SynchronousFileSink {
    * This source is backed by an Actor which will use the dedicated `akka.stream.file-io-dispatcher`,
    * unless configured otherwise by using [[ActorOperationAttributes]].
    */
-  def appendTo(f: File): javadsl.Sink[ByteString, Future[Long]] =
-    apply(f, append = true).asJava
+  def appendTo(f: File): javadsl.Sink[ByteString, Future[java.lang.Long]] =
+    apply(f, append = true).asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
 
 }
