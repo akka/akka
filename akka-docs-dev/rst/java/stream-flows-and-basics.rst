@@ -30,6 +30,7 @@ Processing Stage
   The common name for all building blocks that build up a Flow or FlowGraph.
   Examples of a processing stage would be  operations like ``map()``, ``filter()``, stages added by ``transform()`` like
   :class:`PushStage`, :class:`PushPullStage`, :class:`StatefulStage` and graph junctions like ``Merge`` or ``Broadcast``.
+  For the full list of built-in processing stages see :ref:`stages-overview`
 
 Defining and running streams
 ----------------------------
