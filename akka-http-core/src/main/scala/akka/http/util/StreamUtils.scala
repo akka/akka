@@ -186,11 +186,11 @@ private[http] object StreamUtils {
   /**
    * Returns a source that can only be used once for testing purposes.
    */
-  def oneTimeSource[T, Mat](other: Source[T, Mat]): Source[T, Mat] = {
+  def oneTimeSource[T, Mat](other: Source[T, Mat], errorMsg: String = "One time source can only be instantiated once"): Source[T, Mat] = {
     val onlyOnceFlag = new AtomicBoolean(false)
-    other.map { elem ⇒
+    other.mapMaterialized { elem ⇒
       if (onlyOnceFlag.get() || !onlyOnceFlag.compareAndSet(false, true))
-        throw new IllegalStateException("One time source can only be instantiated once")
+        throw new IllegalStateException(errorMsg)
       elem
     }
   }

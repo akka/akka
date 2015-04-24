@@ -120,12 +120,14 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   type ServerLayer = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, Unit]
 
   /**
-   * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]].
+   * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]]. The returned [[BidiFlow]]
+   * can only be materialized once.
    */
   def serverLayer()(implicit mat: FlowMaterializer): ServerLayer = serverLayer(ServerSettings(system))
 
   /**
-   * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]].
+   * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
+   * can only be materialized once.
    */
   def serverLayer(settings: ServerSettings,
                   log: LoggingAdapter = system.log)(implicit mat: FlowMaterializer): ServerLayer =
