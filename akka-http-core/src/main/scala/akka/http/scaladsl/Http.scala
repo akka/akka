@@ -6,7 +6,7 @@ package akka.http.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
-import akka.http.ServerSettings
+import akka.http._
 import com.typesafe.config.Config
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -446,7 +446,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    * Represents a connection pool to a specific target host and pool configuration.
    */
   case class HostConnectionPool(setup: HostConnectionPoolSetup)(
-    private[http] val gatewayFuture: Future[PoolGateway]) { // enable test access
+    private[http] val gatewayFuture: Future[PoolGateway]) extends javadsl.HostConnectionPool { // enable test access
 
     /**
      * Asynchronously triggers the shutdown of the host connection pool.
