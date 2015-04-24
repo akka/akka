@@ -12,7 +12,7 @@ trait SinkCreate {
    * Creates a `Sink` by using a `FlowGraph.Builder[Unit]` on a block that expects
    * a [[FlowGraph.Builder]] and returns an [[Inlet]].
    */
-  def create[T](block: japi.Function[FlowGraph.Builder[Unit], Inlet[T]]): Sink[T, Unit] =
+  def create[T](block: akka.japi.function.Function[FlowGraph.Builder[Unit], Inlet[T]]): Sink[T, Unit] =
     new Sink(scaladsl.Sink() { b ⇒ block.apply(b.asJava) })
 
   /**
@@ -21,7 +21,7 @@ trait SinkCreate {
    * The create function is expected to return the created Sink's [[Inlet]].
    */
   def create[T, S <: Shape, M](g1: Graph[S, M],
-      block: japi.Function2[FlowGraph.Builder[M], S, Inlet[T]]): Sink[T, M] =
+      block: akka.japi.function.Function2[FlowGraph.Builder[M], S, Inlet[T]]): Sink[T, M] =
     new Sink(scaladsl.Sink(g1) { b ⇒ s => block.apply(b.asJava, s) })
 
   /**
@@ -29,7 +29,7 @@ trait SinkCreate {
    * with the `FlowGraph.Builder[M]` and the [[Shape]]s resulting from importing the graphs.
    * The create function is expected to return the created Sink's [[Inlet]].
    */
-   def create[T, S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: japi.Function2[M1, M2, M],
+   def create[T, S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: akka.japi.function.Function2[M1, M2, M],
       block: japi.Function3[FlowGraph.Builder[M], S1, S2, Inlet[T]]): Sink[T, M] =
     new Sink(scaladsl.Sink(g1, g2)(combineMat.apply _) { b => (s1, s2) => block.apply(b.asJava, s1, s2) })
 

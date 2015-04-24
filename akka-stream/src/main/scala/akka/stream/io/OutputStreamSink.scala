@@ -5,6 +5,7 @@ package akka.stream.io
 
 import java.io.OutputStream
 
+import akka.japi.function.Creator
 import akka.stream.io.impl.OutputStreamSink
 import akka.stream.scaladsl.Sink
 import akka.stream.{ ActorOperationAttributes, OperationAttributes, javadsl }
@@ -37,7 +38,7 @@ object OutputStreamSink {
    *
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    */
-  def create(f: javadsl.japi.Creator[OutputStream]): javadsl.Sink[ByteString, Future[Long]] =
+  def create(f: Creator[OutputStream]): javadsl.Sink[ByteString, Future[Long]] =
     apply(() ⇒ f.create()).asJava
 
 }
