@@ -8,9 +8,9 @@ import akka.actor.ActorSystem
 import akka.actor.DeadLetterSuppression
 import akka.stream._
 import akka.stream.impl._
+import akka.testkit.TestProbe
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.scaladsl._
-import akka.testkit.TestProbe
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.collection.immutable
 import scala.concurrent.duration._

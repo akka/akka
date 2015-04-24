@@ -29,6 +29,7 @@ object SynchronousFileSource {
    */
   def apply(f: File, chunkSize: Int = DefaultChunkSize): Source[ByteString, Future[Long]] =
     new Source(new SynchronousFileSource(f, chunkSize, DefaultAttributes, Source.shape("SynchronousFileSource")))
+      .named(DefaultAttributes.nameOption.get)
 
   /**
    * Creates a synchronous (Java 6 compatible) Source from a Files contents.
