@@ -19,13 +19,13 @@ import org.reactivestreams.Publisher;
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.FlowGraph.Builder;
-import akka.stream.javadsl.japi.Procedure2;
 import akka.stream.testkit.AkkaSpec;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 import akka.japi.Pair;
+import akka.japi.function.Procedure2;
 
 public class FlexiMergeTest {
 

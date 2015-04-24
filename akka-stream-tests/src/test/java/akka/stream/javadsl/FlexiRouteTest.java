@@ -20,7 +20,7 @@ import akka.stream.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.javadsl.FlexiRoute;
 import akka.stream.javadsl.FlowGraph.Builder;
-import akka.stream.javadsl.japi.Procedure3;
+import akka.japi.function.Procedure3;
 import akka.japi.Pair;
 import scala.concurrent.Await;
 import scala.concurrent.Future;

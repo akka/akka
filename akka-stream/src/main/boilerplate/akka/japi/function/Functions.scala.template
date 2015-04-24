@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.javadsl.japi
+package akka.japi.function
 
 [3..22#/**
  * A Function interface. Used to create 1-arg first-class-functions is Java.
