@@ -3,12 +3,15 @@
  */
 package akka.stream.scaladsl
 
+import akka.actor.ActorSystem
+import akka.event.LoggingAdapter
 import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream._
 import akka.stream.OperationAttributes._
 import akka.util.Collections.EmptyImmutableSeq
 import org.reactivestreams.Processor
+import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -339,6 +342,8 @@ trait FlowOps[+Out, +Mat] {
   import akka.stream.impl.Stages._
   import FlowOps._
   type Repr[+O, +M] <: FlowOps[O, M]
+
+  private final val _identity = (x: Any) ⇒ x
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -848,6 +853,26 @@ trait FlowOps[+Out, +Mat] {
    */
   private[akka] def timerTransform[U](mkStage: () ⇒ TimerTransformer[Out, U]): Repr[U, Mat] =
     andThen(TimerTransform(mkStage.asInstanceOf[() ⇒ TimerTransformer[Any, Any]]))
+
+  /**
+   * Logs elements flowing through the stream as well as completion and erroring.
+   *
+   * By default element and completion signals are logged on debug level, and errors are logged on Error level.
+   * This can be adjusted according to your needs by providing a custom [[OperationAttributes.LogLevels]] atrribute on the given Flow:
+   *
+   * Uses implicit [[LoggingAdapter]] if available, otherwise uses an internally created one,
+   * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
+   *
+   * '''Emits when''' the mapping function returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def log(name: String, extract: Out ⇒ Any = _identity)(implicit log: LoggingAdapter = null): Repr[Out, Mat] =
+    andThen(Stages.Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
 
   def withAttributes(attr: OperationAttributes): Repr[Out, Mat]
 

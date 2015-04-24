@@ -3,8 +3,7 @@
  */
 package akka.stream.stage
 
-import akka.stream.Supervision
-import akka.stream.FlowMaterializer
+import akka.stream.{ FlowMaterializer, OperationAttributes, Supervision }
 
 /**
  * General interface for stream transformation.
@@ -571,6 +570,9 @@ sealed trait Context[Out] {
    * It can be used to materialize sub-flows.
    */
   def materializer: FlowMaterializer
+
+  /** Returns operation attributes associated with the this Stage */
+  def attributes: OperationAttributes
 }
 
 /**
@@ -643,3 +645,4 @@ trait AsyncContext[Out, Ext] extends DetachedContext[Out] {
 private[akka] trait BoundaryContext extends Context[Any] {
   def exit(): FreeDirective
 }
+

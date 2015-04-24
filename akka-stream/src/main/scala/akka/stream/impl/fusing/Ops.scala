@@ -3,16 +3,23 @@
  */
 package akka.stream.impl.fusing
 
-import scala.collection.immutable
+import akka.event.Logging.LogLevel
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.stream.OperationAttributes.LogLevels
 import akka.stream.impl.FixedSizeBuffer
-import akka.stream.stage._
-import akka.stream._
-import akka.stream.Supervision
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Try, Success, Failure }
-import scala.annotation.tailrec
-import scala.util.control.NonFatal
 import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.stage._
+import akka.stream.Supervision
+import akka.stream._
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.util.control.NonFatal
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -42,7 +49,9 @@ private[akka] final object Collect {
 }
 
 private[akka] final case class Collect[In, Out](decider: Supervision.Decider)(pf: PartialFunction[In, Out]) extends PushStage[In, Out] {
+
   import Collect.NotApplied
+
   override def onPush(elem: In, ctx: Context[Out]): SyncDirective =
     pf.applyOrElse(elem, NotApplied) match {
       case NotApplied             ⇒ ctx.pull()
@@ -96,6 +105,7 @@ private[akka] final case class Take[T](count: Long) extends PushStage[T, T] {
  */
 private[akka] final case class Drop[T](count: Long) extends PushStage[T, T] {
   private var left: Long = count
+
   override def onPush(elem: T, ctx: Context[T]): SyncDirective =
     if (left > 0) {
       left -= 1
@@ -196,6 +206,7 @@ private[akka] final case class Grouped[T](n: Int) extends PushPullStage[T, immut
  * INTERNAL API
  */
 private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extends DetachedStage[T, T] {
+
   import OverflowStrategy._
 
   private val buffer = FixedSizeBuffer[T](size)
@@ -256,6 +267,7 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
  */
 private[akka] final case class Completed[T]() extends PushPullStage[T, T] {
   override def onPush(elem: T, ctx: Context[T]): SyncDirective = ctx.finish()
+
   override def onPull(ctx: Context[T]): SyncDirective = ctx.finish()
 }
 
@@ -361,6 +373,7 @@ private[akka] object MapAsync {
  */
 private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Future[Out], decider: Supervision.Decider)
   extends AsyncStage[In, Out, (Int, Try[Out])] {
+
   import MapAsync._
 
   type Notification = (Int, Try[Out])
@@ -500,4 +513,72 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
   override def onUpstreamFinish(ctx: AsyncContext[Out, Try[Out]]) =
     if (todo > 0) ctx.absorbTermination()
     else ctx.finish()
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final case class Log[T](name: String, extract: T ⇒ Any, logAdapter: Option[LoggingAdapter]) extends PushStage[T, T] {
+
+  import Log._
+
+  private var logLevels: LogLevels = _
+  private var log: LoggingAdapter = _
+
+  // TODO implement as real preStart once https://github.com/akka/akka/pull/17295 is done
+  def preStart(ctx: Context[T]): Unit = {
+    logLevels = ctx.attributes.logLevels.getOrElse(DefaultLogLevels)
+    log = logAdapter getOrElse {
+      val sys = ctx.materializer.asInstanceOf[ActorFlowMaterializer].system
+      Logging(sys, DefaultLoggerName)
+    }
+  }
+
+  override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
+    if (log == null) preStart(ctx)
+    if (isEnabled(logLevels.onElement))
+      log.log(logLevels.onElement, "[{}] Element: {}", name, extract(elem))
+
+    ctx.push(elem)
+  }
+
+  override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
+    if (log == null) preStart(ctx)
+    if (isEnabled(logLevels.onFailure))
+      logLevels.onFailure match {
+        case Logging.ErrorLevel ⇒ log.error(cause, "[{}] Upstream failed.", name)
+        case level              ⇒ log.log(level, "[{}] Upstream failed, cause: {}: {}", name, Logging.simpleName(cause.getClass), cause.getMessage)
+      }
+
+    super.onUpstreamFailure(cause, ctx)
+  }
+
+  override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
+    if (log == null) preStart(ctx)
+    if (isEnabled(logLevels.onFinish))
+      log.log(logLevels.onFinish, "[{}] Upstream finished.", name)
+
+    super.onUpstreamFinish(ctx)
+  }
+
+  override def onDownstreamFinish(ctx: Context[T]): TerminationDirective = {
+    if (log == null) preStart(ctx)
+    if (isEnabled(logLevels.onFinish))
+      log.log(logLevels.onFinish, "[{}] Downstream finished.", name)
+
+    super.onDownstreamFinish(ctx)
+  }
+
+  private def isEnabled(l: LogLevel): Boolean = l.asInt != OffInt
+
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object Log {
+  private final val DefaultLoggerName = "akka.stream.Log"
+
+  private final val OffInt = LogLevels.Off.asInt
+  private final val DefaultLogLevels = LogLevels(onElement = Logging.DebugLevel, onFinish = Logging.DebugLevel, onFailure = Logging.ErrorLevel)
 }
