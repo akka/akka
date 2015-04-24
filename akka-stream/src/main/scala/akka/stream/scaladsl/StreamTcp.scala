@@ -124,20 +124,23 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Creates a [[StreamTcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
    */
-  def bind(endpoint: InetSocketAddress,
+  def bind(interface: String,
+           port: Int,
            backlog: Int = 100,
            options: immutable.Traversable[SocketOption] = Nil,
            idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
-    new Source(new BindSource(endpoint, backlog, options, idleTimeout, OperationAttributes.none, SourceShape(new Outlet("BindSource.out"))))
+    new Source(new BindSource(new InetSocketAddress(interface, port), backlog, options, idleTimeout,
+      OperationAttributes.none, SourceShape(new Outlet("BindSource.out"))))
   }
 
   def bindAndHandle(
     handler: Flow[ByteString, ByteString, _],
-    endpoint: InetSocketAddress,
+    interface: String,
+    port: Int,
     backlog: Int = 100,
     options: immutable.Traversable[SocketOption] = Nil,
     idleTimeout: Duration = Duration.Inf)(implicit m: FlowMaterializer): Future[ServerBinding] = {
-    bind(endpoint, backlog, options, idleTimeout).to(Sink.foreach { conn: IncomingConnection ⇒
+    bind(interface, port, backlog, options, idleTimeout).to(Sink.foreach { conn: IncomingConnection ⇒
       conn.flow.join(handler).run()
     }).run()
   }
@@ -164,5 +167,12 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     })
 
   }
+
+  /**
+   * Creates an [[StreamTcp.OutgoingConnection]] without specifying options.
+   * It represents a prospective TCP client connection to the given endpoint.
+   */
+  def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    outgoingConnection(new InetSocketAddress(host, port))
 }
 

@@ -155,7 +155,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
 
     def server(flow: Flow[ByteString, ByteString, Any]) = {
       val server = StreamTcp()
-        .bind(new InetSocketAddress("localhost", 0))
+        .bind("localhost", 0)
         .to(Sink.foreach(c ⇒ c.flow.join(flow).run()))
         .run()
       Await.result(server, 2.seconds)
