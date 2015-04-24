@@ -6,6 +6,17 @@ package akka.stream.javadsl
 import akka.stream._
 import akka.stream.scaladsl
 
+/**
+ * Combine the elements of multiple streams into a stream of combined elements using a combiner function.
+ *
+ * '''Emits when''' all of the inputs has an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' any upstream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
 object ZipWith {
 
   /**
