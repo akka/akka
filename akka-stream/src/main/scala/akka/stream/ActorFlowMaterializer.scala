@@ -8,10 +8,10 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.stream.impl._
-import akka.stream.javadsl.japi
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
+import akka.japi.{ function ⇒ japi }
 
 object ActorFlowMaterializer {
 
