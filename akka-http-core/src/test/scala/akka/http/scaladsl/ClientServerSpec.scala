@@ -6,7 +6,7 @@ package akka.http.scaladsl
 
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
-import akka.http.ServerSettings
+import akka.http.{ ClientConnectionSettings, ServerSettings }
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
 import scala.concurrent.Await
@@ -17,7 +17,6 @@ import akka.testkit.EventFilter
 import akka.stream.{ ActorFlowMaterializer, BindFailedException }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
-import akka.http.impl.engine.client.ClientConnectionSettings
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
