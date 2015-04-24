@@ -49,7 +49,8 @@ public class StreamTcpTest extends StreamTest {
   @Test
   public void mustWorkInHappyCase() throws Exception {
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
-    final Source<IncomingConnection, Future<ServerBinding>> binding = StreamTcp.get(system).bind(serverAddress);
+    final Source<IncomingConnection, Future<ServerBinding>> binding = StreamTcp.get(system)
+        .bind(serverAddress.getHostName(), serverAddress.getPort()); // TODO getHostString in Java7
     
     final Future<ServerBinding> future = binding.to(echoHandler).run(materializer);
     final ServerBinding b = Await.result(future, FiniteDuration.create(5, TimeUnit.SECONDS));
@@ -57,7 +58,8 @@ public class StreamTcpTest extends StreamTest {
     
     final Future<ByteString> resultFuture = Source
         .from(testInput)
-        .via(StreamTcp.get(system).outgoingConnection(serverAddress))
+        // TODO getHostString in Java7
+        .via(StreamTcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort())) 
         .runFold(ByteString.empty(),
             new Function2<ByteString, ByteString, ByteString>() {
               public ByteString apply(ByteString acc, ByteString elem) {
@@ -74,7 +76,8 @@ public class StreamTcpTest extends StreamTest {
   @Test
   public void mustReportServerBindFailure() throws Exception {
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
-    final Source<IncomingConnection, Future<ServerBinding>> binding = StreamTcp.get(system).bind(serverAddress);
+    final Source<IncomingConnection, Future<ServerBinding>> binding = StreamTcp.get(system)
+        .bind(serverAddress.getHostName(), serverAddress.getPort()); // TODO getHostString in Java7
     
     final Future<ServerBinding> future = binding.to(echoHandler).run(materializer);
     final ServerBinding b = Await.result(future, FiniteDuration.create(5, TimeUnit.SECONDS));
@@ -95,7 +98,9 @@ public class StreamTcpTest extends StreamTest {
     try {
       Await.result(
           Source.from(testInput)
-              .via(StreamTcp.get(system).outgoingConnection(serverAddress), Keep.<BoxedUnit, Future<OutgoingConnection>> right())
+              // TODO getHostString in Java7
+              .via(StreamTcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort()), 
+                  Keep.<BoxedUnit, Future<OutgoingConnection>> right())
               .to(Sink.<ByteString> ignore())
               .run(materializer),
           FiniteDuration.create(5, TimeUnit.SECONDS));

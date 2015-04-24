@@ -100,11 +100,12 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Creates a [[StreamTcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
    */
-  def bind(endpoint: InetSocketAddress,
+  def bind(interface: String,
+           port: Int,
            backlog: Int,
            options: JIterable[SocketOption],
            idleTimeout: Duration): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(endpoint, backlog, immutableSeq(options), idleTimeout)
+    Source.adapt(delegate.bind(interface, port, backlog, immutableSeq(options), idleTimeout)
       .map(new IncomingConnection(_))
       .mapMaterialized(_.map(new ServerBinding(_))(ec)))
 
@@ -112,8 +113,8 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Creates a [[StreamTcp.ServerBinding]] without specifying options.
    * It represents a prospective TCP server binding on the given `endpoint`.
    */
-  def bind(endpoint: InetSocketAddress): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(endpoint)
+  def bind(interface: String, port: Int): Source[IncomingConnection, Future[ServerBinding]] =
+    Source.adapt(delegate.bind(interface, port)
       .map(new IncomingConnection(_))
       .mapMaterialized(_.map(new ServerBinding(_))(ec)))
 
@@ -132,8 +133,8 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Creates an [[StreamTcp.OutgoingConnection]] without specifying options.
    * It represents a prospective TCP client connection to the given endpoint.
    */
-  def outgoingConnection(remoteAddress: InetSocketAddress): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    Flow.adapt(delegate.outgoingConnection(remoteAddress)
+  def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    Flow.adapt(delegate.outgoingConnection(new InetSocketAddress(host, port))
       .mapMaterialized(_.map(new OutgoingConnection(_))(ec)))
 
 }

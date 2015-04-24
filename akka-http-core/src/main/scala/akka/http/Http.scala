@@ -39,11 +39,10 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
            options: immutable.Traversable[Inet.SocketOption] = Nil,
            settings: ServerSettings = ServerSettings(system),
            log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Source[IncomingConnection, Future[ServerBinding]] = {
-    val endpoint = new InetSocketAddress(interface, port)
-    val connections: Source[StreamTcp.IncomingConnection, Future[StreamTcp.ServerBinding]] =
-      StreamTcp().bind(endpoint, backlog, options, settings.timeouts.idleTimeout)
+    val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
+      Tcp().bind(interface, port, backlog, options, settings.timeouts.idleTimeout)
     connections.map {
-      case StreamTcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
+      case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
         val layer = serverLayer(settings, log)
         IncomingConnection(localAddress, remoteAddress, layer join flow)
     }.mapMaterialized {
@@ -145,7 +144,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     val remoteAddr = new InetSocketAddress(host, port)
     val layer = clientLayer(remoteAddr, settings, log)
 
-    val transportFlow = StreamTcp().outgoingConnection(remoteAddr, localAddress,
+    val transportFlow = Tcp().outgoingConnection(remoteAddr, localAddress,
       options, settings.connectingTimeout, settings.idleTimeout)
 
     layer.joinMat(transportFlow) { (_, tcpConnFuture) ⇒

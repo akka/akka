@@ -259,7 +259,8 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
         BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
       }
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink(incomingConnections)
-      StreamTcp().bind(serverEndpoint, idleTimeout = serverSettings.timeouts.idleTimeout)
+      // TODO getHostString in Java7
+      StreamTcp().bind(serverEndpoint.getHostName, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)
         .map { c ⇒
           val layer = Http().serverLayer(serverSettings, log)
           Http.IncomingConnection(c.localAddress, c.remoteAddress, layer atop rawBytesInjection join c.flow)
