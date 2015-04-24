@@ -31,6 +31,7 @@ object Source {
   val factory: SourceCreate = new SourceCreate {}
 
   /** Adapt [[scaladsl.Source]] for use within JavaDSL */
+  // FIXME: is this needed now?
   def adapt[O, M](source: scaladsl.Source[O, M]): Source[O, M] =
     new Source(source)
 
@@ -206,8 +207,8 @@ object Source {
    * emitted by the second source is emitted after the last element of the first
    * source.
    */
-  def concat[T, M1, M2](first: Source[T, M1], second: Source[T, M2]): Source[T, (M1, M2)] =
-    new Source(scaladsl.Source.concat(first.asScala, second.asScala))
+  def concat[T, M1, M2](first: Graph[SourceShape[T], M1], second: Graph[SourceShape[T], M2]): Source[T, (M1, M2)] =
+    new Source(scaladsl.Source.concat(first, second))
 
   /**
    * A graph with the shape of a source logically is a source, this method makes
@@ -240,33 +241,33 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   /**
    * Transform this [[Source]] by appending the given processing stages.
    */
-  def via[T, M](flow: javadsl.Flow[Out, T, M]): javadsl.Source[T, Mat] =
-    new Source(delegate.via(flow.asScala))
+  def via[T, M](flow: Graph[FlowShape[Out, T], M]): javadsl.Source[T, Mat] =
+    new Source(delegate.via(flow))
 
   /**
    * Transform this [[Source]] by appending the given processing stages.
    */
-  def via[T, M, M2](flow: javadsl.Flow[Out, T, M], combine: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
-    new Source(delegate.viaMat(flow.asScala)(combinerToScala(combine)))
+  def via[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+    new Source(delegate.viaMat(flow)(combinerToScala(combine)))
 
   /**
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def to[M](sink: javadsl.Sink[Out, M]): javadsl.RunnableFlow[Mat] =
-    new RunnableFlowAdapter(delegate.to(sink.asScala))
+  def to[M](sink: Graph[SinkShape[Out], M]): javadsl.RunnableFlow[Mat] =
+    new RunnableFlowAdapter(delegate.to(sink))
 
   /**
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def to[M, M2](sink: javadsl.Sink[Out, M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
-    new RunnableFlowAdapter(delegate.toMat(sink.asScala)(combinerToScala(combine)))
+  def to[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
+    new RunnableFlowAdapter(delegate.toMat(sink)(combinerToScala(combine)))
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a `Sink.publisher`.
    */
-  def runWith[M](sink: Sink[Out, M], materializer: FlowMaterializer): M =
-    delegate.runWith(sink.asScala)(materializer)
+  def runWith[M](sink: Graph[SinkShape[Out], M], materializer: FlowMaterializer): M =
+    delegate.runWith(sink)(materializer)
 
   /**
    * Shortcut for running this `Source` with a fold function.
@@ -284,7 +285,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * emitted by that source is emitted after the last element of this
    * source.
    */
-  def concat[Out2 >: Out, M2](second: Source[Out2, M2]): Source[Out2, (Mat, M2)] =
+  def concat[Out2 >: Out, M2](second: Graph[SourceShape[Out2], M2]): Source[Out2, (Mat, M2)] =
     Source.concat(this, second)
 
   /**

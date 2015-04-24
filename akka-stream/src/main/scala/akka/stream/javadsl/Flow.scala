@@ -38,6 +38,14 @@ object Flow {
    * it so also in type.
    */
   def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] = new Flow(scaladsl.Flow.wrap(g))
+
+  /**
+   * Helper to create `Flow` from a pair of sink and source.
+   */
+  def wrap[I, O, M1, M2, M](
+    sink: Graph[SinkShape[I], M1],
+    source: Graph[SourceShape[O], M2],
+    combine: function.Function2[M1, M2, M]): Flow[I, O, M] = new Flow(scaladsl.Flow.wrap(sink, source)(combine.apply _))
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
@@ -59,38 +67,38 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    */
-  def via[T, M](flow: javadsl.Flow[Out, T, M]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.via(flow.asScala))
+  def via[T, M](flow: Graph[FlowShape[Out, T], M]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.via(flow))
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    */
-  def via[T, M, M2](flow: javadsl.Flow[Out, T, M], combine: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
-    new Flow(delegate.viaMat(flow.asScala)(combinerToScala(combine)))
+  def via[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
+    new Flow(delegate.viaMat(flow)(combinerToScala(combine)))
 
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def to(sink: javadsl.Sink[Out, _]): javadsl.Sink[In, Mat] =
-    new Sink(delegate.to(sink.asScala))
+  def to(sink: Graph[SinkShape[Out], _]): javadsl.Sink[In, Mat] =
+    new Sink(delegate.to(sink))
 
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def to[M, M2](sink: javadsl.Sink[Out, M], combine: function.Function2[Mat, M, M2]): javadsl.Sink[In, M2] =
-    new Sink(delegate.toMat(sink.asScala)(combinerToScala(combine)))
+  def to[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.Sink[In, M2] =
+    new Sink(delegate.toMat(sink)(combinerToScala(combine)))
 
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
    */
-  def join[M](flow: javadsl.Flow[Out, In, M]): javadsl.RunnableFlow[Mat] =
-    new RunnableFlowAdapter(delegate.join(flow.asScala))
+  def join[M](flow: Graph[FlowShape[Out, In], M]): javadsl.RunnableFlow[Mat] =
+    new RunnableFlowAdapter(delegate.join(flow))
 
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
    */
-  def join[M, M2](flow: javadsl.Flow[Out, In, M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
-    new RunnableFlowAdapter(delegate.joinMat(flow.asScala)(combinerToScala(combine)))
+  def join[M, M2](flow: Graph[FlowShape[Out, In], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
+    new RunnableFlowAdapter(delegate.joinMat(flow)(combinerToScala(combine)))
 
   /**
    * Join this [[Flow]] to a [[BidiFlow]] to close off the “top” of the protocol stack:
@@ -109,8 +117,8 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * value of the current flow (ignoring the [[BidiFlow]]’s value), use
    * [[Flow#joinMat[I2* joinMat]] if a different strategy is needed.
    */
-  def join[I2, O2, Mat2](bidi: BidiFlow[Out, O2, I2, In, Mat2]): Flow[I2, O2, Mat] =
-    new Flow(delegate.join(bidi.asScala))
+  def join[I2, O2, Mat2](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2]): Flow[I2, O2, Mat] =
+    new Flow(delegate.join(bidi))
 
   /**
    * Join this [[Flow]] to a [[BidiFlow]] to close off the “top” of the protocol stack:
@@ -128,8 +136,8 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * The `combine` function is used to compose the materialized values of this flow and that
    * [[BidiFlow]] into the materialized value of the resulting [[Flow]].
    */
-  def join[I2, O2, Mat2, M](bidi: BidiFlow[Out, O2, I2, In, Mat2], combine: function.Function2[Mat, Mat2, M]): Flow[I2, O2, M] =
-    new Flow(delegate.joinMat(bidi.asScala)(combinerToScala(combine)))
+  def join[I2, O2, Mat2, M](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2], combine: function.Function2[Mat, Mat2, M]): Flow[I2, O2, M] =
+    new Flow(delegate.joinMat(bidi)(combinerToScala(combine)))
 
   /**
    * Connect the `KeyedSource` to this `Flow` and then connect it to the `KeyedSink` and run it.
@@ -140,8 +148,8 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * @tparam T materialized type of given KeyedSource
    * @tparam U materialized type of given KeyedSink
    */
-  def runWith[T, U](source: javadsl.Source[In, T], sink: javadsl.Sink[Out, U], materializer: FlowMaterializer): akka.japi.Pair[T, U] = {
-    val p = delegate.runWith(source.asScala, sink.asScala)(materializer)
+  def runWith[T, U](source: Graph[SourceShape[In], T], sink: Graph[SinkShape[Out], U], materializer: FlowMaterializer): akka.japi.Pair[T, U] = {
+    val p = delegate.runWith(source, sink)(materializer)
     akka.japi.Pair(p._1.asInstanceOf[T], p._2.asInstanceOf[U])
   }
 
@@ -585,8 +593,8 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Returns a new `Flow` that concatenates a secondary `Source` to this flow so that,
    * the first element emitted by the given ("second") source is emitted after the last element of this Flow.
    */
-  def concat[M](second: javadsl.Source[Out @uncheckedVariance, M]): javadsl.Flow[In, Out, Mat @uncheckedVariance Pair M] =
-    new Flow(delegate.concat(second.asScala).mapMaterialized(p ⇒ Pair(p._1, p._2)))
+  def concat[M](second: Graph[SourceShape[Out @uncheckedVariance], M]): javadsl.Flow[In, Out, Mat @uncheckedVariance Pair M] =
+    new Flow(delegate.concat(second).mapMaterialized(p ⇒ Pair(p._1, p._2)))
 
   override def withAttributes(attr: OperationAttributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))
