@@ -4,28 +4,30 @@
 
 package akka.http.engine.server
 
-import akka.stream.scaladsl.FlexiMerge.{ ReadAny, MergeLogic }
-import akka.stream.scaladsl._
-
-import akka.http.engine.ws._
-import akka.stream.scaladsl.FlexiRoute.{ DemandFrom, RouteLogic }
 import org.reactivestreams.{ Subscriber, Publisher }
 
 import scala.util.control.NonFatal
 import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.actor.{ ActorRef, Props }
-import akka.stream.stage.PushPullStage
-import akka.stream.OperationAttributes._
-import akka.stream.scaladsl._
+
 import akka.stream._
+import akka.stream.scaladsl._
+import akka.stream.stage.PushPullStage
+
+import akka.stream.scaladsl.FlexiMerge.{ ReadAny, MergeLogic }
+import akka.stream.scaladsl.FlexiRoute.{ DemandFrom, RouteLogic }
+
 import akka.http.engine.parsing._
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.engine.TokenSourceActor
 import akka.http.model._
-import akka.http.util._
 import ParserOutput._
-import akka.http.engine.ws.Websocket.{ SwitchToWebsocketToken }
+
+import akka.http.util._
+
+import akka.http.engine.ws._
+import Websocket.SwitchToWebsocketToken
 
 /**
  * INTERNAL API
@@ -49,13 +51,13 @@ private[http] object HttpServerBluePrint {
     val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log, Some(ws))
 
     @volatile var oneHundredContinueRef: Option[ActorRef] = None // FIXME: unnecessary after fixing #16168
-    val oneHundredContinueSource = Source.actorPublisher[OneHundredContinue.type] {
+    val oneHundredContinueSource = StreamUtils.oneTimeSource(Source.actorPublisher[OneHundredContinue.type] {
       Props {
         val actor = new TokenSourceActor(OneHundredContinue)
         oneHundredContinueRef = Some(actor.context.self)
         actor
       }
-    }
+    }, errorMsg = "Http.serverLayer is currently not reusable. You need to create a new instance for each materialization.")
 
     val requestParsingFlow = Flow[ByteString].transform(() ⇒
       // each connection uses a single (private) request parser instance for all its requests
@@ -93,8 +95,8 @@ private[http] object HttpServerBluePrint {
         .flatten(FlattenStrategy.concat)
         .via(Flow[ByteString].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
 
-    FlowGraph.partial(requestParsingFlow, rendererPipeline)(Keep.right) { implicit b ⇒
-      (requestParsing, renderer) ⇒
+    FlowGraph.partial(requestParsingFlow, rendererPipeline, oneHundredContinueSource)((_, _, _) ⇒ ()) { implicit b ⇒
+      (requestParsing, renderer, oneHundreds) ⇒
         import FlowGraph.Implicits._
 
         val bypassFanout = b.add(Broadcast[RequestOutput](2).named("bypassFanout"))
@@ -109,7 +111,7 @@ private[http] object HttpServerBluePrint {
         val requestsIn = (bypassFanout.out(0) ~> requestPreparation).outlet
 
         bypassFanout.out(1) ~> bypass ~> bypassInput
-        oneHundredContinueSource ~> bypassOneHundredContinueInput
+        oneHundreds ~> bypassOneHundredContinueInput
         val http = FlowShape(requestParsing.inlet, renderer.outlet)
 
         // Websocket pipeline
