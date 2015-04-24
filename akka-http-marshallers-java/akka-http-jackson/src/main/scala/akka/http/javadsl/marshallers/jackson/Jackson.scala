@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.marshallers.jackson
+package akka.http.javadsl.marshallers.jackson
 
-import scala.reflect.ClassTag
-import akka.http.marshalling
-import akka.http.unmarshalling
-import akka.http.model.MediaTypes._
-import akka.http.server.japi.{ Unmarshaller, Marshaller }
-import akka.http.server.japi.impl.{ UnmarshallerImpl, MarshallerImpl }
 import com.fasterxml.jackson.databind.{ MapperFeature, ObjectMapper }
+import scala.reflect.ClassTag
+import akka.http.scaladsl.marshalling
+import akka.http.scaladsl.unmarshalling
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.javadsl.server.{ Unmarshaller, Marshaller }
+import akka.http.impl.server.{ UnmarshallerImpl, MarshallerImpl }
 
 object Jackson {
   def json[T <: AnyRef]: Marshaller[T] = _jsonMarshaller.asInstanceOf[Marshaller[T]]

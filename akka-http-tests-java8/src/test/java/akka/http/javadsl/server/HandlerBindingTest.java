@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.server.japi;
+package akka.http.javadsl.server;
 
-import akka.http.model.HttpRequest;
+import akka.http.scaladsl.model.HttpRequest;
 import org.junit.Test;
-
-import static akka.http.server.japi.Directives.*;
+import akka.http.javadsl.testkit.*;
+import static akka.http.javadsl.server.Directives.*;
 
 public class HandlerBindingTest extends JUnitRouteTest {
     @Test
