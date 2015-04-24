@@ -155,13 +155,13 @@ frames back into the original octet stream chunks. These two stages are meant
 to be composed, applying one atop the other as part of a protocol stack. For
 this purpose exists the special type :class:`BidiFlow` which is a graph that
 has exactly two open inlets and two open outlets. The corresponding shape is
-called :ref:`BidiShape` and is defined like this:
+called :class:`BidiShape` and is defined like this:
 
 .. includecode:: ../../../akka-stream/src/main/scala/akka/stream/Shape.scala
    :include: bidi-shape
    :exclude: implementation-details-elided
 
-A bidirectional flow is defined just like a unidirectional :ref:`Flow` as
+A bidirectional flow is defined just like a unidirectional :class:`Flow` as
 demonstrated for the codec mentioned above:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/BidiFlowDocTest.java
