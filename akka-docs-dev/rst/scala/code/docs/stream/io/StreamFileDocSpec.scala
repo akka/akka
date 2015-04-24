@@ -6,10 +6,12 @@ package docs.stream.io
 import java.io.File
 
 import akka.stream._
-import akka.stream.io.SynchronousFileSource
 import akka.stream.io.SynchronousFileSink
-import akka.stream.testkit._
+import akka.stream.io.SynchronousFileSource
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.Utils._
+import akka.stream.testkit._
 import akka.util.ByteString
 
 class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
@@ -53,5 +55,13 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
     SynchronousFileSink(file)
       .withAttributes(ActorOperationAttributes.dispatcher("custom-file-io-dispatcher"))
     //#custom-dispatcher-code
+  }
+
+  "show Implicits" in {
+    //#source-sink-implicits
+    import akka.stream.io.Implicits._
+
+    Source.synchronousFile(file) to Sink.outputStream(() ⇒ System.out)
+    //#source-sink-implicits
   }
 }
