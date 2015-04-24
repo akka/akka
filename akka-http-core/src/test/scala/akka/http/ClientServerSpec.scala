@@ -21,8 +21,7 @@ import akka.http.model.headers._
 import akka.http.util._
 import akka.stream.{ ActorFlowMaterializer, BindFailedException }
 import akka.stream.scaladsl._
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
+import akka.stream.testkit._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
@@ -40,7 +39,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
     "properly bind a server" in {
       val (_, hostname, port) = temporaryServerHostnameAndPort()
-      val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = Http().bind(hostname, port).toMat(Sink(probe))(Keep.left).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       val address = Await.result(binding, 1.second).localAddress
@@ -50,16 +49,16 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     "report failure if bind fails" in {
       val (_, hostname, port) = temporaryServerHostnameAndPort()
       val binding = Http().bind(hostname, port)
-      val probe1 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
       val b1 = Await.result(binding.to(Sink(probe1)).run(), 3.seconds)
       probe1.expectSubscription()
 
-      val probe2 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      val probe2 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink(probe2)).run(), 3.seconds) }
       probe2.expectSubscriptionAndError()
 
-      val probe3 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      val probe3 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink(probe3)).run(), 3.seconds) }
       probe3.expectSubscriptionAndError()
 
@@ -68,7 +67,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       probe1.expectComplete()
 
       if (!akka.util.Helpers.isWindows) {
-        val probe4 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+        val probe4 = TestSubscriber.manualProbe[Http.IncomingConnection]()
         // Bind succeeded, we have a local address
         val b2 = Await.result(binding.to(Sink(probe4)).run(), 3.seconds)
         probe4.expectSubscription()
@@ -221,15 +220,15 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     val connSource = {
       val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
       val binding = Http().bind(hostname, port, settings = settings)
-      val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]
+      val probe = TestSubscriber.manualProbe[Http.IncomingConnection]
       binding.runWith(Sink(probe))
       probe
     }
     val connSourceSub = connSource.expectSubscription()
 
     def openNewClientConnection(settings: ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val requestPublisherProbe = StreamTestKit.PublisherProbe[HttpRequest]()
-      val responseSubscriberProbe = StreamTestKit.SubscriberProbe[HttpResponse]()
+      val requestPublisherProbe = TestPublisher.manualProbe[HttpRequest]()
+      val responseSubscriberProbe = TestSubscriber.manualProbe[HttpResponse]()
 
       val connectionFuture = Source(requestPublisherProbe)
         .viaMat(Http().outgoingConnection(hostname, port, settings = settings))(Keep.right)
@@ -242,7 +241,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       requestPublisherProbe -> responseSubscriberProbe
     }
 
-    def acceptConnection(): (SubscriberProbe[HttpRequest], PublisherProbe[HttpResponse]) = {
+    def acceptConnection(): (TestSubscriber.ManualProbe[HttpRequest], TestPublisher.ManualProbe[HttpResponse]) = {
       connSourceSub.request(1)
       val incomingConnection = connSource.expectNext()
       val sink = Sink.publisher[HttpRequest]
@@ -254,8 +253,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       }
 
       val (pub, sub) = incomingConnection.handleWith(handler)
-      val requestSubscriberProbe = StreamTestKit.SubscriberProbe[HttpRequest]()
-      val responsePublisherProbe = StreamTestKit.PublisherProbe[HttpResponse]()
+      val requestSubscriberProbe = TestSubscriber.manualProbe[HttpRequest]()
+      val responsePublisherProbe = TestPublisher.manualProbe[HttpResponse]()
 
       pub.subscribe(requestSubscriberProbe)
       responsePublisherProbe.subscribe(sub)
