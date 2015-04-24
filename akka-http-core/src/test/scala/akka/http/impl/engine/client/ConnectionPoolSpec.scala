@@ -5,10 +5,12 @@
 package akka.http.impl.engine.client
 
 import java.util.concurrent.atomic.AtomicInteger
+import akka.http.ServerSettings
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
-import akka.http.scaladsl.{ TestUtils, Http, ServerSettings }
+import akka.http.scaladsl.{ TestUtils, Http }
 import akka.http.impl.util.{ SingletonException, StreamUtils }
 import akka.util.ByteString
 import akka.stream.{ BidiShape, ActorFlowMaterializer }
