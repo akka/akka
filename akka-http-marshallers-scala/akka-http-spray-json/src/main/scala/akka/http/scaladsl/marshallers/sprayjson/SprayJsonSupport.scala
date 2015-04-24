@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.marshallers.sprayjson
+package akka.http.scaladsl.marshallers.sprayjson
 
 import scala.language.implicitConversions
 import scala.concurrent.ExecutionContext
 import akka.stream.FlowMaterializer
-import akka.http.marshalling.{ ToEntityMarshaller, Marshaller }
-import akka.http.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
-import akka.http.model.{ ContentTypes, HttpCharsets }
-import akka.http.model.MediaTypes.`application/json`
+import akka.http.scaladsl.marshalling.{ ToEntityMarshaller, Marshaller }
+import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
+import akka.http.scaladsl.model.{ ContentTypes, HttpCharsets }
+import akka.http.scaladsl.model.MediaTypes.`application/json`
 import spray.json._
 
 /**
