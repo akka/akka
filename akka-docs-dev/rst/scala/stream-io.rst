@@ -123,7 +123,7 @@ or for a specific stage by spefifying a custom Dispatcher in code, like this:
 .. includecode:: code/docs/stream/io/StreamFileDocSpec.scala#custom-dispatcher-code
 
 If you would like to keep all sink and source factories defined on the :class:`Source` and :class:`Sink` objects
-instead of using the separate objects contained in ``akka.strea.io`` to create these you can import an *implicit
+instead of using the separate objects contained in ``akka.stream.io`` to create these you can import an *implicit
 coversion* that makes these operations available as shown below:
 
 .. includecode:: code/docs/stream/io/StreamFileDocSpec.scala#source-sink-implicits
