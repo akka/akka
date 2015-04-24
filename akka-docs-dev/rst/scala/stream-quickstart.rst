@@ -26,8 +26,7 @@ which will be responsible for materializing and running the streams we are about
 
 The :class:`ActorFlowMaterializer` can optionally take :class:`ActorFlowMaterializerSettings` which can be used to define
 materialization properties, such as default buffer sizes (see also :ref:`stream-buffers-scala`), the dispatcher to
-be used by the pipeline etc. These can be overridden on an element-by-element basis or for an entire section, but this
-will be discussed in depth in :ref:`stream-section-configuration`.
+be used by the pipeline etc. These can be overridden ``withAttributes`` on :class:`Flow`, :class:`Source`, :class:`Sink` and :class:`Graph`.
 
 Let's assume we have a stream of tweets readily available, in Akka this is expressed as a :class:`Source[Out, M]`:
 
