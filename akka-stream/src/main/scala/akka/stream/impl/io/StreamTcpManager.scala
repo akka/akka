@@ -16,7 +16,7 @@ import akka.io.Tcp
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.impl.ActorProcessor
 import akka.stream.impl.ActorPublisher
-import akka.stream.scaladsl.StreamTcp
+import akka.stream.scaladsl.{ Tcp ⇒ StreamTcp }
 import akka.util.ByteString
 import org.reactivestreams.Processor
 import org.reactivestreams.Subscriber
