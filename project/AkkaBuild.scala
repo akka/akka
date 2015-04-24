@@ -81,8 +81,10 @@ object AkkaBuild extends Build {
       Maven.projects in Maven.mvn := Seq(file("akka-samples") / "akka-docs-java-lambda"),
       validatePullRequest <<= Seq(test in Test in stream, SphinxSupport.generate in Sphinx in docsDev,
       Maven.mvnExec, test in Test in streamTestkit, test in Test in streamTests, test in Test in streamTck,
-      test in Test in httpCore, test in Test in http, test in Test in httpJavaTests, test in Test in httpJava8Tests,
-      test in Test in httpTestkit, test in Test in httpTests, test in Test in docsDev,
+      test in Test in httpCore,
+      test in Test in httpTestkitScala, test in Test in httpTestkitJava, 
+      test in Test in httpTestsScala, test in Test in httpTestsJava, test in Test in httpTestsJava8,
+      test in Test in docsDev,
       compile in Compile in benchJmh
       ).dependOn
     ),
@@ -345,8 +347,11 @@ object AkkaBuild extends Build {
       version := streamAndHttpVersion
     ),
     aggregate = Seq(
-      httpCore, http, httpMarshallers, httpTestkit, httpTests,
-      httpJava, httpJavaMarshallers, httpJavaTestkit, httpJavaTests, httpJava8Tests)
+      httpCore,
+      httpScala, httpJava,
+      httpTestkitScala, httpTestkitJava,
+      httpTestsScala, httpTestsJava, httpTestsJava8,
+      httpMarshallersScala, httpMarshallersJava)
   )
 
   lazy val httpCore = Project(
@@ -368,79 +373,75 @@ object AkkaBuild extends Build {
     //) else Nil)
   )
 
-  lazy val http = Project(
-    id = "akka-http-experimental",
-    base = file("akka-http"),
+  lazy val httpScala = Project(
+    id = "akka-http-scala-experimental",
+    base = file("akka-http-scala"),
     dependencies = Seq(httpCore),
     settings =
       defaultSettings ++ formatSettings ++ scaladocSettings ++
-        javadocSettings ++ OSGi.http ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
+        javadocSettings ++ OSGi.httpScala ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
         Seq(
           version := streamAndHttpVersion,
-          Dependencies.http,
-          // FIXME include mima when akka-http-2.3.x is released
-          //previousArtifact := akkaPreviousArtifact("akka-http")
+          Dependencies.httpScala,
+          // FIXME include mima when akka-http-scala-2.3.x is released
+          //previousArtifact := akkaPreviousArtifact("akka-http-scala")
           previousArtifact := None,
           scalacOptions in Compile += "-language:_"
         )
   )
 
-  lazy val httpTestkit = Project(
-    id = "akka-http-testkit-experimental",
-    base = file("akka-http-testkit"),
-    dependencies = Seq(http),
+  lazy val httpTestkitScala = Project(
+    id = "akka-http-testkit-scala-experimental",
+    base = file("akka-http-testkit-scala"),
+    dependencies = Seq(httpScala),
     settings =
       defaultSettings ++ formatSettings ++ scaladocSettings ++
-        javadocSettings ++ OSGi.httpTestkit ++
+        javadocSettings ++ OSGi.httpTestkitScala ++
         Seq(
           version := streamAndHttpVersion,
-          libraryDependencies ++= Dependencies.httpTestkit,
-          // FIXME include mima when akka-http-2.3.x is released
-          //previousArtifact := akkaPreviousArtifact("akka-http-testkit")
+          libraryDependencies ++= Dependencies.httpTestkitScala,
+          // FIXME include mima when akka-http-scala-2.3.x is released
+          //previousArtifact := akkaPreviousArtifact("akka-http-testkit-scala")
           previousArtifact := None,
           scalacOptions in Compile  += "-language:_"
         )
   )
 
-  lazy val httpTests = Project(
-    id = "akka-http-tests-experimental",
-    base = file("akka-http-tests"),
-    dependencies = Seq(httpTestkit, httpSprayJson, httpXml),
+  lazy val httpTestsScala = Project(
+    id = "akka-http-tests-scala-experimental",
+    base = file("akka-http-tests-scala"),
+    dependencies = Seq(httpTestkitScala, httpSprayJson, httpXml),
     settings =
       defaultSettings ++ formatSettings ++
         Seq(
           version := streamAndHttpVersion,
           publishArtifact := false,
-          libraryDependencies ++= Dependencies.httpTests,
+          libraryDependencies ++= Dependencies.httpTestsScala,
           scalacOptions in Compile  += "-language:_"
         )
   )
 
-  lazy val httpMarshallers = Project(
-    id = "akka-http-marshallers-experimental",
-    base = file("akka-http-marshallers"),
+  lazy val httpMarshallersScala = Project(
+    id = "akka-http-marshallers-scala-experimental",
+    base = file("akka-http-marshallers-scala"),
     settings = parentSettings ++ Seq(
       version := streamAndHttpVersion
     )
   ).aggregate(httpSprayJson, httpXml)
 
   lazy val httpXml =
-    httpMarshallerSubproject("xml")
-      .settings(
-        Dependencies.httpXml
-      )
+    httpMarshallersScalaSubproject("xml")
+      .settings(Dependencies.httpXml)
 
   lazy val httpSprayJson =
-    httpMarshallerSubproject("spray-json")
-      .settings(
-        Dependencies.httpSprayJson
-      )
+    httpMarshallersScalaSubproject("spray-json")
+      .settings(Dependencies.httpSprayJson)
 
-  def httpMarshallerSubproject(name: String) =
+  def httpMarshallersScalaSubproject(name: String) =
     Project(
       id = s"akka-http-$name-experimental",
-      base = file(s"akka-http-marshallers/akka-http-$name"),
-      dependencies = Seq(http),
+      base = file(s"akka-http-marshallers-scala/akka-http-$name"),
+      dependencies = Seq(httpScala),
       settings = defaultSettings ++ formatSettings ++ Seq(
         version := streamAndHttpVersion
       )
@@ -449,80 +450,78 @@ object AkkaBuild extends Build {
   lazy val httpJava = Project(
     id = "akka-http-java-experimental",
     base = file("akka-http-java"),
-    dependencies = Seq(http),
+    dependencies = Seq(httpScala),
     settings =
       defaultSettings ++ formatSettings ++ scaladocSettings ++
-        javadocSettings ++ OSGi.http ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
+        javadocSettings ++ OSGi.httpJava ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
         Seq(
           version := streamAndHttpVersion,
           Dependencies.httpJava,
-          // FIXME include mima when akka-http-2.3.x is released
-          //previousArtifact := akkaPreviousArtifact("akka-http")
+          // FIXME include mima when akka-http-java-2.3.x is released
+          //previousArtifact := akkaPreviousArtifact("akka-http-java")
           previousArtifact := None
         )
   )
 
-  lazy val httpJavaMarshallers = Project(
-    id = "akka-http-java-marshallers-experimental",
-    base = file("akka-http-java-marshallers"),
+  lazy val httpMarshallersJava = Project(
+    id = "akka-http-marshallers-java-experimental",
+    base = file("akka-http-marshallers-java"),
     settings = defaultSettings ++ parentSettings ++ Seq(
       version := streamAndHttpVersion
     )
-  ).aggregate(httpJavaJackson)
+  ).aggregate(httpJackson)
 
-  lazy val httpJavaJackson =
-    httpJavaMarshallerSubproject("jackson")
-      .settings(
-        Dependencies.httpJavaJackson
-      )
+  lazy val httpJackson =
+    httpMarshallersJavaSubproject("jackson")
+      .settings(Dependencies.httpJackson)
 
-  def httpJavaMarshallerSubproject(name: String) =
+  def httpMarshallersJavaSubproject(name: String) =
     Project(
-      id = s"akka-http-java-$name-experimental",
-      base = file(s"akka-http-java-marshallers/akka-http-java-$name"),
+      id = s"akka-http-$name-experimental",
+      base = file(s"akka-http-marshallers-java/akka-http-$name"),
       dependencies = Seq(httpJava),
       settings = defaultSettings ++ formatSettings ++ Seq(
         version := streamAndHttpVersion
       )
     )
 
-  lazy val httpJavaTestkit = Project(
-    id = "akka-http-java-testkit-experimental",
-    base = file("akka-http-java-testkit"),
-    dependencies = Seq(httpJava, httpJavaJackson),
+  lazy val httpTestkitJava = Project(
+    id = "akka-http-testkit-java-experimental",
+    base = file("akka-http-testkit-java"),
+    dependencies = Seq(httpJava, httpJackson),
     settings =
       defaultSettings ++ formatSettings ++
         Seq(
           version := streamAndHttpVersion,
           publishArtifact := false,
-          Dependencies.httpJavaTestkit
+          Dependencies.httpTestkitJava
         )
   )
 
-  lazy val httpJavaTests = Project(
-    id = "akka-http-java-tests-experimental",
-    base = file("akka-http-java-tests"),
-    dependencies = Seq(httpJava, httpJavaJackson, httpJavaTestkit % "test"),
+  lazy val httpTestsJava = Project(
+    id = "akka-http-tests-java-experimental",
+    base = file("akka-http-tests-java"),
+    dependencies = Seq(httpJava, httpJackson, httpTestkitJava % "test"),
     settings =
       defaultSettings ++ formatSettings ++
         Seq(
           version := streamAndHttpVersion,
           publishArtifact := false,
-          Dependencies.httpJavaTests
+          Dependencies.httpTestsJava
         )
   )
 
   val java8Home = SettingKey[Option[File]]("java8-home")
-  lazy val httpJava8Tests = Project(
-    id = "akka-http-java8-tests-experimental",
-    base = file("akka-http-java8-tests"),
-    dependencies = Seq(httpJava, httpJavaJackson, httpJavaTestkit % "test"),
+  lazy val httpTestsJava8 = Project(
+    id = "akka-http-tests-java8-experimental",
+    base = file("akka-http-tests-java8"),
+    dependencies = Seq(httpJava, httpJackson, httpTestkitJava % "test"),
     settings =
       defaultSettings ++ formatSettings ++
         Seq(
           version := streamAndHttpVersion,
           publishArtifact := false,
-          Dependencies.httpJava8Tests,
+          Dependencies.httpTestsJava8,
           fork in run := true,
           connectInput := true,
           javacOptions in compile := Seq("-source", "8"),
@@ -544,7 +543,7 @@ object AkkaBuild extends Build {
           },
           // don't ignore Suites which is the default for the junit-interface
           testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners="),
-          mainClass in run in Test := Some("akka.http.server.japi.SimpleServerApp")
+          mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
         )
   )
 
@@ -921,7 +920,7 @@ object AkkaBuild extends Build {
   lazy val docsDev = Project(
     id = "akka-docs-dev",
     base = file("akka-docs-dev"),
-    dependencies = Seq(streamTestkit % "test->test", stream, httpCore, http, httpTestkit, httpSprayJson, httpXml),
+    dependencies = Seq(streamTestkit % "test->test", stream, httpCore, httpScala, httpTestkitScala, httpSprayJson, httpXml),
     settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ sphinxPreprocessing ++ Seq(
       version := streamAndHttpVersion,
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
@@ -1430,9 +1429,11 @@ object AkkaBuild extends Build {
 
     val httpCore = Nil // FIXME #15689
 
-    val http = Nil // FIXME #15689
+    val httpScala = Nil // FIXME #15689
 
-    val httpTestkit = exports(Seq("akka.http.testkit.*"))
+    val httpJava = Nil // FIXME #15689
+
+    val httpTestkitScala = exports(Seq("akka.http.scaladsl.testkit.*"))
 
     // Temporary fix for #15379. Should be removed when stream is stabilized.
     // And yes OSGi wont like you mixing the persistence and stream artifacts.
@@ -1548,10 +1549,10 @@ object Dependencies {
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.1"       // ApacheV2
 
-    // For akka-http-java json support
+    // For akka-http-jackson support
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.4.3"       // ApacheV2
 
-    // For akka-http-java-testkit
+    // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % "4.11"        // Common Public License 1.0
 
     // Compiler plugins
@@ -1622,27 +1623,23 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
     Test.junitIntf, Test.junit, Test.scalatest)
 
-  val http = deps()
+  val httpScala = deps()
+  val httpJava = deps()
 
-  val httpTestkit = Seq(
+  val httpTestkitScala = Seq(
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion,
     Test.junit, Test.scalatest.copy(configurations = Some("provided; test")))
+  val httpTestkitJava = deps(Compile.junit % "provided", Test.junitIntf)
 
-  val httpTests = Seq(Test.junit, Test.scalatest)
+  val httpTestsScala = Seq(Test.junit, Test.scalatest)
+  val httpTestsJava = deps(Test.junit, Test.junitIntf)
+  val httpTestsJava8 = deps(Test.junit, Test.junitIntf)
 
   val httpXml = deps(scalaXml)
 
   val httpSprayJson = deps(sprayJson)
 
-  val httpJava = deps()
-
-  val httpJavaJackson = deps(jackson)
-
-  val httpJavaTestkit = deps(Compile.junit % "provided", Test.junitIntf)
-
-  val httpJavaTests = deps(Test.junit, Test.junitIntf)
-
-  val httpJava8Tests = deps(Test.junit, Test.junitIntf)
+  val httpJackson = deps(jackson)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
