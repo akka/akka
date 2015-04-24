@@ -1,7 +1,6 @@
 package akka.stream.scaladsl
 
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.TwoStreamsSetup
+import akka.stream.testkit._
 import scala.concurrent.duration._
 import akka.stream._
 
@@ -20,7 +19,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
   "ZipWith" must {
 
     "work in the happy case" in {
-      val probe = StreamTestKit.SubscriberProbe[Outputs]()
+      val probe = TestSubscriber.manualProbe[Outputs]()
 
       FlowGraph.closed() { implicit b ⇒
         val zip = b.add(ZipWith((_: Int) + (_: Int)))
@@ -45,7 +44,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
     }
 
     "work in the sad case" in {
-      val probe = StreamTestKit.SubscriberProbe[Outputs]()
+      val probe = TestSubscriber.manualProbe[Outputs]()
 
       FlowGraph.closed() { implicit b ⇒
         val zip = b.add(ZipWith[Int, Int, Int]((_: Int) / (_: Int)))
@@ -104,7 +103,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
     }
 
     "zipWith a ETA expanded Person.apply (3 inputs)" in {
-      val probe = StreamTestKit.SubscriberProbe[Person]()
+      val probe = TestSubscriber.manualProbe[Person]()
 
       case class Person(name: String, surname: String, int: Int)
 
@@ -127,7 +126,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
     }
 
     "work with up to 22 inputs" in {
-      val probe = StreamTestKit.SubscriberProbe[String]()
+      val probe = TestSubscriber.manualProbe[String]()
 
       FlowGraph.closed() { implicit b ⇒
 

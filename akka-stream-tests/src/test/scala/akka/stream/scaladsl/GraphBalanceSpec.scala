@@ -6,8 +6,8 @@ import scala.concurrent.duration._
 import akka.stream.ActorFlowMaterializer
 
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 
 class GraphBalanceSpec extends AkkaSpec {
 
@@ -20,8 +20,8 @@ class GraphBalanceSpec extends AkkaSpec {
     import FlowGraph.Implicits._
 
     "balance between subscribers which signal demand" in assertAllStagesStopped {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
@@ -45,7 +45,7 @@ class GraphBalanceSpec extends AkkaSpec {
     }
 
     "support waiting for demand from all downstream subscriptions" in {
-      val s1 = StreamTestKit.SubscriberProbe[Int]()
+      val s1 = TestSubscriber.manualProbe[Int]()
       val p2 = FlowGraph.closed(Sink.publisher[Int]) { implicit b ⇒
         p2Sink ⇒
           val balance = b.add(Balance[Int](2, waitForAllDownstreams = true))
@@ -58,7 +58,7 @@ class GraphBalanceSpec extends AkkaSpec {
       sub1.request(1)
       s1.expectNoMsg(200.millis)
 
-      val s2 = StreamTestKit.SubscriberProbe[Int]()
+      val s2 = TestSubscriber.manualProbe[Int]()
       p2.subscribe(s2)
       val sub2 = s2.expectSubscription()
 
@@ -74,7 +74,7 @@ class GraphBalanceSpec extends AkkaSpec {
     }
 
     "support waiting for demand from all non-cancelled downstream subscriptions" in assertAllStagesStopped {
-      val s1 = StreamTestKit.SubscriberProbe[Int]()
+      val s1 = TestSubscriber.manualProbe[Int]()
 
       val (p2, p3) = FlowGraph.closed(Sink.publisher[Int], Sink.publisher[Int])(Keep.both) { implicit b ⇒
         (p2Sink, p3Sink) ⇒
@@ -88,11 +88,11 @@ class GraphBalanceSpec extends AkkaSpec {
       val sub1 = s1.expectSubscription()
       sub1.request(1)
 
-      val s2 = StreamTestKit.SubscriberProbe[Int]()
+      val s2 = TestSubscriber.manualProbe[Int]()
       p2.subscribe(s2)
       val sub2 = s2.expectSubscription()
 
-      val s3 = StreamTestKit.SubscriberProbe[Int]()
+      val s3 = TestSubscriber.manualProbe[Int]()
       p3.subscribe(s3)
       val sub3 = s3.expectSubscription()
 
@@ -143,8 +143,8 @@ class GraphBalanceSpec extends AkkaSpec {
     }
 
     "produce to second even though first cancels" in assertAllStagesStopped {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
@@ -164,8 +164,8 @@ class GraphBalanceSpec extends AkkaSpec {
     }
 
     "produce to first even though second cancels" in assertAllStagesStopped {
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
@@ -185,9 +185,9 @@ class GraphBalanceSpec extends AkkaSpec {
     }
 
     "cancel upstream when downstreams cancel" in assertAllStagesStopped {
-      val p1 = StreamTestKit.PublisherProbe[Int]()
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val p1 = TestPublisher.manualProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val balance = b.add(Balance[Int](2))

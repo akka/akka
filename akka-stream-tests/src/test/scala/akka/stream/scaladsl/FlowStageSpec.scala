@@ -8,8 +8,8 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.testkit.{ EventFilter, TestProbe }
 import com.typesafe.config.ConfigFactory
 import akka.stream.stage._
@@ -33,7 +33,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           }
         }).
         runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(1)
@@ -67,7 +67,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
 
         }).
         runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(4)
@@ -105,7 +105,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
             }
           }).runWith(Sink.publisher)
 
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(50)
@@ -142,7 +142,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           }
         }).
         runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(1)
@@ -172,10 +172,10 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           }
         }).
         runWith(Sink.fanoutPublisher(2, 2))
-      val c1 = StreamTestKit.SubscriberProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
       p2.subscribe(c1)
       val sub1 = c1.expectSubscription()
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
       p2.subscribe(c2)
       val sub2 = c2.expectSubscription()
       sub1.request(1)
@@ -208,7 +208,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
             terminationEmit(Iterator.single(s + "B"), ctx)
         }).
         runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[String]()
+      val c = TestSubscriber.manualProbe[String]()
       p2.subscribe(c)
       val s = c.expectSubscription()
       s.request(1)
@@ -217,7 +217,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "allow early finish" in assertAllStagesStopped {
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       val p2 = Source(p).
         transform(() ⇒ new PushStage[Int, Int] {
           var s = ""
@@ -231,7 +231,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
         }).
         runWith(Sink.publisher)
       val proc = p.expectSubscription
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
       p2.subscribe(c)
       val s = c.expectSubscription()
       s.request(10)
@@ -257,7 +257,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           }
         }).
         runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       EventFilter[IllegalArgumentException]("two not allowed") intercept {
@@ -284,7 +284,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
         }).
         filter(elem ⇒ elem != 1). // it's undefined if element 1 got through before the error or not
         runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       EventFilter[IllegalArgumentException]("two not allowed") intercept {
@@ -306,7 +306,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           }
         }).
         runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(2)
@@ -329,7 +329,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
             terminationEmit(Iterator(1, 2, 3), ctx)
         }).
         runWith(Sink.publisher)
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(4)
@@ -341,7 +341,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "support converting onComplete into onError" in {
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
       Source(List(5, 1, 2, 3)).transform(() ⇒ new PushStage[Int, Int] {
         var expectedNumberOfElements: Option[Int] = None
         var count = 0
@@ -382,13 +382,13 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           }
         })
 
-      val s1 = StreamTestKit.SubscriberProbe[Int]()
+      val s1 = TestSubscriber.manualProbe[Int]()
       flow.to(Sink(s1)).run()
       s1.expectSubscription().request(3)
       s1.expectNext(1, 2, 3)
       s1.expectComplete()
 
-      val s2 = StreamTestKit.SubscriberProbe[Int]()
+      val s2 = TestSubscriber.manualProbe[Int]()
       flow.to(Sink(s2)).run()
       s2.expectSubscription().request(3)
       s2.expectNext(1, 2, 3)
@@ -397,7 +397,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
 
     "handle early cancelation" in assertAllStagesStopped {
       val onDownstreamFinishProbe = TestProbe()
-      val down = StreamTestKit.SubscriberProbe[Int]()
+      val down = TestSubscriber.manualProbe[Int]()
       val s = Source.subscriber[Int].
         transform(() ⇒ new PushStage[Int, Int] {
           override def onPush(elem: Int, ctx: Context[Int]) =
@@ -413,7 +413,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       downstream.cancel()
       onDownstreamFinishProbe.expectMsg("onDownstreamFinish")
 
-      val up = StreamTestKit.PublisherProbe[Int]
+      val up = TestPublisher.manualProbe[Int]
       up.subscribe(s)
       val upsub = up.expectSubscription()
       upsub.expectCancellation()

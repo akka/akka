@@ -1,8 +1,7 @@
 package docs.stream.cookbook
 
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.{ SubscriberProbe, PublisherProbe }
+import akka.stream.testkit._
 
 import scala.concurrent.duration._
 
@@ -17,26 +16,24 @@ class RecipeSimpleDrop extends RecipeSpec {
         Flow[Message].conflate(seed = identity)((lastMessage, newMessage) => newMessage)
       //#simple-drop
 
-      val pub = PublisherProbe[Message]()
-      val sub = SubscriberProbe[Message]()
+      val pub = TestPublisher.probe[Message]()
+      val sub = TestSubscriber.manualProbe[Message]()
       val messageSource = Source(pub)
       val sink = Sink(sub)
 
       messageSource.via(droppyStream).to(sink).run()
 
-      val manualSource = new StreamTestKit.AutoPublisher(pub)
-
       val subscription = sub.expectSubscription()
       sub.expectNoMsg(100.millis)
 
-      manualSource.sendNext("1")
-      manualSource.sendNext("2")
-      manualSource.sendNext("3")
+      pub.sendNext("1")
+      pub.sendNext("2")
+      pub.sendNext("3")
 
       subscription.request(1)
       sub.expectNext("3")
 
-      manualSource.sendComplete()
+      pub.sendComplete()
       subscription.request(1)
       sub.expectComplete()
     }

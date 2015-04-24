@@ -8,9 +8,8 @@ import akka.actor.Cancellable
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.ActorFlowMaterializerSettings
 
 class TickSourceSpec extends AkkaSpec {
@@ -19,7 +18,7 @@ class TickSourceSpec extends AkkaSpec {
 
   "A Flow based on tick publisher" must {
     "produce ticks" in assertAllStagesStopped {
-      val c = StreamTestKit.SubscriberProbe[String]()
+      val c = TestSubscriber.manualProbe[String]()
       Source(1.second, 500.millis, "tick").to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(3)
@@ -34,7 +33,7 @@ class TickSourceSpec extends AkkaSpec {
     }
 
     "drop ticks when not requested" in {
-      val c = StreamTestKit.SubscriberProbe[String]()
+      val c = TestSubscriber.manualProbe[String]()
       Source(1.second, 1.second, "tick").to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(2)
@@ -52,8 +51,8 @@ class TickSourceSpec extends AkkaSpec {
 
     "reject multiple subscribers, but keep the first" in {
       val p = Source(1.second, 1.second, "tick").runWith(Sink.publisher)
-      val c1 = StreamTestKit.SubscriberProbe[String]()
-      val c2 = StreamTestKit.SubscriberProbe[String]()
+      val c1 = TestSubscriber.manualProbe[String]()
+      val c2 = TestSubscriber.manualProbe[String]()
       p.subscribe(c1)
       p.subscribe(c2)
       val sub1 = c1.expectSubscription()
@@ -67,7 +66,7 @@ class TickSourceSpec extends AkkaSpec {
     }
 
     "be usable with zip for a simple form of rate limiting" in {
-      val c = StreamTestKit.SubscriberProbe[Int]()
+      val c = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         import FlowGraph.Implicits._
@@ -87,7 +86,7 @@ class TickSourceSpec extends AkkaSpec {
     }
 
     "be possible to cancel" in assertAllStagesStopped {
-      val c = StreamTestKit.SubscriberProbe[String]()
+      val c = TestSubscriber.manualProbe[String]()
       val tickSource = Source(1.second, 500.millis, "tick")
       val cancellable = tickSource.to(Sink(c)).run()
       val sub = c.expectSubscription()

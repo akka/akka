@@ -6,6 +6,7 @@ package akka.stream.testkit
 import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.scaladsl.{ Sink, Source, Flow }
+import akka.stream.testkit._
 import akka.stream.testkit.StreamTestKit._
 import org.reactivestreams.Publisher
 import org.scalatest.Matchers
@@ -121,14 +122,14 @@ trait ScriptedTest extends Matchers {
     def mayRequestMore: Boolean = remainingDemand > 0
 
     def shakeIt(): Boolean = {
-      val u = upstream.probe.receiveWhile(1.milliseconds) {
+      val u = upstream.receiveWhile(1.milliseconds) {
         case RequestMore(_, n) ⇒
           debugLog(s"operation requests $n")
           pendingRequests += n
           true
         case _ ⇒ false // Ignore
       }
-      val d = downstream.probe.receiveWhile(1.milliseconds) {
+      val d = downstream.receiveWhile(1.milliseconds) {
         case OnNext(elem: Out @unchecked) ⇒
           debugLog(s"operation produces [$elem]")
           if (outstandingDemand == 0) fail("operation produced while there was no demand")

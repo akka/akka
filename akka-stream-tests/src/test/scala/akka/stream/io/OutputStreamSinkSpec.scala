@@ -6,8 +6,8 @@ package akka.stream.io
 import java.io.OutputStream
 
 import akka.stream.scaladsl.Source
-import akka.stream.testkit.StreamTestKit._
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import akka.testkit.TestProbe
 import akka.util.ByteString
@@ -15,7 +15,7 @@ import akka.util.ByteString
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class OutputStreamSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxConfig) {
+class OutputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   val settings = ActorFlowMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorFlowMaterializer(settings)
@@ -63,4 +63,3 @@ class OutputStreamSinkSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxConfig
   }
 
 }
-

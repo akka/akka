@@ -5,9 +5,8 @@ package docs.stream
 
 import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Flow
-import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit._
 import akka.stream.scaladsl.Sink
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.stream.scaladsl.Source
 
 class ReactiveStreamsDocSpec extends AkkaSpec {
@@ -45,12 +44,12 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     override def tweets: Publisher[Tweet] =
       TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.publisher)
 
-    override def storage = SubscriberProbe[Author]
+    override def storage = TestSubscriber.manualProbe[Author]
 
-    override def alert = SubscriberProbe[Author]
+    override def alert = TestSubscriber.manualProbe[Author]
   }
 
-  def assertResult(storage: SubscriberProbe[Author]): Unit = {
+  def assertResult(storage: TestSubscriber.ManualProbe[Author]): Unit = {
     val sub = storage.expectSubscription()
     sub.request(10)
     storage.expectNext(Author("rolandkuhn"))
