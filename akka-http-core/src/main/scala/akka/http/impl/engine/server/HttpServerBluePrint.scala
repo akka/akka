@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.server
 
+import akka.http.ServerSettings
 import org.reactivestreams.{ Subscriber, Publisher }
 import scala.util.control.NonFatal
 import akka.util.ByteString
@@ -18,7 +19,6 @@ import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.impl.engine.TokenSourceActor
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.ServerSettings
 import akka.http.impl.util._
 import akka.http.impl.engine.ws._
 import Websocket.SwitchToWebsocketToken

@@ -5,6 +5,7 @@
 package akka.http.impl.engine.parsing
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import akka.http.ParserSettings
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.annotation.tailrec
 import scala.util.Random

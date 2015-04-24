@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.http.ParserSettings
 import akka.http.scaladsl.util.FastFuture
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.Future

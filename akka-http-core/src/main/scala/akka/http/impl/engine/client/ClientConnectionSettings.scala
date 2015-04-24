@@ -4,10 +4,10 @@
 
 package akka.http.impl.engine.client
 
+import akka.http.ParserSettings
 import com.typesafe.config.Config
 import scala.concurrent.duration.{ FiniteDuration, Duration }
 import akka.http.scaladsl.model.headers.`User-Agent`
-import akka.http.impl.engine.parsing.ParserSettings
 import akka.http.impl.util._
 
 final case class ClientConnectionSettings(

@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.http.ParserSettings
+
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import akka.parboiled2.CharUtils

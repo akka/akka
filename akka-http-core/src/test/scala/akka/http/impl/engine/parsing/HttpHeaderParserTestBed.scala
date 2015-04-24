@@ -1,6 +1,7 @@
 package akka.http.impl.engine.parsing
 
 import akka.actor.ActorSystem
+import akka.http.ParserSettings
 import com.typesafe.config.{ ConfigFactory, Config }
 
 object HttpHeaderParserTestBed extends App {

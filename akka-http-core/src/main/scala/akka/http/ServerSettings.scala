@@ -2,17 +2,17 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.scaladsl
+package akka.http
 
-import com.typesafe.config.Config
-import scala.language.implicitConversions
-import scala.concurrent.duration._
 import akka.ConfigurationException
-import akka.actor.{ ActorRefFactory, ActorSystem }
-import akka.http.impl.engine.parsing.ParserSettings
+import akka.actor.{ ActorSystem, ActorRefFactory }
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.{ Host, Server }
+import com.typesafe.config.Config
+
+import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 final case class ServerSettings(
   serverHeader: Option[Server],
@@ -57,13 +57,28 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
   def apply(optionalSettings: Option[ServerSettings])(implicit actorRefFactory: ActorRefFactory): ServerSettings =
     optionalSettings getOrElse apply(actorSystem)
 
-  /** Java API */
-  def create(system: ActorSystem): ServerSettings = apply(system)
+  /**
+   * Creates an instance of ServerSettings using the configuration provided by the given
+   * ActorSystem.
+   *
+   * Java API
+   */
+  def create(system: ActorSystem): ServerSettings = ServerSettings(system)
 
-  /** Java API */
-  def create(config: Config): ServerSettings = apply(config)
+  /**
+   * Creates an instance of ServerSettings using the given Config.
+   *
+   * Java API
+   */
+  def create(config: Config): ServerSettings = ServerSettings(config)
 
-  /** Java API */
-  def create(configOverrides: String): ServerSettings = apply(configOverrides)
+  /**
+   * Create an instance of ServerSettings using the given String of config overrides to override
+   * settings set in the class loader of this class (i.e. by application.conf or reference.conf files in
+   * the class loader of this class).
+   *
+   * Java API
+   */
+  def create(configOverrides: String): ServerSettings = ServerSettings(configOverrides)
 }
 

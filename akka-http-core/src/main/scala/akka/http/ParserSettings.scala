@@ -2,13 +2,15 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.impl.engine.parsing
+package akka.http
 
 import java.util.Locale
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import akka.http.scaladsl.model.{ StatusCode, HttpMethod, Uri }
 import akka.http.impl.util._
+import akka.http.impl.engine.parsing.HttpHeaderParser
 
 final case class ParserSettings(
   maxUriLength: Int,
@@ -88,5 +90,29 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
         case x        ⇒ throw new IllegalArgumentException(s"[$x] is not a legal `error-logging-verbosity` setting")
       }
   }
+
+  /**
+   * Creates an instance of ParserSettings using the configuration provided by the given
+   * ActorSystem.
+   *
+   * Java API
+   */
+  def create(system: ActorSystem): ParserSettings = ParserSettings(system)
+
+  /**
+   * Creates an instance of ParserSettings using the given Config.
+   *
+   * Java API
+   */
+  def create(config: Config): ParserSettings = ParserSettings(config)
+
+  /**
+   * Create an instance of ParserSettings using the given String of config overrides to override
+   * settings set in the class loader of this class (i.e. by application.conf or reference.conf files in
+   * the class loader of this class).
+   *
+   * Java API
+   */
+  def create(configOverrides: String): ParserSettings = ParserSettings(configOverrides)
 }
 

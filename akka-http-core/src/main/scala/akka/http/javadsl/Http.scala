@@ -5,6 +5,8 @@
 package akka.http.javadsl
 
 import java.lang.{ Iterable ⇒ JIterable }
+import akka.http.ServerSettings
+
 import scala.concurrent.Future
 import akka.japi.Util._
 import akka.japi.Function
@@ -13,7 +15,7 @@ import akka.event.LoggingAdapter
 import akka.io.Inet
 import akka.stream.FlowMaterializer
 import akka.stream.javadsl.{ Flow, Source }
-import akka.http.scaladsl.{ model ⇒ sm, ServerSettings }
+import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.model._
 
 object Http extends ExtensionId[Http] with ExtensionIdProvider {

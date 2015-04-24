@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.http.ParserSettings
+
 import scala.annotation.tailrec
 import akka.http.impl.model.parser.CharacterClasses
 import akka.stream.scaladsl.Source
