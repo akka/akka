@@ -7,7 +7,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.stream._
-import akka.stream.scaladsl.StreamTcp._
+import akka.stream.scaladsl.Tcp._
 import akka.stream.scaladsl._
 import akka.stream.stage.Context
 import akka.stream.stage.PushStage
@@ -31,15 +31,14 @@ class StreamTcpDocSpec extends AkkaSpec {
   "simple server connection" in {
     {
       //#echo-server-simple-bind
-      val localhost = new InetSocketAddress("127.0.0.1", 8888)
+      val connections: Source[IncomingConnection, Future[ServerBinding]] =
+        Tcp().bind("127.0.0.1", 8888)
       //#echo-server-simple-bind
     }
     {
       val localhost = TestUtils.temporaryServerAddress()
-      //#echo-server-simple-bind
       val connections: Source[IncomingConnection, Future[ServerBinding]] =
-        StreamTcp().bind(localhost)
-      //#echo-server-simple-bind
+        Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
 
       //#echo-server-simple-handle
       connections runForeach { connection =>
@@ -58,7 +57,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
   "initial server banner echo server" in {
     val localhost = TestUtils.temporaryServerAddress()
-    val connections = StreamTcp().bind(localhost)
+    val connections = Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
     val serverProbe = TestProbe()
 
     //#welcome-banner-chat-server
@@ -112,25 +111,33 @@ class StreamTcpDocSpec extends AkkaSpec {
       }
     }
 
-    //#repl-client
-    val connection = StreamTcp().outgoingConnection(localhost)
-
-    val replParser = new PushStage[String, ByteString] {
-      override def onPush(elem: String, ctx: Context[ByteString]): SyncDirective = {
-        elem match {
-          case "q" ⇒ ctx.pushAndFinish(ByteString("BYE\n"))
-          case _   ⇒ ctx.push(ByteString(s"$elem\n"))
-        }
-      }
+    {
+      //#repl-client
+      val connection = Tcp().outgoingConnection("127.0.0.1", 8888)
+      //#repl-client
     }
 
-    val repl = Flow[ByteString]
-      .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
-      .map(text => println("Server: " + text))
-      .map(_ => readLine("> "))
-      .transform(() ⇒ replParser)
+    {
+      val connection = Tcp().outgoingConnection(localhost)
+      //#repl-client
 
-    connection.join(repl).run()
+      val replParser = new PushStage[String, ByteString] {
+        override def onPush(elem: String, ctx: Context[ByteString]): SyncDirective = {
+          elem match {
+            case "q" ⇒ ctx.pushAndFinish(ByteString("BYE\n"))
+            case _   ⇒ ctx.push(ByteString(s"$elem\n"))
+          }
+        }
+      }
+
+      val repl = Flow[ByteString]
+        .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
+        .map(text => println("Server: " + text))
+        .map(_ => readLine("> "))
+        .transform(() ⇒ replParser)
+
+      connection.join(repl).run()
+    }
     //#repl-client
 
     serverProbe.expectMsg("Hello world")
