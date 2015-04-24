@@ -38,7 +38,7 @@ object OutputStreamSink {
    *
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    */
-  def create(f: Creator[OutputStream]): javadsl.Sink[ByteString, Future[Long]] =
-    apply(() ⇒ f.create()).asJava
+  def create(f: Creator[OutputStream]): javadsl.Sink[ByteString, Future[java.lang.Long]] =
+    apply(() ⇒ f.create()).asJava.asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
 
 }

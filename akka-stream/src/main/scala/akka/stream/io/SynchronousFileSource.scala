@@ -41,7 +41,7 @@ object SynchronousFileSource {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def create(f: File): javadsl.Source[ByteString, Future[Long]] =
+  def create(f: File): javadsl.Source[ByteString, Future[java.lang.Long]] =
     create(f, DefaultChunkSize)
 
   /**
@@ -54,7 +54,7 @@ object SynchronousFileSource {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def create(f: File, chunkSize: Int): javadsl.Source[ByteString, Future[Long]] =
-    apply(f, chunkSize).asJava
+  def create(f: File, chunkSize: Int): javadsl.Source[ByteString, Future[java.lang.Long]] =
+    apply(f, chunkSize).asJava.asInstanceOf[javadsl.Source[ByteString, Future[java.lang.Long]]]
 
 }
