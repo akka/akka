@@ -1433,7 +1433,7 @@ object AkkaBuild extends Build {
 
     // Temporary fix for #15379. Should be removed when stream is stabilized.
     // And yes OSGi wont like you mixing the persistence and stream artifacts.
-    val stream = exports(Seq("akka.stream.*", "akka.persistence.stream.*", "akka.japi.function.*")) //FIXME when akka.japi is fully in akka-actor
+    val stream = exports(Seq("akka.stream.*", "akka.japi.function.*")) // FIXME when akka.japi is fully in akka-actor
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 

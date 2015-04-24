@@ -14,6 +14,8 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.util.ByteString
 
+import scala.concurrent.Future
+
 class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   implicit val ec = system.dispatcher
@@ -45,8 +47,9 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
     //#file-source
 
-    SynchronousFileSource(file)
-      .runForeach((chunk: ByteString) ⇒ handle(chunk))
+    val foreach: Future[Long] = SynchronousFileSource(file)
+      .to(Sink.ignore)
+      .run()
     //#file-source
   }
 
