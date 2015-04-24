@@ -17,9 +17,8 @@ import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl._
 import akka.stream.scaladsl.FlowGraph.Implicits._
 import akka.stream.stage._
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit.PublisherProbe
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.testkit.EventFilter
 import akka.util.ByteString
 import javax.net.ssl.KeyManagerFactory
@@ -407,7 +406,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
       the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
       the[Exception] thrownBy Await.result(out2, 1.second) should be(ex)
       Thread.sleep(500)
-      val pub = PublisherProbe()
+      val pub = TestPublisher.probe()
       pub.subscribe(sub)
       pub.expectSubscription().expectCancellation()
     }
@@ -424,7 +423,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
       the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
       the[Exception] thrownBy Await.result(out2, 1.second) should be(ex)
       Thread.sleep(500)
-      val pub = PublisherProbe()
+      val pub = TestPublisher.probe()
       pub.subscribe(sub)
       pub.expectSubscription().expectCancellation()
     }
