@@ -352,7 +352,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val serverAddress = temporaryServerAddress()
       val (bindingFuture, echoServerFinish) =
         StreamTcp()
-          .bind(serverAddress)
+          .bind(serverAddress.getHostName, serverAddress.getPort) // TODO getHostString in Java7
           .toMat(echoHandler)(Keep.both)
           .run()
 
@@ -373,7 +373,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val serverAddress = temporaryServerAddress()
       val (bindingFuture, echoServerFinish) =
         StreamTcp()
-          .bind(serverAddress)
+          .bind(serverAddress.getHostName, serverAddress.getPort) // TODO getHostString in Java7
           .toMat(echoHandler)(Keep.both)
           .run()
 
@@ -401,7 +401,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
     "bind and unbind correctly" in {
       val address = temporaryServerAddress()
       val probe1 = TestSubscriber.manualProbe[StreamTcp.IncomingConnection]()
-      val bind = StreamTcp(system).bind(address)
+      val bind = StreamTcp(system).bind(address.getHostName, address.getPort) // TODO getHostString in Java7
       // Bind succeeded, we have a local address
       val binding1 = Await.result(bind.to(Sink(probe1)).run(), 3.second)
 
