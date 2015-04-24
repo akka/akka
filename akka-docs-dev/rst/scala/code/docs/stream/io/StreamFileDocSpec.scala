@@ -8,11 +8,11 @@ import java.io.File
 import akka.stream._
 import akka.stream.io.SynchronousFileSource
 import akka.stream.io.SynchronousFileSink
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.util.ByteString
 
-class StreamFileDocSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxConfig) {
+class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   implicit val ec = system.dispatcher
   implicit val mat = ActorFlowMaterializer()

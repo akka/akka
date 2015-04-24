@@ -12,9 +12,8 @@ import scala.util.Failure
 
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
-import akka.stream.testkit.ScriptedTest
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 
 class HeadSinkSpec extends AkkaSpec with ScriptedTest {
 
@@ -26,7 +25,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
   "A Flow with Sink.head" must {
 
     "yield the first value" in assertAllStagesStopped {
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       val f: Future[Int] = Source(p).map(identity).runWith(Sink.head)
       val proc = p.expectSubscription
       proc.expectRequest()
@@ -36,7 +35,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
     }
 
     "yield the first value when actively constructing" in {
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       val f = Sink.head[Int]
       val s = Source.subscriber[Int]
       val (subscriber, future) = s.toMat(f)(Keep.both).run()
@@ -50,7 +49,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
     }
 
     "yield the first error" in assertAllStagesStopped {
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       val f = Source(p).runWith(Sink.head)
       val proc = p.expectSubscription
       proc.expectRequest()
@@ -61,7 +60,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
     }
 
     "yield NoSuchElementExcption for empty stream" in assertAllStagesStopped {
-      val p = StreamTestKit.PublisherProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
       val f = Source(p).runWith(Sink.head)
       val proc = p.expectSubscription
       proc.expectRequest()

@@ -5,11 +5,9 @@ package akka.stream.scaladsl
 
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
-import akka.stream.testkit.StreamTestKit
-import org.reactivestreams.Subscriber
+import akka.stream.testkit._
 import akka.stream._
+import org.reactivestreams.Subscriber
 
 object GraphFlowSpec {
   val source1 = Source(0 to 3)
@@ -46,7 +44,7 @@ class GraphFlowSpec extends AkkaSpec {
 
   implicit val materializer = ActorFlowMaterializer(settings)
 
-  def validateProbe(probe: SubscriberProbe[Int], requests: Int, result: Set[Int]): Unit = {
+  def validateProbe(probe: TestSubscriber.ManualProbe[Int], requests: Int, result: Set[Int]): Unit = {
     val subscription = probe.expectSubscription()
 
     val collected = (1 to requests).map { _ ⇒
@@ -62,7 +60,7 @@ class GraphFlowSpec extends AkkaSpec {
   "FlowGraphs" when {
     "turned into flows" should {
       "work with a Source and Sink" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val flow = Flow(partialGraph) { implicit b ⇒
           partial ⇒
@@ -77,7 +75,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
 
       "be transformable with a Pipe" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val flow = Flow(partialGraph) { implicit b ⇒
           partial ⇒
@@ -90,7 +88,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
 
       "work with another GraphFlow" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val flow1 = Flow(partialGraph) { implicit b ⇒
           partial ⇒
@@ -108,7 +106,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
 
       "be reusable multiple times" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val flow = Flow(Flow[Int].map(_ * 2)) { implicit b ⇒
           importFlow ⇒
@@ -126,7 +124,7 @@ class GraphFlowSpec extends AkkaSpec {
 
     "turned into sources" should {
       "work with a Sink" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val source = Source(partialGraph) { implicit b ⇒
           partial ⇒
@@ -141,7 +139,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
 
       "work with a Sink when having KeyedSource inside" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val source = Source.apply(Source.subscriber[Int]) { implicit b ⇒
           subSource ⇒
@@ -156,7 +154,7 @@ class GraphFlowSpec extends AkkaSpec {
 
       "be transformable with a Pipe" in {
 
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val source = Source(partialGraph) { implicit b ⇒
           partial ⇒
@@ -171,7 +169,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
 
       "work with an GraphFlow" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val source = Source(partialGraph) { implicit b ⇒
           partial ⇒
@@ -191,7 +189,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
 
       "be reusable multiple times" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val source = Source(Source(1 to 5)) { implicit b ⇒
           s ⇒
@@ -214,7 +212,7 @@ class GraphFlowSpec extends AkkaSpec {
 
     "turned into sinks" should {
       "work with a Source" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val sink = Sink(partialGraph) { implicit b ⇒
           partial ⇒
@@ -229,7 +227,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
 
       "work with a Source when having KeyedSink inside" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
         val pubSink = Sink.publisher[Int]
 
         val sink = Sink(pubSink) { implicit b ⇒
@@ -244,7 +242,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
 
       "be transformable with a Pipe" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val sink = Sink(partialGraph, Flow[String].map(_.toInt))(Keep.both) { implicit b ⇒
           (partial, flow) ⇒
@@ -262,7 +260,7 @@ class GraphFlowSpec extends AkkaSpec {
 
       "work with a GraphFlow" in {
 
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
 
         val flow = Flow(partialGraph) { implicit b ⇒
           partial ⇒
@@ -284,7 +282,7 @@ class GraphFlowSpec extends AkkaSpec {
 
     "used together" should {
       "materialize properly" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
         val inSource = Source.subscriber[Int]
         val outSink = Sink.publisher[Int]
 
@@ -324,7 +322,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
 
       "allow connecting source to sink directly" in {
-        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val probe = TestSubscriber.manualProbe[Int]()
         val inSource = Source.subscriber[Int]
         val outSink = Sink.publisher[Int]
 

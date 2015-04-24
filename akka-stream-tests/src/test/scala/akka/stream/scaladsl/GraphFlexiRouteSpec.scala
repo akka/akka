@@ -4,12 +4,9 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import FlowGraph.Implicits._
 import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit.AutoPublisher
-import akka.stream.testkit.StreamTestKit.OnNext
-import akka.stream.testkit.StreamTestKit.PublisherProbe
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.Utils._
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.actor.ActorRef
@@ -128,18 +125,17 @@ object GraphFlexiRouteSpec {
   }
 
   class TestFixture(implicit val system: ActorSystem, implicit val materializer: ActorFlowMaterializer) {
-    val publisher = PublisherProbe[String]
-    val s1 = SubscriberProbe[String]
-    val s2 = SubscriberProbe[String]
+    val autoPublisher = TestPublisher.probe[String]()
+    val s1 = TestSubscriber.manualProbe[String]
+    val s2 = TestSubscriber.manualProbe[String]
     val completionProbe = TestProbe()
     FlowGraph.closed() { implicit b ⇒
       val route = b.add(new TestRoute(completionProbe.ref))
-      Source(publisher) ~> route.in
+      Source(autoPublisher) ~> route.in
       route.out0 ~> Sink(s1)
       route.out1 ~> Sink(s2)
     }.run()
 
-    val autoPublisher = new AutoPublisher(publisher)
     autoPublisher.sendNext("a")
     autoPublisher.sendNext("b")
 
@@ -164,23 +160,18 @@ class GraphFlexiRouteSpec extends AkkaSpec {
     "build simple fair route" in assertAllStagesStopped {
       // we can't know exactly which elements that go to each output, because if subscription/request
       // from one of the downstream is delayed the elements will be pushed to the other output
-      val s = SubscriberProbe[String]
-      val m = FlowGraph.closed() { implicit b ⇒
-        val merge = b.add(Merge[String](2))
-        val route = b.add(new Fair[String])
-        in ~> route.in
-        route.out(0) ~> merge.in(0)
-        route.out(1) ~> merge.in(1)
-        merge.out ~> Sink(s)
+      FlowGraph.closed(TestSink.probe[String]) { implicit b ⇒
+        out ⇒
+          val merge = b.add(Merge[String](2))
+          val route = b.add(new Fair[String])
+          in ~> route.in
+          route.out(0) ~> merge.in(0)
+          route.out(1) ~> merge.in(1)
+          merge.out ~> out
       }.run()
-
-      val sub = s.expectSubscription()
-      sub.request(10)
-
-      (s.probe.receiveN(5).map { case OnNext(elem) ⇒ elem }).toSet should be(
-        Set("a", "b", "c", "d", "e"))
-
-      s.expectComplete()
+        .request(10)
+        .expectNextUnordered("a", "b", "c", "d", "e")
+        .expectComplete()
     }
 
     "build simple round-robin route" in {
@@ -192,10 +183,10 @@ class GraphFlexiRouteSpec extends AkkaSpec {
           route.out(1) ~> o2.inlet
       }.run()
 
-      val s1 = SubscriberProbe[String]
+      val s1 = TestSubscriber.manualProbe[String]
       p1.subscribe(s1)
       val sub1 = s1.expectSubscription()
-      val s2 = SubscriberProbe[String]
+      val s2 = TestSubscriber.manualProbe[String]
       p2.subscribe(s2)
       val sub2 = s2.expectSubscription()
 
@@ -224,10 +215,10 @@ class GraphFlexiRouteSpec extends AkkaSpec {
           route.out1 ~> ob.inlet
       }.run()
 
-      val s1 = SubscriberProbe[Int]
+      val s1 = TestSubscriber.manualProbe[Int]
       p1.subscribe(s1)
       val sub1 = s1.expectSubscription()
-      val s2 = SubscriberProbe[String]
+      val s2 = TestSubscriber.manualProbe[String]
       p2.subscribe(s2)
       val sub2 = s2.expectSubscription()
 
@@ -273,7 +264,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
 
       s1.expectError().getMessage should be("err")
       s2.expectError().getMessage should be("err")
-      autoPublisher.subscription.expectCancellation()
+      autoPublisher.expectCancellation()
     }
 
     "support error of a specific output" in assertAllStagesStopped {
@@ -314,7 +305,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s1.expectError().getMessage should be("exc")
       s2.expectError().getMessage should be("exc")
 
-      autoPublisher.subscription.expectCancellation()
+      autoPublisher.expectCancellation()
     }
 
     "emit error for user thrown exception in onUpstreamFinish" in assertAllStagesStopped {
@@ -412,7 +403,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       completionProbe.expectMsg("onDownstreamFinish: TestRoute.out0")
       sub2.cancel()
 
-      autoPublisher.subscription.expectCancellation()
+      autoPublisher.expectCancellation()
     }
 
     "cancel upstream input when all outputs completed" in assertAllStagesStopped {
@@ -429,9 +420,8 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       autoPublisher.sendNext("finish")
       s1.expectComplete()
       s2.expectComplete()
-      autoPublisher.subscription.expectCancellation()
+      autoPublisher.expectCancellation()
     }
 
   }
 }
-

@@ -3,7 +3,7 @@ package docs.stream.cookbook
 import akka.actor.{ Props, ActorRef, Actor }
 import akka.actor.Actor.Receive
 import akka.stream.scaladsl._
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.testkit._
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -95,7 +95,7 @@ class RecipeGlobalRateLimit extends RecipeSpec {
       val source1 = Source(() => Iterator.continually("E1")).via(limitGlobal(limiter, 2.seconds))
       val source2 = Source(() => Iterator.continually("E2")).via(limitGlobal(limiter, 2.seconds))
 
-      val probe = SubscriberProbe[String]()
+      val probe = TestSubscriber.manualProbe[String]()
 
       FlowGraph.closed() { implicit b =>
         import FlowGraph.Implicits._

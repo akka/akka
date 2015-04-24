@@ -4,13 +4,12 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.{ Await, Promise }
+import scala.concurrent.duration._
 
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.TwoStreamsSetup
-import scala.concurrent.duration._
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 
 class GraphConcatSpec extends TwoStreamsSetup {
 
@@ -29,7 +28,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
     import FlowGraph.Implicits._
 
     "work in the happy case" in assertAllStagesStopped {
-      val probe = StreamTestKit.SubscriberProbe[Int]()
+      val probe = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
 
@@ -139,7 +138,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
 
     "correctly handle async errors in secondary upstream" in assertAllStagesStopped {
       val promise = Promise[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
 
       FlowGraph.closed() { implicit b ⇒
         val concat = b add Concat[Int]()
@@ -185,4 +184,3 @@ class GraphConcatSpec extends TwoStreamsSetup {
     }
   }
 }
-

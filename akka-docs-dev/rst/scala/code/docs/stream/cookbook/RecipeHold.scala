@@ -1,8 +1,7 @@
 package docs.stream.cookbook
 
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.{ SubscriberProbe, PublisherProbe }
+import akka.stream.testkit._
 
 import scala.concurrent.duration._
 
@@ -53,14 +52,12 @@ class RecipeHold extends RecipeSpec {
 
     "work for version 1" in {
 
-      val pub = PublisherProbe[Int]()
-      val sub = SubscriberProbe[Int]()
+      val pub = TestPublisher.probe[Int]()
+      val sub = TestSubscriber.manualProbe[Int]()
       val source = Source(pub)
       val sink = Sink(sub)
 
       source.transform(() => new HoldWithInitial(0)).to(sink).run()
-
-      val manualSource = new StreamTestKit.AutoPublisher(pub)
 
       val subscription = sub.expectSubscription()
       sub.expectNoMsg(100.millis)
@@ -71,28 +68,26 @@ class RecipeHold extends RecipeSpec {
       subscription.request(1)
       sub.expectNext(0)
 
-      manualSource.sendNext(1)
-      manualSource.sendNext(2)
+      pub.sendNext(1)
+      pub.sendNext(2)
 
       subscription.request(2)
       sub.expectNext(2)
       sub.expectNext(2)
 
-      manualSource.sendComplete()
+      pub.sendComplete()
       subscription.request(1)
       sub.expectComplete()
     }
 
     "work for version 2" in {
 
-      val pub = PublisherProbe[Int]()
-      val sub = SubscriberProbe[Int]()
+      val pub = TestPublisher.probe[Int]()
+      val sub = TestSubscriber.manualProbe[Int]()
       val source = Source(pub)
       val sink = Sink(sub)
 
       source.transform(() => new HoldWithWait).to(sink).run()
-
-      val manualSource = new StreamTestKit.AutoPublisher(pub)
 
       val subscription = sub.expectSubscription()
       sub.expectNoMsg(100.millis)
@@ -100,17 +95,17 @@ class RecipeHold extends RecipeSpec {
       subscription.request(1)
       sub.expectNoMsg(100.millis)
 
-      manualSource.sendNext(1)
+      pub.sendNext(1)
       sub.expectNext(1)
 
-      manualSource.sendNext(2)
-      manualSource.sendNext(3)
+      pub.sendNext(2)
+      pub.sendNext(3)
 
       subscription.request(2)
       sub.expectNext(3)
       sub.expectNext(3)
 
-      manualSource.sendComplete()
+      pub.sendComplete()
       subscription.request(1)
       sub.expectComplete()
     }

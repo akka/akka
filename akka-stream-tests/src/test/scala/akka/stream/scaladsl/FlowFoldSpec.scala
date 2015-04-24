@@ -8,7 +8,7 @@ import scala.util.control.NoStackTrace
 
 import akka.stream.{ OverflowStrategy, ActorFlowMaterializer }
 import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit.Utils._
 
 class FlowFoldSpec extends AkkaSpec {
   implicit val mat = ActorFlowMaterializer()

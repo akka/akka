@@ -9,8 +9,8 @@ import java.util.Random
 import akka.actor.{ ActorCell, RepointableActorRef, ActorSystem }
 import akka.stream.io.SynchronousFileSourceSpec.Settings
 import akka.stream.scaladsl.Sink
-import akka.stream.testkit.StreamTestKit._
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.{ ActorOperationAttributes, ActorFlowMaterializer, ActorFlowMaterializerSettings, OperationAttributes }
 import akka.util.{ Timeout, ByteString }
 
@@ -21,7 +21,7 @@ object SynchronousFileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)
 }
 
-class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxConfig) {
+class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   val settings = ActorFlowMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorFlowMaterializer(settings)
@@ -68,7 +68,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxC
       val p = SynchronousFileSource(testFile, chunkSize)
         .withAttributes(bufferAttributes)
         .runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[ByteString]()
+      val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
       val sub = c.expectSubscription()
 
@@ -106,7 +106,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxC
         .withAttributes(bufferAttributes)
         .runWith(Sink.publisher)
 
-      val c = StreamTestKit.SubscriberProbe[ByteString]()
+      val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
       val sub = c.expectSubscription()
 
@@ -132,7 +132,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxC
 
     "onError whent trying to read from file which does not exist" in assertAllStagesStopped {
       val p = SynchronousFileSource(notExistingFile).runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[ByteString]()
+      val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
 
       c.expectSubscription()
@@ -158,7 +158,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxC
       }
 
     "use dedicated file-io-dispatcher by default" in {
-      val sys = ActorSystem("dispatcher-testing", StreamTestKit.UnboundedMailboxConfig)
+      val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val mat = ActorFlowMaterializer()(sys)
       implicit val timeout = Timeout(500.millis)
 
@@ -171,7 +171,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxC
     }
 
     "allow overriding the dispatcher using OperationAttributes" in {
-      val sys = ActorSystem("dispatcher-testing", StreamTestKit.UnboundedMailboxConfig)
+      val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val mat = ActorFlowMaterializer()(sys)
       implicit val timeout = Timeout(500.millis)
 
@@ -192,4 +192,3 @@ class SynchronousFileSourceSpec extends AkkaSpec(StreamTestKit.UnboundedMailboxC
   }
 
 }
-
