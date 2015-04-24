@@ -5,6 +5,8 @@
 package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
+import akka.http.HostConnectionPoolSetup
+
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration

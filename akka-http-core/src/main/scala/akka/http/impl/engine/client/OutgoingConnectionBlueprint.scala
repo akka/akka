@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.client
 
+import akka.http.ClientConnectionSettings
+
 import language.existentials
 import java.net.InetSocketAddress
 import scala.annotation.tailrec

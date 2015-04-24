@@ -5,6 +5,8 @@
 package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
+import akka.http.ConnectionPoolSettings
+
 import scala.concurrent.{ Promise, Future }
 import scala.util.Try
 import akka.event.LoggingAdapter

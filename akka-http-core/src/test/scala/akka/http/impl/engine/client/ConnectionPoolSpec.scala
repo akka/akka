@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import java.util.concurrent.atomic.AtomicInteger
-import akka.http.ServerSettings
+import akka.http.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

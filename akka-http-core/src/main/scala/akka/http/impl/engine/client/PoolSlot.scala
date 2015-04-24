@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.client
 
+import akka.http.ConnectionPoolSettings
+
 import language.existentials
 import java.net.InetSocketAddress
 import scala.util.{ Failure, Success }

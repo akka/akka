@@ -2,14 +2,18 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.impl.engine.client
+package akka.http
 
-import akka.event.LoggingAdapter
-import akka.io.Inet
+import java.lang.{ Iterable ⇒ JIterable }
 import com.typesafe.config.Config
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
+import akka.japi.Util._
+
+import akka.actor.ActorSystem
+import akka.event.LoggingAdapter
 import akka.http.impl.util._
+import akka.io.Inet
 
 final case class HostConnectionPoolSetup(host: String, port: Int, setup: ConnectionPoolSetup)
 
@@ -18,6 +22,15 @@ final case class ConnectionPoolSetup(
   options: immutable.Traversable[Inet.SocketOption],
   settings: ConnectionPoolSettings,
   log: LoggingAdapter)
+
+object ConnectionPoolSetup {
+  /** Java API */
+  def create(encrypted: Boolean,
+             options: JIterable[Inet.SocketOption],
+             settings: ConnectionPoolSettings,
+             log: LoggingAdapter): ConnectionPoolSetup =
+    ConnectionPoolSetup(encrypted, immutableSeq(options), settings, log)
+}
 
 final case class ConnectionPoolSettings(
   maxConnections: Int,
@@ -44,4 +57,28 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings](
       c getPotentiallyInfiniteDuration "idle-timeout",
       ClientConnectionSettings fromSubConfig c.getConfig("client"))
   }
+
+  /**
+   * Creates an instance of ConnectionPoolSettings using the configuration provided by the given
+   * ActorSystem.
+   *
+   * Java API
+   */
+  def create(system: ActorSystem): ConnectionPoolSettings = ConnectionPoolSettings(system)
+
+  /**
+   * Creates an instance of ConnectionPoolSettings using the given Config.
+   *
+   * Java API
+   */
+  def create(config: Config): ConnectionPoolSettings = ConnectionPoolSettings(config)
+
+  /**
+   * Create an instance of ConnectionPoolSettings using the given String of config overrides to override
+   * settings set in the class loader of this class (i.e. by application.conf or reference.conf files in
+   * the class loader of this class).
+   *
+   * Java API
+   */
+  def create(configOverrides: String): ConnectionPoolSettings = ConnectionPoolSettings(configOverrides)
 }

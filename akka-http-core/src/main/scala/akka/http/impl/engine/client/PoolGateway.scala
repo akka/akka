@@ -1,6 +1,8 @@
 package akka.http.impl.engine.client
 
 import java.util.concurrent.atomic.AtomicReference
+import akka.http.HostConnectionPoolSetup
+
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import akka.actor.{ Props, ActorSystem, ActorRef }
