@@ -30,11 +30,6 @@ object TestServer extends App {
           case Some(upgrade) ⇒ upgrade.handleMessages(echoWebsocketService) // needed for running the autobahn test suite
           case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
         }
-      case req @ HttpRequest(GET, Uri.Path("/ws-greeter"), _, _, _) ⇒
-        req.header[UpgradeToWebsocket] match {
-          case Some(upgrade) ⇒ upgrade.handleMessages(greeterWebsocketService)
-          case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
-        }
       case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
       case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
       case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
