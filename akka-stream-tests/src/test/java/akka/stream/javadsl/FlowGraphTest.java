@@ -4,14 +4,9 @@
 package akka.stream.javadsl;
 
 import akka.actor.ActorRef;
-import akka.japi.*;
+import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.FlowGraph.Builder;
-import akka.stream.javadsl.japi.*;
-import akka.japi.function.Creator;
-import akka.japi.function.Function;
-import akka.japi.function.Function2;
-import akka.japi.function.Procedure;
 import akka.stream.stage.*;
 import akka.japi.function.*;
 import akka.stream.testkit.AkkaSpec;

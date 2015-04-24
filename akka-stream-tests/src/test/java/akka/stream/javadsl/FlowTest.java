@@ -12,14 +12,12 @@ import akka.stream.OverflowStrategy;
 import akka.stream.StreamTest;
 import akka.stream.stage.*;
 import akka.stream.javadsl.FlowGraph.Builder;
-import akka.stream.javadsl.japi.*;
 import akka.japi.function.*;
 import akka.stream.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
 import org.reactivestreams.Publisher;
-import scala.runtime.Boxed;
 import scala.runtime.BoxedUnit;
 import org.junit.ClassRule;
 import org.junit.Test;
