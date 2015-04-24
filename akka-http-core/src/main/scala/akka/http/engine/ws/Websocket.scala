@@ -28,13 +28,18 @@ private[http] object Websocket {
                         closeTimeout: FiniteDuration = 3.seconds): Flow[FrameEvent, FrameEvent, Unit] = {
     /** Completes this branch of the flow if no more messages are expected and converts close codes into errors */
     class PrepareForUserHandler extends PushStage[MessagePart, MessagePart] {
+      var inMessage = false
       def onPush(elem: MessagePart, ctx: Context[MessagePart]): SyncDirective = elem match {
         case PeerClosed(code, reason) ⇒
           if (code.exists(Protocol.CloseCodes.isError)) ctx.fail(new ProtocolException(s"Peer closed connection with code $code"))
+          else if (inMessage) ctx.fail(new ProtocolException(s"Truncated message, peer closed connection in the middle of message."))
           else ctx.finish()
         case ActivelyCloseWithCode(code, reason) ⇒
           if (code.exists(Protocol.CloseCodes.isError)) ctx.fail(new ProtocolException(s"Closing connection with error code $code"))
-          else ctx.finish()
+          else ctx.fail(new IllegalStateException("Regular close from FrameHandler is unexpected"))
+        case x: MessageDataPart ⇒
+          inMessage = !x.last
+          ctx.push(x)
         case x ⇒ ctx.push(x)
       }
     }

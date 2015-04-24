@@ -477,8 +477,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
         netOut.expectComplete()
       }
-      "after receiving regular close frame when fragmented message is still open" in pendingUntilFixed {
-        pending
+      "after receiving regular close frame when fragmented message is still open" in {
         new ServerTestSetup {
           netOutSub.request(10)
           messageInSub.request(10)
@@ -496,7 +495,11 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           inSubscriber.expectNext(outData)
 
           pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
-          messageIn.expectComplete()
+
+          // This is arguable: we could also just fail the subStream but complete the main message stream regularly.
+          // However, truncating an ongoing message by closing without sending a `Continuation(fin = true)` first
+          // could be seen as something being amiss.
+          messageIn.expectError()
           inSubscriber.expectError()
           // truncation of open message
 
