@@ -141,7 +141,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
         .withAttributes(supervisionStrategy(resumingDecider))
         .runWith(TestSink.probe[Int])
         .request(10)
-        .expectNext(1, 2, 4, 5)
+        .expectNextUnordered(1, 2, 4, 5)
         .expectComplete()
     }
 
