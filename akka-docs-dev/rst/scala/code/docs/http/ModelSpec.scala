@@ -1,13 +1,13 @@
 package docs.http
 
 //#import-model
-import akka.http.model._
+import akka.http.scaladsl.model._
 
 //#import-model
 
 import akka.stream.testkit.AkkaSpec
 import akka.util.ByteString
-import akka.http.model.headers.{ GenericHttpCredentials, BasicHttpCredentials }
+import akka.http.scaladsl.model.headers.{ GenericHttpCredentials, BasicHttpCredentials }
 import org.scalatest.MustMatchers
 
 class ModelSpec extends AkkaSpec {
@@ -62,7 +62,7 @@ class ModelSpec extends AkkaSpec {
 
   "deal with headers" in {
     //#headers
-    import akka.http.model.headers._
+    import akka.http.scaladsl.model.headers._
 
     // create a ``Location`` header
     val loc = Location("http://example.com/other")

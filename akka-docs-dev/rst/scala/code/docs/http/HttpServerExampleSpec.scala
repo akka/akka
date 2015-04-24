@@ -5,11 +5,10 @@
 package docs.http
 
 import akka.actor.ActorSystem
-import akka.http.model._
+import akka.http.scaladsl.model._
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 import scala.concurrent.Future
-import akka.http.Http
 
 class HttpServerExampleSpec
   extends AkkaSpec("akka.actor.default-mailbox.mailbox-type = akka.dispatch.UnboundedMailbox") {
@@ -17,7 +16,7 @@ class HttpServerExampleSpec
 
   "binding example" in {
     //#bind-example
-    import akka.http.Http
+    import akka.http.scaladsl.Http
     import akka.stream.ActorFlowMaterializer
 
     implicit val system = ActorSystem()
@@ -34,7 +33,7 @@ class HttpServerExampleSpec
   }
 
   "full-server-example" in {
-    import akka.http.Http
+    import akka.http.scaladsl.Http
     import akka.stream.ActorFlowMaterializer
 
     implicit val system = ActorSystem()
@@ -43,7 +42,7 @@ class HttpServerExampleSpec
     val serverSource = Http(system).bind(interface = "localhost", port = 8080)
 
     //#full-server-example
-    import akka.http.model.HttpMethods._
+    import akka.http.scaladsl.model.HttpMethods._
     import akka.stream.scaladsl.{ Flow, Sink }
 
     val requestHandler: HttpRequest => HttpResponse = {

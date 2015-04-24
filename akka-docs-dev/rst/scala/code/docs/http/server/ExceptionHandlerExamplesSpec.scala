@@ -5,14 +5,14 @@
 package docs.http.server
 
 import akka.actor.ActorSystem
-import akka.http.server.Route
+import akka.http.scaladsl.server.Route
 import akka.stream.ActorFlowMaterializer
 
 object MyHandler {
   //# example-1
-  import akka.http.model.HttpResponse
-  import akka.http.model.StatusCodes._
-  import akka.http.server._
+  import akka.http.scaladsl.model.HttpResponse
+  import akka.http.scaladsl.model.StatusCodes._
+  import akka.http.scaladsl.server._
   import Directives._
 
   implicit def myExceptionHandler =
