@@ -7,7 +7,7 @@ package akka.http.engine.server
 import language.implicitConversions
 import com.typesafe.config.Config
 import scala.concurrent.duration._
-import akka.actor.ActorRefFactory
+import akka.actor.{ ActorSystem, ActorRefFactory }
 import akka.ConfigurationException
 import akka.http.engine.parsing.ParserSettings
 import akka.http.model.HttpHeader
@@ -53,5 +53,17 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
           throw new ConfigurationException(info.formatPretty)
       },
     ParserSettings fromSubConfig c.getConfig("parsing"))
+
+  def apply(optionalSettings: Option[ServerSettings])(implicit actorRefFactory: ActorRefFactory): ServerSettings =
+    optionalSettings getOrElse apply(actorSystem)
+
+  /** Java API */
+  def create(system: ActorSystem): ServerSettings = apply(system)
+
+  /** Java API */
+  def create(config: Config): ServerSettings = apply(config)
+
+  /** Java API */
+  def create(configOverrides: String): ServerSettings = apply(configOverrides)
 }
 

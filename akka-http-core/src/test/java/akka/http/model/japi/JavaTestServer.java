@@ -4,44 +4,43 @@
 
 package akka.http.model.japi;
 
-import static akka.pattern.Patterns.ask;
+import akka.actor.ActorSystem;
+import akka.http.engine.server.ServerSettings;
+import akka.stream.ActorFlowMaterializer;
+import akka.stream.FlowMaterializer;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import akka.stream.javadsl.japi.Function;
+import akka.stream.javadsl.japi.Procedure;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.FiniteDuration;
 
-public abstract class JavaTestServer {
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.concurrent.TimeUnit;
 
-// FIXME Java Http API
-//  public static void main(String[] args) throws IOException, InterruptedException {
-//    ActorSystem system = ActorSystem.create();
-//
-//    final FlowMaterializer materializer = FlowMaterializer.create(system);
-//
-//    ActorRef httpManager = Http.get(system).manager();
-//    Future<Object> binding = ask(httpManager, Http.bind("localhost", 8080), 1000);
-//    binding.foreach(new Foreach<Object>() {
-//      @Override
-//      public void each(Object result) throws Throwable {
-//        ServerBinding binding = (ServerBinding) result;
-//        System.out.println("Bound to " + binding.localAddress());
-//
-//        Source.from(binding.getConnectionStream()).foreach(new akka.stream.javadsl.japi.Procedure<IncomingConnection>() {
-//          @Override
-//          public void apply(IncomingConnection conn) throws Exception {
-//            System.out.println("New incoming connection from " + conn.remoteAddress());
-//
-//            Source.from(conn.getRequestPublisher()).map(new akka.stream.javadsl.japi.Function<HttpRequest, HttpResponse>() {
-//              @Override
-//              public HttpResponse apply(HttpRequest request) throws Exception {
-//                System.out.println("Handling request to " + request.getUri());
-//                return JavaApiTestCases.handleRequest(request);
-//              }
-//            }).runWith(Sink.create(conn.getResponseSubscriber()), materializer);
-//          }
-//        }, materializer);
-//      }
-//    }, system.dispatcher());
-//
-//    System.out.println("Press ENTER to stop.");
-//    new BufferedReader(new InputStreamReader(System.in)).readLine();
-//
-//    system.shutdown();
-//  }
+public class JavaTestServer {
+    public static void main(String[] args) throws Exception {
+        ActorSystem system = ActorSystem.create();
+
+        try {
+            final FlowMaterializer materializer = ActorFlowMaterializer.create(system);
+
+            Future<ServerBinding> serverBindingFuture =
+                    Http.get(system).bindAndHandleSync(
+                            new Function<HttpRequest, HttpResponse>() {
+                                public HttpResponse apply(HttpRequest request) throws Exception {
+                                    System.out.println("Handling request to " + request.getUri());
+                                    return JavaApiTestCases.handleRequest(request);
+                                }
+                            }, "localhost", 8080, materializer);
+
+            Await.result(serverBindingFuture, new FiniteDuration(1, TimeUnit.SECONDS)); // will throw if binding fails
+            System.out.println("Press ENTER to stop.");
+            new BufferedReader(new InputStreamReader(System.in)).readLine();
+        } finally {
+            system.shutdown();
+        }
+    }
 }
