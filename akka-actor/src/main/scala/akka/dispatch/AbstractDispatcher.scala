@@ -5,23 +5,22 @@
 package akka.dispatch
 
 import java.util.concurrent._
-import akka.event.Logging.{ Debug, Error, LogEventException }
-import akka.actor._
-import akka.dispatch.sysmsg._
-import akka.event.{ BusLogging, EventStream }
-import com.typesafe.config.{ ConfigFactory, Config }
-import akka.util.{ Unsafe, Index }
-import scala.annotation.tailrec
-import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool, ForkJoinWorkerThread }
-import scala.concurrent.duration.Duration
-import scala.concurrent.ExecutionContext
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
-import scala.util.Try
 import java.{ util ⇒ ju }
 
-final case class Envelope private (val message: Any, val sender: ActorRef)
+import akka.actor._
+import akka.dispatch.sysmsg._
+import akka.event.EventStream
+import akka.event.Logging.{ Debug, Error, LogEventException }
+import akka.util.{ Index, Unsafe }
+import com.typesafe.config.Config
+
+import scala.annotation.tailrec
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.forkjoin.{ ForkJoinPool, ForkJoinTask, ForkJoinWorkerThread }
+import scala.util.control.NonFatal
+
+final case class Envelope private (message: Any, sender: ActorRef)
 
 object Envelope {
   def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
@@ -46,7 +45,8 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
 /**
  * INTERNAL API
  */
-private[akka] trait LoadMetrics { self: Executor ⇒
+private[akka] trait LoadMetrics {
+  self: Executor ⇒
   def atFullThrottle(): Boolean
 }
 
@@ -62,11 +62,15 @@ private[akka] object MessageDispatcher {
   // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
   final val debug = false // Deliberately without type ascription to make it a compile-time constant
   lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
+
   def printActors(): Unit =
     if (debug) {
       for {
         d ← actors.keys
-        a ← { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
+        a ← {
+          println(d + " inhabitants: " + d.inhabitants)
+          actors.valueIterator(d)
+        }
       } {
         val status = if (a.isTerminated) " (terminated)" else " (alive)"
         val messages = a match {
@@ -84,8 +88,8 @@ private[akka] object MessageDispatcher {
 
 abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContextExecutor {
 
-  import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
+  import MessageDispatcher._
   import configurator.prerequisites
 
   val mailboxes = prerequisites.mailboxes
@@ -110,10 +114,11 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   final def inhabitants: Long = Unsafe.instance.getLongVolatile(this, inhabitantsOffset)
 
   private final def shutdownSchedule: Int = Unsafe.instance.getIntVolatile(this, shutdownScheduleOffset)
+
   private final def updateShutdownSchedule(expect: Int, update: Int): Boolean = Unsafe.instance.compareAndSwapInt(this, shutdownScheduleOffset, expect, update)
 
   /**
-   *  Creates and returns a mailbox for the given actor.
+   * Creates and returns a mailbox for the given actor.
    */
   protected[akka] def createMailbox(actor: Cell, mailboxType: MailboxType): Mailbox
 
@@ -137,7 +142,9 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    * Detaches the specified actor instance from this dispatcher
    */
   final def detach(actor: ActorCell): Unit = try unregister(actor) finally ifSensibleToDoSoThenScheduleShutdown()
+
   final protected def resubmitOnBlock: Boolean = true // We want to avoid starvation
+
   final override protected def unbatchedExecute(r: Runnable): Unit = {
     val invocation = TaskInvocation(eventStream, r, taskCleanup)
     addInhabitants(+1)
@@ -172,6 +179,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
     // IllegalStateException is thrown if scheduler has been shutdown
     try prerequisites.scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
       override def execute(runnable: Runnable): Unit = runnable.run()
+
       override def reportFailure(t: Throwable): Unit = MessageDispatcher.this.reportFailure(t)
     }) catch {
       case _: IllegalStateException ⇒ shutdown()
@@ -375,8 +383,13 @@ object ForkJoinExecutorConfigurator {
    */
   final class AkkaForkJoinPool(parallelism: Int,
                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
-                               unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
-    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) with LoadMetrics {
+                               unhandledExceptionHandler: Thread.UncaughtExceptionHandler,
+                               asyncMode: Boolean)
+    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, asyncMode) with LoadMetrics {
+    def this(parallelism: Int,
+             threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
+             unhandledExceptionHandler: Thread.UncaughtExceptionHandler) = this(parallelism, threadFactory, unhandledExceptionHandler, asyncMode = true)
+
     override def execute(r: Runnable): Unit = {
       if (r eq null) throw new NullPointerException("The Runnable must not be null")
       val task =
@@ -397,8 +410,13 @@ object ForkJoinExecutorConfigurator {
   @SerialVersionUID(1L)
   final class AkkaForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
     override def getRawResult(): Unit = ()
+
     override def setRawResult(unit: Unit): Unit = ()
-    final override def exec(): Boolean = try { runnable.run(); true } catch {
+
+    final override def exec(): Boolean = try {
+      runnable.run()
+      true
+    } catch {
       case ie: InterruptedException ⇒
         Thread.currentThread.interrupt()
         false
@@ -411,9 +429,11 @@ object ForkJoinExecutorConfigurator {
         throw anything
     }
   }
+
 }
 
 class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
+
   import ForkJoinExecutorConfigurator._
 
   def validate(t: ThreadFactory): ForkJoinPool.ForkJoinWorkerThreadFactory = t match {
@@ -422,9 +442,12 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
   }
 
   class ForkJoinExecutorServiceFactory(val threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
-                                       val parallelism: Int) extends ExecutorServiceFactory {
-    def createExecutorService: ExecutorService = new AkkaForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing)
+                                       val parallelism: Int,
+                                       val asyncMode: Boolean) extends ExecutorServiceFactory {
+    def this(threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory, parallelism: Int) = this(threadFactory, parallelism, asyncMode = true)
+    def createExecutorService: ExecutorService = new AkkaForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing, asyncMode)
   }
+
   final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
     val tf = threadFactory match {
       case m: MonitorableThreadFactory ⇒
@@ -432,12 +455,18 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
         m.withName(m.name + "-" + id)
       case other ⇒ other
     }
+    val asyncMode = config.getString("task-peeking-mode") match {
+      case "FIFO"      ⇒ true
+      case "LIFO"      ⇒ false
+      case unsupported ⇒ throw new IllegalStateException(s""""task-peeking-mode" could only set to "FIFO" or "LILO",but you provided:[$unsupported].""")
+    }
     new ForkJoinExecutorServiceFactory(
       validate(tf),
       ThreadPoolConfig.scaledPoolSize(
         config.getInt("parallelism-min"),
         config.getDouble("parallelism-factor"),
-        config.getInt("parallelism-max")))
+        config.getInt("parallelism-max")),
+      asyncMode)
   }
 }
 
@@ -449,12 +478,19 @@ class DefaultExecutorServiceConfigurator(config: Config, prerequisites: Dispatch
 
         new AbstractExecutorService with ExecutorServiceFactory with ExecutorServiceFactoryProvider {
           def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = this
+
           def createExecutorService: ExecutorService = this
+
           def shutdown(): Unit = ()
+
           def isTerminated: Boolean = false
+
           def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = false
+
           def shutdownNow(): ju.List[Runnable] = ju.Collections.emptyList()
+
           def execute(command: Runnable): Unit = ec.execute(command)
+
           def isShutdown: Boolean = false
         }
       case None ⇒ fallback
