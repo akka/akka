@@ -6,6 +6,9 @@ Networking
 
    ../common/cluster
    cluster-usage
+   ../scala/cluster-singleton
+   ../scala/distributed-pub-sub
+   ../scala/cluster-client
    cluster-metrics
    remoting
    serialization

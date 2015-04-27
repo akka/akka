@@ -55,7 +55,7 @@ object AkkaBuild extends Build {
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       }
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, slf4j, agent,
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, clusterTools, slf4j, agent,
       persistence, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, typed)
   )
 
@@ -64,7 +64,7 @@ object AkkaBuild extends Build {
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM)
     // samples don't work with dbuild right now
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j,
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, clusterTools, slf4j,
       persistence, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, typed)
   ).disablePlugins(ValidatePullRequest)
 
@@ -127,6 +127,12 @@ object AkkaBuild extends Build {
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", slf4j % "test->compile")
   ) configs (MultiJvm)
 
+  lazy val clusterTools = Project(
+    id = "akka-cluster-tools",
+    base = file("akka-cluster-tools"),
+    dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
+  ) configs (MultiJvm)
+
   lazy val slf4j = Project(
     id = "akka-slf4j",
     base = file("akka-slf4j"),
@@ -181,7 +187,7 @@ object AkkaBuild extends Build {
   lazy val contrib = Project(
     id = "akka-contrib",
     base = file("akka-contrib"),
-    dependencies = Seq(remote, remoteTests % "test->test", cluster, persistence % "compile;test->provided")
+    dependencies = Seq(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile;test->provided")
   ) configs (MultiJvm)
 
   lazy val samples = Project(

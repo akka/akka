@@ -201,4 +201,14 @@ user defined main class and packaging with `sbt-native-packager <https://github.
 or `Typesafe ConductR <http://typesafe.com/products/conductr>`_.
 Please see :ref:`deployment-scenarios` for more information.
 
+Cluster tools moved to separate module
+======================================
 
+The Cluster Singleton, Distributed Pub-Sub, and Cluster Client previously located in the ``akka-contrib``
+jar is now moved to a separate module named ``akka-cluster-tools``. You need to replace this dependency
+if you use any of these tools.
+
+The classes changed package name from ``akka.contrib.pattern`` to ``akka.cluster.singleton``, ``akka.cluster.pubsub``
+and ``akka.cluster.client``.
+
+The configuration properties changed name to ``akka.cluster.pub-sub`` and ``akka.cluster.client``.
