@@ -9,8 +9,8 @@ import org.scalatest.Matchers
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.RootActorPath
-import akka.contrib.pattern.ClusterSingletonManager
-import akka.contrib.pattern.ClusterSingletonProxy
+import akka.cluster.singleton.ClusterSingletonManager
+import akka.cluster.singleton.ClusterSingletonProxy
 import akka.cluster.Cluster
 import akka.cluster.Member
 import akka.cluster.MemberStatus

@@ -38,6 +38,7 @@ import akka.cluster.MemberStatus
 import akka.pattern.ask
 import akka.persistence._
 import akka.cluster.ClusterEvent.ClusterDomainEvent
+import akka.cluster.singleton.ClusterSingletonManager
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
