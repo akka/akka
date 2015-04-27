@@ -9,6 +9,7 @@ Networking
    cluster-singleton
    distributed-pub-sub
    cluster-client
+   cluster-sharding
    cluster-metrics
    remoting
    serialization

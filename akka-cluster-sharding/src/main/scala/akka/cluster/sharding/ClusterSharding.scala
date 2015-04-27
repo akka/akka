@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.contrib.pattern
+package akka.cluster.sharding
 
 import java.net.URLEncoder
 import java.util.concurrent.ConcurrentHashMap
-import akka.contrib.pattern.Shard.{ ShardCommand, StateChange }
-import akka.contrib.pattern.ShardCoordinator.Internal.SnapshotTick
+import akka.cluster.sharding.Shard.{ ShardCommand, StateChange }
+import akka.cluster.sharding.ShardCoordinator.Internal.SnapshotTick
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -62,7 +62,7 @@ import akka.cluster.singleton.ClusterSingletonManager
  * in the cluster, registering the supported entry types with the [[ClusterSharding#start]]
  * method and then the `ShardRegion` actor for a named entry type can be retrieved with
  * [[ClusterSharding#shardRegion]]. Messages to the entries are always sent via the local
- * `ShardRegion`. Some settings can be configured as described in the `akka.contrib.cluster.sharding`
+ * `ShardRegion`. Some settings can be configured as described in the `akka.cluster.sharding`
  * section of the `reference.conf`.
  *
  * The `ShardRegion` actor is started on each node in the cluster, or group of nodes
@@ -138,7 +138,7 @@ import akka.cluster.singleton.ClusterSingletonManager
  * The `ShardRegion` actor can also be started in proxy only mode, i.e. it will not
  * host any entries itself, but knows how to delegate messages to the right location.
  * A `ShardRegion` starts in proxy only mode if the roles of the node does not include
- * the node role specified in `akka.contrib.cluster.sharding.role` config property
+ * the node role specified in `akka.cluster.sharding.role` config property
  * or if the specified `entryProps` is `None`/`null`.
  *
  * If the state of the entries are persistent you may stop entries that are not used to
@@ -175,7 +175,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * INTERNAL API
    */
   private[akka] object Settings {
-    val config = system.settings.config.getConfig("akka.contrib.cluster.sharding")
+    val config = system.settings.config.getConfig("akka.cluster.sharding")
 
     val Role: Option[String] = config.getString("role") match {
       case "" ⇒ None
@@ -207,7 +207,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * and functions to extract entry and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
-   * Some settings can be configured as described in the `akka.contrib.cluster.sharding` section
+   * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
    * @param typeName the name of the entry type
@@ -254,7 +254,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
    * is used.
    *
-   * Some settings can be configured as described in the `akka.contrib.cluster.sharding` section
+   * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
    * @param typeName the name of the entry type
@@ -290,7 +290,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * and functions to extract entry and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
-   * Some settings can be configured as described in the `akka.contrib.cluster.sharding` section
+   * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
    * @param typeName the name of the entry type
@@ -333,7 +333,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
    * is used.
    *
-   * Some settings can be configured as described in the `akka.contrib.cluster.sharding` section
+   * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
    * @param typeName the name of the entry type
@@ -1016,8 +1016,8 @@ private[akka] class Shard(
   import ShardRegion.{ handOffStopperProps, EntryId, Msg, Passivate }
   import ShardCoordinator.Internal.{ HandOff, ShardStopped }
   import Shard.{ State, RetryPersistence, RestartEntry, EntryStopped, EntryStarted, SnapshotTick }
-  import akka.contrib.pattern.ShardCoordinator.Internal.CoordinatorMessage
-  import akka.contrib.pattern.ShardRegion.ShardRegionCommand
+  import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
+  import akka.cluster.sharding.ShardRegion.ShardRegionCommand
   import akka.persistence.RecoveryCompleted
 
   import context.dispatcher

@@ -27,7 +27,7 @@ An Example in Java
 
 This is how an entry actor may look like:
 
-.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterShardingTest.java#counter-actor
+.. includecode:: ../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java#counter-actor
 
 The above actor uses event sourcing and the support provided in ``UntypedPersistentActor`` to store its state.
 It does not have to be a persistent actor, but in case of failure or migration of entries between nodes it must be able to recover
@@ -39,12 +39,12 @@ When using the sharding extension you are first, typically at system startup on 
 in the cluster, supposed to register the supported entry types with the ``ClusterSharding.start``
 method. ``ClusterSharding.start`` gives you the reference which you can pass along.
 
-.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterShardingTest.java#counter-start
+.. includecode:: ../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java#counter-start
 
 The ``messageExtractor`` defines application specific methods to extract the entry
 identifier and the shard identifier from incoming messages.
 
-.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterShardingTest.java#counter-extractor
+.. includecode:: ../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java#counter-extractor
 
 This example illustrates two different ways to define the entry identifier in the messages:
 
@@ -77,14 +77,14 @@ The ``ShardRegion`` will lookup the location of the shard for the entry if it do
 delegate the message to the right node and it will create the entry actor on demand, i.e. when the
 first message for a specific entry is delivered.
 
-.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterShardingTest.java#counter-usage
+.. includecode:: ../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java#counter-usage
 
 An Example in Scala
 -------------------
 
 This is how an entry actor may look like:
 
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterShardingSpec.scala#counter-actor
+.. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#counter-actor
 
 The above actor uses event sourcing and the support provided in ``PersistentActor`` to store its state.
 It does not have to be a persistent actor, but in case of failure or migration of entries between nodes it must be able to recover
@@ -96,12 +96,12 @@ When using the sharding extension you are first, typically at system startup on 
 in the cluster, supposed to register the supported entry types with the ``ClusterSharding.start``
 method. ``ClusterSharding.start`` gives you the reference which you can pass along.
 
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterShardingSpec.scala#counter-start
+.. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#counter-start
 
 The ``idExtractor`` and ``shardResolver`` are two application specific functions to extract the entry
 identifier and the shard identifier from incoming messages.
 
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterShardingSpec.scala#counter-extractor
+.. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#counter-extractor
 
 This example illustrates two different ways to define the entry identifier in the messages:
 
@@ -134,7 +134,7 @@ The ``ShardRegion`` will lookup the location of the shard for the entry if it do
 delegate the message to the right node and it will create the entry actor on demand, i.e. when the
 first message for a specific entry is delivered.
 
-.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterShardingSpec.scala#counter-usage
+.. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#counter-usage
 
 A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 tutorial named `Akka Cluster Sharding with Scala! <http://www.typesafe.com/activator/template/akka-cluster-sharding-scala>`_.
@@ -274,12 +274,30 @@ using a ``Passivate``.
 Note that the state of the entries themselves will not be restored unless they have been made persistent,
 e.g. with ``akka-persistence``.
 
+Dependencies
+------------
+
+To use the Cluster Sharding you must add the following dependency in your project.
+
+sbt::
+
+    "com.typesafe.akka" %% "akka-cluster-sharding" % "@version@" @crossString@
+
+maven::
+
+  <dependency>
+    <groupId>com.typesafe.akka</groupId>
+    <artifactId>akka-cluster-sharding_@binVersion@</artifactId>
+    <version>@version@</version>
+  </dependency>
+
+
 Configuration
 -------------
 
 The ``ClusterSharding`` extension can be configured with the following properties:
 
-.. includecode:: @contribSrc@/src/main/resources/reference.conf#sharding-ext-config
+.. includecode:: ../../../akka-cluster-sharding/src/main/resources/reference.conf#sharding-ext-config
 
 Custom shard allocation strategy can be defined in an optional parameter to
 ``ClusterSharding.start``. See the API documentation of ``ShardAllocationStrategy``
