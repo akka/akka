@@ -212,3 +212,13 @@ The classes changed package name from ``akka.contrib.pattern`` to ``akka.cluster
 and ``akka.cluster.client``.
 
 The configuration properties changed name to ``akka.cluster.pub-sub`` and ``akka.cluster.client``.
+
+Cluster sharding moved to separate module
+=========================================
+
+The Cluster Sharding previously located in the ``akka-contrib`` jar is now moved to a separate module
+named ``akka-cluster-sharding``. You need to replace this dependency if you use Cluster Sharding.
+
+The classes changed package name from ``akka.contrib.pattern`` to ``akka.cluster.sharding``.
+
+The configuration properties changed name to ``akka.cluster.sharding``.

@@ -1,10 +1,10 @@
 /**
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.contrib.pattern
+package akka.cluster.sharding
 
-import akka.contrib.pattern.ShardCoordinator.Internal.{ ShardStopped, HandOff }
-import akka.contrib.pattern.ShardRegion.Passivate
+import akka.cluster.sharding.ShardCoordinator.Internal.{ ShardStopped, HandOff }
+import akka.cluster.sharding.ShardRegion.Passivate
 
 import language.postfixOps
 import scala.concurrent.duration._
@@ -23,6 +23,7 @@ import akka.testkit._
 import akka.testkit.TestEvent.Mute
 import java.io.File
 import org.apache.commons.io.FileUtils
+import akka.cluster.singleton.ClusterSingletonManager
 
 object ClusterShardingSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -46,7 +47,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
     }
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingSpec"
-    akka.contrib.cluster.sharding {
+    akka.cluster.sharding {
       role = backend
       retry-interval = 1 s
       handoff-timeout = 10 s

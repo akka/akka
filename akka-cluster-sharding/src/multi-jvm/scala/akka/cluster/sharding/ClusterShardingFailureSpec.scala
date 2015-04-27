@@ -1,10 +1,10 @@
 /**
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.contrib.pattern
+package akka.cluster.sharding
 
 import java.io.File
-import akka.contrib.pattern.ShardRegion.Passivate
+import akka.cluster.sharding.ShardRegion.Passivate
 
 import scala.concurrent.duration._
 import org.apache.commons.io.FileUtils
@@ -43,8 +43,8 @@ object ClusterShardingFailureSpec extends MultiNodeConfig {
     }
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingFailureSpec"
-    akka.contrib.cluster.sharding.coordinator-failure-backoff = 3s
-    akka.contrib.cluster.sharding.shard-failure-backoff = 3s
+    akka.cluster.sharding.coordinator-failure-backoff = 3s
+    akka.cluster.sharding.shard-failure-backoff = 3s
     """))
 
   testTransport(on = true)

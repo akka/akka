@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.contrib.pattern
+package akka.cluster.sharding
 
 import java.io.File
 
