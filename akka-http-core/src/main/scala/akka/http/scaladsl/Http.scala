@@ -103,7 +103,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                          options: immutable.Traversable[Inet.SocketOption] = Nil,
                          settings: ServerSettings = ServerSettings(system),
                          log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
-    bindAndHandle(Flow[HttpRequest].mapAsync(1, handler), interface, port, backlog, options, settings, log)
+    bindAndHandle(Flow[HttpRequest].mapAsync(1)(handler), interface, port, backlog, options, settings, log)
 
   /**
    * The type of the server-side HTTP layer as a stand-alone BidiStage
@@ -374,7 +374,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     implicit system: ActorSystem, fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
     val parallelism = settings.pipeliningLimit * settings.maxConnections
-    Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism, {
+    Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
       case (request, userContext) ⇒
         val (effectiveRequest, gatewayFuture) = f(request)
         val result = Promise[(Try[HttpResponse], T)]() // TODO: simplify to `transformWith` when on Scala 2.12
@@ -382,7 +382,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
           .flatMap(_(effectiveRequest))(fm.executionContext)
           .onComplete(responseTry ⇒ result.success(responseTry -> userContext))(fm.executionContext)
         result.future
-    })
+    }
   }
 
   private def hostHeader(host: String, port: Int, scheme: String) = headers.Host(host, Uri.normalizePort(port, scheme))
@@ -434,7 +434,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * Returns the materialization result of the underlying flow materialization.
      */
     def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: FlowMaterializer): Unit =
-      handleWith(Flow[HttpRequest].mapAsync(1, handler))
+      handleWith(Flow[HttpRequest].mapAsync(1)(handler))
   }
 
   /**

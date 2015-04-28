@@ -262,7 +262,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
             case SessionBytes(s, bytes) ⇒ bytes.map(b ⇒ SessionBytes(s, ByteString(b)))
           }
           .take(5)
-          .mapAsync(5, x ⇒ later(500.millis, system.scheduler)(Future.successful(x)))
+          .mapAsync(5)(x ⇒ later(500.millis, system.scheduler)(Future.successful(x)))
           .via(super.flow)
       override def rightClosing = IgnoreCancel
 
@@ -279,7 +279,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
             case SessionBytes(s, bytes) ⇒ bytes.map(b ⇒ SessionBytes(s, ByteString(b)))
           }
           .take(5)
-          .mapAsync(5, x ⇒ later(500.millis, system.scheduler)(Future.successful(x)))
+          .mapAsync(5)(x ⇒ later(500.millis, system.scheduler)(Future.successful(x)))
           .via(super.flow)
       override def rightClosing = IgnoreBoth
 

@@ -28,7 +28,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka
         .take(N)
         .map(id ⇒ HttpRequest(uri = s"/r$id"))
         .via(Http().outgoingConnection(serverHostName, serverPort))
-        .mapAsync(4, _.entity.toStrict(1.second))
+        .mapAsync(4)(_.entity.toStrict(1.second))
         .map { r ⇒ val s = r.data.utf8String; log.debug(s); s.toInt }
         .runFold(0)(_ + _)
 
@@ -60,7 +60,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka
         .take(N)
         .map(id ⇒ HttpRequest(uri = s"/r$id"))
         .via(doubleConnection)
-        .mapAsync(4, _.entity.toStrict(1.second))
+        .mapAsync(4)(_.entity.toStrict(1.second))
         .map { r ⇒ val s = r.data.utf8String; log.debug(s); s.toInt }
         .runFold(0)(_ + _)
 

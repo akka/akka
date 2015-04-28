@@ -328,7 +328,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Source[T, Mat] =
-    new Source(delegate.mapAsync(parallelism, f.apply))
+    new Source(delegate.mapAsync(parallelism)(f.apply))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -341,7 +341,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Source[T, Mat] =
-    new Source(delegate.mapAsyncUnordered(parallelism, f.apply))
+    new Source(delegate.mapAsyncUnordered(parallelism)(f.apply))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
