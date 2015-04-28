@@ -407,7 +407,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](parallelism: Int, f: Out ⇒ Future[T]): Repr[T, Mat] =
+  def mapAsync[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] =
     andThen(MapAsync(parallelism, f.asInstanceOf[Any ⇒ Future[Any]]))
 
   /**
@@ -436,7 +436,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](parallelism: Int, f: Out ⇒ Future[T]): Repr[T, Mat] =
+  def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] =
     andThen(MapAsyncUnordered(parallelism, f.asInstanceOf[Any ⇒ Future[Any]]))
 
   /**

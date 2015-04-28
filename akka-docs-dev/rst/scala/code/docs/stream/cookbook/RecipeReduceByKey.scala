@@ -32,7 +32,7 @@ class RecipeReduceByKey extends RecipeSpec {
       val counts: Source[(String, Int), Unit] =
         countedWords
           .buffer(MaximumDistinctWords, OverflowStrategy.fail)
-          .mapAsync(4, identity)
+          .mapAsync(4)(identity)
       //#word-count
 
       Await.result(counts.grouped(10).runWith(Sink.head), 3.seconds).toSet should be(Set(
@@ -62,7 +62,7 @@ class RecipeReduceByKey extends RecipeSpec {
             }
         }
 
-        reducedValues.buffer(maximumGroupSize, OverflowStrategy.fail).mapAsync(4, identity)
+        reducedValues.buffer(maximumGroupSize, OverflowStrategy.fail).mapAsync(4)(identity)
       }
 
       val wordCounts = words.via(reduceByKey(

@@ -79,7 +79,7 @@ class RecipeGlobalRateLimit extends RecipeSpec {
       def limitGlobal[T](limiter: ActorRef, maxAllowedWait: FiniteDuration): Flow[T, T, Unit] = {
         import akka.pattern.ask
         import akka.util.Timeout
-        Flow[T].mapAsync(4, (element: T) => {
+        Flow[T].mapAsync(4)((element: T) => {
           import system.dispatcher
           implicit val triggerTimeout = Timeout(maxAllowedWait)
           val limiterTriggerFuture = limiter ? Limiter.WantToPass
