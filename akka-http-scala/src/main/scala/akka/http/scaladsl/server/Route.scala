@@ -33,7 +33,7 @@ object Route {
    * Turns a `Route` into an server flow.
    */
   def handlerFlow(route: Route)(implicit setup: RoutingSetup): Flow[HttpRequest, HttpResponse, Unit] =
-    Flow[HttpRequest].mapAsync(1, asyncHandler(route))
+    Flow[HttpRequest].mapAsync(1)(asyncHandler(route))
 
   /**
    * Turns a `Route` into an async handler function.

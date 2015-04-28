@@ -280,7 +280,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       Await.result(x
         .fast.flatMap {
           _.parts
-            .mapAsync(1, _ toStrict 1.second)
+            .mapAsync(1)(_ toStrict 1.second)
             .grouped(100)
             .runWith(Sink.head)
         }
