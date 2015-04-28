@@ -62,7 +62,7 @@ private[http] object HttpServerBluePrint {
     val requestPreparation =
       Flow[RequestOutput]
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
-        .headAndTail
+        .via(headAndTailFlow)
         .map {
           case (RequestStart(method, uri, protocol, headers, createEntity, _, _), entityParts) ⇒
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, defaultHostHeader)
