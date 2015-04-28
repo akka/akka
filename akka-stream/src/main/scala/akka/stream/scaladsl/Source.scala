@@ -165,8 +165,6 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
 
 object Source extends SourceApply {
 
-  import OperationAttributes.none
-
   private[stream] def apply[Out, Mat](module: SourceModule[Out, Mat]): Source[Out, Mat] =
     new Source(module)
 
@@ -355,11 +353,14 @@ object Source extends SourceApply {
    * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
    * not matter.
    *
-   * The stream can be completed successfully by sending [[akka.actor.PoisonPill]] or
-   * [[akka.actor.Status.Success]] to the actor reference.
+   * The stream can be completed successfully by sending the actor referende an [[akka.actor.Status.Success]]
+   * messagein which case already buffered elements will be signalled before signalling completion,
+   * or by sending a [[akka.actor.PoisonPill]] in which case completion will be signalled immediatly.
    *
    * The stream can be completed with failure by sending [[akka.actor.Status.Failure]] to the
-   * actor reference.
+   * actor reference. In case the Actor is still draining its internal buffer (after having received
+   * an [[akka.actor.Status.Success]]) before signalling completion and it receives a [[akka.actor.Status.Failure]],
+   * the failure will be signalled downstream immediatly (instead of the completion signal).
    *
    * The actor will be stopped when the stream is completed, failed or cancelled from downstream,
    * i.e. you can watch it to get notified when that happens.
