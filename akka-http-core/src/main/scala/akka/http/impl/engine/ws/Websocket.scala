@@ -47,7 +47,7 @@ private[http] object Websocket {
     /** Collects user-level API messages from MessageDataParts */
     val collectMessage: Flow[Source[MessageDataPart, Unit], Message, Unit] =
       Flow[Source[MessageDataPart, Unit]]
-        .headAndTail
+        .via(headAndTailFlow)
         .map {
           case (TextMessagePart(text, true), remaining) ⇒
             TextMessage.Strict(text)
