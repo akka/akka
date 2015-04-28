@@ -456,7 +456,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * This is the common interface for all events which indicate that a connection
    * has been closed or half-closed.
    */
-  sealed trait ConnectionClosed extends Event {
+  sealed trait ConnectionClosed extends Event with DeadLetterSuppression {
     /**
      * `true` iff the connection has been closed in response to an [[Abort]] command.
      */
@@ -532,7 +532,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     }
     val ReceivedMessageSizeLimit: Int = getString("max-received-message-size") match {
       case "unlimited" ⇒ Int.MaxValue
-      case x           ⇒ getIntBytes("received-message-size-limit")
+      case x           ⇒ getIntBytes("max-received-message-size")
     }
     val ManagementDispatcher: String = getString("management-dispatcher")
     val FileIODispatcher: String = getString("file-io-dispatcher")

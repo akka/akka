@@ -56,7 +56,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
         rebalance-threshold = 2
         max-simultaneous-rebalance = 1
       }
-    }  
+    }
     """))
 
   nodeConfig(sixth) {
@@ -77,7 +77,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
 
     context.setReceiveTimeout(120.seconds)
 
-    // self.path.parent.name is the type name (utf-8 URL-encoded) 
+    // self.path.parent.name is the type name (utf-8 URL-encoded)
     // self.path.name is the entry identifier (utf-8 URL-encoded)
     override def persistenceId: String = self.path.parent.name + "-" + self.path.name
 
@@ -114,7 +114,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
     case msg @ Get(id)              ⇒ (id.toString, msg)
   }
 
-  val shardResolver: ShardRegion.ShardResolver = msg ⇒ msg match {
+  val shardResolver: ShardRegion.ShardResolver = {
     case EntryEnvelope(id, _) ⇒ (id % 12).toString
     case Get(id)              ⇒ (id % 12).toString
   }
@@ -407,7 +407,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
           }
         }
 
-        // add more shards, which should later trigger rebalance to new node sixth 
+        // add more shards, which should later trigger rebalance to new node sixth
         for (n ← 5 to 10)
           region ! EntryEnvelope(n, Increment)
 
@@ -468,7 +468,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         entryProps = Some(Props[Counter]),
         idExtractor = idExtractor,
         shardResolver = shardResolver)
-      //#counter-start  
+      //#counter-start
       ClusterSharding(system).start(
         typeName = "AnotherCounter",
         entryProps = Some(Props[Counter]),

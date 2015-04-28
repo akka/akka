@@ -8,7 +8,7 @@ import scala.language.postfixOps
 import akka.testkit.{ PerformanceTest, ImplicitSender, AkkaSpec }
 import java.lang.management.ManagementFactory
 import scala.concurrent.duration._
-import akka.TestUtils
+import akka.testkit.SocketUtil
 import scala.util.Try
 
 object ActorPerfSpec {
@@ -104,7 +104,8 @@ class ActorPerfSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
     System.gc()
     val memAfter = memMx.getHeapMemoryUsage
     driver ! PoisonPill
-    TestUtils.verifyActorTermination(driver, 15 seconds)
+    watch(driver)
+    expectTerminated(driver, 15.seconds)
     (duration, memAfter.getUsed - memBefore.getUsed)
   }
 

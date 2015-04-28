@@ -505,6 +505,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
         case _                                   ⇒ Disassociated(Unknown)
       }
       handlerFuture foreach { _ notify disassociateNotification }
+      wrappedHandle.disassociate()
 
     case StopEvent(reason, _, ListenerReady(handler, wrappedHandle)) ⇒
       val disassociateNotification = reason match {

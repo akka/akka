@@ -8,7 +8,7 @@ import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
 import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.io.Udp._
-import akka.TestUtils._
+import akka.testkit.SocketUtil._
 
 class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO

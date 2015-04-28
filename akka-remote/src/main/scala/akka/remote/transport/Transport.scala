@@ -9,6 +9,7 @@ import akka.util.ByteString
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.AkkaException
 import scala.util.control.NoStackTrace
+import akka.actor.DeadLetterSuppression
 
 object Transport {
 
@@ -164,7 +165,7 @@ object AssociationHandle {
    * @param info
    *   information about the reason of disassociation
    */
-  case class Disassociated(info: DisassociateInfo) extends HandleEvent
+  case class Disassociated(info: DisassociateInfo) extends HandleEvent with DeadLetterSuppression
 
   /**
    * Supertype of possible disassociation reasons

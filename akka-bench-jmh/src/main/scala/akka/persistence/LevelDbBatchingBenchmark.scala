@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.persistence.journal.AsyncWriteTarget._
-import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
+import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.testkit.TestProbe
 import org.apache.commons.io.FileUtils
 import org.openjdk.jmh.annotations._
@@ -49,7 +49,7 @@ class LevelDbBatchingBenchmark {
     deleteStorage(sys)
     SharedLeveldbJournal.setStore(store, sys)
 
-    probe =  TestProbe()(sys)
+    probe = TestProbe()(sys)
     store = sys.actorOf(Props[SharedLeveldbStore], "store")
   }
 

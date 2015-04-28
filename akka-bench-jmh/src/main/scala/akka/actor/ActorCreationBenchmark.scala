@@ -28,7 +28,7 @@ class ActorCreationBenchmark {
 
   var i = 1
   def name = {
-    i +=1
+    i += 1
     "some-rather-long-actor-name-actor-" + i
   }
 

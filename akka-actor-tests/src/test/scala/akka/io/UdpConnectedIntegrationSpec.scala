@@ -7,7 +7,7 @@ import java.net.InetSocketAddress
 import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
 import akka.util.ByteString
 import akka.actor.ActorRef
-import akka.TestUtils._
+import akka.testkit.SocketUtil._
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
