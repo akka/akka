@@ -32,18 +32,19 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
   def receive = {
     case _: Request ⇒
       // totalDemand is tracked by super
-      while (totalDemand > 0L && !buffer.isEmpty)
-        onNext(buffer.dequeue())
+      if (bufferSize != 0)
+        while (totalDemand > 0L && !buffer.isEmpty)
+          onNext(buffer.dequeue())
 
     case Cancel ⇒
       context.stop(self)
 
     case _: Status.Success ⇒
-      context.stop(self) // will complete the stream successfully
+      if (bufferSize == 0 || buffer.isEmpty) context.stop(self) // will complete the stream successfully
+      else context.become(drainBufferThenComplete)
 
     case Status.Failure(cause) if isActive ⇒
-      onError(cause)
-      context.stop(self)
+      onErrorThenStop(cause)
 
     case elem if isActive ⇒
       if (totalDemand > 0L)
@@ -63,12 +64,31 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
           buffer.clear()
           buffer.enqueue(elem)
         case Fail ⇒
-          onError(new Fail.BufferOverflowException(s"Buffer overflow (max capacity was: $bufferSize)!"))
-          context.stop(self)
+          onErrorThenStop(new Fail.BufferOverflowException(s"Buffer overflow (max capacity was: $bufferSize)!"))
         case Backpressure ⇒
         // there is a precondition check in Source.actorRefSource factory method
       }
+  }
 
+  def drainBufferThenComplete: Receive = {
+    case Cancel ⇒
+      context.stop(self)
+
+    case Status.Failure(cause) if isActive ⇒
+      // errors must be signalled as soon as possible,
+      // even if previously valid completion was requested via Status.Success
+      onErrorThenStop(cause)
+
+    case _: Request ⇒
+      // totalDemand is tracked by super
+      while (totalDemand > 0L && !buffer.isEmpty)
+        onNext(buffer.dequeue())
+
+      if (buffer.isEmpty) context.stop(self) // will complete the stream successfully
+
+    case elem if isActive ⇒
+      log.debug("Dropping element because Status.Success received already, " +
+        "only draining already buffered elements: [{}] (pending: [{}])", elem, buffer.used)
   }
 
 }
