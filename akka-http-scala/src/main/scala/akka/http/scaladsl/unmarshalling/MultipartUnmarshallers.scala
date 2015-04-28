@@ -88,7 +88,7 @@ trait MultipartUnmarshallers {
                   val bodyParts = entity.dataBytes
                     .transform(() ⇒ parser)
                     .splitWhen(_.isInstanceOf[BodyPartStart])
-                    .headAndTail
+                    .via(headAndTailFlow)
                     .collect {
                       case (BodyPartStart(headers, createEntity), entityParts) ⇒ createBodyPart(createEntity(entityParts), headers)
                       case (ParseError(errorInfo), _)                          ⇒ throw ParsingException(errorInfo)
