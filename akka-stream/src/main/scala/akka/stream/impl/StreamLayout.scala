@@ -18,8 +18,10 @@ import akka.event.Logging.simpleName
  */
 private[akka] object StreamLayout {
 
-  // compile-time constant
-  final val Debug = true
+  // Turn this on to add run-time checks about Stream consistency during
+  // stream operations.
+  // (compile-time constant)
+  final val Debug = false
 
   // TODO: Materialization order
   // TODO: Special case linear composites
