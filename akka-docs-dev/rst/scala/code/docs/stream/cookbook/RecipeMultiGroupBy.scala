@@ -44,7 +44,7 @@ class RecipeMultiGroupBy extends RecipeSpec {
 
       val result = multiGroups.map {
         case (topic, topicMessages) => topicMessages.grouped(10).map(topic.name + _.mkString("[", ", ", "]")).runWith(Sink.head)
-      }.mapAsync(4, identity).grouped(10).runWith(Sink.head)
+      }.mapAsync(4)(identity).grouped(10).runWith(Sink.head)
 
       Await.result(result, 3.seconds).toSet should be(Set(
         "1[1: a, 1: b, all: c, all: d, 1: e]",

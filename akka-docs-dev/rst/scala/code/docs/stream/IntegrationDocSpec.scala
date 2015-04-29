@@ -141,14 +141,14 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#email-addresses-mapAsync
     val emailAddresses: Source[String, Unit] =
       authors
-        .mapAsync(4, author => addressSystem.lookupEmail(author.handle))
+        .mapAsync(4)(author => addressSystem.lookupEmail(author.handle))
         .collect { case Some(emailAddress) => emailAddress }
     //#email-addresses-mapAsync
 
     //#send-emails
     val sendEmails: RunnableFlow[Unit] =
       emailAddresses
-        .mapAsync(4, address => {
+        .mapAsync(4)(address => {
           emailServer.send(
             Email(to = address, title = "Akka", body = "I like your tweet"))
         })
@@ -177,7 +177,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val emailAddresses: Source[String, Unit] =
       authors.via(
-        Flow[Author].mapAsync(4, author => addressSystem.lookupEmail(author.handle))
+        Flow[Author].mapAsync(4)(author => addressSystem.lookupEmail(author.handle))
           .withAttributes(supervisionStrategy(resumingDecider)))
     //#email-addresses-mapAsync-supervision
   }
@@ -193,12 +193,12 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val emailAddresses: Source[String, Unit] =
       authors
-        .mapAsyncUnordered(4, author => addressSystem.lookupEmail(author.handle))
+        .mapAsyncUnordered(4)(author => addressSystem.lookupEmail(author.handle))
         .collect { case Some(emailAddress) => emailAddress }
 
     val sendEmails: RunnableFlow[Unit] =
       emailAddresses
-        .mapAsyncUnordered(4, address => {
+        .mapAsyncUnordered(4)(address => {
           emailServer.send(
             Email(to = address, title = "Akka", body = "I like your tweet"))
         })
@@ -225,7 +225,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val authors = tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
     val phoneNumbers =
-      authors.mapAsync(4, author => addressSystem.lookupPhoneNumber(author.handle))
+      authors.mapAsync(4)(author => addressSystem.lookupPhoneNumber(author.handle))
         .collect { case Some(phoneNo) => phoneNo }
 
     //#blocking-mapAsync
@@ -233,7 +233,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val sendTextMessages: RunnableFlow[Unit] =
       phoneNumbers
-        .mapAsync(4, phoneNo => {
+        .mapAsync(4)(phoneNo => {
           Future {
             smsServer.send(
               TextMessage(to = phoneNo, body = "I like your tweet"))
@@ -262,7 +262,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val authors = tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
     val phoneNumbers =
-      authors.mapAsync(4, author => addressSystem.lookupPhoneNumber(author.handle))
+      authors.mapAsync(4)(author => addressSystem.lookupPhoneNumber(author.handle))
         .collect { case Some(phoneNo) => phoneNo }
 
     //#blocking-map
@@ -296,7 +296,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val timeout = Timeout(3.seconds)
     val saveTweets: RunnableFlow[Unit] =
       akkaTweets
-        .mapAsync(4, tweet => database ? Save(tweet))
+        .mapAsync(4)(tweet => database ? Save(tweet))
         .to(Sink.ignore)
     //#save-tweets
 
@@ -327,7 +327,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })
-      .mapAsync(4, service.convert)
+      .mapAsync(4)(service.convert)
       .runForeach(elem => println(s"after: $elem"))
     //#sometimes-slow-mapAsync
 
@@ -359,7 +359,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })
-      .mapAsyncUnordered(4, service.convert)
+      .mapAsyncUnordered(4)(service.convert)
       .runForeach(elem => println(s"after: $elem"))
     //#sometimes-slow-mapAsyncUnordered
 

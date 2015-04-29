@@ -28,7 +28,7 @@ class GraphMatValueSpec extends AkkaSpec {
       val f = FlowGraph.closed(foldSink) { implicit b ⇒
         fold ⇒
           Source(1 to 10) ~> fold
-          b.matValue.mapAsync(4, identity) ~> Sink(sub)
+          b.matValue.mapAsync(4)(identity) ~> Sink(sub)
       }.run()
 
       val r1 = Await.result(f, 3.seconds)
@@ -45,8 +45,8 @@ class GraphMatValueSpec extends AkkaSpec {
         fold ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
           Source(1 to 10) ~> fold
-          b.matValue.mapAsync(4, identity) ~> zip.in0
-          b.matValue.mapAsync(4, identity) ~> zip.in1
+          b.matValue.mapAsync(4)(identity) ~> zip.in0
+          b.matValue.mapAsync(4)(identity) ~> zip.in1
 
           zip.out ~> Sink(sub)
       }.run()
@@ -66,13 +66,13 @@ class GraphMatValueSpec extends AkkaSpec {
     }
 
     "allow exposing the materialized value as port" in {
-      val (f1, f2) = foldFeedbackSource.mapAsync(4, identity).map(_ + 100).toMat(Sink.head)(Keep.both).run()
+      val (f1, f2) = foldFeedbackSource.mapAsync(4)(identity).map(_ + 100).toMat(Sink.head)(Keep.both).run()
       Await.result(f1, 3.seconds) should ===(55)
       Await.result(f2, 3.seconds) should ===(155)
     }
 
     "allow exposing the materialized value as port even if wrapped and the final materialized value is Unit" in {
-      val noMatSource: Source[Int, Unit] = foldFeedbackSource.mapAsync(4, identity).map(_ + 100).mapMaterialized((_) ⇒ ())
+      val noMatSource: Source[Int, Unit] = foldFeedbackSource.mapAsync(4)(identity).map(_ + 100).mapMaterialized((_) ⇒ ())
       Await.result(noMatSource.runWith(Sink.head), 3.seconds) should ===(155)
     }
 
@@ -81,8 +81,8 @@ class GraphMatValueSpec extends AkkaSpec {
         (s1, s2) ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
 
-          s1.outlet.mapAsync(4, identity) ~> zip.in0
-          s2.outlet.mapAsync(4, identity).map(_ * 100) ~> zip.in1
+          s1.outlet.mapAsync(4)(identity) ~> zip.in0
+          s2.outlet.mapAsync(4)(identity).map(_ * 100) ~> zip.in1
           zip.out
       }
 
