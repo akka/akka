@@ -4,13 +4,12 @@
 
 package akka.http.impl.engine.rendering
 
-import akka.http.impl.engine.ws.{ WebsocketSwitch, UpgradeToWebsocketResponseHeader, Handshake }
+import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebsocketResponseHeader }
 
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
-import akka.stream.OperationAttributes._
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
@@ -23,8 +22,7 @@ import headers._
  */
 private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
                                                 responseHeaderSizeHint: Int,
-                                                log: LoggingAdapter,
-                                                websocketSwitch: Option[WebsocketSwitch] = None) {
+                                                log: LoggingAdapter) {
 
   private val renderDefaultServerHeader: Rendering ⇒ Unit =
     serverHeader match {
@@ -54,14 +52,17 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
   def newRenderer: HttpResponseRenderer = new HttpResponseRenderer
 
-  final class HttpResponseRenderer extends PushStage[ResponseRenderingContext, Source[ByteString, Any]] {
+  final class HttpResponseRenderer extends PushStage[ResponseRenderingContext, Source[ResponseRenderingOutput, Any]] {
 
-    private[this] var close = false // signals whether the connection is to be closed after the current response
+    private[this] var closeMode: CloseMode = DontClose // signals what to do after the current response
+    private[this] def close: Boolean = closeMode != DontClose
+    private[this] def closeIf(cond: Boolean): Unit =
+      if (cond) closeMode = CloseConnection
 
     // need this for testing
     private[http] def isComplete = close
 
-    override def onPush(ctx: ResponseRenderingContext, opCtx: Context[Source[ByteString, Any]]): SyncDirective = {
+    override def onPush(ctx: ResponseRenderingContext, opCtx: Context[Source[ResponseRenderingOutput, Any]]): SyncDirective = {
       val r = new ByteStringRendering(responseHeaderSizeHint)
 
       import ctx.response._
@@ -133,7 +134,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             if (!dateSeen) r ~~ dateHeader
 
             // Do we close the connection after this response?
-            close =
+            closeIf {
               // if we are prohibited to keep-alive by the spec
               alwaysClose ||
                 // if the client wants to close and we don't override
@@ -143,6 +144,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
                   case `HTTP/1.1` ⇒ (connHeader ne null) && connHeader.hasClose
                   case `HTTP/1.0` ⇒ if (connHeader eq null) ctx.requestProtocol == `HTTP/1.1` else !connHeader.hasKeepAlive
                 })
+            }
 
             // Do we render an explicit Connection header?
             val renderConnectionHeader =
@@ -152,10 +154,11 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
             if (renderConnectionHeader)
               r ~~ Connection ~~ (if (close) CloseBytes else KeepAliveBytes) ~~ CrLf
-            else if (connHeader != null && connHeader.hasUpgrade && websocketSwitch.isDefined) {
+            else if (connHeader != null && connHeader.hasUpgrade) {
               r ~~ connHeader ~~ CrLf
-              val websocketHeader = headers.collectFirst { case u: UpgradeToWebsocketResponseHeader ⇒ u }
-              websocketHeader.foreach(header ⇒ websocketSwitch.get.switchToWebsocket(header.handlerFlow)(header.mat))
+              headers
+                .collectFirst { case u: UpgradeToWebsocketResponseHeader ⇒ u }
+                .foreach { header ⇒ closeMode = SwitchToWebsocket(header.handlerFlow) }
             }
             if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
@@ -164,17 +167,24 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
       def renderContentLengthHeader(contentLength: Long) =
         if (status.allowsEntity) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
-      def byteStrings(entityBytes: ⇒ Source[ByteString, Any]): Source[ByteString, Any] =
-        renderByteStrings(r, entityBytes, skipEntity = noEntity)
+      def byteStrings(entityBytes: ⇒ Source[ByteString, Any]): Source[ResponseRenderingOutput, Any] =
+        renderByteStrings(r, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
 
-      def completeResponseRendering(entity: ResponseEntity): Source[ByteString, Any] =
+      def completeResponseRendering(entity: ResponseEntity): Source[ResponseRenderingOutput, Any] =
         entity match {
           case HttpEntity.Strict(_, data) ⇒
             renderHeaders(headers.toList)
             renderEntityContentType(r, entity)
             renderContentLengthHeader(data.length) ~~ CrLf
-            val entityBytes = if (noEntity) ByteString.empty else data
-            Source.single(r.get ++ entityBytes)
+
+            if (!noEntity) r ~~ data
+
+            Source.single {
+              closeMode match {
+                case SwitchToWebsocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebsocket(r.get, handler)
+                case _                          ⇒ ResponseRenderingOutput.HttpData(r.get)
+              }
+            }
 
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderHeaders(headers.toList)
@@ -205,6 +215,11 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
         opCtx.push(result)
     }
   }
+
+  sealed trait CloseMode
+  case object DontClose extends CloseMode
+  case object CloseConnection extends CloseMode
+  case class SwitchToWebsocket(handlerFlow: Flow[FrameEvent, FrameEvent, Any]) extends CloseMode
 }
 
 /**
@@ -215,3 +230,11 @@ private[http] final case class ResponseRenderingContext(
   requestMethod: HttpMethod = HttpMethods.GET,
   requestProtocol: HttpProtocol = HttpProtocols.`HTTP/1.1`,
   closeRequested: Boolean = false)
+
+/** INTERNAL API */
+private[http] sealed trait ResponseRenderingOutput
+/** INTERNAL API */
+private[http] object ResponseRenderingOutput {
+  private[http] case class HttpData(bytes: ByteString) extends ResponseRenderingOutput
+  private[http] case class SwitchToWebsocket(httpResponseBytes: ByteString, handlerFlow: Flow[FrameEvent, FrameEvent, Any]) extends ResponseRenderingOutput
+}

@@ -11,7 +11,6 @@ import scala.util.Random
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import org.scalatest.Inside
-import akka.event.NoLogging
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.{ FlowMaterializer, ActorFlowMaterializer }
@@ -662,7 +661,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
     }
   }
   class TestSetup extends HttpServerTestSetupBase {
-    implicit def system: ActorSystem = spec.system
-    implicit def materializer: FlowMaterializer = spec.materializer
+    implicit def system = spec.system
+    implicit def materializer = spec.materializer
   }
 }

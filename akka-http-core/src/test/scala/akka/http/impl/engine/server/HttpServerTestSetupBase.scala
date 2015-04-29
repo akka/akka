@@ -61,6 +61,7 @@ abstract class HttpServerTestSetupBase {
     requests.expectNext()
   }
   def expectNoRequest(max: FiniteDuration): Unit = requests.expectNoMsg(max)
+  def expectNetworkClose(): Unit = netOut.expectComplete()
 
   def send(data: ByteString): Unit = netInSub.sendNext(data)
   def send(data: String): Unit = send(ByteString(data, "UTF8"))
