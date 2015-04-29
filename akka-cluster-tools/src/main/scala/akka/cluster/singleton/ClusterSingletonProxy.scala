@@ -15,43 +15,76 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberExited
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import com.typesafe.config.Config
+import akka.actor.NoSerializationVerificationNeeded
+
+object ClusterSingletonProxySettings {
+
+  /**
+   * Create settings from the default configuration
+   * `akka.cluster.singleton-proxy`.
+   */
+  def apply(system: ActorSystem): ClusterSingletonProxySettings =
+    apply(system.settings.config.getConfig("akka.cluster.singleton-proxy"))
+
+  /**
+   * Create settings from a configuration with the same layout as
+   * the default configuration `akka.cluster.singleton-proxy`.
+   */
+  def apply(config: Config): ClusterSingletonProxySettings =
+    new ClusterSingletonProxySettings(
+      role = roleOption(config.getString("role")),
+      singletonIdentificationInterval = config.getDuration("singleton-identification-interval", MILLISECONDS).millis)
+
+  /**
+   * Java API: Create settings from the default configuration
+   * `akka.cluster.singleton-proxy`.
+   */
+  def create(system: ActorSystem): ClusterSingletonProxySettings = apply(system)
+
+  /**
+   * Java API: Create settings from a configuration with the same layout as
+   * the default configuration `akka.cluster.singleton-proxy`.
+   */
+  def create(config: Config): ClusterSingletonProxySettings = apply(config)
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def roleOption(role: String): Option[String] =
+    if (role == "") None else Option(role)
+
+}
+
+/**
+ * @param role The role of the cluster nodes where the singleton can be deployed. If None, then any node will do.
+ * @param singletonIdentificationInterval Interval at which the proxy will try to resolve the singleton instance.
+ */
+final class ClusterSingletonProxySettings(
+  val role: Option[String],
+  val singletonIdentificationInterval: FiniteDuration) extends NoSerializationVerificationNeeded {
+
+  def withRole(role: String): ClusterSingletonProxySettings = copy(role = ClusterSingletonProxySettings.roleOption(role))
+
+  def withRole(role: Option[String]): ClusterSingletonProxySettings = copy(role = role)
+
+  def withSingletonIdentificationInterval(singletonIdentificationInterval: FiniteDuration): ClusterSingletonProxySettings =
+    copy(singletonIdentificationInterval = singletonIdentificationInterval)
+
+  private def copy(role: Option[String] = role,
+                   singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval): ClusterSingletonProxySettings =
+    new ClusterSingletonProxySettings(role, singletonIdentificationInterval)
+}
 
 object ClusterSingletonProxy {
   /**
    * Scala API: Factory method for `ClusterSingletonProxy` [[akka.actor.Props]].
    *
    * @param singletonPath The logical path of the singleton, i.e., /user/singletonManager/singleton.
-   * @param role The role of the cluster nodes where the singleton can be deployed. If None, then any node will do.
-   * @param singletonIdentificationInterval Interval at which the proxy will try to resolve the singleton instance.
-   * @return The singleton proxy Props.
+   * @param settings see [[ClusterSingletonProxySettings]]
    */
-  def props(singletonPath: String, role: Option[String], singletonIdentificationInterval: FiniteDuration = 1.second): Props = Props(classOf[ClusterSingletonProxy], singletonPath, role, singletonIdentificationInterval)
-
-  /**
-   * Java API: Factory method for `ClusterSingletonProxy` [[akka.actor.Props]].
-   *
-   * @param singletonPath The logical path of the singleton, i.e., /user/singletonManager/singleton.
-   * @param role The role of the cluster nodes where the singleton can be deployed. If null, then any node will do.
-   * @param singletonIdentificationInterval Interval at which the proxy will try to resolve the singleton instance.
-   * @return The singleton proxy Props.
-   */
-  def props(singletonPath: String, role: String, singletonIdentificationInterval: FiniteDuration): Props =
-    props(singletonPath, roleOption(role), singletonIdentificationInterval)
-
-  /**
-   * Java API: Factory method for `ClusterSingletonProxy` [[akka.actor.Props]]. The interval at which the proxy will try
-   * to resolve the singleton instance is set to 1 second.
-   *
-   * @param singletonPath The logical path of the singleton, i.e., /user/singletonManager/singleton.
-   * @param role The role of the cluster nodes where the singleton can be deployed. If null, then any node will do.
-   * @return The singleton proxy Props.
-   */
-  def defaultProps(singletonPath: String, role: String): Props = props(singletonPath, role, 1 second)
-
-  private def roleOption(role: String): Option[String] = role match {
-    case null | "" ⇒ None
-    case _         ⇒ Some(role)
-  }
+  def props(singletonPath: String, settings: ClusterSingletonProxySettings): Props =
+    Props(new ClusterSingletonProxy(singletonPath, settings)).withDeploy(Deploy.local)
 
   private case object TryToIdentifySingleton
 
@@ -74,16 +107,9 @@ object ClusterSingletonProxy {
  *
  * Note that this is a best effort implementation: messages can always be lost due to the distributed nature of the
  * actors involved.
- *
- * @param singletonPathString The logical path of the singleton. This does not include the node address or actor system
- *                            name, e.g., it can be something like /user/singletonManager/singleton.
- * @param role Cluster role on which the singleton is deployed. This is required to keep track only of the members where
- *             the singleton can actually exist.
- * @param singletonIdentificationInterval Periodicity at which the proxy sends the `Identify` message to the current
- *                                        singleton actor selection.
  */
-class ClusterSingletonProxy(singletonPathString: String, role: Option[String], singletonIdentificationInterval: FiniteDuration) extends Actor with Stash with ActorLogging {
-
+class ClusterSingletonProxy(singletonPathString: String, settings: ClusterSingletonProxySettings) extends Actor with Stash with ActorLogging {
+  import settings._
   val singletonPath = singletonPathString.split("/")
   var identifyCounter = 0
   var identifyId = createIdentifyId(identifyCounter)

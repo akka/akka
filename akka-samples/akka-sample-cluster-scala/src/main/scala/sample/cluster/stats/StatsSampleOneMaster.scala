@@ -5,7 +5,9 @@ import akka.actor.ActorSystem
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.singleton.ClusterSingletonManager
+import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.cluster.singleton.ClusterSingletonProxy
+import akka.cluster.singleton.ClusterSingletonProxySettings
 
 object StatsSampleOneMaster {
   def main(args: Array[String]): Unit = {
@@ -29,14 +31,17 @@ object StatsSampleOneMaster {
 
       //#create-singleton-manager
       system.actorOf(ClusterSingletonManager.props(
-        singletonProps = Props[StatsService], singletonName = "statsService",
-        terminationMessage = PoisonPill, role = Some("compute")),
+        singletonProps = Props[StatsService],
+        terminationMessage = PoisonPill,
+        settings = ClusterSingletonManagerSettings(system)
+          .withSingletonName("statsService").withRole("compute")),
         name = "singleton")
       //#create-singleton-manager
 
       //#singleton-proxy
       system.actorOf(ClusterSingletonProxy.props(singletonPath = "/user/singleton/statsService",
-        role = Some("compute")), name = "statsServiceProxy")
+        settings = ClusterSingletonProxySettings(system).withRole("compute")),
+        name = "statsServiceProxy")
       //#singleton-proxy
     }
   }
