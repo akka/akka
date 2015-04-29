@@ -539,7 +539,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   override def afterAll() = system.shutdown()
 
   class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0")))
-    extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging, None) {
+    extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging) {
 
     def renderTo(expected: String): Matcher[HttpResponse] =
       renderTo(expected, close = false) compose (ResponseRenderingContext(_))
@@ -547,10 +547,15 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     def renderTo(expected: String, close: Boolean): Matcher[ResponseRenderingContext] =
       equal(expected.stripMarginWithNewline("\r\n") -> close).matcher[(String, Boolean)] compose { ctx ⇒
         val renderer = newRenderer
-        val byteStringSource = Await.result(Source.single(ctx)
+        val rendererOutputSource = Await.result(Source.single(ctx)
           .transform(() ⇒ renderer).named("renderer")
           .runWith(Sink.head), 1.second)
-        val future = byteStringSource.grouped(1000).runWith(Sink.head).map(_.reduceLeft(_ ++ _).utf8String)
+        val future =
+          rendererOutputSource.grouped(1000).map(
+            _.map {
+              case ResponseRenderingOutput.HttpData(bytes)      ⇒ bytes
+              case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
+            }).runWith(Sink.head).map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis) -> renderer.isComplete
       }
 
