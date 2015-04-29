@@ -28,7 +28,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
-      val p = Source(1 to 4).mapAsyncUnordered(4, n ⇒ Future {
+      val p = Source(1 to 4).mapAsyncUnordered(4)(n ⇒ Future {
         Await.ready(latch(n), 5.seconds)
         n
       }).to(Sink(c)).run()
@@ -49,7 +49,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val probe = TestProbe()
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 20).mapAsyncUnordered(4, n ⇒ Future {
+      val p = Source(1 to 20).mapAsyncUnordered(4)(n ⇒ Future {
         probe.ref ! n
         n
       }).to(Sink(c)).run()
@@ -76,7 +76,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).mapAsyncUnordered(4, n ⇒ Future {
+      val p = Source(1 to 5).mapAsyncUnordered(4)(n ⇒ Future {
         if (n == 3) throw new RuntimeException("err1") with NoStackTrace
         else {
           Await.ready(latch, 10.seconds)
@@ -93,7 +93,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).mapAsyncUnordered(4, n ⇒
+      val p = Source(1 to 5).mapAsyncUnordered(4)(n ⇒
         if (n == 3) throw new RuntimeException("err2") with NoStackTrace
         else {
           Future {
@@ -111,7 +111,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
     "resume after future failure" in {
       implicit val ec = system.dispatcher
       Source(1 to 5)
-        .mapAsyncUnordered(4, n ⇒ Future {
+        .mapAsyncUnordered(4)(n ⇒ Future {
           if (n == 3) throw new RuntimeException("err3") with NoStackTrace
           else n
         })
@@ -124,7 +124,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
 
     "finish after future failure" in assertAllStagesStopped {
       import system.dispatcher
-      Await.result(Source(1 to 3).mapAsyncUnordered(1, n ⇒ Future {
+      Await.result(Source(1 to 3).mapAsyncUnordered(1)(n ⇒ Future {
         if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
         else n
       }).withAttributes(supervisionStrategy(resumingDecider))
@@ -135,7 +135,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
     "resume when mapAsyncUnordered throws" in {
       implicit val ec = system.dispatcher
       Source(1 to 5)
-        .mapAsyncUnordered(4, n ⇒
+        .mapAsyncUnordered(4)(n ⇒
           if (n == 3) throw new RuntimeException("err4") with NoStackTrace
           else Future(n))
         .withAttributes(supervisionStrategy(resumingDecider))
@@ -147,7 +147,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
 
     "signal NPE when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b")).mapAsyncUnordered(4, elem ⇒ Future.successful(null)).to(Sink(c)).run()
+      val p = Source(List("a", "b")).mapAsyncUnordered(4)(elem ⇒ Future.successful(null)).to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
@@ -156,7 +156,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
     "resume when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
       val p = Source(List("a", "b", "c"))
-        .mapAsyncUnordered(4, elem ⇒ if (elem == "b") Future.successful(null) else Future.successful(elem))
+        .mapAsyncUnordered(4)(elem ⇒ if (elem == "b") Future.successful(null) else Future.successful(elem))
         .withAttributes(supervisionStrategy(resumingDecider))
         .to(Sink(c)).run()
       val sub = c.expectSubscription()
@@ -169,7 +169,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val pub = TestPublisher.manualProbe[Int]()
       val sub = TestSubscriber.manualProbe[Int]()
 
-      Source(pub).mapAsyncUnordered(4, Future.successful).runWith(Sink(sub))
+      Source(pub).mapAsyncUnordered(4)(Future.successful).runWith(Sink(sub))
 
       val upstream = pub.expectSubscription()
       upstream.expectRequest()
