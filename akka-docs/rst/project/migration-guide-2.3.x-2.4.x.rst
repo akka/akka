@@ -217,3 +217,11 @@ named ``akka-cluster-sharding``. You need to replace this dependency if you use 
 The classes changed package name from ``akka.contrib.pattern`` to ``akka.cluster.sharding``.
 
 The configuration properties changed name to ``akka.cluster.sharding``.
+
+ClusterSingletonManager and ClusterSingletonProxy construction
+==============================================================
+
+Parameters to the ``Props`` factory methods have been moved to settings object ``ClusterSingletonManagerSettings`
+and ``ClusterSingletonProxySettings``. These can be created from system configuration properties and also
+amended with API as needed.
+
