@@ -23,6 +23,8 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
   val c: OpTreeCtx
   import c.universe._
 
+  lazy val ruleType = typeOf[Rule[_, _]]
+
   sealed abstract class OpTree {
     def ruleFrame: Tree
 
@@ -441,9 +443,9 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
             case q"(..$args ⇒ $body)" ⇒
               def rewrite(tree: Tree): Tree =
                 tree match {
-                  case Block(statements, res) ⇒ block(statements, rewrite(res))
-                  case x if resultTypeTree.tpe <:< typeOf[Rule[_, _]] ⇒ expand(x, wrapped)
-                  case x ⇒ q"__push($x)"
+                  case Block(statements, res)               ⇒ block(statements, rewrite(res))
+                  case x if resultTypeTree.tpe <:< ruleType ⇒ expand(x, wrapped)
+                  case x                                    ⇒ q"__push($x)"
                 }
               val valDefs = args.zip(argTypeTrees).map { case (a, t) ⇒ q"val ${a.name} = valueStack.pop().asInstanceOf[${t.tpe}]" }.reverse
               block(valDefs, rewrite(body))
@@ -554,9 +556,9 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
           case q"(..$args ⇒ $body)" ⇒
             def rewrite(tree: Tree): Tree =
               tree match {
-                case Block(statements, res) ⇒ block(statements, rewrite(res))
-                case x if actionType.last <:< typeOf[Rule[_, _]] ⇒ expand(x, wrapped)
-                case x ⇒ q"__push($x)"
+                case Block(statements, res)            ⇒ block(statements, rewrite(res))
+                case x if actionType.last <:< ruleType ⇒ expand(x, wrapped)
+                case x                                 ⇒ q"__push($x)"
               }
             block(popToVals(args.map(_.name)), rewrite(body))
         }
