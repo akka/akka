@@ -37,8 +37,6 @@ import scala.util.Try
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- * FIXME: reviewers: it may be necessary to distribute this notice in the license file, is it?
- *
  * INTERNAL API
  */
 private[http] object Utf8Decoder extends StreamingCharsetDecoder {
