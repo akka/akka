@@ -264,7 +264,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               .map(ByteString.apply)
               .transform(() ⇒ newParserStage(requestMethod)).named("parser")
               .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
-              .headAndTail
+              .via(headAndTailFlow)
               .collect {
                 case (ResponseStart(statusCode, protocol, headers, createEntity, close), entityParts) ⇒
                   closeAfterResponseCompletion :+= close
