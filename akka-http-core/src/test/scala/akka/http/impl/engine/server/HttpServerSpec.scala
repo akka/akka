@@ -4,16 +4,16 @@
 
 package akka.http.impl.engine.server
 
+import akka.actor.ActorSystem
 import akka.http.ServerSettings
 
 import scala.util.Random
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import org.scalatest.Inside
-import akka.event.NoLogging
 import akka.util.ByteString
 import akka.stream.scaladsl._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.{ FlowMaterializer, ActorFlowMaterializer }
 import akka.stream.testkit._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
@@ -22,7 +22,7 @@ import HttpEntity._
 import MediaTypes._
 import HttpMethods._
 
-class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
+class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside { spec ⇒
   implicit val materializer = ActorFlowMaterializer()
 
   "The server implementation" should {
@@ -660,49 +660,8 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       expectRequest shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
     }
   }
-
-  class TestSetup {
-    val requests = TestSubscriber.manualProbe[HttpRequest]
-    val responses = TestPublisher.manualProbe[HttpResponse]
-
-    def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
-
-    val (netIn, netOut) = {
-      val netIn = TestPublisher.manualProbe[ByteString]
-      val netOut = TestSubscriber.manualProbe[ByteString]
-
-      FlowGraph.closed(HttpServerBluePrint(settings, NoLogging)) { implicit b ⇒
-        server ⇒
-          import FlowGraph.Implicits._
-          Source(netIn) ~> server.in2
-          server.out1 ~> Sink(netOut)
-          server.out2 ~> Sink(requests)
-          Source(responses) ~> server.in1
-      }.run()
-
-      netIn -> netOut
-    }
-
-    def wipeDate(string: String) =
-      string.fastSplit('\n').map {
-        case s if s.startsWith("Date:") ⇒ "Date: XXXX\r"
-        case s                          ⇒ s
-      }.mkString("\n")
-
-    val netInSub = netIn.expectSubscription()
-    val netOutSub = netOut.expectSubscription()
-    val requestsSub = requests.expectSubscription()
-    val responsesSub = responses.expectSubscription()
-
-    def expectRequest: HttpRequest = {
-      requestsSub.request(1)
-      requests.expectNext()
-    }
-    def expectNoRequest(max: FiniteDuration): Unit = requests.expectNoMsg(max)
-
-    def send(data: ByteString): Unit = netInSub.sendNext(data)
-    def send(data: String): Unit = send(ByteString(data, "UTF8"))
-
-    def closeNetworkInput(): Unit = netInSub.sendComplete()
+  class TestSetup extends HttpServerTestSetupBase {
+    implicit def system = spec.system
+    implicit def materializer = spec.materializer
   }
 }

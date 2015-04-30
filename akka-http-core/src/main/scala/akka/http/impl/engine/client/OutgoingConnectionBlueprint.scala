@@ -72,7 +72,7 @@ private[http] object OutgoingConnectionBlueprint {
       .transform(StreamUtils.recover { case x: ResponseParsingError ⇒ x.error :: Nil }) // FIXME after #16565
       .mapConcat(identityFunc)
       .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
-      .headAndTail
+      .via(headAndTailFlow)
       .collect {
         case (ResponseStart(statusCode, protocol, headers, createEntity, _), entityParts) ⇒
           HttpResponse(statusCode, headers, createEntity(entityParts), protocol)
