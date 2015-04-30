@@ -111,7 +111,8 @@ class TestTransport(
     (_) ⇒ registry.logActivity(ShutdownAttempt(localAddress)))
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = listenBehavior(())
-  override def boundAddress = localAddress
+  // Need to do like this for binary compatibility reasons
+  private[akka] def boundAddress = localAddress
   override def associate(remoteAddress: Address): Future[AssociationHandle] = associateBehavior(remoteAddress)
   override def shutdown(): Future[Boolean] = shutdownBehavior(())
 

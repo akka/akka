@@ -27,7 +27,7 @@ object AkkaBuild extends Build {
 
   override def buildLoaders = BuildLoader.transform(Sample.buildTransformer) :: Nil
 
-  val enableMiMa = false
+  val enableMiMa = true
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it doesn not break things
 
@@ -347,13 +347,7 @@ object AkkaBuild extends Build {
 
   def akkaPreviousArtifact(id: String): Def.Initialize[Option[sbt.ModuleID]] = Def.setting {
     if (enableMiMa) {
-      // Note: This is a little gross because we don't have a 2.3.0 release on Scala 2.11.x
-      // This should be expanded if there are more deviations.
-      val version: String =
-        scalaBinaryVersion.value match {
-          case "2.11" => "2.3.2"
-          case _ =>      "2.3.0"
-        }
+      val version: String = "2.3.10" // FIXME
       val fullId = crossVersion.value match {
         case _ : CrossVersion.Binary => id + "_" + scalaBinaryVersion.value
         case _ : CrossVersion.Full => id + "_" + scalaVersion.value

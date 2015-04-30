@@ -93,7 +93,7 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
  */
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedPool(
-  val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
+  override val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
   within: FiniteDuration,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,

@@ -17,6 +17,14 @@ import akka.serialization.BaseSerializer
 
 class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
+  @deprecated("Use constructor with ExtendedActorSystem", "2.4")
+  def this() = this(null)
+
+  // TODO remove this when deprecated this() is removed
+  override val identifier: Int =
+    if (system eq null) 6
+    else identifierFromConfig
+
   def includeManifest: Boolean = false
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {

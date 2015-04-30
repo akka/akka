@@ -29,6 +29,14 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
   import ProtobufSerializer.deserializeActorRef
   import Deploy.NoDispatcherGiven
 
+  @deprecated("Use constructor with ExtendedActorSystem", "2.4")
+  def this() = this(null)
+
+  // TODO remove this when deprecated this() is removed
+  override val identifier: Int =
+    if (system eq null) 3
+    else identifierFromConfig
+
   def includeManifest: Boolean = false
 
   lazy val serialization = SerializationExtension(system)

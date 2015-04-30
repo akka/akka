@@ -243,6 +243,11 @@ private[transport] object NettyTransport {
       hostName.getOrElse(sa.getAddress.getHostAddress), port.getOrElse(sa.getPort))) // perhaps use getHostString in jdk 1.7
     case _ ⇒ None
   }
+
+  // Need to do like this for binary compatibility reasons
+  def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
+                               hostName: Option[String]): Option[Address] =
+    addressFromSocketAddress(addr, schemeIdentifier, systemName, hostName, port = None)
 }
 
 // FIXME: Split into separate UDP and TCP classes
@@ -434,7 +439,8 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     }
   }
 
-  override def boundAddress = boundTo
+  // Need to do like this for binary compatibility reasons
+  private[akka] def boundAddress = boundTo
 
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
     if (!serverChannel.isBound) Future.failed(new NettyTransportException("Transport is not bound"))

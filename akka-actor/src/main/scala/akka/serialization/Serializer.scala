@@ -73,7 +73,7 @@ trait BaseSerializer extends Serializer {
   /**
    *  Actor system which is required by most serializer implementations.
    */
-  val system: ExtendedActorSystem
+  def system: ExtendedActorSystem
   /**
    * Configuration namespace of serialization identifiers in the `reference.conf`.
    *
@@ -88,7 +88,12 @@ trait BaseSerializer extends Serializer {
    *
    * See [[Serializer#identifier()]].
    */
-  final override val identifier: Int =
+  override val identifier: Int = identifierFromConfig
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def identifierFromConfig: Int =
     system.settings.config.getInt(s"""${SerializationIdentifiers}."${getClass.getName}"""")
 }
 
@@ -146,6 +151,14 @@ object JavaSerializer {
  */
 class JavaSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
+  @deprecated("Use constructor with ExtendedActorSystem", "2.4")
+  def this() = this(null)
+
+  // TODO remove this when deprecated this() is removed
+  override val identifier: Int =
+    if (system eq null) 1
+    else identifierFromConfig
+
   def includeManifest: Boolean = false
 
   def toBinary(o: AnyRef): Array[Byte] = {
@@ -180,6 +193,15 @@ class NullSerializer extends Serializer {
  * (just returns the byte array unchanged/uncopied)
  */
 class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerializer {
+
+  @deprecated("Use constructor with ExtendedActorSystem", "2.4")
+  def this() = this(null)
+
+  // TODO remove this when deprecated this() is removed
+  override val identifier: Int =
+    if (system eq null) 4
+    else identifierFromConfig
+
   def includeManifest: Boolean = false
   def toBinary(o: AnyRef) = o match {
     case null           ⇒ null

@@ -5,10 +5,11 @@
 package docs.io
 
 import java.net.{InetAddress, InetSocketAddress, NetworkInterface, StandardProtocolFamily}
+import java.net.DatagramSocket
 import java.nio.channels.DatagramChannel
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
-import akka.io.Inet.{DatagramChannelCreator, SocketOption}
+import akka.io.Inet.{DatagramChannelCreator, SocketOption, SocketOptionV2}
 import akka.io.{IO, Udp}
 import akka.util.ByteString
 
@@ -20,11 +21,11 @@ final case class Inet6ProtocolFamily() extends DatagramChannelCreator {
 //#inet6-protocol-family
 
 //#multicast-group
-final case class MulticastGroup(address: String, interface: String) extends SocketOption {
-  override def afterConnect(c: DatagramChannel) {
+final case class MulticastGroup(address: String, interface: String) extends SocketOptionV2 {
+  override def afterBind(s: DatagramSocket) {
     val group = InetAddress.getByName(address)
     val networkInterface = NetworkInterface.getByName(interface)
-    c.join(group, networkInterface)
+    s.getChannel.join(group, networkInterface)
   }
 }
 //#multicast-group

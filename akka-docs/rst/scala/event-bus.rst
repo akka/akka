@@ -115,7 +115,7 @@ type :class:`ActorRef`.
 
 This classification requires an :class:`ActorSystem` in order to perform book-keeping
 operations related to the subscribers being Actors, which can terminate without first
-unsubscribing from the EventBus. ActorClassification maitains a system Actor which
+unsubscribing from the EventBus. ManagedActorClassification maitains a system Actor which
 takes care of unsubscribing terminated actors automatically.
 
 The necessary methods to be implemented are illustrated with the following example:

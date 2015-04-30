@@ -121,12 +121,12 @@ object EventBusDocSpec {
 
   //#actor-bus
   import akka.event.ActorEventBus
-  import akka.event.ActorClassification
+  import akka.event.ManagedActorClassification
   import akka.event.ActorClassifier
 
   final case class Notification(ref: ActorRef, id: Int)
 
-  class ActorBusImpl(val system: ActorSystem) extends ActorEventBus with ActorClassifier with ActorClassification {
+  class ActorBusImpl(val system: ActorSystem) extends ActorEventBus with ActorClassifier with ManagedActorClassification {
     type Event = Notification
 
     // is used for extracting the classifier from the incoming events
@@ -179,7 +179,7 @@ class EventBusDocSpec extends AkkaSpec {
     //#scanning-bus-test
   }
 
-  "demonstrate ActorClassification" in {
+  "demonstrate ManagedActorClassification" in {
     //#actor-bus-test
     val observer1 = TestProbe().ref
     val observer2 = TestProbe().ref

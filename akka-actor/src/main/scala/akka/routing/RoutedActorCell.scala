@@ -102,7 +102,10 @@ private[akka] class RoutedActorCell(
     _router = routerConfig.createRouter(system)
     routerConfig match {
       case pool: Pool ⇒
-        val nrOfRoutees = pool.nrOfInstances(system)
+        // must not use pool.nrOfInstances(system) for old (not re-compiled) custom routers
+        // for binary backwards compatibility reasons
+        val deprecatedNrOfInstances = pool.nrOfInstances
+        val nrOfRoutees = if (deprecatedNrOfInstances < 0) pool.nrOfInstances(system) else deprecatedNrOfInstances
         if (nrOfRoutees > 0)
           addRoutees(Vector.fill(nrOfRoutees)(pool.newRoutee(routeeProps, this)))
       case group: Group ⇒
