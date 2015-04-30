@@ -104,11 +104,8 @@ trait Transport {
    */
   def listen: Future[(Address, Promise[AssociationEventListener])]
 
-  /**
-   * @return
-   *  The address this Transport is listening to.
-   */
-  def boundAddress: Address
+  // Need to do like this for binary compatibility reasons
+  // def boundAddress: Address
 
   /**
    * Asynchronously opens a logical duplex link between two Transport Entities over a network. It could be backed by a

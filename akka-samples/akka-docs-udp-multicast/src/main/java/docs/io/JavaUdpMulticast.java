@@ -18,6 +18,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.StandardProtocolFamily;
+import java.net.DatagramSocket;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class JavaUdpMulticast {
     //#inet6-protocol-family
 
     //#multicast-group
-    public static class MulticastGroup extends Inet.AbstractSocketOption {
+    public static class MulticastGroup extends Inet.AbstractSocketOptionV2 {
         private String address;
         private String interf;
 
@@ -44,11 +45,11 @@ public class JavaUdpMulticast {
         }
 
         @Override
-        public void afterConnect(DatagramChannel c) {
+        public void afterBind(DatagramSocket s) {
             try {
                 InetAddress group = InetAddress.getByName(address);
                 NetworkInterface networkInterface = NetworkInterface.getByName(interf);
-                c.join(group, networkInterface);
+                s.getChannel().join(group, networkInterface);
             } catch (Exception ex) {
                 System.out.println("Unable to join multicast group.");
             }

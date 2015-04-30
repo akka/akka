@@ -11,6 +11,7 @@ import akka.actor.ActorRef
 import akka.io.Udp._
 import akka.io.Inet._
 import akka.testkit.SocketUtil._
+import java.net.DatagramSocket
 
 class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
@@ -86,7 +87,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
 
     "call SocketOption.afterConnect method after binding." in {
       val commander = TestProbe()
-      val assertOption = AssertAfterConnect()
+      val assertOption = AssertAfterChannelBind()
       commander.send(IO(Udp), Bind(testActor, addresses(4), options = List(assertOption)))
       commander.expectMsg(Bound(addresses(4)))
       assert(assertOption.afterCalled === 1)
@@ -106,17 +107,17 @@ class UdpIntegrationSpec extends AkkaSpec("""
 private case class AssertBeforeBind() extends SocketOption {
   var beforeCalled = 0
 
-  override def beforeBind(c: DatagramChannel) = {
-    assert(!c.socket.isBound)
+  override def beforeDatagramBind(ds: DatagramSocket): Unit = {
+    assert(!ds.isBound)
     beforeCalled += 1
   }
 }
 
-private case class AssertAfterConnect() extends SocketOption {
+private case class AssertAfterChannelBind() extends SocketOptionV2 {
   var afterCalled = 0
 
-  override def afterConnect(c: DatagramChannel) = {
-    assert(c.socket.isBound)
+  override def afterBind(s: DatagramSocket) = {
+    assert(s.isBound)
     afterCalled += 1
   }
 }

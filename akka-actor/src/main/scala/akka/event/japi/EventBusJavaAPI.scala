@@ -184,16 +184,49 @@ abstract class ScanningEventBus[E, S, C] extends EventBus[E, S, C] {
 }
 
 /**
+ * Java API: See documentation for [[akka.event.ManagedActorClassification]]
+ * An EventBus where the Subscribers are ActorRefs and the Classifier is ActorRef
+ * Means that ActorRefs "listen" to other ActorRefs
+ * E is the Event type
+ */
+abstract class ManagedActorEventBus[E](system: ActorSystem) extends EventBus[E, ActorRef, ActorRef] {
+  private val bus = new akka.event.ActorEventBus with akka.event.ManagedActorClassification with akka.event.ActorClassifier {
+    type Event = E
+
+    override val system = ManagedActorEventBus.this.system
+
+    override protected def mapSize: Int = ManagedActorEventBus.this.mapSize
+
+    override protected def classify(event: E): ActorRef =
+      ManagedActorEventBus.this.classify(event)
+  }
+
+  /**
+   * This is a size hint for the number of Classifiers you expect to have (use powers of 2)
+   */
+  protected def mapSize(): Int
+
+  /**
+   * Returns the Classifier associated with the given Event
+   */
+  protected def classify(event: E): ActorRef
+
+  override def subscribe(subscriber: ActorRef, to: ActorRef): Boolean = bus.subscribe(subscriber, to)
+  override def unsubscribe(subscriber: ActorRef, from: ActorRef): Boolean = bus.unsubscribe(subscriber, from)
+  override def unsubscribe(subscriber: ActorRef): Unit = bus.unsubscribe(subscriber)
+  override def publish(event: E): Unit = bus.publish(event)
+}
+
+/**
  * Java API: See documentation for [[akka.event.ActorClassification]]
  * An EventBus where the Subscribers are ActorRefs and the Classifier is ActorRef
  * Means that ActorRefs "listen" to other ActorRefs
  * E is the Event type
  */
-abstract class ActorEventBus[E](system: ActorSystem) extends EventBus[E, ActorRef, ActorRef] {
+@deprecated("Use ManagedActorEventBus instead", "2.4")
+abstract class ActorEventBus[E] extends EventBus[E, ActorRef, ActorRef] {
   private val bus = new akka.event.ActorEventBus with akka.event.ActorClassification with akka.event.ActorClassifier {
     type Event = E
-
-    override val system = ActorEventBus.this.system
 
     override protected def mapSize: Int = ActorEventBus.this.mapSize
 

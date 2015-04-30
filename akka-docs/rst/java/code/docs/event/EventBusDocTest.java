@@ -39,7 +39,7 @@ import akka.event.japi.ScanningEventBus;
 //#scanning-bus
 
 //#actor-bus
-import akka.event.japi.ActorEventBus;
+import akka.event.japi.ManagedActorEventBus;
 
 //#actor-bus
 
@@ -232,7 +232,7 @@ public class EventBusDocTest {
   
   static
   //#actor-bus
-  public class ActorBusImpl extends ActorEventBus<Notification> {
+  public class ActorBusImpl extends ManagedActorEventBus<Notification> {
 
     // the ActorSystem will be used for book-keeping operations, such as subscribers terminating
     public ActorBusImpl(ActorSystem system) {
@@ -304,7 +304,7 @@ public class EventBusDocTest {
   }
   
   @Test
-  public void demonstrateActorClassification() {
+  public void demonstrateManagedActorClassification() {
       //#actor-bus-test
       ActorRef observer1 = new JavaTestKit(system).getRef();
       ActorRef observer2 = new JavaTestKit(system).getRef();

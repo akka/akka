@@ -121,7 +121,7 @@ final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem, metricsS
 @SerialVersionUID(1L)
 final case class AdaptiveLoadBalancingPool(
   metricsSelector: MetricsSelector = MixMetricsSelector,
-  val nrOfInstances: Int = 0,
+  override val nrOfInstances: Int = 0,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   override val usePoolDispatcher: Boolean = false)

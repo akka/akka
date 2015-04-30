@@ -231,7 +231,10 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   private[akka] def boundAddresses: Map[String, Set[Address]] = {
     transportMapping.map {
       case (scheme, transports) ⇒
-        scheme -> transports.map { case (transport, _) ⇒ transport.boundAddress }
+        scheme -> transports.flatMap {
+          // Need to do like this for binary compatibility reasons
+          case (t, _) ⇒ Option(t.boundAddress)
+        }
     }
   }
 }
