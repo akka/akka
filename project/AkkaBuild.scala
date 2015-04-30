@@ -1499,7 +1499,7 @@ object Dependencies {
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
     val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
 
-    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0.RC5")
+    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0")
 
     // also change pom.xml and build.sbt in akka-samples/akka-docs-java-lambda
     val publishedAkkaVersion = "2.3.10"
