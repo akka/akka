@@ -27,7 +27,7 @@ object AkkaBuild extends Build {
 
   override def buildLoaders = BuildLoader.transform(Sample.buildTransformer) :: Nil
 
-  val enableMiMa = true
+  val enableMiMa = false
 
   lazy val buildSettings = Seq(
     organization        := "com.typesafe.akka",
