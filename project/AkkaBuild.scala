@@ -361,7 +361,7 @@ object AkkaBuild extends Build {
     // FIXME enable javadoc generation when genjavadoc is fixed (++ javadocSettings)
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.httpCore ++ Seq(
       version := streamAndHttpVersion,
-      libraryDependencies ++= Dependencies.httpCore,
+      Dependencies.httpCore,
       // FIXME include mima when akka-http-core-2.3.x is released
       //previousArtifact := akkaPreviousArtifact("akka-http-core-experimental")
       previousArtifact := None
@@ -548,12 +548,10 @@ object AkkaBuild extends Build {
   )
 
   val macroParadise = Seq(
-    libraryDependencies <++= scalaVersion { v =>
-      Seq("org.scala-lang" % "scala-reflect" % v) ++ (
-        if (v.startsWith("2.10."))
-          Seq("org.scalamacros" %% "quasiquotes" % "2.0.1" % "compile")
-        else Nil)
-    },
+    DependencyHelpers.deps(
+      Dependencies.Compile.scalaReflect % "provided",
+      Dependencies.Compile.quasiquotes % "provided"
+    ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
   )
 
@@ -1524,6 +1522,8 @@ object Dependencies {
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
     val scalaXml      = ScalaVersionDependentModuleID.post210Dependency("org.scala-lang.modules" %% "scala-xml" % "1.0.1") // Scala License
+    val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _)
+    val quasiquotes   = ScalaVersionDependentModuleID.scala210Dependency("org.scalamacros" %% "quasiquotes" % "2.0.1")
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
     val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
@@ -1618,9 +1618,10 @@ object Dependencies {
 
   val persistence = deps(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo, Test.scalaXml)
 
-  val httpCore = Seq(
+  val httpCore = deps(
     // FIXME switch back to project dependency
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
+    Dependencies.Compile.quasiquotes % "provided", // needed to depend on akka-parsing
     Test.junitIntf, Test.junit, Test.scalatest)
 
   val httpScala = deps()
@@ -1689,18 +1690,21 @@ object Dependencies {
 }
 
 object DependencyHelpers {
-  case class ScalaVersionDependentModuleID(val modules: String => Seq[ModuleID]) {
+  case class ScalaVersionDependentModuleID(modules: String => Seq[ModuleID]) {
     def %(config: String): ScalaVersionDependentModuleID =
       ScalaVersionDependentModuleID(version => modules(version).map(_ % config))
   }
   object ScalaVersionDependentModuleID {
-    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID =
-      ScalaVersionDependentModuleID(_ => Seq(mod))
+    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID = versioned(_ => mod)
 
+    def versioned(f: String => ModuleID): ScalaVersionDependentModuleID = ScalaVersionDependentModuleID(v => Seq(f(v)))
     def fromPF(f: PartialFunction[String, ModuleID]): ScalaVersionDependentModuleID =
       ScalaVersionDependentModuleID(version => if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
     def post210Dependency(moduleId: ModuleID): ScalaVersionDependentModuleID = fromPF {
       case version if !version.startsWith("2.10") => moduleId
+    }
+    def scala210Dependency(moduleId: ModuleID): ScalaVersionDependentModuleID = fromPF {
+      case version if version.startsWith("2.10") => moduleId
     }
   }
 
