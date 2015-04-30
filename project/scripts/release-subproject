@@ -181,7 +181,7 @@ function get_current_branch {
 
 # get the current subproject version from sbt
 function get_current_version {
-  local result=$(sbt -Dsbt.log.noformat=true "project ${subproject}" version | tail -1 | cut -d ' ' -f2)
+  local result=$(sbt -Dsbt.log.noformat=true "project ${subproject}" version | grep info | tail -1 | cut -d ' ' -f2)
   echo ${result}
 }
 
