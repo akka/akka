@@ -98,6 +98,10 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)) must
           transformTo(Strict(tpe, doubleChars("abcfghijk") ++ trailer))
       }
+      "Chunked with extra LastChunk" in {
+        Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk, LastChunk)) must
+          transformTo(Strict(tpe, doubleChars("abcfghijk") ++ trailer))
+      }
     }
   }
 
