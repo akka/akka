@@ -88,7 +88,9 @@ seed nodes in the existing cluster.
 If you don't configure seed nodes you need to join the cluster programmatically or manually.
 
 Manual joining can be performed by using ref:`cluster_jmx_java` or :ref:`cluster_command_line_java`.
-Joining programatically can be performed with ``Cluster.get(system).join``.
+Joining programatically can be performed with ``Cluster.get(system).join``. Unsuccessful join attempts are 
+automatically retried after the time period defined in configuration property ``retry-unsuccessful-join-after``.
+Retries can be disabled by setting the property to ``off``.
 
 You can join to any node in the cluster. It does not have to be configured as a seed node.
 Note that you can only join to an existing cluster member, which means that for bootstrapping some
@@ -99,11 +101,12 @@ which is attractive when dynamically discovering other nodes at startup by using
 When using ``joinSeedNodes`` you should not include the node itself except for the node that is
 supposed to be the first seed node, and that should be placed first in parameter to ``joinSeedNodes``.
 
-Unsuccessful join attempts are automatically retried after the time period defined in 
-configuration property ``retry-unsuccessful-join-after``. When using ``seed-nodes`` this
-means that a new seed node is picked. When joining manually or programatically this means 
-that the last join request is retried. Retries can be disabled by setting the property to 
-``off``.
+Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in 
+configuration property ``seed-node-timeout``. Unsuccessful attempt to join a specific seed node is
+automatically retried after the configured ``retry-unsuccessful-join-after`. Retrying means that it
+tries to contact all seed nodes and then joins the node that answers first. The first node in the list
+of seed nodes will join itself if it cannot contact any of the other seed nodes within the
+configured ``seed-node-timeout``.
 
 An actor system can only join a cluster once. Additional attempts will be ignored.
 When it has successfully joined it must be restarted to be able to join another
