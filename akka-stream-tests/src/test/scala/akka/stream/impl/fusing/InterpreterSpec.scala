@@ -3,6 +3,8 @@
  */
 package akka.stream.impl.fusing
 
+import akka.stream.stage.{ TerminationDirective, SyncDirective, Context, PushStage }
+
 import scala.util.control.NoStackTrace
 import akka.stream.Supervision
 
@@ -460,6 +462,52 @@ class InterpreterSpec extends InterpreterSpecKit {
 
     }
 
+    // This test is related to issue #17351
+    class PushFinishStage extends PushStage[Any, Any] {
+      override def onPush(elem: Any, ctx: Context[Any]): SyncDirective = ctx.pushAndFinish(elem)
+      override def onUpstreamFinish(ctx: Context[Any]): TerminationDirective =
+        ctx.fail(akka.stream.testkit.Utils.TE("Cannot happen"))
+    }
+
+    "work with pushAndFinish if upstream completes with pushAndFinish" in new TestSetup(Seq(
+      new PushFinishStage)) {
+
+      lastEvents() should be(Set.empty)
+
+      downstream.requestOne()
+      lastEvents() should be(Set(RequestOne))
+
+      upstream.onNextAndComplete("foo")
+      lastEvents() should be(Set(OnNext("foo"), OnComplete))
+    }
+
+    "work with pushAndFinish if indirect upstream completes with pushAndFinish" in new TestSetup(Seq(
+      Map((x: Any) ⇒ x, stoppingDecider),
+      new PushFinishStage,
+      Map((x: Any) ⇒ x, stoppingDecider))) {
+
+      lastEvents() should be(Set.empty)
+
+      downstream.requestOne()
+      lastEvents() should be(Set(RequestOne))
+
+      upstream.onNextAndComplete("foo")
+      lastEvents() should be(Set(OnNext("foo"), OnComplete))
+    }
+
+    "work with pushAndFinish if upstream completes with pushAndFinish and downstream immediately pulls" in new TestSetup(Seq(
+      new PushFinishStage,
+      Fold("", (x: String, y: String) ⇒ x + y, stoppingDecider))) {
+
+      lastEvents() should be(Set.empty)
+
+      downstream.requestOne()
+      lastEvents() should be(Set(RequestOne))
+
+      upstream.onNextAndComplete("foo")
+      lastEvents() should be(Set(OnNext("foo"), OnComplete))
+    }
+
     "implement expand-filter" in pending
 
     "implement take-conflate" in pending
@@ -470,7 +518,31 @@ class InterpreterSpec extends InterpreterSpecKit {
 
     "implement expand-take" in pending
 
-    "implement take-take" in pending
+    "implement take-take" in new TestSetup(Seq(
+      Take(1),
+      Take(1))) {
+      lastEvents() should be(Set.empty)
+
+      downstream.requestOne()
+      lastEvents() should be(Set(RequestOne))
+
+      upstream.onNext("foo")
+      lastEvents() should be(Set(OnNext("foo"), OnComplete, Cancel))
+
+    }
+
+    "implement take-take with pushAndFinish from upstream" in new TestSetup(Seq(
+      Take(1),
+      Take(1))) {
+      lastEvents() should be(Set.empty)
+
+      downstream.requestOne()
+      lastEvents() should be(Set(RequestOne))
+
+      upstream.onNextAndComplete("foo")
+      lastEvents() should be(Set(OnNext("foo"), OnComplete))
+
+    }
 
     "implement take-drop" in pending
 

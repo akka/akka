@@ -92,6 +92,11 @@ trait InterpreterSpecKit extends AkkaSpec {
 
       def onNext(elem: Any): Unit = enterAndPush(elem)
       def onComplete(): Unit = enterAndFinish()
+      def onNextAndComplete(elem: Any): Unit = {
+        context.enter()
+        context.pushAndFinish(elem)
+        context.execute()
+      }
       def onError(cause: Throwable): Unit = enterAndFail(cause)
 
     }
