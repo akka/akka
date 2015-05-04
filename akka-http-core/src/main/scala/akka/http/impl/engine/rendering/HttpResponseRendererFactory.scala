@@ -37,18 +37,19 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
   private def dateHeader: Array[Byte] = {
     var (cachedSeconds, cachedBytes) = cachedDateHeader
-    val now = System.currentTimeMillis
-    if (now - 1000 > cachedSeconds) {
+    val now = currentTimeMillis()
+    if (now / 1000 > cachedSeconds) {
       cachedSeconds = now / 1000
       val r = new ByteArrayRendering(48)
-      dateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
+      DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
       cachedBytes = r.get
       cachedDateHeader = cachedSeconds -> cachedBytes
     }
     cachedBytes
   }
 
-  protected def dateTime(now: Long) = DateTime(now) // split out so we can stabilize by overriding in tests
+  // split out so we can stabilize by overriding in tests
+  protected def currentTimeMillis(): Long = System.currentTimeMillis()
 
   def newRenderer: HttpResponseRenderer = new HttpResponseRenderer
 
