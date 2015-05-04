@@ -4,16 +4,16 @@
  Remoting
 ##########
 
-
 For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
 
 .. note::
 
   As explained in that chapter Akka remoting is designed for communication in a
   peer-to-peer fashion and it has limitations for client-server setups. In
-  particular Akka Remoting does not work with Network Address Translation and
-  Load Balancers, among others.
-
+  particular Akka Remoting does not work transparently with Network Address Translation,
+  Load Balancers, or in Docker containers. For symmetric communication in these situations
+  network and/or Akka configuration will have to be changed as described in
+  :ref:`symmetric-communication`.
 
 Preparing your ActorSystem for Remoting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

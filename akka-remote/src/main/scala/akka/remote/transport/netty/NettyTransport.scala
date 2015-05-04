@@ -124,8 +124,19 @@ class NettyTransportSettings(config: Config) {
     case value ⇒ value
   }
 
+  val BindHostname: String = getString("bind-hostname") match {
+    case ""    ⇒ Hostname
+    case value ⇒ value
+  }
+
   @deprecated("WARNING: This should only be used by professionals.", "2.0")
   val PortSelector: Int = getInt("port")
+
+  @deprecated("WARNING: This should only be used by professionals.", "2.4")
+  val BindPortSelector: Int = getString("bind-port") match {
+    case ""    ⇒ PortSelector
+    case value ⇒ value.toInt
+  }
 
   val SslSettings: Option[SSLSettings] = if (EnableSsl) Some(new SSLSettings(config.getConfig("security"))) else None
 
@@ -159,7 +170,7 @@ private[netty] trait CommonHandlers extends NettyHelpers {
   final protected def init(channel: Channel, remoteSocketAddress: SocketAddress, remoteAddress: Address, msg: ChannelBuffer)(
     op: (AssociationHandle ⇒ Any)): Unit = {
     import transport._
-    NettyTransport.addressFromSocketAddress(channel.getLocalAddress, schemeIdentifier, system.name, Some(settings.Hostname)) match {
+    NettyTransport.addressFromSocketAddress(channel.getLocalAddress, schemeIdentifier, system.name, Some(settings.Hostname), None) match {
       case Some(localAddress) ⇒
         val handle = createHandle(channel, localAddress, remoteAddress)
         handle.readHandlerPromise.future.onSuccess {
@@ -188,7 +199,7 @@ private[netty] abstract class ServerHandler(protected final val transport: Netty
     associationListenerFuture.onSuccess {
       case listener: AssociationEventListener ⇒
         val remoteAddress = NettyTransport.addressFromSocketAddress(remoteSocketAddress, transport.schemeIdentifier,
-          transport.system.name, hostName = None).getOrElse(
+          transport.system.name, hostName = None, port = None).getOrElse(
             throw new NettyTransportException(s"Unknown inbound remote address type [${remoteSocketAddress.getClass.getName}]"))
         init(channel, remoteSocketAddress, remoteAddress, msg) { listener notify InboundAssociation(_) }
     }
@@ -227,11 +238,16 @@ private[transport] object NettyTransport {
   val uniqueIdCounter = new AtomicInteger(0)
 
   def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
-                               hostName: Option[String]): Option[Address] = addr match {
+                               hostName: Option[String], port: Option[Int]): Option[Address] = addr match {
     case sa: InetSocketAddress ⇒ Some(Address(schemeIdentifier, systemName,
-      hostName.getOrElse(sa.getAddress.getHostAddress), sa.getPort)) // perhaps use getHostString in jdk 1.7
+      hostName.getOrElse(sa.getAddress.getHostAddress), port.getOrElse(sa.getPort))) // perhaps use getHostString in jdk 1.7
     case _ ⇒ None
   }
+
+  // Need to do like this in the backport of #15007 to 2.3.x for binary compatibility reasons
+  def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
+                               hostName: Option[String]): Option[Address] =
+    addressFromSocketAddress(addr, schemeIdentifier, systemName, hostName, port = None)
 }
 
 // FIXME: Split into separate UDP and TCP classes
@@ -254,6 +270,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   private final val isDatagram = TransportMode == Udp
 
   @volatile private var localAddress: Address = _
+  @volatile private var boundTo: Address = _
   @volatile private var serverChannel: Channel = _
 
   private val log = Logging(system, this.getClass)
@@ -386,7 +403,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
     for {
-      address ← addressToSocketAddress(Address("", "", settings.Hostname, settings.PortSelector))
+      address ← addressToSocketAddress(Address("", "", settings.BindHostname, settings.BindPortSelector))
     } yield {
       try {
         val newServerChannel = inboundBootstrap match {
@@ -400,13 +417,18 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
         serverChannel = newServerChannel
 
-        addressFromSocketAddress(newServerChannel.getLocalAddress, schemeIdentifier, system.name, Some(settings.Hostname)) match {
-          case Some(address) ⇒
-            localAddress = address
-            associationListenerPromise.future.onSuccess { case listener ⇒ newServerChannel.setReadable(true) }
-            (address, associationListenerPromise)
-          case None ⇒ throw new NettyTransportException(s"Unknown local address type [${newServerChannel.getLocalAddress.getClass.getName}]")
-        }
+        addressFromSocketAddress(newServerChannel.getLocalAddress, schemeIdentifier, system.name, Some(settings.Hostname),
+          if (settings.PortSelector == 0) None else Some(settings.PortSelector)) match {
+            case Some(address) ⇒
+              addressFromSocketAddress(newServerChannel.getLocalAddress, schemeIdentifier, system.name, None, None) match {
+                case Some(address) ⇒ boundTo = address
+                case None          ⇒ throw new NettyTransportException(s"Unknown local address type [${newServerChannel.getLocalAddress.getClass.getName}]")
+              }
+              localAddress = address
+              associationListenerPromise.future.onSuccess { case listener ⇒ newServerChannel.setReadable(true) }
+              (address, associationListenerPromise)
+            case None ⇒ throw new NettyTransportException(s"Unknown local address type [${newServerChannel.getLocalAddress.getClass.getName}]")
+          }
       } catch {
         case NonFatal(e) ⇒ {
           log.error("failed to bind to {}, shutting down Netty transport", address)
@@ -416,6 +438,9 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
       }
     }
   }
+
+  // Need to do like this in the backport of #15007 to 2.3.x for binary compatibility reasons
+  private[akka] def boundAddress = boundTo
 
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
     if (!serverChannel.isBound) Future.failed(new NettyTransportException("Transport is not bound"))

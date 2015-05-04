@@ -92,6 +92,8 @@ class RemoteConfigSpec extends AkkaSpec(
       TcpKeepalive should be(true)
       TcpReuseAddr should be(!Helpers.isWindows)
       c.getString("hostname") should be("")
+      c.getString("bind-hostname") should be("")
+      c.getString("bind-port") should be("")
       ServerSocketWorkerPoolSize should be(2)
       ClientSocketWorkerPoolSize should be(2)
     }

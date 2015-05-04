@@ -52,6 +52,8 @@ be set to a specific :class:`Deploy` instance; this has the same effect as
 putting an equivalent deployment into the configuration file (if both are
 given, configuration file wins).
 
+.. _symmetric-communication:
+
 Peer-to-Peer vs. Client-Server
 ------------------------------
 
@@ -65,11 +67,26 @@ design decisions:
    is no system that only accepts connections, and there is no system that only initiates connections.
    
 The consequence of these decisions is that it is not possible to safely create
-pure client-server setups with predefined roles (violates assumption 2) and
-using setups involving Network Address Translation or Load Balancers (violates
-assumption 1).
-
+pure client-server setups with predefined roles (violates assumption 2).
 For client-server setups it is better to use HTTP or Akka I/O.
+
+Using setups involving Network Address Translation, Load Balancers or Docker
+containers violates assumption 1, unless additional steps are taken in the
+network configuration to allow symmetric communication between involved systems.
+In such situations Akka can be configured to bind to a different network
+address than the one used for establishing connections between Akka nodes::
+
+  akka {
+    remote {
+      netty.tcp {
+        hostname = my.domain.com      # external (logical) hostname
+        port = 8000                   # external (logical) port
+
+        bind-hostname = local.address # internal (bind) hostname
+        bind-port = 2552              # internal (bind) port
+      }
+   }
+  }
 
 Marking Points for Scaling Up with Routers
 ------------------------------------------
