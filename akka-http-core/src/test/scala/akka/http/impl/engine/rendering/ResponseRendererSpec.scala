@@ -74,6 +74,23 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             |"""
         }
       }
+      "a custom status code and no headers and different dates" in new TestSetup() {
+        val initial = DateTime(2011, 8, 25, 9, 10, 0).clicks
+        var extraMillis = 0L
+        (0 until 10000 by 500) foreach { millis ⇒
+          extraMillis = millis
+          HttpResponse(200) should renderTo {
+            s"""HTTP/1.1 200 OK
+              |Server: akka-http/1.0.0
+              |Date: Thu, 25 Aug 2011 09:10:0${extraMillis / 1000 % 60} GMT
+              |Content-Length: 0
+              |
+              |"""
+          }
+        }
+
+        override def currentTimeMillis() = initial + extraMillis
+      }
 
       "to a transparent HEAD request (Strict response entity)" in new TestSetup() {
         ResponseRenderingContext(
@@ -559,7 +576,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         Await.result(future, 250.millis) -> renderer.isComplete
       }
 
-    override def dateTime(now: Long) = DateTime(2011, 8, 25, 9, 10, 29) // provide a stable date for testing
+    override def currentTimeMillis() = DateTime(2011, 8, 25, 9, 10, 29).clicks // provide a stable date for testing
   }
 
   def source[T](elems: T*) = Source(elems.toList)
