@@ -37,6 +37,25 @@ private[akka] object OneBoundedInterpreter {
     override def onDownstreamFinish(ctx: BoundaryContext): TerminationDirective = ctx.exit()
     override def onUpstreamFailure(cause: Throwable, ctx: BoundaryContext): TerminationDirective = ctx.exit()
   }
+
+  /**
+   * INTERNAL API
+   *
+   * This artificial op is used as a boundary to prevent the first forked onPush of execution of a pushFinish to enter
+   * the originating stage again. This stage allows the forked upstream onUpstreamFinish to pass through if there was
+   * no onPull called on the stage. Calling onPull on this op makes it a Finished op, which absorbs the
+   * onUpstreamTermination, but otherwise onUpstreamTermination results in calling finish()
+   */
+  private[akka] object PushFinished extends BoundaryStage {
+    override def onPush(elem: Any, ctx: BoundaryContext): UpstreamDirective = ctx.finish()
+    override def onPull(ctx: BoundaryContext): DownstreamDirective = ctx.finish()
+    // This allows propagation of an onUpstreamFinish call. Note that if onPull has been called on this stage
+    // before, then the call ctx.finish() in onPull already turned this op to a normal Finished, i.e. it will no longer
+    // propagate onUpstreamFinish.
+    override def onUpstreamFinish(ctx: BoundaryContext): TerminationDirective = ctx.finish()
+    override def onDownstreamFinish(ctx: BoundaryContext): TerminationDirective = ctx.exit()
+    override def onUpstreamFailure(cause: Throwable, ctx: BoundaryContext): TerminationDirective = ctx.exit()
+  }
 }
 
 /**
@@ -200,7 +219,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
   private def updateJumpBacks(lastNonCompletedIndex: Int): Unit = {
     var pos = lastNonCompletedIndex
     // For every jump that would jump over us we change them to jump into us
-    while (jumpBacks(pos) < lastNonCompletedIndex && pos < pipeline.length) {
+    while (pos < pipeline.length && jumpBacks(pos) < lastNonCompletedIndex) {
       jumpBacks(pos) = lastNonCompletedIndex
       pos += 1
     }
@@ -290,6 +309,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     }
 
     override def finish(): FreeDirective = {
+      finishCurrentOp()
       fork(Completing)
       state = Cancelling
       null
@@ -297,13 +317,19 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
 
     def isFinishing: Boolean = hasBits(TerminationPending)
 
-    override def pushAndFinish(elem: Any): DownstreamDirective = {
+    final protected def pushAndFinishCommon(elem: Any): Unit = {
       ReactiveStreamsCompliance.requireNonNullElement(elem)
       if (currentOp.isDetached) {
         mustHave(DownstreamBall)
       }
       removeBits(DownstreamBall | PrecedingWasPull)
+    }
+
+    override def pushAndFinish(elem: Any): DownstreamDirective = {
+      pushAndFinishCommon(elem)
+      // Spit the execution domain in two, and invoke op postStop callbacks if there are any
       finishCurrentOp()
+
       // This MUST be an unsafeFork because the execution of PushFinish MUST strictly come before the finish execution
       // path. Other forks are not order dependent because they execute on isolated execution domains which cannot
       // "cross paths". This unsafeFork is relatively safe here because PushAndFinish simply absorbs all later downstream
@@ -311,8 +337,12 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
       // It might be that there are some degenerate cases where this can blow up the stack with a very long chain but I
       // am not aware of such scenario yet. If you know one, put it in InterpreterStressSpec :)
       unsafeFork(PushFinish, elem)
+
+      // Same as finish, without calling finishCurrentOp
       elementInFlight = null
-      finish()
+      fork(Completing)
+      state = Cancelling
+      null
     }
 
     override def fail(cause: Throwable): FreeDirective = {
@@ -397,11 +427,11 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     override def run(): Unit = currentOp.onPush(elementInFlight, ctx = this)
 
     override def pushAndFinish(elem: Any): DownstreamDirective = {
-      ReactiveStreamsCompliance.requireNonNullElement(elem)
-      /*
-       * FIXME (RK) please someone explain why this works: the stage already
-       * terminated, but eventually it will see another onPull because nobody noticed.
-       */
+      pushAndFinishCommon(elem)
+      // Put an isolation barrier that will prevent the onPull of this op to be called again. This barrier
+      // is different from simple Finished that it allows onUpstreamTerminated to pass through, unless onPull
+      // has been called on the stage
+      pipeline(activeOpIndex) = PushFinished.asInstanceOf[UntypedOp]
       elementInFlight = elem
       state = PushFinish
       null
