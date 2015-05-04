@@ -424,6 +424,36 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       upsub.expectCancellation()
     }
 
+    "not trigger onUpstreamFinished after pushAndFinish" in assertAllStagesStopped {
+      val in = TestPublisher.manualProbe[Int]()
+      val flow =
+        Source(in)
+          .transform(() ⇒ new StatefulStage[Int, Int] {
+
+            def initial: StageState[Int, Int] = new State {
+              override def onPush(element: Int, ctx: Context[Int]) =
+                ctx.pushAndFinish(element)
+            }
+            override def onUpstreamFinish(ctx: Context[Int]): TerminationDirective =
+              terminationEmit(Iterator(42), ctx)
+          })
+          .runWith(Sink.publisher)
+
+      val inSub = in.expectSubscription()
+
+      val out = TestSubscriber.manualProbe[Int]()
+      flow.subscribe(out)
+      val outSub = out.expectSubscription()
+
+      inSub.sendNext(23)
+      inSub.sendComplete()
+
+      outSub.request(1) // it depends on this line, i.e. generating backpressure between buffer and stage execution
+
+      out.expectNext(23)
+      out.expectComplete()
+    }
+
   }
 
 }
