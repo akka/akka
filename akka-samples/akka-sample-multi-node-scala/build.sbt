@@ -6,7 +6,7 @@ val project = Project(
   base = file("."),
   settings = Project.defaultSettings ++ SbtMultiJvm.multiJvmSettings ++ Seq(
     name := "akka-sample-multi-node-scala",
-    version := "15v01p01",
+    version := "15v01p02",
     // scalaVersion := provided by Typesafe Reactive Platform
     libraryDependencies ++= Seq(
       TypesafeLibrary.akkaActor.value,

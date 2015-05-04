@@ -1,6 +1,6 @@
 name := "akka-sample-fsm-java-lambda"
 
-version := "15v01p01"
+version := "15v01p02"
 
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 
