@@ -57,19 +57,15 @@ private object RenderSupport {
   }
 
   class ChunkTransformer extends StatefulStage[HttpEntity.ChunkStreamPart, ByteString] {
-    var lastChunkSeen = false
-
     override def initial = new State {
       override def onPush(chunk: HttpEntity.ChunkStreamPart, ctx: Context[ByteString]): SyncDirective = {
-        if (chunk.isLastChunk)
-          lastChunkSeen = true
-        ctx.push(renderChunk(chunk))
+        val bytes = renderChunk(chunk)
+        if (chunk.isLastChunk) ctx.pushAndFinish(bytes)
+        else ctx.push(bytes)
       }
     }
-
     override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective =
-      if (lastChunkSeen) super.onUpstreamFinish(ctx)
-      else terminationEmit(Iterator.single(defaultLastChunkBytes), ctx)
+      terminationEmit(Iterator.single(defaultLastChunkBytes), ctx)
   }
 
   object CheckContentLengthTransformer {

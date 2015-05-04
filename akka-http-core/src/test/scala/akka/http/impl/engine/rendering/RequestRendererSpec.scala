@@ -150,6 +150,57 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         }
       }
 
+      "POST request with chunked body and explicit LastChunk" in new TestSetup() {
+        val chunks =
+          List(
+            ChunkStreamPart("XXXX"),
+            ChunkStreamPart("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            LastChunk)
+
+        HttpRequest(POST, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain`,
+          Source(chunks))) should renderTo {
+          """POST /abc/xyz HTTP/1.1
+            |Host: test.com:8080
+            |User-Agent: spray-can/1.0.0
+            |Transfer-Encoding: chunked
+            |Content-Type: text/plain
+            |
+            |4
+            |XXXX
+            |1a
+            |ABCDEFGHIJKLMNOPQRSTUVWXYZ
+            |0
+            |
+            |"""
+        }
+      }
+
+      "POST request with chunked body and extra LastChunks at the end (which should be ignored)" in new TestSetup() {
+        val chunks =
+          List(
+            ChunkStreamPart("XXXX"),
+            ChunkStreamPart("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            LastChunk,
+            LastChunk)
+
+        HttpRequest(POST, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain`,
+          Source(chunks))) should renderTo {
+          """POST /abc/xyz HTTP/1.1
+            |Host: test.com:8080
+            |User-Agent: spray-can/1.0.0
+            |Transfer-Encoding: chunked
+            |Content-Type: text/plain
+            |
+            |4
+            |XXXX
+            |1a
+            |ABCDEFGHIJKLMNOPQRSTUVWXYZ
+            |0
+            |
+            |"""
+        }
+      }
+
       "POST request with custom Transfer-Encoding header" in new TestSetup() {
         HttpRequest(POST, "/abc/xyz", List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
           entity = Chunked(ContentTypes.`text/plain`, source("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
