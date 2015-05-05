@@ -47,7 +47,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def bind(interface: String, port: Int, materializer: FlowMaterializer): Source[IncomingConnection, Future[ServerBinding]] =
     Source.adapt(delegate.bind(interface, port)(materializer)
       .map(new IncomingConnection(_))
-      .mapMaterialized(_.map(new ServerBinding(_))(ec)))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
   /**
    * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -66,7 +66,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
            materializer: FlowMaterializer): Source[IncomingConnection, Future[ServerBinding]] =
     Source.adapt(delegate.bind(interface, port, backlog, immutableSeq(options), settings, log)(materializer)
       .map(new IncomingConnection(_))
-      .mapMaterialized(_.map(new ServerBinding(_))(ec)))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
@@ -173,7 +173,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     Flow.wrap {
       akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
         .viaMat(delegate.outgoingConnection(host, port))(Keep.right)
-        .mapMaterialized(_.map(new OutgoingConnection(_))(ec))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec))
     }
 
   /**
@@ -188,7 +188,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     Flow.wrap {
       akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
         .viaMat(delegate.outgoingConnection(host, port, localAddress.asScala, immutableSeq(options), settings, log))(Keep.right)
-        .mapMaterialized(_.map(new OutgoingConnection(_))(ec))
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec))
     }
 
   /**

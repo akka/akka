@@ -33,7 +33,7 @@ private[http] object BodyPartRenderer {
 
         def bodyPartChunks(data: Source[ByteString, Any]): Source[ChunkStreamPart, Any] = {
           val entityChunks = data.map[ChunkStreamPart](Chunk(_))
-          (chunkStream(r.get) ++ entityChunks).mapMaterialized((_) ⇒ ())
+          (chunkStream(r.get) ++ entityChunks).mapMaterializedValue((_) ⇒ ())
         }
 
         def completePartRendering(): Source[ChunkStreamPart, Any] =

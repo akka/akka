@@ -28,7 +28,7 @@ class GraphMatValueSpec extends AkkaSpec {
       val f = FlowGraph.closed(foldSink) { implicit b ⇒
         fold ⇒
           Source(1 to 10) ~> fold
-          b.matValue.mapAsync(4)(identity) ~> Sink(sub)
+          b.materializedValue.mapAsync(4)(identity) ~> Sink(sub)
       }.run()
 
       val r1 = Await.result(f, 3.seconds)
@@ -45,8 +45,8 @@ class GraphMatValueSpec extends AkkaSpec {
         fold ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
           Source(1 to 10) ~> fold
-          b.matValue.mapAsync(4)(identity) ~> zip.in0
-          b.matValue.mapAsync(4)(identity) ~> zip.in1
+          b.materializedValue.mapAsync(4)(identity) ~> zip.in0
+          b.materializedValue.mapAsync(4)(identity) ~> zip.in1
 
           zip.out ~> Sink(sub)
       }.run()
@@ -62,7 +62,7 @@ class GraphMatValueSpec extends AkkaSpec {
     val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source(foldSink) { implicit b ⇒
       fold ⇒
         Source(1 to 10) ~> fold
-        b.matValue
+        b.materializedValue
     }
 
     "allow exposing the materialized value as port" in {
@@ -72,7 +72,7 @@ class GraphMatValueSpec extends AkkaSpec {
     }
 
     "allow exposing the materialized value as port even if wrapped and the final materialized value is Unit" in {
-      val noMatSource: Source[Int, Unit] = foldFeedbackSource.mapAsync(4)(identity).map(_ + 100).mapMaterialized((_) ⇒ ())
+      val noMatSource: Source[Int, Unit] = foldFeedbackSource.mapAsync(4)(identity).map(_ + 100).mapMaterializedValue((_) ⇒ ())
       Await.result(noMatSource.runWith(Sink.head), 3.seconds) should ===(155)
     }
 

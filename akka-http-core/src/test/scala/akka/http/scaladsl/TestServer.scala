@@ -70,7 +70,7 @@ object TestServer extends App {
     Flow[Message]
       .collect {
         case TextMessage.Strict(name)         ⇒ TextMessage.Strict(s"Hello '$name'")
-        case TextMessage.Streamed(nameStream) ⇒ TextMessage.Streamed(Source.single("Hello ") ++ nameStream mapMaterialized (_ ⇒ ()))
+        case TextMessage.Streamed(nameStream) ⇒ TextMessage.Streamed(Source.single("Hello ") ++ nameStream mapMaterializedValue (_ ⇒ ()))
         // ignore binary messages
       }
 }

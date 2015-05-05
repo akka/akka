@@ -300,7 +300,7 @@ object FlowGraph {
      *
      * @return The outlet that will emit the materialized value.
      */
-    def matValue: Outlet[Mat] = delegate.matValue
+    def materializedValue: Outlet[Mat] = delegate.materializedValue
 
     def run(mat: FlowMaterializer): Unit = delegate.buildRunnable().run()(mat)
 

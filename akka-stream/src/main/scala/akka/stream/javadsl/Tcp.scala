@@ -107,7 +107,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
            idleTimeout: Duration): Source[IncomingConnection, Future[ServerBinding]] =
     Source.adapt(delegate.bind(interface, port, backlog, immutableSeq(options), idleTimeout)
       .map(new IncomingConnection(_))
-      .mapMaterialized(_.map(new ServerBinding(_))(ec)))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
   /**
    * Creates a [[Tcp.ServerBinding]] without specifying options.
@@ -116,7 +116,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   def bind(interface: String, port: Int): Source[IncomingConnection, Future[ServerBinding]] =
     Source.adapt(delegate.bind(interface, port)
       .map(new IncomingConnection(_))
-      .mapMaterialized(_.map(new ServerBinding(_))(ec)))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
@@ -127,7 +127,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
                          connectTimeout: Duration,
                          idleTimeout: Duration): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
     Flow.adapt(delegate.outgoingConnection(remoteAddress, localAddress, immutableSeq(options), connectTimeout, idleTimeout)
-      .mapMaterialized(_.map(new OutgoingConnection(_))(ec)))
+      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec)))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] without specifying options.
@@ -135,6 +135,6 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
     Flow.adapt(delegate.outgoingConnection(new InetSocketAddress(host, port))
-      .mapMaterialized(_.map(new OutgoingConnection(_))(ec)))
+      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec)))
 
 }

@@ -62,8 +62,8 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Transform only the materialized value of this Flow, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: function.Function[Mat, Mat2]): Flow[In, Out, Mat2] =
-    new Flow(delegate.mapMaterialized(f.apply _))
+  def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Flow[In, Out, Mat2] =
+    new Flow(delegate.mapMaterializedValue(f.apply _))
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
@@ -593,7 +593,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * the first element emitted by the given ("second") source is emitted after the last element of this Flow.
    */
   def concat[M](second: Graph[SourceShape[Out @uncheckedVariance], M]): javadsl.Flow[In, Out, Mat @uncheckedVariance Pair M] =
-    new Flow(delegate.concat(second).mapMaterialized(p ⇒ Pair(p._1, p._2)))
+    new Flow(delegate.concat(second).mapMaterializedValue(p ⇒ Pair(p._1, p._2)))
 
   override def withAttributes(attr: OperationAttributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))
@@ -690,15 +690,15 @@ trait RunnableFlow[+Mat] extends Graph[ClosedShape, Mat] {
   /**
    * Transform only the materialized value of this RunnableFlow, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: function.Function[Mat, Mat2]): RunnableFlow[Mat2]
+  def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableFlow[Mat2]
 }
 
 /** INTERNAL API */
 private[akka] class RunnableFlowAdapter[Mat](runnable: scaladsl.RunnableFlow[Mat]) extends RunnableFlow[Mat] {
   def shape = ClosedShape
   def module = runnable.module
-  override def mapMaterialized[Mat2](f: function.Function[Mat, Mat2]): RunnableFlow[Mat2] =
-    new RunnableFlowAdapter(runnable.mapMaterialized(f.apply _))
+  override def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableFlow[Mat2] =
+    new RunnableFlowAdapter(runnable.mapMaterializedValue(f.apply _))
   override def run(materializer: FlowMaterializer): Mat = runnable.run()(materializer)
 
   override def withAttributes(attr: OperationAttributes): RunnableFlow[Mat] =

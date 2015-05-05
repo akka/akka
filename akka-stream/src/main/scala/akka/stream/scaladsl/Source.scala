@@ -84,7 +84,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   /**
    * Transform only the materialized value of this Source, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: Mat ⇒ Mat2): Repr[Out, Mat2] =
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Repr[Out, Mat2] =
     new Source(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /** INTERNAL API */

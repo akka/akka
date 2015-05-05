@@ -144,8 +144,8 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
   /**
    * Transform only the materialized value of this Sink, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: function.Function[Mat, Mat2]): Sink[In, Mat2] =
-    new Sink(delegate.mapMaterialized(f.apply _))
+  def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Sink[In, Mat2] =
+    new Sink(delegate.mapMaterializedValue(f.apply _))
 
   override def withAttributes(attr: OperationAttributes): javadsl.Sink[In, Mat] =
     new Sink(delegate.withAttributes(attr))

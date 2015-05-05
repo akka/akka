@@ -68,7 +68,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * flow into the materialized value of the resulting Flow.
    */
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
-    if (this.isIdentity) flow.asInstanceOf[Flow[In, T, Mat2]].mapMaterialized(combine(().asInstanceOf[Mat], _))
+    if (this.isIdentity) flow.asInstanceOf[Flow[In, T, Mat2]].mapMaterializedValue(combine(().asInstanceOf[Mat], _))
     else {
       val flowCopy = flow.module.carbonCopy
       new Flow(
@@ -129,7 +129,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   /**
    * Transform the materialized value of this Flow, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: Mat ⇒ Mat2): Repr[Out, Mat2] =
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Repr[Out, Mat2] =
     new Flow(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /**
@@ -320,7 +320,7 @@ case class RunnableFlow[+Mat](private[stream] val module: StreamLayout.Module) e
   /**
    * Transform only the materialized value of this RunnableFlow, leaving all other properties as they were.
    */
-  def mapMaterialized[Mat2](f: Mat ⇒ Mat2): RunnableFlow[Mat2] =
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): RunnableFlow[Mat2] =
     copy(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /**

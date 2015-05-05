@@ -367,7 +367,7 @@ object FlowGraph extends GraphApply {
      *
      * @return The outlet that will emit the materialized value.
      */
-    def matValue: Outlet[M] = {
+    def materializedValue: Outlet[M] = {
       val module = new MaterializedValueSource[Any]
       moduleInProgress = moduleInProgress.grow(module)
       module.shape.outlet.asInstanceOf[Outlet[M]]

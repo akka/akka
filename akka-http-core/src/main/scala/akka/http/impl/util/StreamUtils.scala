@@ -188,7 +188,7 @@ private[http] object StreamUtils {
    */
   def oneTimeSource[T, Mat](other: Source[T, Mat], errorMsg: String = "One time source can only be instantiated once"): Source[T, Mat] = {
     val onlyOnceFlag = new AtomicBoolean(false)
-    other.mapMaterialized { elem ⇒
+    other.mapMaterializedValue { elem ⇒
       if (onlyOnceFlag.get() || !onlyOnceFlag.compareAndSet(false, true))
         throw new IllegalStateException(errorMsg)
       elem
