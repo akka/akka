@@ -41,8 +41,9 @@ private[akka] trait AbstractProps {
    */
   def create[T <: Actor](creator: Creator[T]): Props = {
     val cc = creator.getClass
-    if ((cc.getEnclosingClass ne null) && (cc.getModifiers & Modifier.STATIC) == 0)
+    if (!isNotClosingOverEnclosingClass(cc)) {
       throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level")
+    }
     val ac = classOf[Actor]
     val coc = classOf[Creator[_]]
     val actorClass = Reflect.findMarker(cc, coc) match {
@@ -57,6 +58,19 @@ private[akka] trait AbstractProps {
         throw new IllegalArgumentException(s"erased Creator types are unsupported, use Props.create(actorClass, creator) instead")
     }
     create(classOf[CreatorConsumer], actorClass, creator)
+  }
+
+  private final def isNotClosingOverEnclosingClass(clazz: Class[_]): Boolean = {
+    def hasDeclaredConstructorWithEmptyParams: Boolean =
+      try { clazz.getDeclaredConstructor(); true }
+      catch { case ex: NoSuchMethodException ⇒ false }
+
+    def checkConstructors = {
+      val constructorsLength = clazz.getConstructors.length
+      constructorsLength > 0 || (constructorsLength == 0 && hasDeclaredConstructorWithEmptyParams)
+    }
+
+    (clazz.getEnclosingClass eq null) || checkConstructors
   }
 
   /**
