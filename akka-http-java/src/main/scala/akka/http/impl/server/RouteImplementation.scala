@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.http.javadsl.model.ContentType
-import akka.http.scaladsl.server.directives.AuthenticationDirectives.UserCredentials
+import akka.http.scaladsl.server.directives.AuthenticationDirectives.Credentials
 import akka.http.scaladsl.server.directives.ContentTypeResolver
 import akka.http.scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer
 import akka.http.scaladsl.model.HttpHeader
@@ -94,17 +94,41 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
       HttpBasicAuthentication(authenticator.realm) { creds ⇒
         val javaCreds =
           creds match {
-            case UserCredentials.Missing ⇒
+            case Credentials.Missing ⇒
               new BasicUserCredentials {
                 def available: Boolean = false
                 def userName: String = throw new IllegalStateException("Credentials missing")
-                def verifySecret(secret: String): Boolean = throw new IllegalStateException("Credentials missing")
+                def verify(secret: String): Boolean = throw new IllegalStateException("Credentials missing")
               }
-            case p @ UserCredentials.Provided(name) ⇒
+            case p @ Credentials.Provided(name) ⇒
               new BasicUserCredentials {
                 def available: Boolean = true
                 def userName: String = name
-                def verifySecret(secret: String): Boolean = p.verifySecret(secret)
+                def verify(secret: String): Boolean = p.verify(secret)
+              }
+          }
+
+        authenticator.authenticate(javaCreds)
+      }.flatMap { user ⇒
+        addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
+      }.apply(inner)
+
+    case BearerAuthentication(authenticator, children) ⇒
+      val inner = apply(RouteAlternatives(children))
+      BearerTokenAuthentication(authenticator.realm) { creds ⇒
+        val javaCreds =
+          creds match {
+            case Credentials.Missing ⇒
+              new BearerTokenCredentials {
+                def available: Boolean = false
+                def token: String = throw new IllegalStateException("Credentials missing")
+                def verify(secret: String): Boolean = throw new IllegalStateException("Credentials missing")
+              }
+            case p @ Credentials.Provided(token) ⇒
+              new BearerTokenCredentials {
+                def available: Boolean = true
+                def token: String = token
+                def verify(secret: String): Boolean = p.verify(secret)
               }
           }
 

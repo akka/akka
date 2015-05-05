@@ -36,6 +36,7 @@ private[http] object RouteStructure {
   case class RawPathPrefix(pathElements: immutable.Seq[PathMatcher[_]], children: immutable.Seq[Route]) extends DirectiveRoute
   case class Extract(extractions: Seq[StandaloneExtractionImpl[_]], children: immutable.Seq[Route]) extends DirectiveRoute
   case class BasicAuthentication(authenticator: HttpBasicAuthenticator[_], children: immutable.Seq[Route]) extends DirectiveRoute
+  case class BearerAuthentication(authenticator: BearerTokenAuthenticator[_], children: immutable.Seq[Route]) extends DirectiveRoute
   case class EncodeResponse(coders: immutable.Seq[Coder], children: immutable.Seq[Route]) extends DirectiveRoute
 
   case class Conditional(entityTag: EntityTag, lastModified: DateTime, children: immutable.Seq[Route]) extends DirectiveRoute

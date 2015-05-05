@@ -19,7 +19,7 @@ public class AuthenticationDirectivesTest extends JUnitRouteTest {
             public Future<Option<String>> authenticate(BasicUserCredentials credentials) {
                 if (credentials.available() && // no anonymous access
                         credentials.userName().equals("sina") &&
-                        credentials.verifySecret("1234"))
+                        credentials.verify("1234"))
                     return authenticateAs("Sina");
                 else return refuseAccess();
             }

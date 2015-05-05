@@ -24,8 +24,8 @@ object TestServer extends App {
 
   def auth =
     HttpBasicAuthenticator.provideUserName {
-      case p @ UserCredentials.Provided(name) ⇒ p.verifySecret(name + "-password")
-      case _                                  ⇒ false
+      case p @ Credentials.Provided(name) ⇒ p.verify(name + "-password")
+      case _                              ⇒ false
     }
 
   val bindingFuture = Http().bindAndHandle({
