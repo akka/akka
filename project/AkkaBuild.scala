@@ -82,7 +82,7 @@ object AkkaBuild extends Build {
       validatePullRequest <<= Seq(test in Test in stream, SphinxSupport.generate in Sphinx in docsDev,
       Maven.mvnExec, test in Test in streamTestkit, test in Test in streamTests, test in Test in streamTck,
       test in Test in httpCore,
-      test in Test in httpTestkitScala, test in Test in httpTestkitJava, 
+      test in Test in httpTestkitScala, test in Test in httpTestkitJava,
       test in Test in httpTestsScala, test in Test in httpTestsJava, test in Test in httpTestsJava8,
       test in Test in docsDev,
       compile in Compile in benchJmh
@@ -600,9 +600,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ Seq(
       version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.streamTest,
-      previousArtifact := None,
-      // FIXME remove this when persistence tests are moved out
-      fork in Test := true
+      previousArtifact := None
     )
   )
 
