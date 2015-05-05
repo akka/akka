@@ -106,7 +106,7 @@ abstract class ClusterMetricsEnabledSpec extends MultiNodeSpec(ClusterMetricsEna
 
   "Cluster metrics" must {
     "periodically collect metrics on each node, publish to the event stream, " +
-      "and gossip metrics around the node ring" taggedAs LongRunningTest in within(60 seconds) {
+      "and gossip metrics around the node ring" in within(60 seconds) {
         awaitClusterUp(roles: _*)
         enterBarrier("cluster-started")
         awaitAssert(clusterView.members.count(_.status == MemberStatus.Up) should ===(roles.size))
@@ -117,7 +117,7 @@ abstract class ClusterMetricsEnabledSpec extends MultiNodeSpec(ClusterMetricsEna
         collector.sample.metrics.size should be > (3)
         enterBarrier("after")
       }
-    "reflect the correct number of node metrics in cluster view" taggedAs LongRunningTest in within(30 seconds) {
+    "reflect the correct number of node metrics in cluster view" in within(30 seconds) {
       runOn(node2) {
         cluster.leave(node1)
       }
@@ -146,7 +146,7 @@ abstract class ClusterMetricsDisabledSpec extends MultiNodeSpec(ClusterMetricsDi
   val metricsView = new ClusterMetricsView(cluster.system)
 
   "Cluster metrics" must {
-    "not collect metrics, not publish metrics events, and not gossip metrics" taggedAs LongRunningTest in {
+    "not collect metrics, not publish metrics events, and not gossip metrics" in {
       awaitClusterUp(roles: _*)
       // TODO ensure same contract
       //clusterView.clusterMetrics.size should ===(0)

@@ -32,7 +32,7 @@ abstract class NodeUpSpec
   import ClusterEvent._
 
   "A cluster node that is joining another cluster" must {
-    "not be able to join a node that is not a cluster member" taggedAs LongRunningTest in {
+    "not be able to join a node that is not a cluster member" in {
 
       runOn(first) {
         cluster.join(second)
@@ -45,12 +45,12 @@ abstract class NodeUpSpec
       enterBarrier("after-0")
     }
 
-    "be moved to UP by the leader after a convergence" taggedAs LongRunningTest in {
+    "be moved to UP by the leader after a convergence" in {
       awaitClusterUp(first, second)
       enterBarrier("after-1")
     }
 
-    "be unaffected when joining again" taggedAs LongRunningTest in {
+    "be unaffected when joining again" in {
 
       val unexpected = new AtomicReference[SortedSet[Member]](SortedSet.empty)
       cluster.subscribe(system.actorOf(Props(new Actor {
