@@ -165,7 +165,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       m1.isInstanceOf[Unit] should be(true)
       m2.isInstanceOf[Unit] should be(true)
 
-      runnable.mapMaterialized((_) ⇒ "boo").run() should be("boo")
+      runnable.mapMaterializedValue((_) ⇒ "boo").run() should be("boo")
 
     }
 
@@ -179,7 +179,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       m2.isInstanceOf[Unit] should be(true)
       m3.isInstanceOf[Unit] should be(true)
 
-      runnable.mapMaterialized((_) ⇒ "boo").run() should be("boo")
+      runnable.mapMaterializedValue((_) ⇒ "boo").run() should be("boo")
 
     }
   }

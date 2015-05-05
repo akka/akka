@@ -102,7 +102,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       }
       "are triggered in `mapMaterialized`" in {
         val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
-        val flow = Flow[HttpRequest].map(_ ⇒ HttpResponse()).mapMaterialized(_ ⇒ sys.error("BOOM"))
+        val flow = Flow[HttpRequest].map(_ ⇒ HttpResponse()).mapMaterializedValue(_ ⇒ sys.error("BOOM"))
         val binding = Http().bindAndHandle(flow, hostname, port)
         val b1 = Await.result(binding, 3.seconds)
 

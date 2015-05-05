@@ -200,10 +200,10 @@ Accessing the materialized value inside the Graph
 -------------------------------------------------
 
 In certain cases it might be necessary to feed back the materialized value of a Graph (partial, closed or backing a
-Source, Sink, Flow or BidiFlow). This is possible by using ``builder.matValue`` which gives an ``Outlet`` that
+Source, Sink, Flow or BidiFlow). This is possible by using ``builder.materializedValue`` which gives an ``Outlet`` that
 can be used in the graph as an ordinary source or outlet, and which will eventually emit the materialized value.
-If the materialized value is needed at more than one place, it is possible to call ``matValue`` any number of times
-to acquire the necessary number of outlets.
+If the materialized value is needed at more than one place, it is possible to call ``materializedValue`` any number of
+times to acquire the necessary number of outlets.
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowGraphDocTest.java#flow-graph-matvalue
 
