@@ -95,12 +95,12 @@ To select a Protocol Family you must extend ``akka.io.Inet.DatagramChannelCreato
 class which implements ``akka.io.Inet.SocketOption``. Provide custom logic
 for opening a datagram channel by overriding :meth:`create` method.
 
-.. includecode:: ../../../akka-samples/akka-docs-udp-multicast/src/main/java/docs/io/JavaUdpMulticast.java#inet6-protocol-family
+.. includecode:: code/docs/io/JavaUdpMulticast.java#inet6-protocol-family
 
 Another socket option will be needed to join a multicast group.
 
-.. includecode:: ../../../akka-samples/akka-docs-udp-multicast/src/main/java/docs/io/JavaUdpMulticast.java#multicast-group
+.. includecode:: code/docs/io/JavaUdpMulticast.java#multicast-group
 
 Socket options must be provided to :meth:`UdpMessage.bind` command.
 
-.. includecode:: ../../../akka-samples/akka-docs-udp-multicast/src/main/java/docs/io/JavaUdpMulticast.java#bind
+.. includecode:: code/docs/io/JavaUdpMulticast.java#bind

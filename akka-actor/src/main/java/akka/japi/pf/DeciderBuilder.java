@@ -10,18 +10,19 @@ import static akka.actor.SupervisorStrategy.Directive;
  * Used for building a partial function for {@link akka.actor.Actor#supervisorStrategy() Actor.supervisorStrategy()}.
  * *
  * Inside an actor you can use it like this with Java 8 to define your supervisorStrategy.
- * <p/>
+ * <p>
  * Example:
+ * </p>
  * <pre>
- * @Override
+ * &#64;Override
  * private static SupervisorStrategy strategy =
  *   new OneForOneStrategy(10, Duration.create("1 minute"), DeciderBuilder.
- *     match(ArithmeticException.class, e -> resume()).
- *     match(NullPointerException.class, e -> restart()).
- *     match(IllegalArgumentException.class, e -> stop()).
- *     matchAny(o -> escalate()).build());
+ *     match(ArithmeticException.class, e -&gt; resume()).
+ *     match(NullPointerException.class, e -&gt; restart()).
+ *     match(IllegalArgumentException.class, e -&gt; stop()).
+ *     matchAny(o -&gt; escalate()).build());
  *
- * @Override
+ * &#64;Override
  * public SupervisorStrategy supervisorStrategy() {
  *   return strategy;
  * }

@@ -204,7 +204,7 @@ before or after using them to construct an actor system:
 
 .. parsed-literal::
 
-  Welcome to Scala version @scalaVersion@ (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_27).
+  Welcome to Scala version @scalaVersion@ (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0).
   Type in expressions to have them evaluated.
   Type :help for more information.
 

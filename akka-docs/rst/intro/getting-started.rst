@@ -4,8 +4,10 @@ Getting Started
 Prerequisites
 -------------
 
-Akka requires that you have `Java 1.6 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or
+Akka requires that you have `Java 8 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or
 later installed on you machine.
+
+`Typesafe <http://www.typesafe.com>`_ provides versions of Akka that are compatible with Java 6, 7 and 8.
 
 Getting Started Guides and Template Projects
 --------------------------------------------
@@ -33,8 +35,7 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-cluster`` – Cluster membership management, elastic routers.
 
-- ``akka-osgi`` – base bundle for using Akka in OSGi containers, containing the
-  ``akka-actor`` classes
+- ``akka-osgi`` – utilities for using Akka in OSGi containers
 
 - ``akka-osgi-aries`` – Aries blueprint for provisioning actor systems
 

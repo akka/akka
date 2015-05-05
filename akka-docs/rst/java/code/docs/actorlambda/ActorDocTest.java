@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package docs.actor;
+package docs.actorlambda;
 
 import akka.actor.*;
 import akka.japi.pf.ReceiveBuilder;
@@ -13,8 +13,8 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
-import static docs.actor.Messages.Swap.Swap;
-import static docs.actor.Messages.*;
+import static docs.actorlambda.Messages.Swap.Swap;
+import static docs.actorlambda.Messages.*;
 import static akka.japi.Util.immutableSeq;
 
 import java.util.concurrent.TimeUnit;

@@ -332,7 +332,7 @@ public class JavaTestKit {
    * 
    * <pre>
    * <code>
-   * final String out = new ExpectMsg<String>("match hint") {
+   * final String out = new ExpectMsg&lt;String&gt;("match hint") {
    *   protected String match(Object in) {
    *     if (in instanceof Integer)
    *       return "match";

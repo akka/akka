@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package docs.actor.japi;
+package docs.actorlambda.japi;
 
 //#all
 //#imports
@@ -28,10 +28,10 @@ import static akka.actor.SupervisorStrategy.escalate;
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
 
-import static docs.actor.japi.FaultHandlingDocSample.WorkerApi.*;
-import static docs.actor.japi.FaultHandlingDocSample.CounterServiceApi.*;
-import static docs.actor.japi.FaultHandlingDocSample.CounterApi.*;
-import static docs.actor.japi.FaultHandlingDocSample.StorageApi.*;
+import static docs.actorlambda.japi.FaultHandlingDocSample.WorkerApi.*;
+import static docs.actorlambda.japi.FaultHandlingDocSample.CounterServiceApi.*;
+import static docs.actorlambda.japi.FaultHandlingDocSample.CounterApi.*;
+import static docs.actorlambda.japi.FaultHandlingDocSample.StorageApi.*;
 
 //#imports
 
