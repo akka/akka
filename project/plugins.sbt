@@ -11,7 +11,9 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.6.0")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.6")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1-b71a3e88f0a21d6ce5efe7c0580dba9784295358")
+
+resolvers += Resolver.url("2m-sbt-plugins", url("https://dl.bintray.com/2m/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.3")
 
