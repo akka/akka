@@ -37,7 +37,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
   def runWith[Mat2](source: Graph[SourceShape[In], Mat2])(implicit materializer: FlowMaterializer): Mat2 =
     Source.wrap(source).to(this).run()
 
-  def mapMaterialized[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
     new Sink(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   override def withAttributes(attr: OperationAttributes): Sink[In, Mat] =

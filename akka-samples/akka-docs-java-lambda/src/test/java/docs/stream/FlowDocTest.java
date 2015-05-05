@@ -263,7 +263,7 @@ public class FlowDocTest {
 
 
     RunnableFlow<Cancellable> r11 =
-    r9.mapMaterialized( (nestedTuple) -> {
+    r9.mapMaterializedValue( (nestedTuple) -> {
       Promise<BoxedUnit> p = nestedTuple.first().first();
       Cancellable c = nestedTuple.first().second();
       Future<Integer> f = nestedTuple.second();
