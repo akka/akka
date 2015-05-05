@@ -29,6 +29,8 @@ object AkkaBuild extends Build {
 
   val enableMiMa = false
 
+  val parallelExecutionByDefault = false // TODO: enable this once we're sure it doesn not break things
+
   lazy val buildSettings = Seq(
     organization        := "com.typesafe.akka",
     version             := "2.4-SNAPSHOT",
@@ -42,7 +44,7 @@ object AkkaBuild extends Build {
     settings = parentSettings ++ Release.settings ++ unidocSettings ++
       SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++ scaladocSettings ++
       GraphiteBuildEvents.settings ++ Protobuf.settings ++ Unidoc.settings(Seq(samples), Seq(remoteTests)) ++ Seq(
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
 
       S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
@@ -327,7 +329,7 @@ object AkkaBuild extends Build {
      * Test settings
      */
 
-    parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
+    parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
     logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
     // show full stack traces and test case durations

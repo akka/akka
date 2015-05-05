@@ -29,3 +29,8 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.1.6")
 libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
+
+// for advanced PR validation features
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.4")
+
+libraryDependencies += "org.kohsuke" % "github-api" % "1.68"

@@ -21,3 +21,5 @@ MimaKeys.previousArtifact := akkaPreviousArtifact("akka-persistence-experimental
 fork in Test := true
 
 javaOptions in Test := MultiNode.defaultMultiJvmOptions
+
+

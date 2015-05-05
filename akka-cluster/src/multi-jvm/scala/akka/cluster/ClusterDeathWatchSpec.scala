@@ -72,7 +72,7 @@ abstract class ClusterDeathWatchSpec
   }
 
   "An actor watching a remote actor in the cluster" must {
-    "receive Terminated when watched node becomes Down/Removed" taggedAs LongRunningTest in within(20 seconds) {
+    "receive Terminated when watched node becomes Down/Removed" in within(20 seconds) {
       awaitClusterUp(first, second, third, fourth)
       enterBarrier("cluster-up")
 
@@ -141,7 +141,7 @@ abstract class ClusterDeathWatchSpec
 
     }
 
-    "receive Terminated when watched path doesn't exist" taggedAs LongRunningTest ignore {
+    "receive Terminated when watched path doesn't exist" ignore {
       Thread.sleep(5000)
       runOn(first) {
         val path = RootActorPath(second) / "user" / "non-existing"
@@ -158,7 +158,7 @@ abstract class ClusterDeathWatchSpec
       enterBarrier("after-2")
     }
 
-    "be able to watch actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" taggedAs LongRunningTest in within(20 seconds) {
+    "be able to watch actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" in within(20 seconds) {
       runOn(fifth) {
         system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local), name = "subject5")
       }
@@ -210,7 +210,7 @@ abstract class ClusterDeathWatchSpec
       enterBarrier("after-3")
     }
 
-    "be able to shutdown system when using remote deployed actor on node that crash" taggedAs LongRunningTest in within(20 seconds) {
+    "be able to shutdown system when using remote deployed actor on node that crash" in within(20 seconds) {
       // fourth actor system will be shutdown, not part of testConductor any more
       // so we can't use barriers to synchronize with it
       val firstAddress = address(first)

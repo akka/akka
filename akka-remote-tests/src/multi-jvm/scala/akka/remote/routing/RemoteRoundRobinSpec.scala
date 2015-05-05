@@ -79,7 +79,7 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
   def initialParticipants = roles.size
 
   "A remote round robin pool" must {
-    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
+    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       runOn(first, second, third) {
         enterBarrier("start", "broadcast-end", "end")
@@ -120,7 +120,7 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
   }
 
   "A remote round robin pool with resizer" must {
-    "be locally instantiated on a remote node after several resize rounds" taggedAs LongRunningTest in within(5 seconds) {
+    "be locally instantiated on a remote node after several resize rounds" in within(5 seconds) {
 
       runOn(first, second, third) {
         enterBarrier("start", "broadcast-end", "end")
@@ -163,7 +163,7 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
   }
 
   "A remote round robin group" must {
-    "send messages with actor selection to remote paths" taggedAs LongRunningTest in {
+    "send messages with actor selection to remote paths" in {
 
       runOn(first, second, third) {
         system.actorOf(Props[SomeActor], name = "target-" + myself.name)
