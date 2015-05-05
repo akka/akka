@@ -95,12 +95,12 @@ To select a Protocol Family you must extend ``akka.io.Inet.DatagramChannelCreato
 class which extends ``akka.io.Inet.SocketOption``. Provide custom logic
 for opening a datagram channel by overriding :meth:`create` method.
 
-.. includecode:: ../../../akka-samples/akka-docs-udp-multicast/src/main/scala/ScalaUdpMulticast.scala#inet6-protocol-family
+.. includecode:: code/docs/io/ScalaUdpMulticast.scala#inet6-protocol-family
 
 Another socket option will be needed to join a multicast group.
 
-.. includecode:: ../../../akka-samples/akka-docs-udp-multicast/src/main/scala/ScalaUdpMulticast.scala#multicast-group
+.. includecode:: code/docs/io/ScalaUdpMulticast.scala#multicast-group
 
 Socket options must be provided to :class:`UdpMessage.Bind` message.
 
-.. includecode:: ../../../akka-samples/akka-docs-udp-multicast/src/main/scala/ScalaUdpMulticast.scala#bind
+.. includecode:: code/docs/io/ScalaUdpMulticast.scala#bind

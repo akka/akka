@@ -4,13 +4,13 @@
 
 package docs.io
 
-import java.net.{InetAddress, InetSocketAddress, NetworkInterface, StandardProtocolFamily}
+import java.net.{ InetAddress, InetSocketAddress, NetworkInterface, StandardProtocolFamily }
 import java.net.DatagramSocket
 import java.nio.channels.DatagramChannel
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
-import akka.io.Inet.{DatagramChannelCreator, SocketOption, SocketOptionV2}
-import akka.io.{IO, Udp}
+import akka.actor.{ Actor, ActorLogging, ActorRef }
+import akka.io.Inet.{ DatagramChannelCreator, SocketOption, SocketOptionV2 }
+import akka.io.{ IO, Udp }
 import akka.util.ByteString
 
 //#inet6-protocol-family

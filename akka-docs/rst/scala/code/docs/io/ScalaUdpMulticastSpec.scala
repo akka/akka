@@ -4,14 +4,14 @@
 
 package docs.io
 
-import java.net.{Inet6Address, InetSocketAddress, NetworkInterface, StandardProtocolFamily}
+import java.net.{ Inet6Address, InetSocketAddress, NetworkInterface, StandardProtocolFamily }
 import java.nio.channels.DatagramChannel
 import scala.util.Random
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ ActorSystem, Props }
 import akka.io.Udp
 import akka.testkit.TestKit
-import org.scalatest.{BeforeAndAfter, WordSpecLike}
+import org.scalatest.{ BeforeAndAfter, WordSpecLike }
 
 import scala.collection.JavaConversions.enumerationAsScalaIterator
 
@@ -42,7 +42,7 @@ class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")
     }
   }
 
-  def afterAll = {
+  def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 

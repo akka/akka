@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package docs.actor.fsm;
+package docs.actorlambda.fsm;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -13,11 +13,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import java.util.LinkedList;
 
-import docs.actor.fsm.*;
-import static docs.actor.fsm.Events.Batch;
-import static docs.actor.fsm.Events.Queue;
-import static docs.actor.fsm.Events.SetTarget;
-import static docs.actor.fsm.Events.Flush.Flush;
+import docs.actorlambda.fsm.*;
+import static docs.actorlambda.fsm.Events.Batch;
+import static docs.actorlambda.fsm.Events.Queue;
+import static docs.actorlambda.fsm.Events.SetTarget;
+import static docs.actorlambda.fsm.Events.Flush.Flush;
 
 //#test-code
 public class BuncherTest {

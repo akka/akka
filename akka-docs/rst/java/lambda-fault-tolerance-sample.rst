@@ -49,5 +49,5 @@ Step        Description
 Full Source Code of the Fault Tolerance Sample
 ------------------------------------------------------
 
-.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/japi/FaultHandlingDocSample.java#all
+.. includecode:: code/docs/actorlambda/japi/FaultHandlingDocSample.java#all
 
