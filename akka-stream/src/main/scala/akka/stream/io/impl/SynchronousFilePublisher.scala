@@ -47,7 +47,6 @@ private[akka] class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[
     try {
       raf = new RandomAccessFile(f, "r") // best way to express this in JDK6, OpenOption are available since JDK7
       chan = raf.getChannel
-      readAndSignal(initialBuffer)
     } catch {
       case ex: Exception ⇒
         onErrorThenStop(ex)
