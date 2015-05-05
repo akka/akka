@@ -106,8 +106,9 @@ object Props {
    */
   def create[T <: Actor](creator: Creator[T]): Props = {
     val cc = creator.getClass
-    if ((cc.getEnclosingClass ne null) && (cc.getModifiers & Modifier.STATIC) == 0)
+    if (!isNotClosingOverEnclosingClass(cc)) {
       throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level")
+    }
     val ac = classOf[Actor]
     val coc = classOf[Creator[_]]
     val actorClass = Reflect.findMarker(cc, coc) match {
@@ -129,6 +130,21 @@ object Props {
    */
   def create[T <: Actor](actorClass: Class[T], creator: Creator[T]): Props = {
     apply(defaultDeploy, classOf[CreatorConsumer], actorClass :: creator :: Nil)
+  }
+
+  private final def isNotClosingOverEnclosingClass(clazz: Class[_]): Boolean = {
+    def findMatchingConstructor(argTypes: Array[Class[_]]): Boolean =
+      try { val c = clazz.getConstructor(argTypes: _*); true }
+      catch { case ex: NoSuchMethodException ⇒ false }
+    def findMatchingDeclaredConstructor(argTypes: Array[Class[_]]): Boolean =
+      try { val c = clazz.getDeclaredConstructor(argTypes: _*); true }
+      catch { case ex: NoSuchMethodException ⇒ false }
+
+    //noinspection EmptyCheck
+    def defaultEmptyConstructor = clazz.getConstructors.length == 0 && findMatchingDeclaredConstructor(Array.empty)
+    def matchingConstructor = clazz.getDeclaredConstructors.exists { c ⇒ findMatchingConstructor(c.getParameterTypes) }
+
+    defaultEmptyConstructor || matchingConstructor
   }
 }
 
