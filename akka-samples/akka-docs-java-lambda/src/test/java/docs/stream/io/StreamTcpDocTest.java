@@ -7,6 +7,8 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
+
+import akka.stream.io.Framing;
 import docs.stream.cookbook.RecipeParseLines;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -80,7 +82,7 @@ public class StreamTcpDocTest {
         System.out.println("New connection from: " + connection.remoteAddress());
 
         final Flow<ByteString, ByteString, BoxedUnit> echo = Flow.of(ByteString.class)
-          .transform(() -> RecipeParseLines.parseLines("\n", 256))
+          .via(Framing.lines("\n", 256, false))
           .map(s -> s + "!!!\n")
           .map(s -> ByteString.fromString(s));
 
@@ -118,7 +120,7 @@ public class StreamTcpDocTest {
           Source.single(ByteString.fromString(welcomeMsg));
       final Flow<ByteString, ByteString, BoxedUnit> echoFlow =
           Flow.of(ByteString.class)
-            .transform(() -> RecipeParseLines.parseLines("\n", 256))
+            .via(Framing.lines("\n", 256, false))
             //#welcome-banner-chat-server
             .map(command -> {
               serverProbe.ref().tell(command, null);
@@ -169,7 +171,7 @@ public class StreamTcpDocTest {
       };
   
       final Flow<ByteString, ByteString, BoxedUnit> repl = Flow.of(ByteString.class)
-        .transform(() -> RecipeParseLines.parseLines("\n", 256))
+        .via(Framing.lines("\n", 256, false))
         .map(text -> {System.out.println("Server: " + text); return "next";})
         .map(elem -> readLine("> "))
         .transform(() -> replParser);
