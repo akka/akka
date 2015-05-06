@@ -145,24 +145,22 @@ object PersistenceTCKDoc {
     import akka.persistence.journal.JournalSpec
 
     //#journal-tck-scala
-    class MyJournalSpec extends JournalSpec {
-      override val config = ConfigFactory.parseString(
+    class MyJournalSpec extends JournalSpec(
+      config = ConfigFactory.parseString(
         """
         akka.persistence.journal.plugin = "my.journal.plugin"
-        """)
-    }
+        """))
     //#journal-tck-scala
   }
   new AnyRef {
     import akka.persistence.snapshot.SnapshotStoreSpec
 
     //#snapshot-store-tck-scala
-    class MySnapshotStoreSpec extends SnapshotStoreSpec {
-      override val config = ConfigFactory.parseString(
+    class MySnapshotStoreSpec extends SnapshotStoreSpec(
+      config = ConfigFactory.parseString(
         """
         akka.persistence.snapshot-store.plugin = "my.snapshot-store.plugin"
-        """)
-    }
+        """))
     //#snapshot-store-tck-scala
   }
   new AnyRef {
@@ -172,11 +170,11 @@ object PersistenceTCKDoc {
     import org.iq80.leveldb.util.FileUtils
 
     //#journal-tck-before-after-scala
-    class MyJournalSpec extends JournalSpec {
-      override val config = ConfigFactory.parseString(
+    class MyJournalSpec extends JournalSpec(
+      config = ConfigFactory.parseString(
         """
         akka.persistence.journal.plugin = "my.journal.plugin"
-        """)
+        """)) {
 
       val storageLocations = List(
         new File(system.settings.config.getString("akka.persistence.journal.leveldb.dir")),

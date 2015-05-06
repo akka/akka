@@ -28,8 +28,7 @@ object JournalSpec {
  * @see [[akka.persistence.journal.JournalPerfSpec]]
  * @see [[akka.persistence.japi.journal.JavaJournalPerfSpec]]
  */
-trait JournalSpec extends PluginSpec {
-  import JournalSpec._
+abstract class JournalSpec(config: Config) extends PluginSpec(config) {
 
   implicit lazy val system: ActorSystem = ActorSystem("JournalSpec", config.withFallback(JournalSpec.config))
 

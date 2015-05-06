@@ -11,7 +11,7 @@ import com.typesafe.config._
 
 import org.scalatest._
 
-trait PluginSpec extends TestKitBase with WordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
+abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
   private val counter = new AtomicInteger(0)
 
   private var _extension: Persistence = _
@@ -21,16 +21,14 @@ trait PluginSpec extends TestKitBase with WordSpecLike with Matchers with Before
   // this is akka-persistence internals and journals themselfes don't really care
   protected val actorInstanceId = 1
 
-  override protected def beforeEach(): Unit = {
+  override protected def beforeEach(): Unit =
     _pid = s"p-${counter.incrementAndGet()}"
-  }
+
   override protected def beforeAll(): Unit =
     _extension = Persistence(system)
 
   override protected def afterAll(): Unit =
     shutdown(system)
-
-  val config: Config
 
   def extension: Persistence =
     _extension

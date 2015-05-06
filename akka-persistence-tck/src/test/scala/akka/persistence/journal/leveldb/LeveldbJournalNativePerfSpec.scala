@@ -8,9 +8,9 @@ import akka.persistence.{ PersistenceSpec, PluginCleanup }
 import org.scalatest.DoNotDiscover
 
 @DoNotDiscover // because only checking that compilation is OK with JournalPerfSpec
-class LeveldbJournalNativePerfSpec extends JournalSpec with JournalPerfSpec with PluginCleanup {
-  lazy val config = PersistenceSpec.config(
+class LeveldbJournalNativePerfSpec extends JournalPerfSpec(
+  config = PersistenceSpec.config(
     "leveldb",
     "LeveldbJournalNativePerfSpec",
-    extraConfig = Some("akka.persistence.journal.leveldb.native = on"))
-}
+    extraConfig = Some("akka.persistence.journal.leveldb.native = on")))
+  with PluginCleanup
