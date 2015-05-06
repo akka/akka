@@ -410,7 +410,7 @@ object AkkaBuild extends Build {
   lazy val httpTestsScala = Project(
     id = "akka-http-tests-scala-experimental",
     base = file("akka-http-tests-scala"),
-    dependencies = Seq(httpTestkitScala, httpSprayJson, httpXml),
+    dependencies = Seq(httpTestkitScala, httpSprayJson, httpPlayJson, httpXml),
     settings =
       defaultSettings ++ formatSettings ++
         Seq(
@@ -425,9 +425,10 @@ object AkkaBuild extends Build {
     id = "akka-http-marshallers-scala-experimental",
     base = file("akka-http-marshallers-scala"),
     settings = parentSettings ++ Seq(
-      version := streamAndHttpVersion
+      version := streamAndHttpVersion,
+      resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
     )
-  ).aggregate(httpSprayJson, httpXml)
+  ).aggregate(httpSprayJson, httpPlayJson, httpXml)
 
   lazy val httpXml =
     httpMarshallersScalaSubproject("xml")
@@ -436,6 +437,10 @@ object AkkaBuild extends Build {
   lazy val httpSprayJson =
     httpMarshallersScalaSubproject("spray-json")
       .settings(Dependencies.httpSprayJson)
+
+  lazy val httpPlayJson =
+    httpMarshallersScalaSubproject("play-json")
+      .settings(Dependencies.httpPlayJson)
 
   def httpMarshallersScalaSubproject(name: String) =
     Project(
@@ -1547,6 +1552,9 @@ object Dependencies {
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.1"       // ApacheV2
 
+    //For akka-http play-json support
+    val playJson    = "com.typesafe.play"            %% "play-json"                    % "2.3.8"       // ApacheV2
+
     // For akka-http-jackson support
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.4.3"       // ApacheV2
 
@@ -1637,6 +1645,8 @@ object Dependencies {
   val httpXml = deps(scalaXml)
 
   val httpSprayJson = deps(sprayJson)
+
+  val httpPlayJson = deps(playJson)
 
   val httpJackson = deps(jackson)
 
