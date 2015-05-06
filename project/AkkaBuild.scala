@@ -148,7 +148,8 @@ object AkkaBuild extends Build {
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.actor ++ Seq(
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.actor ++ 
+      spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++ Seq(
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
