@@ -4,9 +4,7 @@
 
 package akka.io
 
-import java.util.concurrent.atomic.AtomicBoolean
 import java.nio.ByteBuffer
-import annotation.tailrec
 
 trait BufferPool {
   def acquire(): ByteBuffer
@@ -27,7 +25,6 @@ trait BufferPool {
  * benefit to wrapping in-heap JVM data when writing with NIO.
  */
 private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries: Int) extends BufferPool {
-  private[this] val locked = new AtomicBoolean(false)
   private[this] val pool: Array[ByteBuffer] = new Array[ByteBuffer](maxPoolEntries)
   private[this] var buffersInPool: Int = 0
 
@@ -40,32 +37,28 @@ private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries:
   private def allocate(size: Int): ByteBuffer =
     ByteBuffer.allocateDirect(size)
 
-  @tailrec
-  private final def takeBufferFromPool(): ByteBuffer =
-    if (locked.compareAndSet(false, true)) {
-      val buffer =
-        try if (buffersInPool > 0) {
-          buffersInPool -= 1
-          pool(buffersInPool)
-        } else null
-        finally locked.set(false)
+  private final def takeBufferFromPool(): ByteBuffer = {
+    val buffer = pool.synchronized {
+      if (buffersInPool > 0) {
+        buffersInPool -= 1
+        pool(buffersInPool)
+      } else null
+    }
 
-      // allocate new and clear outside the lock
-      if (buffer == null)
-        allocate(defaultBufferSize)
-      else {
-        buffer.clear()
-        buffer
-      }
-    } else takeBufferFromPool() // spin while locked
+    // allocate new and clear outside the lock
+    if (buffer == null)
+      allocate(defaultBufferSize)
+    else {
+      buffer.clear()
+      buffer
+    }
+  }
 
-  @tailrec
   private final def offerBufferToPool(buf: ByteBuffer): Unit =
-    if (locked.compareAndSet(false, true))
-      try if (buffersInPool < maxPoolEntries) {
+    pool.synchronized {
+      if (buffersInPool < maxPoolEntries) {
         pool(buffersInPool) = buf
         buffersInPool += 1
       } // else let the buffer be gc'd
-      finally locked.set(false)
-    else offerBufferToPool(buf) // spin while locked
+    }
 }
