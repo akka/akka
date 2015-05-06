@@ -260,7 +260,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "reliable deny creation of actors while shutting down" in {
       val system = ActorSystem()
       import system.dispatcher
-      system.scheduler.scheduleOnce(200 millis) { system.terminate() }
+      system.scheduler.scheduleOnce(100 millis) { system.terminate() }
       var failing = false
       var created = Vector.empty[ActorRef]
       while (!system.whenTerminated.isCompleted) {
@@ -268,6 +268,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
           val t = system.actorOf(Props[ActorSystemSpec.Terminater])
           failing should not be true // because once failing => always failing (it’s due to shutdown)
           created :+= t
+          if (created.size % 1000 == 0) Thread.sleep(20) // in case of unfair thread scheduling
         } catch {
           case _: IllegalStateException ⇒ failing = true
         }
