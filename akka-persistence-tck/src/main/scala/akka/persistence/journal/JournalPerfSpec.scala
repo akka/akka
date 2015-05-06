@@ -7,9 +7,9 @@ import akka.actor.{ ActorLogging, ActorRef, Props }
 import akka.persistence.journal.JournalPerfSpec.{ BenchActor, Cmd, ResetCounter }
 import akka.persistence.{ PersistentActor, PluginSpec }
 import akka.testkit.TestProbe
-
 import scala.collection.immutable
 import scala.concurrent.duration._
+import com.typesafe.config.Config
 
 object JournalPerfSpec {
   class BenchActor(override val persistenceId: String, replyTo: ActorRef, replyAfter: Int) extends PersistentActor
@@ -75,8 +75,7 @@ object JournalPerfSpec {
  *
  * @see [[akka.persistence.journal.JournalSpec]]
  */
-trait JournalPerfSpec extends PluginSpec {
-  this: JournalSpec ⇒
+abstract class JournalPerfSpec(config: Config) extends JournalSpec(config) {
 
   private val testProbe = TestProbe()
 

@@ -1,13 +1,12 @@
 package akka.persistence.snapshot
 
 import scala.collection.immutable.Seq
-
 import akka.actor._
 import akka.persistence._
 import akka.persistence.SnapshotProtocol._
 import akka.testkit.TestProbe
-
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.Config
 
 object SnapshotStoreSpec {
   val config = ConfigFactory.parseString("akka.persistence.publish-plugin-commands = on")
@@ -24,7 +23,7 @@ object SnapshotStoreSpec {
  *
  * @see [[akka.persistence.japi.snapshot.JavaSnapshotStoreSpec]]
  */
-trait SnapshotStoreSpec extends PluginSpec {
+abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config) {
   implicit lazy val system = ActorSystem("SnapshotStoreSpec", config.withFallback(SnapshotStoreSpec.config))
 
   private var senderProbe: TestProbe = _
