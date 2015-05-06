@@ -12,7 +12,6 @@ import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.model.{ ContentTypes, HttpCharsets }
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import play.api.libs.json._
-import play.api.libs.functional.syntax._
 import akka.http.scaladsl.model.StatusCodes._
 import scala.util.control.NoStackTrace
 
