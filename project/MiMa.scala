@@ -21,6 +21,8 @@ object MiMa extends AutoPlugin {
   val mimaIgnoredProblems = {
     Seq(
       // add filters here, see release-2.3 branch
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor.akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_="),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor.akka$dispatch$BatchingExecutor$$_blockContext")
      )
   }
 }
