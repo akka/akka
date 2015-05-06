@@ -3,8 +3,10 @@ package akka.dispatch
 import java.util.concurrent.{ ExecutorService, Executor, Executors }
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent._
+import scala.concurrent.duration._
 import akka.testkit.{ TestLatch, AkkaSpec, DefaultTimeout }
 import akka.util.SerializedSuspendableExecutionContext
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
@@ -80,6 +82,29 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
         latch.countDown()
       }
       Await.ready(latch, timeout.duration)
+    }
+
+    "work with tasks that use blocking{} multiple times" in {
+      system.dispatcher.isInstanceOf[BatchingExecutor] should be(true)
+      import system.dispatcher
+
+      val f = Future(()).flatMap { _ ⇒
+        // this needs to be within an OnCompleteRunnable so that things are added to the batch
+        val p = Future.successful(42)
+        // we need the callback list to be non-empty when the blocking{} call is executing
+        p.onComplete { _ ⇒ () }
+        val r = p.map { _ ⇒
+          // trigger the resubmitUnbatched() call
+          blocking { () }
+          // make sure that the other task runs to completion before continuing
+          Thread.sleep(500)
+          // now try again to blockOn()
+          blocking { () }
+        }
+        p.onComplete { _ ⇒ () }
+        r
+      }
+      Await.result(f, 3.seconds) should be(())
     }
   }
 
