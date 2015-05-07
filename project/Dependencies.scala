@@ -22,7 +22,7 @@ object Dependencies {
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.4" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
-    val config        = "com.typesafe"                % "config"                       % "1.2.1"       // ApacheV2
+    val config        = "com.typesafe"                % "config"                       % "1.3.0"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.10.3.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
