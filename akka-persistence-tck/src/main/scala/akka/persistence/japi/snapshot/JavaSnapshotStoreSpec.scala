@@ -20,4 +20,4 @@ import org.scalatest.junit.JUnitRunner
  * @see [[akka.persistence.snapshot.SnapshotStoreSpec]]
  */
 @RunWith(classOf[JUnitRunner])
-class JavaSnapshotStoreSpec(val config: Config) extends SnapshotStoreSpec
+class JavaSnapshotStoreSpec(config: Config) extends SnapshotStoreSpec(config)
