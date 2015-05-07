@@ -14,7 +14,6 @@ import akka.event.Logging.Error
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.annotation.tailrec
-import scala.concurrent.forkjoin.ForkJoinTask
 import scala.util.control.NonFatal
 import com.typesafe.config.Config
 import java.util.concurrent.atomic.AtomicInteger
@@ -54,7 +53,7 @@ private[akka] object Mailbox {
  * INTERNAL API
  */
 private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
-  extends ForkJoinTask[Unit] with SystemMessageQueue with Runnable {
+  extends SystemMessageQueue with Runnable {
 
   import Mailbox._
 
@@ -227,21 +226,6 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       setAsIdle() //Volatile write, needed here
       dispatcher.registerForExecution(this, false, false)
     }
-  }
-
-  override final def getRawResult(): Unit = ()
-  override final def setRawResult(unit: Unit): Unit = ()
-  final override def exec(): Boolean = try { run(); false } catch {
-    case ie: InterruptedException ⇒
-      Thread.currentThread.interrupt()
-      false
-    case anything: Throwable ⇒
-      val t = Thread.currentThread
-      t.getUncaughtExceptionHandler match {
-        case null ⇒
-        case some ⇒ some.uncaughtException(t, anything)
-      }
-      throw anything
   }
 
   /**
