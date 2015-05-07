@@ -4,10 +4,11 @@
 
 package akka.dispatch
 
+import java.util.concurrent.{ ConcurrentHashMap, TimeUnit }
+
 import com.typesafe.config._
-import java.util.concurrent.ConcurrentHashMap
+
 import scala.util.{ Failure, Success, Try }
-import java.util.concurrent.TimeUnit
 
 /**
  * INTERNAL API
@@ -97,6 +98,8 @@ private[akka] class CachingConfig(_config: Config) extends Config {
       config.hasPath(path)
   }
 
+  def hasPathOrNull(path: String): Boolean = config.hasPathOrNull(path)
+
   def isEmpty = config.isEmpty
 
   def entrySet() = config.entrySet()
@@ -129,9 +132,9 @@ private[akka] class CachingConfig(_config: Config) extends Config {
 
   def getBytes(path: String) = config.getBytes(path)
 
-  def getMilliseconds(path: String) = config.getMilliseconds(path)
+  def getMilliseconds(path: String) = config.getDuration(path, TimeUnit.MILLISECONDS)
 
-  def getNanoseconds(path: String) = config.getNanoseconds(path)
+  def getNanoseconds(path: String) = config.getDuration(path, TimeUnit.NANOSECONDS)
 
   def getList(path: String) = config.getList(path)
 
@@ -155,9 +158,9 @@ private[akka] class CachingConfig(_config: Config) extends Config {
 
   def getBytesList(path: String) = config.getBytesList(path)
 
-  def getMillisecondsList(path: String) = config.getMillisecondsList(path)
+  def getMillisecondsList(path: String) = config.getDurationList(path, TimeUnit.MILLISECONDS)
 
-  def getNanosecondsList(path: String) = config.getNanosecondsList(path)
+  def getNanosecondsList(path: String) = config.getDurationList(path, TimeUnit.NANOSECONDS)
 
   def withOnlyPath(path: String) = new CachingConfig(config.withOnlyPath(path))
 
@@ -172,6 +175,16 @@ private[akka] class CachingConfig(_config: Config) extends Config {
   def getDuration(path: String, unit: TimeUnit) = config.getDuration(path, unit)
 
   def getDurationList(path: String, unit: TimeUnit) = config.getDurationList(path, unit)
+
+  def getDuration(path: String): java.time.Duration = config.getDuration(path)
+
+  def getDurationList(path: String) = config.getDurationList(path)
+
+  def getIsNull(path: String): Boolean = config.getIsNull(path)
+
+  def getMemorySize(path: String) = config.getMemorySize(path)
+
+  def getMemorySizeList(path: String) = config.getMemorySizeList(path)
 
   def isResolved() = config.isResolved()
 
