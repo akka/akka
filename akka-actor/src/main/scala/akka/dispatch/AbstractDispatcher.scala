@@ -12,7 +12,7 @@ import akka.event.EventStream
 import com.typesafe.config.{ ConfigFactory, Config }
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec
-import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool, ForkJoinWorkerThread }
+import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContextExecutor
@@ -377,16 +377,8 @@ object ForkJoinExecutorConfigurator {
                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
     extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) with LoadMetrics {
-    override def execute(r: Runnable): Unit = {
-      if (r eq null) throw new NullPointerException("The Runnable must not be null")
-      val task =
-        if (r.isInstanceOf[ForkJoinTask[_]]) r.asInstanceOf[ForkJoinTask[Any]]
-        else new AkkaForkJoinTask(r)
-      Thread.currentThread match {
-        case worker: ForkJoinWorkerThread if worker.getPool eq this ⇒ task.fork()
-        case _ ⇒ super.execute(task)
-      }
-    }
+    override def execute(r: Runnable): Unit =
+      if (r eq null) throw new NullPointerException else super.execute(new AkkaForkJoinTask(r))
 
     def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
