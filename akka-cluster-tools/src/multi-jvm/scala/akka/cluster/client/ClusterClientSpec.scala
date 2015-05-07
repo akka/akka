@@ -72,7 +72,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
-      DistributedPubSubExtension(system).mediator ! DistributedPubSubMediator.Count
+      DistributedPubSub(system).mediator ! DistributedPubSubMediator.Count
       expectMsgType[Int] should ===(expected)
     }
   }

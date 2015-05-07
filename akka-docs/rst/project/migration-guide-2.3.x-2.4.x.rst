@@ -221,7 +221,17 @@ The configuration properties changed name to ``akka.cluster.sharding``.
 ClusterSingletonManager and ClusterSingletonProxy construction
 ==============================================================
 
-Parameters to the ``Props`` factory methods have been moved to settings object ``ClusterSingletonManagerSettings`
+Parameters to the ``Props`` factory methods have been moved to settings object ``ClusterSingletonManagerSettings``
 and ``ClusterSingletonProxySettings``. These can be created from system configuration properties and also
 amended with API as needed.
 
+DistributedPubSub construction
+==============================
+
+Normally, the ``DistributedPubSubMediator`` is started by the ``DistributedPubSubExtension``.
+This extension has been renamed to ``DistributedPubSub``. It is also possible to start
+it as an ordinary actor if you need multiple instances of it with different settings.
+The parameters of the ``Props`` factory methods in the ``DistributedPubSubMediator`` companion
+has been moved to settings object ``DistributedPubSubSettings``. This can be created from
+system configuration properties and also amended with API as needed.
+ 

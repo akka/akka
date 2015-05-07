@@ -64,7 +64,7 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
   class Publisher extends Actor {
     import DistributedPubSubMediator.Publish
     // activate the extension
-    val mediator = DistributedPubSubExtension(context.system).mediator
+    val mediator = DistributedPubSub(context.system).mediator
 
     def receive = {
       case in: String ⇒
@@ -77,7 +77,7 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
   //#subscriber
   class Subscriber extends Actor with ActorLogging {
     import DistributedPubSubMediator.{ Subscribe, SubscribeAck }
-    val mediator = DistributedPubSubExtension(context.system).mediator
+    val mediator = DistributedPubSub(context.system).mediator
     // subscribe to the topic named "content"
     mediator ! Subscribe("content", self)
 
@@ -114,8 +114,8 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
     enterBarrier(from.name + "-joined")
   }
 
-  def createMediator(): ActorRef = DistributedPubSubExtension(system).mediator
-  def mediator: ActorRef = DistributedPubSubExtension(system).mediator
+  def createMediator(): ActorRef = DistributedPubSub(system).mediator
+  def mediator: ActorRef = DistributedPubSub(system).mediator
 
   var chatUsers: Map[String, ActorRef] = Map.empty
 
