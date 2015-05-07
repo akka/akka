@@ -19,7 +19,7 @@ import akka.event.Logging.simpleName
 private[akka] object StreamLayout {
 
   // compile-time constant
-  final val Debug = true
+  final val Debug = false
 
   // TODO: Materialization order
   // TODO: Special case linear composites
