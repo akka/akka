@@ -27,7 +27,8 @@ abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherS
 
   def this() = this(false)
 
-  implicit lazy val materializer = ActorFlowMaterializer(ActorFlowMaterializerSettings(system).copy(maxInputBufferSize = 512))(system)
+  implicit lazy val materializer = ActorFlowMaterializer(
+    ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 512, maxSize = 512))(system)
 
   override def createFailedPublisher(): Publisher[T] =
     TestPublisher.error(new Exception("Unable to serve subscribers right now!"))

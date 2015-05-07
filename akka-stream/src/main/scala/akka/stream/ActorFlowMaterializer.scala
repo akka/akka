@@ -164,6 +164,20 @@ abstract class ActorFlowMaterializer extends FlowMaterializer {
 class MaterializationException(msg: String, cause: Throwable = null) extends RuntimeException(msg, cause)
 
 object ActorFlowMaterializerSettings {
+
+  def apply(
+    initialInputBufferSize: Int,
+    maxInputBufferSize: Int,
+    dispatcher: String,
+    supervisionDecider: Supervision.Decider,
+    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+    debugLogging: Boolean,
+    outputBurstLimit: Int,
+    optimizations: Optimizations) =
+    new ActorFlowMaterializerSettings(
+      initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
+      outputBurstLimit, optimizations)
+
   /**
    * Create [[ActorFlowMaterializerSettings]].
    *
@@ -215,20 +229,33 @@ object ActorFlowMaterializerSettings {
  *
  * This will likely be replaced in the future by auto-tuning these values at runtime.
  */
-final case class ActorFlowMaterializerSettings(
-  initialInputBufferSize: Int,
-  maxInputBufferSize: Int,
-  dispatcher: String,
-  supervisionDecider: Supervision.Decider,
-  subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-  debugLogging: Boolean,
-  outputBurstLimit: Int,
-  optimizations: Optimizations) {
+final class ActorFlowMaterializerSettings(
+  val initialInputBufferSize: Int,
+  val maxInputBufferSize: Int,
+  val dispatcher: String,
+  val supervisionDecider: Supervision.Decider,
+  val subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+  val debugLogging: Boolean,
+  val outputBurstLimit: Int,
+  val optimizations: Optimizations) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
   requirePowerOfTwo(maxInputBufferSize, "maxInputBufferSize")
   require(initialInputBufferSize <= maxInputBufferSize, s"initialInputBufferSize($initialInputBufferSize) must be <= maxInputBufferSize($maxInputBufferSize)")
+
+  private def copy(
+    initialInputBufferSize: Int = this.initialInputBufferSize,
+    maxInputBufferSize: Int = this.maxInputBufferSize,
+    dispatcher: String = this.dispatcher,
+    supervisionDecider: Supervision.Decider = this.supervisionDecider,
+    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings = this.subscriptionTimeoutSettings,
+    debugLogging: Boolean = this.debugLogging,
+    outputBurstLimit: Int = this.outputBurstLimit,
+    optimizations: Optimizations = this.optimizations) =
+    new ActorFlowMaterializerSettings(
+      initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
+      outputBurstLimit, optimizations)
 
   def withInputBuffer(initialSize: Int, maxSize: Int): ActorFlowMaterializerSettings =
     copy(initialInputBufferSize = initialSize, maxInputBufferSize = maxSize)
@@ -274,6 +301,9 @@ final case class ActorFlowMaterializerSettings(
 object StreamSubscriptionTimeoutSettings {
   import akka.stream.StreamSubscriptionTimeoutTerminationMode._
 
+  def apply(mode: StreamSubscriptionTimeoutTerminationMode, timeout: FiniteDuration): StreamSubscriptionTimeoutSettings =
+    new StreamSubscriptionTimeoutSettings(mode, timeout)
+
   /** Java API */
   def create(config: Config): StreamSubscriptionTimeoutSettings =
     apply(config)
@@ -289,7 +319,8 @@ object StreamSubscriptionTimeoutSettings {
       timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis)
   }
 }
-final case class StreamSubscriptionTimeoutSettings(mode: StreamSubscriptionTimeoutTerminationMode, timeout: FiniteDuration)
+
+final class StreamSubscriptionTimeoutSettings(val mode: StreamSubscriptionTimeoutTerminationMode, val timeout: FiniteDuration)
 
 sealed abstract class StreamSubscriptionTimeoutTerminationMode
 
