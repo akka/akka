@@ -226,7 +226,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     val foldFlow: Flow[Int, Int, Future[Int]] = Flow(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder ⇒
         fold ⇒
-          (fold.inlet, builder.matValue.mapAsync(4)(identity).outlet)
+          (fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
     }
     //#flow-graph-matvalue
 
@@ -243,8 +243,8 @@ class FlowGraphDocSpec extends AkkaSpec {
           //   fold completes
           // As a result this Source will never emit anything, and its materialited
           // Future will never complete
-          builder.matValue.mapAsync(4)(identity) ~> fold
-          builder.matValue.mapAsync(4)(identity).outlet
+          builder.materializedValue.mapAsync(4)(identity) ~> fold
+          builder.materializedValue.mapAsync(4)(identity).outlet
     }
     //#flow-graph-matvalue-cycle
   }

@@ -46,7 +46,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
       case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
         val layer = serverLayer(settings, log)
         IncomingConnection(localAddress, remoteAddress, layer join flow)
-    }.mapMaterialized {
+    }.mapMaterializedValue {
       _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
     }
   }
@@ -367,7 +367,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     import hcps._
     val theHostHeader = hostHeader(host, port, Uri.httpScheme(setup.encrypted))
     clientFlow[T](setup.settings)(_.withDefaultHeaders(theHostHeader) -> gatewayFuture)
-      .mapMaterialized(_ ⇒ HostConnectionPool(hcps)(gatewayFuture))
+      .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gatewayFuture))
   }
 
   private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, Future[PoolGateway]))(
