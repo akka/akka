@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.javadsl.server.directives
+package akka.http.javadsl.server
+package directives
 
 import akka.http.impl.server.RouteStructure
-import akka.http.javadsl.server.{ Route, ExceptionHandler }
 
 import scala.annotation.varargs
 

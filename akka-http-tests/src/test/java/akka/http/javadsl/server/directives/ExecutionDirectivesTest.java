@@ -6,12 +6,10 @@ package akka.http.javadsl.server.directives;
 
 import org.junit.Test;
 
-import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.model.*;
 import akka.http.javadsl.server.*;
-import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.server.values.*;
 import akka.http.javadsl.testkit.*;
-
-import static akka.http.javadsl.server.Directives.*;
 
 public class ExecutionDirectivesTest extends JUnitRouteTest {
     @Test
