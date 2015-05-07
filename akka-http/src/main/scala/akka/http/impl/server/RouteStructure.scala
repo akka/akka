@@ -5,6 +5,8 @@
 package akka.http.impl.server
 
 import java.io.File
+import akka.http.javadsl.server.values.{ PathMatcher, HttpBasicAuthenticator }
+
 import scala.language.existentials
 import scala.collection.immutable
 import akka.http.javadsl.model.{ DateTime, ContentType, HttpMethod }

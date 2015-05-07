@@ -2,15 +2,14 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.javadsl.server
+package akka.http.javadsl.server.values
 
-import akka.http.impl.server.{ ExtractionImplBase, ExtractionImpl, RouteStructure }
+import akka.http.impl.server.{ ExtractionImplBase, RouteStructure }
+import akka.http.javadsl.server.{ AbstractDirective, RequestVal, Route }
 import akka.http.scaladsl.util.FastFuture
 
-import scala.annotation.varargs
 import scala.concurrent.Future
-import scala.reflect
-import reflect.ClassTag
+import scala.reflect.ClassTag
 
 /**
  * Represents existing or missing HTTP Basic authentication credentials.

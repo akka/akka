@@ -4,8 +4,9 @@
 
 package akka.http.impl.server
 
+import akka.http.javadsl.server.values.PathMatcher
+
 import scala.reflect.ClassTag
-import akka.http.javadsl.server.PathMatcher
 import akka.http.scaladsl.server.{ PathMatcher ⇒ ScalaPathMatcher }
 
 /**

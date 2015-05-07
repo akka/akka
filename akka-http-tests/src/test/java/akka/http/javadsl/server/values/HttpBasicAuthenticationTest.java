@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.javadsl.server.directives;
+package akka.http.javadsl.server.values;
 
 import org.junit.Test;
 import scala.Option;
@@ -12,10 +12,8 @@ import akka.http.javadsl.server.*;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.Authorization;
 import akka.http.javadsl.testkit.*;
-import akka.http.javadsl.server.*;
-import static akka.http.javadsl.server.Directives.*;
 
-public class AuthenticationDirectivesTest extends JUnitRouteTest {
+public class HttpBasicAuthenticationTest extends JUnitRouteTest {
     HttpBasicAuthenticator<String> authenticatedUser =
         new HttpBasicAuthenticator<String>("test-realm") {
             @Override

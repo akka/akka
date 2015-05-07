@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.server
 
+import akka.http.javadsl.server.values.{ PathMatcher, HttpBasicAuthenticator }
+
 /**
  * Represents a value that can be extracted from a request.
  */

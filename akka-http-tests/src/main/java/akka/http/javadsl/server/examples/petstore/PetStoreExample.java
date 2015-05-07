@@ -7,6 +7,8 @@ package akka.http.javadsl.server.examples.petstore;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.server.*;
+import akka.http.javadsl.server.values.PathMatcher;
+import akka.http.javadsl.server.values.PathMatchers;
 
 import java.io.IOException;
 import java.util.Map;

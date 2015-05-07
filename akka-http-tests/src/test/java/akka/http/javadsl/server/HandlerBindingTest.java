@@ -4,10 +4,11 @@
 
 package akka.http.javadsl.server;
 
-import akka.http.scaladsl.model.HttpRequest;
 import org.junit.Test;
+
+import akka.http.scaladsl.model.HttpRequest;
 import akka.http.javadsl.testkit.*;
-import static akka.http.javadsl.server.Directives.*;
+import akka.http.javadsl.server.values.*;
 
 public class HandlerBindingTest extends JUnitRouteTest {
     @Test

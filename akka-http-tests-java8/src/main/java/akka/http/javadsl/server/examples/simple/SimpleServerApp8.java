@@ -6,6 +6,8 @@ package akka.http.javadsl.server.examples.simple;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.server.*;
+import akka.http.javadsl.server.values.*;
+
 import java.io.IOException;
 
 public class SimpleServerApp8 extends HttpApp {
