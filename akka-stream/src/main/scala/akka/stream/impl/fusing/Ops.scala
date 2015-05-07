@@ -396,25 +396,27 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
   }
 
   override def onPull(ctx: AsyncContext[Out, (Int, Try[Out])]) = {
-    @tailrec def rec(hasFreedUpSpace: Boolean): DownstreamDirective =
+    @tailrec def rec(): DownstreamDirective =
       if (elemsInFlight.isEmpty && ctx.isFinishing) ctx.finish()
       else if (elemsInFlight.isEmpty || elemsInFlight.peek == NotYetThere) {
-        if (hasFreedUpSpace && ctx.isHoldingUpstream) ctx.holdDownstreamAndPull()
+        if (!elemsInFlight.isFull && ctx.isHoldingUpstream) ctx.holdDownstreamAndPull()
         else ctx.holdDownstream()
       } else elemsInFlight.dequeue() match {
-        case Failure(ex) ⇒ rec(true)
+        case Failure(ex) ⇒ rec()
         case Success(elem) ⇒
           if (ctx.isHoldingUpstream) ctx.pushAndPull(elem)
           else ctx.push(elem)
       }
-    rec(false)
+    rec()
   }
 
   override def onAsyncInput(input: (Int, Try[Out]), ctx: AsyncContext[Out, Notification]) = {
     @tailrec def rec(): Directive =
       if (elemsInFlight.isEmpty && ctx.isFinishing) ctx.finish()
-      else if (elemsInFlight.isEmpty || elemsInFlight.peek == NotYetThere) ctx.ignore()
-      else elemsInFlight.dequeue() match {
+      else if (elemsInFlight.isEmpty || (elemsInFlight.peek eq NotYetThere)) {
+        if (!elemsInFlight.isFull && ctx.isHoldingUpstream) ctx.pull()
+        else ctx.ignore()
+      } else elemsInFlight.dequeue() match {
         case Failure(ex) ⇒ rec()
         case Success(elem) ⇒
           if (ctx.isHoldingUpstream) ctx.pushAndPull(elem)

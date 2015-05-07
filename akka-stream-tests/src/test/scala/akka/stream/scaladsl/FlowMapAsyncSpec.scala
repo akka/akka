@@ -171,6 +171,21 @@ class FlowMapAsyncSpec extends AkkaSpec {
       c.expectComplete()
     }
 
+    "resume after multiple failures" in assertAllStagesStopped {
+      val futures: List[Future[String]] = List(
+        Future.failed(Utils.TE("failure1")),
+        Future.failed(Utils.TE("failure2")),
+        Future.failed(Utils.TE("failure3")),
+        Future.failed(Utils.TE("failure4")),
+        Future.failed(Utils.TE("failure5")),
+        Future.successful("happy!"))
+
+      Await.result(
+        Source(futures)
+          .mapAsync(2)(identity).withAttributes(supervisionStrategy(resumingDecider))
+          .runWith(Sink.head), 3.seconds) should ===("happy!")
+    }
+
     "finish after future failure" in assertAllStagesStopped {
       import system.dispatcher
       Await.result(Source(1 to 3).mapAsync(1)(n ⇒ Future {
