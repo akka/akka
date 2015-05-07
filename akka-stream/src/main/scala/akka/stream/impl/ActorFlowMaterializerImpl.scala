@@ -60,7 +60,7 @@ private[akka] case class ActorFlowMaterializerImpl(
   }
 
   override def materialize[Mat](runnableFlow: Graph[ClosedShape, Mat]): Mat = {
-    runnableFlow.module.validate()
+    if (StreamLayout.Debug) runnableFlow.module.validate()
 
     val session = new MaterializerSession(runnableFlow.module) {
       private val flowName = createFlowName()
