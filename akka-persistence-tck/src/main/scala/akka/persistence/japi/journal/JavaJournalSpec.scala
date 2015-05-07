@@ -21,4 +21,4 @@ import org.scalatest.junit.JUnitRunner
  * @param config configures the Journal plugin to be tested
  */
 @RunWith(classOf[JUnitRunner])
-class JavaJournalSpec(val config: Config) extends JournalSpec
+class JavaJournalSpec(config: Config) extends JournalSpec(config)
