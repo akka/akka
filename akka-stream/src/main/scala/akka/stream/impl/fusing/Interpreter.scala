@@ -12,11 +12,6 @@ import scala.annotation.{ switch, tailrec }
 import scala.collection.breakOut
 import scala.util.control.NonFatal
 
-// TODO:
-// fix jumpback table with keep-going-on-complete ops (we might jump between otherwise isolated execution regions)
-// implement grouped, buffer
-// add recover
-
 /**
  * INTERNAL API
  */
