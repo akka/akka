@@ -4,16 +4,16 @@
 
 package akka.http.javadsl.server.directives;
 
+import akka.http.javadsl.server.values.PathMatcher;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.UUID;
 
 import akka.http.javadsl.server.*;
+import akka.http.javadsl.server.values.*;
 import akka.http.javadsl.testkit.*;
 import akka.http.scaladsl.model.HttpRequest;
-
-import static akka.http.javadsl.server.Directives.*;
 
 public class PathDirectivesTest extends JUnitRouteTest {
     @Test
@@ -87,7 +87,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
     public void testSingleSlash() {
         TestRoute route =
             testRoute(
-                pathSingleSlash().route(complete("Ok"))
+                    pathSingleSlash().route(complete("Ok"))
             );
 
         route.run(HttpRequest.GET("/"))

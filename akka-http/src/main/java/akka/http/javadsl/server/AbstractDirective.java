@@ -14,7 +14,7 @@ package akka.http.javadsl.server;
  *
  * See https://issues.scala-lang.org/browse/SI-9013
  */
-abstract class AbstractDirective implements Directive {
+public abstract class AbstractDirective implements Directive {
     @Override
     public Route route(Route first, Route... others) {
         return createRoute(first, others);

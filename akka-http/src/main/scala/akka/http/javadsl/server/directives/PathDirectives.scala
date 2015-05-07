@@ -6,6 +6,7 @@ package akka.http.javadsl.server
 package directives
 
 import akka.http.impl.server.RouteStructure
+import akka.http.javadsl.server.values.{ PathMatchers, PathMatcher }
 
 import scala.annotation.varargs
 import scala.collection.immutable
