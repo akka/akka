@@ -4,6 +4,7 @@ import akka.testkit._
 import akka.routing.{ ConsistentHashingRoutingLogic, RouterEnvelope }
 import org.scalatest.WordSpecLike
 import akka.actor.{ ActorInitializationException, ActorRef }
+import com.typesafe.config.ConfigFactory
 
 case class WrappedMessage(msg: String) extends RouterEnvelope {
   override def message = msg
@@ -15,6 +16,7 @@ object DistributedPubSubMediatorRouterSpec {
   def config(routingLogic: String) = s"""
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.remote.netty.tcp.port=0
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.pub-sub.routing-logic = $routingLogic
   """
@@ -85,7 +87,7 @@ class DistributedPubSubMediatorWithRandomRouterSpec
   extends AkkaSpec(DistributedPubSubMediatorRouterSpec.config("random"))
   with DistributedPubSubMediatorRouterSpec with DefaultTimeout with ImplicitSender {
 
-  val mediator = DistributedPubSubExtension(system).mediator
+  val mediator = DistributedPubSub(system).mediator
 
   "DistributedPubSubMediator when sending wrapped message" must {
     val msg = WrappedMessage("hello")
@@ -106,13 +108,14 @@ class DistributedPubSubMediatorWithHashRouterSpec
     "not be allowed" when {
       "constructed by extension" in {
         intercept[IllegalArgumentException] {
-          DistributedPubSubExtension(system).mediator
+          DistributedPubSub(system).mediator
         }
       }
-      "constructed by props" in {
-        EventFilter[ActorInitializationException](occurrences = 1) intercept {
-          system.actorOf(
-            DistributedPubSubMediator.props(None, routingLogic = ConsistentHashingRoutingLogic(system)))
+      "constructed by settings" in {
+        intercept[IllegalArgumentException] {
+          val config = ConfigFactory.parseString(DistributedPubSubMediatorRouterSpec.config("random"))
+            .withFallback(system.settings.config).getConfig("akka.cluster.pub-sub")
+          DistributedPubSubSettings(config).withRoutingLogic(ConsistentHashingRoutingLogic(system))
         }
       }
     }

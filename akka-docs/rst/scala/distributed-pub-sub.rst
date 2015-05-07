@@ -14,7 +14,7 @@ actors among all cluster nodes or a group of nodes tagged with a specific role.
 
 The `DistributedPubSubMediator` is supposed to be started on all nodes,
 or all nodes with specified role, in the cluster. The mediator can be
-started with the ``DistributedPubSubExtension`` or as an ordinary actor.
+started with the ``DistributedPubSub`` or as an ordinary actor.
 
 Changes are only performed in the own part of the registry and those changes
 are versioned. Deltas are disseminated in a scalable way to other nodes with
@@ -122,16 +122,16 @@ It can publish messages to the topic from anywhere in the cluster:
 A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 tutorial named `Akka Clustered PubSub with Scala! <http://www.typesafe.com/activator/template/akka-clustering>`_.
 
-DistributedPubSubExtension
+DistributedPubSub
 --------------------------
 
-In the example above the mediator is started and accessed with the ``akka.cluster.pubsub.DistributedPubSubExtension``.
+In the example above the mediator is started and accessed with the ``akka.cluster.pubsub.DistributedPubSub``.
 That is convenient and perfectly fine in most cases, but it can be good to know that it is possible to
 start the mediator actor as an ordinary actor and you can have several different mediators at the same
 time to be able to divide a large number of actors/topics to different mediators. For example you might
 want to use different cluster roles for different mediators.
 
-The ``DistributedPubSubExtension`` can be configured with the following properties:
+The ``DistributedPubSub`` can be configured with the following properties:
 
 .. includecode:: ../../../akka-cluster-tools/src/main/resources/reference.conf#pub-sub-ext-config
 
@@ -141,7 +141,7 @@ and then it takes a while for it to be populated.
 
 ::
 
-   akka.extensions = ["akka.cluster.pubsub.DistributedPubSubExtension"]
+   akka.extensions = ["akka.cluster.pubsub.DistributedPubSub"]
 
 Dependencies
 ------------

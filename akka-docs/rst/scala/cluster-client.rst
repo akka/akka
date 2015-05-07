@@ -101,7 +101,7 @@ The ``ClusterReceptionistExtension`` can be configured with the following proper
 
 .. includecode:: ../../../akka-cluster-tools/src/main/resources/reference.conf#receptionist-ext-config
 
-Note that the ``ClusterReceptionistExtension`` uses the ``DistributedPubSubExtension``, which is described
+Note that the ``ClusterReceptionistExtension`` uses the ``DistributedPubSub`` extension, which is described
 in :ref:`distributed-pub-sub`.
 
 It is recommended to load the extension when the actor system is started by defining it in the
