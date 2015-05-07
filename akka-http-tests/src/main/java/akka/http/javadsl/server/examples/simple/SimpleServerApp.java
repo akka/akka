@@ -6,6 +6,10 @@ package akka.http.javadsl.server.examples.simple;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.server.*;
+import akka.http.javadsl.server.values.Parameter;
+import akka.http.javadsl.server.values.Parameters;
+import akka.http.javadsl.server.values.PathMatcher;
+import akka.http.javadsl.server.values.PathMatchers;
 
 import java.io.IOException;
 

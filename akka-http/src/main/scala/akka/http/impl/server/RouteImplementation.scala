@@ -4,6 +4,8 @@
 
 package akka.http.impl.server
 
+import akka.http.javadsl.server.values.{ PathMatcher, BasicUserCredentials }
+
 import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable

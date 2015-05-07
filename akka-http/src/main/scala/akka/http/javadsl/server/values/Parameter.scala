@@ -2,17 +2,17 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.javadsl.server
+package akka.http.javadsl.server.values
 
 import java.{ lang ⇒ jl }
 
-import scala.concurrent.ExecutionContext
-import scala.reflect.ClassTag
-
+import akka.http.impl.server.ParameterImpl
+import akka.http.javadsl.server.RequestVal
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
-import akka.http.scaladsl.common.ToNameReceptacleEnhancements
-import akka.http.impl.server.ParameterImpl
+
+import scala.concurrent.ExecutionContext
+import scala.reflect.ClassTag
 
 /**
  * A RequestVal representing a query parameter of type T.
@@ -24,7 +24,7 @@ trait Parameter[T] extends RequestVal[T]
  * FIXME: add tests, see #16437
  */
 object Parameters {
-  import ToNameReceptacleEnhancements._
+  import akka.http.scaladsl.common.ToNameReceptacleEnhancements._
 
   /**
    * A string query parameter.

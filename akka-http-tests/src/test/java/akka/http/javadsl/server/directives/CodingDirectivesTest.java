@@ -4,8 +4,6 @@
 
 package akka.http.javadsl.server.directives;
 
-import static akka.http.javadsl.server.Directives.*;
-
 import akka.actor.ActorSystem;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.AcceptEncoding;
