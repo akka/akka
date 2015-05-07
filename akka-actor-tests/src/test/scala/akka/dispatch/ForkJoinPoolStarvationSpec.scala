@@ -1,0 +1,66 @@
+package akka.dispatch
+
+import akka.actor.{ ActorRef, Actor, Props }
+import akka.testkit.{ ImplicitSender, AkkaSpec }
+import com.typesafe.config.ConfigFactory
+
+object ForkJoinPoolStarvationSpec {
+  val config = ConfigFactory.parseString(
+    """
+      |actorhang {
+      |
+      |  task-dispatcher {
+      |    mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
+      |    throughput = 100
+      |    fork-join-executor {
+      |      parallelism-factor = 2
+      |      parallelism-max = 2
+      |      parallelism-min = 2
+      |    }
+      |  }
+      |}
+    """.stripMargin)
+
+  class SelfBusyActor extends Actor {
+    self ! "tick"
+
+    override def receive = {
+      case "tick" ⇒
+        self ! "tick"
+    }
+  }
+
+  class InnocentActor extends Actor {
+
+    override def receive = {
+      case "ping" ⇒
+        sender ! "All fine"
+    }
+  }
+
+}
+
+class ForkJoinPoolStarvationSpec extends AkkaSpec(ForkJoinPoolStarvationSpec.config) with ImplicitSender {
+  import ForkJoinPoolStarvationSpec._
+
+  val Iterations = 1000
+
+  "AkkaForkJoinPool" must {
+
+    "not starve tasks arriving from external dispatchers under high internal traffic" in {
+      // Two busy actors that will occupy the threads of the dispatcher
+      // Since they submit to the local task queue via fork, they can starve external submissions
+      system.actorOf(Props(new SelfBusyActor).withDispatcher("actorhang.task-dispatcher"))
+      system.actorOf(Props(new SelfBusyActor).withDispatcher("actorhang.task-dispatcher"))
+
+      val innocentActor = system.actorOf(Props(new InnocentActor).withDispatcher("actorhang.task-dispatcher"))
+
+      for (_ ← 1 to Iterations) {
+        // External task submission via the default dispatcher
+        innocentActor ! "ping"
+        expectMsg("All fine")
+      }
+    }
+
+  }
+}
