@@ -5,8 +5,6 @@
 package akka.io
 
 import java.nio.ByteBuffer
-import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.TimeUnit
 
 trait BufferPool {
   def acquire(): ByteBuffer
@@ -23,9 +21,8 @@ trait BufferPool {
  * being freed by normal garbage collection.
  */
 private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries: Int) extends BufferPool {
-  private[this] val lock = new ReentrantLock
-  private[this] val pool = new Array[ByteBuffer](maxPoolEntries)
-  private[this] var buffersInPool = 0
+  private[this] val pool: Array[ByteBuffer] = new Array[ByteBuffer](maxPoolEntries)
+  private[this] var buffersInPool: Int = 0
 
   def acquire(): ByteBuffer =
     takeBufferFromPool()
@@ -37,15 +34,12 @@ private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries:
     ByteBuffer.allocateDirect(size)
 
   private final def takeBufferFromPool(): ByteBuffer = {
-    var buffer: ByteBuffer = null
-
-    if (lock.tryLock(1, TimeUnit.MILLISECONDS))
-      try
-        if (buffersInPool > 0) {
-          buffersInPool -= 1
-          buffer = pool(buffersInPool)
-        }
-      finally lock.unlock()
+    val buffer = pool.synchronized {
+      if (buffersInPool > 0) {
+        buffersInPool -= 1
+        pool(buffersInPool)
+      } else null
+    }
 
     // allocate new and clear outside the lock
     if (buffer == null)
@@ -57,11 +51,10 @@ private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries:
   }
 
   private final def offerBufferToPool(buf: ByteBuffer): Unit =
-    if (lock.tryLock(1, TimeUnit.MILLISECONDS))
-      try
-        if (buffersInPool < maxPoolEntries) {
-          pool(buffersInPool) = buf
-          buffersInPool += 1
-        } // else let the buffer be gc'd
-      finally lock.unlock()
+    pool.synchronized {
+      if (buffersInPool < maxPoolEntries) {
+        pool(buffersInPool) = buf
+        buffersInPool += 1
+      } // else let the buffer be gc'd
+    }
 }
