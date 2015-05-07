@@ -315,7 +315,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   "A Flow with multiple subscribers (FanOutBox)" must {
     "adapt speed to the currently slowest subscriber" in {
-      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
+      new ChainSetup(identity, settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 1)) {
         val downstream2 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream2)
@@ -342,7 +342,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "support slow subscriber with fan-out 2" in {
-      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
+      new ChainSetup(identity, settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(initialBufferSize = 2, maximumBufferSize = 2)) {
         val downstream2 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream2)
@@ -382,7 +382,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "support incoming subscriber while elements were requested before" in {
-      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
+      new ChainSetup(identity, settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 1)) {
         downstreamSubscription.request(5)
         upstream.expectRequest(upstreamSubscription, 1)
@@ -420,7 +420,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "be unblocked when blocking subscriber cancels subscription" in {
-      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
+      new ChainSetup(identity, settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 1)) {
         val downstream2 = TestSubscriber.manualProbe[Any]()
         publisher.subscribe(downstream2)
@@ -457,7 +457,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "call future subscribers' onError after onSubscribe if initial upstream was completed" in {
-      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
+      new ChainSetup(identity, settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 1)) {
         val downstream2 = TestSubscriber.manualProbe[Any]()
         // don't link it just yet
@@ -496,7 +496,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "call future subscribers' onError should be called instead of onSubscribed after initial upstream reported an error" in {
-      new ChainSetup[Int, String](_.map(_ ⇒ throw TestException), settings.copy(initialInputBufferSize = 1),
+      new ChainSetup[Int, String](_.map(_ ⇒ throw TestException), settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 1)) {
         downstreamSubscription.request(1)
         upstreamSubscription.expectRequest(1)
@@ -513,7 +513,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "call future subscribers' onError when all subscriptions were cancelled" in {
-      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
+      new ChainSetup(identity, settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 16)) {
         upstreamSubscription.expectRequest(1)
         downstreamSubscription.cancel()
@@ -529,7 +529,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   "A broken Flow" must {
     "cancel upstream and call onError on current and future downstream subscribers if an internal error occurs" in {
-      new ChainSetup(faultyFlow, settings.copy(initialInputBufferSize = 1), toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 16)) {
+      new ChainSetup(faultyFlow, settings.withInputBuffer(initialSize = 1, maxSize = 1), toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 16)) {
 
         def checkError(sprobe: TestSubscriber.ManualProbe[Any]): Unit = {
           val error = sprobe.expectError()
