@@ -100,7 +100,7 @@ abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesP
   protected def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
 
   /** Start inflating */
-  case object StartInflate extends State {
+  case object StartInflate extends IntermediateState {
     def onPush(data: ByteString, ctx: Context[ByteString]): SyncDirective = {
       require(inflater.needsInput())
       inflater.setInput(data.toArray)
