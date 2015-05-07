@@ -138,7 +138,7 @@ public class FlowGraphDocTest {
       (b, fold) -> {
          return new Pair<>(
            fold.inlet(),
-           b.from(b.matValue()).via(flatten).out()
+           b.from(b.materializedValue()).via(flatten).out()
          );
     });
     //#flow-graph-matvalue
@@ -152,8 +152,8 @@ public class FlowGraphDocTest {
         //   fold completes
         // As a result this Source will never emit anything, and its materialited
         // Future will never complete
-        b.from(b.matValue()).via(flatten).to(fold);
-        return b.from(b.matValue()).via(flatten).out();
+        b.from(b.materializedValue()).via(flatten).to(fold);
+        return b.from(b.materializedValue()).via(flatten).out();
       });
 
     //#flow-graph-matvalue-cycle

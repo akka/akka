@@ -221,7 +221,7 @@ public class FlowGraphTest extends StreamTest {
       @Override
       public void apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
         b.from(Source.single(1)).to(out);
-        b.from(b.matValue()).to(Sink.foreach(new Procedure<Future<Integer>>(){
+        b.from(b.materializedValue()).to(Sink.foreach(new Procedure<Future<Integer>>(){
           public void apply(Future<Integer> mat) throws Exception {
             probe.ref().tell(mat, ActorRef.noSender());
           }
