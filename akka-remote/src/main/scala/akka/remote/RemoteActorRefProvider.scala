@@ -451,7 +451,8 @@ private[akka] class RemoteActorRef private[akka] (
     }
   }
 
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = false
+  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+  override private[akka] def isTerminated: Boolean = false
 
   private def handleException: Catcher[Unit] = {
     case e: InterruptedException ⇒

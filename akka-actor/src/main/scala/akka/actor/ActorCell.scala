@@ -254,7 +254,7 @@ private[akka] trait Cell {
    * Returns “true” if the actor is locally known to be terminated, “false” if
    * alive or uncertain.
    */
-  def isTerminated: Boolean
+  private[akka] def isTerminated: Boolean
   /**
    * The supervisor of this actor.
    */

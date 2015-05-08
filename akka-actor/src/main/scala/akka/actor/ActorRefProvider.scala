@@ -535,7 +535,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     }
 
     @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
-    override def isTerminated: Boolean = !isWalking
+    override private[akka] def isTerminated: Boolean = !isWalking
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
       if (isWalking)
