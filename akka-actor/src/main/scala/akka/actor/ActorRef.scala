@@ -89,9 +89,6 @@ object ActorRef {
  * Two actor references are compared equal when they have the same path and point to
  * the same actor incarnation. A reference pointing to a terminated actor doesn't compare
  * equal to a reference pointing to another (re-created) actor with the same path.
- * Actor references acquired with `actorFor` do not always include the full information
- * about the underlying actor identity and therefore such references do not always compare
- * equal to references acquired with `actorOf`, `sender`, or `context.self`.
  *
  * If you need to keep track of actor references in a collection and do not care
  * about the exact actor incarnation you can use the ``ActorPath`` as key because
