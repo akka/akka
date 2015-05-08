@@ -4,7 +4,7 @@ name := "hello-kernel"
 
 version := "0.1"
 
-val akkaVersion = "2.3-SNAPSHOT"
+val akkaVersion = "2.3.11"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
