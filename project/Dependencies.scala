@@ -11,7 +11,7 @@ object Dependencies {
     val crossScala = Seq("2.11.5", "2.10.4")
     val scalaVersion = crossScala.head
     val scalaStmVersion  = sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7")
-    val scalaTestVersion = sys.props.get("akka.build.scalaTestVersion").getOrElse("2.1.3")
+    val scalaTestVersion = sys.props.get("akka.build.scalaTestVersion").getOrElse("2.2.4")
     val scalaCheckVersion = sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.3")
   }
 
