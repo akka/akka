@@ -50,9 +50,9 @@ object ValidatePullRequest extends AutoPlugin {
   override def trigger = allRequirements
 
   override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++ Seq(
-    testOptions in ValidatePR += Tests.Argument("-l akka.testkit.PerformanceTest"),
-    testOptions in ValidatePR += Tests.Argument("-l akka.testkit.LongRunningTest"),
-    testOptions in ValidatePR += Tests.Argument("-l akka.testkit.TimingTest"),
+    testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
+    testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
+    testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
 
     targetBranch in ValidatePR := {
         sys.env.get(TargetBranchEnvVarName) orElse
@@ -161,7 +161,7 @@ object ValidatePullRequest extends AutoPlugin {
       val theVoid = Def.task { () } // when you stare into the void, the void stares back at you
 
       if ((projectIsAffectedByChanges in ValidatePR).value) {
-        log.info(s"Changes in PR are affecting project [${name.value}] - proceeding with test:test")
+        log.info(s"Changes in PR are affecting project [${name.value}] - proceeding with pr-validation:test")
         theVoid.dependsOn(test in ValidatePR)
       } else {
         log.info(s"Skipping validation of [${name.value}], as PR does NOT affect this project...")
