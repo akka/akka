@@ -609,10 +609,8 @@ object ShardRegion {
 
   private case object Retry extends ShardRegionCommand
 
-  private def roleOption(role: String): Option[String] = role match {
-    case null | "" ⇒ None
-    case _         ⇒ Some(role)
-  }
+  private def roleOption(role: String): Option[String] =
+    if (role == "") None else Option(role)
 
   /**
    * INTERNAL API. Sends `PoisonPill` to the entries and when all of them have terminated

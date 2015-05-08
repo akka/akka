@@ -228,10 +228,23 @@ amended with API as needed.
 DistributedPubSub construction
 ==============================
 
-Normally, the ``DistributedPubSubMediator`` is started by the ``DistributedPubSubExtension``.
+Normally, the ``DistributedPubSubMediator`` actor is started by the ``DistributedPubSubExtension``.
 This extension has been renamed to ``DistributedPubSub``. It is also possible to start
 it as an ordinary actor if you need multiple instances of it with different settings.
 The parameters of the ``Props`` factory methods in the ``DistributedPubSubMediator`` companion
 has been moved to settings object ``DistributedPubSubSettings``. This can be created from
 system configuration properties and also amended with API as needed.
- 
+
+ClusterClient construction
+==========================
+
+The parameters of the ``Props`` factory methods in the ``ClusterClient`` companion
+has been moved to settings object ``ClusterClientSettings``. This can be created from
+system configuration properties and also amended with API as needed.
+
+Normally, the ``ClusterReceptionist`` actor is started by the ``ClusterReceptionistExtension``.
+This extension has been renamed to ``ClusterClientReceptionist``. It is also possible to start
+it as an ordinary actor if you need multiple instances of it with different settings.
+The parameters of the ``Props`` factory methods in the ``ClusterReceptionist`` companion
+has been moved to settings object ``ClusterReceptionistSettings``. This can be created from
+system configuration properties and also amended with API as needed.

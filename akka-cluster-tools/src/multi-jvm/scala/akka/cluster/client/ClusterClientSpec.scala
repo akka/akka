@@ -68,7 +68,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     enterBarrier(from.name + "-joined")
   }
 
-  def createReceptionist(): Unit = ClusterReceptionistExtension(system)
+  def createReceptionist(): Unit = ClusterClientReceptionist(system)
 
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
@@ -80,8 +80,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
   def roleName(addr: Address): Option[RoleName] = roles.find(node(_).address == addr)
 
   def initialContacts = Set(
-    system.actorSelection(node(second) / "user" / "receptionist"),
-    system.actorSelection(node(third) / "user" / "receptionist"))
+    node(second) / "user" / "receptionist",
+    node(third) / "user" / "receptionist")
 
   "A ClusterClient" must {
 
@@ -92,7 +92,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       join(fourth, first)
       runOn(fourth) {
         val service = system.actorOf(Props(classOf[TestService], testActor), "testService")
-        ClusterReceptionistExtension(system).registerService(service)
+        ClusterClientReceptionist(system).registerService(service)
       }
       runOn(first, second, third, fourth) {
         awaitCount(1)
@@ -103,7 +103,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
     "communicate to actor on any node in cluster" in within(10 seconds) {
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(initialContacts))
+        val c = system.actorOf(ClusterClient.props(
+          ClusterClientSettings(system).withInitialContacts(initialContacts)))
         c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
         expectMsg("ack")
       }
@@ -122,12 +123,12 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       //#server
       runOn(host1) {
         val serviceA = system.actorOf(Props[Service], "serviceA")
-        ClusterReceptionistExtension(system).registerService(serviceA)
+        ClusterClientReceptionist(system).registerService(serviceA)
       }
 
       runOn(host2, host3) {
         val serviceB = system.actorOf(Props[Service], "serviceB")
-        ClusterReceptionistExtension(system).registerService(serviceB)
+        ClusterClientReceptionist(system).registerService(serviceB)
       }
       //#server
 
@@ -138,7 +139,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       //#client
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(initialContacts))
+        val c = system.actorOf(ClusterClient.props(
+          ClusterClientSettings(system).withInitialContacts(initialContacts)))
         c ! ClusterClient.Send("/user/serviceA", "hello", localAffinity = true)
         c ! ClusterClient.SendToAll("/user/serviceB", "hi")
       }
@@ -165,13 +167,14 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     "re-establish connection to receptionist when connection is lost" in within(30 seconds) {
       runOn(first, second, third, fourth) {
         val service2 = system.actorOf(Props(classOf[TestService], testActor), "service2")
-        ClusterReceptionistExtension(system).registerService(service2)
+        ClusterClientReceptionist(system).registerService(service2)
         awaitCount(8)
       }
       enterBarrier("service2-replicated")
 
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(initialContacts))
+        val c = system.actorOf(ClusterClient.props(
+          ClusterClientSettings(system).withInitialContacts(initialContacts)))
 
         c ! ClusterClient.Send("/user/service2", "bonjour", localAffinity = true)
         expectMsg("ack")
