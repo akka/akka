@@ -34,15 +34,16 @@ private[stream] object AbstractStage {
   final val UpstreamBall = 1
   final val DownstreamBall = 2
   final val BothBalls = UpstreamBall | DownstreamBall
+  final val BothBallsAndNoTerminationPending = UpstreamBall | DownstreamBall | NoTerminationPending
   final val PrecedingWasPull = 0x4000
-  final val TerminationPending = 0x8000
+  final val NoTerminationPending = 0x8000
 }
 
 abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out], LifeCtx <: LifecycleContext] extends Stage[In, Out] {
   /**
    * INTERNAL API
    */
-  private[stream] var bits = 0
+  private[stream] var bits = AbstractStage.NoTerminationPending
 
   /**
    * INTERNAL API

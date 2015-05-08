@@ -270,14 +270,17 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
 
     protected def mustHave(b: Int): Unit =
       if (!hasBits(b)) {
-        def format(b: Int) =
-          (b & BothBalls: @switch) match {
+        def format(b: Int) = {
+          val ballStatus = (b & BothBalls: @switch) match {
             case 0              ⇒ "no balls"
             case UpstreamBall   ⇒ "upstream ball"
             case DownstreamBall ⇒ "downstream ball"
             case BothBalls      ⇒ "upstream & downstream balls"
           }
-        throw new IllegalStateException(s"operation requires ${format(b)} while holding ${format(currentOp.bits)} and receiving ${format(incomingBall)}")
+          if ((b & NoTerminationPending) > 0) ballStatus + " and not isFinishing"
+          else ballStatus + " and isFinishing"
+        }
+        throw new IllegalStateException(s"operation requires [${format(b)}] while holding [${format(currentOp.bits)}] and receiving [${format(incomingBall)}]")
       }
 
     override def push(elem: Any): DownstreamDirective = {
@@ -294,11 +297,13 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     }
 
     override def pull(): UpstreamDirective = {
+      var requirements = NoTerminationPending
       if (currentOp.isDetached) {
         if (incomingBall == DownstreamBall)
           throw new IllegalStateException("Cannot pull during onPull, only push, pushAndPull or holdDownstreamAndPull")
-        mustHave(UpstreamBall)
+        requirements |= UpstreamBall
       }
+      mustHave(requirements)
       removeBits(UpstreamBall)
       addBits(PrecedingWasPull)
       state = Pulling
@@ -325,7 +330,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
       null
     }
 
-    def isFinishing: Boolean = hasBits(TerminationPending)
+    def isFinishing: Boolean = !hasBits(NoTerminationPending)
 
     final protected def pushAndFinishCommon(elem: Any, finishState: UntypedOp): Unit = {
       finishCurrentOp(finishState)
@@ -362,6 +367,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     }
 
     override def holdUpstream(): UpstreamDirective = {
+      mustHave(NoTerminationPending)
       removeBits(PrecedingWasPull)
       addBits(UpstreamBall)
       exit()
@@ -371,7 +377,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
       ReactiveStreamsCompliance.requireNonNullElement(elem)
       if (incomingBall != UpstreamBall)
         throw new IllegalStateException("can only holdUpstreamAndPush from onPush")
-      mustHave(BothBalls)
+      mustHave(BothBallsAndNoTerminationPending)
       removeBits(PrecedingWasPull | DownstreamBall)
       addBits(UpstreamBall)
       elementInFlight = elem
@@ -389,7 +395,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     override def holdDownstreamAndPull(): DownstreamDirective = {
       if (incomingBall != DownstreamBall)
         throw new IllegalStateException("can only holdDownstreamAndPull from onPull")
-      mustHave(BothBalls)
+      mustHave(BothBallsAndNoTerminationPending)
       addBits(PrecedingWasPull | DownstreamBall)
       removeBits(UpstreamBall)
       state = Pulling
@@ -400,7 +406,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
 
     override def pushAndPull(elem: Any): FreeDirective = {
       ReactiveStreamsCompliance.requireNonNullElement(elem)
-      mustHave(BothBalls)
+      mustHave(BothBallsAndNoTerminationPending)
       addBits(PrecedingWasPull)
       removeBits(BothBalls)
       fork(Pushing, elem)
@@ -410,7 +416,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
 
     override def absorbTermination(): TerminationDirective = {
       updateJumpBacks(activeOpIndex)
-      removeBits(BothBalls)
+      removeBits(BothBallsAndNoTerminationPending)
       finish()
     }
 
@@ -479,7 +485,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     }
 
     override def run(): Unit = {
-      if (hasBits(TerminationPending)) exit()
+      if (!hasBits(NoTerminationPending)) exit()
       else currentOp.onUpstreamFinish(ctx = this)
     }
 
@@ -489,7 +495,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     }
 
     override def absorbTermination(): TerminationDirective = {
-      addBits(TerminationPending)
+      removeBits(NoTerminationPending)
       removeBits(UpstreamBall)
       updateJumpBacks(activeOpIndex)
       if (hasBits(DownstreamBall) || (!currentOp.isDetached && hasBits(PrecedingWasPull))) {
@@ -512,7 +518,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     }
 
     def run(): Unit = {
-      if (hasBits(TerminationPending)) exit()
+      if (!hasBits(NoTerminationPending)) exit()
       else currentOp.onDownstreamFinish(ctx = this)
     }
 
@@ -536,7 +542,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     def run(): Unit = currentOp.onUpstreamFailure(cause, ctx = this)
 
     override def absorbTermination(): TerminationDirective = {
-      addBits(TerminationPending)
+      removeBits(NoTerminationPending)
       removeBits(UpstreamBall)
       updateJumpBacks(activeOpIndex)
       if (hasBits(DownstreamBall) || (!currentOp.isDetached && hasBits(PrecedingWasPull))) {
