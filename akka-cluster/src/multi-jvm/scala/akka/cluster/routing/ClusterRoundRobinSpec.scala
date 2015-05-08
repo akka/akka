@@ -132,12 +132,12 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
 
   "A cluster router with a RoundRobin router" must {
-    "start cluster with 2 nodes" taggedAs LongRunningTest in {
+    "start cluster with 2 nodes" in {
       awaitClusterUp(first, second)
       enterBarrier("after-1")
     }
 
-    "deploy routees to the member nodes in the cluster" taggedAs LongRunningTest in {
+    "deploy routees to the member nodes in the cluster" in {
 
       runOn(first) {
         router1.isInstanceOf[RoutedActorRef] should ===(true)
@@ -162,7 +162,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       enterBarrier("after-2")
     }
 
-    "lookup routees on the member nodes in the cluster" taggedAs LongRunningTest in {
+    "lookup routees on the member nodes in the cluster" in {
 
       // cluster consists of first and second
 
@@ -193,7 +193,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       enterBarrier("after-3")
     }
 
-    "deploy routees to new nodes in the cluster" taggedAs LongRunningTest in {
+    "deploy routees to new nodes in the cluster" in {
 
       // add third and fourth
       awaitClusterUp(first, second, third, fourth)
@@ -216,7 +216,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       enterBarrier("after-4")
     }
 
-    "lookup routees on new nodes in the cluster" taggedAs LongRunningTest in {
+    "lookup routees on new nodes in the cluster" in {
 
       // cluster consists of first, second, third and fourth
 
@@ -238,7 +238,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       enterBarrier("after-5")
     }
 
-    "deploy routees to only remote nodes when allow-local-routees = off" taggedAs LongRunningTest in {
+    "deploy routees to only remote nodes when allow-local-routees = off" in {
 
       runOn(first) {
         // max-nr-of-instances-per-node=1 times 3 nodes
@@ -261,7 +261,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       enterBarrier("after-6")
     }
 
-    "deploy routees to specified node role" taggedAs LongRunningTest in {
+    "deploy routees to specified node role" in {
 
       runOn(first) {
         awaitAssert(currentRoutees(router5).size should ===(2))
@@ -283,7 +283,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       enterBarrier("after-7")
     }
 
-    "deploy programatically defined routees to the member nodes in the cluster" taggedAs LongRunningTest in {
+    "deploy programatically defined routees to the member nodes in the cluster" in {
 
       runOn(first) {
         router2.isInstanceOf[RoutedActorRef] should ===(true)
@@ -309,7 +309,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       enterBarrier("after-8")
     }
 
-    "remove routees for unreachable nodes, and add when reachable again" taggedAs LongRunningTest in within(30.seconds) {
+    "remove routees for unreachable nodes, and add when reachable again" in within(30.seconds) {
 
       // myservice is already running
 
@@ -334,7 +334,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       enterBarrier("after-9")
     }
 
-    "deploy programatically defined routees to other node when a node becomes down" taggedAs LongRunningTest in {
+    "deploy programatically defined routees to other node when a node becomes down" in {
       muteMarkingAsUnreachable()
 
       runOn(first) {

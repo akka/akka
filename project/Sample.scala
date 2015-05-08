@@ -65,7 +65,7 @@ object Sample {
       MiMa.projectSettings ++
       Publish.projectSettings ++
       ValidatePullRequest.projectSettings
-    ): _*)
+    ): _*).configs(ValidatePullRequest.ValidatePR)
 
   private implicit class RichLoadedDefinitions(ld: LoadedDefinitions) {
     def copy(projects: Seq[Project]) =

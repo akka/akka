@@ -56,7 +56,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
   override def verifySystemShutdown = true
 
   "A new remote actor" must {
-    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
+    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello")
@@ -71,7 +71,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
       enterBarrier("done")
     }
 
-    "be locally instantiated on a remote node (with null parameter) and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
+    "be locally instantiated on a remote node (with null parameter) and be able to communicate through its RemoteActorRef" in {
 
       runOn(master) {
         val actor = system.actorOf(Props(classOf[SomeActorWithParam], null), "service-hello-null")
@@ -86,7 +86,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
       enterBarrier("done")
     }
 
-    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef (with deployOnAll)" taggedAs LongRunningTest in {
+    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef (with deployOnAll)" in {
 
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello2")
@@ -101,7 +101,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
       enterBarrier("done")
     }
 
-    "be able to shutdown system when using remote deployed actor" taggedAs LongRunningTest in within(20 seconds) {
+    "be able to shutdown system when using remote deployed actor" in within(20 seconds) {
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello3")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
