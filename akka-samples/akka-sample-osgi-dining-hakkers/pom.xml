@@ -22,7 +22,7 @@
         <scalatest.version>2.2.3</scalatest.version>
         <typesafe.config.version>1.2.1</typesafe.config.version>
         <leveldb.version>0.7</leveldb.version>
-        <leveldbjni.version>1.7</leveldbjni.version>
+        <leveldbjni.version>1.8</leveldbjni.version>
         <uncommons-maths.version>1.2.2</uncommons-maths.version>
     </properties>
 
