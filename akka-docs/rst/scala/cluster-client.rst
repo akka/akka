@@ -18,12 +18,12 @@ the cluster client.
 
 
 The receptionist is supposed to be started on all nodes, or all nodes with specified role,
-in the cluster. The receptionist can be started with the ``ClusterReceptionistExtension``
+in the cluster. The receptionist can be started with the ``ClusterClientReceptionist`` extension
 or as an ordinary actor.
 
 You can send messages via the ``ClusterClient`` to any actor in the cluster that is registered
 in the ``DistributedPubSubMediator`` used by the ``ClusterReceptionist``.
-The ``ClusterReceptionistExtension`` provides methods for registration of actors that
+The ``ClusterClientReceptionist`` provides methods for registration of actors that
 should be reachable from the client. Messages are wrapped in ``ClusterClient.Send``,
 ``ClusterClient.SendToAll`` or ``ClusterClient.Publish``.
 
@@ -67,7 +67,7 @@ An Example
 On the cluster nodes first start the receptionist. Note, it is recommended to load the extension 
 when the actor system is started by defining it in the ``akka.extensions`` configuration property::
 
-   akka.extensions = ["akka.cluster.client.ClusterReceptionistExtension"]
+   akka.extensions = ["akka.cluster.client.ClusterClientReceptionist"]
 
 Next, register the actors that should be available for the client.
 
@@ -89,25 +89,25 @@ A more comprehensive sample is available in the `Typesafe Activator <http://www.
 tutorial named `Distributed workers with Akka and Scala! <http://www.typesafe.com/activator/template/akka-distributed-workers>`_
 and `Distributed workers with Akka and Java! <http://www.typesafe.com/activator/template/akka-distributed-workers-java>`_.
 
-ClusterReceptionistExtension
+ClusterClientReceptionist
 ----------------------------
 
-In the example above the receptionist is started and accessed with the ``akka.cluster.client.ClusterReceptionistExtension``.
+In the example above the receptionist is started and accessed with the ``akka.cluster.client.ClusterClientReceptionist``.
 That is convenient and perfectly fine in most cases, but it can be good to know that it is possible to
 start the ``akka.cluster.client.ClusterReceptionist`` actor as an ordinary actor and you can have several
 different receptionists at the same time, serving different types of clients.
 
-The ``ClusterReceptionistExtension`` can be configured with the following properties:
+The ``ClusterClientReceptionist`` can be configured with the following properties:
 
 .. includecode:: ../../../akka-cluster-tools/src/main/resources/reference.conf#receptionist-ext-config
 
-Note that the ``ClusterReceptionistExtension`` uses the ``DistributedPubSub`` extension, which is described
+Note that the ``ClusterClientReceptionist`` uses the ``DistributedPubSub`` extension, which is described
 in :ref:`distributed-pub-sub`.
 
 It is recommended to load the extension when the actor system is started by defining it in the
 ``akka.extensions`` configuration property::
 
-   akka.extensions = ["akka.cluster.client.ClusterReceptionistExtension"]
+   akka.extensions = ["akka.cluster.client.ClusterClientReceptionist"]
 
 Dependencies
 ------------
