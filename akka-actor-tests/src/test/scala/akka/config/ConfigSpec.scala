@@ -4,14 +4,15 @@
 
 package akka.config
 
-import language.postfixOps
-import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
-import scala.collection.JavaConverters._
-import scala.concurrent.duration._
+import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorSystem
 import akka.event.Logging.DefaultLogger
-import java.util.concurrent.TimeUnit
+import akka.testkit.AkkaSpec
+import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) {
@@ -92,6 +93,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
           pool.getInt("parallelism-min") should be(8)
           pool.getDouble("parallelism-factor") should be(3.0)
           pool.getInt("parallelism-max") should be(64)
+          pool.getString("task-peeking-mode") should be("FIFO")
         }
 
         //Thread pool executor config
