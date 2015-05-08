@@ -220,13 +220,12 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    *
    * @param fromState State being transitioning from
    * @param toState State being transitioning from
-   * @throws IllegalStateException if an invalid transition is attempted
    */
-  private def transition(fromState: State, toState: State): Unit =
+  private def transition(fromState: State, toState: State): Unit = {
     if (swapState(fromState, toState))
       toState.enter()
-    else
-      throw new IllegalStateException("Illegal transition attempted from: " + fromState + " to " + toState)
+    // else some other thread already swapped state
+  }
 
   /**
    * Trips breaker to an open state.  This is valid from Closed or Half-Open states.
