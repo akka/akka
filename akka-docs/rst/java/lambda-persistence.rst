@@ -61,7 +61,7 @@ LevelDB based plugins will require the following additional dependency declarati
   <dependency>
     <groupId>org.fusesource.leveldbjni</groupId>
     <artifactId>leveldbjni-all</artifactId>
-    <version>1.7</version>
+    <version>1.8</version>
   </dependency>
 
 Architecture
