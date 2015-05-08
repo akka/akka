@@ -3,6 +3,9 @@
  */
 package akka.stream.impl.fusing
 
+import akka.stream.stage._
+
+import scala.util.control.NoStackTrace
 import akka.stream.Supervision
 
 class InterpreterSpec extends InterpreterSpecKit {
@@ -494,6 +497,25 @@ class InterpreterSpec extends InterpreterSpecKit {
 
       upstream.onNextAndComplete("foo")
       lastEvents() should be(Set(OnNext("foo"), OnComplete))
+    }
+
+    "report error if pull is called while op is terminating" in new TestSetup(Seq(new PushPullStage[Any, Any] {
+      override def onPull(ctx: Context[Any]): SyncDirective = ctx.pull()
+      override def onPush(elem: Any, ctx: Context[Any]): SyncDirective = ctx.pull()
+      override def onUpstreamFinish(ctx: Context[Any]): TerminationDirective = ctx.absorbTermination()
+    })) {
+      lastEvents() should be(Set.empty)
+
+      downstream.requestOne()
+      lastEvents() should be(Set(RequestOne))
+
+      upstream.onComplete()
+      val ev = lastEvents()
+      ev.nonEmpty should be(true)
+      ev.forall {
+        case OnError(_: IllegalStateException) ⇒ true
+        case _                                 ⇒ false
+      } should be(true)
     }
 
     "implement expand-filter" in pending
