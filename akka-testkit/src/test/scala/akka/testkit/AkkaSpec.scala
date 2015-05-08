@@ -3,6 +3,8 @@
  */
 package akka.testkit
 
+import org.scalactic.Constraint
+
 import language.{ postfixOps, reflectiveCalls }
 import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
 import org.scalatest.Matchers
@@ -14,7 +16,6 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import akka.dispatch.Dispatchers
 import akka.testkit.TestEvent._
 import org.scalautils.ConversionCheckedTripleEquals
-import org.scalautils.Constraint
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
