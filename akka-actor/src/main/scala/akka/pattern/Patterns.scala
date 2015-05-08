@@ -155,7 +155,7 @@ object Patterns {
    * {{{
    *   final Future<Object> f = Patterns.ask(worker, request, timeout);
    *   // apply some transformation (i.e. enrich with request info)
-   *   final Future<Object> transformed = f.map(new akka.japi.Function<Object, Object>() { ... });
+   *   final Future<Object> transformed = f.map(new akka.japi.function.Function<Object, Object>() { ... });
    *   // send it on to the next stage
    *   Patterns.pipe(transformed).to(nextActor);
    * }}}

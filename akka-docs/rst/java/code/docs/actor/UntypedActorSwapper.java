@@ -10,7 +10,7 @@ import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.japi.Procedure;
+import akka.japi.function.Procedure;
 
 //#swapper
 public class UntypedActorSwapper {

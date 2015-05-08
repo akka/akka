@@ -12,7 +12,7 @@ import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.ReceiveTimeout;
-import akka.japi.Procedure;
+import akka.japi.function.Procedure;
 import akka.japi.Option;
 import akka.persistence.UntypedPersistentActor;
 
@@ -66,8 +66,9 @@ public class ClusterShardingTest {
 
     //#counter-start
     Option<String> roleOption = Option.none();
-    ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter", 
-      Props.create(Counter.class), Option.java2ScalaOption(roleOption), false, messageExtractor);
+    ActorRef startedCounterRegion = ClusterSharding.get(system).start(
+        "Counter", Props.create(Counter.class),
+        Option.java2ScalaOption(roleOption), false, messageExtractor);
     //#counter-start
 
     //#counter-usage
@@ -119,7 +120,8 @@ public class ClusterShardingTest {
     // getSelf().path().name() is the entry identifier (utf-8 URL-encoded)
     @Override
     public String persistenceId() {
-      return getSelf().path().parent().parent().name() + "-" + getSelf().path().name();
+      return getSelf().path().parent().parent().name() + "-"
+          + getSelf().path().name();
     }
 
     @Override

@@ -3,7 +3,8 @@ package akka.dispatch;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.actor.ActorSystem;
 
-import akka.japi.*;
+import akka.japi.function.*;
+import akka.japi.Option;
 import org.junit.ClassRule;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
@@ -25,8 +26,8 @@ import akka.testkit.AkkaSpec;
 public class JavaFutureTests {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("JavaFutureTests", AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("JavaFutureTests",
+      AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
   private final Duration timeout = Duration.create(5, TimeUnit.SECONDS);
@@ -35,6 +36,7 @@ public class JavaFutureTests {
   public void mustBeAbleToMapAFuture() throws Exception {
 
     Future<String> f1 = Futures.future(new Callable<String>() {
+      @Override
       public String call() {
         return "Hello";
       }
@@ -109,7 +111,7 @@ public class JavaFutureTests {
       public void each(String future) {
         latch.countDown();
       }
-    },system.dispatcher());
+    }, system.dispatcher());
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
@@ -124,7 +126,8 @@ public class JavaFutureTests {
     Future<String> f = cf.future();
     Future<Integer> r = f.flatMap(new Mapper<String, Future<Integer>>() {
       public Future<Integer> checkedApply(String r) throws Throwable {
-        if (false) throw new IOException("Just here to make sure this compiles.");
+        if (false)
+          throw new IOException("Just here to make sure this compiles.");
         latch.countDown();
         Promise<Integer> cf = Futures.promise();
         cf.success(Integer.parseInt(r));
@@ -142,8 +145,8 @@ public class JavaFutureTests {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise();
     Future<String> f = cf.future();
-    Future<String> r = f.filter(Filter.filterOf(new Function<String, Boolean>() {
-      public Boolean apply(String r) {
+    Future<String> r = f.filter(Filter.filterOf(new Predicate<String>() {
+      public boolean test(String r) {
         latch.countDown();
         return r.equals("foo");
       }
@@ -157,13 +160,14 @@ public class JavaFutureTests {
 
   // TODO: Improve this test, perhaps with an Actor
   @Test
-  public void mustSequenceAFutureList() throws Exception{
+  public void mustSequenceAFutureList() throws Exception {
     LinkedList<Future<String>> listFutures = new LinkedList<Future<String>>();
     LinkedList<String> listExpected = new LinkedList<String>();
 
     for (int i = 0; i < 10; i++) {
       listExpected.add("test");
       listFutures.add(Futures.future(new Callable<String>() {
+        @Override
         public String call() {
           return "test";
         }
@@ -177,13 +181,14 @@ public class JavaFutureTests {
 
   // TODO: Improve this test, perhaps with an Actor
   @Test
-  public void foldForJavaApiMustWork() throws Exception{
+  public void foldForJavaApiMustWork() throws Exception {
     LinkedList<Future<String>> listFutures = new LinkedList<Future<String>>();
     StringBuilder expected = new StringBuilder();
 
     for (int i = 0; i < 10; i++) {
       expected.append("test");
       listFutures.add(Futures.future(new Callable<String>() {
+        @Override
         public String call() {
           return "test";
         }
@@ -200,13 +205,14 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void reduceForJavaApiMustWork() throws Exception{
+  public void reduceForJavaApiMustWork() throws Exception {
     LinkedList<Future<String>> listFutures = new LinkedList<Future<String>>();
     StringBuilder expected = new StringBuilder();
 
     for (int i = 0; i < 10; i++) {
       expected.append("test");
       listFutures.add(Futures.future(new Callable<String>() {
+        @Override
         public String call() {
           return "test";
         }
@@ -223,7 +229,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void traverseForJavaApiMustWork() throws Exception{
+  public void traverseForJavaApiMustWork() throws Exception {
     LinkedList<String> listStrings = new LinkedList<String>();
     LinkedList<String> expectedStrings = new LinkedList<String>();
 
@@ -235,6 +241,7 @@ public class JavaFutureTests {
     Future<Iterable<String>> result = Futures.traverse(listStrings, new Function<String, Future<String>>() {
       public Future<String> apply(final String r) {
         return Futures.future(new Callable<String>() {
+          @Override
           public String call() {
             return r.toUpperCase();
           }
@@ -246,19 +253,20 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void findForJavaApiMustWork() throws Exception{
+  public void findForJavaApiMustWork() throws Exception {
     LinkedList<Future<Integer>> listFutures = new LinkedList<Future<Integer>>();
     for (int i = 0; i < 10; i++) {
       final Integer fi = i;
       listFutures.add(Futures.future(new Callable<Integer>() {
+        @Override
         public Integer call() {
           return fi;
         }
       }, system.dispatcher()));
     }
     final Integer expect = 5;
-    Future<Option<Integer>> f = Futures.find(listFutures, new Function<Integer, Boolean>() {
-      public Boolean apply(Integer i) {
+    Future<Option<Integer>> f = Futures.find(listFutures, new Predicate<Integer>() {
+      public boolean test(Integer i) {
         return i == 5;
       }
     }, system.dispatcher());
@@ -303,7 +311,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void recoverWithToMustBeCallable() throws Exception{
+  public void recoverWithToMustBeCallable() throws Exception {
     final IllegalStateException fail = new IllegalStateException("OHNOES");
     Promise<Object> p = Futures.promise();
     Future<Object> f = p.future().recoverWith(new Recover<Future<Object>>() {

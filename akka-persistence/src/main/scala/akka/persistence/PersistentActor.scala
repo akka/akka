@@ -5,9 +5,10 @@ package akka.persistence
 
 import java.lang.{ Iterable ⇒ JIterable }
 import akka.actor.UntypedActor
-import akka.japi.Procedure
 import akka.actor.AbstractActor
 import akka.japi.Util
+import akka.japi.{ Procedure ⇒ DeprecatedProcedure }
+import akka.japi.function.Procedure
 
 /**
  * Sent to a [[PersistentActor]] if a journal fails to write a persistent message. If
@@ -159,6 +160,10 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
   final def persist[A](event: A, handler: Procedure[A]): Unit =
     persist(event)(event ⇒ handler(event))
 
+  @deprecated("Use persist with akka.japi.function.Procedure parameter", "2.4")
+  final def persist[A](event: A, handler: DeprecatedProcedure[A]): Unit =
+    persist(event)(event ⇒ handler(event))
+
   /**
    * Java API: asynchronously persists `events` in specified order. This is equivalent to calling
    * `persist[A](event: A, handler: Procedure[A])` multiple times with the same `handler`,
@@ -168,6 +173,10 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param handler handler for each persisted `events`
    */
   final def persist[A](events: JIterable[A], handler: Procedure[A]): Unit =
+    persist(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  @deprecated("Use persist with akka.japi.function.Procedure parameter", "2.4")
+  final def persist[A](events: JIterable[A], handler: DeprecatedProcedure[A]): Unit =
     persist(Util.immutableSeq(events))(event ⇒ handler(event))
 
   /**
@@ -192,6 +201,10 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
   final def persistAsync[A](event: A)(handler: Procedure[A]): Unit =
     super[Eventsourced].persistAsync(event)(event ⇒ handler(event))
 
+  @deprecated("Use persistAsync with akka.japi.function.Procedure parameter", "2.4")
+  final def persistAsync[A](event: A)(handler: DeprecatedProcedure[A]): Unit =
+    super[Eventsourced].persistAsync(event)(event ⇒ handler(event))
+
   /**
    * JAVA API: asynchronously persists `events` in specified order. This is equivalent to calling
    * `persistAsync[A](event: A)(handler: A => Unit)` multiple times with the same `handler`,
@@ -200,7 +213,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
-  final def persistAsync[A](events: JIterable[A])(handler: A ⇒ Unit): Unit =
+  final def persistAsync[A](events: JIterable[A])(handler: Procedure[A]): Unit =
     super[Eventsourced].persistAsync(Util.immutableSeq(events))(event ⇒ handler(event))
 
   /**
@@ -225,6 +238,10 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
   final def defer[A](event: A)(handler: Procedure[A]): Unit =
     super[Eventsourced].defer(event)(event ⇒ handler(event))
 
+  @deprecated("Use defer with akka.japi.function.Procedure parameter", "2.4")
+  final def defer[A](event: A)(handler: DeprecatedProcedure[A]): Unit =
+    super[Eventsourced].defer(event)(event ⇒ handler(event))
+
   /**
    * Defer the handler execution until all pending handlers have been executed.
    * Allows to define logic within the actor, which will respect the invocation-order-guarantee
@@ -245,6 +262,10 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param handler handler for each `event`
    */
   final def defer[A](events: JIterable[A])(handler: Procedure[A]): Unit =
+    super[Eventsourced].defer(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  @deprecated("Use defer with akka.japi.function.Procedure parameter", "2.4")
+  final def defer[A](events: JIterable[A])(handler: DeprecatedProcedure[A]): Unit =
     super[Eventsourced].defer(Util.immutableSeq(events))(event ⇒ handler(event))
 
   /**

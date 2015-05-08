@@ -6,7 +6,7 @@ package akka.persistence.journal.japi;
 
 import scala.concurrent.Future;
 
-import akka.japi.Procedure;
+import akka.japi.function.Procedure;
 import akka.persistence.PersistentRepr;
 
 interface AsyncRecoveryPlugin {

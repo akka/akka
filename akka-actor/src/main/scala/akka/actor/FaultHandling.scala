@@ -7,6 +7,8 @@ import language.implicitConversions
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.concurrent.TimeUnit
 import akka.japi.Util.immutableSeq
+import akka.japi.{ Function ⇒ DeprecatedJFunction }
+import akka.japi.function.{ Function ⇒ JFunction }
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
@@ -185,7 +187,8 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   implicit def seqThrowable2Decider(trapExit: immutable.Seq[Class[_ <: Throwable]]): Decider = makeDecider(trapExit)
 
   type Decider = PartialFunction[Throwable, Directive]
-  type JDecider = akka.japi.Function[Throwable, Directive]
+  type JDecider = DeprecatedJFunction[Throwable, Directive]
+  type JDecider2 = JFunction[Throwable, Directive]
   type CauseDirective = (Class[_ <: Throwable], Directive)
 
   /**
@@ -217,7 +220,13 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   /**
    * Converts a Java Decider into a Scala Decider
    */
+  @deprecated("Use makeDecider with akka.japi.function.Function parameter", "2.4")
   def makeDecider(func: JDecider): Decider = { case x ⇒ func(x) }
+
+  /**
+   * Converts a Java Decider into a Scala Decider
+   */
+  def makeDecider(func: JDecider2): Decider = { case x ⇒ func(x) }
 
   /**
    * Sort so that subtypes always precede their supertypes, but without
@@ -390,12 +399,26 @@ case class AllForOneStrategy(
   /**
    * Java API
    */
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider2, loggingEnabled: Boolean) =
+    this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
+
+  /**
+   * Java API
+   */
+  @deprecated("Use constructor with akka.japi.function.Function parameter", "2.4")
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider, loggingEnabled: Boolean) =
     this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
   /**
    * Java API
    */
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider2) =
+    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
+
+  /**
+   * Java API
+   */
+  @deprecated("Use constructor with akka.japi.function.Function parameter", "2.4")
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
 
@@ -466,12 +489,26 @@ case class OneForOneStrategy(
   /**
    * Java API
    */
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider2, loggingEnabled: Boolean) =
+    this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
+
+  /**
+   * Java API
+   */
+  @deprecated("Use constructor with akka.japi.function.Function parameter", "2.4")
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider, loggingEnabled: Boolean) =
     this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
   /**
    * Java API
    */
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider2) =
+    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
+
+  /**
+   * Java API
+   */
+  @deprecated("Use constructor with akka.japi.function.Function parameter", "2.4")
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
 

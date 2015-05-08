@@ -12,7 +12,7 @@ import java.util.Map;
 
 import akka.actor.*;
 import akka.dispatch.Mapper;
-import akka.japi.Function;
+import akka.japi.function.Function;
 import scala.concurrent.duration.Duration;
 import akka.util.Timeout;
 import akka.event.Logging;

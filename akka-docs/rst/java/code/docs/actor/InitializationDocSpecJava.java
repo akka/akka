@@ -4,7 +4,7 @@
 package docs.actor;
 
 import akka.actor.*;
-import akka.japi.Procedure;
+import akka.japi.function.Procedure;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;

@@ -14,7 +14,8 @@ import akka.util.Timeout;
 
 //#imports2
 import scala.concurrent.duration.Duration;
-import akka.japi.Function;
+import akka.japi.function.Function;
+import akka.japi.function.Predicate;
 import java.util.concurrent.Callable;
 import static akka.dispatch.Futures.future;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -29,7 +30,7 @@ import static akka.dispatch.Futures.traverse;
 //#imports4
 
 //#imports5
-import akka.japi.Function2;
+import akka.japi.function.Function2;
 import static akka.dispatch.Futures.fold;
 //#imports5
 
@@ -370,15 +371,15 @@ public class FutureDocTest {
     final ExecutionContext ec = system.dispatcher();
     Future<Integer> future1 = Futures.successful(4);
     Future<Integer> successfulFilter = future1.filter(Filter.filterOf(
-      new Function<Integer, Boolean>() {
-        public Boolean apply(Integer i) {
+      new Predicate<Integer>() {
+        public boolean test(Integer i) {
           return i % 2 == 0;
         }
       }), ec);
 
     Future<Integer> failedFilter = future1.filter(Filter.filterOf(
-      new Function<Integer, Boolean>() {
-        public Boolean apply(Integer i) {
+      new Predicate<Integer>() {
+        public boolean test(Integer i) {
           return i % 2 != 0;
         }
       }), ec);

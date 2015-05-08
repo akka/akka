@@ -5,7 +5,9 @@
 package akka.dispatch
 
 import scala.runtime.{ BoxedUnit, AbstractPartialFunction }
-import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption, Procedure }
+import akka.japi.{ Option ⇒ JOption }
+import akka.japi.{ Function ⇒ DeprecatedJFunc, Function2 ⇒ DeprecatedJFunc2, Option ⇒ JOption, Procedure ⇒ DeprecatedProcedure }
+import akka.japi.function.{ Function ⇒ JFunction, Function2 ⇒ JFunction2, Predicate, Procedure }
 import scala.concurrent.{ Future, Promise, ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService }
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
@@ -38,6 +40,18 @@ object ExecutionContexts {
     ExecutionContext.fromExecutor(executor, errorReporter.apply)
 
   /**
+   * Returns a new ExecutionContextExecutor which will delegate execution to the underlying Executor,
+   * and which will use the provided error reporter.
+   *
+   * @param executor the Executor which will be used for the ExecutionContext
+   * @param errorReporter a Procedure that will log any exceptions passed to it
+   * @return a new ExecutionContext
+   */
+  @deprecated("Use fromExecutor with akka.japi.function.Procedure parameter", "2.4")
+  def fromExecutor(executor: Executor, errorReporter: DeprecatedProcedure[Throwable]): ExecutionContextExecutor =
+    ExecutionContext.fromExecutor(executor, errorReporter.apply)
+
+  /**
    * Returns a new ExecutionContextExecutorService which will delegate execution to the underlying ExecutorService,
    * and which will use the default error reporter.
    *
@@ -56,6 +70,18 @@ object ExecutionContexts {
    * @return a new ExecutionContext
    */
   def fromExecutorService(executorService: ExecutorService, errorReporter: Procedure[Throwable]): ExecutionContextExecutorService =
+    ExecutionContext.fromExecutorService(executorService, errorReporter.apply)
+
+  /**
+   * Returns a new ExecutionContextExecutorService which will delegate execution to the underlying ExecutorService,
+   * and which will use the provided error reporter.
+   *
+   * @param executor the ExecutorService which will be used for the ExecutionContext
+   * @param errorReporter a Procedure that will log any exceptions passed to it
+   * @return a new ExecutionContext
+   */
+  @deprecated("Use fromExecutorService with akka.japi.function.Procedure parameter", "2.4")
+  def fromExecutorService(executorService: ExecutorService, errorReporter: DeprecatedProcedure[Throwable]): ExecutionContextExecutorService =
     ExecutionContext.fromExecutorService(executorService, errorReporter.apply)
 
   /**
@@ -114,7 +140,16 @@ object Futures {
   /**
    * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
    */
-  def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: JFunc[T, java.lang.Boolean], executor: ExecutionContext): Future[JOption[T]] = {
+  def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: Predicate[T], executor: ExecutionContext): Future[JOption[T]] = {
+    implicit val ec = executor
+    Future.find[T](futures.asScala)(predicate.test)(executor) map JOption.fromScalaOption
+  }
+
+  /**
+   * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
+   */
+  @deprecated("Use find with akka.japi.function.Predicate parameter", "2.4")
+  def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: DeprecatedJFunc[T, java.lang.Boolean], executor: ExecutionContext): Future[JOption[T]] = {
     implicit val ec = executor
     Future.find[T](futures.asScala)(predicate.apply(_))(executor) map JOption.fromScalaOption
   }
@@ -131,13 +166,30 @@ object Futures {
    * the result will be the first failure of any of the futures, or any failure in the actual fold,
    * or the result of the fold.
    */
-  def fold[T <: AnyRef, R <: AnyRef](zero: R, futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, R], executor: ExecutionContext): Future[R] =
+  def fold[T <: AnyRef, R <: AnyRef](zero: R, futures: JIterable[Future[T]], fun: JFunction2[R, T, R], executor: ExecutionContext): Future[R] =
+    Future.fold(futures.asScala)(zero)(fun.apply)(executor)
+
+  /**
+   * A non-blocking fold over the specified futures, with the start value of the given zero.
+   * The fold is performed on the thread where the last future is completed,
+   * the result will be the first failure of any of the futures, or any failure in the actual fold,
+   * or the result of the fold.
+   */
+  @deprecated("Use fold with akka.japi.function.Function2 parameter", "2.4")
+  def fold[T <: AnyRef, R <: AnyRef](zero: R, futures: JIterable[Future[T]], fun: DeprecatedJFunc2[R, T, R], executor: ExecutionContext): Future[R] =
     Future.fold(futures.asScala)(zero)(fun.apply)(executor)
 
   /**
    * Reduces the results of the supplied futures and binary function.
    */
-  def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, R], executor: ExecutionContext): Future[R] =
+  def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: JFunction2[R, T, R], executor: ExecutionContext): Future[R] =
+    Future.reduce[T, R](futures.asScala)(fun.apply)(executor)
+
+  /**
+   * Reduces the results of the supplied futures and binary function.
+   */
+  @deprecated("Use reduce with akka.japi.function.Function2 parameter", "2.4")
+  def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: DeprecatedJFunc2[R, T, R], executor: ExecutionContext): Future[R] =
     Future.reduce[T, R](futures.asScala)(fun.apply)(executor)
 
   /**
@@ -154,13 +206,28 @@ object Futures {
    * This is useful for performing a parallel map. For example, to apply a function to all items of a list
    * in parallel.
    */
-  def traverse[A, B](in: JIterable[A], fn: JFunc[A, Future[B]], executor: ExecutionContext): Future[JIterable[B]] = {
+  def traverse[A, B](in: JIterable[A], fn: JFunction[A, Future[B]], executor: ExecutionContext): Future[JIterable[B]] = {
     implicit val d = executor
     in.asScala.foldLeft(Future(new JLinkedList[B]())) { (fr, a) ⇒
       val fb = fn(a)
       for (r ← fr; b ← fb) yield { r add b; r }
     }
   }
+
+  /**
+   * Transforms a JIterable[A] into a Future[JIterable[B]] using the provided Function A ⇒ Future[B].
+   * This is useful for performing a parallel map. For example, to apply a function to all items of a list
+   * in parallel.
+   */
+  @deprecated("Use traverse with akka.japi.function.Function parameter", "2.4")
+  def traverse[A, B](in: JIterable[A], fn: DeprecatedJFunc[A, Future[B]], executor: ExecutionContext): Future[JIterable[B]] = {
+    implicit val d = executor
+    in.asScala.foldLeft(Future(new JLinkedList[B]())) { (fr, a) ⇒
+      val fb = fn(a)
+      for (r ← fr; b ← fb) yield { r add b; r }
+    }
+  }
+
 }
 
 /**
@@ -305,7 +372,11 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
  * to failure cases.
  */
 object Filter {
-  def filterOf[T](f: akka.japi.Function[T, java.lang.Boolean]): (T ⇒ Boolean) =
+  def filterOf[T](f: Predicate[T]): (T ⇒ Boolean) =
+    new Function1[T, Boolean] { def apply(result: T): Boolean = f.test(result) }
+
+  @deprecated("Use filterOf with akka.japi.function.Predicate parameter", "2.4")
+  def filterOf[T](f: DeprecatedJFunc[T, java.lang.Boolean]): (T ⇒ Boolean) =
     new Function1[T, Boolean] { def apply(result: T): Boolean = f(result).booleanValue() }
 }
 
@@ -331,7 +402,7 @@ abstract class Foreach[-T] extends japi.UnitFunctionBridge[T] {
 /**
  * Callback for the Future.map and Future.flatMap operations that will be invoked
  * if the Future that this callback is registered on becomes completed with a success.
- * This callback is the equivalent of an akka.japi.Function
+ * This callback is the equivalent of an akka.japi.function.Function
  *
  * Override "apply" normally, or "checkedApply" if you need to throw checked exceptions.
  *

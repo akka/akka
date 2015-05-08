@@ -16,7 +16,7 @@ import akka.io.Tcp.ConnectionClosed;
 import akka.io.Tcp.Event;
 import akka.io.Tcp.Received;
 import akka.io.TcpMessage;
-import akka.japi.Procedure;
+import akka.japi.function.Procedure;
 import akka.util.ByteString;
 
 //#simple-echo-handler

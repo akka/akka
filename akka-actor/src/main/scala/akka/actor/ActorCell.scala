@@ -8,7 +8,8 @@ import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch.Envelope
 import akka.dispatch.sysmsg._
 import akka.event.Logging.{ LogEvent, Debug, Error }
-import akka.japi.Procedure
+import akka.japi.{ Procedure ⇒ DeprecatedProcedure }
+import akka.japi.function.Procedure
 import java.io.{ ObjectOutputStream, NotSerializableException }
 import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
@@ -200,6 +201,13 @@ trait UntypedActorContext extends ActorContext {
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
+   * Replaces the current behavior on the top of the behavior stack.
+   */
+  @deprecated("Use become with akka.japi.function.Procedure parameter", "2.4")
+  def become(behavior: DeprecatedProcedure[Any]): Unit
+
+  /**
+   * Changes the Actor's behavior to become the new 'Procedure' handler.
    * This method acts upon the behavior stack as follows:
    *
    *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
@@ -210,6 +218,20 @@ trait UntypedActorContext extends ActorContext {
    * always pushing new behaviors and never issuing an `unbecome()`)
    */
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit
+
+  /**
+   * Changes the Actor's behavior to become the new 'Procedure' handler.
+   * This method acts upon the behavior stack as follows:
+   *
+   *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
+   *  - if `discardOld = false` it will keep the current behavior and push the given one atop
+   *
+   * The default of replacing the current behavior on the stack has been chosen to avoid memory
+   * leaks in case client code is written without consulting this documentation first (i.e.
+   * always pushing new behaviors and never issuing an `unbecome()`)
+   */
+  @deprecated("Use become with akka.japi.function.Procedure parameter", "2.4")
+  def become(behavior: DeprecatedProcedure[Any], discardOld: Boolean): Unit
 
 }
 
@@ -519,21 +541,28 @@ private[akka] class ActorCell(
    * ACTOR CONTEXT IMPLEMENTATION
    */
 
-  final def sender(): ActorRef = currentMessage match {
+  override final def sender(): ActorRef = currentMessage match {
     case null                      ⇒ system.deadLetters
     case msg if msg.sender ne null ⇒ msg.sender
     case _                         ⇒ system.deadLetters
   }
 
-  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
+  override def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
     behaviorStack = behavior :: (if (discardOld && behaviorStack.nonEmpty) behaviorStack.tail else behaviorStack)
 
-  def become(behavior: Procedure[Any]): Unit = become(behavior, discardOld = true)
+  override def become(behavior: Procedure[Any]): Unit = become(behavior, discardOld = true)
 
-  def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
+  override def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
     become({ case msg ⇒ behavior.apply(msg) }: Actor.Receive, discardOld)
 
-  def unbecome(): Unit = {
+  @deprecated("Use become with akka.japi.function.Procedure parameter", "2.4")
+  override def become(behavior: DeprecatedProcedure[Any]): Unit = become(behavior, discardOld = true)
+
+  @deprecated("Use become with akka.japi.function.Procedure parameter", "2.4")
+  override def become(behavior: DeprecatedProcedure[Any], discardOld: Boolean): Unit =
+    become({ case msg ⇒ behavior.apply(msg) }: Actor.Receive, discardOld)
+
+  override def unbecome(): Unit = {
     val original = behaviorStack
     behaviorStack =
       if (original.isEmpty || original.tail.isEmpty) actor.receive :: emptyBehaviorStack

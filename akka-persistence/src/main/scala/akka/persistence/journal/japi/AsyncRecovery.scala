@@ -7,7 +7,7 @@ package akka.persistence.journal.japi
 import scala.concurrent.Future
 
 import akka.actor.Actor
-import akka.japi.Procedure
+import akka.japi.function.Procedure
 import akka.persistence.journal.{ AsyncRecovery ⇒ SAsyncReplay }
 import akka.persistence.PersistentRepr
 

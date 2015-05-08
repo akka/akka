@@ -18,7 +18,7 @@ import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
-import akka.japi.Function;
+import akka.japi.function.Function;
 import akka.pattern.Patterns;
 import akka.util.Timeout;
 

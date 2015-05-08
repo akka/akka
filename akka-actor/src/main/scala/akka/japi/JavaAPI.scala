@@ -16,6 +16,7 @@ import java.util.Collections.{ emptyList, singletonList }
 /**
  * A Function interface. Used to create first-class-functions is Java.
  */
+@deprecated("Use akka.japi.function.Function", "2.4")
 trait Function[T, R] {
   @throws(classOf[Exception])
   def apply(param: T): R
@@ -24,6 +25,7 @@ trait Function[T, R] {
 /**
  * A Function interface. Used to create 2-arg first-class-functions is Java.
  */
+@deprecated("Use akka.japi.function.Function2", "2.4")
 trait Function2[T1, T2, R] {
   @throws(classOf[Exception])
   def apply(arg1: T1, arg2: T2): R
@@ -32,6 +34,7 @@ trait Function2[T1, T2, R] {
 /**
  * A Procedure is like a Function, but it doesn't produce a return value.
  */
+@deprecated("Use akka.japi.function.Procedure", "2.4")
 trait Procedure[T] {
   @throws(classOf[Exception])
   def apply(param: T): Unit
@@ -40,6 +43,7 @@ trait Procedure[T] {
 /**
  * An executable piece of code that takes no parameters and doesn't return any value.
  */
+@deprecated("Use akka.japi.function.Effect", "2.4")
 trait Effect {
   @throws(classOf[Exception])
   def apply(): Unit
@@ -48,6 +52,7 @@ trait Effect {
 /**
  * Java API: Defines a criteria and determines whether the parameter meets this criteria.
  */
+@deprecated("Use akka.japi.function.Predicate", "2.4")
 trait Predicate[T] {
   def test(param: T): Boolean
 }
