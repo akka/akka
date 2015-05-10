@@ -91,6 +91,16 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
   }
 
   /**
+   * User overridable callback.
+   * <p/>
+   * It is called before any other method defined on the `Stage`.
+   * Empty default implementation.
+   */
+  @throws(classOf[Exception])
+  def preStart(ctx: Ctx): Unit = () // TODO or hide as LifecycleContext... then AsyncStage cannot do anything about it
+  // TODO hide here and make Async Stage final def preStart + def asyncPreStart ???
+
+  /**
    * `onPush` is called when an element from upstream is available and there is demand from downstream, i.e.
    * in `onPush` you are allowed to call [[akka.stream.stage.Context#push]] to emit one element downstreams,
    * or you can absorb the element by calling [[akka.stream.stage.Context#pull]]. Note that you can only
@@ -147,6 +157,15 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
    * with [[akka.stream.stage.Context#isFinishing]].
    */
   def onUpstreamFailure(cause: Throwable, ctx: Ctx): TerminationDirective = ctx.fail(cause)
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called after the Stages final action is performed.  // TODO need better wording here
+   * Empty default implementation.
+   */
+  @throws(classOf[Exception])
+  def postStop(): Unit = ()
 
   /**
    * If an exception is thrown from [[#onPush]] this method is invoked to decide how
@@ -274,13 +293,6 @@ abstract class DetachedStage[In, Out]
 abstract class AsyncStage[In, Out, Ext]
   extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, AsyncContext[Out, Ext]] {
   private[stream] override def isDetached = true
-
-  /**
-   * Initial input for the asynchronous “side” of this Stage. This can be overridden
-   * to set initial asynchronous requests in motion or schedule asynchronous
-   * events.
-   */
-  def initAsyncInput(ctx: AsyncContext[Out, Ext]): Unit = ()
 
   /**
    * Implement this method to define the action to be taken in response to an
@@ -519,10 +531,21 @@ sealed trait TerminationDirective extends SyncDirective
 // never instantiated
 sealed abstract class FreeDirective private () extends UpstreamDirective with DownstreamDirective with TerminationDirective with AsyncDirective
 
+trait LifecycleContext {
+  /**
+   * Returns the FlowMaterializer that was used to materialize this [[Stage]].
+   * It can be used to materialize sub-flows.
+   */
+  def materializer: FlowMaterializer
+
+  /** Returns operation attributes associated with the this Stage */
+  def attributes: OperationAttributes
+}
+
 /**
  * Passed to the callback methods of [[PushPullStage]] and [[StatefulStage]].
  */
-sealed trait Context[Out] {
+sealed trait Context[Out] extends LifecycleContext {
   /**
    * INTERNAL API
    */
@@ -565,14 +588,6 @@ sealed trait Context[Out] {
    */
   def isFinishing: Boolean
 
-  /**
-   * Returns the FlowMaterializer that was used to materialize this [[Stage]].
-   * It can be used to materialize sub-flows.
-   */
-  def materializer: FlowMaterializer
-
-  /** Returns operation attributes associated with the this Stage */
-  def attributes: OperationAttributes
 }
 
 /**

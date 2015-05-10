@@ -3,13 +3,13 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.{ FlowMaterializer, Supervision }
+import akka.event.LoggingAdapter
 import akka.stream.impl.ReactiveStreamsCompliance
-import akka.stream.OperationAttributes
 import akka.stream.stage._
+import akka.stream.{ FlowMaterializer, OperationAttributes, Supervision }
 
 import scala.annotation.{ switch, tailrec }
-import scala.collection.breakOut
+import scala.collection.{ breakOut, immutable }
 import scala.util.control.NonFatal
 
 /**
@@ -17,6 +17,20 @@ import scala.util.control.NonFatal
  */
 private[akka] object OneBoundedInterpreter {
   final val Debug = false
+
+  /** INTERNAL API */
+  private[akka] sealed trait InitializationStatus
+  /** INTERNAL API */
+  private[akka] final case object InitializationSuccessful extends InitializationStatus
+  /** INTERNAL API */
+  private[akka] final case class InitializationFailed(failures: immutable.Seq[InitializationFailure]) extends InitializationStatus {
+    // exceptions are reverse ordered here, below methods help to avoid confusion when used from the outside
+    def mostUpstream = failures.last
+    def mostDownstream = failures.head
+  }
+
+  /** INTERNAL API */
+  private[akka] case class InitializationFailure(op: Int, ex: Throwable)
 
   /**
    * INTERNAL API
@@ -138,6 +152,7 @@ private[akka] object OneBoundedInterpreter {
  */
 private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
                                           onAsyncInput: (AsyncStage[Any, Any, Any], AsyncContext[Any, Any], Any) ⇒ Unit,
+                                          log: LoggingAdapter,
                                           materializer: FlowMaterializer,
                                           attributes: OperationAttributes = OperationAttributes.none,
                                           val forkLimit: Int = 100,
@@ -312,7 +327,8 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
 
     def isFinishing: Boolean = hasBits(TerminationPending)
 
-    final protected def pushAndFinishCommon(elem: Any): Unit = {
+    final protected def pushAndFinishCommon(elem: Any, finishState: UntypedOp): Unit = {
+      finishCurrentOp(finishState)
       ReactiveStreamsCompliance.requireNonNullElement(elem)
       if (currentOp.isDetached) {
         mustHave(DownstreamBall)
@@ -321,9 +337,8 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     }
 
     override def pushAndFinish(elem: Any): DownstreamDirective = {
-      pushAndFinishCommon(elem)
-      // Spit the execution domain in two, and invoke op postStop callbacks if there are any
-      finishCurrentOp()
+      // Spit the execution domain in two and invoke postStop
+      pushAndFinishCommon(elem, Finished.asInstanceOf[UntypedOp])
 
       // This MUST be an unsafeFork because the execution of PushFinish MUST strictly come before the finish execution
       // path. Other forks are not order dependent because they execute on isolated execution domains which cannot
@@ -422,11 +437,12 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     override def run(): Unit = currentOp.onPush(elementInFlight, ctx = this)
 
     override def pushAndFinish(elem: Any): DownstreamDirective = {
-      pushAndFinishCommon(elem)
+      // PushFinished
       // Put an isolation barrier that will prevent the onPull of this op to be called again. This barrier
       // is different from simple Finished that it allows onUpstreamTerminated to pass through, unless onPull
       // has been called on the stage
-      pipeline(activeOpIndex) = PushFinished.asInstanceOf[UntypedOp]
+      pushAndFinishCommon(elem, PushFinished.asInstanceOf[UntypedOp])
+
       elementInFlight = elem
       state = PushFinish
       null
@@ -623,9 +639,20 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     activeOpIndex = savePos
   }
 
-  def init(): Unit = {
-    initBoundaries()
+  /**
+   * Initializes all stages setting their initial context and calling [[AbstractStage.preStart]] on each.
+   */
+  def init(): InitializationStatus = {
+    val failures = initBoundaries()
     runDetached()
+
+    if (failures.isEmpty) InitializationSuccessful
+    else {
+      val failure = failures.head
+      activeOpIndex = failure.op
+      currentOp.enterAndFail(failure.ex)
+      InitializationFailed(failures)
+    }
   }
 
   def isFinished: Boolean = pipeline(Upstream) == Finished && pipeline(Downstream) == Finished
@@ -652,7 +679,8 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
   /**
    * This method injects a Context to each of the BoundaryStages and AsyncStages. This will be the context returned by enter().
    */
-  private def initBoundaries(): Unit = {
+  private def initBoundaries(): List[InitializationFailure] = {
+    var failures: List[InitializationFailure] = Nil
     var op = 0
     while (op < pipeline.length) {
       (pipeline(op): Any) match {
@@ -662,16 +690,26 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
         case a: AsyncStage[Any, Any, Any] @unchecked ⇒
           a.context = new EntryState("async", op)
           activeOpIndex = op
-          a.initAsyncInput(a.context) // TODO remove asyncInput? it's like preStart
+          a.preStart(a.context)
 
-        case _ ⇒
+        case a: AbstractStage[Any, Any, Any, Any, Any] @unchecked ⇒
+          val state = new EntryState("stage", op)
+          a.context = state
+          try a.preStart(state) catch {
+            case NonFatal(ex) ⇒
+              failures ::= InitializationFailure(op, ex) // not logging here as 'most downstream' exception will be signalled via onError
+            // TODO could use decider here, but semantics become a bit iffy (Resume => ignore error in prestart? Doesn't sound like a good idea).
+          }
       }
       op += 1
     }
+    failures
   }
 
-  private def finishCurrentOp(): Unit = {
-    pipeline(activeOpIndex) = Finished.asInstanceOf[UntypedOp]
+  private def finishCurrentOp(finishState: UntypedOp = Finished.asInstanceOf[UntypedOp]): Unit = {
+    try pipeline(activeOpIndex).postStop()
+    catch { case NonFatal(ex) ⇒ log.error(s"Stage [{}] postStop failed", ex) }
+    finally pipeline(activeOpIndex) = finishState
   }
 
   /**
