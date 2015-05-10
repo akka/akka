@@ -3,15 +3,10 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.stage.{ TerminationDirective, SyncDirective, Context, PushStage }
-
-import scala.util.control.NoStackTrace
 import akka.stream.Supervision
 
 class InterpreterSpec extends InterpreterSpecKit {
   import Supervision.stoppingDecider
-  import Supervision.resumingDecider
-  import Supervision.restartingDecider
 
   "Interpreter" must {
 
@@ -460,13 +455,6 @@ class InterpreterSpec extends InterpreterSpecKit {
       downstream.requestOne()
       lastEvents() should be(Set(OnNext(2)))
 
-    }
-
-    // This test is related to issue #17351
-    class PushFinishStage extends PushStage[Any, Any] {
-      override def onPush(elem: Any, ctx: Context[Any]): SyncDirective = ctx.pushAndFinish(elem)
-      override def onUpstreamFinish(ctx: Context[Any]): TerminationDirective =
-        ctx.fail(akka.stream.testkit.Utils.TE("Cannot happen"))
     }
 
     "work with pushAndFinish if upstream completes with pushAndFinish" in new TestSetup(Seq(
