@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.unmarshalling
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 object Unmarshal {
   def apply[T](value: T): Unmarshal[T] = new Unmarshal(value)
@@ -14,5 +14,5 @@ class Unmarshal[A](val value: A) {
   /**
    * Unmarshals the value to the given Type using the in-scope Unmarshaller.
    */
-  def to[B](implicit um: Unmarshaller[A, B]): Future[B] = um(value)
+  def to[B](implicit um: Unmarshaller[A, B], ec: ExecutionContext): Future[B] = um(value)
 }

@@ -6,7 +6,6 @@ package akka.http.scaladsl.server
 package directives
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.common._
 import akka.http.impl.util._
@@ -88,8 +87,9 @@ object ParameterDirectives extends ParameterDirectives {
 
     private def extractParameter[A, B](f: A ⇒ Directive1[B]) = paramDef(f)
     private def filter[T](paramName: String, fsou: FSOU[T]): Directive1[T] =
-      extractUri flatMap { uri ⇒
-        onComplete(fsou(uri.query get paramName)) flatMap {
+      extractRequestContext flatMap { ctx ⇒
+        import ctx.executionContext
+        onComplete(fsou(ctx.request.uri.query get paramName)) flatMap {
           case Success(x)                               ⇒ provide(x)
           case Failure(Unmarshaller.NoContentException) ⇒ reject(MissingQueryParamRejection(paramName))
           case Failure(x)                               ⇒ reject(MalformedQueryParamRejection(paramName, x.getMessage.nullAsEmpty, Option(x.getCause)))
@@ -103,20 +103,21 @@ object ParameterDirectives extends ParameterDirectives {
       extractParameter[NameReceptacle[T], T] { nr ⇒ filter(nr.name, fsu) }
     implicit def forNUR[T] =
       extractParameter[NameUnmarshallerReceptacle[T], T] { nr ⇒ filter(nr.name, nr.um) }
-    implicit def forNOR[T](implicit fsou: FSOU[T], ec: ExecutionContext) =
+    implicit def forNOR[T](implicit fsou: FSOU[T]) =
       extractParameter[NameOptionReceptacle[T], Option[T]] { nr ⇒ filter[Option[T]](nr.name, fsou) }
-    implicit def forNDR[T](implicit fsou: FSOU[T], ec: ExecutionContext) =
+    implicit def forNDR[T](implicit fsou: FSOU[T]) =
       extractParameter[NameDefaultReceptacle[T], T] { nr ⇒ filter[T](nr.name, fsou withDefaultValue nr.default) }
-    implicit def forNOUR[T](implicit ec: ExecutionContext) =
+    implicit def forNOUR[T] =
       extractParameter[NameOptionUnmarshallerReceptacle[T], Option[T]] { nr ⇒ filter(nr.name, nr.um: FSOU[T]) }
-    implicit def forNDUR[T](implicit ec: ExecutionContext) =
+    implicit def forNDUR[T] =
       extractParameter[NameDefaultUnmarshallerReceptacle[T], T] { nr ⇒ filter[T](nr.name, (nr.um: FSOU[T]) withDefaultValue nr.default) }
 
     //////////////////// required parameter support ////////////////////
 
     private def requiredFilter[T](paramName: String, fsou: FSOU[T], requiredValue: Any): Directive0 =
-      extractUri flatMap { uri ⇒
-        onComplete(fsou(uri.query get paramName)) flatMap {
+      extractRequestContext flatMap { ctx ⇒
+        import ctx.executionContext
+        onComplete(fsou(ctx.request.uri.query get paramName)) flatMap {
           case Success(value) if value == requiredValue ⇒ pass
           case _                                        ⇒ reject
         }

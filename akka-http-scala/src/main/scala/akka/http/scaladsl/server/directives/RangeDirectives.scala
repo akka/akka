@@ -99,7 +99,6 @@ trait RangeDirectives {
 
       def applyRanges(ranges: Seq[ByteRange]): Directive0 =
         extractRequestContext.flatMap { ctx ⇒
-          import ctx.executionContext
           mapRouteResultWithPF {
             case Complete(HttpResponse(OK, headers, entity, protocol)) ⇒
               universal(entity) match {
