@@ -38,7 +38,7 @@ private[stream] object AbstractStage {
   final val TerminationPending = 0x8000
 }
 
-abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out]] extends Stage[In, Out] {
+abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out], LifeCtx <: LifecycleContext] extends Stage[In, Out] {
   /**
    * INTERNAL API
    */
@@ -89,6 +89,15 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
     context.fail(e)
     context.execute()
   }
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * It is called before any other method defined on the `Stage`.
+   * Empty default implementation.
+   */
+  @throws(classOf[Exception])
+  def preStart(ctx: LifeCtx): Unit = ()
 
   /**
    * `onPush` is called when an element from upstream is available and there is demand from downstream, i.e.
@@ -147,6 +156,15 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
    * with [[akka.stream.stage.Context#isFinishing]].
    */
   def onUpstreamFailure(cause: Throwable, ctx: Ctx): TerminationDirective = ctx.fail(cause)
+
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called after the Stages final action is performed.  // TODO need better wording here
+   * Empty default implementation.
+   */
+  @throws(classOf[Exception])
+  def postStop(): Unit = ()
 
   /**
    * If an exception is thrown from [[#onPush]] this method is invoked to decide how
@@ -212,7 +230,7 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
  * @see [[StatefulStage]]
  * @see [[PushStage]]
  */
-abstract class PushPullStage[In, Out] extends AbstractStage[In, Out, SyncDirective, SyncDirective, Context[Out]]
+abstract class PushPullStage[In, Out] extends AbstractStage[In, Out, SyncDirective, SyncDirective, Context[Out], LifecycleContext]
 
 /**
  * `PushStage` is a [[PushPullStage]] that always perform transitive pull by calling `ctx.pull` from `onPull`.
@@ -247,7 +265,7 @@ abstract class PushStage[In, Out] extends PushPullStage[In, Out] {
  * @see [[PushPullStage]]
  */
 abstract class DetachedStage[In, Out]
-  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, DetachedContext[Out]] {
+  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, DetachedContext[Out], LifecycleContext] {
   private[stream] override def isDetached = true
 
   /**
@@ -272,15 +290,8 @@ abstract class DetachedStage[In, Out]
  * with the provided data item.
  */
 abstract class AsyncStage[In, Out, Ext]
-  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, AsyncContext[Out, Ext]] {
+  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, AsyncContext[Out, Ext], AsyncContext[Out, Ext]] {
   private[stream] override def isDetached = true
-
-  /**
-   * Initial input for the asynchronous “side” of this Stage. This can be overridden
-   * to set initial asynchronous requests in motion or schedule asynchronous
-   * events.
-   */
-  def initAsyncInput(ctx: AsyncContext[Out, Ext]): Unit = ()
 
   /**
    * Implement this method to define the action to be taken in response to an
@@ -500,7 +511,7 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
  * BoundaryStages are the elements that make the interpreter *tick*, there is no other way to start the interpreter
  * than using a BoundaryStage.
  */
-private[akka] abstract class BoundaryStage extends AbstractStage[Any, Any, Directive, Directive, BoundaryContext] {
+private[akka] abstract class BoundaryStage extends AbstractStage[Any, Any, Directive, Directive, BoundaryContext, LifecycleContext] {
   final override def decide(t: Throwable): Supervision.Directive = Supervision.Stop
 
   final override def restart(): BoundaryStage =
@@ -519,10 +530,21 @@ sealed trait TerminationDirective extends SyncDirective
 // never instantiated
 sealed abstract class FreeDirective private () extends UpstreamDirective with DownstreamDirective with TerminationDirective with AsyncDirective
 
+trait LifecycleContext {
+  /**
+   * Returns the FlowMaterializer that was used to materialize this [[Stage]].
+   * It can be used to materialize sub-flows.
+   */
+  def materializer: FlowMaterializer
+
+  /** Returns operation attributes associated with the this Stage */
+  def attributes: OperationAttributes
+}
+
 /**
  * Passed to the callback methods of [[PushPullStage]] and [[StatefulStage]].
  */
-sealed trait Context[Out] {
+sealed trait Context[Out] extends LifecycleContext {
   /**
    * INTERNAL API
    */
@@ -565,14 +587,6 @@ sealed trait Context[Out] {
    */
   def isFinishing: Boolean
 
-  /**
-   * Returns the FlowMaterializer that was used to materialize this [[Stage]].
-   * It can be used to materialize sub-flows.
-   */
-  def materializer: FlowMaterializer
-
-  /** Returns operation attributes associated with the this Stage */
-  def attributes: OperationAttributes
 }
 
 /**

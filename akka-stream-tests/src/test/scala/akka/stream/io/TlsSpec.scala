@@ -59,7 +59,7 @@ object TlsSpec {
   class Timeout(duration: FiniteDuration)(implicit system: ActorSystem) extends AsyncStage[ByteString, ByteString, Unit] {
     private var last: ByteString = _
 
-    override def initAsyncInput(ctx: AsyncContext[ByteString, Unit]) = {
+    override def preStart(ctx: AsyncContext[ByteString, Unit]) = {
       val cb = ctx.getAsyncCallback()
       system.scheduler.scheduleOnce(duration)(cb.invoke(()))(system.dispatcher)
     }

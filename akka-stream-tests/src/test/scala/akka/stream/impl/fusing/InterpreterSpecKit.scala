@@ -3,13 +3,66 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.OperationAttributes
-import akka.stream.testkit.AkkaSpec
+import akka.event.Logging
 import akka.stream.stage._
+import akka.stream.testkit.AkkaSpec
+import akka.stream.{ ActorFlowMaterializer, OperationAttributes }
 import akka.testkit.TestProbe
-import akka.stream.ActorFlowMaterializer
 
-trait InterpreterSpecKit extends AkkaSpec {
+trait InterpreterLifecycleSpecKit {
+  private[akka] case class PreStartAndPostStopIdentity[T](
+    onStart: LifecycleContext ⇒ Unit = _ ⇒ (),
+    onStop: () ⇒ Unit = () ⇒ (),
+    onUpstreamCompleted: () ⇒ Unit = () ⇒ (),
+    onUpstreamFailed: Throwable ⇒ Unit = ex ⇒ ())
+    extends PushStage[T, T] {
+    override def preStart(ctx: LifecycleContext) = onStart(ctx)
+
+    override def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
+
+    override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
+      onUpstreamCompleted()
+      super.onUpstreamFinish(ctx)
+    }
+
+    override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
+      onUpstreamFailed(cause)
+      super.onUpstreamFailure(cause, ctx)
+    }
+
+    override def postStop() = onStop()
+  }
+
+  private[akka] case class PreStartFailer[T](pleaseThrow: () ⇒ Unit) extends PushStage[T, T] {
+
+    override def preStart(ctx: LifecycleContext) =
+      pleaseThrow()
+
+    override def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
+  }
+
+  private[akka] case class PostStopFailer[T](ex: () ⇒ Throwable) extends PushStage[T, T] {
+    override def onUpstreamFinish(ctx: Context[T]) = ctx.finish()
+    override def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
+
+    override def postStop(): Unit = throw ex()
+  }
+
+  // This test is related to issue #17351
+  private[akka] class PushFinishStage(onPostStop: () ⇒ Unit = () ⇒ ()) extends PushStage[Any, Any] {
+    override def onPush(elem: Any, ctx: Context[Any]): SyncDirective =
+      ctx.pushAndFinish(elem)
+
+    override def onUpstreamFinish(ctx: Context[Any]): TerminationDirective =
+      ctx.fail(akka.stream.testkit.Utils.TE("Cannot happen"))
+
+    override def postStop(): Unit =
+      onPostStop()
+  }
+
+}
+
+trait InterpreterSpecKit extends AkkaSpec with InterpreterLifecycleSpecKit {
 
   case object OnComplete
   case object Cancel
@@ -61,6 +114,7 @@ trait InterpreterSpecKit extends AkkaSpec {
     val sidechannel = TestProbe()
     val interpreter = new OneBoundedInterpreter(upstream +: ops :+ downstream,
       (op, ctx, event) ⇒ sidechannel.ref ! ActorInterpreter.AsyncInput(op, ctx, event),
+      Logging(system, classOf[TestSetup]),
       ActorFlowMaterializer(),
       OperationAttributes.none,
       forkLimit, overflowToHeap)
