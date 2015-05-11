@@ -126,7 +126,7 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent with Marsh
               securedConnection = defaultHostInfo.securedConnection,
               defaultHostHeader = defaultHostInfo.host)
           val ctx = new RequestContextImpl(effectiveRequest, setup.routingLog.requestLog(effectiveRequest), setup.settings)
-          val sealedExceptionHandler = setup.exceptionHandler.seal(setup.settings)(setup.executionContext)
+          val sealedExceptionHandler = setup.exceptionHandler.seal(setup.settings)
           val semiSealedRoute = // sealed for exceptions but not for rejections
             Directives.handleExceptions(sealedExceptionHandler) { route }
           val deferrableRouteResult = semiSealedRoute(ctx)

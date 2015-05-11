@@ -58,46 +58,47 @@ trait MultipartUnmarshallers {
                                                                                                         createStreamed: (MultipartMediaType, Source[BP, Any]) ⇒ T,
                                                                                                         createStrictBodyPart: (HttpEntity.Strict, List[HttpHeader]) ⇒ BPS,
                                                                                                         createStrict: (MultipartMediaType, immutable.Seq[BPS]) ⇒ T)(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[T] =
-    Unmarshaller { entity ⇒
-      if (entity.contentType.mediaType.isMultipart && mediaRange.matches(entity.contentType.mediaType)) {
-        entity.contentType.mediaType.params.get("boundary") match {
-          case None ⇒
-            FastFuture.failed(new RuntimeException("Content-Type with a multipart media type must have a 'boundary' parameter"))
-          case Some(boundary) ⇒
-            import BodyPartParser._
-            val parser = new BodyPartParser(defaultContentType, boundary, log)
-            FastFuture.successful {
-              entity match {
-                case HttpEntity.Strict(ContentType(mediaType: MultipartMediaType, _), data) ⇒
-                  val builder = new VectorBuilder[BPS]()
-                  val iter = new IteratorInterpreter[ByteString, BodyPartParser.Output](
-                    Iterator.single(data), List(parser)).iterator
-                  // note that iter.next() will throw exception if stream fails
-                  iter.foreach {
-                    case BodyPartStart(headers, createEntity) ⇒
-                      val entity = createEntity(Source.empty) match {
-                        case x: HttpEntity.Strict ⇒ x
-                        case x                    ⇒ throw new IllegalStateException("Unexpected entity type from strict BodyPartParser: " + x)
-                      }
-                      builder += createStrictBodyPart(entity, headers)
-                    case ParseError(errorInfo) ⇒ throw ParsingException(errorInfo)
-                    case x                     ⇒ throw new IllegalStateException(s"Unexpected BodyPartParser result $x in strict case")
-                  }
-                  createStrict(mediaType, builder.result())
-                case _ ⇒
-                  val bodyParts = entity.dataBytes
-                    .transform(() ⇒ parser)
-                    .splitWhen(_.isInstanceOf[BodyPartStart])
-                    .via(headAndTailFlow)
-                    .collect {
-                      case (BodyPartStart(headers, createEntity), entityParts) ⇒ createBodyPart(createEntity(entityParts), headers)
-                      case (ParseError(errorInfo), _)                          ⇒ throw ParsingException(errorInfo)
+    Unmarshaller { implicit ec ⇒
+      entity ⇒
+        if (entity.contentType.mediaType.isMultipart && mediaRange.matches(entity.contentType.mediaType)) {
+          entity.contentType.mediaType.params.get("boundary") match {
+            case None ⇒
+              FastFuture.failed(new RuntimeException("Content-Type with a multipart media type must have a 'boundary' parameter"))
+            case Some(boundary) ⇒
+              import BodyPartParser._
+              val parser = new BodyPartParser(defaultContentType, boundary, log)
+              FastFuture.successful {
+                entity match {
+                  case HttpEntity.Strict(ContentType(mediaType: MultipartMediaType, _), data) ⇒
+                    val builder = new VectorBuilder[BPS]()
+                    val iter = new IteratorInterpreter[ByteString, BodyPartParser.Output](
+                      Iterator.single(data), List(parser)).iterator
+                    // note that iter.next() will throw exception if stream fails
+                    iter.foreach {
+                      case BodyPartStart(headers, createEntity) ⇒
+                        val entity = createEntity(Source.empty) match {
+                          case x: HttpEntity.Strict ⇒ x
+                          case x                    ⇒ throw new IllegalStateException("Unexpected entity type from strict BodyPartParser: " + x)
+                        }
+                        builder += createStrictBodyPart(entity, headers)
+                      case ParseError(errorInfo) ⇒ throw ParsingException(errorInfo)
+                      case x                     ⇒ throw new IllegalStateException(s"Unexpected BodyPartParser result $x in strict case")
                     }
-                  createStreamed(entity.contentType.mediaType.asInstanceOf[MultipartMediaType], bodyParts)
+                    createStrict(mediaType, builder.result())
+                  case _ ⇒
+                    val bodyParts = entity.dataBytes
+                      .transform(() ⇒ parser)
+                      .splitWhen(_.isInstanceOf[BodyPartStart])
+                      .via(headAndTailFlow)
+                      .collect {
+                        case (BodyPartStart(headers, createEntity), entityParts) ⇒ createBodyPart(createEntity(entityParts), headers)
+                        case (ParseError(errorInfo), _)                          ⇒ throw ParsingException(errorInfo)
+                      }
+                    createStreamed(entity.contentType.mediaType.asInstanceOf[MultipartMediaType], bodyParts)
+                }
               }
-            }
-        }
-      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(mediaRange))
+          }
+        } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(mediaRange))
     }
 }
 

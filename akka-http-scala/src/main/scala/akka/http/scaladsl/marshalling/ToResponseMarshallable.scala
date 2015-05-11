@@ -26,5 +26,5 @@ object ToResponseMarshallable {
     }
 
   implicit val marshaller: ToResponseMarshaller[ToResponseMarshallable] =
-    Marshaller { marshallable ⇒ marshallable.marshaller(marshallable.value) }
+    Marshaller { implicit ec ⇒ marshallable ⇒ marshallable.marshaller(marshallable.value) }
 }
