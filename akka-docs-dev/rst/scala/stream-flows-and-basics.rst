@@ -198,7 +198,7 @@ and ``runWith()`` methods defined on flow elements as well as a small number of 
 well-known sinks, such as ``runForeach(el => )`` (being an alias to ``runWith(Sink.foreach(el => ))``.
 
 Materialization is currently performed synchronously on the materializing thread.
-Tha actual stream processing is handled by :ref:`Actors actor-scala` started up during the streams materialization,
+The actual stream processing is handled by actors started up during the streams materialization,
 which will be running on the thread pools they have been configured to run on - which defaults to the dispatcher set in
 :class:`MaterializationSettings` while constructing the :class:`ActorFlowMaterializer`.
 
