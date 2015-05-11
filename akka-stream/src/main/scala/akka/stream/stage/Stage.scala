@@ -38,7 +38,7 @@ private[stream] object AbstractStage {
   final val TerminationPending = 0x8000
 }
 
-abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out]] extends Stage[In, Out] {
+abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out], LifeCtx <: LifecycleContext] extends Stage[In, Out] {
   /**
    * INTERNAL API
    */
@@ -97,8 +97,7 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
    * Empty default implementation.
    */
   @throws(classOf[Exception])
-  def preStart(ctx: Ctx): Unit = () // TODO or hide as LifecycleContext... then AsyncStage cannot do anything about it
-  // TODO hide here and make Async Stage final def preStart + def asyncPreStart ???
+  def preStart(ctx: LifeCtx): Unit = ()
 
   /**
    * `onPush` is called when an element from upstream is available and there is demand from downstream, i.e.
@@ -231,7 +230,7 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
  * @see [[StatefulStage]]
  * @see [[PushStage]]
  */
-abstract class PushPullStage[In, Out] extends AbstractStage[In, Out, SyncDirective, SyncDirective, Context[Out]]
+abstract class PushPullStage[In, Out] extends AbstractStage[In, Out, SyncDirective, SyncDirective, Context[Out], LifecycleContext]
 
 /**
  * `PushStage` is a [[PushPullStage]] that always perform transitive pull by calling `ctx.pull` from `onPull`.
@@ -266,7 +265,7 @@ abstract class PushStage[In, Out] extends PushPullStage[In, Out] {
  * @see [[PushPullStage]]
  */
 abstract class DetachedStage[In, Out]
-  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, DetachedContext[Out]] {
+  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, DetachedContext[Out], LifecycleContext] {
   private[stream] override def isDetached = true
 
   /**
@@ -291,7 +290,7 @@ abstract class DetachedStage[In, Out]
  * with the provided data item.
  */
 abstract class AsyncStage[In, Out, Ext]
-  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, AsyncContext[Out, Ext]] {
+  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, AsyncContext[Out, Ext], AsyncContext[Out, Ext]] {
   private[stream] override def isDetached = true
 
   /**
@@ -512,7 +511,7 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
  * BoundaryStages are the elements that make the interpreter *tick*, there is no other way to start the interpreter
  * than using a BoundaryStage.
  */
-private[akka] abstract class BoundaryStage extends AbstractStage[Any, Any, Directive, Directive, BoundaryContext] {
+private[akka] abstract class BoundaryStage extends AbstractStage[Any, Any, Directive, Directive, BoundaryContext, LifecycleContext] {
   final override def decide(t: Throwable): Supervision.Directive = Supervision.Stop
 
   final override def restart(): BoundaryStage =

@@ -3,14 +3,13 @@
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import akka.stream.Supervision._
 import akka.stream._
-import akka.stream.impl.fusing.{ InterpreterLifecycleSpecKit, ActorInterpreter }
+import akka.stream.impl.fusing.{ ActorInterpreter, InterpreterLifecycleSpecKit }
 import akka.stream.stage.Stage
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.{ AkkaSpec, _ }
+
 import scala.concurrent.duration._
 
 class ActorInterpreterLifecycleSpec extends AkkaSpec with InterpreterLifecycleSpecKit {
@@ -113,7 +112,7 @@ class ActorInterpreterLifecycleSpec extends AkkaSpec with InterpreterLifecycleSp
       up.subscribe(processor)
       val upsub = up.expectSubscription()
       upsub.sendComplete()
-      down.expectComplete() // failures in postStop are logged, but not propagated // TODO Future features? make this a setting?
+      down.expectComplete()
     }
 
   }

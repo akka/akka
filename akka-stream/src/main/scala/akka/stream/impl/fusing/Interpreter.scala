@@ -161,7 +161,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
   import AbstractStage._
   import OneBoundedInterpreter._
 
-  type UntypedOp = AbstractStage[Any, Any, Directive, Directive, Context[Any]]
+  type UntypedOp = AbstractStage[Any, Any, Directive, Directive, Context[Any], LifecycleContext]
   require(ops.nonEmpty, "OneBoundedInterpreter cannot be created without at least one Op")
 
   private final val pipeline: Array[UntypedOp] = ops.map(_.asInstanceOf[UntypedOp])(breakOut)
@@ -197,7 +197,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
   private var lastOpFailing: Int = -1
 
   private def pipeName(op: UntypedOp): String = {
-    val o = (op: AbstractStage[_, _, _, _, _])
+    val o = (op: AbstractStage[_, _, _, _, _, _])
     (o match {
       case Finished               ⇒ "finished"
       case _: BoundaryStage       ⇒ "boundary"
@@ -692,13 +692,12 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
           activeOpIndex = op
           a.preStart(a.context)
 
-        case a: AbstractStage[Any, Any, Any, Any, Any] @unchecked ⇒
+        case a: AbstractStage[Any, Any, Any, Any, Any, Any] @unchecked ⇒
           val state = new EntryState("stage", op)
           a.context = state
           try a.preStart(state) catch {
             case NonFatal(ex) ⇒
               failures ::= InitializationFailure(op, ex) // not logging here as 'most downstream' exception will be signalled via onError
-            // TODO could use decider here, but semantics become a bit iffy (Resume => ignore error in prestart? Doesn't sound like a good idea).
           }
       }
       op += 1
