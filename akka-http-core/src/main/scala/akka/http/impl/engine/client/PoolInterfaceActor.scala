@@ -106,7 +106,7 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
         // if we can't dispatch right now we buffer and dispatch when demand from the pool arrives
         if (inputBuffer.isFull) {
           x.responsePromise.failure(
-            new RuntimeException(s"Exceeded configured max-open-requests value of [${inputBuffer.size}}]"))
+            new RuntimeException(s"Exceeded configured max-open-requests value of [${inputBuffer.size}]"))
         } else inputBuffer.enqueue(x)
       } else dispatchRequest(x) // if we can dispatch right now, do it
       request(1) // for every incoming request we demand one response from the pool
