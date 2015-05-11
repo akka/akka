@@ -9,9 +9,13 @@ import akka.http.scaladsl.util.FastFuture._
 
 trait RouteConcatenation {
 
-  implicit def enhanceRouteWithConcatenation(route: Route) = new RouteConcatenation(route: Route)
+  implicit def enhanceRouteWithConcatenation(route: Route) =
+    new RouteConcatenation.RouteWithConcatenation(route: Route)
+}
 
-  class RouteConcatenation(route: Route) {
+object RouteConcatenation extends RouteConcatenation {
+
+  class RouteWithConcatenation(route: Route) {
     /**
      * Returns a Route that chains two Routes. If the first Route rejects the request the second route is given a
      * chance to act upon the request.
@@ -28,7 +32,4 @@ trait RouteConcatenation {
       }
     }
   }
-
 }
-
-object RouteConcatenation extends RouteConcatenation
