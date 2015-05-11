@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote
 
 import akka.remote.testkit.MultiNodeConfig
@@ -96,15 +99,15 @@ abstract class RemoteReDeploymentMultiJvmSpec extends MultiNodeSpec(RemoteReDepl
     "terminate the child when its parent system is replaced by a new one" in {
 
       val echo = system.actorOf(echoProps(testActor), "echo")
-      val address = node(second).address
+      enterBarrier("echo-started")
 
       runOn(second) {
         system.actorOf(Props[Parent], "parent") ! ((Props[Hello], "hello"))
-        expectMsg("HelloParent")
+        expectMsg(15.seconds, "HelloParent")
       }
 
       runOn(first) {
-        expectMsg("PreStart")
+        expectMsg(15.seconds, "PreStart")
       }
 
       enterBarrier("first-deployed")
@@ -135,14 +138,16 @@ abstract class RemoteReDeploymentMultiJvmSpec extends MultiNodeSpec(RemoteReDepl
         val p = TestProbe()(sys)
         sys.actorOf(echoProps(p.ref), "echo")
         p.send(sys.actorOf(Props[Parent], "parent"), (Props[Hello], "hello"))
-        p.expectMsg("HelloParent")
+        p.expectMsg(15.seconds, "HelloParent")
       }
 
       enterBarrier("re-deployed")
 
       runOn(first) {
-        if (expectQuarantine) expectMsg("PreStart")
-        else expectMsgAllOf("PostStop", "PreStart")
+        within(15.seconds) {
+          if (expectQuarantine) expectMsg("PreStart")
+          else expectMsgAllOf("PostStop", "PreStart")
+        }
       }
 
       enterBarrier("the-end")
