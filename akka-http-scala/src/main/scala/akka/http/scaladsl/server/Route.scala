@@ -22,7 +22,7 @@ object Route {
   def seal(route: Route)(implicit setup: RoutingSetup): Route = {
     import directives.ExecutionDirectives._
     import setup._
-    handleExceptions(exceptionHandler.seal(settings)) {
+    handleExceptions(exceptionHandler.seal(setup.settings)) {
       handleRejections(rejectionHandler.seal) {
         route
       }
@@ -30,7 +30,7 @@ object Route {
   }
 
   /**
-   * Turns a `Route` into an server flow.
+   * Turns a `Route` into a server flow.
    */
   def handlerFlow(route: Route)(implicit setup: RoutingSetup): Flow[HttpRequest, HttpResponse, Unit] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route))

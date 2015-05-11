@@ -9,7 +9,6 @@ import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
 import akka.http.scaladsl.server.util.Tupler
-import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 
 // format: OFF

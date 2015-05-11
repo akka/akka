@@ -94,7 +94,6 @@ object Directive {
 
   /**
    * Constructs a directive from a function literal.
-   * Note: [[Directive]] itself is sealed to keep the type monomorphic.
    */
   def apply[T: Tuple](f: (T ⇒ Route) ⇒ Route): Directive[T] =
     new Directive[T] { def tapply(inner: T ⇒ Route) = f(inner) }
