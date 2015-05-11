@@ -16,7 +16,7 @@ trait InterpreterLifecycleSpecKit {
     onUpstreamCompleted: () ⇒ Unit = () ⇒ (),
     onUpstreamFailed: Throwable ⇒ Unit = ex ⇒ ())
     extends PushStage[T, T] {
-    override def preStart(ctx: Context[T]) = onStart(ctx)
+    override def preStart(ctx: LifecycleContext) = onStart(ctx)
 
     override def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
 
@@ -34,7 +34,9 @@ trait InterpreterLifecycleSpecKit {
   }
 
   private[akka] case class PreStartFailer[T](pleaseThrow: () ⇒ Unit) extends PushStage[T, T] {
-    override def preStart(ctx: Context[T]) = pleaseThrow()
+
+    override def preStart(ctx: LifecycleContext) =
+      pleaseThrow()
 
     override def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
   }
