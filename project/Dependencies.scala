@@ -8,7 +8,7 @@ object Dependencies {
   import DependencyHelpers.ScalaVersionDependentModuleID._
 
   object Versions {
-    val crossScala = Seq("2.11.5", "2.10.4")
+    val crossScala = Seq("2.11.6")
     val scalaVersion = crossScala.head
     val scalaStmVersion  = sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7")
     val scalaTestVersion = sys.props.get("akka.build.scalaTestVersion").getOrElse("2.2.4")
@@ -50,7 +50,7 @@ object Dependencies {
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
-      val scalaXml     = post210Dependency("org.scala-lang.modules" %% "scala-xml" % "1.0.1"  % "test")
+      val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.1"            % "test"
 
       // metrics, measurements, perf testing
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
@@ -125,9 +125,6 @@ object DependencyHelpers {
     def fromPF(f: PartialFunction[String, ModuleID]): ScalaVersionDependentModuleID =
       ScalaVersionDependentModuleID(version => if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
 
-    def post210Dependency(moduleId: ModuleID): ScalaVersionDependentModuleID = ScalaVersionDependentModuleID.fromPF {
-      case version if !version.startsWith("2.10") => moduleId
-    }
   }
 
   /**
