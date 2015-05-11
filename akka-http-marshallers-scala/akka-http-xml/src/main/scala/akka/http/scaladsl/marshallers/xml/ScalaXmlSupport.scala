@@ -6,7 +6,6 @@ package akka.http.scaladsl.marshallers.xml
 
 import java.io.{ ByteArrayInputStream, InputStreamReader }
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
 import scala.xml.{ XML, NodeSeq }
 import akka.stream.FlowMaterializer
 import akka.http.scaladsl.unmarshalling._
@@ -15,18 +14,16 @@ import akka.http.scaladsl.model._
 import MediaTypes._
 
 trait ScalaXmlSupport {
-  implicit def defaultNodeSeqMarshaller(implicit ec: ExecutionContext): ToEntityMarshaller[NodeSeq] =
+  implicit def defaultNodeSeqMarshaller: ToEntityMarshaller[NodeSeq] =
     Marshaller.oneOf(ScalaXmlSupport.nodeSeqContentTypes.map(nodeSeqMarshaller): _*)
 
-  def nodeSeqMarshaller(contentType: ContentType)(implicit ec: ExecutionContext): ToEntityMarshaller[NodeSeq] =
+  def nodeSeqMarshaller(contentType: ContentType): ToEntityMarshaller[NodeSeq] =
     Marshaller.StringMarshaller.wrap(contentType)(_.toString())
 
-  implicit def defaultNodeSeqUnmarshaller(implicit fm: FlowMaterializer,
-                                          ec: ExecutionContext): FromEntityUnmarshaller[NodeSeq] =
+  implicit def defaultNodeSeqUnmarshaller(implicit fm: FlowMaterializer): FromEntityUnmarshaller[NodeSeq] =
     nodeSeqUnmarshaller(ScalaXmlSupport.nodeSeqContentTypeRanges: _*)
 
-  def nodeSeqUnmarshaller(ranges: ContentTypeRange*)(implicit fm: FlowMaterializer,
-                                                     ec: ExecutionContext): FromEntityUnmarshaller[NodeSeq] =
+  def nodeSeqUnmarshaller(ranges: ContentTypeRange*)(implicit fm: FlowMaterializer): FromEntityUnmarshaller[NodeSeq] =
     Unmarshaller.byteArrayUnmarshaller.forContentTypes(ranges: _*).mapWithCharset { (bytes, charset) ⇒
       if (bytes.length > 0) {
         val parser = XML.parser
