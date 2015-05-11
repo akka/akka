@@ -5,16 +5,14 @@
 package akka.http.scaladsl.server
 package directives
 
+import scala.concurrent.Future
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsRejected, CredentialsMissing }
-import akka.http.scaladsl.server.directives.AuthenticationDirectives._
 
-import scala.concurrent.Future
-
-class AuthenticationDirectivesSpec extends RoutingSpec {
-  val dontAuth = HttpBasicAuthentication("MyRealm")(HttpBasicAuthenticator[String](_ ⇒ Future.successful(None)))
-  val doAuth = HttpBasicAuthentication("MyRealm")(HttpBasicAuthenticator.provideUserName(_ ⇒ true))
+class SecurityDirectivesSpec extends RoutingSpec {
+  val dontAuth = authenticate[String]("MyRealm", _ ⇒ Future.successful(None))
+  val doAuth = authenticateStrictPF("MyRealm", { case UserCredentials.Provided(name) ⇒ name })
   val authWithAnonymous = doAuth.withAnonymousUser("We are Legion")
 
   val challenge = HttpChallenge("Basic", "MyRealm")
@@ -61,7 +59,7 @@ class AuthenticationDirectivesSpec extends RoutingSpec {
   "AuthenticationDirectives facilities" should {
     "properly stack several authentication directives" in {
       val otherChallenge = HttpChallenge("MyAuth", "MyRealm2")
-      val otherAuth: Directive1[String] = AuthenticationDirectives.authenticateOrRejectWithChallenge { (cred: Option[HttpCredentials]) ⇒
+      val otherAuth: Directive1[String] = SecurityDirectives.authenticateOrRejectWithChallenge { (cred: Option[HttpCredentials]) ⇒
         Future.successful(Left(otherChallenge))
       }
       val bothAuth = dontAuth | otherAuth
