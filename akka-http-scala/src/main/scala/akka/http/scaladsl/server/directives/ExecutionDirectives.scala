@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import akka.http.scaladsl.util.FastFuture
@@ -35,14 +36,21 @@ trait ExecutionDirectives {
    */
   def handleRejections(handler: RejectionHandler): Directive0 =
     extractRequestContext flatMap { ctx ⇒
+      val maxIterations = 8
+      // allow for up to `maxIterations` nested rejections from RejectionHandler before bailing out
+      def handle(rejections: immutable.Seq[Rejection], originalRejections: immutable.Seq[Rejection], iterationsLeft: Int = maxIterations): Future[RouteResult] =
+        if (iterationsLeft > 0) {
+          handler(rejections) match {
+            case Some(route) ⇒ recoverRejectionsWith(handle(_, originalRejections, iterationsLeft - 1))(route)(ctx.withAcceptAll)
+            case None        ⇒ FastFuture.successful(RouteResult.Rejected(rejections))
+          }
+        } else
+          sys.error(s"Rejection handler still produced new rejections after $maxIterations iterations. " +
+            s"Is there an infinite handler cycle? Initial rejections: $originalRejections final rejections: $rejections")
+
       recoverRejectionsWith { rejections ⇒
-        val filteredRejections = RejectionHandler.applyTransformations(rejections)
-        handler(filteredRejections) match {
-          case Some(route) ⇒
-            val errorMsg = "The RejectionHandler for %s must not itself produce rejections (received %s)!"
-            recoverRejections(r ⇒ sys.error(errorMsg.format(filteredRejections, r)))(route)(ctx.withAcceptAll)
-          case None ⇒ FastFuture.successful(RouteResult.Rejected(filteredRejections))
-        }
+        val transformed = RejectionHandler.applyTransformations(rejections)
+        handle(transformed, transformed)
       }
     }
 }

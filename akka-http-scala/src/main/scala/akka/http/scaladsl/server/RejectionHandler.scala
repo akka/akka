@@ -7,11 +7,9 @@ package akka.http.scaladsl.server
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model._
 import StatusCodes._
-import headers._
-import directives.RouteDirectives._
 import AuthenticationFailedRejection._
 
 trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { self ⇒
@@ -22,8 +20,9 @@ trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { se
    */
   def withFallback(that: RejectionHandler): RejectionHandler =
     (this, that) match {
+      case (a: BuiltRejectionHandler, _) if a.isDefault ⇒ this // the default handler already handles everything
       case (a: BuiltRejectionHandler, b: BuiltRejectionHandler) ⇒
-        new BuiltRejectionHandler(a.cases ++ b.cases, a.notFound orElse b.notFound, a.isSealed || b.isSealed)
+        new BuiltRejectionHandler(a.cases ++ b.cases, a.notFound orElse b.notFound, b.isDefault)
       case _ ⇒ new RejectionHandler {
         def apply(rejections: immutable.Seq[Rejection]): Option[Route] =
           self(rejections) orElse that(rejections)
@@ -33,10 +32,10 @@ trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { se
   /**
    * "Seals" this handler by attaching a default handler as fallback if necessary.
    */
-  def seal(implicit ec: ExecutionContext): RejectionHandler =
+  def seal: RejectionHandler =
     this match {
-      case x: BuiltRejectionHandler if x.isSealed ⇒ x
-      case _                                      ⇒ withFallback(default)
+      case x: BuiltRejectionHandler if x.isDefault ⇒ x
+      case _                                       ⇒ withFallback(default)
     }
 }
 
@@ -45,19 +44,17 @@ object RejectionHandler {
   /**
    * Creates a new [[RejectionHandler]] builder.
    */
-  def newBuilder(): Builder = new Builder
+  def newBuilder(): Builder = new Builder(isDefault = false)
 
-  final class Builder {
+  final class Builder private[RejectionHandler] (isDefault: Boolean) {
     private[this] val cases = new immutable.VectorBuilder[Handler]
     private[this] var notFound: Option[Route] = None
-    private[this] var hasCatchAll: Boolean = false
 
     /**
      * Handles a single [[Rejection]] with the given partial function.
      */
     def handle(pf: PartialFunction[Rejection, Route]): this.type = {
       cases += CaseHandler(pf)
-      hasCatchAll ||= pf.isDefinedAt(PrivateRejection)
       this
     }
 
@@ -68,7 +65,6 @@ object RejectionHandler {
     def handleAll[T <: Rejection: ClassTag](f: immutable.Seq[T] ⇒ Route): this.type = {
       val runtimeClass = implicitly[ClassTag[T]].runtimeClass
       cases += TypeHandler[T](runtimeClass, f)
-      hasCatchAll ||= runtimeClass == classOf[Rejection]
       this
     }
 
@@ -81,7 +77,7 @@ object RejectionHandler {
     }
 
     def result(): RejectionHandler =
-      new BuiltRejectionHandler(cases.result(), notFound, hasCatchAll && notFound.isDefined)
+      new BuiltRejectionHandler(cases.result(), notFound, isDefault)
   }
 
   private sealed abstract class Handler
@@ -94,7 +90,7 @@ object RejectionHandler {
 
   private class BuiltRejectionHandler(val cases: Vector[Handler],
                                       val notFound: Option[Route],
-                                      val isSealed: Boolean) extends RejectionHandler {
+                                      val isDefault: Boolean) extends RejectionHandler {
     def apply(rejections: immutable.Seq[Rejection]): Option[Route] =
       if (rejections.nonEmpty) {
         @tailrec def rec(ix: Int): Option[Route] =
@@ -112,10 +108,12 @@ object RejectionHandler {
       } else notFound
   }
 
+  import Directives._
+
   /**
    * Creates a new default [[RejectionHandler]] instance.
    */
-  def default(implicit ec: ExecutionContext) =
+  def default =
     newBuilder()
       .handleAll[SchemeRejection] { rejections ⇒
         val schemes = rejections.map(_.supported).mkString(", ")
@@ -222,6 +220,4 @@ object RejectionHandler {
       case (remaining, transformation) ⇒ transformation.transform(remaining)
     }
   }
-
-  private object PrivateRejection extends Rejection
 }
