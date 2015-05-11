@@ -6,6 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import scala.util.control.NonFatal
+import akka.http.scaladsl.server.util.ClassMagnet
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 
