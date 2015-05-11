@@ -4,18 +4,16 @@
 package akka.stream.impl.fusing
 
 import java.util.Arrays
-import akka.actor.{ Actor, ActorRef }
+import akka.actor._
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnError, OnComplete }
 import akka.stream.impl._
 import akka.stream.OperationAttributes
+import akka.stream.impl.fusing.OneBoundedInterpreter.{ InitializationFailed, InitializationFailure, InitializationSuccessful }
 import akka.stream.stage._
 import org.reactivestreams.{ Subscriber, Subscription }
-import akka.actor.Props
-import akka.actor.ActorLogging
 import akka.event.{ Logging, LoggingAdapter }
-import akka.actor.DeadLetterSuppression
 import akka.stream.ActorFlowMaterializer
 
 /**
@@ -181,6 +179,8 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
   private var downstreamCompleted = false
   // this is true while we “hold the ball”; while “false” incoming demand will just be queued up
   private var upstreamWaiting = true
+  // when upstream failed before we got the exposed publisher
+  private var upstreamFailed: Option[Throwable] = None
   // the number of elements emitted during a single execution is bounded
   private var burstRemaining = outputBurstLimit
 
@@ -227,6 +227,9 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
         log.debug("fail due to: {}", e.getMessage)
       if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
       if ((subscriber ne null) && !e.isInstanceOf[SpecViolation]) tryOnError(subscriber, e)
+    } else if (exposedPublisher == null && upstreamFailed.isEmpty) {
+      // fail called before the exposed publisher arrived, we must store it and fail when we're first able to
+      upstreamFailed = Some(e)
     }
   }
 
@@ -261,8 +264,13 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
 
   protected def waitingExposedPublisher: Actor.Receive = {
     case ExposedPublisher(publisher) ⇒
-      exposedPublisher = publisher
-      subreceive.become(downstreamRunning)
+      upstreamFailed match {
+        case _: Some[_] ⇒
+          publisher.shutdown(upstreamFailed)
+        case _ ⇒
+          exposedPublisher = publisher
+          subreceive.become(downstreamRunning)
+      }
     case other ⇒
       throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
   }
@@ -319,11 +327,18 @@ private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings
   private val interpreter =
     new OneBoundedInterpreter(upstream +: ops :+ downstream,
       (op, ctx, event) ⇒ self ! AsyncInput(op, ctx, event),
+      Logging(this),
       materializer,
       attributes,
       name = context.self.path.toString)
 
-  interpreter.init()
+  interpreter.init() match {
+    case failed: InitializationFailed ⇒
+      // the Actor will be stopped thanks to aroundReceive checking interpreter.isFinished
+      upstream.setDownstreamCanceled()
+      downstream.fail(failed.mostDownstream.ex)
+    case InitializationSuccessful ⇒ // ok
+  }
 
   def receive: Receive =
     upstream.subreceive

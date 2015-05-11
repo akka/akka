@@ -381,7 +381,7 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
   private var callback: AsyncCallback[Notification] = _
   private val elemsInFlight = FixedSizeBuffer[Try[Out]](parallelism)
 
-  override def initAsyncInput(ctx: AsyncContext[Out, Notification]): Unit = {
+  override def preStart(ctx: AsyncContext[Out, Notification]): Unit = {
     callback = ctx.getAsyncCallback()
   }
 
@@ -465,9 +465,8 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
 
   private def todo = inFlight + buffer.used
 
-  override def initAsyncInput(ctx: AsyncContext[Out, Try[Out]]): Unit = {
+  override def preStart(ctx: AsyncContext[Out, Try[Out]]): Unit =
     callback = ctx.getAsyncCallback()
-  }
 
   override def decide(ex: Throwable) = decider(ex)
 
@@ -527,17 +526,17 @@ private[akka] final case class Log[T](name: String, extract: T ⇒ Any, logAdapt
   private var logLevels: LogLevels = _
   private var log: LoggingAdapter = _
 
-  // TODO implement as real preStart once https://github.com/akka/akka/pull/17295 is done
-  def preStart(ctx: Context[T]): Unit = {
+  // TODO more optimisations can be done here - prepare logOnPush function etc
+
+  override def preStart(ctx: LifecycleContext): Unit = {
     logLevels = ctx.attributes.logLevels.getOrElse(DefaultLogLevels)
-    log = logAdapter getOrElse {
-      val sys = ctx.materializer.asInstanceOf[ActorFlowMaterializer].system
-      Logging(sys, DefaultLoggerName)
+    log = logAdapter match {
+      case Some(l) ⇒ l
+      case _       ⇒ Logging(ctx.materializer.asInstanceOf[ActorFlowMaterializer].system, DefaultLoggerName)
     }
   }
 
   override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
-    if (log == null) preStart(ctx)
     if (isEnabled(logLevels.onElement))
       log.log(logLevels.onElement, "[{}] Element: {}", name, extract(elem))
 
@@ -545,7 +544,6 @@ private[akka] final case class Log[T](name: String, extract: T ⇒ Any, logAdapt
   }
 
   override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
-    if (log == null) preStart(ctx)
     if (isEnabled(logLevels.onFailure))
       logLevels.onFailure match {
         case Logging.ErrorLevel ⇒ log.error(cause, "[{}] Upstream failed.", name)
@@ -556,7 +554,6 @@ private[akka] final case class Log[T](name: String, extract: T ⇒ Any, logAdapt
   }
 
   override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
-    if (log == null) preStart(ctx)
     if (isEnabled(logLevels.onFinish))
       log.log(logLevels.onFinish, "[{}] Upstream finished.", name)
 
@@ -564,7 +561,6 @@ private[akka] final case class Log[T](name: String, extract: T ⇒ Any, logAdapt
   }
 
   override def onDownstreamFinish(ctx: Context[T]): TerminationDirective = {
-    if (log == null) preStart(ctx)
     if (isEnabled(logLevels.onFinish))
       log.log(logLevels.onFinish, "[{}] Downstream finished.", name)
 

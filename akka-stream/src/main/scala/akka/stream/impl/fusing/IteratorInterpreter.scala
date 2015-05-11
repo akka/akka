@@ -3,8 +3,9 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.stage._
+import akka.event.NoLogging
 import akka.stream._
+import akka.stream.stage._
 
 /**
  * INTERNAL API
@@ -97,6 +98,7 @@ private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: S
   private val downstream = IteratorDownstream[O]()
   private val interpreter = new OneBoundedInterpreter(upstream +: ops.asInstanceOf[Seq[Stage[_, _]]] :+ downstream,
     (op, ctx, evt) ⇒ throw new UnsupportedOperationException("IteratorInterpreter is fully synchronous"),
+    NoLogging,
     NoFlowMaterializer)
   interpreter.init()
 
