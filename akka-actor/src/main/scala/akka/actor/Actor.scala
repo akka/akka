@@ -5,10 +5,11 @@
 package akka.actor
 
 import akka.AkkaException
+import akka.event.LoggingAdapter
+
 import scala.annotation.tailrec
 import scala.beans.BeanProperty
 import scala.util.control.NoStackTrace
-import akka.event.LoggingAdapter
 
 /**
  * INTERNAL API
@@ -341,6 +342,15 @@ object Actor {
   }
 
   /**
+   * ignoringBehavior is a Receive-expression that consumes and ignores all messages.
+   */
+  @SerialVersionUID(1L)
+  object ignoringBehavior extends Receive {
+    def isDefinedAt(x: Any): Boolean = true
+    def apply(x: Any): Unit = ()
+  }
+
+  /**
    * Default placeholder (null) used for "!" to indicate that there is no sender of the message,
    * that will be translated to the receiving system's deadLetters.
    */
@@ -400,8 +410,6 @@ object Actor {
  * the name-space clean.
  */
 trait Actor {
-
-  import Actor._
 
   // to make type Receive known in subclasses without import
   type Receive = Actor.Receive
