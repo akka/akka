@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-import akka.http.scaladsl.server.directives.AuthenticationDirectives._
+import akka.http.scaladsl.server.directives.UserCredentials
 import com.typesafe.config.{ ConfigFactory, Config }
 import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializer
@@ -22,11 +22,9 @@ object TestServer extends App {
   import ScalaXmlSupport._
   import Directives._
 
-  def auth =
-    HttpBasicAuthenticator.provideUserName {
-      case p @ UserCredentials.Provided(name) ⇒ p.verifySecret(name + "-password")
-      case _                                  ⇒ false
-    }
+  def auth: AuthenticatorPF[String] = {
+    case p @ UserCredentials.Provided(name) if p.verifySecret(name + "-password") ⇒ name
+  }
 
   val bindingFuture = Http().bindAndHandle({
     get {
@@ -34,7 +32,7 @@ object TestServer extends App {
         complete(index)
       } ~
         path("secure") {
-          HttpBasicAuthentication("My very secure site")(auth) { user ⇒
+          authenticateBasicPF("My very secure site", auth) { user ⇒
             complete(<html><body>Hello <b>{ user }</b>. Access has been granted!</body></html>)
           }
         } ~
