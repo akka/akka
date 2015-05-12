@@ -381,7 +381,10 @@ object ForkJoinExecutorConfigurator {
              unhandledExceptionHandler: Thread.UncaughtExceptionHandler) = this(parallelism, threadFactory, unhandledExceptionHandler, asyncMode = true)
 
     override def execute(r: Runnable): Unit =
-      if (r eq null) throw new NullPointerException else super.execute(new AkkaForkJoinTask(r))
+      if (r ne null)
+        super.execute((if (r.isInstanceOf[ForkJoinTask[_]]) r else new AkkaForkJoinTask(r)).asInstanceOf[ForkJoinTask[Any]])
+      else
+        throw new NullPointerException("Runnable was null")
 
     def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }

@@ -177,6 +177,9 @@ abstract class PoolBase extends Pool
  */
 trait Pool extends RouterConfig {
 
+  @deprecated("Implement nrOfInstances with ActorSystem parameter instead", "2.4")
+  def nrOfInstances: Int = -1
+
   /**
    * Initial number of routee instances
    */

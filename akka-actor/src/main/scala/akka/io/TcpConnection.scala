@@ -187,7 +187,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         // continue anyway
         log.debug("Could not enable TcpNoDelay: {}", e.getMessage)
     }
-    options.foreach(_.afterConnect(channel))
+    options.foreach(_.afterConnect(channel.socket))
 
     commander ! Connected(
       channel.socket.getRemoteSocketAddress.asInstanceOf[InetSocketAddress],

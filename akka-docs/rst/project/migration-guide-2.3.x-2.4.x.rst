@@ -11,6 +11,19 @@ When migrating from earlier versions you should first follow the instructions fo
 migrating :ref:`1.3.x to 2.0.x <migration-2.0>` and then :ref:`2.0.x to 2.1.x <migration-2.1>`
 and then :ref:`2.1.x to 2.2.x <migration-2.2>` and then :ref:`2.2.x to 2.3.x <migration-2.3>`.
 
+Binary Compatibility
+====================
+
+Akka 2.4.x is backwards binary compatible with previous 2.3.x versions apart from the following
+exceptions. This means that the new JARs are a drop-in replacement for the old one 
+(but not the other way around) as long as your build does not enable the inliner (Scala-only restriction).
+
+The following parts are not binary compatible with 2.3.x:
+
+* akka-testkit and akka-remote-testkit
+* experimental modules, such as akka-persistence and akka-contrib
+* features, classes, methods that were deprecated in 2.3.x and removed in 2.4.x 
+
 Advanced Notice: TypedActors will go away
 ========================================
 
@@ -31,13 +44,14 @@ In earlier versions of Akka `TestKit.remaining` returned the default timeout con
 AssertionError if called outside of within. The old behavior however can still be achieved by
 calling `TestKit.remainingOrDefault` instead.
 
-EventStream and ActorClassification EventBus now require an ActorSystem
-=======================================================================
+EventStream and ManagedActorClassification EventBus now require an ActorSystem
+==============================================================================
 
 Both the ``EventStream`` (:ref:`Scala <event-stream-scala>`, :ref:`Java <event-stream-java>`) and the
-``ActorClassification`` Event Bus (:ref:`Scala <actor-classification-scala>`, :ref:`Java <actor-classification-java>`) now
+``ManagedActorClassification``, ``ManagedActorEventBus`` (:ref:`Scala <actor-classification-scala>`, :ref:`Java <actor-classification-java>`) now
 require an ``ActorSystem`` to properly operate. The reason for that is moving away from stateful internal lifecycle checks
-to a fully reactive model for unsubscribing actors that have ``Terminated``.
+to a fully reactive model for unsubscribing actors that have ``Terminated``. Therefore the ``ActorClassification``
+and ``ActorEventBus`` was deprecated and replaced by ``ManagedActorClassification`` and ``ManagedActorEventBus`` 
 
 If you have implemented a custom event bus, you will need to pass in the actor system through the constructor now:
 
@@ -62,25 +76,6 @@ In ``2.4.x`` when an ``FSM`` performs a any ``goto(X)`` transition, it will alwa
 Which turns out to be useful in many systems where same-state transitions actually should have an effect.
 
 In case you do *not* want to trigger a state transition event when effectively performing an ``X->X`` transition, use ``stay()`` instead.
-
-More control over Channel properties in Akka-IO
-===============================================
-Method signatures for ``SocketOption`` have been changed to take a channel instead of a socket. The channel's socket
-can be retrieved by calling ``channel.socket``. This allows for accessing new NIO features in Java 7.
-
-========================================  =====================================
-                 2.3                                      2.4
-========================================  =====================================
-``beforeDatagramBind(DatagramSocket)``    ``beforeBind(DatagramChannel)``
-``beforeServerSocketBind(ServerSocket)``  ``beforeBind(ServerSocketChannel)``
-``beforeConnect(Socket)``                 ``beforeBind(SocketChannel)``
-\                                         ``afterConnect(DatagramChannel)``
-\                                         ``afterConnect(ServerSocketChannel)``
-``afterConnect(Socket)``                  ``afterConnect(SocketChannel)``
-========================================  =====================================
-
-A new class ``DatagramChannelCreator`` which extends ``SocketOption`` has been added. ``DatagramChannelCreator`` can be used for
-custom ``DatagramChannel`` creation logic. This allows for opening IPv6 multicast datagram channels.
 
 Cluster Sharding Entry Path Change
 ==================================

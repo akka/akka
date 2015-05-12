@@ -120,7 +120,7 @@ private[akka] final case class TailChoppingRoutees(
  */
 @SerialVersionUID(1L)
 final case class TailChoppingPool(
-  val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
+  override val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
   within: FiniteDuration,
   interval: FiniteDuration,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,

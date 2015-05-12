@@ -260,7 +260,7 @@ final case class ConsistentHashingRoutingLogic(
  */
 @SerialVersionUID(1L)
 final case class ConsistentHashingPool(
-  val nrOfInstances: Int,
+  override val nrOfInstances: Int,
   override val resizer: Option[Resizer] = None,
   val virtualNodesFactor: Int = 0,
   val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,

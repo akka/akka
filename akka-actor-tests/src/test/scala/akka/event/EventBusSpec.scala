@@ -147,7 +147,7 @@ abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty(
 
 object ActorEventBusSpec {
   class MyActorEventBus(protected val system: ActorSystem) extends ActorEventBus
-    with ActorClassification with ActorClassifier {
+    with ManagedActorClassification with ActorClassifier {
 
     type Event = Notification
 
@@ -179,7 +179,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
 
   def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit = system.stop(subscriber)
 
-  // ActorClassification specific tests
+  // ManagedActorClassification specific tests
 
   "must unsubscribe subscriber when it terminates" in {
     val a1 = createSubscriber(system.deadLetters)
