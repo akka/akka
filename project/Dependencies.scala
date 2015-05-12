@@ -87,6 +87,10 @@ object Dependencies {
   val remoteTests = deps(Test.junit, Test.scalatest, Test.scalaXml)
 
   val cluster = Seq(Test.junit, Test.scalatest)
+  
+  val clusterTools = Seq(Test.junit, Test.scalatest)
+  
+  val clusterSharding = Seq(Test.junit, Test.scalatest, Test.commonsIo)
 
   val clusterMetrics = Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
 
