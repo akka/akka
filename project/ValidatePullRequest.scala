@@ -15,6 +15,10 @@ import scala.util.matching.Regex
 
 object ValidatePullRequest extends AutoPlugin {
 
+  override def trigger = allRequirements
+
+  override def requires = plugins.JvmPlugin
+
   sealed trait BuildMode {
     val Zero = Def.task { () } // when you stare into the void, the void stares back at you
     def task: Def.Initialize[Task[Unit]]
@@ -73,8 +77,6 @@ object ValidatePullRequest extends AutoPlugin {
 
   // running validation
   val validatePullRequest = taskKey[Unit]("Additional tasks for pull request validation")
-
-  override def trigger = allRequirements
 
   def changedDirectoryIsDependency(changedDirs: Set[String],
                                    target: File,
