@@ -40,7 +40,7 @@ private[io] class UdpListener(val udp: UdpExt,
   val localAddress =
     try {
       val socket = channel.socket
-      bind.options.foreach(_.beforeBind(channel))
+      bind.options.foreach(_.beforeDatagramBind(socket))
       socket.bind(bind.localAddress)
       val ret = socket.getLocalSocketAddress match {
         case isa: InetSocketAddress ⇒ isa
@@ -48,7 +48,10 @@ private[io] class UdpListener(val udp: UdpExt,
       }
       channelRegistry.register(channel, OP_READ)
       log.debug("Successfully bound to [{}]", ret)
-      bind.options.foreach(_.afterConnect(channel))
+      bind.options.foreach {
+        case o: Inet.SocketOptionV2 ⇒ o.afterBind(channel.socket)
+        case _                      ⇒
+      }
       ret
     } catch {
       case NonFatal(e) ⇒
