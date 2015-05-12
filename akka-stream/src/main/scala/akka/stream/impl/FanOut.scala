@@ -4,14 +4,13 @@
 package akka.stream.impl
 
 import akka.stream.scaladsl.FlexiRoute.RouteLogic
-import akka.stream.Shape
+import akka.stream.{ AbruptTerminationException, Shape, ActorFlowMaterializerSettings }
 
 import scala.collection.immutable
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.stream.ActorFlowMaterializerSettings
 import org.reactivestreams.Subscription
 import akka.actor.DeadLetterSuppression
 
@@ -279,7 +278,7 @@ private[akka] abstract class FanOut(val settings: ActorFlowMaterializerSettings,
 
   override def postStop(): Unit = {
     primaryInputs.cancel()
-    outputBunch.cancel(new IllegalStateException("Processor actor terminated abruptly"))
+    outputBunch.cancel(AbruptTerminationException(self))
   }
 
   override def postRestart(reason: Throwable): Unit = {

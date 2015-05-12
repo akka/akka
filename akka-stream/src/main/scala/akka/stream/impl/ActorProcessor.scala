@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import java.util.Arrays
 import akka.actor._
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.{ AbruptTerminationException, ActorFlowMaterializerSettings }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnComplete, OnError }
 import org.reactivestreams.{ Subscriber, Subscription, Processor }
@@ -288,7 +288,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: ActorFlowMateriali
 
   override def postStop(): Unit = {
     primaryInputs.cancel()
-    primaryOutputs.error(new IllegalStateException("Processor actor terminated abruptly"))
+    primaryOutputs.error(AbruptTerminationException(self))
   }
 
   override def postRestart(reason: Throwable): Unit = {

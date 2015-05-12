@@ -5,16 +5,14 @@ package akka.stream.impl.fusing
 
 import java.util.Arrays
 import akka.actor._
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.{ AbruptTerminationException, ActorFlowMaterializerSettings, OperationAttributes, ActorFlowMaterializer }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnError, OnComplete }
 import akka.stream.impl._
-import akka.stream.OperationAttributes
 import akka.stream.impl.fusing.OneBoundedInterpreter.{ InitializationFailed, InitializationFailure, InitializationSuccessful }
 import akka.stream.stage._
 import org.reactivestreams.{ Subscriber, Subscription }
 import akka.event.{ Logging, LoggingAdapter }
-import akka.stream.ActorFlowMaterializer
 
 /**
  * INTERNAL API
@@ -361,7 +359,7 @@ private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings
 
   override def postStop(): Unit = {
     upstream.cancel()
-    downstream.fail(new IllegalStateException("Processor actor terminated abruptly"))
+    downstream.fail(AbruptTerminationException(self))
   }
 
   override def postRestart(reason: Throwable): Unit = {
