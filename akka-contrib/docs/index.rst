@@ -34,10 +34,6 @@ The Current List of Modules
    throttle
    jul
    peek-mailbox
-   cluster-singleton
-   cluster-sharding
-   distributed-pub-sub
-   cluster-client
    aggregator
    receive-pipeline
 
