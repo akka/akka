@@ -361,10 +361,10 @@ trait FlowOps[+Out, +Mat] {
   def map[T](f: Out ⇒ T): Repr[T, Mat] = andThen(Map(f.asInstanceOf[Any ⇒ Any]))
 
   /**
-   * Transform each input element into a sequence of output elements that is
+   * Transform each input element into an `Iterable` of output elements that is
    * then flattened into the output stream.
    *
-   * The returned sequence MUST NOT contain `null` values,
+   * The returned `Iterable` MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
    *
    * '''Emits when''' the mapping function returns an element or there are still remaining elements
@@ -378,7 +378,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[T, Mat] = andThen(MapConcat(f.asInstanceOf[Any ⇒ immutable.Seq[Any]]))
+  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T, Mat] = andThen(MapConcat(f.asInstanceOf[Any ⇒ immutable.Iterable[Any]]))
 
   /**
    * Transform this stream by applying the given function to each of the elements
