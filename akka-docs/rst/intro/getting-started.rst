@@ -76,9 +76,7 @@ Using a snapshot version
 
 The Akka nightly snapshots are published to http://repo.akka.io/snapshots/ and are
 versioned with both ``SNAPSHOT`` and timestamps. You can choose a timestamped
-version to work with and can decide when to update to a newer version. The Akka
-snapshots repository is also proxied through http://repo.typesafe.com/typesafe/snapshots/
-which includes proxies for several other repositories that Akka modules depend on.
+version to work with and can decide when to update to a newer version.
 
 .. warning::
 
@@ -111,7 +109,6 @@ For Akka version 2.1-M2 and onwards:
 For previous Akka versions:
 
 `Akka Repo <http://repo.akka.io/releases/>`_
-`Typesafe Repo <http://repo.typesafe.com/typesafe/releases/>`_
 
 Using Akka with Maven
 ---------------------
@@ -155,8 +152,6 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
     version := "1.0"
 
     scalaVersion := "@scalaVersion@"
-
-    resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
     libraryDependencies +=
       "com.typesafe.akka" %% "akka-actor" % "@version@" @crossString@

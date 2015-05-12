@@ -63,12 +63,13 @@ abstract class RemoteGatePiercingSpec
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "RemoteNodeRestartGate" must {
+  "RemoteGatePiercing" must {
 
     "allow restarted node to pass through gate" taggedAs LongRunningTest in {
-      runOn(first) {
-        system.actorOf(Props[Subject], "subject")
+      system.actorOf(Props[Subject], "subject")
+      enterBarrier("actors-started")
 
+      runOn(first) {
         identify(second, "subject")
 
         enterBarrier("actors-communicate")
@@ -85,8 +86,6 @@ abstract class RemoteGatePiercingSpec
       }
 
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
-
         enterBarrier("actors-communicate")
 
         enterBarrier("gated")
