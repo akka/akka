@@ -11,7 +11,7 @@ import akka.stream.stage.Stage
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor._
-import akka.stream.{ OperationAttributes, ActorFlowMaterializerSettings, ActorFlowMaterializer }
+import akka.stream.{ AbruptTerminationException, OperationAttributes, ActorFlowMaterializerSettings, ActorFlowMaterializer }
 import akka.stream.impl._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -533,8 +533,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
         def checkError(sprobe: TestSubscriber.ManualProbe[Any]): Unit = {
           val error = sprobe.expectError()
-          error.isInstanceOf[IllegalStateException] should be(true)
-          error.getMessage should be("Processor actor terminated abruptly")
+          error.isInstanceOf[AbruptTerminationException] should be(true)
+          error.getMessage should startWith("Processor actor")
         }
 
         val downstream2 = TestSubscriber.manualProbe[Any]()
