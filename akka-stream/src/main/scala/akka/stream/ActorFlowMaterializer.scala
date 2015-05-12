@@ -13,6 +13,8 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.japi.function
 
+import scala.util.control.NoStackTrace
+
 object ActorFlowMaterializer {
 
   /**
@@ -162,6 +164,14 @@ abstract class ActorFlowMaterializer extends FlowMaterializer {
  * failures.
  */
 class MaterializationException(msg: String, cause: Throwable = null) extends RuntimeException(msg, cause)
+
+/**
+ * This exception signals that an actor implementing a Reactive Streams Subscriber, Publisher or Processor
+ * has been terminated without being notified by an onError, onComplete or cancel signal. This usually happens
+ * when an ActorSystem is shut down while stream processing actors are still running.
+ */
+final case class AbruptTerminationException(actor: ActorRef)
+  extends RuntimeException(s"Processor actor [$actor] terminated abruptly") with NoStackTrace
 
 object ActorFlowMaterializerSettings {
 
