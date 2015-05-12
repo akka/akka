@@ -215,36 +215,7 @@ object Source extends SourceApply {
    * beginning) regardless of when they subscribed.
    */
   def apply[T](iterable: immutable.Iterable[T]): Source[T, Unit] = {
-    Source.empty.transform(() ⇒ {
-      new PushPullStage[Nothing, T] {
-        var iterator: Iterator[T] = null
-
-        // Delayed init so we onError instead of failing during construction of the Source
-        def initIterator(): Unit = if (iterator eq null) iterator = iterable.iterator
-
-        // Upstream is guaranteed to be empty
-        override def onPush(elem: Nothing, ctx: Context[T]): SyncDirective =
-          throw new UnsupportedOperationException("The IterableSource stage cannot be pushed")
-
-        override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
-          initIterator()
-          if (iterator.hasNext) ctx.absorbTermination()
-          else ctx.finish()
-        }
-
-        override def onPull(ctx: Context[T]): SyncDirective = {
-          if (!ctx.isFinishing) {
-            initIterator()
-            ctx.pull()
-          } else {
-            val elem = iterator.next()
-            if (iterator.hasNext) ctx.push(elem)
-            else ctx.pushAndFinish(elem)
-          }
-        }
-      }
-
-    }).withAttributes(DefaultAttributes.iterableSource)
+    Source.single(()).mapConcat((_: Unit) ⇒ iterable).withAttributes(DefaultAttributes.iterableSource)
   }
 
   /**

@@ -9,6 +9,7 @@ import akka.japi.{ Util, Pair }
 import akka.japi.function
 import akka.stream.scaladsl
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.stage.Stage
@@ -170,10 +171,14 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
     new Flow(delegate.map(f.apply))
 
   /**
-   * Transform each input element into a sequence of output elements that is
+   * Transform each input element into an `Iterable` of output elements that is
    * then flattened into the output stream.
    *
-   * The returned list MUST NOT contain `null` values,
+   * Make sure that the `Iterable` is immutable or at least not modified after
+   * being used as an output sequence. Otherwise the stream may fail with
+   * `oncurrentModificationException` or other more subtle errors may occur.
+   *
+   * The returned `Iterable` MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
    *
    * '''Emits when''' the mapping function returns an element or there are still remaining elements
@@ -186,8 +191,14 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    *
    * '''Cancels when''' downstream cancels
    */
-  def mapConcat[T](f: function.Function[Out, java.util.List[T]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.mapConcat(elem ⇒ Util.immutableSeq(f.apply(elem))))
+  def mapConcat[T](f: function.Function[Out, java.lang.Iterable[T]]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.mapConcat { elem ⇒
+      val scalaIterable = new immutable.Iterable[T] {
+        import collection.JavaConverters._
+        override def iterator: Iterator[T] = f(elem).iterator().asScala
+      }
+      scalaIterable
+    })
 
   /**
    * Transform this stream by applying the given function to each of the elements
