@@ -64,22 +64,30 @@ private[akka] final case class Collect[In, Out](decider: Supervision.Decider)(pf
 /**
  * INTERNAL API
  */
-private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Seq[Out], decider: Supervision.Decider) extends PushPullStage[In, Out] {
+private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Iterable[Out], decider: Supervision.Decider) extends PushPullStage[In, Out] {
   private var currentIterator: Iterator[Out] = Iterator.empty
 
   override def onPush(elem: In, ctx: Context[Out]): SyncDirective = {
     currentIterator = f(elem).iterator
-    if (currentIterator.isEmpty) ctx.pull()
+    if (!currentIterator.hasNext) ctx.pull()
     else ctx.push(currentIterator.next())
   }
 
   override def onPull(ctx: Context[Out]): SyncDirective =
-    if (currentIterator.hasNext) ctx.push(currentIterator.next())
-    else if (ctx.isFinishing) ctx.finish()
-    else ctx.pull()
+    if (ctx.isFinishing) {
+      if (currentIterator.hasNext) {
+        val elem = currentIterator.next()
+        if (currentIterator.hasNext) ctx.push(elem)
+        else ctx.pushAndFinish(elem)
+      } else ctx.finish()
+    } else {
+      if (currentIterator.hasNext) ctx.push(currentIterator.next())
+      else ctx.pull()
+    }
 
   override def onUpstreamFinish(ctx: Context[Out]): TerminationDirective =
-    ctx.absorbTermination()
+    if (currentIterator.hasNext) ctx.absorbTermination()
+    else ctx.finish()
 
   override def decide(t: Throwable): Supervision.Directive = decider(t)
 
