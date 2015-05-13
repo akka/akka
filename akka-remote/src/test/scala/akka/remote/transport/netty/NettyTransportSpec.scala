@@ -145,7 +145,14 @@ trait BindBehaviour { this: WordSpec with Matchers ⇒
 
     s"bind to specified $proto address" in {
       val address = SocketUtil.temporaryServerAddress(address = "127.0.0.1", udp = proto == "udp")
-      val bindAddress = SocketUtil.temporaryServerAddress(address = "127.0.1.1", udp = proto == "udp")
+      val bindAddress =
+        try SocketUtil.temporaryServerAddress(address = "127.0.1.1", udp = proto == "udp")
+        catch {
+          case e: java.net.BindException ⇒
+            info(s"skipping test due to [${e.getMessage}], you probably have to use `ifconfig lo0 alias 127.0.1.1`")
+            pending
+            null
+        }
 
       val bindConfig = ConfigFactory.parseString(s"""
         akka.remote {
