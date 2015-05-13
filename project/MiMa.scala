@@ -3,11 +3,9 @@
  */
 package akka
 
-import sbt._
-import sbt.Keys._
-import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
-import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+import com.typesafe.tools.mima.plugin.MimaKeys.{binaryIssueFilters, previousArtifact}
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import sbt._
 
 object MiMa extends AutoPlugin {
 
@@ -407,7 +405,8 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[FinalClassProblem]("akka.cluster.routing.ClusterRouterPoolSettings"),
       ProblemFilters.exclude[FinalClassProblem]("akka.cluster.routing.MixMetricsSelector"),
       ProblemFilters.exclude[FinalClassProblem]("akka.cluster.routing.ClusterRouterGroupSettings"),
-      
+      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Watch"),
+
       // changed to static method, source compatible is enough
       ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.JavaTestKit.shutdownActorSystem"),
       // testActorName()java.lang.String in trait akka.testkit.TestKitBase does not have a correspondent in old version
@@ -529,8 +528,17 @@ object MiMa extends AutoPlugin {
       // synthetic method akka$dispatch$BatchingExecutor$$_blockContext()java.lang.ThreadLocal in class akka.dispatch.MessageDispatcher does not have a correspondent in new version
       ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.MessageDispatcher.akka$dispatch$BatchingExecutor$$_blockContext"),
       // issue #16736
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.OnMemberUpListener")
+      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.OnMemberUpListener"),
       
+      //changes introduced by #16911
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.RemoteActorRefProvider.afterSendSystemMessage"),
+      FilterAnyProblem("akka.remote.RemoteWatcher"),
+      FilterAnyProblem("akka.remote.RemoteWatcher$WatchRemote"),
+      FilterAnyProblem("akka.remote.RemoteWatcher$UnwatchRemote"),
+      FilterAnyProblem("akka.remote.RemoteWatcher$Rewatch"),
+      FilterAnyProblem("akka.remote.RemoteWatcher$RewatchRemote"),
+      FilterAnyProblem("akka.remote.RemoteWatcher$Stats")
+
      )
   }
 }
