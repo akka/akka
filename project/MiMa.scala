@@ -527,7 +527,9 @@ object MiMa extends AutoPlugin {
       // synthetic method akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_=(java.lang.ThreadLocal)Unit in class akka.dispatch.MessageDispatcher does not have a correspondent in new version
       ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.MessageDispatcher.akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_="),
       // synthetic method akka$dispatch$BatchingExecutor$$_blockContext()java.lang.ThreadLocal in class akka.dispatch.MessageDispatcher does not have a correspondent in new version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.MessageDispatcher.akka$dispatch$BatchingExecutor$$_blockContext")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.MessageDispatcher.akka$dispatch$BatchingExecutor$$_blockContext"),
+      // issue #16736
+      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.OnMemberUpListener")
       
      )
   }
