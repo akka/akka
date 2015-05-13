@@ -49,8 +49,9 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
         // using the getHostString() method. This avoids a reverse DNS query from calling getHostName()
         // if the original host string is an IP address.
         val clazz = classOf[InetSocketAddress]
-        address ⇒ clazz.getMethods.find(_.getName == "getHostString").map(_ invoke address).
-          getOrElse(address.getHostName).asInstanceOf[String]
+        address ⇒ clazz.getMethods.collectFirst {
+          case m if m.getName == "getHostString" => m.invoke(address)
+        }.getOrElse(address.getHostName).asInstanceOf[String]
       }
 
       @tailrec def renderHeaders(remaining: List[HttpHeader], hostHeaderSeen: Boolean = false,
