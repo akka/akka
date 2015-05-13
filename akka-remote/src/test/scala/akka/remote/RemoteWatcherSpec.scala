@@ -6,16 +6,7 @@ package akka.remote
 import language.postfixOps
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.actor.ActorSystem
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.ExtendedActorSystem
-import akka.actor.RootActorPath
-import akka.actor.Identify
-import akka.actor.ActorIdentity
-import akka.actor.PoisonPill
-import akka.actor.Address
+import akka.actor._
 
 object RemoteWatcherSpec {
 
@@ -101,10 +92,10 @@ class RemoteWatcherSpec extends AkkaSpec(
 
   val heartbeatRspB = HeartbeatRsp(remoteAddressUid)
 
-  def createRemoteActor(props: Props, name: String): ActorRef = {
+  def createRemoteActor(props: Props, name: String): InternalActorRef = {
     remoteSystem.actorOf(props, name)
     system.actorSelection(RootActorPath(remoteAddress) / "user" / name) ! Identify(name)
-    expectMsgType[ActorIdentity].ref.get
+    expectMsgType[ActorIdentity].ref.get.asInstanceOf[InternalActorRef]
   }
 
   "A RemoteWatcher" must {
@@ -115,8 +106,8 @@ class RemoteWatcherSpec extends AkkaSpec(
       val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor1")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor1")
 
-      val a1 = system.actorOf(Props[MyActor], "a1")
-      val a2 = system.actorOf(Props[MyActor], "a2")
+      val a1 = system.actorOf(Props[MyActor], "a1").asInstanceOf[InternalActorRef]
+      val a2 = system.actorOf(Props[MyActor], "a2").asInstanceOf[InternalActorRef]
       val b1 = createRemoteActor(Props[MyActor], "b1")
       val b2 = createRemoteActor(Props[MyActor], "b2")
 
@@ -124,9 +115,8 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(b2, a1)
       monitorA ! WatchRemote(b2, a2)
       monitorA ! Stats
-      // for each watchee the RemoteWatcher also adds its own watch: 5 = 3 + 2
       // (a1->b1), (a1->b2), (a2->b2)
-      expectMsg(Stats.counts(watching = 5, watchingNodes = 1))
+      expectMsg(Stats.counts(watching = 3, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
       expectMsg(Heartbeat)
@@ -142,7 +132,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! UnwatchRemote(b1, a1)
       // still (a1->b2) and (a2->b2) left
       monitorA ! Stats
-      expectMsg(Stats.counts(watching = 3, watchingNodes = 1))
+      expectMsg(Stats.counts(watching = 2, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
       expectMsg(Heartbeat)
@@ -151,7 +141,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! UnwatchRemote(b2, a2)
       // still (a1->b2) left
       monitorA ! Stats
-      expectMsg(Stats.counts(watching = 2, watchingNodes = 1))
+      expectMsg(Stats.counts(watching = 1, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
       expectMsg(Heartbeat)
@@ -180,7 +170,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor4")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor4")
 
-      val a = system.actorOf(Props[MyActor], "a4")
+      val a = system.actorOf(Props[MyActor], "a4").asInstanceOf[InternalActorRef]
       val b = createRemoteActor(Props[MyActor], "b4")
 
       monitorA ! WatchRemote(b, a)
@@ -219,7 +209,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       val monitorA = system.actorOf(Props(classOf[TestRemoteWatcher], heartbeatExpectedResponseAfter), "monitor5")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor5")
 
-      val a = system.actorOf(Props[MyActor], "a5")
+      val a = system.actorOf(Props[MyActor], "a5").asInstanceOf[InternalActorRef]
       val b = createRemoteActor(Props[MyActor], "b5")
 
       monitorA ! WatchRemote(b, a)
@@ -253,7 +243,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor6")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor6")
 
-      val a = system.actorOf(Props[MyActor], "a6")
+      val a = system.actorOf(Props[MyActor], "a6").asInstanceOf[InternalActorRef]
       val b = createRemoteActor(Props[MyActor], "b6")
 
       monitorA ! WatchRemote(b, a)

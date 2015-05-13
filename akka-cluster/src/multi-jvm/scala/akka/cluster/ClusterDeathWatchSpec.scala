@@ -6,28 +6,15 @@ package akka.cluster
 import language.postfixOps
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent._
-import akka.actor.Props
-import akka.actor.Actor
-import akka.actor.Address
-import akka.actor.RootActorPath
-import akka.actor.Terminated
-import akka.actor.Address
+import akka.actor._
 import akka.remote.RemoteActorRef
 import java.util.concurrent.TimeoutException
-import akka.actor.ActorSystemImpl
-import akka.actor.ActorIdentity
-import akka.actor.Identify
-import akka.actor.ActorRef
 import akka.remote.RemoteWatcher
-import akka.actor.ActorSystem
 import akka.cluster.MultiNodeClusterSpec.EndActor
-import akka.actor.Deploy
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -172,7 +159,9 @@ abstract class ClusterDeathWatchSpec
         // fifth is not cluster member, so the watch is handled by the RemoteWatcher
         awaitAssert {
           remoteWatcher ! RemoteWatcher.Stats
-          expectMsgType[RemoteWatcher.Stats].watchingRefs should contain((subject5, testActor))
+          val stats = expectMsgType[RemoteWatcher.Stats]
+          stats.watchingRefs should contain(subject5 → testActor)
+          stats.watchingAddresses should contain(address(fifth))
         }
       }
       enterBarrier("remote-watch")
@@ -181,13 +170,13 @@ abstract class ClusterDeathWatchSpec
       awaitClusterUp(first, fourth, fifth)
 
       runOn(first) {
-        // fifth is member, so the watch is handled by the ClusterRemoteWatcher,
-        // and cleaned up from RemoteWatcher
+        // fifth is member, so the node is handled by the ClusterRemoteWatcher,
+        // but the watch is still in RemoteWatcher
         awaitAssert {
           remoteWatcher ! RemoteWatcher.Stats
-          expectMsgType[RemoteWatcher.Stats].watchingRefs.map {
-            case (watchee, watcher) ⇒ watchee.path.name
-          } should not contain ("subject5")
+          val stats = expectMsgType[RemoteWatcher.Stats]
+          stats.watchingRefs.map(_._1.path.name) should contain("subject5")
+          stats.watchingAddresses should not contain address(fifth)
         }
       }
 
