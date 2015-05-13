@@ -32,7 +32,7 @@ object TestServer extends App {
         complete(index)
       } ~
         path("secure") {
-          authenticateStrictPF("My very secure site", auth) { user ⇒
+          authenticateBasicStrictPF("My very secure site", auth) { user ⇒
             complete(<html><body>Hello <b>{ user }</b>. Access has been granted!</body></html>)
           }
         } ~

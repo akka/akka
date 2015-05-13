@@ -6,10 +6,10 @@ SecurityDirectives
 .. toctree::
    :maxdepth: 1
 
-   authenticate
-   authenticatePF
-   authenticateStrict
-   authenticateStrictPF
+   authenticateBasic
+   authenticateBasicPF
+   authenticateBasicStrict
+   authenticateBasicStrictPF
    authenticateOrRejectWithChallenge
    authorize
    extractCredentials

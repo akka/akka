@@ -176,7 +176,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
 
     val route = {
       path("orders") {
-        authenticate(realm = "admin area", myAuthenticator) { user =>
+        authenticateBasic(realm = "admin area", myAuthenticator) { user =>
           get {
             encodeResponseWith(Deflate) {
               complete {

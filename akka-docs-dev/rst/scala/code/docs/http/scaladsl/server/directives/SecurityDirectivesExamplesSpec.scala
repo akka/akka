@@ -21,7 +21,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     val route =
       Route.seal {
         path("secured") {
-          authenticate(BasicAuth(myUserPassAuthenticator _, realm = "secure site")) { userName =>
+          authenticateBasic(BasicAuth(myUserPassAuthenticator _, realm = "secure site")) { userName =>
             complete(s"The user is '$userName'")
           }
         }
@@ -57,7 +57,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     val route =
       Route.seal {
         path("secured") {
-          authenticate(BasicAuth(realm = "secure site", config = config, createUser = extractUser _)) { userName =>
+          authenticateBasic(BasicAuth(realm = "secure site", config = config, createUser = extractUser _)) { userName =>
             complete(s"The user is '$userName'")
           }
         }
@@ -93,7 +93,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
 
     val route =
       Route.seal {
-        authenticate(BasicAuth(realm = "secure site", config = config, createUser = extractUser _)) { userName =>
+        authenticateBasic(BasicAuth(realm = "secure site", config = config, createUser = extractUser _)) { userName =>
           path("peters-lair") {
             authorize(hasPermissionToPetersLair(userName)) {
               complete(s"'$userName' visited Peter's lair")

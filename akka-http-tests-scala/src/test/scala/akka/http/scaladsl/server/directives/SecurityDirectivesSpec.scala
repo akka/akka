@@ -11,13 +11,13 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsRejected, CredentialsMissing }
 
 class SecurityDirectivesSpec extends RoutingSpec {
-  val dontAuth = authenticate[String]("MyRealm", _ ⇒ Future.successful(None))
-  val doAuth = authenticateStrictPF("MyRealm", { case UserCredentials.Provided(name) ⇒ name })
+  val dontAuth = authenticateBasic[String]("MyRealm", _ ⇒ Future.successful(None))
+  val doAuth = authenticateBasicStrictPF("MyRealm", { case UserCredentials.Provided(name) ⇒ name })
   val authWithAnonymous = doAuth.withAnonymousUser("We are Legion")
 
   val challenge = HttpChallenge("Basic", "MyRealm")
 
-  "the 'HttpBasicAuthentication' directive" should {
+  "basic authentication" should {
     "reject requests without Authorization header with an AuthenticationFailedRejection" in {
       Get() ~> {
         dontAuth { echoComplete }
@@ -56,17 +56,15 @@ class SecurityDirectivesSpec extends RoutingSpec {
       } ~> check { status shouldEqual StatusCodes.InternalServerError }
     }
   }
-  "AuthenticationDirectives facilities" should {
-    "properly stack several authentication directives" in {
+  "authentication directives" should {
+    "properly stack" in {
       val otherChallenge = HttpChallenge("MyAuth", "MyRealm2")
-      val otherAuth: Directive1[String] = SecurityDirectives.authenticateOrRejectWithChallenge { (cred: Option[HttpCredentials]) ⇒
+      val otherAuth: Directive1[String] = authenticateOrRejectWithChallenge { (cred: Option[HttpCredentials]) ⇒
         Future.successful(Left(otherChallenge))
       }
       val bothAuth = dontAuth | otherAuth
 
-      Get() ~> Route.seal {
-        bothAuth { echoComplete }
-      } ~> check {
+      Get() ~> Route.seal(bothAuth { echoComplete }) ~> check {
         status shouldEqual StatusCodes.Unauthorized
         headers.collect {
           case `WWW-Authenticate`(challenge +: Nil) ⇒ challenge

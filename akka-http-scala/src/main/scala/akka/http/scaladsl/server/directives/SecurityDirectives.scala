@@ -45,7 +45,7 @@ trait SecurityDirectives {
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
    */
-  def authenticate[T](realm: String, authenticator: Authenticator[T]): AuthenticationDirective[T] =
+  def authenticateBasic[T](realm: String, authenticator: Authenticator[T]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
       authenticateOrRejectWithChallenge[BasicHttpCredentials, T] { basic ⇒
         authenticator(UserCredentials(basic)).fast.map {
@@ -60,17 +60,17 @@ trait SecurityDirectives {
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
    */
-  def authenticateStrict[T](realm: String, authenticator: StrictAuthenticator[T]): AuthenticationDirective[T] =
-    authenticate(realm, cred ⇒ FastFuture.successful(authenticator(cred)))
+  def authenticateBasicStrict[T](realm: String, authenticator: StrictAuthenticator[T]): AuthenticationDirective[T] =
+    authenticateBasic(realm, cred ⇒ FastFuture.successful(authenticator(cred)))
 
   /**
    * A directive that wraps the inner route with Http Basic authentication support.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
    */
-  def authenticatePF[T](realm: String, authenticator: AuthenticatorPF[T]): AuthenticationDirective[T] =
+  def authenticateBasicPF[T](realm: String, authenticator: AuthenticatorPF[T]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
-      authenticate(realm, credentials ⇒
+      authenticateBasic(realm, credentials ⇒
         if (authenticator isDefinedAt credentials) authenticator(credentials).fast.map(Some(_))
         else FastFuture.successful(None))
     }
@@ -80,8 +80,8 @@ trait SecurityDirectives {
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
    */
-  def authenticateStrictPF[T](realm: String, authenticator: StrictAuthenticatorPF[T]): AuthenticationDirective[T] =
-    authenticateStrict(realm, authenticator.lift)
+  def authenticateBasicStrictPF[T](realm: String, authenticator: StrictAuthenticatorPF[T]): AuthenticationDirective[T] =
+    authenticateBasicStrict(realm, authenticator.lift)
 
   /**
    * Lifts an authenticator function into a directive. The authenticator function gets passed in credentials from the

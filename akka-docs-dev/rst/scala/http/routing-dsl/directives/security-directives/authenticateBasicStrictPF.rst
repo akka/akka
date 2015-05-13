@@ -1,7 +1,7 @@
-.. _-authenticate-:
+.. _-authenticateBasicStrictPF-:
 
-authenticate
-============
+authenticateBasicStrictPF
+=========================
 
 ...
 
@@ -9,7 +9,7 @@ Signature
 ---------
 
 .. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authenticate
+   :snippet: authenticateBasicStrictPF
 
 Description
 -----------
@@ -20,4 +20,4 @@ Example
 -------
 
 ... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: 0authenticate
+   :snippet: 0authenticateBasicStrictPF
