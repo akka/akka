@@ -44,6 +44,15 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
 
       def render(h: HttpHeader) = r ~~ h ~~ CrLf
 
+      val hostString: InetSocketAddress ⇒ String = {
+        // Retrieve the original host string that was given (IP or DNS name) if running Java 7 or later
+        // using the getHostString() method. This avoids a reverse DNS query from calling getHostName()
+        // if the original host string is an IP address.
+        val clazz = classOf[InetSocketAddress]
+        address ⇒ clazz.getMethods.find(_.getName == "getHostString").map(_ invoke address).
+          getOrElse(address.getHostName).asInstanceOf[String]
+      }
+
       @tailrec def renderHeaders(remaining: List[HttpHeader], hostHeaderSeen: Boolean = false,
                                  userAgentSeen: Boolean = false, transferEncodingSeen: Boolean = false): Unit =
         remaining match {
@@ -93,7 +102,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
           }
 
           case Nil ⇒
-            if (!hostHeaderSeen) r ~~ Host(ctx.serverAddress) ~~ CrLf
+            if (!hostHeaderSeen) r ~~ Host(hostString(ctx.serverAddress), ctx.serverAddress.getPort) ~~ CrLf
             if (!userAgentSeen && userAgentHeader.isDefined) r ~~ userAgentHeader.get ~~ CrLf
             if (entity.isChunked && !entity.isKnownEmpty && !transferEncodingSeen)
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
