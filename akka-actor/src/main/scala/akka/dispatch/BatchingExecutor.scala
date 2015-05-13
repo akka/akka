@@ -78,22 +78,23 @@ private[akka] trait BatchingExecutor extends Executor {
     }
   }
 
+  private[this] val _blockContext = new ThreadLocal[BlockContext]()
+
   private[this] final class BlockableBatch extends AbstractBatch with BlockContext {
-    private var parentBlockContext: BlockContext = _
     // this method runs in the delegate ExecutionContext's thread
     override final def run(): Unit = {
       require(_tasksLocal.get eq null)
       _tasksLocal set this // Install ourselves as the current batch
-      val prevBlockContext = BlockContext.current
+      val prevBlockContext = _blockContext.get
+      _blockContext.set(BlockContext.current)
       BlockContext.withBlockContext(this) {
-        parentBlockContext = prevBlockContext
         try processBatch(this) catch {
           case t: Throwable ⇒
             resubmitUnbatched()
             throw t
         } finally {
           _tasksLocal.remove()
-          parentBlockContext = null
+          _blockContext.set(prevBlockContext)
         }
       }
     }
@@ -102,8 +103,7 @@ private[akka] trait BatchingExecutor extends Executor {
       // if we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
       resubmitUnbatched()
       // now delegate the blocking to the previous BC
-      require(parentBlockContext ne null)
-      parentBlockContext.blockOn(thunk)
+      _blockContext.get.blockOn(thunk)
     }
   }
 

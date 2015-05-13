@@ -360,7 +360,7 @@ object AkkaBuild extends Build {
 
   def akkaPreviousArtifact(id: String): Def.Initialize[Option[sbt.ModuleID]] = Def.setting {
     if (enableMiMa) {
-      val version: String = "2.3.10" // FIXME
+      val version: String = "2.3.11" // FIXME verify all 2.3.x versions
       val fullId = crossVersion.value match {
         case _ : CrossVersion.Binary => id + "_" + scalaBinaryVersion.value
         case _ : CrossVersion.Full => id + "_" + scalaVersion.value

@@ -515,7 +515,19 @@ object MiMa extends AutoPlugin {
       FilterAnyProblem("akka.remote.PhiAccrualFailureDetector$State"),
       FilterAnyProblem("akka.cluster.ClusterDomainEventPublisher"),
       FilterAnyProblem("akka.cluster.InternalClusterAction"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.InternalClusterAction$PublishCurrentClusterState")
+      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.InternalClusterAction$PublishCurrentClusterState"),
+      // issue #16327 compared to 2.3.10
+      // synthetic method akka$dispatch$BatchingExecutor$BlockableBatch$$parentBlockContext_=(scala.concurrent.BlockContext)Unit in class akka.dispatch.BatchingExecutor#BlockableBatch does not have a correspondent in new version
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#BlockableBatch.akka$dispatch$BatchingExecutor$BlockableBatch$$parentBlockContext_="),
+      // synthetic method akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_=(java.lang.ThreadLocal)Unit in trait akka.dispatch.BatchingExecutor does not have a correspondent in old version
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor.akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_="),
+      // synthetic method akka$dispatch$BatchingExecutor$$_blockContext()java.lang.ThreadLocal in trait akka.dispatch.BatchingExecutor does not have a correspondent in old version
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor.akka$dispatch$BatchingExecutor$$_blockContext"),
+      // issue #16327 compared to 2.3.11
+      // synthetic method akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_=(java.lang.ThreadLocal)Unit in class akka.dispatch.MessageDispatcher does not have a correspondent in new version
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.MessageDispatcher.akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_="),
+      // synthetic method akka$dispatch$BatchingExecutor$$_blockContext()java.lang.ThreadLocal in class akka.dispatch.MessageDispatcher does not have a correspondent in new version
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.MessageDispatcher.akka$dispatch$BatchingExecutor$$_blockContext")
       
      )
   }
