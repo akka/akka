@@ -19,9 +19,11 @@ object BalancingSpec {
   class Worker(latch: TestLatch) extends Actor {
     lazy val id = counter.getAndIncrement()
     def receive = {
-      case msg ⇒
-        if (id == 1) Thread.sleep(10) // dispatch to other routees
-        else Await.ready(latch, 1.minute)
+      case msg: Int ⇒
+        if (id != 1)
+          Await.ready(latch, 1.minute)
+        else if (msg <= 10)
+          Thread.sleep(50) // dispatch to other routees
         sender() ! id
     }
   }
@@ -68,7 +70,7 @@ class BalancingSpec extends AkkaSpec(
     val iterationCount = 100
 
     for (i ← 1 to iterationCount) {
-      pool ! "hit-" + i
+      pool ! i
     }
 
     // all but one worker are blocked
@@ -110,14 +112,14 @@ class BalancingSpec extends AkkaSpec(
 
     "work with anonymous actor names" in {
       // the dispatcher-id must not contain invalid config key characters (e.g. $a)
-      system.actorOf(Props[Parent]) ! "hello"
+      system.actorOf(Props[Parent]) ! 1000
       expectMsgType[Int]
     }
 
     "work with encoded actor names" in {
       val encName = URLEncoder.encode("abcå6#$€xyz", "utf-8")
       // % is a valid config key character (e.g. %C3%A5)
-      system.actorOf(Props[Parent], encName) ! "hello"
+      system.actorOf(Props[Parent], encName) ! 1001
       expectMsgType[Int]
     }
 
