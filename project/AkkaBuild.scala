@@ -1006,6 +1006,7 @@ object AkkaBuild extends Build {
       FilterAnyProblem("akka.remote.testconductor.TerminateMsg"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testconductor.Conductor.shutdown"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testkit.MultiNodeSpec.akka$remote$testkit$MultiNodeSpec$$deployer"),
+      FilterAnyProblem("akka.remote.EndpointManager"),
       FilterAnyProblem("akka.remote.EndpointManager$Pass"),
       FilterAnyProblem("akka.remote.EndpointManager$EndpointRegistry"),
       FilterAnyProblem("akka.remote.EndpointWriter"),
