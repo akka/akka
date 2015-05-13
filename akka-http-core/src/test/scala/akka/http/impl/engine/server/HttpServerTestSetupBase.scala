@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.server
 
+import akka.stream.io.{ SendBytes, SslTlsOutbound, SessionBytes }
+
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.ActorSystem
@@ -11,7 +13,7 @@ import akka.event.NoLogging
 import akka.util.ByteString
 
 import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.{ Sink, Source, FlowGraph }
+import akka.stream.scaladsl.{ Flow, Sink, Source, FlowGraph }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 
 import akka.http.impl.util._
@@ -36,8 +38,8 @@ abstract class HttpServerTestSetupBase {
     FlowGraph.closed(HttpServerBluePrint(settings, NoLogging)) { implicit b ⇒
       server ⇒
         import FlowGraph.Implicits._
-        Source(netIn) ~> server.in2
-        server.out1 ~> Sink(netOut)
+        Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
+        server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink(netOut)
         server.out2 ~> Sink(requests)
         Source(responses) ~> server.in1
     }.run()

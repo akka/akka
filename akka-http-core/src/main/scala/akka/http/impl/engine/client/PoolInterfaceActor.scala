@@ -5,8 +5,6 @@
 package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
-import akka.http.HostConnectionPoolSetup
-
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
@@ -17,8 +15,9 @@ import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
 import akka.stream.impl.FixedSizeBuffer
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+import akka.http.HostConnectionPoolSetup
 import akka.http.impl.util.SeqActorName
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
 import PoolFlow._
 
@@ -59,7 +58,9 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
     import context.system
     import hcps._
     import setup._
-    val connectionFlow = Http().outgoingConnection(host, port, None, options, settings.connectionSettings, setup.log)
+    val connectionFlow =
+      if (httpsContext.isEmpty) Http().outgoingConnection(host, port, None, options, settings.connectionSettings, setup.log)
+      else Http().outgoingConnectionTls(host, port, None, options, settings.connectionSettings, httpsContext, setup.log)
     val poolFlow = PoolFlow(connectionFlow, new InetSocketAddress(host, port), settings, setup.log)
     Source(ActorPublisher(self)).via(poolFlow).runWith(Sink(ActorSubscriber[ResponseContext](self)))
   }
@@ -135,7 +136,12 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
     }
 
   def dispatchRequest(pr: PoolRequest): Unit = {
-    val effectiveRequest = pr.request.withUri(pr.request.uri.toHttpRequestTargetOriginForm)
+    val scheme = Uri.httpScheme(hcps.setup.httpsContext.isDefined)
+    val hostHeader = headers.Host(hcps.host, Uri.normalizePort(hcps.port, scheme))
+    val effectiveRequest =
+      pr.request
+        .withUri(pr.request.uri.toHttpRequestTargetOriginForm)
+        .withDefaultHeaders(hostHeader)
     val retries = if (pr.request.method.isIdempotent) hcps.setup.settings.maxRetries else 0
     onNext(RequestContext(effectiveRequest, pr.responsePromise, retries))
   }

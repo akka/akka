@@ -6,10 +6,10 @@ package akka.http.javadsl
 
 import java.lang.{ Iterable ⇒ JIterable }
 import java.net.InetSocketAddress
-import akka.http._
-import akka.stream.scaladsl.Keep
-
+import scala.language.implicitConversions
 import scala.concurrent.Future
+import scala.util.Try
+import akka.stream.scaladsl.Keep
 import akka.japi.Util._
 import akka.japi.{ Option, Function }
 import akka.actor.{ ExtendedActorSystem, ActorSystem, ExtensionIdProvider, ExtensionId }
@@ -17,11 +17,10 @@ import akka.event.LoggingAdapter
 import akka.io.Inet
 import akka.stream.FlowMaterializer
 import akka.stream.javadsl.{ Flow, Source }
+import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.model._
-import akka.http.impl.util.JavaMapping.Implicits._
-
-import scala.util.Try
+import akka.http._
 
 object Http extends ExtensionId[Http] with ExtensionIdProvider {
   override def get(system: ActorSystem): Http = super.get(system)
@@ -33,6 +32,9 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ ec }
 
   private lazy val delegate = akka.http.scaladsl.Http(system)
+
+  private implicit def convertHttpsContext(hctx: Option[HttpsContext]) =
+    hctx.map(_.asInstanceOf[akka.http.scaladsl.HttpsContext])
 
   /**
    * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -62,9 +64,10 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def bind(interface: String, port: Int,
            backlog: Int, options: JIterable[Inet.SocketOption],
            settings: ServerSettings,
+           httpsContext: Option[HttpsContext],
            log: LoggingAdapter,
            materializer: FlowMaterializer): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(interface, port, backlog, immutableSeq(options), settings, log)(materializer)
+    Source.adapt(delegate.bind(interface, port, backlog, immutableSeq(options), settings, httpsContext, log)(materializer)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
@@ -95,10 +98,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
                     interface: String, port: Int,
                     backlog: Int, options: JIterable[Inet.SocketOption],
                     settings: ServerSettings,
+                    httpsContext: Option[HttpsContext],
                     log: LoggingAdapter,
                     materializer: FlowMaterializer): Future[ServerBinding] =
     delegate.bindAndHandle(handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala,
-      interface, port, backlog, immutableSeq(options), settings, log)(materializer)
+      interface, port, backlog, immutableSeq(options), settings, httpsContext, log)(materializer)
       .map(new ServerBinding(_))(ec)
 
   /**
@@ -127,10 +131,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
                         interface: String, port: Int,
                         backlog: Int, options: JIterable[Inet.SocketOption],
                         settings: ServerSettings,
+                        httpsContext: Option[HttpsContext],
                         log: LoggingAdapter,
                         materializer: FlowMaterializer): Future[ServerBinding] =
     delegate.bindAndHandleSync(handler.apply(_).asScala,
-      interface, port, backlog, immutableSeq(options), settings, log)(materializer)
+      interface, port, backlog, immutableSeq(options), settings, httpsContext, log)(materializer)
       .map(new ServerBinding(_))(ec)
 
   /**
@@ -158,11 +163,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def bindAndHandleAsync(handler: Function[HttpRequest, Future[HttpResponse]],
                          interface: String, port: Int,
                          backlog: Int, options: JIterable[Inet.SocketOption],
-                         settings: ServerSettings,
-                         log: LoggingAdapter,
+                         settings: ServerSettings, httpsContext: Option[HttpsContext],
+                         parallelism: Int, log: LoggingAdapter,
                          materializer: FlowMaterializer): Future[ServerBinding] =
     delegate.bindAndHandleAsync(handler.apply(_).asInstanceOf[Future[sm.HttpResponse]],
-      interface, port, backlog, immutableSeq(options), settings, log)(materializer)
+      interface, port, backlog, immutableSeq(options), settings, httpsContext, parallelism, log)(materializer)
       .map(new ServerBinding(_))(ec)
 
   /**
@@ -173,6 +178,16 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     Flow.wrap {
       akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
         .viaMat(delegate.outgoingConnection(host, port))(Keep.right)
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec))
+    }
+
+  /**
+   * Same as [[outgoingConnection]] but with HTTPS encryption.
+   */
+  def outgoingConnectionTls(host: String, port: Int): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+    Flow.wrap {
+      akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
+        .viaMat(delegate.outgoingConnectionTls(host, port))(Keep.right)
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec))
     }
 
@@ -188,6 +203,25 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     Flow.wrap {
       akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
         .viaMat(delegate.outgoingConnection(host, port, localAddress.asScala, immutableSeq(options), settings, log))(Keep.right)
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec))
+    }
+
+  /**
+   * Same as [[outgoingConnection]] but with HTTPS encryption.
+   *
+   * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
+   * for encryption on the connection.
+   */
+  def outgoingConnectionTls(host: String, port: Int,
+                            localAddress: Option[InetSocketAddress],
+                            options: JIterable[Inet.SocketOption],
+                            settings: ClientConnectionSettings,
+                            httpsContext: Option[HttpsContext],
+                            log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+    Flow.wrap {
+      akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
+        .viaMat(delegate.outgoingConnectionTls(host, port, localAddress.asScala, immutableSeq(options), settings,
+          httpsContext.map(_.asInstanceOf[akka.http.scaladsl.HttpsContext]), log))(Keep.right)
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec))
     }
 
@@ -209,6 +243,12 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptTupleFlow(delegate.newHostConnectionPool[T](host, port)(materializer))
 
   /**
+   * Same as [[newHostConnectionPool]] but with HTTPS encryption.
+   */
+  def newHostConnectionPoolTls[T](host: String, port: Int, materializer: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    adaptTupleFlow(delegate.newHostConnectionPoolTls[T](host, port)(materializer))
+
+  /**
    * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
    * the requests from all its materializations across this pool.
    * While the started host connection pool internally shuts itself down automatically after the configured idle
@@ -227,6 +267,20 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
                                settings: ConnectionPoolSettings,
                                log: LoggingAdapter, materializer: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     adaptTupleFlow(delegate.newHostConnectionPool[T](host, port, immutableSeq(options), settings, log)(materializer))
+
+  /**
+   * Same as [[newHostConnectionPool]] but with HTTPS encryption.
+   *
+   * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
+   * for encryption on the connection.
+   */
+  def newHostConnectionPoolTls[T](host: String, port: Int,
+                                  options: JIterable[Inet.SocketOption],
+                                  settings: ConnectionPoolSettings,
+                                  httpsContext: Option[HttpsContext],
+                                  log: LoggingAdapter, materializer: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    adaptTupleFlow(delegate.newHostConnectionPoolTls[T](host, port, immutableSeq(options), settings,
+      httpsContext.map(_.asInstanceOf[akka.http.scaladsl.HttpsContext]), log)(materializer))
 
   /**
    * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
@@ -266,6 +320,12 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptTupleFlow(delegate.cachedHostConnectionPool[T](host, port)(materializer))
 
   /**
+   * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
+   */
+  def cachedHostConnectionPoolTls[T](host: String, port: Int, materializer: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    adaptTupleFlow(delegate.cachedHostConnectionPoolTls[T](host, port)(materializer))
+
+  /**
    * Returns a [[Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
    * HTTP connections to the given target host endpoint. For every ActorSystem, target host and pool
    * configuration a separate connection pool is maintained.
@@ -287,6 +347,20 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
                                   settings: ConnectionPoolSettings,
                                   log: LoggingAdapter, materializer: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     adaptTupleFlow(delegate.cachedHostConnectionPool[T](host, port, immutableSeq(options), settings, log)(materializer))
+
+  /**
+   * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
+   *
+   * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
+   * for encryption on the connection.
+   */
+  def cachedHostConnectionPoolTls[T](host: String, port: Int,
+                                     options: JIterable[Inet.SocketOption],
+                                     settings: ConnectionPoolSettings,
+                                     httpsContext: Option[HttpsContext],
+                                     log: LoggingAdapter, materializer: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    adaptTupleFlow(delegate.cachedHostConnectionPoolTls[T](host, port, immutableSeq(options), settings,
+      httpsContext.map(_.asInstanceOf[akka.http.scaladsl.HttpsContext]), log)(materializer))
 
   /**
    * Returns a [[Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
@@ -328,6 +402,9 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * depending on their respective effective URI. Note that incoming requests must have either an absolute URI or
    * a valid `Host` header.
    *
+   * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
+   * for setting up the HTTPS connection pool, if required.
+   *
    * Since the underlying transport usually comprises more than a single connection the produced flow might generate
    * responses in an order that doesn't directly match the consumed requests.
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
@@ -337,8 +414,9 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def superPool[T](options: JIterable[Inet.SocketOption],
                    settings: ConnectionPoolSettings,
+                   httpsContext: Option[HttpsContext],
                    log: LoggingAdapter, materializer: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] =
-    adaptTupleFlow(delegate.superPool[T](immutableSeq(options), settings, log)(materializer))
+    adaptTupleFlow(delegate.superPool[T](immutableSeq(options), settings, httpsContext, log)(materializer))
 
   /**
    * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
@@ -354,14 +432,18 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
    * effective URI to produce a response future.
    *
+   * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
+   * for setting up the HTTPS connection pool, if required.
+   *
    * Note that the request must have either an absolute URI or a valid `Host` header, otherwise
    * the future will be completed with an error.
    */
   def singleRequest(request: HttpRequest,
                     options: JIterable[Inet.SocketOption],
                     settings: ConnectionPoolSettings,
+                    httpsContext: Option[HttpsContext],
                     log: LoggingAdapter, materializer: FlowMaterializer): Future[HttpResponse] =
-    delegate.singleRequest(request.asScala, immutableSeq(options), settings, log)(materializer)
+    delegate.singleRequest(request.asScala, immutableSeq(options), settings, httpsContext, log)(materializer)
 
   /**
    * Triggers an orderly shutdown of all host connections pools currently maintained by the [[ActorSystem]].
@@ -372,6 +454,17 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * method call the respective connection pools will be restarted and not contribute to the returned future.
    */
   def shutdownAllConnectionPools(): Future[Unit] = delegate.shutdownAllConnectionPools()
+
+  /**
+   * Gets the current default client-side [[HttpsContext]].
+   */
+  def defaultClientHttpsContext: HttpsContext = delegate.defaultClientHttpsContext
+
+  /**
+   * Sets the default client-side [[HttpsContext]].
+   */
+  def setDefaultClientHttpsContext(context: HttpsContext): Unit =
+    delegate.setDefaultClientHttpsContext(context.asInstanceOf[akka.http.scaladsl.HttpsContext])
 
   private def adaptTupleFlow[T, Mat](scalaFlow: akka.stream.scaladsl.Flow[(scaladsl.model.HttpRequest, T), (Try[HttpResponse], T), Mat]): Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat] =
     Flow.wrap {
