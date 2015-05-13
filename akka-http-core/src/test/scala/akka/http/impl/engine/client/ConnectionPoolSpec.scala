@@ -5,14 +5,14 @@
 package akka.http.impl.engine.client
 
 import java.util.concurrent.atomic.AtomicInteger
-import akka.http.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
+import akka.util.ByteString
 import akka.http.scaladsl.{ TestUtils, Http }
 import akka.http.impl.util.{ SingletonException, StreamUtils }
-import akka.util.ByteString
+import akka.http.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.stream.io.{ SessionBytes, SendBytes, SslTlsInbound, SslTlsOutbound }
 import akka.stream.{ BidiShape, ActorFlowMaterializer }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber, AkkaSpec }
 import akka.stream.scaladsl._
@@ -174,14 +174,6 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
   "The single-request client infrastructure" should {
     class LocalTestSetup extends TestSetup(ServerSettings(system).copy(rawRequestUriHeader = true), autoAccept = true)
 
-    "properly complete a simple request/response cycle with a host header request" in new LocalTestSetup {
-      val request = HttpRequest(uri = "/abc", headers = List(Host(serverHostName, serverPort)))
-      val responseFuture = Http().singleRequest(request)
-      val responseHeaders = Await.result(responseFuture, 1.second).headers
-      responseHeaders should contain(RawHeader("Req-Uri", s"http://$serverHostName:$serverPort/abc"))
-      responseHeaders should contain(RawHeader("Req-Raw-Request-URI", "/abc"))
-    }
-
     "transform absolute request URIs into relative URIs plus host header" in new LocalTestSetup {
       val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment")
       val responseFuture = Http().singleRequest(request)
@@ -205,11 +197,11 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
       responseHeaders should contain(RawHeader("Req-Raw-Request-URI", "//foo"))
     }
 
-    "produce an error if the request does not contain a Host-header or an absolute URI" in {
+    "produce an error if the request does not have an absolute URI" in {
       val request = HttpRequest(uri = "/foo")
       val responseFuture = Http().singleRequest(request)
       val thrown = the[IllegalUriException] thrownBy Await.result(responseFuture, 1.second)
-      thrown should have message "Cannot establish effective URI of request to `/foo`, request has a relative URI and is missing a `Host` header"
+      thrown should have message "Cannot determine request scheme and target endpoint as HttpMethod(GET) request to /foo doesn't have an absolute URI"
     }
   }
 
@@ -251,9 +243,9 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
     val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]
     val incomingConnectionsSub = {
       val rawBytesInjection = BidiFlow() { b ⇒
-        val top = b.add(Flow[ByteString].map(mapServerSideOutboundRawBytes)
+        val top = b.add(Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) ⇒ mapServerSideOutboundRawBytes(x) }
           .transform(StreamUtils.recover { case NoErrorComplete ⇒ ByteString.empty }))
-        val bottom = b.add(Flow[ByteString])
+        val bottom = b.add(Flow[ByteString].map(SessionBytes(null, _)))
         BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
       }
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink(incomingConnections)

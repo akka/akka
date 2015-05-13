@@ -49,6 +49,9 @@ import java.security.cert.Certificate
  */
 object SslTls {
 
+  type ScalaFlow = scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, Unit]
+  type JavaFlow = javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, Unit]
+
   /**
    * Scala API: create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. The
    * SSLContext will be used to create an SSLEngine to which then the
@@ -61,7 +64,7 @@ object SslTls {
    * For a description of the `closing` parameter please refer to [[Closing]].
    */
   def apply(sslContext: SSLContext, firstSession: NegotiateNewSession,
-            role: Role, closing: Closing = IgnoreComplete): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, Unit] =
+            role: Role, closing: Closing = IgnoreComplete): ScalaFlow =
     new scaladsl.BidiFlow(TlsModule(OperationAttributes.none, sslContext, firstSession, role, closing))
 
   /**
@@ -75,7 +78,7 @@ object SslTls {
    *
    * This method uses the default closing behavior or [[IgnoreComplete]].
    */
-  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role): javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, Unit] =
+  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role): JavaFlow =
     new javadsl.BidiFlow(apply(sslContext, firstSession, role))
 
   /**
@@ -89,7 +92,7 @@ object SslTls {
    *
    * For a description of the `closing` parameter please refer to [[Closing]].
    */
-  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, closing: Closing): javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, Unit] =
+  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, closing: Closing): JavaFlow =
     new javadsl.BidiFlow(apply(sslContext, firstSession, role, closing))
 
   /**
@@ -138,14 +141,16 @@ object SslTls {
  * unwrapping [[SendBytes]].
  */
 object SslTlsPlacebo {
-  val forScala = scaladsl.BidiFlow() { implicit b ⇒
-    // this constructs a session for (invalid) protocol SSL_NULL_WITH_NULL_NULL
-    val session = SSLContext.getDefault.createSSLEngine.getSession
-    val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(b) ⇒ b })
-    val bottom = b.add(scaladsl.Flow[ByteString].map(SessionBytes(session, _)))
-    BidiShape(top, bottom)
-  }
-  val forJava = new javadsl.BidiFlow(forScala)
+  val forScala: scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
+    scaladsl.BidiFlow() { implicit b ⇒
+      // this constructs a session for (invalid) protocol SSL_NULL_WITH_NULL_NULL
+      val session = SSLContext.getDefault.createSSLEngine.getSession
+      val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(b) ⇒ b })
+      val bottom = b.add(scaladsl.Flow[ByteString].map(SessionBytes(session, _)))
+      BidiShape(top, bottom)
+    }
+  val forJava: javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
+    new javadsl.BidiFlow(forScala)
 }
 
 /**
@@ -206,7 +211,7 @@ case object Server extends Server
  *  - [[EagerClose]] means to not ignore signals
  *  - [[IgnoreCancel]] means to not react to cancellation of the receiving
  *    side unless the sending side has already completed
- *  - [[IgnoreComplete]] means to not reacto the completion of the sending
+ *  - [[IgnoreComplete]] means to not react to the completion of the sending
  *    side unless the receiving side has already cancelled
  *  - [[IgnoreBoth]] means to ignore the first termination signal—be that
  *    cancellation or completion—and only act upon the second one

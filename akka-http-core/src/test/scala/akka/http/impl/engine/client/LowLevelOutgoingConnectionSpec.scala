@@ -6,6 +6,7 @@ package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
 import akka.http.ClientConnectionSettings
+import akka.stream.io.{ SessionBytes, SslTlsOutbound, SendBytes }
 import org.scalatest.Inside
 import akka.util.ByteString
 import akka.event.NoLogging
@@ -34,7 +35,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
-        netInSub.expectRequest(16)
+        netInSub.expectRequest()
         sendWireData(
           """HTTP/1.1 200 OK
             |Content-Length: 0
@@ -71,7 +72,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         expectWireData("XY")
         sub.sendComplete()
 
-        netInSub.expectRequest(16)
+        netInSub.expectRequest()
         sendWireData(
           """HTTP/1.1 200 OK
             |Content-Length: 0
@@ -96,7 +97,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
-        netInSub.expectRequest(16)
+        netInSub.expectRequest()
         sendWireData(
           """HTTP/1.1 200 OK
             |Transfer-Encoding: chunked
@@ -140,7 +141,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
-        netInSub.expectRequest(16)
+        netInSub.expectRequest()
         sendWireData(
           """HTTP/1.1 200 OK
             |Content-Length: 0
@@ -166,7 +167,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
-        netInSub.expectRequest(16)
+        netInSub.expectRequest()
         sendWireData(
           """HTTP/1.1 200 OK
             |Transfer-Encoding: chunked
@@ -239,7 +240,6 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to 2 bytes less"
         netInSub.sendComplete()
         responses.expectComplete()
-        netInSub.expectCancellation()
       }
 
       "catch the entity stream being longer than the Content-Length" in new TestSetup {
@@ -265,7 +265,6 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to more bytes"
         netInSub.sendComplete()
         responses.expectComplete()
-        netInSub.expectCancellation()
       }
 
       "catch illegal response starts" in new TestSetup {
@@ -277,7 +276,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
-        netInSub.expectRequest(16)
+        netInSub.expectRequest()
         sendWireData(
           """HTTP/1.2 200 OK
             |
@@ -298,7 +297,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
-        netInSub.expectRequest(16)
+        netInSub.expectRequest()
         sendWireData(
           """HTTP/1.1 200 OK
             |Transfer-Encoding: chunked
@@ -336,7 +335,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
-        netInSub.expectRequest(16)
+        netInSub.expectRequest()
         sendWireData("HTTP/1.1 200 OK")
         netInSub.sendComplete()
 
@@ -363,8 +362,8 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       FlowGraph.closed(OutgoingConnectionBlueprint(remoteAddress, settings, NoLogging)) { implicit b ⇒
         client ⇒
           import FlowGraph.Implicits._
-          Source(netIn) ~> client.in2
-          client.out1 ~> Sink(netOut)
+          Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
+          client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink(netOut)
           Source(requests) ~> client.in1
           client.out2 ~> Sink(responses)
       }.run()
