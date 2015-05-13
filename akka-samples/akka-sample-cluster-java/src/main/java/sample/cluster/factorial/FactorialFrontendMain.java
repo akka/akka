@@ -17,7 +17,7 @@ public class FactorialFrontendMain {
 
     final ActorSystem system = ActorSystem.create("ClusterSystem", config);
     system.log().info(
-        "Factorials will start when 2 backend members in the cluster.");
+            "Factorials will start when 2 backend members in the cluster.");
     //#registerOnUp
     Cluster.get(system).registerOnMemberUp(new Runnable() {
       @Override
@@ -27,6 +27,16 @@ public class FactorialFrontendMain {
       }
     });
     //#registerOnUp
+
+    //#registerOnRemoved
+    Cluster.get(system).registerOnMemberRemoved(new Runnable() {
+        @Override
+        public void run() {
+            system.terminate();
+        }
+    });
+    //#registerOnRemoved
+
   }
 
 }
