@@ -201,7 +201,7 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
     }
   }
 
-  override def isClosed: Boolean = downstreamCompleted
+  override def isClosed: Boolean = downstreamCompleted && (subscriber ne null)
 
   protected def createSubscription(): Subscription = new ActorSubscription(actor, subscriber)
 

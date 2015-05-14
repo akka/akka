@@ -50,7 +50,7 @@ private[akka] class PrefixAndTailImpl(_settings: ActorFlowMaterializerSettings, 
   }
 
   def emitEmptyTail(): Unit = {
-    primaryOutputs.enqueueOutputElement((taken, Source(EmptyPublisher[Any])))
+    primaryOutputs.enqueueOutputElement((taken, Source.empty))
     nextPhase(completedPhase)
   }
 

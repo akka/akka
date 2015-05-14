@@ -241,7 +241,7 @@ private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, 
   protected def fail(e: Throwable): Unit = {
     if (settings.debugLogging)
       log.debug("fail due to: {}", e.getMessage)
-    inputBunch.cancel()
+    nextPhase(completedPhase)
     primaryOutputs.error(e)
     pump()
   }

@@ -4,11 +4,11 @@
 package akka.stream.scaladsl
 
 import scala.collection.immutable
-import scala.concurrent.Await
+import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
+import scala.util.Try
 import scala.util.control.NoStackTrace
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.{ OperationAttributes, ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import org.reactivestreams.Subscriber
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -26,7 +26,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     def newHeadSink = Sink.head[(immutable.Seq[Int], Source[Int, _])]
 
-    "work on empty input" in {
+    "work on empty input" in assertAllStagesStopped {
       val futureSink = newHeadSink
       val fut = Source.empty.prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
@@ -36,7 +36,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       tailSubscriber.expectSubscriptionAndComplete()
     }
 
-    "work on short input" in {
+    "work on short input" in assertAllStagesStopped {
       val futureSink = newHeadSink
       val fut = Source(List(1, 2, 3)).prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
@@ -68,7 +68,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
-    "handle negative take count" in {
+    "handle negative take count" in assertAllStagesStopped {
       val futureSink = newHeadSink
       val fut = Source(1 to 10).prefixAndTail(-1).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
@@ -190,6 +190,23 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       up.subscribe(flowSubscriber)
       val upsub = up.expectSubscription()
       upsub.expectCancellation()
+    }
+
+    "work even if tail subscriber arrives after substream completion" in {
+      val pub = TestPublisher.manualProbe[Int]()
+      val sub = TestSubscriber.manualProbe[Int]()
+
+      val f = Source(pub).prefixAndTail(1).runWith(Sink.head)
+      val s = pub.expectSubscription()
+      s.sendNext(0)
+
+      val (_, tail) = Await.result(f, 3.seconds)
+
+      val tailPub = tail.runWith(Sink.publisher)
+      s.sendComplete()
+
+      tailPub.subscribe(sub)
+      sub.expectSubscriptionAndComplete()
     }
 
   }
