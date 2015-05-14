@@ -256,6 +256,8 @@ private[akka] object StreamSupervisor {
   final case class Children(children: Set[ActorRef])
   /** Testing purpose */
   final case object StopChildren
+  /** Testing purpose */
+  final case object StoppedChildren
 }
 
 private[akka] class StreamSupervisor(settings: ActorFlowMaterializerSettings) extends Actor {
@@ -267,8 +269,10 @@ private[akka] class StreamSupervisor(settings: ActorFlowMaterializerSettings) ex
     case Materialize(props, name) ⇒
       val impl = context.actorOf(props, name)
       sender() ! impl
-    case GetChildren  ⇒ sender() ! Children(context.children.toSet)
-    case StopChildren ⇒ context.children.foreach(context.stop)
+    case GetChildren ⇒ sender() ! Children(context.children.toSet)
+    case StopChildren ⇒
+      context.children.foreach(context.stop)
+      sender() ! StoppedChildren
   }
 }
 
