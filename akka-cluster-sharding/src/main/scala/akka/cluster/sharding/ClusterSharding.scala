@@ -1433,7 +1433,7 @@ object ShardCoordinator {
      * supposed to discard their known location of the shard, i.e. start buffering
      * incoming messages for the shard. They reply with [[BeginHandOffAck]].
      * When all have replied the `ShardCoordinator` continues by sending
-     * [[HandOff]] to the `ShardRegion` responsible for the shard.
+     * `HandOff` to the `ShardRegion` responsible for the shard.
      */
     @SerialVersionUID(1L) final case class BeginHandOff(shard: ShardId) extends CoordinatorMessage
     /**
@@ -1441,14 +1441,14 @@ object ShardCoordinator {
      */
     @SerialVersionUID(1L) final case class BeginHandOffAck(shard: ShardId) extends CoordinatorCommand
     /**
-     * When all `ShardRegion` actors have acknoledged the [[BeginHandOff]] the
-     * ShardCoordinator` sends this message to the `ShardRegion` responsible for the
+     * When all `ShardRegion` actors have acknoledged the `BeginHandOff` the
+     * `ShardCoordinator` sends this message to the `ShardRegion` responsible for the
      * shard. The `ShardRegion` is supposed to stop all entries in that shard and when
      * all entries have terminated reply with `ShardStopped` to the `ShardCoordinator`.
      */
     @SerialVersionUID(1L) final case class HandOff(shard: ShardId) extends CoordinatorMessage
     /**
-     * Reply to [[HandOff]] when all entries in the shard have been terminated.
+     * Reply to `HandOff` when all entries in the shard have been terminated.
      */
     @SerialVersionUID(1L) final case class ShardStopped(shard: ShardId) extends CoordinatorCommand
 
@@ -1527,8 +1527,8 @@ object ShardCoordinator {
 
   /**
    * INTERNAL API. Rebalancing process is performed by this actor.
-   * It sends [[BeginHandOff]] to all `ShardRegion` actors followed by
-   * [[HandOff]] to the `ShardRegion` responsible for the shard.
+   * It sends `BeginHandOff` to all `ShardRegion` actors followed by
+   * `HandOff` to the `ShardRegion` responsible for the shard.
    * When the handoff is completed it sends [[RebalanceDone]] to its
    * parent `ShardCoordinator`. If the process takes longer than the
    * `handOffTimeout` it also sends [[RebalanceDone]].

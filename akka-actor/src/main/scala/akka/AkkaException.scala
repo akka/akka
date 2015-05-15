@@ -5,11 +5,7 @@
 package akka
 
 /**
- * Akka base Exception. Each Exception gets:
- * <ul>
- *   <li>a uuid for tracking purposes</li>
- *   <li>toString that includes exception name, message and uuid</li>
- * </ul>
+ * Akka base Exception.
  */
 @SerialVersionUID(1L)
 class AkkaException(message: String, cause: Throwable) extends RuntimeException(message, cause) with Serializable {

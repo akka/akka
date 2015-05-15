@@ -10,7 +10,6 @@ import java.util.{ AbstractQueue, Comparator, Iterator, PriorityQueue }
 
 /**
  * PriorityQueueStabilizer wraps a priority queue so that it respects FIFO for elements of equal priority.
- * @tparam E - The type of the elements of this Queue
  */
 trait PriorityQueueStabilizer[E <: AnyRef] extends AbstractQueue[E] {
   val backingQueue: AbstractQueue[PriorityQueueStabilizer.WrappedElement[E]]
@@ -58,9 +57,8 @@ object PriorityQueueStabilizer {
 
 /**
  * StablePriorityQueue is a priority queue that preserves order for elements of equal priority.
- * @param capacity - the initial capacity of this Queue, needs to be > 0.
+ * @param capacity - the initial capacity of this Queue, needs to be &gt; 0.
  * @param cmp - Comparator for comparing Queue elements
- * @tparam E - The type of the elements of this Queue
  */
 class StablePriorityQueue[E <: AnyRef](capacity: Int, cmp: Comparator[E]) extends PriorityQueueStabilizer[E] {
   val backingQueue = new PriorityQueue[PriorityQueueStabilizer.WrappedElement[E]](
@@ -70,9 +68,8 @@ class StablePriorityQueue[E <: AnyRef](capacity: Int, cmp: Comparator[E]) extend
 
 /**
  * StablePriorityBlockingQueue is a blocking priority queue that preserves order for elements of equal priority.
- * @param capacity - the initial capacity of this Queue, needs to be > 0.
+ * @param capacity - the initial capacity of this Queue, needs to be &gt; 0.
  * @param cmp - Comparator for comparing Queue elements
- * @tparam E - The type of the elements of this Queue
  */
 class StablePriorityBlockingQueue[E <: AnyRef](capacity: Int, cmp: Comparator[E]) extends PriorityQueueStabilizer[E] {
   val backingQueue = new PriorityBlockingQueue[PriorityQueueStabilizer.WrappedElement[E]](

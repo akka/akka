@@ -20,8 +20,8 @@ import akka.actor.Status
  * implementation will fabricate a (hidden) [[ActorRef]] that is bound to a
  * [[scala.concurrent.Promise]]. This ActorRef will need to be injected in the
  * message that is sent to the target Actor in order to function as a reply-to
- * address, therefore the argument to the [[AskPattern$.Askable ask
- * operator]] is not the message itself but a function that given the reply-to
+ * address, therefore the argument to the ask / `?`
+ * operator is not the message itself but a function that given the reply-to
  * address will create the message.
  *
  * {{{

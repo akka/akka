@@ -173,22 +173,22 @@ import ReliableProxy._
  * transition callbacks to those actors which subscribe using the
  * ``SubscribeTransitionCallBack`` and ``UnsubscribeTransitionCallBack``
  * messages; see [[akka.actor.FSM]] for more documentation. The proxy will
- * transition into [[ReliableProxy.Active]] state when ACKs
- * are outstanding and return to the [[ReliableProxy.Idle]]
+ * transition into `ReliableProxy.Active` state when ACKs
+ * are outstanding and return to the `ReliableProxy.Idle`
  * state when every message send so far has been confirmed by the peer end-point.
  *
- * The initial state of the proxy is [[ReliableProxy.Connecting]]. In this state the
+ * The initial state of the proxy is `ReliableProxy.Connecting`. In this state the
  * proxy will repeatedly send [[akka.actor.Identify]] messages to `ActorSelection(targetPath)`
  * in order to obtain a new `ActorRef` for the target. When an [[akka.actor.ActorIdentity]]
  * for the target is received a new tunnel will be created, a [[ReliableProxy.TargetChanged]]
  * message containing the target `ActorRef` will be sent to the proxy's transition subscribers
- * and the proxy will transition into either the [[ReliableProxy.Idle]] or [[ReliableProxy.Active]]
+ * and the proxy will transition into either the `ReliableProxy.Idle` or `ReliableProxy.Active`
  * state, depending if there are any outstanding messages that need to be delivered.  If
  * `maxConnectAttempts` is defined this actor will stop itself after `Identify` is sent
  * `maxConnectAttempts` times.
  *
  * While in the `Idle` or `Active` states, if a communication failure causes the tunnel to
- * terminate via Remote Deathwatch the proxy will transition into the [[ReliableProxy.Connecting]]
+ * terminate via Remote Deathwatch the proxy will transition into the `ReliableProxy.Connecting`
  * state as described above.  After reconnecting `TargetChanged` will be sent only if the target
  * `ActorRef` has changed.
  *

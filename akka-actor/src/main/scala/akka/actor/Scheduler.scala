@@ -187,7 +187,7 @@ trait Cancellable {
  * when scheduling single-shot tasks, instead it always rounds up the task
  * delay to a full multiple of the TickDuration. This means that tasks are
  * scheduled possibly one tick later than they could be (if checking that
- * “now() + delay <= nextTick” were done).
+ * “now() + delay &lt;= nextTick” were done).
  */
 class LightArrayRevolverScheduler(config: Config,
                                   log: LoggingAdapter,

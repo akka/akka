@@ -27,7 +27,7 @@ class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader
   /**
    * Creates the [[akka.actor.ActorSystem]], using the name specified.
    *
-   * A default name (`bundle-<bundle id>-ActorSystem`) is assigned when you pass along [[scala.None]] instead.
+   * A default name (`bundle-&lt;bundle id&gt;-ActorSystem`) is assigned when you pass along [[scala.None]] instead.
    */
   def createActorSystem(name: Option[String]): ActorSystem =
     ActorSystem(actorSystemName(name), actorSystemConfig(context), classloader)
@@ -43,7 +43,7 @@ class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader
 
   /**
    * Determine the name for the [[akka.actor.ActorSystem]]
-   * Returns a default value of `bundle-<bundle id>-ActorSystem` is no name is being specified
+   * Returns a default value of `bundle-&lt;bundle id&gt;-ActorSystem` is no name is being specified
    */
   def actorSystemName(name: Option[String]): String =
     name.getOrElse("bundle-%s-ActorSystem".format(context.getBundle.getBundleId))

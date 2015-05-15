@@ -139,7 +139,6 @@ object JavaSerializer {
      *
      * @param value - the current value under the call to callable.call()
      * @param callable - the operation to be performed
-     * @tparam S - the return type
      * @return the result of callable.call()
      */
     def withValue[S](value: ExtendedActorSystem, callable: Callable[S]): S = super.withValue[S](value)(callable.call)

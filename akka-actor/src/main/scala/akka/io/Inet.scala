@@ -78,7 +78,7 @@ object Inet {
     /**
      * Open and return new DatagramChannel.
      *
-     * [[scala.throws]] is needed because [[DatagramChannel.open]] method
+     * `throws` is needed because `DatagramChannel.open` method
      * can throw an exception.
      */
     @throws(classOf[Exception])
@@ -95,7 +95,7 @@ object Inet {
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_RCVBUF option
      *
-     * For more information see [[java.net.Socket.setReceiveBufferSize]]
+     * For more information see [[java.net.Socket#setReceiveBufferSize]]
      */
     final case class ReceiveBufferSize(size: Int) extends SocketOption {
       require(size > 0, "ReceiveBufferSize must be > 0")
@@ -109,7 +109,7 @@ object Inet {
     /**
      * [[akka.io.Inet.SocketOption]] to enable or disable SO_REUSEADDR
      *
-     * For more information see [[java.net.Socket.setReuseAddress]]
+     * For more information see [[java.net.Socket#setReuseAddress]]
      */
     final case class ReuseAddress(on: Boolean) extends SocketOption {
       override def beforeServerSocketBind(s: ServerSocket): Unit = s.setReuseAddress(on)
@@ -120,7 +120,7 @@ object Inet {
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_SNDBUF option.
      *
-     * For more information see [[java.net.Socket.setSendBufferSize]]
+     * For more information see [[java.net.Socket#setSendBufferSize]]
      */
     final case class SendBufferSize(size: Int) extends SocketOption {
       require(size > 0, "SendBufferSize must be > 0")
@@ -132,7 +132,7 @@ object Inet {
      * type-of-service octet in the IP header for packets sent from this
      * socket.
      *
-     * For more information see [[java.net.Socket.setTrafficClass]]
+     * For more information see [[java.net.Socket#setTrafficClass]]
      */
     final case class TrafficClass(tc: Int) extends SocketOption {
       require(0 <= tc && tc <= 255, "TrafficClass needs to be in the interval [0, 255]")
@@ -145,21 +145,21 @@ object Inet {
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_RCVBUF option
      *
-     * For more information see [[java.net.Socket.setReceiveBufferSize]]
+     * For more information see [[java.net.Socket#setReceiveBufferSize]]
      */
     val ReceiveBufferSize = SO.ReceiveBufferSize
 
     /**
      * [[akka.io.Inet.SocketOption]] to enable or disable SO_REUSEADDR
      *
-     * For more information see [[java.net.Socket.setReuseAddress]]
+     * For more information see [[java.net.Socket#setReuseAddress]]
      */
     val ReuseAddress = SO.ReuseAddress
 
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_SNDBUF option.
      *
-     * For more information see [[java.net.Socket.setSendBufferSize]]
+     * For more information see [[java.net.Socket#setSendBufferSize]]
      */
     val SendBufferSize = SO.SendBufferSize
 
@@ -168,7 +168,7 @@ object Inet {
      * type-of-service octet in the IP header for packets sent from this
      * socket.
      *
-     * For more information see [[java.net.Socket.setTrafficClass]]
+     * For more information see [[java.net.Socket#setTrafficClass]]
      */
     val TrafficClass = SO.TrafficClass
   }
@@ -178,21 +178,21 @@ object Inet {
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_RCVBUF option
      *
-     * For more information see [[java.net.Socket.setReceiveBufferSize]]
+     * For more information see [[java.net.Socket#setReceiveBufferSize]]
      */
     def receiveBufferSize(size: Int) = ReceiveBufferSize(size)
 
     /**
      * [[akka.io.Inet.SocketOption]] to enable or disable SO_REUSEADDR
      *
-     * For more information see [[java.net.Socket.setReuseAddress]]
+     * For more information see [[java.net.Socket#setReuseAddress]]
      */
     def reuseAddress(on: Boolean) = ReuseAddress(on)
 
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_SNDBUF option.
      *
-     * For more information see [[java.net.Socket.setSendBufferSize]]
+     * For more information see [[java.net.Socket#setSendBufferSize]]
      */
     def sendBufferSize(size: Int) = SendBufferSize(size)
 
@@ -201,7 +201,7 @@ object Inet {
      * type-of-service octet in the IP header for packets sent from this
      * socket.
      *
-     * For more information see [[java.net.Socket.setTrafficClass]]
+     * For more information see [[java.net.Socket#setTrafficClass]]
      */
     def trafficClass(tc: Int) = TrafficClass(tc)
   }

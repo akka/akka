@@ -80,9 +80,6 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
    */
   final val AutoAck: Boolean = config.getBoolean("akka.camel.consumer.auto-ack")
 
-  /**
-   *
-   */
   final val JmxStatistics: Boolean = config.getBoolean("akka.camel.jmx")
 
   /**
@@ -127,7 +124,6 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
  *
  * @see akka.actor.ExtensionId
  * @see akka.actor.ExtensionIdProvider
- *
  */
 object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider {
 

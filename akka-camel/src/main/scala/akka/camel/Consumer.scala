@@ -14,8 +14,6 @@ import scala.language.existentials
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
- *
- *
  */
 trait Consumer extends Actor with CamelSupport {
   import Consumer._

@@ -101,10 +101,10 @@ object ScalaDSL {
   def Ignore[T]: Behavior[T] = ignoreBehavior.asInstanceOf[Behavior[T]]
 
   /**
-   * Algebraic Data Type modeling either a [[ScalaDSL$.Msg message]] or a
-   * [[ScalaDSL$.Sig signal]], including the [[ActorContext]]. This type is
+   * Algebraic Data Type modeling either a [[Msg message]] or a
+   * [[Sig signal]], including the [[ActorContext]]. This type is
    * used by several of the behaviors defined in this DSL, see for example
-   * [[ScalaDSL$.Full]].
+   * [[Full]].
    */
   sealed trait MessageOrSignal[T]
   /**
@@ -185,7 +185,7 @@ object ScalaDSL {
   /**
    * This type of Behavior is created from a partial function from the declared
    * message type to the next behavior, flagging all unmatched messages as
-   * [[ScalaDSL$.Unhandled]]. All system signals are
+   * [[Unhandled]]. All system signals are
    * ignored by this behavior, which implies that a failure of a child actor
    * will be escalated unconditionally.
    *
@@ -226,7 +226,7 @@ object ScalaDSL {
   }
 
   /**
-   * This type of behavior is a variant of [[ScalaDSL$.Total]] that does not
+   * This type of behavior is a variant of [[Total]] that does not
    * allow the actor to change behavior. It is an efficient choice for stateless
    * actors, possibly entering such a behavior after finishing its
    * initialization (which may be modeled using any of the other behavior types).
@@ -250,7 +250,7 @@ object ScalaDSL {
    * messages that were sent to the synchronous self reference will be lost.
    *
    * This decorator is useful for passing messages between the left and right
-   * sides of [[ScalaDSL$.And]] and [[ScalaDSL$.Or]] combinators.
+   * sides of [[And]] and [[Or]] combinators.
    */
   final case class SynchronousSelf[T](f: ActorRef[T] ⇒ Behavior[T]) extends Behavior[T] {
     private val inbox = Inbox.sync[T]("syncbox")
@@ -324,7 +324,7 @@ object ScalaDSL {
    * A behavior combinator that feeds incoming messages and signals either into
    * the left or right sub-behavior and allows them to evolve independently of
    * each other. The message or signal is passed first into the left sub-behavior
-   * and only if that results in [[ScalaDSL$.Unhandled]] is it passed to the right
+   * and only if that results in [[Unhandled]] is it passed to the right
    * sub-behavior. When one of the sub-behaviors terminates the other takes over
    * exclusively. When both sub-behaviors respond to a [[Failed]] signal, the
    * response with the higher precedence is chosen (see [[Failed$]]).

@@ -87,19 +87,19 @@ private[cluster] object InternalClusterAction {
   case object JoinSeedNode
 
   /**
-   * @see JoinSeedNode
+   * see JoinSeedNode
    */
   @SerialVersionUID(1L)
   case object InitJoin extends ClusterMessage
 
   /**
-   * @see JoinSeedNode
+   * see JoinSeedNode
    */
   @SerialVersionUID(1L)
   final case class InitJoinAck(address: Address) extends ClusterMessage
 
   /**
-   * @see JoinSeedNode
+   * see JoinSeedNode
    */
   @SerialVersionUID(1L)
   final case class InitJoinNack(address: Address) extends ClusterMessage

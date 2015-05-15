@@ -109,7 +109,7 @@ abstract class AbstractLoggingActor extends AbstractActor with ActorLogging
  * }
  * </pre>
  * Note that the subclasses of `AbstractActorWithStash` by default request a Deque based mailbox since this class
- * implements the `RequiresMessageQueue<DequeBasedMessageQueueSemantics>` marker interface.
+ * implements the `RequiresMessageQueue&lt;DequeBasedMessageQueueSemantics&gt;` marker interface.
  * You can override the default mailbox provided when `DequeBasedMessageQueueSemantics` are requested via config:
  * <pre>
  *   akka.actor.mailbox.requirements {

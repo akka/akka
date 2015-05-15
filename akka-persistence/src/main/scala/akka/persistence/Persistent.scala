@@ -35,9 +35,9 @@ private[persistence] final case class NonPersistentRepr(payload: Any, sender: Ac
 /**
  * Plugin API: representation of a persistent message in the journal plugin API.
  *
- * @see [[journal.SyncWriteJournal]]
- * @see [[journal.AsyncWriteJournal]]
- * @see [[journal.AsyncRecovery]]
+ * @see [[akka.persistence.journal.SyncWriteJournal]]
+ * @see [[akka.persistence.journal.AsyncWriteJournal]]
+ * @see [[akka.persistence.journal.AsyncRecovery]]
  */
 trait PersistentRepr extends PersistentEnvelope with Message {
   import scala.collection.JavaConverters._

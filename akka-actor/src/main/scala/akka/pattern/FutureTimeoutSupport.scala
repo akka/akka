@@ -1,8 +1,7 @@
-package akka.pattern
-
 /**
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
+package akka.pattern
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ ExecutionContext, Promise, Future }

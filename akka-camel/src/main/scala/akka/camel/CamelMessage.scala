@@ -49,7 +49,6 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * in a [[scala.util.Success]]. If an exception occurs during the conversion to the type <code>T</code> or when the header cannot be found,
    * the exception is returned in a [[scala.util.Failure]].
    *
-   * <p>
    * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
    * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    *
@@ -60,7 +59,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
   /**
    * Java API: Returns the header by given <code>name</code> parameter. The header is  converted to type <code>T</code> as defined by the <code>clazz</code> parameter.
    * An exception is thrown when the conversion to the type <code>T</code> fails or when the header cannot be found.
-   * <p>
+   *
    * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
    * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    */
@@ -133,7 +132,6 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
 
 /**
  * Companion object of CamelMessage class.
- *
  */
 object CamelMessage {
 
@@ -176,7 +174,6 @@ object CamelMessage {
 /**
  * Positive acknowledgement message (used for application-acknowledged message receipts).
  * When `autoAck` is set to false in the [[akka.camel.Consumer]], you can send an `Ack` to the sender of the CamelMessage.
- *
  */
 case object Ack {
   /** Java API to get the Ack singleton */

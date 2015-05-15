@@ -34,7 +34,7 @@ abstract class Behavior[T] {
    *  * returning `Same` designates to reuse the current Behavior
    *  * returning `Unhandled` keeps the same Behavior and signals that the message was not yet handled
    *
-   * Code calling this method should use [[Behavior$.canonicalize]] to replace
+   * Code calling this method should use [[Behavior$]] `canonicalize` to replace
    * the special objects with real Behaviors.
    */
   def management(ctx: ActorContext[T], msg: Signal): Behavior[T]
@@ -49,7 +49,7 @@ abstract class Behavior[T] {
    *  * returning `Same` designates to reuse the current Behavior
    *  * returning `Unhandled` keeps the same Behavior and signals that the message was not yet handled
    *
-   * Code calling this method should use [[Behavior$.canonicalize]] to replace
+   * Code calling this method should use [[Behavior$]] `canonicalize` to replace
    * the special objects with real Behaviors.
    */
   def message(ctx: ActorContext[T], msg: T): Behavior[T]
@@ -103,7 +103,7 @@ final case class PostRestart(failure: Throwable) extends Signal
  * registered watchers after this signal has been processed.
  *
  * <b>IMPORTANT NOTE:</b> if the actor terminated by switching to the
- * [[ScalaDSL$.Stopped]] behavior then this signal will be ignored (i.e. the
+ * `Stopped` behavior then this signal will be ignored (i.e. the
  * Stopped behvavior will do nothing in reaction to it).
  */
 @SerialVersionUID(1L)
@@ -136,7 +136,7 @@ final case object ReceiveTimeout extends Signal
 /**
  * Lifecycle signal that is fired when an Actor that was watched has terminated.
  * Watching is performed by invoking the
- * [[akka.typed.ActorContext!.watch[U]* watch]] method. The DeathWatch service is
+ * [[akka.typed.ActorContext]] `watch` method. The DeathWatch service is
  * idempotent, meaning that registering twice has the same effect as registering
  * once. Registration does not need to happen before the Actor terminates, a
  * notification is guaranteed to arrive after both registration and termination
@@ -267,7 +267,7 @@ object Behavior {
 
   /**
    * Given a possibly special behavior (same or unhandled) and a
-   * “current” behavior (which defines the meaning of encountering a [[ScalaDSL$.Same]]
+   * “current” behavior (which defines the meaning of encountering a `Same`
    * behavior) this method unwraps the behavior such that the innermost behavior
    * is returned, i.e. it removes the decorations.
    */

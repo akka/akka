@@ -115,8 +115,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   /**
    * Returns the Serializer configured for the given object, returns the NullSerializer if it's null.
    *
-   * @throws akka.ConfigurationException if no `serialization-bindings` is configured for the
-   *   class of the object
+   * Throws akka.ConfigurationException if no `serialization-bindings` is configured for the
+   *   class of the object.
    */
   def findSerializerFor(o: AnyRef): Serializer = o match {
     case null  ⇒ NullSerializer
@@ -130,7 +130,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * ambiguity it is primarily using the most specific configured class,
    * and secondly the entry configured first.
    *
-   * @throws java.io.NotSerializableException if no `serialization-bindings` is configured for the class
+   * Throws java.io.NotSerializableException if no `serialization-bindings` is configured for the class.
    */
   def serializerFor(clazz: Class[_]): Serializer =
     serializerMap.get(clazz) match {
