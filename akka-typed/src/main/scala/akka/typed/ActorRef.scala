@@ -13,7 +13,7 @@ import language.implicitConversions
  * Actor instance. Sending a message to an Actor that has terminated before
  * receiving the message will lead to that message being discarded; such
  * messages are delivered to the [[akka.actor.DeadLetter]] channel of the
- * [[akka.actor.ActorSystem!.eventStream EventStream]] on a best effort basis
+ * [[akka.event.EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
 abstract class ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] { this: ScalaActorRef[T] ⇒

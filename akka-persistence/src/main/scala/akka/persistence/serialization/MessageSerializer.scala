@@ -21,7 +21,7 @@ import scala.collection.immutable.VectorBuilder
 trait Message extends Serializable
 
 /**
- * Protobuf serializer for [[PersistentRepr]] and [[AtLeastOnceDelivery]] messages.
+ * Protobuf serializer for [[akka.persistence.PersistentRepr]] and [[akka.persistence.AtLeastOnceDelivery]] messages.
  */
 class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import PersistentRepr.Undefined

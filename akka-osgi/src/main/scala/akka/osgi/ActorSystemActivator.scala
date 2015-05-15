@@ -103,7 +103,7 @@ abstract class ActorSystemActivator extends BundleActivator {
   }
 
   /**
-   * By default, the [[akka.actor.ActorSystem]] name will be set to `bundle-<bundle id>-ActorSystem`.  Override this
+   * By default, the [[akka.actor.ActorSystem]] name will be set to `bundle-&lt;bundle id&gt;-ActorSystem`.  Override this
    * method to define another name for your [[akka.actor.ActorSystem]] instance.
    *
    * @param context the bundle context

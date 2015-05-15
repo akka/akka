@@ -65,7 +65,7 @@ private[akka] object RemoteWatcher {
  * intercepts Watch and Unwatch system messages and sends corresponding
  * [[RemoteWatcher.WatchRemote]] and [[RemoteWatcher.UnwatchRemote]] to this actor.
  *
- * For a new node to be watched this actor periodically sends [[RemoteWatcher.Heartbeat]]
+ * For a new node to be watched this actor periodically sends `RemoteWatcher.Heartbeat`
  * to the peer actor on the other node, which replies with [[RemoteWatcher.HeartbeatRsp]]
  * message back. The failure detector on the watching side monitors these heartbeat messages.
  * If arrival of hearbeat messages stops it will be detected and this actor will publish

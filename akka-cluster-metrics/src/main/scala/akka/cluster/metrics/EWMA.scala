@@ -33,7 +33,7 @@ final case class EWMA(value: Double, alpha: Double) {
    * Calculates the exponentially weighted moving average for a given monitored data set.
    *
    * @param xn the new data point
-   * @return a new [[akka.cluster.EWMA]] with the updated value
+   * @return a new EWMA with the updated value
    */
   def :+(xn: Double): EWMA = {
     val newValue = (alpha * xn) + (1 - alpha) * value

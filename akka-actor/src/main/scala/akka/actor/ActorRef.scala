@@ -118,7 +118,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * Sends the specified message to this ActorRef, i.e. fire-and-forget
    * semantics, including the sender reference if possible.
    *
-   * Pass [[akka.actor.ActorRef$.noSender]] or `null` as sender if there is nobody to reply to
+   * Pass [[akka.actor.ActorRef]] `noSender` or `null` as sender if there is nobody to reply to
    */
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
 
@@ -157,7 +157,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
 /**
  * This trait represents the Scala Actor API
  * There are implicit conversions in ../actor/Implicits.scala
- * from ActorRef -> ScalaActorRef and back
+ * from ActorRef -&gt; ScalaActorRef and back
  */
 trait ScalaActorRef { ref: ActorRef ⇒
 

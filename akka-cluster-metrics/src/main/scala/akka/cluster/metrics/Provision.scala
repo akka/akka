@@ -15,14 +15,14 @@ import scala.util.Failure
 import scala.util.Try
 
 /**
- * Provide sigar instance as [[SigarProxy]].
+ * Provide sigar instance as `SigarProxy`.
  *
  * User can provision sigar classes and native library in one of the following ways:
  *
- * 1) Use [[https://github.com/kamon-io/sigar-loader Kamon sigar-loader]] as a project dependency for the user project.
+ * 1) Use <a href="https://github.com/kamon-io/sigar-loader">Kamon sigar-loader</a> as a project dependency for the user project.
  * Metrics extension will extract and load sigar library on demand with help of Kamon sigar provisioner.
  *
- * 2) Use [[https://github.com/kamon-io/sigar-loader Kamon sigar-loader]] as java agent: `java -javaagent:/path/to/sigar-loader.jar`
+ * 2) Use <a href="https://github.com/kamon-io/sigar-loader">Kamon sigar-loader</a> as java agent: `java -javaagent:/path/to/sigar-loader.jar`
  * Kamon sigar loader agent will extract and load sigar library during JVM start.
  *
  * 3) Place `sigar.jar` on the `classpath` and sigar native library for the o/s on the `java.library.path`
@@ -79,7 +79,7 @@ object SigarProvider {
   /**
    * Release underlying sigar proxy resources.
    *
-   * Note: [[SigarProxy]] is not [[Sigar]] during tests.
+   * Note: `SigarProxy` is not `Sigar` during tests.
    */
   def close(sigar: SigarProxy) = {
     if (sigar.isInstanceOf[Sigar]) sigar.asInstanceOf[Sigar].close()
@@ -87,7 +87,7 @@ object SigarProvider {
 }
 
 /**
- * Provide sigar instance as [[SigarProxy]] with configured location via [[ClusterMetricsSettings]].
+ * Provide sigar instance as `SigarProxy` with configured location via [[ClusterMetricsSettings]].
  */
 case class DefaultSigarProvider(settings: ClusterMetricsSettings) extends SigarProvider {
   def extractFolder = settings.NativeLibraryExtractFolder

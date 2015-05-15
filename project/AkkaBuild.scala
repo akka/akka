@@ -317,7 +317,7 @@ object AkkaBuild extends Build {
     // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
     javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
     javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-Xdoclint:none"),
+    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.8"),
     incOptions := incOptions.value.withNameHashing(true),
 
     crossVersion := CrossVersion.binary,

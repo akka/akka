@@ -11,8 +11,6 @@ import org.apache.camel.impl.DefaultCamelContext
 
 /**
  * Subclass this abstract class to create an untyped producer actor. This class is meant to be used from Java.
- *
- *
  */
 abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
   /**

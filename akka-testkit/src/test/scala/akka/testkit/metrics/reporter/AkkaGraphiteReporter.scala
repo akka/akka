@@ -12,7 +12,7 @@ import akka.testkit.metrics._
 import scala.concurrent.duration._
 
 /**
- * Used to report [[Metric]] types that the original [[com.codahale.metrics.graphite.GraphiteReporter]] is unaware of (cannot re-use directly because of private constructor).
+ * Used to report `com.codahale.metrics.Metric` types that the original `com.codahale.metrics.graphite.GraphiteReporter` is unaware of (cannot re-use directly because of private constructor).
  */
 class AkkaGraphiteReporter(
   registry: AkkaMetricRegistry,

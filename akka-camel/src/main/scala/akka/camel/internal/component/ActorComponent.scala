@@ -30,8 +30,6 @@ import scala.util.{ Failure, Success, Try }
  * `ActorComponent` to the [[org.apache.camel.CamelContext]] under the 'actor' component name.
  * Messages are sent to [[akka.camel.Consumer]] actors through a [[akka.camel.internal.component.ActorEndpoint]] that
  * this component provides.
- *
- *
  */
 private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends DefaultComponent {
   /**
@@ -51,8 +49,6 @@ private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends D
  * Actors are referenced using actor endpoint URIs of the following format:
  * <code>[actorPath]?[options]%s</code>,
  * where <code>[actorPath]</code> refers to the actor path to the actor.
- *
- *
  */
 private[camel] class ActorEndpoint(uri: String,
                                    comp: ActorComponent,
@@ -87,7 +83,6 @@ private[camel] class ActorEndpoint(uri: String,
 /**
  * INTERNAL API
  * Configures the `ActorEndpoint`. This needs to be a `bean` for Camel purposes.
- *
  */
 private[camel] trait ActorEndpointConfig {
   def path: ActorEndpointPath
@@ -99,12 +94,10 @@ private[camel] trait ActorEndpointConfig {
 }
 
 /**
- * Sends the in-message of an exchange to an untyped actor, identified by an [[akka.camel.internal.component.ActorEndPoint]]
+ * Sends the in-message of an exchange to an untyped actor, identified by an [[akka.camel.internal.component.ActorEndpoint]]
  *
- * @see akka.camel.component.ActorComponent
- * @see akka.camel.component.ActorEndpoint
- *
- *
+ * @see akka.camel.internal.component.ActorComponent
+ * @see akka.camel.internal.component.ActorEndpoint
  */
 private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) extends DefaultProducer(endpoint) with AsyncProcessor {
   /**

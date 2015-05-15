@@ -18,7 +18,7 @@ import akka.util.TypedMultiMap
 object Receptionist {
 
   /**
-   * Internal representation of [[Receptionist$.ServiceKey]] which is needed
+   * Internal representation of [[Receptionist.ServiceKey]] which is needed
    * in order to use a TypedMultiMap (using keys with a type parameter does not
    * work in Scala 2.x).
    */
@@ -41,7 +41,7 @@ object Receptionist {
    */
   sealed trait Command
   /**
-   * Associate the given [[ActorRef]] with the given [[ServiceKey]]. Multiple
+   * Associate the given [[akka.typed.ActorRef]] with the given [[ServiceKey]]. Multiple
    * registrations can be made for the same key. Unregistration is implied by
    * the end of the referenced Actor’s lifecycle.
    */
@@ -53,7 +53,7 @@ object Receptionist {
   final case class Find[T](key: ServiceKey[T])(val replyTo: ActorRef[Listing[T]]) extends Command
 
   /**
-   * Confirmtion that the given [[ActorRef]] has been associated with the [[ServiceKey]].
+   * Confirmtion that the given [[akka.typed.ActorRef]] has been associated with the [[ServiceKey]].
    */
   final case class Registered[T](key: ServiceKey[T], address: ActorRef[T])
   /**
@@ -85,3 +85,5 @@ object Receptionist {
       behavior(map valueRemoved ref)
   }
 }
+
+abstract class Receptionist

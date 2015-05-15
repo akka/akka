@@ -54,7 +54,7 @@ trait ProducerSupport extends Actor with CamelSupport {
    * actually sent it is pre-processed by calling <code>transformOutgoingMessage</code>. If <code>oneway</code>
    * is <code>true</code>, an in-only message exchange is initiated, otherwise an in-out message exchange.
    *
-   * @see Producer#produce(Any, ExchangePattern)
+   * @see Producer#produce
    */
   protected def produce: Receive = {
     case CamelProducerObjects(endpoint, processor) ⇒
@@ -119,7 +119,7 @@ trait ProducerSupport extends Actor with CamelSupport {
      * response is received asynchronously, the <code>receiveAfterProduce</code> is called
      * asynchronously. The original sender is preserved.
      *
-     * @see CamelMessage#canonicalize(Any)
+     * @see CamelMessage#canonicalize
      * @param endpoint the endpoint
      * @param processor the processor
      * @param msg message to produce

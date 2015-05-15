@@ -60,7 +60,7 @@ final case class Deploy(
   /**
    * Do a merge between this and the other Deploy, where values from “this” take
    * precedence. The “path” of the other Deploy is not taken into account. All
-   * other members are merged using ``<X>.withFallback(other.<X>)``.
+   * other members are merged using `X.withFallback(other.X)`.
    */
   def withFallback(other: Deploy): Deploy = {
     Deploy(

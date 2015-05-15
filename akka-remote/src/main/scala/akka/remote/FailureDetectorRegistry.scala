@@ -13,8 +13,8 @@ import akka.ConfigurationException
  * Interface for a registry of Akka failure detectors. New resources are implicitly registered when heartbeat is first
  * called with the resource given as parameter.
  *
- * @tparam A
- *   The type of the key that identifies a resource to be monitored by a failure detector
+ * type parameter A:
+ *  - The type of the key that identifies a resource to be monitored by a failure detector
  */
 trait FailureDetectorRegistry[A] {
 
@@ -56,7 +56,7 @@ private[akka] object FailureDetectorLoader {
 
   /**
    * Loads and instantiates a given [[FailureDetector]] implementation. The class to be loaded must have a constructor
-   * that accepts a [[com.typesafe.config.Config]] and an [[EventStream]] parameter. Will throw ConfigurationException
+   * that accepts a [[com.typesafe.config.Config]] and an [[akka.event.EventStream]] parameter. Will throw ConfigurationException
    * if the implementation cannot be loaded.
    *
    * @param fqcn Fully qualified class name of the implementation to be loaded.
@@ -76,8 +76,8 @@ private[akka] object FailureDetectorLoader {
 
   /**
    * Loads and instantiates a given [[FailureDetector]] implementation. The class to be loaded must have a constructor
-   * that accepts a [[com.typesafe.config.Config]] and an [[EventStream]] parameter. Will throw ConfigurationException
-   * if the implementation cannot be loaded. Use [[FailureDetectorLoader#load]] if no implicit [[ActorContext]] is
+   * that accepts a [[com.typesafe.config.Config]] and an [[akka.event.EventStream]] parameter. Will throw ConfigurationException
+   * if the implementation cannot be loaded. Use [[FailureDetectorLoader#load]] if no implicit [[akka.actor.ActorContext]] is
    * available.
    *
    * @param fqcn Fully qualified class name of the implementation to be loaded.

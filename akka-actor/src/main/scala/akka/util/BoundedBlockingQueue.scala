@@ -11,9 +11,8 @@ import annotation.tailrec
 
 /**
  * BoundedBlockingQueue wraps any Queue and turns the result into a BlockingQueue with a limited capacity.
- * @param maxCapacity - the maximum capacity of this Queue, needs to be > 0
+ * @param maxCapacity - the maximum capacity of this Queue, needs to be &gt; 0
  * @param backing - the backing Queue
- * @tparam E - The type of the contents of this Queue
  */
 class BoundedBlockingQueue[E <: AnyRef](
   val maxCapacity: Int, private val backing: Queue[E]) extends AbstractQueue[E] with BlockingQueue[E] {

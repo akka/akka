@@ -358,9 +358,9 @@ private[akka] object SystemGuardian {
   /**
    * For the purpose of orderly shutdown it's possible
    * to register interest in the termination of systemGuardian
-   * and receive a notification [[akka.actor.Guardian.TerminationHook]]
+   * and receive a notification `TerminationHook`
    * before systemGuardian is stopped. The registered hook is supposed
-   * to reply with [[akka.actor.Guardian.TerminationHookDone]] and the
+   * to reply with `TerminationHookDone` and the
    * systemGuardian will not stop until all registered hooks have replied.
    */
   case object RegisterTerminationHook

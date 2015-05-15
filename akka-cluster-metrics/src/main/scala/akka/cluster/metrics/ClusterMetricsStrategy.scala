@@ -10,7 +10,7 @@ import akka.util.Helpers.ConfigOps
 
 /**
  * Default [[ClusterMetricsSupervisor]] strategy:
- * A configurable [[OneForOneStrategy]] with restart-on-throwable decider.
+ * A configurable [[akka.actor.OneForOneStrategy]] with restart-on-throwable decider.
  */
 class ClusterMetricsStrategy(config: Config) extends OneForOneStrategy(
   maxNrOfRetries = config.getInt("maxNrOfRetries"),
@@ -25,7 +25,7 @@ object ClusterMetricsStrategy {
   import akka.actor.SupervisorStrategy._
 
   /**
-   * [[SupervisorStrategy.Decider]] which allows to survive intermittent Sigar native method calls failures.
+   * [[akka.actor.SupervisorStrategy]] `Decider` which allows to survive intermittent Sigar native method calls failures.
    */
   val metricsDecider: SupervisorStrategy.Decider = {
     case _: ActorInitializationException ⇒ Stop

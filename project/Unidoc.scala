@@ -2,7 +2,7 @@ package akka
 
 import sbt._
 import sbtunidoc.Plugin.UnidocKeys._
-import sbtunidoc.Plugin.{ ScalaUnidoc, JavaUnidoc, scalaJavaUnidocSettings, genjavadocSettings, scalaUnidocSettings }
+import sbtunidoc.Plugin.{ ScalaUnidoc, JavaUnidoc, scalaJavaUnidocSettings, genjavadocExtraSettings, scalaUnidocSettings }
 import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
@@ -22,7 +22,10 @@ object Unidoc {
 
   val genjavadocEnabled = sys.props.get("akka.genjavadoc.enabled").getOrElse("false").toBoolean
   val (unidocSettings, javadocSettings) =
-    if (genjavadocEnabled) (scalaJavaUnidocSettings, genjavadocSettings ++ Seq(unidocGenjavadocVersion in Global := "0.8"))
+    if (genjavadocEnabled)
+      (scalaJavaUnidocSettings, genjavadocExtraSettings ++ Seq(
+        scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
+        unidocGenjavadocVersion in Global := "0.9-SNAPSHOT"))
     else (scalaUnidocSettings, Nil)
 
   lazy val scaladocDiagramsEnabled = sys.props.get("akka.scaladoc.diagrams").getOrElse("true").toBoolean
