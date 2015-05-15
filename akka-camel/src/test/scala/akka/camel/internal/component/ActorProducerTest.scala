@@ -128,7 +128,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpecLike w
 
           "timeout after replyTimeout" taggedAs TimingTest in {
             val duration = process()
-            duration should (be >= (100 millis) and be < (300 millis))
+            duration should (be >= (100 millis) and be < (2000 millis))
           }
 
           "never set the response on exchange" in {
