@@ -27,6 +27,14 @@ object LoggerSpec {
       }
     """).withFallback(AkkaSpec.testConf)
 
+  val slowConfig = ConfigFactory.parseString("""
+      akka {
+        stdout-loglevel = "ERROR"
+        loglevel = "ERROR"
+        loggers = ["akka.event.LoggerSpec$SlowLogger"]
+      }
+    """).withFallback(AkkaSpec.testConf)
+
   val noLoggingConfig = ConfigFactory.parseString("""
       akka {
         stdout-loglevel = "OFF"
@@ -91,6 +99,19 @@ object LoggerSpec {
     }
   }
 
+  class SlowLogger extends Logging.DefaultLogger {
+    override def aroundReceive(r: Receive, msg: Any): Unit = {
+      msg match {
+        case event: LogEvent ⇒
+          if (event.message.toString.startsWith("msg1"))
+            Thread.sleep(500) // slow
+          super.aroundReceive(r, msg)
+        case _ ⇒ super.aroundReceive(r, msg)
+      }
+
+    }
+  }
+
   class ActorWithMDC extends Actor with DiagnosticActorLogging {
     var reqId = 0
 
@@ -148,6 +169,25 @@ class LoggerSpec extends WordSpec with Matchers {
       val out = createSystemAndLogToBuffer("defaultLogger", defaultConfig, true)
       out.size should be > (0)
     }
+
+    "drain logger queue on system shutdown" in {
+      val out = new java.io.ByteArrayOutputStream()
+      Console.withOut(out) {
+        val sys = ActorSystem("defaultLogger", slowConfig)
+        sys.log.error("msg1")
+        sys.log.error("msg2")
+        sys.log.error("msg3")
+        TestKit.shutdownActorSystem(sys, verifySystemShutdown = true)
+        out.flush()
+        out.close()
+      }
+
+      val logMessages = new String(out.toByteArray).split("\n")
+      logMessages.head should include("msg1")
+      logMessages.last should include("msg3")
+      logMessages.size should ===(3)
+    }
+
   }
 
   "An actor system configured with the logging turned off" must {
