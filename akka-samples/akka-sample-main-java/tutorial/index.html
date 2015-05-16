@@ -24,7 +24,7 @@ the application will shut down—more on that later. The main business logic
 happens in the <code>preStart</code> method, where a <code>Greeter</code> actor is created
 and instructed to issue that greeting we crave for. When the greeter is done it
 will tell us so by sending back a message, and when that message has been
-received it will be passed into the behavior described by the <code>receive</code>
+received it will be passed into the behavior described by the <code>onReceive</code>
 method where we can conclude the demonstration by stopping the <code>HelloWorld</code>
 actor. 
 </p>
