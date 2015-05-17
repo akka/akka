@@ -7,6 +7,7 @@ package akka.http.scaladsl.model.ws
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
+//#message-model
 /**
  * The ADT for Websocket messages. A message can either be a binary or a text message.
  */
@@ -21,6 +22,7 @@ trait TextMessage extends Message {
    */
   def textStream: Source[String, _]
 }
+//#message-model
 object TextMessage {
   def apply(text: String): Strict = Strict(text)
   def apply(textStream: Source[String, Any]): TextMessage =
@@ -35,12 +37,14 @@ object TextMessage {
   }
   final private case class Streamed(textStream: Source[String, _]) extends TextMessage
 }
+//#message-model
 trait BinaryMessage extends Message {
   /**
    * The contents of this message as a stream.
    */
   def dataStream: Source[ByteString, _]
 }
+//#message-model
 object BinaryMessage {
   def apply(data: ByteString): Strict = Strict(data)
   def apply(dataStream: Source[ByteString, Any]): BinaryMessage =
