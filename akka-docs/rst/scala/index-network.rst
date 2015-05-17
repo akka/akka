@@ -11,6 +11,7 @@ Networking
    cluster-client
    cluster-sharding
    cluster-metrics
+   distributed-data
    remoting
    serialization
    io

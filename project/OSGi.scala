@@ -34,6 +34,8 @@ object OSGi {
   val clusterSharding = exports(Seq("akka.cluster.sharding.*"), imports = Seq(protobufImport()))    
 
   val clusterMetrics = exports(Seq("akka.cluster.metrics.*"), imports = Seq(protobufImport(),kamonImport(),sigarImport()))
+  
+  val distributedData = exports(Seq("akka.cluster.ddata.*"), imports = Seq(protobufImport()))
 
   val contrib = exports(Seq("akka.contrib.*"))
 
