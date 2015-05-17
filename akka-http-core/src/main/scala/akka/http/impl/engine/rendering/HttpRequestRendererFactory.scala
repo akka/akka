@@ -8,7 +8,6 @@ import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
-import akka.stream.OperationAttributes._
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.http.scaladsl.model._
@@ -16,14 +15,29 @@ import akka.http.impl.util._
 import RenderSupport._
 import headers._
 
+import scala.util.control.NonFatal
+
 /**
  * INTERNAL API
  */
 private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`User-Agent`],
                                                requestHeaderSizeHint: Int,
                                                log: LoggingAdapter) {
-
   def newRenderer: HttpRequestRenderer = new HttpRequestRenderer
+
+  /**
+   * Retrieve the original host string that was given (IP or DNS name) if running Java 7 or later
+   * using the getHostString() method. This avoids a reverse DNS query from calling getHostName()
+   * if the original host string is an IP address.
+   */
+  private[http] val hostString: InetSocketAddress ⇒ String =
+    try {
+      val m = classOf[InetSocketAddress].getDeclaredMethod("getHostString")
+      require(m.getReturnType == classOf[String])
+      address ⇒ m.invoke(address).asInstanceOf[String]
+    } catch {
+      case NonFatal(_) ⇒ _.getHostName
+    }
 
   final class HttpRequestRenderer extends PushStage[RequestRenderingContext, Source[ByteString, Any]] {
 
@@ -43,16 +57,6 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
       }
 
       def render(h: HttpHeader) = r ~~ h ~~ CrLf
-
-      val hostString: InetSocketAddress ⇒ String = {
-        // Retrieve the original host string that was given (IP or DNS name) if running Java 7 or later
-        // using the getHostString() method. This avoids a reverse DNS query from calling getHostName()
-        // if the original host string is an IP address.
-        val clazz = classOf[InetSocketAddress]
-        address ⇒ clazz.getMethods.collectFirst {
-          case m if m.getName == "getHostString" => m.invoke(address)
-        }.getOrElse(address.getHostName).asInstanceOf[String]
-      }
 
       @tailrec def renderHeaders(remaining: List[HttpHeader], hostHeaderSeen: Boolean = false,
                                  userAgentSeen: Boolean = false, transferEncodingSeen: Boolean = false): Unit =
