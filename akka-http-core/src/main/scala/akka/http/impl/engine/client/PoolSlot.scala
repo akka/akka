@@ -4,14 +4,13 @@
 
 package akka.http.impl.engine.client
 
-import akka.http.ConnectionPoolSettings
-
 import language.existentials
 import java.net.InetSocketAddress
 import scala.util.{ Failure, Success }
 import scala.collection.immutable
 import akka.actor._
 import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+import akka.http.ConnectionPoolSettings
 import akka.http.impl.util._
 import akka.stream.impl.{ SubscribePending, ExposedPublisher, ActorProcessor }
 import akka.stream.actor._
