@@ -61,7 +61,7 @@ object AkkaBuild extends Build {
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       unidocExclude := Seq(samples.id, remoteTests.id, parsing.id),
       sources in JavaDoc <<= junidocSources,
-      javacOptions in JavaDoc := Seq(),
+      javacOptions in JavaDoc := (if (sys.props("java.version").startsWith("1.8")) Seq("-Xdoclint:none") else Seq()),
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
       packageDoc in Compile <<= packageDoc in JavaDoc,
       Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
@@ -326,7 +326,7 @@ object AkkaBuild extends Build {
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       unidocExclude := Seq(parsing.id, docsDev.id),
       sources in JavaDoc <<= junidocSources,
-      javacOptions in JavaDoc := Seq(),
+      javacOptions in JavaDoc := (if (sys.props("java.version").startsWith("1.8")) Seq("-Xdoclint:none") else Seq()),
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
       packageDoc in Compile <<= packageDoc in JavaDoc,
       Dist.distExclude := Seq(docsDev.id),
@@ -1078,7 +1078,8 @@ object AkkaBuild extends Build {
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
-    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.6"),
+    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.6") ++
+                            (if (sys.props("java.version").startsWith("1.8")) Seq("-Xdoclint:none") else Seq()),
 
     crossVersion := CrossVersion.binary,
 
@@ -1492,7 +1493,7 @@ object Dependencies {
   object Versions {
     val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
     val scalaZeroMQVersion = System.getProperty("akka.build.scalaZeroMQVersion", "0.0.7")
-    val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.8")
+    val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.9")
     val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.2.4")
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
     val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
