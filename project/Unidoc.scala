@@ -25,7 +25,7 @@ object Unidoc {
     if (genjavadocEnabled)
       (scalaJavaUnidocSettings, genjavadocExtraSettings ++ Seq(
         scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-        unidocGenjavadocVersion in Global := "0.9-SNAPSHOT"))
+        unidocGenjavadocVersion in Global := "0.9"))
     else (scalaUnidocSettings, Nil)
 
   lazy val scaladocDiagramsEnabled = sys.props.get("akka.scaladoc.diagrams").getOrElse("true").toBoolean
