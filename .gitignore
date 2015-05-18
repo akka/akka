@@ -26,6 +26,7 @@
 .scala_dependencies
 .scalastyle
 .settings
+.cache*
 .tags
 .tags_sorted_by_file
 .target

@@ -194,9 +194,9 @@ class ClusterClient(
 }
 
 /**
- * Extension that starts [[ClusterReceptionist]] and accompanying [[DistributedPubSubMediator]]
+ * Extension that starts [[ClusterReceptionist]] and accompanying [[akka.cluster.pubsub.DistributedPubSubMediator]]
  * with settings defined in config section `akka.cluster.client.receptionist`.
- * The [[DistributedPubSubMediator]] is started by the [[DistributedPubSubExtension]].
+ * The [[akka.cluster.pubsub.DistributedPubSubMediator]] is started by the [[akka.cluster.pubsub.DistributedPubSubExtension]].
  */
 object ClusterReceptionistExtension extends ExtensionId[ClusterReceptionistExtension] with ExtensionIdProvider {
   override def get(system: ActorSystem): ClusterReceptionistExtension = super.get(system)
@@ -347,12 +347,12 @@ object ClusterReceptionist {
  * The receptionist can be started with the [[ClusterReceptionistExtension]] or as an
  * ordinary actor (use the factory method [[ClusterReceptionist#props]]).
  *
- * The receptionist forwards messages from the client to the associated [[DistributedPubSubMediator]],
+ * The receptionist forwards messages from the client to the associated [[akka.cluster.pubsub.DistributedPubSubMediator]],
  * i.e. the client can send messages to any actor in the cluster that is registered in the
  * `DistributedPubSubMediator`. Messages from the client are wrapped in
- * [[DistributedPubSubMediator.Send]], [[DistributedPubSubMediator.SendToAll]]
- * or [[DistributedPubSubMediator.Publish]] with the semantics described in
- * [[DistributedPubSubMediator]].
+ * [[akka.cluster.pubsub.DistributedPubSubMediator.Send]], [[akka.cluster.pubsub.DistributedPubSubMediator.SendToAll]]
+ * or [[akka.cluster.pubsub.DistributedPubSubMediator.Publish]] with the semantics described in
+ * [[akka.cluster.pubsub.DistributedPubSubMediator]].
  *
  * Response messages from the destination actor are tunneled via the receptionist
  * to avoid inbound connections from other cluster nodes to the client, i.e.
