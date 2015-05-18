@@ -5,6 +5,7 @@
 package akka.http.impl.engine.server
 
 import akka.http.ServerSettings
+import akka.stream.io._
 import org.reactivestreams.{ Subscriber, Publisher }
 import scala.util.control.NonFatal
 import akka.util.ByteString
@@ -29,7 +30,7 @@ import ParserOutput._
  */
 private[http] object HttpServerBluePrint {
 
-  type ServerShape = BidiShape[HttpResponse, ByteString, ByteString, HttpRequest]
+  type ServerShape = BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest]
 
   def apply(settings: ServerSettings, log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[ServerShape, Unit] = {
     import settings._
@@ -135,13 +136,16 @@ private[http] object HttpServerBluePrint {
         switchSource ~> wsSwitchTokenMerge.in1
         wsSwitchTokenMerge.out ~> protocolRouter.in
 
-        val netIn = wsSwitchTokenMerge.in0
-        val netOut = protocolMerge.out
+        val unwrapTls = b.add(Flow[SslTlsInbound] collect { case x: SessionBytes ⇒ x.bytes })
+        val wrapTls = b.add(Flow[ByteString].map[SslTlsOutbound](SendBytes))
 
-        BidiShape[HttpResponse, ByteString, ByteString, HttpRequest](
+        unwrapTls ~> wsSwitchTokenMerge.in0
+        protocolMerge.out ~> wrapTls
+
+        BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest](
           bypassApplicationInput,
-          netOut,
-          netIn,
+          wrapTls.outlet,
+          unwrapTls.inlet,
           requestsIn)
     }
   }

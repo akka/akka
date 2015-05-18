@@ -5,11 +5,11 @@
 package akka.http
 
 import java.lang.{ Iterable ⇒ JIterable }
+import akka.http.scaladsl.HttpsContext
 import com.typesafe.config.Config
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import akka.japi.Util._
-
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.impl.util._
@@ -18,18 +18,18 @@ import akka.io.Inet
 final case class HostConnectionPoolSetup(host: String, port: Int, setup: ConnectionPoolSetup)
 
 final case class ConnectionPoolSetup(
-  encrypted: Boolean,
   options: immutable.Traversable[Inet.SocketOption],
   settings: ConnectionPoolSettings,
+  httpsContext: Option[HttpsContext],
   log: LoggingAdapter)
 
 object ConnectionPoolSetup {
   /** Java API */
-  def create(encrypted: Boolean,
-             options: JIterable[Inet.SocketOption],
+  def create(options: JIterable[Inet.SocketOption],
              settings: ConnectionPoolSettings,
+             httpsContext: akka.japi.Option[akka.http.javadsl.HttpsContext],
              log: LoggingAdapter): ConnectionPoolSetup =
-    ConnectionPoolSetup(encrypted, immutableSeq(options), settings, log)
+    ConnectionPoolSetup(immutableSeq(options), settings, httpsContext.map(_.asInstanceOf[HttpsContext]), log)
 }
 
 final case class ConnectionPoolSettings(
