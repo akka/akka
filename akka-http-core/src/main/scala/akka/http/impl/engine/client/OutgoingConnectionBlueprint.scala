@@ -5,6 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.http.ClientConnectionSettings
+import akka.stream.io.{ SessionBytes, SslTlsInbound, SendBytes, SslTlsOutbound }
 
 import language.existentials
 import java.net.InetSocketAddress
@@ -27,7 +28,7 @@ import akka.http.impl.util._
  */
 private[http] object OutgoingConnectionBlueprint {
 
-  type ClientShape = BidiShape[HttpRequest, ByteString, ByteString, HttpResponse]
+  type ClientShape = BidiShape[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse]
 
   /*
     Stream Setup
@@ -87,10 +88,12 @@ private[http] object OutgoingConnectionBlueprint {
       val terminationFanout = b.add(Broadcast[HttpResponse](2))
       val terminationMerge = b.add(new TerminationMerge)
 
-      val logger = Flow[ByteString].transform(() ⇒ errorLogger(log, "Outgoing request stream error")).named("errorLogger")
-      val bytesOut = (terminationMerge.out ~> requestRendering.via(logger)).outlet
+      val logger = b.add(Flow[ByteString].transform(() ⇒ errorLogger(log, "Outgoing request stream error")).named("errorLogger"))
+      val wrapTls = b.add(Flow[ByteString].map(SendBytes))
+      terminationMerge.out ~> requestRendering ~> logger ~> wrapTls
 
-      val bytesIn = responseParsingMerge.in0
+      val unwrapTls = b.add(Flow[SslTlsInbound].collect { case SessionBytes(_, bytes) ⇒ bytes })
+      unwrapTls ~> responseParsingMerge.in0
 
       methodBypassFanout.out(0) ~> terminationMerge.in0
 
@@ -99,10 +102,10 @@ private[http] object OutgoingConnectionBlueprint {
       responseParsingMerge.out ~> responsePrep ~> terminationFanout.in
       terminationFanout.out(0) ~> terminationMerge.in1
 
-      BidiShape[HttpRequest, ByteString, ByteString, HttpResponse](
+      BidiShape[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse](
         methodBypassFanout.in,
-        bytesOut,
-        bytesIn,
+        wrapTls.outlet,
+        unwrapTls.inlet,
         terminationFanout.out(1))
     }
   }

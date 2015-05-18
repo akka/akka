@@ -14,16 +14,16 @@ import akka.http.impl.util._
 
 object TestClient extends App {
   val testConf: Config = ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     akka.log-dead-letters = off
-    akka.io.tcp.trace-logging = on""")
+    akka.io.tcp.trace-logging = off""")
   implicit val system = ActorSystem("ServerTest", testConf)
   implicit val fm = ActorFlowMaterializer()
   import system.dispatcher
 
   installEventStreamLoggerFor[UnhandledMessage]
 
-  val host = "spray.io"
+  val host = "github.com"
 
   fetchServerVersion1()
 
@@ -31,9 +31,9 @@ object TestClient extends App {
   //  system.shutdown()
 
   def fetchServerVersion1(): Unit = {
-    println(s"Fetching HTTP server version of host `$host` via a direct low-level connection ...")
+    println(s"Fetching HTTPS server version of host `$host` via a direct low-level connection ...")
 
-    val connection = Http().outgoingConnection(host)
+    val connection = Http().outgoingConnectionTls(host)
     val result = Source.single(HttpRequest()).via(connection).runWith(Sink.head)
     result.map(_.header[headers.Server]) onComplete {
       case Success(res) ⇒
@@ -50,7 +50,7 @@ object TestClient extends App {
 
   def fetchServerVersion2(): Unit = {
     println(s"Fetching HTTP server version of host `$host` via the high-level API ...")
-    val result = Http().singleRequest(HttpRequest(uri = s"http://$host/"))
+    val result = Http().singleRequest(HttpRequest(uri = s"https://$host/"))
     result.map(_.header[headers.Server]) onComplete {
       case Success(res) ⇒
         println(s"$host is running ${res mkString ", "}")
