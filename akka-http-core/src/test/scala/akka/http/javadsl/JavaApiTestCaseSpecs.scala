@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model
 
+import akka.http.javadsl.model.headers.Cookie
+
 import scala.collection.immutable
 import org.scalatest.{ MustMatchers, FreeSpec }
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
@@ -42,7 +44,7 @@ class JavaApiTestCaseSpecs extends FreeSpec with MustMatchers {
         model.HttpRequest(headers = immutable.Seq(model.headers.Authorization(BasicHttpCredentials("username", "password")))))
     }
     "removeCookies" in {
-      val testRequest = model.HttpRequest(headers = immutable.Seq(model.headers.Cookie(model.headers.HttpCookie("test", "blub"))))
+      val testRequest = model.HttpRequest(headers = immutable.Seq(Cookie.create("test", "blub")))
       JavaApiTestCases.removeCookies(testRequest) must be(
         model.HttpRequest())
     }

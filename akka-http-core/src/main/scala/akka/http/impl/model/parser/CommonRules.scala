@@ -218,7 +218,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   // https://tools.ietf.org/html/rfc6265#section-4.1.1
   // ******************************************************************************************
   def `cookie-pair` = rule {
-    `cookie-name` ~ ws('=') ~ `cookie-value` ~> (HttpCookie(_, _))
+    `cookie-name` ~ ws('=') ~ `cookie-value` ~> (HttpCookiePair(_: String, _: String))
   }
 
   def `cookie-name` = rule { token }

@@ -9,9 +9,12 @@ package akka.http.javadsl.model.headers;
  *  Specification: https://tools.ietf.org/html/rfc6265#section-4.2
  */
 public abstract class Cookie extends akka.http.scaladsl.model.HttpHeader {
-    public abstract Iterable<HttpCookie> getCookies();
+    public abstract Iterable<HttpCookiePair> getCookies();
 
-    public static Cookie create(HttpCookie... cookies) {
-        return new akka.http.scaladsl.model.headers.Cookie(akka.http.impl.util.Util.<HttpCookie, akka.http.scaladsl.model.headers.HttpCookie>convertArray(cookies));
+    public static Cookie create(HttpCookiePair... cookies) {
+        return new akka.http.scaladsl.model.headers.Cookie(akka.http.impl.util.Util.<HttpCookiePair, akka.http.scaladsl.model.headers.HttpCookiePair>convertArray(cookies));
+    }
+    public static Cookie create(String name, String value) {
+        return create(HttpCookiePair.create(name, value));
     }
 }
