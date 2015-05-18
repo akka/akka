@@ -132,6 +132,7 @@ object JavaMapping {
   implicit object EntityTagRange extends Inherited[jm.headers.EntityTagRange, sm.headers.EntityTagRange]
   implicit object HttpChallenge extends Inherited[jm.headers.HttpChallenge, sm.headers.HttpChallenge]
   implicit object HttpCookie extends Inherited[jm.headers.HttpCookie, sm.headers.HttpCookie]
+  implicit object HttpCookiePair extends Inherited[jm.headers.HttpCookiePair, sm.headers.HttpCookiePair]
   implicit object HttpCredentials extends Inherited[jm.headers.HttpCredentials, sm.headers.HttpCredentials]
   implicit object HttpEncoding extends Inherited[jm.headers.HttpEncoding, sm.headers.HttpEncoding]
   implicit object HttpEncodingRange extends Inherited[jm.headers.HttpEncodingRange, sm.headers.HttpEncodingRange]
