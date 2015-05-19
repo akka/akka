@@ -90,10 +90,11 @@ public class Match<I, R> extends AbstractMatch<I, R> {
 
   /**
    * Convenience function to make the Java code more readable.
-   * <p>
+   * <p></p>
+   * 
    * <pre><code>
    *   Matcher&lt;X, Y&gt; matcher = Matcher.create(...);
-   * <p>
+   * 
    *   Y someY = matcher.match(obj);
    * </code></pre>
    *

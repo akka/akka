@@ -9,7 +9,7 @@ import akka.camel.{ FailureResult, AkkaCamelException, CamelMessage }
 
 /**
  * INTERNAL API
- * Adapter for converting an [[org.apache.camel.Exchange]] to and from [[akka.camel.CamelMessage]] and [[akka.camel.Failure]] objects.
+ * Adapter for converting an [[org.apache.camel.Exchange]] to and from [[akka.camel.CamelMessage]] and [[akka.camel.FailureResult]] objects.
  * The org.apache.camel.Message is mutable and not suitable to be used directly as messages between Actors.
  * This adapter is used to convert to immutable messages to be used with Actors, and convert the immutable messages back
  * to org.apache.camel.Message when using Camel.
@@ -62,8 +62,6 @@ private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
    * on the AkkaCamelException.
    *
    * If the exchange is out-capable then the headers of Exchange.getOut are used, otherwise the headers of Exchange.getIn are used.
-   *
-   * @see AkkaCamelException
    */
   def toAkkaCamelException: AkkaCamelException = toAkkaCamelException(Map.empty)
 
@@ -78,8 +76,6 @@ private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
    *
    * @param headers additional headers to set on the exception in addition to those
    *                in the exchange.
-   *
-   * @see AkkaCamelException
    */
   def toAkkaCamelException(headers: Map[String, Any]): AkkaCamelException = {
     import scala.collection.JavaConversions._
@@ -88,8 +84,6 @@ private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
 
   /**
    * Creates an immutable Failure object from the adapted Exchange so it can be used internally between Actors.
-   *
-   * @see Failure
    */
   def toFailureMessage: FailureResult = toFailureResult(Map.empty)
 
@@ -98,8 +92,6 @@ private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
    *
    * @param headers additional headers to set on the created CamelMessage in addition to those
    *                in the Camel message.
-   *
-   * @see Failure
    */
   def toFailureResult(headers: Map[String, Any]): FailureResult = {
     import scala.collection.JavaConversions._

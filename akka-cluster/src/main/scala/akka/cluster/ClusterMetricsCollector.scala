@@ -119,7 +119,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   }
 
   /**
-   * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus.Up]].
+   * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus]] `Up`.
    */
   def receiveState(state: CurrentClusterState): Unit =
     nodes = state.members collect { case m if m.status == Up ⇒ m.address }
@@ -128,7 +128,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
    * Samples the latest metrics for the node, updates metrics statistics in
    * [[akka.cluster.MetricsGossip]], and publishes the change to the event bus.
    *
-   * @see [[akka.cluster.ClusterMetricsCollector.collect( )]]
+   * @see [[akka.cluster.ClusterMetricsCollector#collect]]
    */
   def collect(): Unit = {
     latestGossip :+= collector.sample()
@@ -189,7 +189,7 @@ private[cluster] object MetricsGossip {
 private[cluster] final case class MetricsGossip(nodes: Set[NodeMetrics]) {
 
   /**
-   * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus.Up]]
+   * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus]] `Up`.
    */
   def remove(node: Address): MetricsGossip = copy(nodes = nodes filterNot (_.address == node))
 
@@ -386,7 +386,7 @@ object Metric extends MetricNumericConverter {
  *
  * @param address [[akka.actor.Address]] of the node the metrics are gathered at
  * @param timestamp the time of sampling, in milliseconds since midnight, January 1, 1970 UTC
- * @param metrics the set of sampled [[akka.actor.Metric]]
+ * @param metrics the set of sampled [[akka.cluster.Metric]]
  */
 @SerialVersionUID(1L)
 @deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")

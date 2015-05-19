@@ -258,12 +258,12 @@ object DistributedPubSubMediator {
     }
 
     /**
-     * Mediator uses [[Router]] to send messages to multiple destinations, Router in general
-     * unwraps messages from [[RouterEnvelope]] and sends the contents to [[Routee]]s.
+     * Mediator uses [[akka.routing.Router]] to send messages to multiple destinations, Router in general
+     * unwraps messages from [[akka.routing.RouterEnvelope]] and sends the contents to [[akka.routing.Routee]]s.
      *
      * Using mediator services should not have an undesired effect of unwrapping messages
-     * out of [[RouterEnvelope]]. For this reason user messages are wrapped in
-     * [[MediatorRouterEnvelope]] which will be unwrapped by the [[Router]] leaving original
+     * out of [[akka.routing.RouterEnvelope]]. For this reason user messages are wrapped in
+     * [[MediatorRouterEnvelope]] which will be unwrapped by the [[akka.routing.Router]] leaving original
      * user message.
      */
     def wrapIfNeeded: Any ⇒ Any = {

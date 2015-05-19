@@ -27,7 +27,7 @@ object ActorPath {
 
   /**
    * Validates the given actor path element and throws an [[InvalidActorNameException]] if invalid.
-   * See [[isValidPathElement()]] for a non-throwing version.
+   * See [[#isValidPathElement]] for a non-throwing version.
    *
    * @param element actor path element to be validated
    */
@@ -35,7 +35,7 @@ object ActorPath {
 
   /**
    * Validates the given actor path element and throws an [[InvalidActorNameException]] if invalid.
-   * See [[isValidPathElement()]] for a non-throwing version.
+   * See [[#isValidPathElement]] for a non-throwing version.
    *
    * @param element actor path element to be validated
    * @param fullPath optional fullPath element that may be included for better error messages; null if not given
@@ -60,7 +60,7 @@ object ActorPath {
   /**
    * This method is used to validate a path element (Actor Name).
    * Since Actors form a tree, it is addressable using an URL, therefore an Actor Name has to conform to:
-   * [[http://www.ietf.org/rfc/rfc2396.txt RFC-2396]].
+   * <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC-2396</a>.
    *
    * User defined Actor names may not start from a `$` sign - these are reserved for system names.
    */
@@ -97,7 +97,7 @@ object ActorPath {
  * ActorPath defines a natural ordering (so that ActorRefs can be put into
  * collections with this requirement); this ordering is intended to be as fast
  * as possible, which owing to the bottom-up recursive nature of ActorPath
- * is sorted by path elements FROM RIGHT TO LEFT, where RootActorPath >
+ * is sorted by path elements FROM RIGHT TO LEFT, where RootActorPath &gt;
  * ChildActorPath in case the number of elements is different.
  *
  * Two actor paths are compared equal when they have the same name and parent

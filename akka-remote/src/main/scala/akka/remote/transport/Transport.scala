@@ -24,7 +24,7 @@ object Transport {
 
   /**
    * Message sent to a [[akka.remote.transport.Transport.AssociationEventListener]] registered to a transport
-   * (via the Promise returned by [[akka.remote.transport.Transport.listen]]) when an inbound association request arrives.
+   * (via the Promise returned by [[akka.remote.transport.Transport#listen]]) when an inbound association request arrives.
    *
    * @param association
    *   The handle for the inbound association.
@@ -153,7 +153,7 @@ object AssociationHandle {
 
   /**
    * Message sent to the listener registered to an association (via the Promise returned by
-   * [[akka.remote.transport.AssociationHandle.readHandlerPromise]]) when an inbound payload arrives.
+   * [[akka.remote.transport.AssociationHandle#readHandlerPromise]]) when an inbound payload arrives.
    *
    * @param payload
    *   The raw bytes that were sent by the remote endpoint.

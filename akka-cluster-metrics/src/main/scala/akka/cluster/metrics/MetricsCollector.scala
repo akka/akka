@@ -237,7 +237,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
    * theoretically. Note that 99% CPU utilization can be optimal or indicative of failure.
    *
    * In the data stream, this will sometimes return with a valid metric value, and sometimes as a NaN or Infinite.
-   * Documented bug https://bugzilla.redhat.com/show_bug.cgi?id=749121 and several others.
+   * Documented bug <a href="https://bugzilla.redhat.com/show_bug.cgi?id=749121">749121</a> and several others.
    *
    * Creates a new instance each time.
    */
@@ -248,8 +248,8 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarP
 
   /**
    * (SIGAR) Returns the stolen CPU time. Relevant to virtual hosting environments.
-   * For details please see: [[http://en.wikipedia.org/wiki/CPU_time#Subdivision Wikipedia - CPU time subdivision]] and
-   * [[https://www.datadoghq.com/2013/08/understanding-aws-stolen-cpu-and-how-it-affects-your-apps/ Understanding AWS stolen CPU and how it affects your apps]]
+   * For details please see: <a href="http://en.wikipedia.org/wiki/CPU_time#Subdivision">Wikipedia - CPU time subdivision</a> and
+   * <a href="https://www.datadoghq.com/2013/08/understanding-aws-stolen-cpu-and-how-it-affects-your-apps/">Understanding AWS stolen CPU and how it affects your apps</a>
    *
    * Creates a new instance each time.
    */

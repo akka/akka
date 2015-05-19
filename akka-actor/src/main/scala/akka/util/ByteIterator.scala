@@ -543,19 +543,19 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   /**
    * Get a specific number of Bytes from this iterator. In contrast to
-   * copyToArray, this method will fail if this.len < xs.length.
+   * copyToArray, this method will fail if this.len &lt; xs.length.
    */
   def getBytes(xs: Array[Byte]): this.type = getBytes(xs, 0, xs.length)
 
   /**
    * Get a specific number of Bytes from this iterator. In contrast to
-   * copyToArray, this method will fail if length < n or if (xs.length - offset) < n.
+   * copyToArray, this method will fail if length &lt; n or if (xs.length - offset) &lt; n.
    */
   def getBytes(xs: Array[Byte], offset: Int, n: Int): this.type
 
   /**
    * Get a specific number of Bytes from this iterator. In contrast to
-   * copyToArray, this method will fail if this.len < n.
+   * copyToArray, this method will fail if this.len &lt; n.
    */
   def getBytes(n: Int): Array[Byte] = {
     val bytes = new Array[Byte](n)
@@ -565,7 +565,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   /**
    * Get a ByteString with specific number of Bytes from this iterator. In contrast to
-   * copyToArray, this method will fail if this.len < n.
+   * copyToArray, this method will fail if this.len &lt; n.
    */
   def getByteString(n: Int): ByteString = {
     val bs = clone.take(n).toByteString

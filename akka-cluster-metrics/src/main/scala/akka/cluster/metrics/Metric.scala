@@ -109,7 +109,7 @@ object StandardMetrics {
   final val SystemLoadAverage = "system-load-average"
   final val Processors = "processors"
   // In latest Linux kernels: CpuCombined + CpuStolen + CpuIdle = 1.0  or 100%.
-  /** Sum of User + Sys + Nice + Wait. See [[org.hyperic.sigar.CpuPerc]] */
+  /** Sum of User + Sys + Nice + Wait. See `org.hyperic.sigar.CpuPerc` */
   final val CpuCombined = "cpu-combined"
   /** The amount of CPU 'stolen' from this virtual machine by the hypervisor for other tasks (such as running another virtual machine). */
   final val CpuStolen = "cpu-stolen"
@@ -146,9 +146,9 @@ object StandardMetrics {
   }
 
   /**
-   * The amount of used and committed memory will always be <= max if max is defined.
-   * A memory allocation may fail if it attempts to increase the used memory such that used > committed
-   * even if used <= max is true (e.g. when the system virtual memory is low).
+   * The amount of used and committed memory will always be &lt;= max if max is defined.
+   * A memory allocation may fail if it attempts to increase the used memory such that used &gt; committed
+   * even if used &lt;= max is true (e.g. when the system virtual memory is low).
    *
    * @param address [[akka.actor.Address]] of the node the metrics are gathered at
    * @param timestamp the time of sampling, in milliseconds since midnight, January 1, 1970 UTC
@@ -269,7 +269,7 @@ private[metrics] trait MetricNumericConverter {
  *
  * @param address [[akka.actor.Address]] of the node the metrics are gathered at
  * @param timestamp the time of sampling, in milliseconds since midnight, January 1, 1970 UTC
- * @param metrics the set of sampled [[akka.actor.Metric]]
+ * @param metrics the set of sampled [[akka.cluster.metrics.Metric]]
  */
 @SerialVersionUID(1L)
 final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] = Set.empty[Metric]) {
@@ -344,7 +344,7 @@ private[metrics] object MetricsGossip {
 private[metrics] final case class MetricsGossip(nodes: Set[NodeMetrics]) {
 
   /**
-   * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus.Up]]
+   * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus]] `Up`.
    */
   def remove(node: Address): MetricsGossip = copy(nodes = nodes filterNot (_.address == node))
 

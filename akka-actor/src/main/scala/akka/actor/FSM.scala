@@ -70,7 +70,7 @@ object FSM {
   /**
    * Signifies that the [[akka.actor.FSM]] is shutting itself down because of
    * an error, e.g. if the state to transition into does not exist. You can use
-   * this to communicate a more precise cause to the [[akka.actor.FSM.onTermination]] block.
+   * this to communicate a more precise cause to the `onTermination` block.
    */
   final case class Failure(cause: Any) extends Reason
 
@@ -374,7 +374,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * Return this from a state function when no state change is to be effected.
    *
    * No transition event will be triggered by [[#stay]].
-   * If you want to trigger an event like `S -> S` for [[#onTransition]] to handle use [[#goto]] instead.
+   * If you want to trigger an event like `S -&gt; S` for `onTransition` to handle use `goto` instead.
    *
    * @return descriptor for staying in current state
    */
@@ -410,7 +410,6 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * @param msg message to be delivered
    * @param timeout delay of first message delivery and between subsequent messages
    * @param repeat send once if false, scheduleAtFixedRate if true
-   * @return current state descriptor
    */
   final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean = false): Unit = {
     if (debugEvent)
@@ -1160,7 +1159,6 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param name identifier to be used with cancelTimer()
    * @param msg message to be delivered
    * @param timeout delay of first message delivery and between subsequent messages
-   * @return current state descriptor
    */
   final def setTimer(name: String, msg: Any, timeout: FiniteDuration): Unit =
     setTimer(name, msg, timeout, false)

@@ -46,7 +46,7 @@ final case class Address private (protocol: String, system: String, host: Option
   /**
    * Returns the canonical String representation of this Address formatted as:
    *
-   * <protocol>://<system>@<host>:<port>
+   * `protocol://system@host:port`
    */
   @transient
   override lazy val toString: String = {
@@ -61,7 +61,7 @@ final case class Address private (protocol: String, system: String, host: Option
   /**
    * Returns a String representation formatted as:
    *
-   * <system>@<host>:<port>
+   * `system@host:port`
    */
   def hostPort: String = toString.substring(protocol.length + 3)
 }

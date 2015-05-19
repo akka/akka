@@ -32,7 +32,7 @@ import akka.actor.DeadLetterSuppression
  * The conductor is the one orchestrating the test: it governs the
  * [[akka.remote.testconductor.Controller]]’s port to which all
  * [[akka.remote.testconductor.Player]]s connect, it issues commands to their
- * [[akka.remote.testconductor.NetworkFailureInjector]] and provides support
+ * `akka.remote.testconductor.NetworkFailureInjector` and provides support
  * for barriers using the [[akka.remote.testconductor.BarrierCoordinator]].
  * All of this is bundled inside the [[akka.remote.testconductor.TestConductorExt]]
  * extension.
@@ -292,7 +292,7 @@ private[akka] object ServerFSM {
  * node name translations).
  *
  * In the Ready state, messages from the client are forwarded to the controller
- * and [[akka.remote.testconductor.Send]] requests are sent, but the latter is
+ * and `Send` requests are sent, but the latter is
  * treated specially: all client operations are to be confirmed by a
  * [[akka.remote.testconductor.Done]] message, and there can be only one such
  * request outstanding at a given time (i.e. a Send fails if the previous has

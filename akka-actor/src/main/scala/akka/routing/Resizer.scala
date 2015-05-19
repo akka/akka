@@ -100,7 +100,7 @@ case class DefaultResizer(
  * <li> 0:   number of routees currently processing a message.</li>
  * <li> 1:   number of routees currently processing a message has
  *           some messages in mailbox.</li>
- * <li> > 1: number of routees with at least the configured `pressureThreshold`
+ * <li> &gt; 1: number of routees with at least the configured `pressureThreshold`
  *           messages in their mailbox. Note that estimating mailbox size of
  *           default UnboundedMailbox is O(N) operation.</li>
  * </ul>
@@ -180,7 +180,7 @@ case class DefaultResizer(
    * <li> 0:   number of routees currently processing a message.</li>
    * <li> 1:   number of routees currently processing a message has
    *           some messages in mailbox.</li>
-   * <li> > 1: number of routees with at least the configured `pressureThreshold`
+   * <li> &gt; 1: number of routees with at least the configured `pressureThreshold`
    *           messages in their mailbox. Note that estimating mailbox size of
    *           default UnboundedMailbox is O(N) operation.</li>
    * </ul>

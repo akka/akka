@@ -12,6 +12,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
 
+import language.postfixOps
+
 class AskSpec extends AkkaSpec with ScalaFutures {
 
   "The “ask” pattern" must {

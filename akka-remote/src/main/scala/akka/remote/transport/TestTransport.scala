@@ -189,11 +189,11 @@ object TestTransport {
    * @param logCallback
    *   Function that will be called independently of the current active behavior
    *
-   * @tparam A
-   *   Parameter type of the wrapped function. If it takes multiple parameters it must be wrapped in a tuple.
+   * type parameter A:
+   *  - Parameter type of the wrapped function. If it takes multiple parameters it must be wrapped in a tuple.
    *
-   * @tparam B
-   *   Type parameter of the future that the original function returns.
+   * type parameter B:
+   *  - Type parameter of the future that the original function returns.
    */
   class SwitchableLoggedBehavior[A, B](defaultBehavior: Behavior[A, B], logCallback: (A) ⇒ Unit) extends Behavior[A, B] {
 

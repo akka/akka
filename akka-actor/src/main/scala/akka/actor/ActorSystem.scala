@@ -291,7 +291,7 @@ abstract class ActorSystem extends ActorRefFactory {
   def logConfiguration(): Unit
 
   /**
-   * Construct a path below the application guardian to be used with [[ActorSystem.actorSelection]].
+   * Construct a path below the application guardian to be used with [[ActorSystem#actorSelection]].
    */
   def /(name: String): ActorPath
 
@@ -301,7 +301,7 @@ abstract class ActorSystem extends ActorRefFactory {
   def child(child: String): ActorPath = /(child)
 
   /**
-   * Construct a path below the application guardian to be used with [[ActorSystem.actorSelection]].
+   * Construct a path below the application guardian to be used with [[ActorSystem#actorSelection]].
    */
   def /(name: Iterable[String]): ActorPath
 
@@ -326,7 +326,7 @@ abstract class ActorSystem extends ActorRefFactory {
   def eventStream: EventStream
 
   /**
-   * Convenient logging adapter for logging to the [[ActorSystem.eventStream]].
+   * Convenient logging adapter for logging to the [[ActorSystem#eventStream]].
    */
   def log: LoggingAdapter
 
@@ -369,7 +369,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
-   * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
    *
    * Scala API
    */
@@ -382,7 +382,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
-   * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
    */
   def registerOnTermination(code: Runnable): Unit
 
@@ -391,7 +391,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * timeout has elapsed. This will block until after all on termination
    * callbacks have been run.
    *
-   * @throws TimeoutException in case of timeout
+   * Throws TimeoutException in case of timeout.
    */
   @deprecated("Use Await.result(whenTerminated, timeout) instead", "2.4")
   def awaitTermination(timeout: Duration): Unit
@@ -407,7 +407,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Stop this actor system. This will stop the guardian actor, which in turn
    * will recursively stop all its child actors, then the system guardian
    * (below which the logging actors reside) and the execute all registered
-   * termination handlers (see [[ActorSystem.registerOnTermination]]).
+   * termination handlers (see [[ActorSystem#registerOnTermination]]).
    */
   @deprecated("Use the terminate() method instead", "2.4")
   def shutdown(): Unit
@@ -426,7 +426,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Terminates this actor system. This will stop the guardian actor, which in turn
    * will recursively stop all its child actors, then the system guardian
    * (below which the logging actors reside) and the execute all registered
-   * termination handlers (see [[ActorSystem.registerOnTermination]]).
+   * termination handlers (see [[ActorSystem#registerOnTermination]]).
    */
   def terminate(): Future[Terminated]
 
@@ -835,7 +835,7 @@ private[akka] class ActorSystemImpl(
      * Adds a Runnable that will be executed on ActorSystem termination.
      * Note that callbacks are executed in reverse order of insertion.
      * @param r The callback to be executed on ActorSystem termination
-     * @throws RejectedExecutionException if called after ActorSystem has been terminated
+     * Throws RejectedExecutionException if called after ActorSystem has been terminated.
      */
     final def add(r: Runnable): Unit = {
       @tailrec def addRec(r: Runnable, p: Promise[T]): Unit = ref.get match {

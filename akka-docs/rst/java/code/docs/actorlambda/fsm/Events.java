@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package docs.actor.fsm;
+package docs.actorlambda.fsm;
 
 import akka.actor.ActorRef;
 import java.util.List;

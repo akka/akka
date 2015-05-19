@@ -13,7 +13,7 @@ import scala.collection.mutable
 /**
  * An implementation of a ConcurrentMultiMap
  * Adds/remove is serialized over the specified key
- * Reads are fully concurrent <-- el-cheapo
+ * Reads are fully concurrent &lt;-- el-cheapo
  */
 class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 
@@ -188,6 +188,6 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 /**
  * An implementation of a ConcurrentMultiMap
  * Adds/remove is serialized over the specified key
- * Reads are fully concurrent <-- el-cheapo
+ * Reads are fully concurrent &lt;-- el-cheapo
  */
 class ConcurrentMultiMap[K, V](mapSize: Int, valueComparator: Comparator[V]) extends Index[K, V](mapSize, valueComparator)

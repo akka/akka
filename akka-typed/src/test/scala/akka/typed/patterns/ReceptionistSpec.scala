@@ -27,9 +27,11 @@ class ReceptionistSpec extends TypedSpec {
       val a = Inbox.sync[ServiceA]("a")
       val r = Inbox.sync[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a.ref)(r.ref))
+      ctx.getAllEffects() should be(Effect.Watched(a.ref) :: Nil)
       r.receiveMsg() should be(Registered(ServiceKeyA, a.ref))
       val q = Inbox.sync[Listing[ServiceA]]("q")
       ctx.run(Find(ServiceKeyA)(q.ref))
+      ctx.getAllEffects() should be(Nil)
       q.receiveMsg() should be(Listing(ServiceKeyA, Set(a.ref)))
       assertEmpty(a, r, q)
     }

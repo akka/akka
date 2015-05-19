@@ -88,7 +88,6 @@ object WorkList {
    * Singly linked list entry implementation for WorkList.
    * @param ref The item reference, None for head entry
    * @param permanent If the entry is to be kept after processing
-   * @tparam T The type of the item
    */
   class Entry[T](val ref: Option[T], val permanent: Boolean) {
     var next: Entry[T] = null
@@ -101,7 +100,6 @@ object WorkList {
  * The list is not thread safe! However it is expected to be reentrant. This means a processing function can add/remove
  * entries from the list while processing. Most important, a processing function can remove its own entry from the list.
  * The first remove must return true and any subsequent removes must return false.
- * @tparam T The type of the item
  */
 class WorkList[T] {
 

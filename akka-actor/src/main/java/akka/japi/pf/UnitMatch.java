@@ -110,7 +110,7 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * <p>
    * <pre><code>
    *   UnitMatcher&lt;X&gt; matcher = UnitMatcher.create(...);
-   * <p>
+   * 
    *   matcher.match(obj);
    * </code></pre>
    *

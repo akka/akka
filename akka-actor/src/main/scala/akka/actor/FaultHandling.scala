@@ -145,7 +145,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   /**
    * When supervisorStrategy is not specified for an actor this
-   * [[Decider]] is used by default in the supervisor strategy.
+   * `Decider` is used by default in the supervisor strategy.
    * The child will be stopped when [[akka.actor.ActorInitializationException]],
    * [[akka.actor.ActorKilledException]], or [[akka.actor.DeathPactException]] is
    * thrown. It will be restarted for other `Exception` types.

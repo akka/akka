@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package docs.actor.fsm;
+package docs.actorlambda.fsm;
 
 import akka.actor.*;
 import akka.testkit.JavaTestKit;
@@ -14,8 +14,8 @@ import scala.concurrent.duration.Duration;
 
 import static org.junit.Assert.*;
 
-import static docs.actor.fsm.FSMDocTest.StateType.*;
-import static docs.actor.fsm.FSMDocTest.Messages.*;
+import static docs.actorlambda.fsm.FSMDocTest.StateType.*;
+import static docs.actorlambda.fsm.FSMDocTest.Messages.*;
 import static java.util.concurrent.TimeUnit.*;
 
 public class FSMDocTest {
@@ -173,7 +173,7 @@ public class FSMDocTest {
       expectMsgEquals(Active);
       expectMsgEquals(Data.Foo);
       String msg = expectMsgClass(String.class);
-      assertThat(msg, CoreMatchers.startsWith("LogEntry(SomeState,Foo,Actor[akka://FSMDocTest/system/"));
+      assertTrue(msg.startsWith("LogEntry(SomeState,Foo,Actor[akka://FSMDocTest/system/"));
     }};
   }
 }

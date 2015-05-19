@@ -119,13 +119,11 @@ object Agent {
  * // use result ...
  *
  * }}}
- * <br/>
  *
  * Agent is also monadic, which means that you can compose operations using
  * for-comprehensions. In monadic usage the original agents are not touched
  * but new agents are created. So the old values (agents) are still available
  * as-is. They are so-called 'persistent'.
- * <br/><br/>
  *
  * Example of monadic usage:
  * {{{

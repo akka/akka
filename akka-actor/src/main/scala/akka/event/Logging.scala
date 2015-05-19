@@ -251,8 +251,8 @@ class DummyClassForStringSources
  * In case an [[akka.actor.ActorSystem]] is provided, the following apply:
  * <ul>
  * <li>[[akka.actor.Actor]] and [[akka.actor.ActorRef]] will be represented by their absolute physical path</li>
- * <li>providing a `String` as source will append "(<system address>)" and use the result</li>
- * <li>providing a `Class` will extract its simple name, append "(<system address>)" and use the result</li>
+ * <li>providing a `String` as source will append "(&lt;system address&gt;)" and use the result</li>
+ * <li>providing a `Class` will extract its simple name, append "(&lt;system address&gt;)" and use the result</li>
  * <li>anything else gives compile error unless implicit [[akka.event.LogSource]] is in scope for it</li>
  * </ul>
  *
@@ -385,7 +385,7 @@ object Logging {
 
   /**
    * Returns a 'safe' getSimpleName for the provided Class
-   * @param obj
+   * @param clazz
    * @return the simple name of the given Class
    */
   def simpleName(clazz: Class[_]): String = {
@@ -856,19 +856,19 @@ object Logging {
  * evaluate .toString only if the log level is actually enabled. Typically used
  * by obtaining an implementation from the Logging object:
  *
- * <code><pre>
+ * {{{
  * val log = Logging(&lt;bus&gt;, &lt;source object&gt;)
  * ...
  * log.info("hello world!")
- * </pre></code>
+ * }}}
  *
  * All log-level methods support simple interpolation templates with up to four
  * arguments placed by using <code>{}</code> within the template (first string
  * argument):
  *
- * <code><pre>
+ * {{{
  * log.error(exception, "Exception while processing {} in state {}", msg, state)
- * </pre></code>
+ * }}}
  */
 trait LoggingAdapter {
 
@@ -1140,7 +1140,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
   /**
    * Scala API:
    * Mapped Diagnostic Context for application defined values
-   * which can be used in PatternLayout when [[akka.event.slf4j.Slf4jLogger]] is configured.
+   * which can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
    * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    *
    * @return A Map containing the MDC values added by the application, or empty Map if no value was added.
@@ -1150,7 +1150,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
   /**
    * Scala API:
    * Sets the values to be added to the MDC (Mapped Diagnostic Context) before the log is appended.
-   * These values can be used in PatternLayout when [[akka.event.slf4j.Slf4jLogger]] is configured.
+   * These values can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
    * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    */
   def mdc(mdc: MDC): Unit = _mdc = if (mdc != null) mdc else emptyMDC
@@ -1158,17 +1158,18 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
   /**
    * Java API:
    * Mapped Diagnostic Context for application defined values
-   * which can be used in PatternLayout when [[akka.event.slf4j.Slf4jLogger]] is configured.
+   * which can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
    * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    * Note tha it returns a <b>COPY</b> of the actual MDC values.
    * You cannot modify any value by changing the returned Map.
    * Code like the following won't have any effect unless you set back the modified Map.
-   * <code><pre>
+   *
+   * {{{
    *   Map mdc = log.getMDC();
    *   mdc.put("key", value);
    *   // NEEDED
    *   log.setMDC(mdc);
-   * </pre></code>
+   * }}}
    *
    * @return A copy of the actual MDC values
    */
@@ -1177,7 +1178,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
   /**
    * Java API:
    * Sets the values to be added to the MDC (Mapped Diagnostic Context) before the log is appended.
-   * These values can be used in PatternLayout when [[akka.event.slf4j.Slf4jLogger]] is configured.
+   * These values can be used in PatternLayout when `akka.event.slf4j.Slf4jLogger` is configured.
    * Visit <a href="http://logback.qos.ch/manual/mdc.html">Logback Docs: MDC</a> for more information.
    */
   def setMDC(jMdc: java.util.Map[String, Any]): Unit = mdc(if (jMdc != null) jMdc.asScala.toMap else emptyMDC)
