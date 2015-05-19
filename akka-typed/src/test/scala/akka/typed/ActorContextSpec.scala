@@ -96,8 +96,8 @@ object ActorContextSpec {
           replyTo ! TimeoutSet
           Same
         case Schedule(delay, target, msg, replyTo) ⇒
-          ctx.schedule(delay, target, msg)
           replyTo ! Scheduled
+          ctx.schedule(delay, target, msg)
           Same
         case Stop ⇒ Stopped
         case Kill(ref, replyTo) ⇒
