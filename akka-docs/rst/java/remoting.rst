@@ -188,13 +188,6 @@ Watching Remote Actors
 Watching a remote actor is not different than watching a local actor, as described in
 :ref:`deathwatch-java`.
 
-.. warning::
-
-  *Caveat:* Watching an ``ActorRef`` acquired with ``actorFor`` does not trigger
-  ``Terminated`` for lost connections. ``actorFor`` is deprecated in favor of 
-  ``actorSelection``. Acquire the ``ActorRef`` to watch with ``Identify`` and 
-  ``ActorIdentity`` as described in :ref:`actorSelection-java`.
-
 Failure Detector
 ----------------
 

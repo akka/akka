@@ -206,7 +206,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
   def resume(causedByFailure: Throwable): Unit = sendSystemMessage(Resume(causedByFailure))
   def restart(cause: Throwable): Unit = sendSystemMessage(Recreate(cause))
   def stop(): Unit = sendSystemMessage(Terminate())
-  def isTerminated: Boolean = locked {
+  override private[akka] def isTerminated: Boolean = locked {
     val cell = self.underlying
     if (cellIsReady(cell)) cell.isTerminated else false
   }
