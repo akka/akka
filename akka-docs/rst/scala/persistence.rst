@@ -51,7 +51,7 @@ in-memory heap based journal, local file-system based snapshot-store and LevelDB
 LevelDB based plugins will require the following additional dependency declaration::
 
   "org.iq80.leveldb"            % "leveldb"          % "0.7"
-  "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.7"
+  "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
 
 Architecture
 ============

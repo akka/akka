@@ -24,6 +24,12 @@ The following parts are not binary compatible with 2.3.x:
 * experimental modules, such as akka-persistence and akka-contrib
 * features, classes, methods that were deprecated in 2.3.x and removed in 2.4.x 
 
+The dependency to **Netty** has been updated from version 3.8.0.Final to 3.10.3.Final. The changes in 
+those versions might not be fully binary compatible, but we believe that it will not be a problem
+in practice. No changes were needed to the Akka source code for this update. Users of libraries that
+depend on 3.8.0.Final that break with 3.10.3.Final should be able to manually downgrade the dependency
+to 3.8.0.Final and Akka will still work with that version.
+
 Advanced Notice: TypedActors will go away
 ========================================
 
