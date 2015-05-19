@@ -25,6 +25,7 @@ object Unidoc {
     if (genjavadocEnabled)
       (scalaJavaUnidocSettings, genjavadocExtraSettings ++ Seq(
         scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
+        javacOptions in JavaUnidoc ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-Xdoclint:none"),
         unidocGenjavadocVersion in Global := "0.9"))
     else (scalaUnidocSettings, Nil)
 
