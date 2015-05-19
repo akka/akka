@@ -31,7 +31,7 @@ depend on 3.8.0.Final that break with 3.10.3.Final should be able to manually do
 to 3.8.0.Final and Akka will still work with that version.
 
 Advanced Notice: TypedActors will go away
-========================================
+=========================================
 
 While technically not yet deprecated, the current ``akka.actor.TypedActor`` support will be superseded by
 the Akka Typed project that is currently being developed in open preview mode. If you are using TypedActors
@@ -192,7 +192,7 @@ since it is still enabled in akka-cluster by default (for compatibility with pas
 Router configuration entries have also changed for the module, they use prefix ``cluster-metrics-``:
 ``cluster-metrics-adaptive-pool`` and ``cluster-metrics-adaptive-group``
 Metrics extension classes and objects are located in the new package ``akka.cluster.metrics``. 
-Please see :ref:`Scala <cluster-metrics-scala>`, :ref:`Java <cluster-metrics-java>` for more information.
+Please see :ref:`Scala <cluster_metrics_scala>`, :ref:`Java <cluster_metrics_java>` for more information.
 
 Microkernel is Deprecated
 =========================
@@ -254,3 +254,13 @@ it as an ordinary actor if you need multiple instances of it with different sett
 The parameters of the ``Props`` factory methods in the ``ClusterReceptionist`` companion
 has been moved to settings object ``ClusterReceptionistSettings``. This can be created from
 system configuration properties and also amended with API as needed.
+
+Asynchronous ShardAllocationStrategy
+====================================
+
+The methods of the ``ShardAllocationStrategy`` and ``AbstractShardAllocationStrategy`` in Cluster Sharding
+have changed return type to a ``Future`` to support asynchronous decision. For example you can ask an
+actor external actor of how to allocate shards or rebalance shards.
+
+For the synchronous case you can return the result via ``scala.concurrent.Future.successful`` in Scala or 
+``akka.dispatch.Futures.successful`` in Java.

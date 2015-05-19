@@ -306,7 +306,7 @@ private[akka] class LocalActorRef private[akka] (
   _mailboxType: MailboxType,
   _supervisor: InternalActorRef,
   override val path: ActorPath)
-    extends ActorRefWithCell with LocalRef {
+  extends ActorRefWithCell with LocalRef {
 
   /*
    * Safe publication of this class’s fields is guaranteed by mailbox.setActor()
@@ -599,10 +599,10 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
  * INTERNAL API
  */
 private[akka] class VirtualPathContainer(
-    override val provider: ActorRefProvider,
-    override val path: ActorPath,
-    override val getParent: InternalActorRef,
-    val log: LoggingAdapter) extends MinimalActorRef {
+  override val provider: ActorRefProvider,
+  override val path: ActorPath,
+  override val getParent: InternalActorRef,
+  val log: LoggingAdapter) extends MinimalActorRef {
 
   private val children = new ConcurrentHashMap[String, InternalActorRef]
 
