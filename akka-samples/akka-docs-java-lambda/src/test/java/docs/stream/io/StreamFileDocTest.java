@@ -16,6 +16,7 @@ import akka.stream.ActorOperationAttributes;
 import akka.stream.OperationAttributes;
 import akka.stream.io.SynchronousFileSink;
 import akka.stream.io.SynchronousFileSource;
+import akka.stream.javadsl.Sink;
 import docs.stream.cookbook.RecipeParseLines;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.Future;
 import scala.runtime.BoxedUnit;
 
 import akka.stream.*;
@@ -57,13 +59,18 @@ public class StreamFileDocTest {
   }
 
   @Test
-  public void demonstrateSimpleServerConnection() throws IOException {
+  public void demonstrateMaterializingBytesWritten() throws IOException {
     final File file = File.createTempFile(getClass().getName(), ".tmp");
 
     try {
       //#file-source
-      SynchronousFileSource.create(file)
-        .runForeach(chunk -> System.out.println(chunk.utf8String()), mat);
+      Sink<ByteString, Future<BoxedUnit>> printlnSink =
+        Sink.foreach(chunk -> System.out.println(chunk.utf8String()));
+
+      Future<Long> bytesWritten =
+        SynchronousFileSource.create(file)
+          .to(printlnSink)
+          .run(mat);
       //#file-source
     } finally {
       file.delete();
@@ -75,6 +82,7 @@ public class StreamFileDocTest {
     final File file = File.createTempFile(getClass().getName(), ".tmp");
 
     try {
+      Sink<ByteString, Future<Long>> byteStringFutureSink =
       //#custom-dispatcher-code
       SynchronousFileSink.create(file)
         .withAttributes(ActorOperationAttributes.dispatcher("custom-file-io-dispatcher"));
