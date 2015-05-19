@@ -37,36 +37,105 @@ import akka.routing.RoundRobinRoutingLogic
 import akka.routing.ConsistentHashingRoutingLogic
 import akka.routing.BroadcastRoutingLogic
 import scala.collection.immutable.TreeMap
+import com.typesafe.config.Config
+import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.Deploy
+
+object DistributedPubSubSettings {
+  /**
+   * Create settings from the default configuration
+   * `akka.cluster.pub-sub`.
+   */
+  def apply(system: ActorSystem): DistributedPubSubSettings =
+    apply(system.settings.config.getConfig("akka.cluster.pub-sub"))
+
+  /**
+   * Create settings from a configuration with the same layout as
+   * the default configuration `akka.cluster.pub-sub`.
+   */
+  def apply(config: Config): DistributedPubSubSettings =
+    new DistributedPubSubSettings(
+      role = roleOption(config.getString("role")),
+      routingLogic = config.getString("routing-logic") match {
+        case "random"             ⇒ RandomRoutingLogic()
+        case "round-robin"        ⇒ RoundRobinRoutingLogic()
+        case "consistent-hashing" ⇒ throw new IllegalArgumentException(s"'consistent-hashing' routing logic can't be used by the pub-sub mediator")
+        case "broadcast"          ⇒ BroadcastRoutingLogic()
+        case other                ⇒ throw new IllegalArgumentException(s"Unknown 'routing-logic': [$other]")
+      },
+      gossipInterval = config.getDuration("gossip-interval", MILLISECONDS).millis,
+      removedTimeToLive = config.getDuration("removed-time-to-live", MILLISECONDS).millis,
+      maxDeltaElements = config.getInt("max-delta-elements"))
+
+  /**
+   * Java API: Create settings from the default configuration
+   * `akka.cluster.pub-sub`.
+   */
+  def create(system: ActorSystem): DistributedPubSubSettings = apply(system)
+
+  /**
+   * Java API: Create settings from a configuration with the same layout as
+   * the default configuration `akka.cluster.pub-sub`.
+   */
+  def create(config: Config): DistributedPubSubSettings = apply(config)
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def roleOption(role: String): Option[String] =
+    if (role == "") None else Option(role)
+}
+
+/**
+ * @param role Start the mediator on members tagged with this role.
+ *   All members are used if undefined.
+ * @param routingLogic The routing logic to use for `Send`.
+ * @param gossipInterval How often the DistributedPubSubMediator should send out gossip information
+ * @param removedTimeToLive Removed entries are pruned after this duration
+ * @param maxDeltaElements Maximum number of elements to transfer in one message when synchronizing
+ *   the registries. Next chunk will be transferred in next round of gossip.
+ */
+final class DistributedPubSubSettings(
+  val role: Option[String],
+  val routingLogic: RoutingLogic,
+  val gossipInterval: FiniteDuration,
+  val removedTimeToLive: FiniteDuration,
+  val maxDeltaElements: Int) extends NoSerializationVerificationNeeded {
+
+  require(!routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],
+    "'ConsistentHashingRoutingLogic' can't be used by the pub-sub mediator")
+
+  def withRole(role: String): DistributedPubSubSettings = copy(role = DistributedPubSubSettings.roleOption(role))
+
+  def withRole(role: Option[String]): DistributedPubSubSettings = copy(role = role)
+
+  def withRoutingLogic(routingLogic: RoutingLogic): DistributedPubSubSettings =
+    copy(routingLogic = routingLogic)
+
+  def withGossipInterval(gossipInterval: FiniteDuration): DistributedPubSubSettings =
+    copy(gossipInterval = gossipInterval)
+
+  def withRemovedTimeToLive(removedTimeToLive: FiniteDuration): DistributedPubSubSettings =
+    copy(removedTimeToLive = removedTimeToLive)
+
+  def withMaxDeltaElements(maxDeltaElements: Int): DistributedPubSubSettings =
+    copy(maxDeltaElements = maxDeltaElements)
+
+  private def copy(role: Option[String] = role,
+                   routingLogic: RoutingLogic = routingLogic,
+                   gossipInterval: FiniteDuration = gossipInterval,
+                   removedTimeToLive: FiniteDuration = removedTimeToLive,
+                   maxDeltaElements: Int = maxDeltaElements): DistributedPubSubSettings =
+    new DistributedPubSubSettings(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements)
+}
 
 object DistributedPubSubMediator {
 
   /**
    * Scala API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]].
    */
-  def props(
-    role: Option[String],
-    routingLogic: RoutingLogic = RandomRoutingLogic(),
-    gossipInterval: FiniteDuration = 1.second,
-    removedTimeToLive: FiniteDuration = 2.minutes,
-    maxDeltaElements: Int = 3000): Props =
-    Props(classOf[DistributedPubSubMediator], role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements)
-
-  /**
-   * Java API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]].
-   */
-  def props(
-    role: String,
-    routingLogic: RoutingLogic,
-    gossipInterval: FiniteDuration,
-    removedTimeToLive: FiniteDuration,
-    maxDeltaElements: Int): Props =
-    props(Internal.roleOption(role), routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements)
-
-  /**
-   * Java API: Factory method for `DistributedPubSubMediator` [[akka.actor.Props]]
-   * with default values.
-   */
-  def defaultProps(role: String): Props = props(Internal.roleOption(role))
+  def props(settings: DistributedPubSubSettings): Props =
+    Props(new DistributedPubSubMediator(settings)).withDeploy(Deploy.local)
 
   @SerialVersionUID(1L) final case class Put(ref: ActorRef)
   @SerialVersionUID(1L) final case class Remove(path: String)
@@ -170,11 +239,6 @@ object DistributedPubSubMediator {
     @SerialVersionUID(1L)
     final case class MediatorRouterEnvelope(msg: Any) extends RouterEnvelope {
       override def message = msg
-    }
-
-    def roleOption(role: String): Option[String] = role match {
-      case null | "" ⇒ None
-      case _         ⇒ Some(role)
     }
 
     def encName(s: String) = URLEncoder.encode(s, "utf-8")
@@ -285,7 +349,7 @@ trait DistributedPubSubMessage extends Serializable
  *
  * The `DistributedPubSubMediator` is supposed to be started on all nodes,
  * or all nodes with specified role, in the cluster. The mediator can be
- * started with the [[DistributedPubSubExtension]] or as an ordinary actor.
+ * started with the [[DistributedPubSub]] extension or as an ordinary actor.
  *
  * Changes are only performed in the own part of the registry and those changes
  * are versioned. Deltas are disseminated in a scalable way to other nodes with
@@ -345,16 +409,11 @@ trait DistributedPubSubMessage extends Serializable
  * [[DistributedPubSubMediator.SubscribeAck]] and [[DistributedPubSubMediator.UnsubscribeAck]]
  * replies.
  */
-class DistributedPubSubMediator(
-  role: Option[String],
-  routingLogic: RoutingLogic,
-  gossipInterval: FiniteDuration,
-  removedTimeToLive: FiniteDuration,
-  maxDeltaElements: Int)
-  extends Actor with ActorLogging {
+class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Actor with ActorLogging {
 
   import DistributedPubSubMediator._
   import DistributedPubSubMediator.Internal._
+  import settings._
 
   require(!routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],
     "'consistent-hashing' routing logic can't be used by the pub-sub mediator")
@@ -648,32 +707,29 @@ class DistributedPubSubMediator(
   }
 }
 
+object DistributedPubSub extends ExtensionId[DistributedPubSub] with ExtensionIdProvider {
+  override def get(system: ActorSystem): DistributedPubSub = super.get(system)
+
+  override def lookup = DistributedPubSub
+
+  override def createExtension(system: ExtendedActorSystem): DistributedPubSub =
+    new DistributedPubSub(system)
+}
+
 /**
  * Extension that starts a [[DistributedPubSubMediator]] actor
  * with settings defined in config section `akka.cluster.pub-sub`.
  */
-object DistributedPubSubExtension extends ExtensionId[DistributedPubSubExtension] with ExtensionIdProvider {
-  override def get(system: ActorSystem): DistributedPubSubExtension = super.get(system)
+class DistributedPubSub(system: ExtendedActorSystem) extends Extension {
 
-  override def lookup = DistributedPubSubExtension
-
-  override def createExtension(system: ExtendedActorSystem): DistributedPubSubExtension =
-    new DistributedPubSubExtension(system)
-}
-
-class DistributedPubSubExtension(system: ExtendedActorSystem) extends Extension {
-
-  private val config = system.settings.config.getConfig("akka.cluster.pub-sub")
-  private val role: Option[String] = config.getString("role") match {
-    case "" ⇒ None
-    case r  ⇒ Some(r)
-  }
+  private val settings = DistributedPubSubSettings(system)
 
   /**
    * Returns true if this member is not tagged with the role configured for the
    * mediator.
    */
-  def isTerminated: Boolean = Cluster(system).isTerminated || !role.forall(Cluster(system).selfRoles.contains)
+  def isTerminated: Boolean =
+    Cluster(system).isTerminated || !settings.role.forall(Cluster(system).selfRoles.contains)
 
   /**
    * The [[DistributedPubSubMediator]]
@@ -682,19 +738,8 @@ class DistributedPubSubExtension(system: ExtendedActorSystem) extends Extension 
     if (isTerminated)
       system.deadLetters
     else {
-      val routingLogic = config.getString("routing-logic") match {
-        case "random"             ⇒ RandomRoutingLogic()
-        case "round-robin"        ⇒ RoundRobinRoutingLogic()
-        case "consistent-hashing" ⇒ throw new IllegalArgumentException(s"'consistent-hashing' routing logic can't be used by the pub-sub mediator")
-        case "broadcast"          ⇒ BroadcastRoutingLogic()
-        case other                ⇒ throw new IllegalArgumentException(s"Unknown 'routing-logic': [$other]")
-      }
-      val gossipInterval = config.getDuration("gossip-interval", MILLISECONDS).millis
-      val removedTimeToLive = config.getDuration("removed-time-to-live", MILLISECONDS).millis
-      val maxDeltaElements = config.getInt("max-delta-elements")
-      val name = config.getString("name")
-      system.actorOf(DistributedPubSubMediator.props(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements),
-        name)
+      val name = system.settings.config.getString("akka.cluster.pub-sub.name")
+      system.actorOf(DistributedPubSubMediator.props(settings), name)
     }
   }
 }

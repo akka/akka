@@ -259,9 +259,9 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     //#create-singleton-manager
     system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[Consumer], queue, testActor),
-      singletonName = "consumer",
       terminationMessage = End,
-      role = Some("worker")),
+      settings = ClusterSingletonManagerSettings(system)
+        .withSingletonName("consumer").withRole("worker")),
       name = "singleton")
     //#create-singleton-manager
   }
@@ -270,7 +270,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     //#create-singleton-proxy
     system.actorOf(ClusterSingletonProxy.props(
       singletonPath = "/user/singleton/consumer",
-      role = Some("worker")),
+      settings = ClusterSingletonProxySettings(system).withRole("worker")),
       name = "consumerProxy")
     //#create-singleton-proxy
   }

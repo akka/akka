@@ -15,11 +15,13 @@ import akka.cluster.MemberStatus
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.singleton.ClusterSingletonManager
+import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.cluster.singleton.ClusterSingletonProxy
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import sample.cluster.stats.StatsMessages._
+import akka.cluster.singleton.ClusterSingletonProxySettings
 
 object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
   // register the named roles (nodes) of the test
@@ -100,14 +102,14 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
 
       Cluster(system).unsubscribe(testActor)
 
-      system.actorOf(ClusterSingletonManager.defaultProps(
+      system.actorOf(ClusterSingletonManager.props(
         Props[StatsService],
-        singletonName = "statsService",
         terminationMessage = PoisonPill,
-        role = null), name = "singleton")
+        settings = ClusterSingletonManagerSettings(system).withSingletonName("statsService")),
+        name = "singleton")
 
-      system.actorOf(ClusterSingletonProxy.defaultProps("/user/singleton/statsService",
-        "compute"), "statsServiceProxy");
+      system.actorOf(ClusterSingletonProxy.props("/user/singleton/statsService",
+        ClusterSingletonProxySettings(system).withRole("compute")), "statsServiceProxy")
 
       testConductor.enter("all-up")
     }

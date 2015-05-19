@@ -4,7 +4,10 @@
 
 package akka.cluster.pubsub;
 
+import com.typesafe.config.ConfigFactory;
+
 import akka.testkit.AkkaJUnitActorSystemResource;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -19,7 +22,10 @@ public class DistributedPubSubMediatorTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("DistributedPubSubMediatorTest");
+    new AkkaJUnitActorSystemResource("DistributedPubSubMediatorTest", 
+        ConfigFactory.parseString(
+            "akka.actor.provider = \"akka.cluster.ClusterActorRefProvider\"\n" +
+            "akka.remote.netty.tcp.port=0"));
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
@@ -47,7 +53,7 @@ public class DistributedPubSubMediatorTest {
 
     public Subscriber() {
       ActorRef mediator = 
-        DistributedPubSubExtension.get(getContext().system()).mediator();
+        DistributedPubSub.get(getContext().system()).mediator();
       // subscribe to the topic named "content"
       mediator.tell(new DistributedPubSubMediator.Subscribe("content", getSelf()), 
         getSelf());
@@ -70,7 +76,7 @@ public class DistributedPubSubMediatorTest {
 
     // activate the extension
     ActorRef mediator = 
-      DistributedPubSubExtension.get(getContext().system()).mediator();
+      DistributedPubSub.get(getContext().system()).mediator();
 
     public void onReceive(Object msg) {
       if (msg instanceof String) {
