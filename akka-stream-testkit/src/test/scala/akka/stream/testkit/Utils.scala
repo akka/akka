@@ -7,6 +7,7 @@ import akka.stream.impl._
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
+import scala.util.Try
 import scala.util.control.NoStackTrace
 
 object Utils {
@@ -19,9 +20,10 @@ object Utils {
   def assertAllStagesStopped[T](block: ⇒ T)(implicit materializer: FlowMaterializer): T =
     materializer match {
       case impl: ActorFlowMaterializerImpl ⇒
-        impl.supervisor ! StreamSupervisor.StopChildren
-        val result = block
         val probe = TestProbe()(impl.system)
+        probe.send(impl.supervisor, StreamSupervisor.StopChildren)
+        probe.expectMsg(StreamSupervisor.StoppedChildren)
+        val result = block
         probe.within(5.seconds) {
           probe.awaitAssert {
             impl.supervisor.tell(StreamSupervisor.GetChildren, probe.ref)

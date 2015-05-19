@@ -82,9 +82,11 @@ private[akka] object MultiStreamOutputProcessor {
     private def closePublisher(withState: CompletedState): Unit = {
       subscriptionTimeout.cancel()
       state.getAndSet(withState) match {
-        case Attached(sub)     ⇒ closeSubscriber(sub, withState)
         case _: CompletedState ⇒ throw new IllegalStateException("Attempted to double shutdown publisher")
-        case Open              ⇒ // No action needed
+        case Attached(sub) ⇒
+          if (subscriber eq null) tryOnSubscribe(sub, CancelledSubscription)
+          closeSubscriber(sub, withState)
+        case Open ⇒ // No action needed
       }
     }
 
