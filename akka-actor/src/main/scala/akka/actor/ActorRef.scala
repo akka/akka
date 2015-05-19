@@ -39,6 +39,7 @@ object ActorRef {
  * Scala:
  * {{{
  * import akka.pattern.ask
+ * import scala.concurrent.Await
  *
  * class ExampleActor extends Actor {
  *   val other = context.actorOf(Props[OtherActor], "childName") // will be destroyed and re-created upon restart by default
@@ -48,7 +49,9 @@ object ActorRef {
  *     case Request2(msg) => other.tell(msg, sender()) // forward sender reference, enabling direct reply
  *     case Request3(msg) =>
  *       implicit val timeout = Timeout(5.seconds)
- *       sender() ! (other ? msg)  // will reply with a Future for holding other's reply
+ *       (other ? msg) pipeTo sender()
+ *       // the ask call will get a future from other's reply
+ *       // when the future is complete, send its value to the original sender
  *   }
  * }
  * }}}
@@ -56,6 +59,7 @@ object ActorRef {
  * Java:
  * {{{
  * import static akka.pattern.Patterns.ask;
+ * import static akka.pattern.Patterns.pipe;
  *
  * public class ExampleActor extends UntypedActor {
  *   // this child will be destroyed and re-created upon restart by default
@@ -73,7 +77,9 @@ object ActorRef {
  *
  *     } else if (o instanceof Request3) {
  *       Msg msg = ((Request3) o).getMsg();
- *       getSender().tell(ask(other, msg, 5000)); // reply with Future for holding the other's reply (timeout 5 seconds)
+ *       pipe(ask(other, msg, 5000)).to(getSender());
+ *       // the ask call will get a future from other's reply
+ *       // when the future is complete, send its value to the original sender
  *
  *     } else {
  *       unhandled(o);
