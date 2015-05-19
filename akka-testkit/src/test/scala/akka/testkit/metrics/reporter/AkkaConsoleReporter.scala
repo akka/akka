@@ -11,7 +11,7 @@ import akka.testkit.metrics._
 import scala.reflect.ClassTag
 
 /**
- * Used to report [[Metric]] types that the original [[ConsoleReporter]] is unaware of (cannot re-use directly because of private constructor).
+ * Used to report `akka.testkit.metric.Metric` types that the original `com.codahale.metrics.ConsoleReporter` is unaware of (cannot re-use directly because of private constructor).
  */
 class AkkaConsoleReporter(
   registry: AkkaMetricRegistry,

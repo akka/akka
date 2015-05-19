@@ -33,7 +33,7 @@ import scala.util.control.NonFatal
  *
  * This way of writing Actors can be very useful when writing Actor-based
  * test procedures for actor systems, hence also the possibility to expect
- * failures (see [[StepWise$.Steps!.expectFailure]]).
+ * failures (see [[StepWise.Steps#expectFailure]]).
  */
 object StepWise {
   import Behavior._
@@ -173,3 +173,5 @@ object StepWise {
       case Nil ⇒ Stopped
     }
 }
+
+abstract class StepWise

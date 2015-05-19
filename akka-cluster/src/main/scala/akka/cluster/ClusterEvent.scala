@@ -129,7 +129,7 @@ object ClusterEvent {
   }
 
   /**
-   * Member status changed to [[MemberStatus.Exiting]] and will be removed
+   * Member status changed to `MemberStatus.Exiting` and will be removed
    * when all members have seen the `Exiting` status.
    */
   final case class MemberExited(member: Member) extends MemberEvent {
@@ -178,7 +178,7 @@ object ClusterEvent {
   final case object ClusterShuttingDown extends ClusterDomainEvent
 
   /**
-   * Java API: get the singleton instance of [[ClusterShuttingDown]] event
+   * Java API: get the singleton instance of `ClusterShuttingDown` event
    */
   def getClusterShuttingDownInstance = ClusterShuttingDown
 

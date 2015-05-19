@@ -19,7 +19,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferConverter, setAsJavaSetConverter }
 
 /**
- * Protobuf serializer for [[ClusterMetricsMessage]] types.
+ * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.
  */
 class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 

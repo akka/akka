@@ -19,7 +19,7 @@ private[akka] trait MetricsKitOps extends MetricKeyDSL {
 
   type MetricKey = MetricKeyDSL#MetricKey
 
-  /** Simple thread-safe counter, backed by [[LongAdder]] so can pretty efficiently work even when hit by multiple threads */
+  /** Simple thread-safe counter, backed by `java.util.concurrent.LongAdder` so can pretty efficiently work even when hit by multiple threads */
   def counter(key: MetricKey): Counter = registry.counter(key.toString)
 
   /** Simple averaging Gauge, which exposes an arithmetic mean of the values added to it. */
@@ -49,7 +49,7 @@ private[akka] trait MetricsKitOps extends MetricKeyDSL {
   /**
    * Use when measuring for 9x'th percentiles as well as min / max / mean values.
    *
-   * Backed by [[ExponentiallyDecayingReservoir]].
+   * Backed by codahale `ExponentiallyDecayingReservoir`.
    */
   def histogram(key: MetricKey): Histogram = {
     registry.histogram((key / "histogram").toString)
@@ -62,10 +62,10 @@ private[akka] trait MetricsKitOps extends MetricKeyDSL {
   }
 
   /**
-   * Enable memory measurements - will be logged by [[ScheduledReporter]]s if enabled.
+   * Enable memory measurements - will be logged by `ScheduledReporter`s if enabled.
    * Must not be triggered multiple times - pass around the `MemoryUsageSnapshotting` if you need to measure different points.
    *
-   * Also allows to [[MemoryUsageSnapshotting.getHeapSnapshot]] to obtain memory usage numbers at given point in time.
+   * Also allows to `MemoryUsageSnapshotting.getHeapSnapshot` to obtain memory usage numbers at given point in time.
    */
   def measureMemory(key: MetricKey): MemoryUsageGaugeSet with MemoryUsageSnapshotting = {
     val gaugeSet = new jvm.MemoryUsageGaugeSet() with MemoryUsageSnapshotting {

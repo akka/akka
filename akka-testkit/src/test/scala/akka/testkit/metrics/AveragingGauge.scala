@@ -8,7 +8,7 @@ import com.codahale.metrics.Gauge
 /**
  * Gauge which exposes the Arithmetic Mean of values given to it.
  *
- * Can be used to expose average of a series of values to [[com.codahale.metrics.ScheduledReporter]]s.
+ * Can be used to expose average of a series of values to `com.codahale.metrics.ScheduledReporter`.
  */
 class AveragingGauge extends Gauge[Double] {
 

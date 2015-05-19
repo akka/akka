@@ -19,7 +19,7 @@ object AtLeastOnceDelivery {
    * Snapshot of current `AtLeastOnceDelivery` state. Can be retrieved with
    * [[AtLeastOnceDelivery#getDeliverySnapshot]] and saved with [[PersistentActor#saveSnapshot]].
    * During recovery the snapshot received in [[SnapshotOffer]] should be set
-   * with [[AtLeastOnceDelivery.setDeliverySnapshot]].
+   * with [[AtLeastOnceDelivery#setDeliverySnapshot]].
    */
   @SerialVersionUID(1L)
   case class AtLeastOnceDeliverySnapshot(currentDeliveryId: Long, unconfirmedDeliveries: immutable.Seq[UnconfirmedDelivery])

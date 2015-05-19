@@ -23,7 +23,7 @@ import scala.reflect.ClassTag
  * please refer to <a href="http://openjdk.java.net/projects/code-tools/jmh/">JMH</a> if that's what you're writing.
  * This trait instead aims to give an high level overview as well as data for trend-analysis of long running tests.
  *
- * Reporting defaults to [[ConsoleReporter]].
+ * Reporting defaults to `ConsoleReporter`.
  * In order to send registry to Graphite run sbt with the following property: `-Dakka.registry.reporting.0=graphite`.
  */
 private[akka] trait MetricsKit extends MetricsKitOps {
@@ -195,7 +195,7 @@ private[akka] object MetricsKit {
   }
 }
 
-/** Provides access to custom Akka [[Metric]]s, with named methods. */
+/** Provides access to custom Akka `com.codahale.metrics.Metric`, with named methods. */
 trait AkkaMetricRegistry {
   this: MetricRegistry ⇒
 

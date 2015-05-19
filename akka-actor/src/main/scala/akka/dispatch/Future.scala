@@ -41,7 +41,7 @@ object ExecutionContexts {
    * Returns a new ExecutionContextExecutorService which will delegate execution to the underlying ExecutorService,
    * and which will use the default error reporter.
    *
-   * @param executor the ExecutorService which will be used for the ExecutionContext
+   * @param executorService the ExecutorService which will be used for the ExecutionContext
    * @return a new ExecutionContext
    */
   def fromExecutorService(executorService: ExecutorService): ExecutionContextExecutorService =
@@ -51,7 +51,7 @@ object ExecutionContexts {
    * Returns a new ExecutionContextExecutorService which will delegate execution to the underlying ExecutorService,
    * and which will use the provided error reporter.
    *
-   * @param executor the ExecutorService which will be used for the ExecutionContext
+   * @param executorService the ExecutorService which will be used for the ExecutionContext
    * @param errorReporter a Procedure that will log any exceptions passed to it
    * @return a new ExecutionContext
    */
@@ -272,7 +272,7 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
    * becomes completed with a failure.
    *
    * @return a successful value for the passed in failure
-   * @throws the passed in failure to propagate it.
+   * Throws the passed in failure to propagate it.
    *
    * Java API
    */
@@ -350,7 +350,7 @@ abstract class Mapper[-T, +R] extends scala.runtime.AbstractFunction1[T, R] {
   /**
    * Override this method if you need to throw checked exceptions
    *
-   * @throws UnsupportedOperation by default
+   * Throws UnsupportedOperation by default.
    */
   @throws(classOf[Throwable])
   def checkedApply(parameter: T): R = throw new UnsupportedOperationException("Mapper.checkedApply has not been implemented")

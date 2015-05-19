@@ -50,7 +50,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
  *
  * Each cluster [[Member]] is identified by its [[akka.actor.Address]], and
  * the cluster address of this actor system is [[#selfAddress]]. A member also has a status;
- * initially [[MemberStatus.Joining]] followed by [[MemberStatus.Up]].
+ * initially [[MemberStatus]] `Joining` followed by [[MemberStatus]] `Up`.
  */
 class Cluster(val system: ExtendedActorSystem) extends Extension {
 
@@ -212,11 +212,11 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * The `to` classes can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
    * or subclasses.
    *
-   * If `initialStateMode` is [[ClusterEvent.InitialStateAsEvents]] the events corresponding
+   * If `initialStateMode` is `ClusterEvent.InitialStateAsEvents` the events corresponding
    * to the current state will be sent to the subscriber to mimic what you would
    * have seen if you were listening to the events when they occurred in the past.
    *
-   * If `initialStateMode` is [[ClusterEvent.InitialStateAsSnapshot]] a snapshot of
+   * If `initialStateMode` is `ClusterEvent.InitialStateAsSnapshot` a snapshot of
    * [[akka.cluster.ClusterEvent.CurrentClusterState]] will be sent to the subscriber as the
    * first message.
    *
@@ -274,8 +274,8 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.
-   * The member will go through the status changes [[MemberStatus.Leaving]] (not published to
-   * subscribers) followed by [[MemberStatus.Exiting]] and finally [[MemberStatus.Removed]].
+   * The member will go through the status changes [[MemberStatus]] `Leaving` (not published to
+   * subscribers) followed by [[MemberStatus]] `Exiting` and finally [[MemberStatus]] `Removed`.
    *
    * Note that this command can be issued to any member in the cluster, not necessarily the
    * one that is leaving. The cluster extension, but not the actor system or JVM, of the
@@ -300,7 +300,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   /**
    * The supplied thunk will be run, once, when current cluster member is `Up`.
-   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members`
    * to defer some action, such as starting actors, until the cluster has reached
    * a certain size.
    */
@@ -309,7 +309,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   /**
    * Java API: The supplied callback will be run, once, when current cluster member is `Up`.
-   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members`
    * to defer some action, such as starting actors, until the cluster has reached
    * a certain size.
    */
@@ -344,7 +344,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * Shuts down all connections to other members, the cluster daemon and the periodic gossip and cleanup tasks.
    *
    * Should not called by the user. The user can issue a LEAVE command which will tell the node
-   * to go through graceful handoff process `LEAVE -> EXITING -> REMOVED -> SHUTDOWN`.
+   * to go through graceful handoff process `LEAVE -&gt; EXITING -&gt; REMOVED -&gt; SHUTDOWN`.
    */
   private[cluster] def shutdown(): Unit = {
     if (_isTerminated.compareAndSet(false, true)) {

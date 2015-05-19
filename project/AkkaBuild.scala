@@ -203,9 +203,10 @@ object AkkaBuild extends Build {
     settings = parentSettings ++ ActivatorDist.settings,
     // FIXME osgiDiningHakkersSampleMavenTest temporarily removed from aggregate due to #16703
     aggregate = if (!CommandLineOptions.aggregateSamples) Nil else
-      Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala,
-        sampleMainJava, sampleMainScala, sampleMultiNodeScala,
-        samplePersistenceJava, samplePersistenceScala, sampleRemoteJava, sampleRemoteScala)
+      Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala, sampleFsmJavaLambda,
+        sampleMainJava, sampleMainScala, sampleMainJavaLambda, sampleMultiNodeScala,
+        samplePersistenceJava, samplePersistenceScala, samplePersistenceJavaLambda,
+        sampleRemoteJava, sampleRemoteScala, sampleSupervisionJavaLambda)
   )
 
   lazy val sampleCamelJava = Sample.project("akka-sample-camel-java")
@@ -215,17 +216,22 @@ object AkkaBuild extends Build {
   lazy val sampleClusterScala = Sample.project("akka-sample-cluster-scala")
 
   lazy val sampleFsmScala = Sample.project("akka-sample-fsm-scala")
+  lazy val sampleFsmJavaLambda = Sample.project("akka-sample-fsm-java-lambda")
 
   lazy val sampleMainJava = Sample.project("akka-sample-main-java")
   lazy val sampleMainScala = Sample.project("akka-sample-main-scala")
+  lazy val sampleMainJavaLambda = Sample.project("akka-sample-main-java-lambda")
 
   lazy val sampleMultiNodeScala = Sample.project("akka-sample-multi-node-scala")
 
   lazy val samplePersistenceJava = Sample.project("akka-sample-persistence-java")
   lazy val samplePersistenceScala = Sample.project("akka-sample-persistence-scala")
+  lazy val samplePersistenceJavaLambda = Sample.project("akka-sample-persistence-java-lambda")
 
   lazy val sampleRemoteJava = Sample.project("akka-sample-remote-java")
   lazy val sampleRemoteScala = Sample.project("akka-sample-remote-scala")
+  
+  lazy val sampleSupervisionJavaLambda = Sample.project("akka-sample-supervision-java-lambda")
 
   lazy val osgiDiningHakkersSampleMavenTest = Project(id = "akka-sample-osgi-dining-hakkers-maven-test",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers-maven-test"),
@@ -305,13 +311,13 @@ object AkkaBuild extends Build {
   lazy val defaultSettings = baseSettings ++ resolverSettings ++ TestExtras.Filter.settings ++
     Protobuf.settings ++ Seq(
     // compile options
-    scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
+    scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
     scalacOptions in Test := (scalacOptions in Test).value.filterNot(_ == "-Xlog-reflective-calls"),
     // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
-    javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-XDignore.symbol.file"),
+    javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
     javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.6"),
+    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.8"),
     incOptions := incOptions.value.withNameHashing(true),
 
     crossVersion := CrossVersion.binary,

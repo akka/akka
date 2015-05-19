@@ -51,7 +51,7 @@ private[akka] class EventStreamUnsubscriber(eventStream: EventStream, debug: Boo
  * INTERNAL API
  *
  * Provides factory for [[akka.event.EventStreamUnsubscriber]] actors with **unique names**.
- * This is needed if someone spins up more [[EventStream]]s using the same [[ActorSystem]],
+ * This is needed if someone spins up more [[EventStream]]s using the same [[akka.actor.ActorSystem]],
  * each stream gets it's own unsubscriber.
  */
 private[akka] object EventStreamUnsubscriber {

@@ -106,6 +106,7 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
       within(10.seconds) {
         awaitAssert(cluster.state.members.count(m ⇒ m.status == MemberStatus.Up) should be(3))
       }
+      enterBarrier("all-up")
 
       runOn(second) {
         cluster.leave(node(first).address)

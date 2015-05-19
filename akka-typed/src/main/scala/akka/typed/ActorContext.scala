@@ -113,13 +113,13 @@ trait ActorContext[T] {
   def watch(other: akka.actor.ActorRef): akka.actor.ActorRef
 
   /**
-   * Revoke the registration established by [[#watch[U]* watch]]. A [[Terminated]]
+   * Revoke the registration established by `watch`. A [[Terminated]]
    * notification will not subsequently be received for the referenced Actor.
    */
   def unwatch[U](other: ActorRef[U]): ActorRef[U]
 
   /**
-   * Revoke the registration established by [[#watch(* watch]]. A [[Terminated]]
+   * Revoke the registration established by `watch`. A [[Terminated]]
    * notification will not subsequently be received for the referenced Actor.
    */
   def unwatch(other: akka.actor.ActorRef): akka.actor.ActorRef
@@ -135,7 +135,7 @@ trait ActorContext[T] {
   /**
    * Schedule the sending of the given message to the given target Actor after
    * the given time period has elapsed. The scheduled action can be cancelled
-   * by invoking [[akka.actor.Cancellable!.cancel* cancel]] on the returned
+   * by invoking [[akka.actor.Cancellable]] `cancel` on the returned
    * handle.
    */
   def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): untyped.Cancellable
@@ -157,9 +157,9 @@ trait ActorContext[T] {
 /**
  * An [[ActorContext]] for synchronous execution of a [[Behavior]] that
  * provides only stubs for the effects an Actor can perform and replaces
- * created child Actors by [[Inbox$.sync* a synchronous Inbox]].
+ * created child Actors by a synchronous Inbox (see `Inbox.sync`).
  *
- * @see [[EffectfulActorContext]] for more advanced uses.
+ * See [[EffectfulActorContext]] for more advanced uses.
  */
 class StubbedActorContext[T](
   val name: String,

@@ -76,7 +76,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * Returns a dispatcher as specified in configuration. Please note that this
    * method _may_ create and return a NEW dispatcher, _every_ call.
    *
-   * @throws ConfigurationException if the specified dispatcher cannot be found in the configuration
+   * Throws ConfigurationException if the specified dispatcher cannot be found in the configuration.
    */
   def lookup(id: String): MessageDispatcher = lookupConfigurator(id).dispatcher()
 

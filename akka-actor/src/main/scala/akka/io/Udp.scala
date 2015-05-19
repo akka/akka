@@ -120,13 +120,13 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    * Send this message to a listener actor (which sent a [[Bound]] message) to
    * have it stop reading datagrams from the network. If the O/S kernel’s receive
    * buffer runs full then subsequent datagrams will be silently discarded.
-   * Re-enable reading from the socket using the [[ResumeReading]] command.
+   * Re-enable reading from the socket using the `ResumeReading` command.
    */
   case object SuspendReading extends Command
 
   /**
    * This message must be sent to the listener actor to re-enable reading from
-   * the socket after a [[SuspendReading]] command.
+   * the socket after a `SuspendReading` command.
    */
   case object ResumeReading extends Command
 
@@ -161,7 +161,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
   case object SimpleSenderReady extends SimpleSenderReady
 
   /**
-   * This message is sent by the listener actor in response to an [[Unbind]] command
+   * This message is sent by the listener actor in response to an `Unbind` command
    * after the socket has been closed.
    */
   sealed trait Unbound
@@ -312,13 +312,13 @@ object UdpMessage {
    * Send this message to a listener actor (which sent a [[Udp.Bound]] message) to
    * have it stop reading datagrams from the network. If the O/S kernel’s receive
    * buffer runs full then subsequent datagrams will be silently discarded.
-   * Re-enable reading from the socket using the [[Udp.ResumeReading]] command.
+   * Re-enable reading from the socket using the `Udp.ResumeReading` command.
    */
   def suspendReading: Command = SuspendReading
 
   /**
    * This message must be sent to the listener actor to re-enable reading from
-   * the socket after a [[Udp.SuspendReading]] command.
+   * the socket after a `Udp.SuspendReading` command.
    */
   def resumeReading: Command = ResumeReading
 }

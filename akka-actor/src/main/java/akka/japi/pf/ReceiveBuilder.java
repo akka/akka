@@ -10,19 +10,20 @@ package akka.japi.pf;
  * There is both a match on type only, and a match on type and predicate.
  *
  * Inside an actor you can use it like this with Java 8 to define your receive method.
- * <p/>
+ * <p>
  * Example:
+ * </p>
  * <pre>
- * @Override
+ * &#64;Override
  * public Actor() {
  *   receive(ReceiveBuilder.
- *     match(Double.class, d -> {
+ *     match(Double.class, d -&gt; {
  *       sender().tell(d.isNaN() ? 0 : d, self());
  *     }).
- *     match(Integer.class, i -> {
+ *     match(Integer.class, i -&gt; {
  *       sender().tell(i * 10, self());
  *     }).
- *     match(String.class, s -> s.startsWith("foo"), s -> {
+ *     match(String.class, s -&gt; s.startsWith("foo"), s -&gt; {
  *       sender().tell(s.toUpperCase(), self());
  *     }).build()
  *   );

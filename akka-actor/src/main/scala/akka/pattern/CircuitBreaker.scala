@@ -108,9 +108,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    * Wraps invocations of asynchronous calls that need to be protected
    *
    * @param body Call needing protected
-   * @tparam T return type from call
    * @return [[scala.concurrent.Future]] containing the call result or a
-   * [[scala.concurrent.TimeoutException]] if the call timed out
+   *   `scala.concurrent.TimeoutException` if the call timed out
    *
    */
   def withCircuitBreaker[T](body: ⇒ Future[T]): Future[T] = currentState.invoke(body)
@@ -119,9 +118,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    * Java API for [[#withCircuitBreaker]]
    *
    * @param body Call needing protected
-   * @tparam T return type from call
    * @return [[scala.concurrent.Future]] containing the call result or a
-   * [[scala.concurrent.TimeoutException]] if the call timed out
+   *   `scala.concurrent.TimeoutException` if the call timed out
    */
   def callWithCircuitBreaker[T](body: Callable[Future[T]]): Future[T] = withCircuitBreaker(body.call)
 
@@ -129,12 +127,12 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    * Wraps invocations of synchronous calls that need to be protected
    *
    * Calls are run in caller's thread. Because of the synchronous nature of
-   * this call the  [[scala.concurrent.TimeoutException]] will only be thrown
+   * this call the  `scala.concurrent.TimeoutException` will only be thrown
    * after the body has completed.
    *
+   * Throws java.util.concurrent.TimeoutException if the call timed out.
+   *
    * @param body Call needing protected
-   * @tparam T return type from call
-   * @throws scala.concurrent.TimeoutException if the call timed out
    * @return The result of the call
    */
   def withSyncCircuitBreaker[T](body: ⇒ T): T =
@@ -143,11 +141,9 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
       callTimeout)
 
   /**
-   * Java API for [[#withSyncCircuitBreaker]]
+   * Java API for [[#withSyncCircuitBreaker]]. Throws [[java.util.concurrent.TimeoutException]] if the call timed out.
    *
    * @param body Call needing protected
-   * @tparam T return type from call
-   * @throws scala.concurrent.TimeoutException if the call timed out
    * @return The result of the call
    */
   def callWithSyncCircuitBreaker[T](body: Callable[T]): T = withSyncCircuitBreaker(body.call)
@@ -223,11 +219,10 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
   private[akka] def currentFailureCount: Int = Closed.get
 
   /**
-   * Implements consistent transition between states
+   * Implements consistent transition between states. Throws IllegalStateException if an invalid transition is attempted.
    *
    * @param fromState State being transitioning from
    * @param toState State being transitioning from
-   * @throws IllegalStateException if an invalid transition is attempted
    */
   private def transition(fromState: State, toState: State): Unit =
     if (swapState(fromState, toState))
@@ -254,6 +249,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    */
   private def attemptReset(): Unit = transition(Open, HalfOpen)
 
+  private val timeoutFuture = Future.failed(new TimeoutException("Circuit Breaker Timed out.") with NoStackTrace)
+
   /**
    * Internal state abstraction
    */
@@ -264,7 +261,6 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * Add a listener function which is invoked on state entry
      *
      * @param listener listener implementation
-     * @tparam T return type of listener, not used - but supplied for type inference purposes
      */
     def addListener(listener: Runnable): Unit = listeners add listener
 
@@ -295,7 +291,6 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * call timeout is counted as a failed call, otherwise a successful call
      *
      * @param body Implementation of the call
-     * @tparam T Return type of the call's implementation
      * @return Future containing the result of the call
      */
     def callThrough[T](body: ⇒ Future[T]): Future[T] = {
@@ -308,14 +303,13 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
         val p = Promise[T]()
 
         implicit val ec = sameThreadExecutionContext
-        p.future.onComplete({
+        p.future.onComplete {
           case s: Success[_] ⇒ callSucceeds()
           case _             ⇒ callFails()
-        })
+        }
 
         val timeout = scheduler.scheduleOnce(callTimeout) {
-          p.tryCompleteWith(
-            Future.failed(new TimeoutException("Circuit Breaker Timed out.")))
+          p tryCompleteWith timeoutFuture
         }
 
         materialize(body).onComplete { result ⇒
@@ -330,7 +324,6 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * Abstract entry point for all states
      *
      * @param body Implementation of the call that needs protected
-     * @tparam T Return type of protected call
      * @return Future containing result of protected call
      */
     def invoke[T](body: ⇒ Future[T]): Future[T]
@@ -373,7 +366,6 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * Implementation of invoke, which simply attempts the call
      *
      * @param body Implementation of the call that needs protected
-     * @tparam T Return type of protected call
      * @return Future containing result of protected call
      */
     override def invoke[T](body: ⇒ Future[T]): Future[T] = callThrough(body)
@@ -418,7 +410,6 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * If the call succeeds the breaker closes.
      *
      * @param body Implementation of the call that needs protected
-     * @tparam T Return type of protected call
      * @return Future containing result of protected call
      */
     override def invoke[T](body: ⇒ Future[T]): Future[T] =
@@ -462,7 +453,6 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * Fail-fast on any invocation
      *
      * @param body Implementation of the call that needs protected
-     * @tparam T Return type of protected call
      * @return Future containing result of protected call
      */
     override def invoke[T](body: ⇒ Future[T]): Future[T] =
