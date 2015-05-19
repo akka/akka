@@ -12,22 +12,22 @@ object Dependencies {
     val scalaVersion = crossScala.head
     val scalaStmVersion  = sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7")
     val scalaTestVersion = sys.props.get("akka.build.scalaTestVersion").getOrElse("2.2.4")
-    val scalaCheckVersion = sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.3")
+    val scalaCheckVersion = sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.6")
   }
 
   object Compile {
     import Versions._
 
     // Compile
-    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.4" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config        = "com.typesafe"                % "config"                       % "1.2.1"       // ApacheV2
-    val netty         = "io.netty"                    % "netty"                        % "3.8.0.Final" // ApacheV2
+    val netty         = "io.netty"                    % "netty"                        % "3.10.3.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
 
-    val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.7"       // MIT
+    val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.12"       // MIT
     // mirrored in OSGi sample
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
@@ -37,31 +37,31 @@ object Dependencies {
     val sigar         = "org.fusesource"              % "sigar"                        % "1.6.4"       // ApacheV2
 
     object Test {
-      val commonsMath  = "org.apache.commons"          % "commons-math"                 % "2.1"              % "test" // ApacheV2
+      val commonsMath  = "org.apache.commons"          % "commons-math"                 % "2.2"              % "test" // ApacheV2
       val commonsIo    = "commons-io"                  % "commons-io"                   % "2.4"              % "test" // ApacheV2
-      val commonsCodec = "commons-codec"               % "commons-codec"                % "1.7"              % "test" // ApacheV2
-      val junit        = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
-      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.0.13"           % "test" // EPL 1.0 / LGPL 2.1
-      val mockito      = "org.mockito"                 % "mockito-all"                  % "1.9.5"            % "test" // MIT
+      val commonsCodec = "commons-codec"               % "commons-codec"                % "1.10"             % "test" // ApacheV2
+      val junit        = "junit"                       % "junit"                        % "4.12"             % "test" // Common Public License 1.0
+      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
+      val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest    = "org.scalatest"              %% "scalatest"                    % scalaTestVersion   % "test" // ApacheV2
       val scalacheck   = "org.scalacheck"             %% "scalacheck"                   % scalaCheckVersion  % "test" // New BSD
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.2.1"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
-      val junitIntf    = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
-      val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.1"            % "test"
+      val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
+      val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.4"            % "test"
 
       // metrics, measurements, perf testing
-      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
-      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.1"            % "test" // ApacheV2
+      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
+      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
       val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
       val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "1.1.4"            % "test" // CC0
       val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging
-      val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.7"    % "test"    // MIT
-      val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.7"    % "test"    // MIT
+      val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.12"    % "test"    // MIT
+      val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.12"    % "test"    // MIT
     }
 
     object Provided {
@@ -69,7 +69,7 @@ object Dependencies {
       val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.5-rev001"     %     "optional;provided;test" // ApacheV2
       
       val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
-      val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.7"    %  "optional;provided"     // New BSD
+      val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"    %  "optional;provided"     // New BSD
     }
     
   }
