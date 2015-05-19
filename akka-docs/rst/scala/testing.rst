@@ -581,13 +581,6 @@ Which of these methods is the best depends on what is most important to test. Th
 most generic option is to create the parent actor by passing it a function that is
 responsible for the Actor creation, but the fabricated parent is often sufficient.
 
-
-.. includecode:: code/docs/testkit/ParentChildSpec.scala#test-fabricated-parent
-
-Which of these methods is the best depends on what is most important to test. The 
-most generic option is to create the parent actor by passing it the partial function, 
-but the fabricated parent is often sufficient. 
-
 .. _Scala-CallingThreadDispatcher:
 
 CallingThreadDispatcher
