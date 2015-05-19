@@ -31,12 +31,16 @@ public class ClusterSingletonManagerTest {
     final ActorRef testActor = null;
 
     //#create-singleton-manager
-    system.actorOf(ClusterSingletonManager.defaultProps(Props.create(Consumer.class, queue, testActor), "consumer",
-        new End(), "worker"), "singleton");
+    final ClusterSingletonManagerSettings settings = ClusterSingletonManagerSettings.create(system)
+        .withSingletonName("consumer").withRole("worker");
+    system.actorOf(ClusterSingletonManager.props(Props.create(Consumer.class, queue, testActor), 
+        new End(), settings), "singleton");
     //#create-singleton-manager
 
     //#create-singleton-proxy
-    system.actorOf(ClusterSingletonProxy.defaultProps("user/singleton/consumer", "worker"), "consumerProxy");
+    ClusterSingletonProxySettings proxySettings = 
+        ClusterSingletonProxySettings.create(system).withRole("worker");
+    system.actorOf(ClusterSingletonProxy.props("user/singleton/consumer", proxySettings), "consumerProxy");
     //#create-singleton-proxy
   }
 

@@ -4,64 +4,113 @@
 package akka.cluster.client
 
 import java.net.URLEncoder
+
 import scala.collection.immutable
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
+import akka.actor.ActorPath
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.Cancellable
+import akka.actor.Deploy
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.Identify
+import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.ReceiveTimeout
+import akka.actor.Stash
 import akka.actor.Terminated
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
+import akka.cluster.pubsub._
+import akka.japi.Util.immutableSeq
 import akka.routing.ConsistentHash
 import akka.routing.MurmurHash
-import akka.actor.Stash
-import akka.actor.Cancellable
-import akka.cluster.pubsub._
+import com.typesafe.config.Config
+
+object ClusterClientSettings {
+  /**
+   * Create settings from the default configuration
+   * `akka.cluster.client`.
+   */
+  def apply(system: ActorSystem): ClusterClientSettings =
+    apply(system.settings.config.getConfig("akka.cluster.client"))
+
+  /**
+   * Create settings from a configuration with the same layout as
+   * the default configuration `akka.cluster.client`.
+   */
+  def apply(config: Config): ClusterClientSettings = {
+    val initialContacts = immutableSeq(config.getStringList("initial-contacts")).map(ActorPath.fromString).toSet
+    new ClusterClientSettings(
+      initialContacts,
+      establishingGetContactsInterval = config.getDuration("establishing-get-contacts-interval", MILLISECONDS).millis,
+      refreshContactsInterval = config.getDuration("refresh-contacts-interval", MILLISECONDS).millis)
+  }
+
+  /**
+   * Java API: Create settings from the default configuration
+   * `akka.cluster.client`.
+   */
+  def create(system: ActorSystem): ClusterClientSettings = apply(system)
+
+  /**
+   * Java API: Create settings from a configuration with the same layout as
+   * the default configuration `akka.cluster.client`.
+   */
+  def create(config: Config): ClusterClientSettings = apply(config)
+
+}
+
+/**
+ * @param initialContacts Actor paths of the `ClusterReceptionist` actors on
+ *   the servers (cluster nodes) that the client will try to contact initially.
+ * @param establishingGetContactsInterval Interval at which the client retries
+ *   to establish contact with one of ClusterReceptionist on the servers (cluster nodes)
+ * @param refreshContactsInterval Interval at which the client will ask the
+ *   `ClusterReceptionist` for new contact points to be used for next reconnect.
+ */
+final class ClusterClientSettings(
+  val initialContacts: Set[ActorPath],
+  val establishingGetContactsInterval: FiniteDuration,
+  val refreshContactsInterval: FiniteDuration) extends NoSerializationVerificationNeeded {
+
+  def withInitialContacts(initialContacts: Set[ActorPath]): ClusterClientSettings = {
+    require(initialContacts.nonEmpty, "initialContacts must be defined")
+    copy(initialContacts = initialContacts)
+  }
+
+  def withEstablishingGetContactsInterval(establishingGetContactsInterval: FiniteDuration): ClusterClientSettings =
+    copy(establishingGetContactsInterval = establishingGetContactsInterval)
+
+  def withRefreshContactsInterval(refreshContactsInterval: FiniteDuration): ClusterClientSettings =
+    copy(refreshContactsInterval = refreshContactsInterval)
+
+  private def copy(
+    initialContacts: Set[ActorPath] = initialContacts,
+    establishingGetContactsInterval: FiniteDuration = establishingGetContactsInterval,
+    refreshContactsInterval: FiniteDuration = refreshContactsInterval): ClusterClientSettings =
+    new ClusterClientSettings(initialContacts, establishingGetContactsInterval, refreshContactsInterval)
+
+}
 
 object ClusterClient {
 
   /**
    * Scala API: Factory method for `ClusterClient` [[akka.actor.Props]].
    */
-  def props(
-    initialContacts: Set[ActorSelection],
-    establishingGetContactsInterval: FiniteDuration = 3.second,
-    refreshContactsInterval: FiniteDuration = 1.minute): Props =
-    Props(classOf[ClusterClient], initialContacts, establishingGetContactsInterval, refreshContactsInterval).
-      withMailbox("akka.cluster.client.mailbox")
-
-  /**
-   * Java API: Factory method for `ClusterClient` [[akka.actor.Props]].
-   */
-  def props(
-    initialContacts: java.util.Set[ActorSelection],
-    establishingGetContactsInterval: FiniteDuration,
-    refreshContactsInterval: FiniteDuration): Props = {
-    import scala.collection.JavaConverters._
-    props(initialContacts.asScala.toSet, establishingGetContactsInterval, refreshContactsInterval)
-  }
-
-  /**
-   * Java API: Factory method for `ClusterClient` [[akka.actor.Props]] with
-   * default values.
-   */
-  def defaultProps(initialContacts: java.util.Set[ActorSelection]): Props = {
-    import scala.collection.JavaConverters._
-    props(initialContacts.asScala.toSet)
-  }
+  def props(settings: ClusterClientSettings): Props =
+    Props(new ClusterClient(settings)).withDeploy(Deploy.local).withMailbox("akka.cluster.client.mailbox")
 
   @SerialVersionUID(1L)
   final case class Send(path: String, msg: Any, localAffinity: Boolean) {
@@ -116,17 +165,18 @@ object ClusterClient {
  *  Use the factory method [[ClusterClient#props]]) to create the
  * [[akka.actor.Props]] for the actor.
  */
-class ClusterClient(
-  initialContacts: Set[ActorSelection],
-  establishingGetContactsInterval: FiniteDuration,
-  refreshContactsInterval: FiniteDuration)
-  extends Actor with Stash with ActorLogging {
+class ClusterClient(settings: ClusterClientSettings) extends Actor with Stash with ActorLogging {
 
   import ClusterClient._
   import ClusterClient.Internal._
   import ClusterReceptionist.Internal._
+  import settings._
 
-  var contacts: immutable.IndexedSeq[ActorSelection] = initialContacts.toVector
+  require(initialContacts.nonEmpty, "initialContacts must be defined")
+
+  val initialContactsSel: immutable.IndexedSeq[ActorSelection] =
+    initialContacts.map(context.actorSelection).toVector
+  var contacts = initialContactsSel
   sendGetContacts()
 
   import context.dispatcher
@@ -187,27 +237,27 @@ class ClusterClient(
   }
 
   def sendGetContacts(): Unit = {
-    if (contacts.isEmpty) initialContacts foreach { _ ! GetContacts }
-    else if (contacts.size == 1) (initialContacts ++ contacts) foreach { _ ! GetContacts }
+    if (contacts.isEmpty) initialContactsSel foreach { _ ! GetContacts }
+    else if (contacts.size == 1) (initialContactsSel ++ contacts) foreach { _ ! GetContacts }
     else contacts foreach { _ ! GetContacts }
   }
+}
+
+object ClusterClientReceptionist extends ExtensionId[ClusterClientReceptionist] with ExtensionIdProvider {
+  override def get(system: ActorSystem): ClusterClientReceptionist = super.get(system)
+
+  override def lookup = ClusterClientReceptionist
+
+  override def createExtension(system: ExtendedActorSystem): ClusterClientReceptionist =
+    new ClusterClientReceptionist(system)
 }
 
 /**
  * Extension that starts [[ClusterReceptionist]] and accompanying [[akka.cluster.pubsub.DistributedPubSubMediator]]
  * with settings defined in config section `akka.cluster.client.receptionist`.
- * The [[akka.cluster.pubsub.DistributedPubSubMediator]] is started by the [[akka.cluster.pubsub.DistributedPubSubExtension]].
+ * The [[akka.cluster.pubsub.DistributedPubSubMediator]] is started by the [[akka.cluster.pubsub.DistributedPubSub]] extension.
  */
-object ClusterReceptionistExtension extends ExtensionId[ClusterReceptionistExtension] with ExtensionIdProvider {
-  override def get(system: ActorSystem): ClusterReceptionistExtension = super.get(system)
-
-  override def lookup = ClusterReceptionistExtension
-
-  override def createExtension(system: ExtendedActorSystem): ClusterReceptionistExtension =
-    new ClusterReceptionistExtension(system)
-}
-
-class ClusterReceptionistExtension(system: ExtendedActorSystem) extends Extension {
+class ClusterClientReceptionist(system: ExtendedActorSystem) extends Extension {
 
   private val config = system.settings.config.getConfig("akka.cluster.client.receptionist")
   private val role: Option[String] = config.getString("role") match {
@@ -224,7 +274,7 @@ class ClusterReceptionistExtension(system: ExtendedActorSystem) extends Extensio
   /**
    * Register the actors that should be reachable for the clients in this [[DistributedPubSubMediator]].
    */
-  private def pubSubMediator: ActorRef = DistributedPubSubExtension(system).mediator
+  private def pubSubMediator: ActorRef = DistributedPubSub(system).mediator
 
   /**
    * Register an actor that should be reachable for the clients.
@@ -264,16 +314,80 @@ class ClusterReceptionistExtension(system: ExtendedActorSystem) extends Extensio
     if (isTerminated)
       system.deadLetters
     else {
-      val numberOfContacts: Int = config.getInt("number-of-contacts")
-      val responseTunnelReceiveTimeout =
-        config.getDuration("response-tunnel-receive-timeout", MILLISECONDS).millis
       val name = config.getString("name")
       // important to use val mediator here to activate it outside of ClusterReceptionist constructor
       val mediator = pubSubMediator
-      system.actorOf(ClusterReceptionist.props(mediator, role, numberOfContacts,
-        responseTunnelReceiveTimeout), name)
+      system.actorOf(ClusterReceptionist.props(mediator, ClusterReceptionistSettings(config)), name)
     }
   }
+}
+
+object ClusterReceptionistSettings {
+  /**
+   * Create settings from the default configuration
+   * `akka.cluster.client.receptionist`.
+   */
+  def apply(system: ActorSystem): ClusterReceptionistSettings =
+    apply(system.settings.config.getConfig("akka.cluster.client.receptionist"))
+
+  /**
+   * Create settings from a configuration with the same layout as
+   * the default configuration `akka.cluster.client.receptionist`.
+   */
+  def apply(config: Config): ClusterReceptionistSettings =
+    new ClusterReceptionistSettings(
+      role = roleOption(config.getString("role")),
+      numberOfContacts = config.getInt("number-of-contacts"),
+      responseTunnelReceiveTimeout = config.getDuration("response-tunnel-receive-timeout", MILLISECONDS).millis)
+
+  /**
+   * Java API: Create settings from the default configuration
+   * `akka.cluster.client.receptionist`.
+   */
+  def create(system: ActorSystem): ClusterReceptionistSettings = apply(system)
+
+  /**
+   * Java API: Create settings from a configuration with the same layout as
+   * the default configuration `akka.cluster.client.receptionist`.
+   */
+  def create(config: Config): ClusterReceptionistSettings = apply(config)
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def roleOption(role: String): Option[String] =
+    if (role == "") None else Option(role)
+
+}
+
+/**
+ * @param role Start the receptionist on members tagged with this role.
+ *   All members are used if undefined.
+ * @param numberOfContacts The receptionist will send this number of contact points to the client
+ * @param responseTunnelReceiveTimeout The actor that tunnel response messages to the
+ *   client will be stopped after this time of inactivity.
+ */
+final class ClusterReceptionistSettings(
+  val role: Option[String],
+  val numberOfContacts: Int,
+  val responseTunnelReceiveTimeout: FiniteDuration) extends NoSerializationVerificationNeeded {
+
+  def withRole(role: String): ClusterReceptionistSettings = copy(role = ClusterReceptionistSettings.roleOption(role))
+
+  def withRole(role: Option[String]): ClusterReceptionistSettings = copy(role = role)
+
+  def withNumberOfContacts(numberOfContacts: Int): ClusterReceptionistSettings =
+    copy(numberOfContacts = numberOfContacts)
+
+  def withResponseTunnelReceiveTimeout(responseTunnelReceiveTimeout: FiniteDuration): ClusterReceptionistSettings =
+    copy(responseTunnelReceiveTimeout = responseTunnelReceiveTimeout)
+
+  private def copy(
+    role: Option[String] = role,
+    numberOfContacts: Int = numberOfContacts,
+    responseTunnelReceiveTimeout: FiniteDuration = responseTunnelReceiveTimeout): ClusterReceptionistSettings =
+    new ClusterReceptionistSettings(role, numberOfContacts, responseTunnelReceiveTimeout)
+
 }
 
 object ClusterReceptionist {
@@ -283,29 +397,8 @@ object ClusterReceptionist {
    */
   def props(
     pubSubMediator: ActorRef,
-    role: Option[String],
-    numberOfContacts: Int = 3,
-    responseTunnelReceiveTimeout: FiniteDuration = 30.seconds): Props =
-    Props(classOf[ClusterReceptionist], pubSubMediator, role, numberOfContacts, responseTunnelReceiveTimeout)
-
-  /**
-   * Java API: Factory method for `ClusterReceptionist` [[akka.actor.Props]].
-   */
-  def props(
-    pubSubMediator: ActorRef,
-    role: String,
-    numberOfContacts: Int,
-    responseTunnelReceiveTimeout: FiniteDuration): Props =
-    props(pubSubMediator, Internal.roleOption(role), numberOfContacts, responseTunnelReceiveTimeout)
-
-  /**
-   * Java API: Factory method for `ClusterReceptionist` [[akka.actor.Props]]
-   * with default values.
-   */
-  def props(
-    pubSubMediator: ActorRef,
-    role: String): Props =
-    props(pubSubMediator, Internal.roleOption(role))
+    settings: ClusterReceptionistSettings): Props =
+    Props(new ClusterReceptionist(pubSubMediator, settings)).withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -317,11 +410,6 @@ object ClusterReceptionist {
     final case class Contacts(contactPoints: immutable.IndexedSeq[ActorSelection])
     @SerialVersionUID(1L)
     case object Ping
-
-    def roleOption(role: String): Option[String] = role match {
-      case null | "" ⇒ None
-      case _         ⇒ Some(role)
-    }
 
     /**
      * Replies are tunneled via this actor, child of the receptionist, to avoid
@@ -344,7 +432,7 @@ object ClusterReceptionist {
 /**
  * [[ClusterClient]] connects to this actor to retrieve. The `ClusterReceptionist` is
  * supposed to be started on all nodes, or all nodes with specified role, in the cluster.
- * The receptionist can be started with the [[ClusterReceptionistExtension]] or as an
+ * The receptionist can be started with the [[ClusterClientReceptionist]] or as an
  * ordinary actor (use the factory method [[ClusterReceptionist#props]]).
  *
  * The receptionist forwards messages from the client to the associated [[akka.cluster.pubsub.DistributedPubSubMediator]],
@@ -361,16 +449,13 @@ object ClusterReceptionist {
  * as the original sender, so the client can choose to send subsequent messages
  * directly to the actor in the cluster.
  */
-class ClusterReceptionist(
-  pubSubMediator: ActorRef,
-  role: Option[String],
-  numberOfContacts: Int,
-  responseTunnelReceiveTimeout: FiniteDuration)
+class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterReceptionistSettings)
   extends Actor with ActorLogging {
 
   import DistributedPubSubMediator.{ Send, SendToAll, Publish }
 
   import ClusterReceptionist.Internal._
+  import settings._
 
   val cluster = Cluster(context.system)
   import cluster.selfAddress

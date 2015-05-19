@@ -7,7 +7,6 @@ import java.net.URLEncoder
 import java.util.concurrent.ConcurrentHashMap
 import akka.cluster.sharding.Shard.{ ShardCommand, StateChange }
 import akka.cluster.sharding.ShardCoordinator.Internal.SnapshotTick
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -39,6 +38,7 @@ import akka.pattern.ask
 import akka.persistence._
 import akka.cluster.ClusterEvent.ClusterDomainEvent
 import akka.cluster.singleton.ClusterSingletonManager
+import akka.cluster.singleton.ClusterSingletonManagerSettings
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -405,11 +405,12 @@ private[akka] class ClusterShardingGuardian extends Actor {
           val coordinatorProps = ShardCoordinator.props(handOffTimeout = HandOffTimeout, shardStartTimeout = ShardStartTimeout,
             rebalanceInterval = RebalanceInterval, snapshotInterval = SnapshotInterval, allocationStrategy)
           val singletonProps = ShardCoordinatorSupervisor.props(CoordinatorFailureBackoff, coordinatorProps)
+          val singletonSettings = ClusterSingletonManagerSettings(context.system)
+            .withSingletonName("singleton").withRole(role)
           context.actorOf(ClusterSingletonManager.props(
             singletonProps,
-            singletonName = "singleton",
             terminationMessage = PoisonPill,
-            role = role),
+            singletonSettings),
             name = coordinatorSingletonManagerName)
         }
 
@@ -608,10 +609,8 @@ object ShardRegion {
 
   private case object Retry extends ShardRegionCommand
 
-  private def roleOption(role: String): Option[String] = role match {
-    case null | "" ⇒ None
-    case _         ⇒ Some(role)
-  }
+  private def roleOption(role: String): Option[String] =
+    if (role == "") None else Option(role)
 
   /**
    * INTERNAL API. Sends `PoisonPill` to the entries and when all of them have terminated

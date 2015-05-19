@@ -71,16 +71,15 @@ class ClusterSingletonManagerStartupSpec extends MultiNodeSpec(ClusterSingletonM
   def createSingleton(): ActorRef = {
     system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[Echo], testActor),
-      singletonName = "echo",
       terminationMessage = PoisonPill,
-      role = None),
+      settings = ClusterSingletonManagerSettings(system).withSingletonName("echo")),
       name = "singleton")
   }
 
   lazy val echoProxy: ActorRef = {
     system.actorOf(ClusterSingletonProxy.props(
       singletonPath = "/user/singleton/echo",
-      role = None),
+      settings = ClusterSingletonProxySettings(system)),
       name = "echoProxy")
   }
 

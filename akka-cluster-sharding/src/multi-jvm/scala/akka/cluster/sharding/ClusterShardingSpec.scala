@@ -5,7 +5,6 @@ package akka.cluster.sharding
 
 import akka.cluster.sharding.ShardCoordinator.Internal.{ ShardStopped, HandOff }
 import akka.cluster.sharding.ShardRegion.Passivate
-
 import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
@@ -24,6 +23,7 @@ import akka.testkit.TestEvent.Mute
 import java.io.File
 import org.apache.commons.io.FileUtils
 import akka.cluster.singleton.ClusterSingletonManager
+import akka.cluster.singleton.ClusterSingletonManagerSettings
 
 object ClusterShardingSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -194,9 +194,8 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         val rebalanceEnabled = coordinatorName.toLowerCase.startsWith("rebalancing")
         system.actorOf(ClusterSingletonManager.props(
           singletonProps = ShardCoordinatorSupervisor.props(failureBackoff = 5.seconds, coordinatorProps(rebalanceEnabled)),
-          singletonName = "singleton",
           terminationMessage = PoisonPill,
-          role = None),
+          settings = ClusterSingletonManagerSettings(system)),
           name = coordinatorName + "Coordinator")
       }
   }
