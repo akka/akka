@@ -116,29 +116,39 @@ trait ActorRefProvider {
     async: Boolean): InternalActorRef
 
   /**
+   * INTERNAL API
+   *
    * Create actor reference for a specified local or remote path. If no such
    * actor exists, it will be (equivalent to) a dead letter reference.
+   *
+   * Actor references acquired with `actorFor` do not always include the full information
+   * about the underlying actor identity and therefore such references do not always compare
+   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
    */
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(path: ActorPath): InternalActorRef
+  private[akka] def actorFor(path: ActorPath): InternalActorRef
 
   /**
+   * INTERNAL API
+   *
    * Create actor reference for a specified local or remote path, which will
    * be parsed using java.net.URI. If no such actor exists, it will be
    * (equivalent to) a dead letter reference. If `s` is a relative URI, resolve
    * it relative to the given ref.
    */
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(ref: InternalActorRef, s: String): InternalActorRef
+  private[akka] def actorFor(ref: InternalActorRef, s: String): InternalActorRef
 
   /**
+   * INTERNAL API
+   *
    * Create actor reference for the specified child path starting at the
    * given starting point. This method always returns an actor which is “logically local”,
    * i.e. it cannot be used to obtain a reference to an actor which is not
    * physically or logically attached to this actor system.
    */
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(ref: InternalActorRef, p: Iterable[String]): InternalActorRef
+  private[akka] def actorFor(ref: InternalActorRef, p: Iterable[String]): InternalActorRef
 
   /**
    * Create actor reference for a specified path. If no such
@@ -235,17 +245,25 @@ trait ActorRefFactory {
   def actorOf(props: Props, name: String): ActorRef
 
   /**
+   * INTERNAL API
+   *
    * Look-up an actor by path; if it does not exist, returns a reference to
    * the dead-letter mailbox of the [[akka.actor.ActorSystem]]. If the path
    * point to an actor which is not local, no attempt is made during this
    * call to verify that the actor it represents does exist or is alive; use
    * `watch(ref)` to be notified of the target’s termination, which is also
    * signaled if the queried path cannot be resolved.
+   *
+   * Actor references acquired with `actorFor` do not always include the full information
+   * about the underlying actor identity and therefore such references do not always compare
+   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
    */
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(path: ActorPath): ActorRef = provider.actorFor(path)
+  private[akka] def actorFor(path: ActorPath): ActorRef = provider.actorFor(path)
 
   /**
+   * INTERNAL API
+   *
    * Look-up an actor by path represented as string.
    *
    * Absolute URIs like `akka://appname/user/actorA` are looked up as described
@@ -258,11 +276,17 @@ trait ActorRefFactory {
    * Relative URIs like `myChild/grandChild` or `../myBrother` are looked up
    * relative to the current context as described for look-ups by
    * `actorOf(Iterable[String])`
+   *
+   * Actor references acquired with `actorFor` do not always include the full information
+   * about the underlying actor identity and therefore such references do not always compare
+   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
    */
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(path: String): ActorRef = provider.actorFor(lookupRoot, path)
+  private[akka] def actorFor(path: String): ActorRef = provider.actorFor(lookupRoot, path)
 
   /**
+   * INTERNAL API
+   *
    * Look-up an actor by applying the given path elements, starting from the
    * current context, where `".."` signifies the parent of an actor.
    *
@@ -279,11 +303,17 @@ trait ActorRefFactory {
    * }}}
    *
    * For maximum performance use a collection with efficient head & tail operations.
+   *
+   * Actor references acquired with `actorFor` do not always include the full information
+   * about the underlying actor identity and therefore such references do not always compare
+   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
    */
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(path: Iterable[String]): ActorRef = provider.actorFor(lookupRoot, path)
+  private[akka] def actorFor(path: Iterable[String]): ActorRef = provider.actorFor(lookupRoot, path)
 
   /**
+   * INTERNAL API
+   *
    * Java API: Look-up an actor by applying the given path elements, starting from the
    * current context, where `".."` signifies the parent of an actor.
    *
@@ -303,9 +333,13 @@ trait ActorRefFactory {
    * }}}
    *
    * For maximum performance use a collection with efficient head & tail operations.
+   *
+   * Actor references acquired with `actorFor` do not always include the full information
+   * about the underlying actor identity and therefore such references do not always compare
+   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
    */
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(path: java.lang.Iterable[String]): ActorRef = provider.actorFor(lookupRoot, immutableSeq(path))
+  private[akka] def actorFor(path: java.lang.Iterable[String]): ActorRef = provider.actorFor(lookupRoot, immutableSeq(path))
 
   /**
    * Construct an [[akka.actor.ActorSelection]] from the given path, which is
@@ -501,7 +535,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     }
 
     @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
-    override def isTerminated: Boolean = !isWalking
+    override private[akka] def isTerminated: Boolean = !isWalking
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
       if (isWalking)
@@ -633,7 +667,7 @@ private[akka] class LocalActorRefProvider private[akka] (
   }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  override def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
+  private[akka] override def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case RelativeActorPath(elems) ⇒
       if (elems.isEmpty) {
         log.debug("look-up of empty path string [{}] fails (per definition)", path)
@@ -647,7 +681,7 @@ private[akka] class LocalActorRefProvider private[akka] (
   }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  override def actorFor(path: ActorPath): InternalActorRef =
+  private[akka] override def actorFor(path: ActorPath): InternalActorRef =
     if (path.root == rootPath) actorFor(rootGuardian, path.elements)
     else {
       log.debug("look-up of foreign ActorPath [{}] failed", path)
@@ -655,7 +689,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  override def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
+  private[akka] override def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
     if (path.isEmpty) {
       log.debug("look-up of empty path sequence fails (per definition)")
       deadLetters

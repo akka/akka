@@ -299,7 +299,7 @@ private[akka] class RemoteActorRefProvider(
     }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(path: ActorPath): InternalActorRef = {
+  override private[akka] def actorFor(path: ActorPath): InternalActorRef = {
     if (hasAddress(path.address)) actorFor(rootGuardian, path.elements)
     else try {
       new RemoteActorRef(transport, transport.localAddressForRemote(path.address),
@@ -312,7 +312,7 @@ private[akka] class RemoteActorRefProvider(
   }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
+  override private[akka] def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (hasAddress(address)) actorFor(rootGuardian, elems)
       else {
@@ -330,7 +330,7 @@ private[akka] class RemoteActorRefProvider(
   }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
-  def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
+  override private[akka] def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
     local.actorFor(ref, path)
 
   def rootGuardianAt(address: Address): ActorRef =
@@ -451,7 +451,8 @@ private[akka] class RemoteActorRef private[akka] (
     }
   }
 
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = false
+  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+  override private[akka] def isTerminated: Boolean = false
 
   private def handleException: Catcher[Unit] = {
     case e: InterruptedException ⇒

@@ -438,17 +438,6 @@ Remote actor addresses may also be looked up, if :ref:`remoting <remoting-java>`
 
 An example demonstrating remote actor look-up is given in :ref:`remote-sample-java`.
 
-.. note::
-
-  ``actorFor`` is deprecated in favor of ``actorSelection`` because actor references
-  acquired with ``actorFor`` behave differently for local and remote actors.
-  In the case of a local actor reference, the named actor needs to exist before the
-  lookup, or else the acquired reference will be an :class:`EmptyLocalActorRef`.
-  This will be true even if an actor with that exact path is created after acquiring
-  the actor reference. For remote actor references acquired with `actorFor` the
-  behaviour is different and sending messages to such a reference will under the hood
-  look up the actor by path on the remote system for every message send.
-
 Messages and immutability
 =========================
 
