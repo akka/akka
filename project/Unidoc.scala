@@ -17,7 +17,7 @@ object Unidoc {
         sources in JavaDoc <<= (target, compile in Compile, sources in Compile) map ((t, c, s) =>
           (t / "java" ** "*.java").get ++ s.filter(_.getName.endsWith(".java"))
         ),
-        javacOptions in JavaDoc := Seq(),
+        javacOptions in JavaDoc := (if (sys.props("java.version").startsWith("1.8")) Seq("-Xdoclint:none") else Seq()),
         artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
         libraryDependencies += Dependencies.Compile.genjavadoc,
         scalacOptions <+= target map (t => "-P:genjavadoc:out=" + (t / "java"))
