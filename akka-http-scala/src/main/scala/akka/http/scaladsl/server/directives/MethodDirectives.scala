@@ -50,10 +50,15 @@ trait MethodDirectives {
   def put: Directive0 = _put
 
   /**
+   * Extracts the request method.
+   */
+  def extractMethod: Directive1[HttpMethod] = _extractMethod
+
+  /**
    * Rejects all requests whose HTTP method does not match the given one.
    */
   def method(httpMethod: HttpMethod): Directive0 =
-    extract(_.request.method).flatMap[Unit] {
+    extractMethod.flatMap[Unit] {
       case `httpMethod` ⇒ pass
       case _            ⇒ reject(MethodRejection(httpMethod))
     } & cancelRejections(classOf[MethodRejection])
@@ -79,6 +84,9 @@ trait MethodDirectives {
 }
 
 object MethodDirectives extends MethodDirectives {
+  private val _extractMethod: Directive1[HttpMethod] =
+    BasicDirectives.extract(_.request.method)
+
   // format: OFF
   private val _delete : Directive0 = method(DELETE)
   private val _get    : Directive0 = method(GET)
