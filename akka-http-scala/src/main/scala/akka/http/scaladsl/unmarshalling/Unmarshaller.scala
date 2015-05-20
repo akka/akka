@@ -10,22 +10,24 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model._
 
-trait Unmarshaller[-A, B] extends (A ⇒ Future[B]) {
+trait Unmarshaller[-A, B] {
 
-  def transform[C](f: Future[B] ⇒ Future[C]): Unmarshaller[A, C] =
-    Unmarshaller { a ⇒ f(this(a)) }
+  def apply(value: A)(implicit ec: ExecutionContext): Future[B]
 
-  def map[C](f: B ⇒ C)(implicit ec: ExecutionContext): Unmarshaller[A, C] =
-    transform(_.fast map f)
+  def transform[C](f: ExecutionContext ⇒ Future[B] ⇒ Future[C]): Unmarshaller[A, C] =
+    Unmarshaller { implicit ec ⇒ a ⇒ f(ec)(this(a)) }
 
-  def flatMap[C](f: B ⇒ Future[C])(implicit ec: ExecutionContext): Unmarshaller[A, C] =
-    transform(_.fast flatMap f)
+  def map[C](f: B ⇒ C): Unmarshaller[A, C] =
+    transform(implicit ec ⇒ _.fast map f)
 
-  def recover[C >: B](pf: PartialFunction[Throwable, C])(implicit ec: ExecutionContext): Unmarshaller[A, C] =
-    transform(_.fast recover pf)
+  def flatMap[C](f: ExecutionContext ⇒ B ⇒ Future[C]): Unmarshaller[A, C] =
+    transform(implicit ec ⇒ _.fast flatMap f(ec))
 
-  def withDefaultValue[BB >: B](defaultValue: BB)(implicit ec: ExecutionContext): Unmarshaller[A, BB] =
-    recover { case Unmarshaller.NoContentException ⇒ defaultValue }
+  def recover[C >: B](pf: ExecutionContext ⇒ PartialFunction[Throwable, C]): Unmarshaller[A, C] =
+    transform(implicit ec ⇒ _.fast recover pf(ec))
+
+  def withDefaultValue[BB >: B](defaultValue: BB): Unmarshaller[A, BB] =
+    recover(_ ⇒ { case Unmarshaller.NoContentException ⇒ defaultValue })
 }
 
 object Unmarshaller
@@ -36,47 +38,48 @@ object Unmarshaller
   /**
    * Creates an `Unmarshaller` from the given function.
    */
-  def apply[A, B](f: A ⇒ Future[B]): Unmarshaller[A, B] =
+  def apply[A, B](f: ExecutionContext ⇒ A ⇒ Future[B]): Unmarshaller[A, B] =
     new Unmarshaller[A, B] {
-      def apply(a: A) =
-        try f(a)
+      def apply(a: A)(implicit ec: ExecutionContext) =
+        try f(ec)(a)
         catch { case NonFatal(e) ⇒ FastFuture.failed(e) }
     }
 
   /**
    * Helper for creating a synchronous `Unmarshaller` from the given function.
    */
-  def strict[A, B](f: A ⇒ B): Unmarshaller[A, B] = Unmarshaller(a ⇒ FastFuture.successful(f(a)))
+  def strict[A, B](f: A ⇒ B): Unmarshaller[A, B] = Unmarshaller(_ ⇒ a ⇒ FastFuture.successful(f(a)))
 
   /**
    * Helper for creating a "super-unmarshaller" from a sequence of "sub-unmarshallers", which are tried
    * in the given order. The first successful unmarshalling of a "sub-unmarshallers" is the one produced by the
    * "super-unmarshaller".
    */
-  def firstOf[A, B](unmarshallers: Unmarshaller[A, B]*)(implicit ec: ExecutionContext): Unmarshaller[A, B] =
-    Unmarshaller { a ⇒
-      def rec(ix: Int, supported: Set[ContentTypeRange]): Future[B] =
-        if (ix < unmarshallers.size) {
-          unmarshallers(ix)(a).fast.recoverWith {
-            case Unmarshaller.UnsupportedContentTypeException(supp) ⇒ rec(ix + 1, supported ++ supp)
-          }
-        } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported))
-      rec(0, Set.empty)
+  def firstOf[A, B](unmarshallers: Unmarshaller[A, B]*): Unmarshaller[A, B] =
+    Unmarshaller { implicit ec ⇒
+      a ⇒
+        def rec(ix: Int, supported: Set[ContentTypeRange]): Future[B] =
+          if (ix < unmarshallers.size) {
+            unmarshallers(ix)(a).fast.recoverWith {
+              case Unmarshaller.UnsupportedContentTypeException(supp) ⇒ rec(ix + 1, supported ++ supp)
+            }
+          } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported))
+        rec(0, Set.empty)
     }
 
-  implicit def identityUnmarshaller[T]: Unmarshaller[T, T] = Unmarshaller(FastFuture.successful)
+  implicit def identityUnmarshaller[T]: Unmarshaller[T, T] = Unmarshaller(_ ⇒ FastFuture.successful)
 
   // we don't define these methods directly on `Unmarshaller` due to variance constraints
   implicit class EnhancedUnmarshaller[A, B](val um: Unmarshaller[A, B]) extends AnyVal {
-    def mapWithInput[C](f: (A, B) ⇒ C)(implicit ec: ExecutionContext): Unmarshaller[A, C] =
-      Unmarshaller(a ⇒ um(a).fast.map(f(a, _)))
+    def mapWithInput[C](f: (A, B) ⇒ C): Unmarshaller[A, C] =
+      Unmarshaller(implicit ec ⇒ a ⇒ um(a).fast.map(f(a, _)))
 
-    def flatMapWithInput[C](f: (A, B) ⇒ Future[C])(implicit ec: ExecutionContext): Unmarshaller[A, C] =
-      Unmarshaller(a ⇒ um(a).fast.flatMap(f(a, _)))
+    def flatMapWithInput[C](f: (A, B) ⇒ Future[C]): Unmarshaller[A, C] =
+      Unmarshaller(implicit ec ⇒ a ⇒ um(a).fast.flatMap(f(a, _)))
   }
 
   implicit class EnhancedFromEntityUnmarshaller[A](val underlying: FromEntityUnmarshaller[A]) extends AnyVal {
-    def mapWithCharset[B](f: (A, HttpCharset) ⇒ B)(implicit ec: ExecutionContext): FromEntityUnmarshaller[B] =
+    def mapWithCharset[B](f: (A, HttpCharset) ⇒ B): FromEntityUnmarshaller[B] =
       underlying.mapWithInput { (entity, data) ⇒ f(data, entity.contentType.charset) }
 
     /**
@@ -84,18 +87,19 @@ object Unmarshaller
      * If the underlying [[Unmarshaller]] already contains a content-type filter (also wrapped at some level),
      * this filter is *replaced* by this method, not stacked!
      */
-    def forContentTypes(ranges: ContentTypeRange*)(implicit ec: ExecutionContext): FromEntityUnmarshaller[A] =
-      Unmarshaller { entity ⇒
-        if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
-          underlying(entity).fast recoverWith retryWithPatchedContentType(underlying, entity)
-        } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
+    def forContentTypes(ranges: ContentTypeRange*): FromEntityUnmarshaller[A] =
+      Unmarshaller { implicit ec ⇒
+        entity ⇒
+          if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
+            underlying(entity).fast recoverWith retryWithPatchedContentType(underlying, entity)
+          } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
       }
   }
 
   // must be moved out of the the [[EnhancedFromEntityUnmarshaller]] value class due to bug in scala 2.10:
   // https://issues.scala-lang.org/browse/SI-8018
-  private def retryWithPatchedContentType[T](underlying: FromEntityUnmarshaller[T],
-                                             entity: HttpEntity): PartialFunction[Throwable, Future[T]] = {
+  private def retryWithPatchedContentType[T](underlying: FromEntityUnmarshaller[T], entity: HttpEntity)(
+    implicit ec: ExecutionContext): PartialFunction[Throwable, Future[T]] = {
     case UnsupportedContentTypeException(supported) ⇒ underlying(entity withContentType supported.head.specimen)
   }
 

@@ -22,8 +22,9 @@ trait MarshallingDirectives {
    * produced by the unmarshaller.
    */
   def entity[T](um: FromRequestUnmarshaller[T]): Directive1[T] =
-    extractRequest.flatMap[Tuple1[T]] { request ⇒
-      onComplete(um(request)) flatMap {
+    extractRequestContext.flatMap[Tuple1[T]] { ctx ⇒
+      import ctx.executionContext
+      onComplete(um(ctx.request)) flatMap {
         case Success(value) ⇒ provide(value)
         case Failure(Unmarshaller.NoContentException) ⇒ reject(RequestEntityExpectedRejection)
         case Failure(Unmarshaller.UnsupportedContentTypeException(x)) ⇒ reject(UnsupportedRequestContentTypeRejection(x))
@@ -41,13 +42,15 @@ trait MarshallingDirectives {
    * Uses the marshaller for the given type to produce a completion function that is passed to its inner function.
    * You can use it do decouple marshaller resolution from request completion.
    */
-  def completeWith[T](marshaller: ToResponseMarshaller[T])(inner: (T ⇒ Unit) ⇒ Unit): Route = { ctx ⇒
-    import ctx.executionContext
-    implicit val m = marshaller
-    val promise = Promise[T]()
-    inner(promise.success(_))
-    ctx.complete(promise.future)
-  }
+  def completeWith[T](marshaller: ToResponseMarshaller[T])(inner: (T ⇒ Unit) ⇒ Unit): Route =
+    extractExecutionContext { implicit ec ⇒
+      implicit val m = marshaller
+      complete {
+        val promise = Promise[T]()
+        inner(promise.success(_))
+        promise.future
+      }
+    }
 
   /**
    * Returns the in-scope Marshaller for the given type.

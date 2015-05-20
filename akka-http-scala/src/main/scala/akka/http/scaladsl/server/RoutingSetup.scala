@@ -46,14 +46,14 @@ object RoutingSetup {
   implicit def apply(implicit routingSettings: RoutingSettings,
                      exceptionHandler: ExceptionHandler = null,
                      rejectionHandler: RejectionHandler = null,
-                     executionContext: ExecutionContext,
+                     executionContext: ExecutionContext = null,
                      flowMaterializer: FlowMaterializer,
                      routingLog: RoutingLog): RoutingSetup =
     new RoutingSetup(
       routingSettings,
       if (exceptionHandler ne null) exceptionHandler else ExceptionHandler.default(routingSettings),
-      if (rejectionHandler ne null) rejectionHandler else RejectionHandler.default(executionContext),
-      executionContext,
+      if (rejectionHandler ne null) rejectionHandler else RejectionHandler.default,
+      if (executionContext ne null) executionContext else flowMaterializer.executionContext,
       flowMaterializer,
       routingLog)
 }

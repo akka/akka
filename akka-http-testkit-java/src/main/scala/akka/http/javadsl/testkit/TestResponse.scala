@@ -32,7 +32,7 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
   def entityBytes: ByteString = entity.data()
   def entityAs[T](unmarshaller: Unmarshaller[T]): T =
     Unmarshal(response)
-      .to(unmarshaller.asInstanceOf[UnmarshallerImpl[T]].scalaUnmarshaller(ec, materializer))
+      .to(unmarshaller.asInstanceOf[UnmarshallerImpl[T]].scalaUnmarshaller(ec, materializer), ec)
       .awaitResult(awaitAtMost)
   def entityAsString: String = entity.data().utf8String
   def status: StatusCode = response.status.asJava

@@ -46,78 +46,78 @@ object StrictForm {
     private[StrictForm] final case class FromPart(value: Multipart.FormData.BodyPart.Strict) extends Field
 
     implicit def unmarshaller[T](implicit um: FieldUnmarshaller[T]): FromStrictFormFieldUnmarshaller[T] =
-      Unmarshaller {
+      Unmarshaller(implicit ec ⇒ {
         case FromString(value) ⇒ um.unmarshalString(value)
         case FromPart(value)   ⇒ um.unmarshalPart(value)
-      }
+      })
 
     def unmarshallerFromFSU[T](fsu: FromStringUnmarshaller[T]): FromStrictFormFieldUnmarshaller[T] =
-      Unmarshaller {
+      Unmarshaller(implicit ec ⇒ {
         case FromString(value) ⇒ fsu(value)
         case FromPart(value)   ⇒ fsu(value.entity.data.decodeString(value.entity.contentType.charset.nioCharset.name))
-      }
+      })
 
     @implicitNotFound("In order to unmarshal a `StrictForm.Field` to type `${T}` you need to supply a " +
       "`FromStringUnmarshaller[${T}]` and/or a `FromEntityUnmarshaller[${T}]`")
     sealed trait FieldUnmarshaller[T] {
-      def unmarshalString(value: String): Future[T]
-      def unmarshalPart(value: Multipart.FormData.BodyPart.Strict): Future[T]
+      def unmarshalString(value: String)(implicit ec: ExecutionContext): Future[T]
+      def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext): Future[T]
     }
     object FieldUnmarshaller extends LowPrioImplicits {
       implicit def fromBoth[T](implicit fsu: FromStringUnmarshaller[T], feu: FromEntityUnmarshaller[T]) =
         new FieldUnmarshaller[T] {
-          def unmarshalString(value: String) = fsu(value)
-          def unmarshalPart(value: Multipart.FormData.BodyPart.Strict) = feu(value.entity)
+          def unmarshalString(value: String)(implicit ec: ExecutionContext) = fsu(value)
+          def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext) = feu(value.entity)
         }
     }
     sealed abstract class LowPrioImplicits {
       implicit def fromFSU[T](implicit fsu: FromStringUnmarshaller[T]) =
         new FieldUnmarshaller[T] {
-          def unmarshalString(value: String) = fsu(value)
-          def unmarshalPart(value: Multipart.FormData.BodyPart.Strict) =
+          def unmarshalString(value: String)(implicit ec: ExecutionContext) = fsu(value)
+          def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext) =
             fsu(value.entity.data.decodeString(value.entity.contentType.charset.nioCharset.name))
         }
       implicit def fromFEU[T](implicit feu: FromEntityUnmarshaller[T]) =
         new FieldUnmarshaller[T] {
-          def unmarshalString(value: String) = feu(HttpEntity(value))
-          def unmarshalPart(value: Multipart.FormData.BodyPart.Strict) = feu(value.entity)
+          def unmarshalString(value: String)(implicit ec: ExecutionContext) = feu(HttpEntity(value))
+          def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext) = feu(value.entity)
         }
     }
   }
 
   implicit def unmarshaller(implicit formDataUM: FromEntityUnmarshaller[FormData],
                             multipartUM: FromEntityUnmarshaller[Multipart.FormData],
-                            ec: ExecutionContext, fm: FlowMaterializer): FromEntityUnmarshaller[StrictForm] = {
+                            fm: FlowMaterializer): FromEntityUnmarshaller[StrictForm] =
+    Unmarshaller { implicit ec ⇒
+      entity ⇒
 
-    def tryUnmarshalToQueryForm(entity: HttpEntity): Future[StrictForm] =
-      for (formData ← formDataUM(entity).fast) yield {
-        new StrictForm {
-          val fields = formData.fields.map { case (name, value) ⇒ name -> Field.FromString(value) }(collection.breakOut)
-        }
-      }
-
-    def tryUnmarshalToMultipartForm(entity: HttpEntity): Future[StrictForm] =
-      for {
-        multiPartFD ← multipartUM(entity).fast
-        strictMultiPartFD ← multiPartFD.toStrict(10.seconds).fast // TODO: make timeout configurable
-      } yield {
-        new StrictForm {
-          val fields = strictMultiPartFD.strictParts.map {
-            case x: Multipart.FormData.BodyPart.Strict ⇒ x.name -> Field.FromPart(x)
-          }(collection.breakOut)
-        }
-      }
-
-    Unmarshaller { entity ⇒
-      tryUnmarshalToQueryForm(entity).fast.recoverWith {
-        case Unmarshaller.UnsupportedContentTypeException(supported1) ⇒
-          tryUnmarshalToMultipartForm(entity).fast.recoverWith {
-            case Unmarshaller.UnsupportedContentTypeException(supported2) ⇒
-              FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported1 ++ supported2))
+        def tryUnmarshalToQueryForm: Future[StrictForm] =
+          for (formData ← formDataUM(entity).fast) yield {
+            new StrictForm {
+              val fields = formData.fields.map { case (name, value) ⇒ name -> Field.FromString(value) }(collection.breakOut)
+            }
           }
-      }
+
+        def tryUnmarshalToMultipartForm: Future[StrictForm] =
+          for {
+            multiPartFD ← multipartUM(entity).fast
+            strictMultiPartFD ← multiPartFD.toStrict(10.seconds).fast // TODO: make timeout configurable
+          } yield {
+            new StrictForm {
+              val fields = strictMultiPartFD.strictParts.map {
+                case x: Multipart.FormData.BodyPart.Strict ⇒ x.name -> Field.FromPart(x)
+              }(collection.breakOut)
+            }
+          }
+
+        tryUnmarshalToQueryForm.fast.recoverWith {
+          case Unmarshaller.UnsupportedContentTypeException(supported1) ⇒
+            tryUnmarshalToMultipartForm.fast.recoverWith {
+              case Unmarshaller.UnsupportedContentTypeException(supported2) ⇒
+                FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported1 ++ supported2))
+            }
+        }
     }
-  }
 
   /**
    * Simple model for strict file content in a multipart form data part.

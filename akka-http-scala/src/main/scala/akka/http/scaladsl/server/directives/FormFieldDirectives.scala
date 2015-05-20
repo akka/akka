@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.common._
@@ -86,13 +86,13 @@ object FormFieldDirectives extends FormFieldDirectives {
       extractField[NameReceptacle[T], T] { nr ⇒ filter(nr.name, fu) }
     implicit def forNUR[T](implicit sfu: SFU) =
       extractField[NameUnmarshallerReceptacle[T], T] { nr ⇒ filter(nr.name, StrictForm.Field.unmarshallerFromFSU(nr.um)) }
-    implicit def forNOR[T](implicit sfu: SFU, fu: FSFFOU[T], ec: ExecutionContext) =
+    implicit def forNOR[T](implicit sfu: SFU, fu: FSFFOU[T]) =
       extractField[NameOptionReceptacle[T], Option[T]] { nr ⇒ filter[Option[T]](nr.name, fu) }
-    implicit def forNDR[T](implicit sfu: SFU, fu: FSFFOU[T], ec: ExecutionContext) =
+    implicit def forNDR[T](implicit sfu: SFU, fu: FSFFOU[T]) =
       extractField[NameDefaultReceptacle[T], T] { nr ⇒ filter(nr.name, fu withDefaultValue nr.default) }
-    implicit def forNOUR[T](implicit sfu: SFU, ec: ExecutionContext) =
+    implicit def forNOUR[T](implicit sfu: SFU) =
       extractField[NameOptionUnmarshallerReceptacle[T], Option[T]] { nr ⇒ filter[Option[T]](nr.name, StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T]) }
-    implicit def forNDUR[T](implicit sfu: SFU, ec: ExecutionContext) =
+    implicit def forNDUR[T](implicit sfu: SFU) =
       extractField[NameDefaultUnmarshallerReceptacle[T], T] { nr ⇒ filter(nr.name, (StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T]) withDefaultValue nr.default) }
 
     //////////////////// required formField support ////////////////////

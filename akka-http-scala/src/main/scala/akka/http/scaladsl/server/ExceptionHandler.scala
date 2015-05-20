@@ -4,7 +4,6 @@
 
 package akka.http.scaladsl.server
 
-import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 import akka.http.scaladsl.model._
 import StatusCodes._
@@ -19,7 +18,7 @@ trait ExceptionHandler extends ExceptionHandler.PF {
   /**
    * "Seals" this handler by attaching a default handler as fallback if necessary.
    */
-  def seal(settings: RoutingSettings)(implicit ec: ExecutionContext): ExceptionHandler
+  def seal(settings: RoutingSettings): ExceptionHandler
 }
 
 object ExceptionHandler {
@@ -33,11 +32,11 @@ object ExceptionHandler {
       def apply(error: Throwable) = pf(error)
       def withFallback(that: ExceptionHandler): ExceptionHandler =
         if (!knownToBeSealed) ExceptionHandler(knownToBeSealed = false)(this orElse that) else this
-      def seal(settings: RoutingSettings)(implicit ec: ExecutionContext): ExceptionHandler =
+      def seal(settings: RoutingSettings): ExceptionHandler =
         if (!knownToBeSealed) ExceptionHandler(knownToBeSealed = true)(this orElse default(settings)) else this
     }
 
-  def default(settings: RoutingSettings)(implicit ec: ExecutionContext): ExceptionHandler =
+  def default(settings: RoutingSettings): ExceptionHandler =
     apply(knownToBeSealed = true) {
       case IllegalRequestException(info, status) ⇒ ctx ⇒ {
         ctx.log.warning("Illegal request {}\n\t{}\n\tCompleting with '{}' response",
