@@ -340,38 +340,6 @@ private[akka] class Balance(_settings: ActorFlowMaterializerSettings, _outputPor
 /**
  * INTERNAL API
  */
-private[akka] object Unzip {
-  def props(settings: ActorFlowMaterializerSettings): Props =
-    Props(new Unzip(settings))
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class Unzip(_settings: ActorFlowMaterializerSettings) extends FanOut(_settings, outputCount = 2) {
-  outputBunch.markAllOutputs()
-
-  initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
-    primaryInputs.dequeueInputElement() match {
-      case (a, b) ⇒
-        outputBunch.enqueue(0, a)
-        outputBunch.enqueue(1, b)
-
-      case t: akka.japi.Pair[_, _] ⇒
-        outputBunch.enqueue(0, t.first)
-        outputBunch.enqueue(1, t.second)
-
-      case t ⇒
-        throw new IllegalArgumentException(
-          s"Unable to unzip elements of type ${t.getClass.getName}, " +
-            s"can only handle Tuple2 and akka.japi.Pair!")
-    }
-  })
-}
-
-/**
- * INTERNAL API
- */
 private[akka] object FlexiRoute {
   def props[T, S <: Shape](settings: ActorFlowMaterializerSettings, ports: S, routeLogic: RouteLogic[T]): Props =
     Props(new FlexiRouteImpl(settings, ports, routeLogic))

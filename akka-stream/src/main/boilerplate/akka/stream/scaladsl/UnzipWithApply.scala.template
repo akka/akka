@@ -1,0 +1,38 @@
+/**
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.scaladsl
+
+import akka.stream._
+import akka.stream.impl.GenJunctions._
+import akka.stream.impl.StreamLayout
+
+trait UnzipWithApply {
+
+  [2..20#/**
+   * Create a new `UnzipWith` specialized for 1 inputs.
+   *
+   * @param unzipper unzipping-function from the input values to the output value
+   */
+  def apply[O, [#A1#]](unzipper: O ⇒ ([#A1#])): UnzipWith1[O, [#A1#]] = {
+    val shape = new FanOutShape1[O, [#A1#]]("UnzipWith1")
+    new UnzipWith1(shape, new UnzipWith1Module(shape, unzipper, OperationAttributes.name("UnzipWith1")))
+    }
+    #
+
+  ]
+
+}
+
+[2..20#/** `UnzipWith` specialized for 1 inputs */
+class UnzipWith1[O, [#A1#]] private[stream] (override val shape: FanOutShape1[O, [#A1#]],
+                         private[stream] override val module: StreamLayout.Module)
+  extends Graph[FanOutShape1[O, [#A1#]], Unit] {
+
+  override def withAttributes(attr: OperationAttributes): UnzipWith1[O, [#A1#]] =
+    new UnzipWith1(shape, module.withAttributes(attr).wrap())
+
+  override def named(name: String): UnzipWith1[O, [#A1#]] = withAttributes(OperationAttributes.name(name))
+}
+#
+]
