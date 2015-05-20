@@ -147,7 +147,7 @@ trait BasicDirectives {
     mapRequestContext(_ withFlowMaterializer materializer)
 
   /**
-   * Extracts the [[ExecutionContext]] from the [[RequestContext]].
+   * Extracts the [[FlowMaterializer]] from the [[RequestContext]].
    */
   def extractFlowMaterializer: Directive1[FlowMaterializer] = BasicDirectives._extractFlowMaterializer
 

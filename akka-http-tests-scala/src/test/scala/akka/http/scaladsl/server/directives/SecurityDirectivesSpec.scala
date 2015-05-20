@@ -5,21 +5,19 @@
 package akka.http.scaladsl.server
 package directives
 
+import scala.concurrent.Future
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsRejected, CredentialsMissing }
-import akka.http.scaladsl.server.directives.AuthenticationDirectives._
 
-import scala.concurrent.Future
-
-class AuthenticationDirectivesSpec extends RoutingSpec {
-  val dontAuth = HttpBasicAuthentication("MyRealm")(HttpBasicAuthenticator[String](_ ⇒ Future.successful(None)))
-  val doAuth = HttpBasicAuthentication("MyRealm")(HttpBasicAuthenticator.provideUserName(_ ⇒ true))
+class SecurityDirectivesSpec extends RoutingSpec {
+  val dontAuth = authenticateBasicAsync[String]("MyRealm", _ ⇒ Future.successful(None))
+  val doAuth = authenticateBasicPF("MyRealm", { case UserCredentials.Provided(name) ⇒ name })
   val authWithAnonymous = doAuth.withAnonymousUser("We are Legion")
 
   val challenge = HttpChallenge("Basic", "MyRealm")
 
-  "the 'HttpBasicAuthentication' directive" should {
+  "basic authentication" should {
     "reject requests without Authorization header with an AuthenticationFailedRejection" in {
       Get() ~> {
         dontAuth { echoComplete }
@@ -58,17 +56,15 @@ class AuthenticationDirectivesSpec extends RoutingSpec {
       } ~> check { status shouldEqual StatusCodes.InternalServerError }
     }
   }
-  "AuthenticationDirectives facilities" should {
-    "properly stack several authentication directives" in {
+  "authentication directives" should {
+    "properly stack" in {
       val otherChallenge = HttpChallenge("MyAuth", "MyRealm2")
-      val otherAuth: Directive1[String] = AuthenticationDirectives.authenticateOrRejectWithChallenge { (cred: Option[HttpCredentials]) ⇒
+      val otherAuth: Directive1[String] = authenticateOrRejectWithChallenge { (cred: Option[HttpCredentials]) ⇒
         Future.successful(Left(otherChallenge))
       }
       val bothAuth = dontAuth | otherAuth
 
-      Get() ~> Route.seal {
-        bothAuth { echoComplete }
-      } ~> check {
+      Get() ~> Route.seal(bothAuth { echoComplete }) ~> check {
         status shouldEqual StatusCodes.Unauthorized
         headers.collect {
           case `WWW-Authenticate`(challenge +: Nil) ⇒ challenge

@@ -11,8 +11,8 @@ import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 /**
  * The result of handling a request.
  *
- * As a user you cannot create RouteResult instances directly.
- * Instead, use the RequestContext to achieve the desired effect.
+ * As a user you typically don't create RouteResult instances directly.
+ * Instead, use the methods on the [[RequestContext]] to achieve the desired effect.
  */
 sealed trait RouteResult
 

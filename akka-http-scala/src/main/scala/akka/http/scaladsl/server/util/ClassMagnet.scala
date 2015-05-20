@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.scaladsl.server.directives
+package akka.http.scaladsl.server.util
 
 import scala.reflect.ClassTag
 
@@ -18,6 +18,8 @@ trait ClassMagnet[T] {
   def extractPF: PartialFunction[Any, T]
 }
 object ClassMagnet {
+  implicit def apply[T](c: Class[T]): ClassMagnet[T] = ClassMagnet()(ClassTag(c))
+
   implicit def apply[T](u: Unit)(implicit tag: ClassTag[T]): ClassMagnet[T] =
     new ClassMagnet[T] {
       val classTag: ClassTag[T] = tag

@@ -8,8 +8,7 @@ import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.http.javadsl.model.ContentType
-import akka.http.scaladsl.server.directives.AuthenticationDirectives.UserCredentials
-import akka.http.scaladsl.server.directives.ContentTypeResolver
+import akka.http.scaladsl.server.directives.{ UserCredentials, ContentTypeResolver }
 import akka.http.scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.CustomHeader
@@ -91,7 +90,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
 
     case BasicAuthentication(authenticator, children) ⇒
       val inner = apply(RouteAlternatives(children))
-      HttpBasicAuthentication(authenticator.realm) { creds ⇒
+      authenticateBasicAsync(authenticator.realm, { creds ⇒
         val javaCreds =
           creds match {
             case UserCredentials.Missing ⇒
@@ -109,7 +108,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
           }
 
         authenticator.authenticate(javaCreds)
-      }.flatMap { user ⇒
+      }).flatMap { user ⇒
         addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
       }.apply(inner)
 

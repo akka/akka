@@ -6,13 +6,9 @@ package akka.http.scaladsl.server
 
 import directives._
 
-// FIXME: the comments are kept as a reminder which directives are not yet imported
-
 trait Directives extends RouteConcatenation
-  with AuthenticationDirectives
   with BasicDirectives
   with CacheConditionDirectives
-  //with ChunkingDirectives
   with CookieDirectives
   with DebuggingDirectives
   with CodingDirectives
