@@ -350,9 +350,20 @@ private[http] object HttpServerBluePrint {
             case ResponseRenderingOutput.SwitchToWebsocket(responseBytes, handlerFlow) ⇒
               ctx.emit(responseBytes)
               installHandler(handlerFlow)
+              ctx.changeCompletionHandling(defaultCompletionHandling)
               websocket
           }
         }
+
+        // Completion handling that installs a dummy handler, to make sure no processors leak because they have
+        // never been subscribed to, see #17494.
+        override def initialCompletionHandling: CompletionHandling =
+          CompletionHandling(
+            onUpstreamFinish = { (ctx, in) ⇒ installDummyHandler(); defaultCompletionHandling.onUpstreamFinish(ctx, in) },
+            onUpstreamFailure = { (ctx, in, t) ⇒ installDummyHandler(); defaultCompletionHandling.onUpstreamFailure(ctx, in, t) })
+
+        def installDummyHandler(): Unit = installHandler(Flow[FrameEvent])
+
         def websocket: State[_] = State[ByteString](Read(wsIn)) { (ctx, in, bytes) ⇒
           ctx.emit(bytes)
           SameState

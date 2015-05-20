@@ -6,10 +6,11 @@ package akka.http.scaladsl
 
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
+import akka.http.scaladsl.Http.ServerBinding
 import akka.http.{ ClientConnectionSettings, ServerSettings }
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
-import scala.concurrent.Await
+import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.ActorSystem
@@ -30,7 +31,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     akka.stdout-loglevel = ERROR
     akka.log-dead-letters = OFF""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-
+  import system.dispatcher
   implicit val materializer = ActorFlowMaterializer()
 
   "The low-level HTTP infrastructure" should {
@@ -114,97 +115,110 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       }
     }
 
-    "properly complete a simple request/response cycle" in new TestSetup {
-      val (clientOut, clientIn) = openNewClientConnection()
-      val (serverIn, serverOut) = acceptConnection()
+    "properly complete a simple request/response cycle" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        val (clientOut, clientIn) = openNewClientConnection()
+        val (serverIn, serverOut) = acceptConnection()
 
-      val clientOutSub = clientOut.expectSubscription()
-      clientOutSub.expectRequest()
-      clientOutSub.sendNext(HttpRequest(uri = "/abc"))
+        val clientOutSub = clientOut.expectSubscription()
+        clientOutSub.expectRequest()
+        clientOutSub.sendNext(HttpRequest(uri = "/abc"))
 
-      val serverInSub = serverIn.expectSubscription()
-      serverInSub.request(1)
-      serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
+        val serverInSub = serverIn.expectSubscription()
+        serverInSub.request(1)
+        serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
 
-      val serverOutSub = serverOut.expectSubscription()
-      serverOutSub.expectRequest()
-      serverOutSub.sendNext(HttpResponse(entity = "yeah"))
+        val serverOutSub = serverOut.expectSubscription()
+        serverOutSub.expectRequest()
+        serverOutSub.sendNext(HttpResponse(entity = "yeah"))
 
-      val clientInSub = clientIn.expectSubscription()
-      clientInSub.request(1)
-      val response = clientIn.expectNext()
-      toStrict(response.entity) shouldEqual HttpEntity("yeah")
+        val clientInSub = clientIn.expectSubscription()
+        clientInSub.request(1)
+        val response = clientIn.expectNext()
+        toStrict(response.entity) shouldEqual HttpEntity("yeah")
 
-      clientOutSub.sendComplete()
-      serverInSub.request(1) // work-around for #16552
-      serverIn.expectComplete()
-      serverOutSub.expectCancellation()
-      clientInSub.request(1) // work-around for #16552
-      clientIn.expectComplete()
+        clientOutSub.sendComplete()
+        serverInSub.request(1) // work-around for #16552
+        serverIn.expectComplete()
+        serverOutSub.expectCancellation()
+        clientInSub.request(1) // work-around for #16552
+        clientIn.expectComplete()
+
+        binding.foreach(_.unbind())
+      }
     }
 
-    "properly complete a chunked request/response cycle" in new TestSetup {
-      val (clientOut, clientIn) = openNewClientConnection()
-      val (serverIn, serverOut) = acceptConnection()
+    "properly complete a chunked request/response cycle" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        val (clientOut, clientIn) = openNewClientConnection()
+        val (serverIn, serverOut) = acceptConnection()
 
-      val chunks = List(Chunk("abc"), Chunk("defg"), Chunk("hijkl"), LastChunk)
-      val chunkedContentType: ContentType = MediaTypes.`application/base64`
-      val chunkedEntity = HttpEntity.Chunked(chunkedContentType, Source(chunks))
+        val chunks = List(Chunk("abc"), Chunk("defg"), Chunk("hijkl"), LastChunk)
+        val chunkedContentType: ContentType = MediaTypes.`application/base64`
+        val chunkedEntity = HttpEntity.Chunked(chunkedContentType, Source(chunks))
 
-      val clientOutSub = clientOut.expectSubscription()
-      clientOutSub.sendNext(HttpRequest(POST, "/chunked", List(Accept(MediaRanges.`*/*`)), chunkedEntity))
+        val clientOutSub = clientOut.expectSubscription()
+        clientOutSub.sendNext(HttpRequest(POST, "/chunked", List(Accept(MediaRanges.`*/*`)), chunkedEntity))
 
-      val serverInSub = serverIn.expectSubscription()
-      serverInSub.request(1)
-      private val HttpRequest(POST, uri, List(Accept(Seq(MediaRanges.`*/*`)), Host(_, _), `User-Agent`(_)),
-        Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext()
-      uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-      Await.result(chunkStream.grouped(4).runWith(Sink.head), 100.millis) shouldEqual chunks
+        val serverInSub = serverIn.expectSubscription()
+        serverInSub.request(1)
+        private val HttpRequest(POST, uri, List(Accept(Seq(MediaRanges.`*/*`)), Host(_, _), `User-Agent`(_)),
+          Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext()
+        uri shouldEqual Uri(s"http://$hostname:$port/chunked")
+        Await.result(chunkStream.grouped(4).runWith(Sink.head), 100.millis) shouldEqual chunks
 
-      val serverOutSub = serverOut.expectSubscription()
-      serverOutSub.expectRequest()
-      serverOutSub.sendNext(HttpResponse(206, List(Age(42)), chunkedEntity))
+        val serverOutSub = serverOut.expectSubscription()
+        serverOutSub.expectRequest()
+        serverOutSub.sendNext(HttpResponse(206, List(Age(42)), chunkedEntity))
 
-      val clientInSub = clientIn.expectSubscription()
-      clientInSub.request(1)
-      val HttpResponse(StatusCodes.PartialContent, List(Age(42), Server(_), Date(_)),
-        Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
-      Await.result(chunkStream2.grouped(1000).runWith(Sink.head), 100.millis) shouldEqual chunks
+        val clientInSub = clientIn.expectSubscription()
+        clientInSub.request(1)
+        val HttpResponse(StatusCodes.PartialContent, List(Age(42), Server(_), Date(_)),
+          Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
+        Await.result(chunkStream2.grouped(1000).runWith(Sink.head), 100.millis) shouldEqual chunks
 
-      clientOutSub.sendComplete()
-      serverInSub.request(1) // work-around for #16552
-      serverIn.expectComplete()
-      serverOutSub.expectCancellation()
-      clientInSub.request(1) // work-around for #16552
-      clientIn.expectComplete()
+        clientOutSub.sendComplete()
+        serverInSub.request(1) // work-around for #16552
+        serverIn.expectComplete()
+        serverOutSub.expectCancellation()
+        clientInSub.request(1) // work-around for #16552
+        clientIn.expectComplete()
+
+        connSourceSub.cancel()
+      }
     }
 
-    "be able to deal with eager closing of the request stream on the client side" in new TestSetup {
-      val (clientOut, clientIn) = openNewClientConnection()
-      val (serverIn, serverOut) = acceptConnection()
+    "be able to deal with eager closing of the request stream on the client side" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        val (clientOut, clientIn) = openNewClientConnection()
+        val (serverIn, serverOut) = acceptConnection()
 
-      val clientOutSub = clientOut.expectSubscription()
-      clientOutSub.sendNext(HttpRequest(uri = "/abc"))
-      clientOutSub.sendComplete() // complete early
+        val clientOutSub = clientOut.expectSubscription()
+        clientOutSub.sendNext(HttpRequest(uri = "/abc"))
+        clientOutSub.sendComplete()
+        // complete early
 
-      val serverInSub = serverIn.expectSubscription()
-      serverInSub.request(1)
-      serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
+        val serverInSub = serverIn.expectSubscription()
+        serverInSub.request(1)
+        serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
 
-      val serverOutSub = serverOut.expectSubscription()
-      serverOutSub.expectRequest()
-      serverOutSub.sendNext(HttpResponse(entity = "yeah"))
+        val serverOutSub = serverOut.expectSubscription()
+        serverOutSub.expectRequest()
+        serverOutSub.sendNext(HttpResponse(entity = "yeah"))
 
-      val clientInSub = clientIn.expectSubscription()
-      clientInSub.request(1)
-      val response = clientIn.expectNext()
-      toStrict(response.entity) shouldEqual HttpEntity("yeah")
+        val clientInSub = clientIn.expectSubscription()
+        clientInSub.request(1)
+        val response = clientIn.expectNext()
+        toStrict(response.entity) shouldEqual HttpEntity("yeah")
 
-      serverInSub.request(1) // work-around for #16552
-      serverIn.expectComplete()
-      serverOutSub.expectCancellation()
-      clientInSub.request(1) // work-around for #16552
-      clientIn.expectComplete()
+        serverInSub.request(1) // work-around for #16552
+        serverIn.expectComplete()
+        serverOutSub.expectCancellation()
+        clientInSub.request(1) // work-around for #16552
+        clientIn.expectComplete()
+
+        connSourceSub.cancel()
+      }
     }
   }
 
@@ -215,12 +229,12 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     def configOverrides = ""
 
     // automatically bind a server
-    val connSource = {
+    val (connSource, binding: Future[ServerBinding]) = {
       val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
-      val binding = Http().bind(hostname, port, settings = settings)
+      val connections = Http().bind(hostname, port, settings = settings)
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]
-      binding.runWith(Sink(probe))
-      probe
+      val binding = connections.toMat(Sink(probe))(Keep.left).run()
+      (probe, binding)
     }
     val connSourceSub = connSource.expectSubscription()
 

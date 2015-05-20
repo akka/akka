@@ -7,6 +7,7 @@ package akka.http.impl.engine.ws
 import akka.http.impl.engine.ws.Protocol.Opcode
 import akka.http.scaladsl.model.ws._
 import akka.stream.scaladsl.{ Sink, Flow, Source }
+import akka.stream.testkit.Utils
 import akka.util.ByteString
 import org.scalatest.{ Matchers, FreeSpec }
 
@@ -21,92 +22,104 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
 
   "The server-side Websocket integration should" - {
     "establish a websocket connection when the user requests it" - {
-      "when user handler instantly tries to send messages" in new TestSetup {
-        send(
-          """GET /chat HTTP/1.1
-          |Host: server.example.com
-          |Upgrade: websocket
-          |Connection: Upgrade
-          |Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
-          |Origin: http://example.com
-          |Sec-WebSocket-Version: 13
-          |
-          |""".
-            stripMarginWithNewline("\r\n"))
-        val request = expectRequest
-        val upgrade = request.header[UpgradeToWebsocket]
-        upgrade.isDefined shouldBe true
+      "when user handler instantly tries to send messages" in Utils.assertAllStagesStopped {
+        new TestSetup {
+          send(
+            """GET /chat HTTP/1.1
+              |Host: server.example.com
+              |Upgrade: websocket
+              |Connection: Upgrade
+              |Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+              |Origin: http://example.com
+              |Sec-WebSocket-Version: 13
+              |
+              |""".stripMarginWithNewline("\r\n"))
 
-        val source =
-          Source(List(1, 2, 3, 4, 5)).map(num ⇒ TextMessage.Strict(s"Message $num"))
-        val handler = Flow.wrap(Sink.ignore, source)((_, _) ⇒ ())
-        val response = upgrade.get.handleMessages(handler)
-        responsesSub.sendNext(response)
+          val request = expectRequest
+          val upgrade = request.header[UpgradeToWebsocket]
+          upgrade.isDefined shouldBe
+            true
 
-        wipeDate(expectNextChunk().utf8String) shouldEqual
-          """HTTP/1.1 101 Switching Protocols
-          |Upgrade: websocket
-          |Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
-          |Server: akka-http/test
-          |Date: XXXX
-          |Connection: upgrade
-          |
-          |""".
-          stripMarginWithNewline("\r\n")
+          val source =
+            Source(List(1, 2, 3, 4, 5)).map(num ⇒ TextMessage.Strict(s"Message $num"))
+          val handler = Flow.wrap(Sink.ignore, source)((_, _) ⇒ ())
+          val response = upgrade.get.handleMessages(handler)
+          responsesSub.sendNext(response)
 
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 2"), fin = true)
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 3"), fin = true)
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 4"), fin = true)
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 5"), fin = true)
-        expectWSCloseFrame(Protocol.CloseCodes.Regular)
+          wipeDate(expectNextChunk().utf8String) shouldEqual
+            """HTTP/1.1 101 Switching Protocols
+              |Upgrade: websocket
+              |Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+              |Server: akka-http/test
+              |Date: XXXX
+              |Connection: upgrade
+              |
+              |""".stripMarginWithNewline("\r\n")
+
+          expectWSFrame(Protocol.Opcode.Text,
+
+            ByteString("Message 1"), fin = true)
+          expectWSFrame(Protocol.
+            Opcode.Text, ByteString("Message 2"), fin = true)
+          expectWSFrame(
+            Protocol.Opcode.Text, ByteString("Message 3"), fin = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 4"), fin = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 5"), fin = true)
+          expectWSCloseFrame(Protocol.CloseCodes.Regular)
+
+          sendWSCloseFrame(Protocol.CloseCodes.Regular, mask = true)
+          closeNetworkInput()
+          expectNetworkClose()
+        }
       }
-      "for echoing user handler" in new TestSetup {
-        send(
-          """GET /echo HTTP/1.1
-            |Host: server.example.com
-            |Upgrade: websocket
-            |Connection: Upgrade
-            |Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
-            |Origin: http://example.com
-            |Sec-WebSocket-Version: 13
-            |
-            |""".
-            stripMarginWithNewline("\r\n"))
-        val request = expectRequest
-        val upgrade = request.header[UpgradeToWebsocket]
-        upgrade.isDefined shouldBe true
+      "for echoing user handler" in Utils.assertAllStagesStopped {
+        new TestSetup {
 
-        val response = upgrade.get.handleMessages(Flow[Message]) // simple echoing
-        responsesSub.sendNext(response)
+          send(
+            """GET /echo HTTP/1.1
+              |Host: server.example.com
+              |Upgrade: websocket
+              |Connection: Upgrade
+              |Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+              |Origin: http://example.com
+              |Sec-WebSocket-Version: 13
+              |
+              |""".stripMarginWithNewline("\r\n"))
 
-        wipeDate(expectNextChunk().utf8String) shouldEqual
-          """HTTP/1.1 101 Switching Protocols
-            |Upgrade: websocket
-            |Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
-            |Server: akka-http/test
-            |Date: XXXX
-            |Connection: upgrade
-            |
-            |""".
-          stripMarginWithNewline("\r\n")
+          val request = expectRequest
+          val upgrade = request.header[UpgradeToWebsocket]
+          upgrade.isDefined shouldBe true
 
-        sendWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true, mask = true)
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
-        sendWSFrame(Protocol.Opcode.Text, ByteString("Message 2"), fin = true, mask = true)
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 2"), fin = true)
-        sendWSFrame(Protocol.Opcode.Text, ByteString("Message 3"), fin = true, mask = true)
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 3"), fin = true)
-        sendWSFrame(Protocol.Opcode.Text, ByteString("Message 4"), fin = true, mask = true)
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 4"), fin = true)
-        sendWSFrame(Protocol.Opcode.Text, ByteString("Message 5"), fin = true, mask = true)
-        expectWSFrame(Protocol.Opcode.Text, ByteString("Message 5"), fin = true)
+          val response = upgrade.get.handleMessages(Flow[Message]) // simple echoing
+          responsesSub.sendNext(response)
 
-        sendWSCloseFrame(Protocol.CloseCodes.Regular, mask = true)
-        expectWSCloseFrame(Protocol.CloseCodes.Regular)
+          wipeDate(expectNextChunk().utf8String) shouldEqual
+            """HTTP/1.1 101 Switching Protocols
+              |Upgrade: websocket
+              |Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+              |Server: akka-http/test
+              |Date: XXXX
+              |Connection: upgrade
+              |
+              |""".stripMarginWithNewline("\r\n")
 
-        closeNetworkInput()
-        expectNetworkClose()
+          sendWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true, mask = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
+          sendWSFrame(Protocol.Opcode.Text, ByteString("Message 2"), fin = true, mask = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 2"), fin = true)
+          sendWSFrame(Protocol.Opcode.Text, ByteString("Message 3"), fin = true, mask = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 3"), fin = true)
+          sendWSFrame(Protocol.Opcode.Text, ByteString("Message 4"), fin = true, mask = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 4"), fin = true)
+          sendWSFrame(Protocol.Opcode.Text, ByteString("Message 5"), fin = true, mask = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 5"), fin = true)
+
+          sendWSCloseFrame(Protocol.CloseCodes.Regular, mask = true)
+          expectWSCloseFrame(Protocol.CloseCodes.Regular)
+
+          closeNetworkInput()
+          expectNetworkClose()
+        }
       }
     }
     "prevent the selection of an unavailable subprotocol" in pending
