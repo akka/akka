@@ -8,13 +8,13 @@ import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
-import akka.stream.OperationAttributes._
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import RenderSupport._
 import headers._
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -24,6 +24,20 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
                                                log: LoggingAdapter) {
 
   def newRenderer: HttpRequestRenderer = new HttpRequestRenderer
+
+  /**
+   * Retrieve the original host string that was given (IP or DNS name) if running Java 7 or later
+   * using the getHostString() method. This avoids a reverse DNS query from calling getHostName()
+   * if the original host string is an IP address.
+   */
+  private[http] val hostString: InetSocketAddress ⇒ String =
+    try {
+      val m = classOf[InetSocketAddress].getDeclaredMethod("getHostString")
+      require(m.getReturnType == classOf[String])
+      address ⇒ m.invoke(address).asInstanceOf[String]
+    } catch {
+      case NonFatal(_) ⇒ _.getHostName
+    }
 
   final class HttpRequestRenderer extends PushStage[RequestRenderingContext, Source[ByteString, Any]] {
 
@@ -93,7 +107,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
           }
 
           case Nil ⇒
-            if (!hostHeaderSeen) r ~~ Host(ctx.serverAddress) ~~ CrLf
+            if (!hostHeaderSeen) r ~~ Host(hostString(ctx.serverAddress), ctx.serverAddress.getPort) ~~ CrLf
             if (!userAgentSeen && userAgentHeader.isDefined) r ~~ userAgentHeader.get ~~ CrLf
             if (entity.isChunked && !entity.isKnownEmpty && !transferEncodingSeen)
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
