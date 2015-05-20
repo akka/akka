@@ -6,23 +6,24 @@ package akka.pattern
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.Status.Failure
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import java.util.concurrent.TimeoutException
 
 object CircuitBreakerStressSpec {
   case object JobDone
   case object GetResult
-  case class Result(doneCount: Int, failCount: Int, circCount: Int)
+  case class Result(doneCount: Int, timeoutCount: Int, failCount: Int, circCount: Int)
 
   class StressActor(breaker: CircuitBreaker) extends Actor with ActorLogging with PipeToSupport {
     import context.dispatcher
 
     private var doneCount = 0
+    private var timeoutCount = 0
     private var failCount = 0
     private var circCount = 0
 
@@ -43,11 +44,14 @@ object CircuitBreakerStressSpec {
       case Failure(ex: CircuitBreakerOpenException) ⇒
         circCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
+      case Failure(_: TimeoutException) ⇒
+        timeoutCount += 1
+        breaker.withCircuitBreaker(job).pipeTo(self)
       case Failure(_) ⇒
         failCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
       case GetResult ⇒
-        sender() ! Result(doneCount, failCount, circCount)
+        sender() ! Result(doneCount, timeoutCount, failCount, circCount)
     }
   }
 }
@@ -59,7 +63,7 @@ class CircuitBreakerStressSpec extends AkkaSpec with ImplicitSender {
   muteDeadLetters(classOf[AnyRef])(system)
 
   "A CircuitBreaker" in {
-    val breaker = CircuitBreaker(system.scheduler, 5, 100.millisecond, 200.seconds)
+    val breaker = CircuitBreaker(system.scheduler, 5, 200.millisecond, 200.seconds)
     val stressActors = Vector.fill(3) {
       system.actorOf(Props(classOf[StressActor], breaker))
     }
