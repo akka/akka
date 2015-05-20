@@ -240,9 +240,11 @@ object Unzip {
   /**
    * Create a new `Unzip`.
    */
+
   def apply[A, B](): Unzip[A, B] = {
     val shape = new FanOutShape2[(A, B), A, B]("Unzip")
-    new Unzip(shape, new UnzipModule(shape, OperationAttributes.name("Unzip")))
+    val f = (t: Tuple2[A, B]) ⇒ (t._1, t._2)
+    new Unzip(shape, new UnzipWith2Module[(A, B), A, B](shape, f, OperationAttributes.name("Unzip")))
   }
 }
 
@@ -258,6 +260,19 @@ class Unzip[A, B] private (override val shape: FanOutShape2[(A, B), A, B],
 
   override def named(name: String): Unzip[A, B] = withAttributes(OperationAttributes.name(name))
 }
+
+/**
+ * Takes a stream of pair elements and splits each pair to two output streams.
+ *
+ * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' any of the outputs backpressures
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' any downstream cancels
+ */
+object UnzipWith extends UnzipWithApply
 
 object Concat {
   /**

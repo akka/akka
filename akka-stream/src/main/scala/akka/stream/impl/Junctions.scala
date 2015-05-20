@@ -94,15 +94,6 @@ private[stream] object Junctions {
     override def carbonCopy: Module = BalanceModule(shape.deepCopy(), waitForAllDownstreams, attributes)
   }
 
-  final case class UnzipModule[A, B](
-    shape: FanOutShape2[(A, B), A, B],
-    override val attributes: OperationAttributes = name("unzip")) extends FanOutModule {
-
-    override def withAttributes(attr: OperationAttributes): Module = copy(attributes = attr)
-
-    override def carbonCopy: Module = UnzipModule(shape.deepCopy(), attributes)
-  }
-
   final case class ConcatModule[T](
     shape: UniformFanInShape[T, T],
     override val attributes: OperationAttributes = name("concat")) extends FanInModule {
