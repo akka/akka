@@ -1,4 +1,4 @@
-import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, MultiNode, Unidoc, SigarLoader }
+import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, MultiNodeScalaTest, Unidoc, SigarLoader }
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 import com.typesafe.tools.mima.plugin.MimaKeys
 
@@ -10,8 +10,6 @@ Unidoc.scaladocSettings
 
 Unidoc.javadocSettings
 
-MultiNode.multiJvmSettings
-
 SigarLoader.sigarSettings
 
 OSGi.clusterMetrics
@@ -22,8 +20,4 @@ libraryDependencies ++= Dependencies.clusterMetrics
 
 parallelExecution in Test := false
 
-extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-  (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-}
-
-scalatestOptions in MultiJvm := MultiNode.defaultMultiJvmScalatestOptions.value
+enablePlugins(MultiNodeScalaTest)

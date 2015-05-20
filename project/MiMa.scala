@@ -15,7 +15,7 @@ object MiMa extends AutoPlugin {
     previousArtifact := None,
     binaryIssueFilters ++= mimaIgnoredProblems
   )
-  
+
   case class FilterAnyProblem(name: String) extends com.typesafe.tools.mima.core.ProblemFilter {
     import com.typesafe.tools.mima.core._
     override def apply(p: Problem): Boolean = p match {
@@ -23,7 +23,7 @@ object MiMa extends AutoPlugin {
       case m: MemberProblem => m.ref.owner.fullName != name && m.ref.owner.fullName != (name + '$')
     }
   }
-  
+
   val mimaIgnoredProblems = {
       import com.typesafe.tools.mima.core._
     Seq(
@@ -85,7 +85,7 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.lastCumulativeAck"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.ReliableDeliverySupervisor.bailoutAt"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.lastCumulativeAck_="),
-      
+
       // Change to improve cluster heartbeat sender, #16638
       FilterAnyProblem("akka.cluster.HeartbeatNodeRing"),
       FilterAnyProblem("akka.cluster.ClusterHeartbeatSenderState"),
@@ -98,7 +98,7 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[FinalMethodProblem]("akka.dispatch.BatchingExecutor#Batch.run"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.akka$dispatch$BatchingExecutor$Batch$$parentBlockContext_="),
       ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.this"),
-      
+
       // Exclude observations from downed, #13875
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffReachable"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffSeen"),
@@ -110,9 +110,9 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.isLeader"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.leader"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.roleLeader"),
-      
+
       // copied everything above from release-2.3 branch
-      
+
       // final case classes
       ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.ThreadPoolConfig"),
       ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.UnboundedDequeBasedMailbox"),
@@ -416,11 +416,11 @@ object MiMa extends AutoPlugin {
       // synthetic method akka$remote$testkit$MultiNodeSpec$Replacement$$$outer()akka.remote.testkit.MultiNodeSpec in class akka.remote.testkit.MultiNodeSpec#Replacement does not have a correspondent in new version
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testkit.MultiNodeSpec#Replacement.akka$remote$testkit$MultiNodeSpec$Replacement$$$outer"),
 
-      
+
       // method nrOfInstances(akka.actor.ActorSystem)Int in trait akka.routing.Pool does not have a correspondent in old version
       // ok to exclude, since we don't call nrOfInstances(sys) for old implementations
       ProblemFilters.exclude[MissingMethodProblem]("akka.routing.Pool.nrOfInstances"),
-      
+
       // removed deprecated
       ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorFactory"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.util.Timeout.longToTimeout"),
@@ -480,8 +480,8 @@ object MiMa extends AutoPlugin {
       // deprecated method this(Int,java.lang.String,Boolean,scala.Option)Unit in class akka.cluster.routing.ClusterRouterGroupSettings does not have a correspondent with same parameter signature among (Int,java.lang.Iterable,Boolean,java.lang.String)Unit, (Int,scala.collection.immutable.Seq,Boolean,scala.Option)Unit
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.routing.ClusterRouterGroupSettings.this"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.TestKit.dilated"),
-      
-      
+
+
       // changed internals
       ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorSystem.terminate"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorSystem.whenTerminated"),
@@ -529,7 +529,7 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.MessageDispatcher.akka$dispatch$BatchingExecutor$$_blockContext"),
       // issue #16736
       ProblemFilters.exclude[MissingClassProblem]("akka.cluster.OnMemberUpListener"),
-      
+
       //changes introduced by #16911
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.RemoteActorRefProvider.afterSendSystemMessage"),
       FilterAnyProblem("akka.remote.RemoteWatcher"),
