@@ -15,7 +15,7 @@ import reflect.ClassTag
 /**
  * Represents existing or missing HTTP Basic authentication credentials.
  */
-trait BasicUserCredentials {
+trait BearerTokenCredentials {
   /**
    * Were credentials provided in the request?
    */
@@ -24,7 +24,7 @@ trait BasicUserCredentials {
   /**
    * The username as sent in the request.
    */
-  def userName: String
+  def token: String
   /**
    * Verifies the given secret against the one sent in the request.
    */
@@ -36,9 +36,9 @@ trait BasicUserCredentials {
  * to check if the supplied or missing credentials are authenticated and provide a domain level object representing
  * the user as a [[RequestVal]].
  */
-abstract class HttpBasicAuthenticator[T](val realm: String) extends AbstractDirective with ExtractionImplBase[T] with RequestVal[T] {
+abstract class BearerTokenAuthenticator[T](val realm: String) extends AbstractDirective with ExtractionImplBase[T] with RequestVal[T] {
   protected[http] implicit def classTag: ClassTag[T] = reflect.classTag[AnyRef].asInstanceOf[ClassTag[T]]
-  def authenticate(credentials: BasicUserCredentials): Future[Option[T]]
+  def authenticate(credentials: BearerTokenCredentials): Future[Option[T]]
 
   /**
    * Creates a return value for use in [[authenticate]] that successfully authenticates the requests and provides
@@ -55,5 +55,5 @@ abstract class HttpBasicAuthenticator[T](val realm: String) extends AbstractDire
    * INTERNAL API
    */
   protected[http] final def createRoute(first: Route, others: Array[Route]): Route =
-    RouteStructure.BasicAuthentication(this, (first +: others).toVector)
+    RouteStructure.BearerAuthentication(this, (first +: others).toVector)
 }
