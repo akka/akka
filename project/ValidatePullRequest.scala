@@ -7,9 +7,9 @@ import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
 import net.virtualvoid.sbt.graph.IvyGraphMLDependencies
 import net.virtualvoid.sbt.graph.IvyGraphMLDependencies.ModuleId
 import org.kohsuke.github._
-import sbtunidoc.Plugin.UnidocKeys.unidoc
 import sbt.Keys._
 import sbt._
+import sbtunidoc.Plugin.UnidocKeys._
 
 import scala.collection.immutable
 import scala.util.matching.Regex
@@ -118,7 +118,8 @@ object ValidatePullRequest extends AutoPlugin {
   }
 
 
-  override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++ Seq(
+  override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++
+    Unidoc.javadocSettings ++ Unidoc.scaladocSettings ++ Seq(
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
