@@ -33,7 +33,7 @@ object AkkaBuild extends Build {
 
   lazy val buildSettings = Seq(
     organization        := "com.typesafe.akka",
-    version             := "2.4-SNAPSHOT",
+    version             := "2.4-M1",
     scalaVersion        := Dependencies.Versions.scalaVersion,
     crossScalaVersions  := Dependencies.Versions.crossScala
   )
