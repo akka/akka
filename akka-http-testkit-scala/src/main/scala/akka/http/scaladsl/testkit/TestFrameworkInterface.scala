@@ -7,12 +7,14 @@ package akka.http.scaladsl.testkit
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{ BeforeAndAfterAll, Suite }
 
+//# source-quote
 trait TestFrameworkInterface {
 
   def cleanUp()
 
   def failTest(msg: String): Nothing
 }
+//#
 
 object TestFrameworkInterface {
 

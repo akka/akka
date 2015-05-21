@@ -70,6 +70,7 @@ groupedWithin          the configured time elapses since the last group has been
 **It is currently not possible to build custom timer driven stages**
 
 .. _detached-stages-overview:
+
 Backpressure aware stages
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
