@@ -14,7 +14,7 @@ Unidoc.javadocSettings
 
 // OSGi.persistenceTck TODO: we do need to export this as OSGi bundle too?
 
-libraryDependencies ++= Dependencies.persistenceTck
+Dependencies.persistenceTck
 
 MimaKeys.previousArtifact := None
 

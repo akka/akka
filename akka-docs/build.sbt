@@ -17,7 +17,7 @@ SphinxDoc.sphinxPreprocessing
 
 SphinxDoc.docsSettings
 
-libraryDependencies ++= Dependencies.docs
+Dependencies.docs
 
 publishArtifact in Compile := false
 

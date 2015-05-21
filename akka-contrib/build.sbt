@@ -11,7 +11,7 @@ Unidoc.javadocSettings
 
 MultiNode.multiJvmSettings
 
-libraryDependencies ++= Dependencies.contrib
+Dependencies.contrib
 
 MimaKeys.reportBinaryIssues := () // disable bin comp check
 
