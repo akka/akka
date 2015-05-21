@@ -1,6 +1,5 @@
 import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, Unidoc }
 import com.typesafe.tools.mima.plugin.MimaKeys
-import akka.MultiNode
 
 AkkaBuild.defaultSettings
 
@@ -19,5 +18,3 @@ libraryDependencies ++= Dependencies.persistenceTck
 MimaKeys.previousArtifact := None
 
 fork in Test := true
-
-javaOptions in Test := MultiNode.defaultMultiJvmOptions

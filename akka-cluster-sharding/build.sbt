@@ -11,8 +11,8 @@ Unidoc.javadocSettings
 
 OSGi.clusterSharding
 
-MultiNode.multiJvmSettings
-
 libraryDependencies ++= Dependencies.clusterSharding
 
 //MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster-sharding").value
+
+enablePlugins(MultiNode)

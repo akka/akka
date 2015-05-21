@@ -9,6 +9,7 @@ import net.virtualvoid.sbt.graph.IvyGraphMLDependencies.ModuleId
 import org.kohsuke.github._
 import sbt.Keys._
 import sbt._
+import sbtunidoc.Plugin.UnidocKeys._
 
 import scala.collection.immutable
 import scala.util.matching.Regex
@@ -16,7 +17,6 @@ import scala.util.matching.Regex
 object ValidatePullRequest extends AutoPlugin {
 
   override def trigger = allRequirements
-
   override def requires = plugins.JvmPlugin
 
   sealed trait BuildMode {
@@ -30,21 +30,20 @@ object ValidatePullRequest extends AutoPlugin {
       l.info(s"Skipping validation of [$projectName], as PR does NOT affect this project...")
   }
   case object BuildQuick extends BuildMode {
-    override def task = Zero.dependsOn(test in ValidatePR)
-    def log(projectName: String, l: Logger) = 
+    override def task = Zero.dependsOn(test in ValidatePR).dependsOn(unidoc in Compile)
+    def log(projectName: String, l: Logger) =
       l.info(s"Building [$projectName] in quick mode, as it's dependencies were affected by PR.")
   }
   case object BuildProjectChangedQuick extends BuildMode {
-    override def task = Zero.dependsOn(test in ValidatePR)
+    override def task = Zero.dependsOn(test in ValidatePR).dependsOn(unidoc in Compile)
     def log(projectName: String, l: Logger) =
       l.info(s"Building [$projectName] as the root `project/` directory was affected by this PR.")
   }
   final case class BuildCommentForcedAll(phrase: String, c: GHIssueComment) extends BuildMode {
-    override def task = Zero.dependsOn(test in Test)
+    override def task = Zero.dependsOn(test in Test).dependsOn(unidoc in Compile)
     def log(projectName: String, l: Logger) =
       l.info(s"GitHub PR comment [ ${c.getUrl} ] contains [$phrase], forcing BUILD ALL mode!")
   }
-
 
   val ValidatePR = config("pr-validation") extend Test
 
@@ -73,7 +72,7 @@ object ValidatePullRequest extends AutoPlugin {
 
   // determining touched dirs and projects
   val changedDirectories = taskKey[immutable.Set[String]]("List of touched modules in this PR branch")
-  val projectBuildMode = taskKey[BuildMode]("True if this project is affected by the PR and should be rebuilt")
+  val projectBuildMode = taskKey[BuildMode]("Determines what will run when this project is affected by the PR and should be rebuilt")
 
   // running validation
   val validatePullRequest = taskKey[Unit]("Additional tasks for pull request validation")
@@ -119,7 +118,8 @@ object ValidatePullRequest extends AutoPlugin {
   }
 
 
-  override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++ Seq(
+  override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++
+    Unidoc.javadocSettings ++ Unidoc.scaladocSettings ++ Seq(
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
@@ -209,4 +209,13 @@ object ValidatePullRequest extends AutoPlugin {
     // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
     validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
   )
+
+  def whenValidatingPr(task: TaskKey[_]) =
+    validatePullRequest := {
+      (projectBuildMode in ValidatePR).value match {
+        case BuildSkip => // do not run multi-jvm tests if project is skipped during pr validation
+        case _ => task.value
+      }
+      validatePullRequest.value
+    }
 }

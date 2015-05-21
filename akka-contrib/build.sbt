@@ -9,8 +9,6 @@ Unidoc.scaladocSettingsNoVerificationOfDiagrams
 
 Unidoc.javadocSettings
 
-MultiNode.multiJvmSettings
-
 libraryDependencies ++= Dependencies.contrib
 
 MimaKeys.reportBinaryIssues := () // disable bin comp check
@@ -25,3 +23,5 @@ description := """|
                   |without prior deprecation. The Typesafe subscription does not cover
                   |support for these modules.
                   |""".stripMargin
+
+enablePlugins(MultiNode)

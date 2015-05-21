@@ -11,8 +11,8 @@ Unidoc.javadocSettings
 
 OSGi.clusterTools
 
-MultiNode.multiJvmSettings
-
 libraryDependencies ++= Dependencies.clusterTools
 
 //MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster-tools").value
+
+enablePlugins(MultiNode)
