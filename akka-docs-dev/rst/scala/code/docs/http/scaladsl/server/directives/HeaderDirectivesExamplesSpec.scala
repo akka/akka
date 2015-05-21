@@ -10,8 +10,9 @@ import akka.http.scaladsl.server.MissingHeaderRejection
 import akka.http.scaladsl.server.Route
 import headers._
 import StatusCodes._
+import org.scalatest.Inside
 
-class HeaderDirectivesExamplesSpec extends RoutingSpec {
+class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
   "headerValueByName-0" in {
     val route =
       headerValueByName("X-User-Id") { userId =>
@@ -67,10 +68,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec {
   "headerValueByType-0" in {
     val route =
       headerValueByType[Origin]() { origin ⇒
-        complete(s"The first origin was ${origin.originList.head}")
+        complete(s"The first origin was ${origin.origins.head}")
       }
 
-    val originHeader = Origin(Seq(HttpOrigin("http://localhost:8080")))
+    val originHeader = Origin(HttpOrigin("http://localhost:8080"))
 
     // extract a header if the type is matching
     Get("abc") ~> originHeader ~> route ~> check {
@@ -79,17 +80,17 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec {
 
     // reject a request if no header of the given type is present
     Get("abc") ~> route ~> check {
-      rejection must beLike { case MissingHeaderRejection("Origin") ⇒ ok }
+      inside(rejection) { case MissingHeaderRejection("Origin") ⇒ }
     }
   }
   "optionalHeaderValueByType-0" in {
     val route =
       optionalHeaderValueByType[Origin]() {
-        case Some(origin) ⇒ complete(s"The first origin was ${origin.originList.head}")
+        case Some(origin) ⇒ complete(s"The first origin was ${origin.origins.head}")
         case None         ⇒ complete("No Origin header found.")
       }
 
-    val originHeader = Origin(Seq(HttpOrigin("http://localhost:8080")))
+    val originHeader = Origin(HttpOrigin("http://localhost:8080"))
     // extract Some(header) if the type is matching
     Get("abc") ~> originHeader ~> route ~> check {
       responseAs[String] shouldEqual "The first origin was http://localhost:8080"

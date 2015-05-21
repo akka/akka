@@ -4,7 +4,7 @@
 
 package docs.http.scaladsl.server
 package directives
-
+/*
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Future
 import akka.http.scaladsl.model._
@@ -118,3 +118,4 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       }
   }
 }
+*/ 

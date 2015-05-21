@@ -5,12 +5,10 @@
 package docs.http.scaladsl.server
 package directives
 
-import akka.http.scaladsl.model._
-
 class SchemeDirectivesExamplesSpec extends RoutingSpec {
   "example-1" in {
     val route =
-      schemeName { scheme =>
+      extractScheme { scheme =>
         complete(s"The scheme is '${scheme}'")
       }
 
@@ -20,6 +18,10 @@ class SchemeDirectivesExamplesSpec extends RoutingSpec {
   }
 
   "example-2" in {
+    import akka.http.scaladsl.model._
+    import akka.http.scaladsl.model.headers.Location
+    import StatusCodes.MovedPermanently
+
     val route =
       scheme("http") {
         extract(_.request.uri) { uri ⇒
@@ -32,7 +34,7 @@ class SchemeDirectivesExamplesSpec extends RoutingSpec {
 
     Get("http://www.example.com/hello") ~> route ~> check {
       status shouldEqual MovedPermanently
-      header[headers.Location] shouldEqual Some(headers.Location(Uri("https://www.example.com/hello")))
+      header[Location] shouldEqual Some(Location(Uri("https://www.example.com/hello")))
     }
 
     Get("https://www.example.com/hello") ~> route ~> check {

@@ -9,6 +9,8 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.model._
 
 class FormFieldDirectivesExamplesSpec extends RoutingSpec {
+  // FIXME: investigate why it doesn't work without this import
+  import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
 
   "formFields" in {
     val route =
@@ -16,7 +18,7 @@ class FormFieldDirectivesExamplesSpec extends RoutingSpec {
         complete(s"The color is '$color' and the age ten years ago was ${age - 10}")
       }
 
-    Post("/", FormData(Seq("color" -> "blue", "age" -> "68"))) ~> route ~> check {
+    Post("/", FormData("color" -> "blue", "age" -> "68")) ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue' and the age ten years ago was 58"
     }
 

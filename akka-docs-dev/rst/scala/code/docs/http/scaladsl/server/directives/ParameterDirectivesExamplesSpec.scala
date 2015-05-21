@@ -5,9 +5,13 @@
 package docs.http.scaladsl.server
 package directives
 
-import spray.http.StatusCodes
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Route
 
 class ParameterDirectivesExamplesSpec extends RoutingSpec {
+  // FIXME: investigate why it doesn't work without this import
+  import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
+
   "example-1" in {
     val route =
       parameter('color) { color =>
@@ -91,7 +95,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec {
 
     Get("/?color=blue&count=blub") ~> Route.seal(route) ~> check {
       status shouldEqual StatusCodes.BadRequest
-      responseAs[String] shouldEqual "The query parameter 'count' was malformed:\n'blub' is not a valid 32-bit integer value"
+      responseAs[String] shouldEqual "The query parameter 'count' was malformed:\n'blub' is not a valid 32-bit signed integer value"
     }
   }
   "parameterMap" in {

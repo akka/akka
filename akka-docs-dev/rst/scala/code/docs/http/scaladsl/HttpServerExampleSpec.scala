@@ -3,7 +3,7 @@
  */
 
 package docs.http.scaladsl
-
+/*
 import scala.concurrent.Future
 import org.scalatest.{ WordSpec, Matchers }
 import akka.actor.ActorSystem
@@ -254,3 +254,4 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
     def processOrderRequest(id: Int, complete: Order => Unit): Unit = ???
   }
 }
+*/

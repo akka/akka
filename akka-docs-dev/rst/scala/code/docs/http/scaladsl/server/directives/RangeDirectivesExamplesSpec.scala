@@ -4,7 +4,7 @@
 
 package docs.http.scaladsl.server
 package directives
-
+/*
 import akka.http.scaladsl.model._
 import headers._
 
@@ -34,3 +34,4 @@ class RangeDirectivesExamplesSpec extends RoutingSpec {
     }
   }
 }
+*/ 
