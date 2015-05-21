@@ -56,7 +56,7 @@ object AkkaBuild extends Build {
       }
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, clusterTools, clusterSharding,
-      slf4j, agent, persistence, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, typed)
+      slf4j, agent, persistence, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -65,7 +65,7 @@ object AkkaBuild extends Build {
     // remove dependencies that we have to build ourselves (Scala STM)
     // samples don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, clusterTools, clusterSharding,
-      slf4j, persistence, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, typed)
+      slf4j, persistence, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed)
   ).disablePlugins(ValidatePullRequest)
 
   lazy val actor = Project(
