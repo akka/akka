@@ -693,7 +693,7 @@ trait TestKitBase {
 }
 
 /**
- * Test kit for testing actors. Inheriting from this trait enables reception of
+ * Test kit for testing actors. Inheriting from this class enables reception of
  * replies from actors, which are queued by an internal actor and can be
  * examined using the `expectMsg...` methods. Assertions and bounds concerning
  * timing are available in the form of `within` blocks.
@@ -724,7 +724,7 @@ trait TestKitBase {
  *
  *  - the ActorSystem passed into the constructor needs to be shutdown,
  *    otherwise thread pools and memory will be leaked
- *  - this trait is not thread-safe (only one actor with one queue, one stack
+ *  - this class is not thread-safe (only one actor with one queue, one stack
  *    of `within` blocks); it is expected that the code is executed from a
  *    constructor as shown above, which makes this a non-issue, otherwise take
  *    care not to run tests within a single test class instance in parallel.
