@@ -18,7 +18,7 @@ The signature shown is simplified and written in pseudo-syntax, the real signatu
 ``<ParamDef>`` doesn't really exist but consists of the syntactic variants as shown in the description and the examples.
 
 .. [1] See `The Magnet Pattern`_ for an explanation of magnet-based overloading.
-.. _`The Magnet Pattern`: /blog/2012-12-13-the-magnet-pattern/
+.. _`The Magnet Pattern`: http://spray.io/blog/2012-12-13-the-magnet-pattern/
 
 Description
 -----------

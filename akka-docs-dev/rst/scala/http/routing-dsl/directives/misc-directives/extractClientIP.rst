@@ -15,9 +15,8 @@ Signature
 Description
 -----------
 
-spray-can and spray-servlet adds the ``Remote-Address`` header to every request automatically if the respective
-setting ``spray.can.server.remote-address-header`` or ``spray.servlet.remote-address-header`` is set to ``on``.
-Per default it is set to ``off``.
+The akka-http server engine adds the ``Remote-Address`` header to every request automatically if the respective
+setting ``akka.http.server.remote-address-header`` is set to ``on``. Per default it is set to ``off``.
 
 Example
 -------

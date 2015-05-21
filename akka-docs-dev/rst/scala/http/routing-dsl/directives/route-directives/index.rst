@@ -3,7 +3,7 @@
 RouteDirectives
 ===============
 
-The ``RouteDirectives`` have a special role in spray's routing DSL. Contrary to all other directives (except most
+The ``RouteDirectives`` have a special role in akka-http's routing DSL. Contrary to all other directives (except most
 :ref:`FileAndResourceDirectives`) they do not produce instances of type ``Directive[L <: HList]`` but rather "plain"
 routes of type ``Route``.
 The reason is that the ``RouteDirectives`` are not meant for wrapping an inner route (like most other directives, as

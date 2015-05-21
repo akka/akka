@@ -3,7 +3,7 @@
 Marshalling Directives
 ======================
 
-Marshalling directives work in conjunction with ``spray.httpx.marshalling`` and ``spray.httpx.unmarshalling`` to convert
+Marshalling directives work in conjunction with ``akka.http.scaladsl.marshalling`` and ``akka.http.scaladsl.unmarshalling`` to convert
 a request entity to a specific type or a type to a response.
 
 See :ref:`marshalling <http-marshalling-scala>` and :ref:`unmarshalling <http-unmarshalling-scala>` for specific
