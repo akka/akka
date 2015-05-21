@@ -80,12 +80,12 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
   "example-3" in {
     val route =
       path("success") {
-        onFailure(Future { "Ok" }) { extraction =>
+        completeOrRecoverWith(Future { "Ok" }) { extraction =>
           failWith(extraction) // not executed.
         }
       } ~
       path("failure") {
-        onFailure(Future.failed[String](TestException)) { extraction =>
+        completeOrRecoverWith(Future.failed[String](TestException)) { extraction =>
           failWith(extraction)
         }
       }

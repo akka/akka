@@ -13,7 +13,7 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
 
   "extract-hostname" in {
     val route =
-      hostName { hn =>
+      extractHost { hn =>
         complete(s"Hostname: $hn")
       }
 
@@ -78,11 +78,11 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
   }
 
   "failing-regex" in {
-    {
+    an[IllegalArgumentException] should be thrownBy {
       host("server-([0-9]).company.(com|net|org)".r) { target =>
         complete("Will never complete :'(")
       }
-    } must throwAn[IllegalArgumentException]
+    }
   }
 
 }

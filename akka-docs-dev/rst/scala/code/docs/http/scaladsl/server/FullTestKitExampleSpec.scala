@@ -31,7 +31,7 @@ class FullTestKitExampleSpec extends WordSpec with Matchers with ScalatestRouteT
 
     "return a greeting for GET requests to the root path" in {
       Get() ~> smallRoute ~> check {
-        responseAs[String] should contain("Captain on the bridge")
+        responseAs[String] shouldEqual "Captain on the bridge!"
       }
     }
 

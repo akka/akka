@@ -5,8 +5,8 @@
 package docs.http.scaladsl.server
 package directives
 
-import spray.http.{ RequestProcessingException, HttpResponse, StatusCodes }
-import spray.routing.ValidationRejection
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.{ Route, ValidationRejection }
 
 class RouteDirectivesExamplesSpec extends RoutingSpec {
 
@@ -83,12 +83,12 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
   "failwith-examples" in {
     val route =
       path("foo") {
-        failWith(new RequestProcessingException(StatusCodes.BandwidthLimitExceeded))
+        failWith(new RuntimeException("Oops."))
       }
 
     Get("/foo") ~> Route.seal(route) ~> check {
-      status shouldEqual StatusCodes.BandwidthLimitExceeded
-      responseAs[String] shouldEqual "Bandwidth limit has been exceeded."
+      status shouldEqual StatusCodes.InternalServerError
+      responseAs[String] shouldEqual "There was an internal server error."
     }
   }
 
