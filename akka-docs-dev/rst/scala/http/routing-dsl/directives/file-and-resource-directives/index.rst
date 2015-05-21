@@ -3,7 +3,7 @@
 FileAndResourceDirectives
 =========================
 
-Like the :ref:`RouteDirectives` the ``FileAndResourceDirectives`` are somewhat special in spray's routing DSL.
+Like the :ref:`RouteDirectives` the ``FileAndResourceDirectives`` are somewhat special in akka-http's routing DSL.
 Contrary to all other directives they do not produce instances of type ``Directive[L <: HList]`` but rather "plain"
 routes of type ``Route``.
 The reason is that they are not meant for wrapping an inner route (like most other directives, as intermediate-level

@@ -33,7 +33,7 @@ targeted by the request has already been established and the respective ETag/Las
 
 
 The :ref:`FileAndResourceDirectives` internally use the ``conditional`` directive for ETag and Last-Modified support
-(if the ``spray.routing.file-get-conditional`` setting is enabled).
+(if the ``akka.http.routing.file-get-conditional`` setting is enabled).
 
 __ http://tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26#section-6
 __ https://datatracker.ietf.org/wg/httpbis/

@@ -21,7 +21,7 @@ Signature
 
 The signature shown is simplified, the real signature uses magnets. [1]_
 
-.. [1] See `The Magnet Pattern </blog/2012-12-13-the-magnet-pattern/>`_ for an explanation of magnet-based overloading.
+.. [1] See `The Magnet Pattern <http://spray.io/blog/2012-12-13-the-magnet-pattern/>`_ for an explanation of magnet-based overloading.
 
 
 Description

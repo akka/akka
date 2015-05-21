@@ -18,7 +18,7 @@ Signature
 The signature shown is simplified, the real signature uses magnets. [1]_
 
 .. [1] See `The Magnet Pattern`_ for an explanation of magnet-based overloading.
-.. _`The Magnet Pattern`: /blog/2012-12-13-the-magnet-pattern/
+.. _`The Magnet Pattern`: http://spray.io/blog/2012-12-13-the-magnet-pattern/
 
 
 Description
@@ -34,7 +34,7 @@ ranges with a ``TooManyRangesRejection``.
 Requests with unsatisfiable ranges are rejected with an ``UnsatisfiableRangeRejection``.
 
 The ``withRangeSupport()`` form (without parameters) uses the ``range-coalescing-threshold`` and ``range-count-limit``
-settings from the ``spray.routing`` configuration.
+settings from the ``akka.http.routing`` configuration.
 
 This directive is transparent to non-``GET`` requests.
 

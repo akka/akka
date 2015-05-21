@@ -28,14 +28,14 @@ class RespondWithDirectivesExamplesSpec extends RoutingSpec {
   "respondWithHeaders-examples" in {
     val route =
       path("foo") {
-        respondWithHeaders(RawHeader("Funky-Muppet", "gonzo"), Origin(Seq(HttpOrigin("http://spray.io")))) {
+        respondWithHeaders(RawHeader("Funky-Muppet", "gonzo"), Origin(Seq(HttpOrigin("http://akka.io")))) {
           complete("beep")
         }
       }
 
     Get("/foo") ~> route ~> check {
       header("Funky-Muppet") shouldEqual Some(RawHeader("Funky-Muppet", "gonzo"))
-      header[Origin] shouldEqual Some(Origin(Seq(HttpOrigin("http://spray.io"))))
+      header[Origin] shouldEqual Some(Origin(Seq(HttpOrigin("http://akka.io"))))
       responseAs[String] shouldEqual "beep"
     }
   }

@@ -136,7 +136,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
         path("hello") {
           get {
             complete {
-              <h1>Say hello to spray</h1>
+              <h1>Say hello to akka-http</h1>
             }
           }
         }

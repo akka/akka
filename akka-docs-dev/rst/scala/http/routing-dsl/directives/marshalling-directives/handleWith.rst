@@ -21,15 +21,15 @@ The ``handleWith`` directive is used when you want to handle a route with a give
 type A ⇒ B.  ``handleWith`` will use both an in-scope unmarshaller to convert a request into 
 type A and an in-scope marshaller to convert type B into a response. This is helpful when your 
 core business logic resides in some other class or you want your business logic to be independent
-of *Spray*. You can use ``handleWith`` to "hand off" processing to a given function without requiring
-any spray-specific functionality.
+of the REST interface written with akka-http. You can use ``handleWith`` to "hand off" processing
+to a given function without requiring any akka-http-specific functionality.
 
 ``handleWith`` is similar to ``produce``.  The main difference is ``handleWith`` automatically
 calls ``complete`` when the function passed to ``handleWith`` returns. Using ``produce`` you
 must explicity call the completion function passed from the ``produce`` function.
 
 See :ref:`marshalling <http-marshalling-scala>` and :ref:`unmarshalling <http-unmarshalling-scala>` for guidance
-on marshalling entities with Spray.
+on marshalling entities with akka-http.
 
 Examples
 --------
