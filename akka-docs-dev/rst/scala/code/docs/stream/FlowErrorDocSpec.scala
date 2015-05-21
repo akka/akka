@@ -11,6 +11,7 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 import akka.stream.OperationAttributes
 import akka.stream.ActorOperationAttributes
+import scala.concurrent.duration._
 
 class FlowErrorDocSpec extends AkkaSpec {
 
@@ -24,7 +25,7 @@ class FlowErrorDocSpec extends AkkaSpec {
     //#stop
 
     intercept[ArithmeticException] {
-      Await.result(result, remaining)
+      Await.result(result, 3.seconds)
     }
   }
 
@@ -42,7 +43,7 @@ class FlowErrorDocSpec extends AkkaSpec {
     // result here will be a Future completed with Success(228)
     //#resume
 
-    Await.result(result, remaining) should be(228)
+    Await.result(result, 3.seconds) should be(228)
   }
 
   "demonstrate resume section" in {
@@ -62,7 +63,7 @@ class FlowErrorDocSpec extends AkkaSpec {
     // result here will be a Future completed with Success(150)
     //#resume-section
 
-    Await.result(result, remaining) should be(150)
+    Await.result(result, 3.seconds) should be(150)
   }
 
   "demonstrate restart section" in {
@@ -85,7 +86,7 @@ class FlowErrorDocSpec extends AkkaSpec {
     // result here will be a Future completed with Success(Vector(0, 1, 4, 0, 5, 12))
     //#restart-section
 
-    Await.result(result, remaining) should be(Vector(0, 1, 4, 0, 5, 12))
+    Await.result(result, 3.seconds) should be(Vector(0, 1, 4, 0, 5, 12))
   }
 
 }
