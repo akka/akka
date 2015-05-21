@@ -6,6 +6,8 @@ package akka.http.scaladsl.server
 package directives
 
 import java.io.{ File, FileInputStream }
+import java.net.URL
+
 import scala.annotation.tailrec
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
@@ -81,23 +83,13 @@ trait FileAndResourceDirectives {
    * Completes GET requests with the content of the given resource. The actual I/O operation is
    * running detached in a `Future`, so it doesn't block the current thread (but potentially
    * some other thread !).
-   * If the resource cannot be found or read the Route rejects the request.
+   * If the resource is a directory or cannot be found or read the Route rejects the request.
    */
-  def getFromResource(resourceName: String, contentType: ContentType, theClassLoader: ClassLoader = defaultClassLoader): Route =
+  def getFromResource(resourceName: String, contentType: ContentType, classLoader: ClassLoader = defaultClassLoader): Route =
     if (!resourceName.endsWith("/"))
       get {
-        theClassLoader.getResource(resourceName) match {
-          case null ⇒ reject
-          case url ⇒
-            val (length, lastModified) = {
-              val conn = url.openConnection()
-              try {
-                conn.setUseCaches(false) // otherwise the JDK will keep the JAR file open when we close!
-                val len = conn.getContentLength
-                val lm = conn.getLastModified
-                len -> lm
-              } finally conn.getInputStream.close()
-            }
+        Option(classLoader.getResource(resourceName)) flatMap ResourceFile.apply match {
+          case Some(ResourceFile(url, length, lastModified)) ⇒
             conditionalFor(length, lastModified) {
               withRangeSupport {
                 extractSettings { settings ⇒
@@ -108,6 +100,7 @@ trait FileAndResourceDirectives {
                 }
               }
             }
+          case _ ⇒ reject // not found or directory
         }
       }
     else reject // don't serve the content of resource "directories"
@@ -173,6 +166,7 @@ trait FileAndResourceDirectives {
   /**
    * Same as "getFromDirectory" except that the file is not fetched from the file system but rather from a
    * "resource directory".
+   * If the requested resource is itself a directory or cannot be found or read the Route rejects the request.
    */
   def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader = defaultClassLoader)(implicit resolver: ContentTypeResolver): Route = {
     val base = if (directoryName.isEmpty) "" else withTrailingSlash(directoryName)
@@ -207,6 +201,31 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
       }
     rec(if (path.startsWithSlash) path.tail else path)
   }
+
+  object ResourceFile {
+    def apply(url: URL): Option[ResourceFile] = url.getProtocol match {
+      case "file" ⇒
+        val file = new File(url.toURI)
+        if (file.isDirectory) None
+        else Some(ResourceFile(url, file.length(), file.lastModified()))
+      case "jar" ⇒
+        val jarFile = url.getFile
+        val startIndex = if (jarFile.startsWith("file:")) 5 else 0
+        val bangIndex = jarFile.indexOf("!")
+        val jarFilePath = jarFile.substring(startIndex, bangIndex)
+        val resourcePath = jarFile.substring(bangIndex + 2)
+        val jar = new java.util.zip.ZipFile(jarFilePath)
+        try {
+          val entry = jar.getEntry(resourcePath)
+          Option(jar.getInputStream(entry)) map { is ⇒
+            is.close()
+            ResourceFile(url, entry.getSize, entry.getTime)
+          }
+        } finally jar.close()
+      case _ ⇒ None
+    }
+  }
+  case class ResourceFile(url: URL, length: Long, lastModified: Long)
 
   trait DirectoryRenderer {
     def marshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing]

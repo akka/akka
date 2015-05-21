@@ -97,6 +97,18 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "reject requests to non-existing resources" in {
       Get() ~> getFromResource("nonExistingResource") ~> check { handled shouldEqual (false) }
     }
+    "reject requests to directory resources" in {
+      Get() ~> getFromResource("someDir") ~> check { handled shouldEqual (false) }
+    }
+    "reject requests to directory resources with trailing slash" in {
+      Get() ~> getFromResource("someDir/") ~> check { handled shouldEqual (false) }
+    }
+    "reject requests to directory resources from an Archive " in {
+      Get() ~> getFromResource("com/typesafe/config") ~> check { handled shouldEqual (false) }
+    }
+    "reject requests to directory resources from an Archive with trailing slash" in {
+      Get() ~> getFromResource("com/typesafe/config/") ~> check { handled shouldEqual (false) }
+    }
     "return the resource content with the MediaType matching the file extension" in {
       val route = getFromResource("sample.html")
 
@@ -116,6 +128,12 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       runCheck()
       runCheck() // additional test to check that no internal state is kept
     }
+    "return the resource content from an Archive" in {
+      Get() ~> getFromResource("com/typesafe/config/Config.class") ~> check {
+        mediaType shouldEqual `application/octet-stream`
+        responseEntity.toStrict(1.second).awaitResult(1.second).data.asByteBuffer.getInt shouldEqual 0xCAFEBABE
+      }
+    }
     "return the file content with MediaType 'application/octet-stream' on unknown file extensions" in {
       Get() ~> getFromResource("sample.xyz") ~> check {
         mediaType shouldEqual `application/octet-stream`
@@ -132,11 +150,38 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       mediaType shouldEqual `application/pdf`
       responseAs[String] shouldEqual "123"
     }
-    "return the resource content with the MediaType matching the file extension - example 1" in { Get("empty.pdf") ~> getFromResourceDirectory("subDirectory") ~> verify }
-    "return the resource content with the MediaType matching the file extension - example 2" in { Get("empty.pdf") ~> getFromResourceDirectory("subDirectory/") ~> verify }
-    "return the resource content with the MediaType matching the file extension - example 3" in { Get("subDirectory/empty.pdf") ~> getFromResourceDirectory("") ~> verify }
+    "return the resource content with the MediaType matching the file extension - example 1" in {
+      Get("empty.pdf") ~> getFromResourceDirectory("subDirectory") ~> verify
+    }
+    "return the resource content with the MediaType matching the file extension - example 2" in {
+      Get("empty.pdf") ~> getFromResourceDirectory("subDirectory/") ~> verify
+    }
+    "return the resource content with the MediaType matching the file extension - example 3" in {
+      Get("subDirectory/empty.pdf") ~> getFromResourceDirectory("") ~> verify
+    }
+    "return the resource content from an Archive" in {
+      Get("Config.class") ~> getFromResourceDirectory("com/typesafe/config") ~> check {
+        mediaType shouldEqual `application/octet-stream`
+        responseEntity.toStrict(1.second).awaitResult(1.second).data.asByteBuffer.getInt shouldEqual 0xCAFEBABE
+      }
+    }
     "reject requests to directory resources" in {
       Get() ~> getFromResourceDirectory("subDirectory") ~> check { handled shouldEqual (false) }
+    }
+    "reject requests to directory resources with trailing slash" in {
+      Get() ~> getFromResourceDirectory("subDirectory/") ~> check { handled shouldEqual (false) }
+    }
+    "reject requests to sub directory resources" in {
+      Get("sub") ~> getFromResourceDirectory("someDir") ~> check { handled shouldEqual (false) }
+    }
+    "reject requests to sub directory resources with trailing slash" in {
+      Get("sub/") ~> getFromResourceDirectory("someDir") ~> check { handled shouldEqual (false) }
+    }
+    "reject requests to directory resources from an Archive" in {
+      Get() ~> getFromResourceDirectory("com/typesafe/config") ~> check { handled shouldEqual (false) }
+    }
+    "reject requests to directory resources from an Archive with trailing slash" in {
+      Get() ~> getFromResourceDirectory("com/typesafe/config/") ~> check { handled shouldEqual (false) }
     }
   }
 
@@ -320,7 +365,6 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
 
   def evaluateTo[T](t: T, atMost: Duration = 100.millis)(implicit ec: ExecutionContext): Matcher[Future[T]] =
     be(t).compose[Future[T]] { fut ⇒
-      import scala.concurrent.Await
       fut.awaitResult(atMost)
     }
 }
