@@ -1432,9 +1432,7 @@ object AkkaBuild extends Build {
 
     val httpTestkitScala = exports(Seq("akka.http.scaladsl.testkit.*"))
 
-    // Temporary fix for #15379. Should be removed when stream is stabilized.
-    // And yes OSGi wont like you mixing the persistence and stream artifacts.
-    val stream = exports(Seq("akka.stream.*", "akka.japi.function.*")) // FIXME when akka.japi is fully in akka-actor
+    val stream = exports(Seq("akka.stream.*"))
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
@@ -1501,7 +1499,7 @@ object Dependencies {
     val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0")
 
     // also change pom.xml and build.sbt in akka-samples/akka-docs-java-lambda
-    val publishedAkkaVersion = "2.3.10"
+    val publishedAkkaVersion = "2.3.11"
   }
 
   object Compile {
