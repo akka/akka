@@ -4,12 +4,13 @@
 
 package docs.http.scaladsl.server
 package directives
-/*
+
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import spray.json.DefaultJsonProtocol
 import headers._
 import StatusCodes._
+import MediaTypes.`application/json`
 
 //# person-case-class
 case class Person(name: String, favoriteNumber: Int)
@@ -37,7 +38,7 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
       }
   }
 
-  "example-produce-with-json" in {
+  "example-completeWith-with-json" in {
     import PersonJsonSupport._
 
     val findPerson = (f: Person => Unit) => {
@@ -49,13 +50,13 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     }
 
     val route = get {
-      produce(instanceOf[Person]) { completionFunction => ctx => findPerson(completionFunction) }
+      completeWith(instanceOf[Person]) { completionFunction => findPerson(completionFunction) }
     }
 
     Get("/") ~> route ~> check {
       mediaType shouldEqual `application/json`
-      responseAs[String] must contain(""""name": "Jane"""")
-      responseAs[String] must contain(""""favoriteNumber": 42""")
+      responseAs[String] should include(""""name": "Jane"""")
+      responseAs[String] should include(""""favoriteNumber": 42""")
     }
   }
 
@@ -77,9 +78,8 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     Post("/", HttpEntity(`application/json`, """{ "name": "Jane", "favoriteNumber" : 42 }""")) ~>
       route ~> check {
         mediaType shouldEqual `application/json`
-        responseAs[String] must contain(""""name": "Jane"""")
-        responseAs[String] must contain(""""favoriteNumber": 42""")
+        responseAs[String] should include(""""name": "Jane"""")
+        responseAs[String] should include(""""favoriteNumber": 42""")
       }
   }
 }
-*/ 

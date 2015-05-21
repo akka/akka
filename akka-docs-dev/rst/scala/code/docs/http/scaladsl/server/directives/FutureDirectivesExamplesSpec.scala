@@ -31,7 +31,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
   }))
   implicit val responseTimeout = Timeout(2, TimeUnit.SECONDS)
 
-  "example-1" in {
+  "onComplete" in {
     def divide(a: Int, b: Int): Future[Int] = Future {
       a / b
     }
@@ -54,7 +54,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
     }
   }
 
-  "example-2" in {
+  "onSuccess" in {
     val route =
       path("success") {
         onSuccess(Future { "Ok" }) { extraction =>
@@ -77,7 +77,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
     }
   }
 
-  "example-3" in {
+  "completeOrRecoverWith" in {
     val route =
       path("success") {
         completeOrRecoverWith(Future { "Ok" }) { extraction =>
