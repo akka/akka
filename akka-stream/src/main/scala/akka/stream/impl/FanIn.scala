@@ -5,10 +5,9 @@ package akka.stream.impl
 
 import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.actor.Props
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.{ AbruptTerminationException, ActorFlowMaterializerSettings, InPort, Shape }
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
 import akka.stream.scaladsl.FlexiMerge.MergeLogic
-import akka.stream.{ InPort, Shape }
 import org.reactivestreams.{ Subscription, Subscriber }
 import akka.actor.DeadLetterSuppression
 
@@ -248,7 +247,7 @@ private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, 
 
   override def postStop(): Unit = {
     inputBunch.cancel()
-    primaryOutputs.error(new IllegalStateException("Processor actor terminated abruptly"))
+    primaryOutputs.error(AbruptTerminationException(self))
   }
 
   override def postRestart(reason: Throwable): Unit = {
