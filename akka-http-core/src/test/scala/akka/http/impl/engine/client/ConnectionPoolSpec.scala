@@ -4,9 +4,13 @@
 
 package akka.http.impl.engine.client
 
+import java.net.InetSocketAddress
+import java.nio.ByteBuffer
+import java.nio.channels.{ SocketChannel, ServerSocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import akka.util.ByteString
 import akka.http.scaladsl.{ TestUtils, Http }
@@ -19,8 +23,32 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model._
 
-class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF\n akka.io.tcp.trace-logging = off") {
+class ConnectionPoolSpec extends AkkaSpec("""
+    akka.loggers = []
+    akka.loglevel = OFF
+    akka.io.tcp.trace-logging = off
+    akka.io.tcp.windows-connection-abort-workaround-enabled=auto""") {
   implicit val materializer = ActorFlowMaterializer()
+
+  // FIXME: Extract into proper util class to be reusable
+  lazy val ConnectionResetByPeerMessage: String = {
+    val serverSocket = ServerSocketChannel.open()
+    serverSocket.socket.bind(new InetSocketAddress("127.0.0.1", 0))
+    try {
+      val clientSocket = SocketChannel.open(new InetSocketAddress("127.0.0.1", serverSocket.socket().getLocalPort))
+      @volatile var serverSideChannel: SocketChannel = null
+      awaitCond {
+        serverSideChannel = serverSocket.accept()
+        serverSideChannel != null
+      }
+      serverSideChannel.socket.setSoLinger(true, 0)
+      serverSideChannel.close()
+      clientSocket.read(ByteBuffer.allocate(1))
+      null
+    } catch {
+      case NonFatal(e) ⇒ e.getMessage
+    }
+  }
 
   "The host-level client infrastructure" should {
 
@@ -104,7 +132,7 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
       val responses = Seq(responseOut.expectNext(), responseOut.expectNext())
 
       responses mustContainLike { case (Success(x), 42) ⇒ requestUri(x) should endWith("/a") }
-      responses mustContainLike { case (Failure(x), 43) ⇒ x.getMessage should include("reset by peer") }
+      responses mustContainLike { case (Failure(x), 43) ⇒ x.getMessage should include(ConnectionResetByPeerMessage) }
     }
 
     "retry failed requests" in new TestSetup(autoAccept = true) {
@@ -142,7 +170,7 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
       val responses = Seq(responseOut.expectNext(), responseOut.expectNext())
 
       responses mustContainLike { case (Success(x), 42) ⇒ requestUri(x) should endWith("/a") }
-      responses mustContainLike { case (Failure(x), 43) ⇒ x.getMessage should include("reset by peer") }
+      responses mustContainLike { case (Failure(x), 43) ⇒ x.getMessage should include(ConnectionResetByPeerMessage) }
       remainingResponsesToKill.get() shouldEqual 0
     }
 

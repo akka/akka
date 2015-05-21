@@ -8,6 +8,7 @@ import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class FlowForeachSpec extends AkkaSpec {
 
@@ -48,7 +49,7 @@ class FlowForeachSpec extends AkkaSpec {
     "complete future with failure when function throws" in assertAllStagesStopped {
       val error = new Exception with NoStackTrace
       val future = Source.single(1).runForeach(_ ⇒ throw error)
-      the[Exception] thrownBy Await.result(future, remaining) should be(error)
+      the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
   }
