@@ -22,5 +22,5 @@ any header the request is rejected as "NotFound".
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
    :snippet: headerValuePF-0

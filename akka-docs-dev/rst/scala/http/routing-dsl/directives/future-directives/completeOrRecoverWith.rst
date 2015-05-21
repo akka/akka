@@ -3,7 +3,8 @@
 completeOrRecoverWith
 =====================
 
-...
+Completes the request with the result of the computation given as argument of type ``Future[T]`` by marshalling it
+with the implicitly given ``ToResponseMarshaller[T]``. Runs the inner route if the ``Future`` computation fails.
 
 Signature
 ---------
@@ -14,10 +15,15 @@ Signature
 Description
 -----------
 
-...
+If the future succeeds the request is completed using the value's marshaller (this directive therefore
+requires a marshaller for the future's parameter type to be implicitly available). The execution of the inner
+route passed to this directive is only executed if the given future completed with a failure,
+exposing the reason of failure as a extraction of type ``Throwable``.
+
+To handle the successful case manually as well, use the :ref:`-onComplete-` directive, instead.
 
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala
-   :snippet: 0completeOrRecoverWith
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala
+   :snippet: completeOrRecoverWith

@@ -22,5 +22,5 @@ usually marshalled to an empty but successful result. In many cases ``None`` sho
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
   :snippet: rejectEmptyResponse-example
