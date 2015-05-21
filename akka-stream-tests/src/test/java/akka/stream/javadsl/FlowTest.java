@@ -57,12 +57,12 @@ public class FlowTest extends StreamTest {
       }
     });
     final Flow<String, String, ?> flow2 = Flow.of(String.class).grouped(2
-    ).mapConcat(new Function<java.util.List<String>, java.util.List<String>>() {
+    ).mapConcat(new Function<java.util.List<String>, java.lang.Iterable<String>>() {
       public java.util.List<String> apply(java.util.List<String> elem) {
         return elem;
       }
     }).groupedWithin(100, FiniteDuration.create(50, TimeUnit.MILLISECONDS)
-    ).mapConcat(new Function<java.util.List<String>, java.util.List<String>>() {
+    ).mapConcat(new Function<java.util.List<String>, java.lang.Iterable<String>>() {
           public java.util.List<String> apply(java.util.List<String> elem) {
             return elem;
           }
