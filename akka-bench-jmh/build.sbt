@@ -1,1 +1,2 @@
 enablePlugins(JmhPlugin)
+disablePlugins(Unidoc)

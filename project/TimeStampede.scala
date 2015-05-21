@@ -8,8 +8,7 @@ import sbt.Keys._
 
 object TimeStampede extends AutoPlugin {
 
-  override def requires = RootSettings
-  override def trigger = allRequirements
+  override def trigger = noTrigger
 
   override lazy val projectSettings = Seq(
     commands += stampVersion
