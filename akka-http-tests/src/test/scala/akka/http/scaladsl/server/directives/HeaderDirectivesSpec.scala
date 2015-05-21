@@ -1,0 +1,100 @@
+/*
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package akka.http.scaladsl.server.directives
+
+import akka.http.scaladsl.model._
+import headers._
+import akka.http.scaladsl.server._
+import org.scalatest.Inside
+
+class HeaderDirectivesSpec extends RoutingSpec with Inside {
+
+  "The headerValuePF directive" should {
+    lazy val myHeaderValue = headerValuePF { case Connection(tokens) ⇒ tokens.head }
+
+    "extract the respective header value if a matching request header is present" in {
+      Get("/abc") ~> addHeader(Connection("close")) ~> myHeaderValue { echoComplete } ~> check {
+        responseAs[String] shouldEqual "close"
+      }
+    }
+
+    "reject with an empty rejection set if no matching request header is present" in {
+      Get("/abc") ~> myHeaderValue { echoComplete } ~> check { rejections shouldEqual Nil }
+    }
+
+    "reject with a MalformedHeaderRejection if the extract function throws an exception" in {
+      Get("/abc") ~> addHeader(Connection("close")) ~> {
+        (headerValuePF { case _ ⇒ sys.error("Naah!") }) { echoComplete }
+      } ~> check {
+        inside(rejection) { case MalformedHeaderRejection("Connection", "Naah!", _) ⇒ }
+      }
+    }
+  }
+
+  "The headerValueByType directive" should {
+    lazy val route =
+      headerValueByType[Origin]() { origin ⇒
+        complete(s"The first origin was ${origin.origins.head}")
+      }
+    "extract a header if the type is matching" in {
+      val originHeader = Origin(HttpOrigin("http://localhost:8080"))
+      Get("abc") ~> originHeader ~> route ~> check {
+        responseAs[String] shouldEqual "The first origin was http://localhost:8080"
+      }
+    }
+    "reject a request if no header of the given type is present" in {
+      Get("abc") ~> route ~> check {
+        inside(rejection) {
+          case MissingHeaderRejection("Origin") ⇒
+        }
+      }
+    }
+  }
+
+  "The optionalHeaderValue directive" should {
+    lazy val myHeaderValue = optionalHeaderValue {
+      case Connection(tokens) ⇒ Some(tokens.head)
+      case _                  ⇒ None
+    }
+
+    "extract the respective header value if a matching request header is present" in {
+      Get("/abc") ~> addHeader(Connection("close")) ~> myHeaderValue { echoComplete } ~> check {
+        responseAs[String] shouldEqual "Some(close)"
+      }
+    }
+
+    "extract None if no matching request header is present" in {
+      Get("/abc") ~> myHeaderValue { echoComplete } ~> check { responseAs[String] shouldEqual "None" }
+    }
+
+    "reject with a MalformedHeaderRejection if the extract function throws an exception" in {
+      Get("/abc") ~> addHeader(Connection("close")) ~> {
+        val myHeaderValue = optionalHeaderValue { case _ ⇒ sys.error("Naaah!") }
+        myHeaderValue { echoComplete }
+      } ~> check {
+        inside(rejection) { case MalformedHeaderRejection("Connection", "Naaah!", _) ⇒ }
+      }
+    }
+  }
+
+  "The optionalHeaderValueByType directive" should {
+    val route =
+      optionalHeaderValueByType[Origin]() {
+        case Some(origin) ⇒ complete(s"The first origin was ${origin.origins.head}")
+        case None         ⇒ complete("No Origin header found.")
+      }
+    "extract Some(header) if the type is matching" in {
+      val originHeader = Origin(HttpOrigin("http://localhost:8080"))
+      Get("abc") ~> originHeader ~> route ~> check {
+        responseAs[String] shouldEqual "The first origin was http://localhost:8080"
+      }
+    }
+    "extract None if no header of the given type is present" in {
+      Get("abc") ~> route ~> check {
+        responseAs[String] shouldEqual "No Origin header found."
+      }
+    }
+  }
+}
