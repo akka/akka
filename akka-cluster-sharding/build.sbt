@@ -13,6 +13,6 @@ OSGi.clusterSharding
 
 MultiNode.multiJvmSettings
 
-libraryDependencies ++= Dependencies.clusterSharding
+Dependencies.clusterSharding
 
 //MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster-sharding").value

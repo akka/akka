@@ -37,10 +37,15 @@ object MultiNode {
       (if (onlyTestTags.value.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) onlyTestTags.value.mkString("\"", " ", "\"") else onlyTestTags.value.mkString(" ")))
   }
 
-  lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++ Seq(
-    jvmOptions in MultiJvm := defaultMultiJvmOptions,
-    compileInputs in(MultiJvm, compile) <<= (compileInputs in(MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm),
-    compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test)) ++
+  lazy val multiJvmSettings =
+    SbtMultiJvm.multiJvmSettings ++
+    inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++
+    Seq(
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      compileInputs in(MultiJvm, compile) <<= (compileInputs in(MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm),
+      scalacOptions in MultiJvm <<= scalacOptions in Test,
+      compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test)
+    ) ++
     Option(System.getProperty("akka.test.multi-node.hostsFileName")).map(x => Seq(multiNodeHostsFileName in MultiJvm := x)).getOrElse(Seq.empty) ++
     Option(System.getProperty("akka.test.multi-node.java")).map(x => Seq(multiNodeJavaName in MultiJvm := x)).getOrElse(Seq.empty) ++
     Option(System.getProperty("akka.test.multi-node.targetDirName")).map(x => Seq(multiNodeTargetDirName in MultiJvm := x)).getOrElse(Seq.empty) ++

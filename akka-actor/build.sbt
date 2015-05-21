@@ -11,7 +11,7 @@ Unidoc.javadocSettings
 
 OSGi.actor
 
-libraryDependencies ++= Dependencies.actor
+Dependencies.actor
 
 MimaKeys.previousArtifact := akkaPreviousArtifact("akka-actor").value
 

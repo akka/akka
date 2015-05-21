@@ -14,7 +14,7 @@ MultiNode.multiJvmSettings
 
 OSGi.cluster
 
-libraryDependencies ++= Dependencies.cluster
+Dependencies.cluster
 
 MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster").value
 

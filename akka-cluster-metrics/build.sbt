@@ -16,7 +16,7 @@ SigarLoader.sigarSettings
 
 OSGi.clusterMetrics
 
-libraryDependencies ++= Dependencies.clusterMetrics
+Dependencies.clusterMetrics
 
 //MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster-metrics").value
 
