@@ -94,7 +94,7 @@ object AkkaBuild extends Build {
   lazy val benchJmh = Project(
     id = "akka-bench-jmh",
     base = file("akka-bench-jmh"),
-    dependencies = Seq(actor, persistence, testkit).map(_ % "compile;compile->test;provided->test")
+    dependencies = Seq(actor, persistence, testkit).map(_ % "compile;compile->test;provided->provided")
   ).disablePlugins(ValidatePullRequest)
 
   lazy val remote = Project(
