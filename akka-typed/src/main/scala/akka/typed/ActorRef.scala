@@ -16,7 +16,7 @@ import language.implicitConversions
  * [[akka.event.EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
-abstract class ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] { this: ScalaActorRef[T] ⇒
+abstract class ActorRef[-T] extends java.lang.Comparable[ActorRef[Any]] { this: ScalaActorRef[T] ⇒
   /**
    * INTERNAL API.
    *
@@ -52,7 +52,7 @@ abstract class ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] { this: Sc
     case _              ⇒ false
   }
   override def hashCode = untypedRef.hashCode
-  override def compareTo(other: ActorRef[_]) = untypedRef.compareTo(other.untypedRef)
+  override def compareTo(other: ActorRef[Any]) = untypedRef.compareTo(other.untypedRef)
 }
 
 /**

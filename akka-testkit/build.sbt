@@ -12,7 +12,7 @@ Unidoc.javadocSettings
 OSGi.testkit
 
 // to fix scaladoc generation
-libraryDependencies ++= Dependencies.testkit
+Dependencies.testkit
 
 initialCommands += "import akka.testkit._"
 

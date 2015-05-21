@@ -8,4 +8,4 @@ Unidoc.scaladocSettings
 
 publishArtifact in Compile := false
 
-libraryDependencies ++= Dependencies.actorTests
+Dependencies.actorTests

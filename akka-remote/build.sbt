@@ -11,7 +11,7 @@ Unidoc.javadocSettings
 
 OSGi.remote
 
-libraryDependencies ++= Dependencies.remote
+Dependencies.remote
 
 parallelExecution in Test := false
 

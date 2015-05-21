@@ -9,6 +9,6 @@ Unidoc.scaladocSettingsNoVerificationOfDiagrams
 
 Unidoc.javadocSettings
 
-libraryDependencies ++= Dependencies.kernel
+Dependencies.kernel
 
 MimaKeys.previousArtifact := akkaPreviousArtifact("akka-kernel").value
