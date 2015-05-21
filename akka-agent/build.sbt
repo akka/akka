@@ -1,16 +1,14 @@
-import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, Unidoc }
+import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, ScaladocNoVerificationOfDiagrams }
 import com.typesafe.tools.mima.plugin.MimaKeys
 
 AkkaBuild.defaultSettings
 
 Formatting.formatSettings
 
-Unidoc.scaladocSettingsNoVerificationOfDiagrams
-
-Unidoc.javadocSettings
-
 OSGi.agent
 
 Dependencies.agent
 
 MimaKeys.previousArtifact := akkaPreviousArtifact("akka-agent").value
+
+enablePlugins(ScaladocNoVerificationOfDiagrams)

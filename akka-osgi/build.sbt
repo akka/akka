@@ -1,13 +1,9 @@
-import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, Unidoc }
+import akka.{ AkkaBuild, Dependencies, Formatting, OSGi }
 import com.typesafe.tools.mima.plugin.MimaKeys
 
 AkkaBuild.defaultSettings
 
 Formatting.formatSettings
-
-Unidoc.scaladocSettings
-
-Unidoc.javadocSettings
 
 OSGi.osgi
 
