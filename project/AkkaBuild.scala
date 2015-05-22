@@ -31,11 +31,9 @@ object AkkaBuild extends Build {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it doesn not break things
 
-  lazy val buildSettings = Seq(
+  lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization        := "com.typesafe.akka",
-    version             := "2.4-SNAPSHOT",
-    scalaVersion        := Dependencies.Versions.scalaVersion,
-    crossScalaVersions  := Dependencies.Versions.crossScala
+    version             := "2.4-SNAPSHOT"
   )
 
   lazy val root = Project(

@@ -1,23 +1,23 @@
 package akka
 
 import sbt._
+import Keys._
 
 object Dependencies {
 
-  import DependencyHelpers._
-  import DependencyHelpers.ScalaVersionDependentModuleID._
+  lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
+  lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
+  lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
 
-  object Versions {
-    val crossScala = Seq("2.11.6")
-    val scalaVersion = crossScala.head
-    val scalaStmVersion  = sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7")
-    val scalaTestVersion = sys.props.get("akka.build.scalaTestVersion").getOrElse("2.2.4")
-    val scalaCheckVersion = sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.6")
-  }
+  val Versions = Seq(
+    crossScalaVersions := Seq("2.11.6", "2.12.0-M1"),
+    scalaVersion := crossScalaVersions.value.head,
+    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7"),
+    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.6"),
+    scalaTestVersion := (if (scalaVersion.value == "2.12.0-M1") "2.2.5-M1" else "2.2.4")
+  )
 
   object Compile {
-    import Versions._
-
     // Compile
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.4" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
@@ -25,7 +25,7 @@ object Dependencies {
     val config        = "com.typesafe"                % "config"                       % "1.3.0"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.10.3.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
-    val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
+    val scalaStm      = Def.setting { "org.scala-stm" %% "scala-stm" % scalaStmVersion.value } // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.12"       // MIT
     // mirrored in OSGi sample
@@ -44,8 +44,8 @@ object Dependencies {
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
-      val scalatest    = "org.scalatest"              %% "scalatest"                    % scalaTestVersion   % "test" // ApacheV2
-      val scalacheck   = "org.scalacheck"             %% "scalacheck"                   % scalaCheckVersion  % "test" // New BSD
+      val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"  % scalaTestVersion.value   % "test" } // ApacheV2
+      val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value  % "test" } // New BSD
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.2.1"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
@@ -75,66 +75,41 @@ object Dependencies {
   }
 
   import Compile._
+  val l = libraryDependencies
 
-  val actor = Seq(config)
+  val actor = l ++= Seq(config)
 
-  val testkit = Seq(Test.junit, Test.scalatest) ++ Test.metricsAll
+  val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
-  val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf, Test.junitIntf)
+  val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck.value, protobuf, Test.junitIntf)
 
-  val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
+  val remote = l ++= Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest.value)
 
-  val remoteTests = deps(Test.junit, Test.scalatest, Test.scalaXml)
+  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
 
-  val cluster = Seq(Test.junit, Test.scalatest)
+  val cluster = l ++= Seq(Test.junit, Test.scalatest.value)
   
-  val clusterTools = Seq(Test.junit, Test.scalatest)
+  val clusterTools = l ++= Seq(Test.junit, Test.scalatest.value)
   
-  val clusterSharding = Seq(Test.junit, Test.scalatest, Test.commonsIo)
+  val clusterSharding = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsIo)
 
-  val clusterMetrics = Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
+  val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
 
-  val slf4j = Seq(slf4jApi, Test.logback)
+  val slf4j = l ++= Seq(slf4jApi, Test.logback)
 
-  val agent = Seq(scalaStm, Test.scalatest, Test.junit)
+  val agent = l ++= Seq(scalaStm.value, Test.scalatest.value, Test.junit)
 
-  val persistence = deps(protobuf, Provided.levelDB, Provided.levelDBNative, Test.scalatest, Test.junit, Test.commonsIo, Test.scalaXml)
+  val persistence = l ++= Seq(protobuf, Provided.levelDB, Provided.levelDBNative, Test.scalatest.value, Test.junit, Test.commonsIo, Test.scalaXml)
 
-  val persistenceTck = Seq(Test.scalatest.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
+  val persistenceTck = l ++= Seq(Test.scalatest.value.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
 
-  val kernel = Seq(Test.scalatest, Test.junit)
+  val kernel = l ++= Seq(Test.scalatest.value, Test.junit)
 
-  val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito, Test.logback, Test.commonsIo, Test.junitIntf)
+  val camel = l ++= Seq(camelCore, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo, Test.junitIntf)
 
-  val osgi = Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
+  val osgi = l ++= Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest.value, Test.junit)
 
-  val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
+  val docs = l ++= Seq(Test.scalatest.value, Test.junit, Test.junitIntf)
 
-  val contrib = Seq(Test.junitIntf, Test.commonsIo)
-}
-
-object DependencyHelpers {
-
-  import sbt.Keys._
-
-  case class ScalaVersionDependentModuleID(val modules: String => Seq[ModuleID]) {
-    def %(config: String): ScalaVersionDependentModuleID =
-      ScalaVersionDependentModuleID(version => modules(version).map(_ % config))
-  }
-
-  object ScalaVersionDependentModuleID {
-    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID =
-      ScalaVersionDependentModuleID(_ => Seq(mod))
-
-    def fromPF(f: PartialFunction[String, ModuleID]): ScalaVersionDependentModuleID =
-      ScalaVersionDependentModuleID(version => if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
-
-  }
-
-  /**
-   * Use this as a dependency setting if the dependencies contain both static and Scala-version
-   * dependent entries.
-   */
-  def deps(modules: ScalaVersionDependentModuleID*) =
-    libraryDependencies <++= scalaVersion(version => modules.flatMap(m => m.modules(version)))
+  val contrib = l ++= Seq(Test.junitIntf, Test.commonsIo)
 }

@@ -11,6 +11,6 @@ Unidoc.javadocSettings
 
 OSGi.camel
 
-libraryDependencies ++= Dependencies.camel
+Dependencies.camel
 
 MimaKeys.previousArtifact := akkaPreviousArtifact("akka-camel").value
