@@ -23,5 +23,5 @@ to its inner route.
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostExamplesSpec.scala
-   :snippet: extract-hostname
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala
+   :snippet: extractHost

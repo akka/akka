@@ -36,23 +36,23 @@ Example
 
 Matching a list of hosts:
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala
    :snippet: list-of-hosts
 
 Making sure the host satisfies the given predicate
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala
    :snippet: predicate
 
 Using a regular expressions:
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala
    :snippet: using-regex
 
 Beware that in the case of introducing multiple capturing groups in the regex such as in the case bellow, the
 directive will fail at runtime, at the moment the route tree is evaluated for the first time. This might cause
 your http handler actor to enter in a fail/restart loop depending on your supervision strategy.
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala
    :snippet: failing-regex
 

@@ -11,7 +11,7 @@ import StatusCodes._
 
 class HostDirectivesExamplesSpec extends RoutingSpec {
 
-  "extract-hostname" in {
+  "extractHost" in {
     val route =
       extractHost { hn =>
         complete(s"Hostname: $hn")

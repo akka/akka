@@ -36,13 +36,13 @@ Examples
 
 The following example uses an ``updatePerson`` function with a ``Person`` case class as an input and output.  We plug this function into our route using ``handleWith``.
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: person-case-class
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: example-handleWith-with-json
 
 The PersonJsonSupport object handles both marshalling and unmarshalling of the Person case class.
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: person-json-support

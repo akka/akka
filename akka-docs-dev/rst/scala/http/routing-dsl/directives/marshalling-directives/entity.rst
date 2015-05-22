@@ -40,13 +40,13 @@ Examples
 The following example uses ``spray-json`` to unmarshall a json request into a simple ``Person`` 
 class.  It utilizes ``SprayJsonSupport`` via the ``PersonJsonSupport`` object as the in-scope unmarshaller.
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: person-case-class
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: person-json-support
 
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: example-entity-with-json
 

@@ -23,5 +23,5 @@ The opposite filter is available as ``requestEntityEmpty``.
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
   :snippet: requestEntityEmptyPresent-example

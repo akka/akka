@@ -21,5 +21,5 @@ handling when the header is missing use the :ref:`-optionalHeaderValueByName-` d
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
    :snippet: headerValueByName-0
