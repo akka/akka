@@ -163,9 +163,22 @@ public class ActorCreationTest {
   }
 
   @Test
-  public void testAnonymousClassCreatorWithArguments() {
+  public void testClassCreatorWithArguments() {
     final Creator<UntypedActor> anonymousCreatorFromStaticMethod = new P("hello");
     Props.create(anonymousCreatorFromStaticMethod);
+  }
+
+  @Test
+  public void testAnonymousClassCreatorWithArguments() {
+    try {
+      final Creator<UntypedActor> anonymousCreatorFromStaticMethod = new P("hello") {
+        // captures enclosing class
+      };
+      Props.create(anonymousCreatorFromStaticMethod);
+      fail("Should have detected this is not a real static class, and thrown");
+    } catch (IllegalArgumentException e) {
+      assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
+    }
   }
 
 }

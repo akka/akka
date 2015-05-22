@@ -134,10 +134,10 @@ object Props {
 
   private final def isNotClosingOverEnclosingClass(clazz: Class[_]): Boolean = {
     def findMatchingConstructor(argTypes: Array[Class[_]]): Boolean =
-      try { val c = clazz.getConstructor(argTypes: _*); true }
+      try { clazz.getConstructor(argTypes: _*); true }
       catch { case ex: NoSuchMethodException ⇒ false }
     def findMatchingDeclaredConstructor(argTypes: Array[Class[_]]): Boolean =
-      try { val c = clazz.getDeclaredConstructor(argTypes: _*); true }
+      try { clazz.getDeclaredConstructor(argTypes: _*); true }
       catch { case ex: NoSuchMethodException ⇒ false }
 
     //noinspection EmptyCheck
