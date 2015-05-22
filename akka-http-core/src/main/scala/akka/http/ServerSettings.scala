@@ -4,15 +4,20 @@
 
 package akka.http
 
-import akka.ConfigurationException
-import akka.actor.{ ActorSystem, ActorRefFactory }
-import akka.http.impl.util._
-import akka.http.scaladsl.model.HttpHeader
-import akka.http.scaladsl.model.headers.{ Host, Server }
 import com.typesafe.config.Config
 
-import scala.concurrent.duration._
 import scala.language.implicitConversions
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+import akka.ConfigurationException
+import akka.actor.{ ActorSystem, ActorRefFactory }
+import akka.io.Inet.SocketOption
+
+import akka.http.impl.util._
+
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.headers.{ Host, Server }
 
 final case class ServerSettings(
   serverHeader: Option[Server],
@@ -22,10 +27,13 @@ final case class ServerSettings(
   transparentHeadRequests: Boolean,
   verboseErrorMessages: Boolean,
   responseHeaderSizeHint: Int,
+  backlog: Int,
+  socketOptions: immutable.Traversable[SocketOption],
   defaultHostHeader: Host,
   parserSettings: ParserSettings) {
 
   require(0 <= responseHeaderSizeHint, "response-size-hint must be > 0")
+  require(0 <= backlog, "backlog must be > 0")
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.server") {
@@ -45,6 +53,8 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
     c getBoolean "transparent-head-requests",
     c getBoolean "verbose-error-messages",
     c getIntBytes "response-header-size-hint",
+    c getInt "backlog",
+    SocketOptionSettings fromSubConfig c.getConfig("socket-options"),
     defaultHostHeader =
       HttpHeader.parse("Host", c getString "default-host-header") match {
         case HttpHeader.ParsingResult.Ok(x: Host, Nil) ⇒ x

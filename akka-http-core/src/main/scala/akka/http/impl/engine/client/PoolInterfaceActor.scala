@@ -59,8 +59,8 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
     import hcps._
     import setup._
     val connectionFlow =
-      if (httpsContext.isEmpty) Http().outgoingConnection(host, port, None, options, settings.connectionSettings, setup.log)
-      else Http().outgoingConnectionTls(host, port, None, options, settings.connectionSettings, httpsContext, setup.log)
+      if (httpsContext.isEmpty) Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
+      else Http().outgoingConnectionTls(host, port, None, settings.connectionSettings, httpsContext, setup.log)
     val poolFlow = PoolFlow(connectionFlow, new InetSocketAddress(host, port), settings, setup.log)
     Source(ActorPublisher(self)).via(poolFlow).runWith(Sink(ActorSubscriber[ResponseContext](self)))
   }
