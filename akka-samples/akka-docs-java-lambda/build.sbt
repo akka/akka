@@ -2,7 +2,7 @@ name := "akka-docs-java-lambda"
 
 version := "2.3-SNAPSHOT"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.10.5"
 
 compileOrder := CompileOrder.ScalaThenJava
 
@@ -10,7 +10,7 @@ javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
 
-val publishedAkkaVersion = "2.3.10"
+val publishedAkkaVersion = "2.3.11"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %%      "akka-actor"                       % publishedAkkaVersion,

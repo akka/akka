@@ -6,7 +6,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <publishedAkkaVersion>2.3.10</publishedAkkaVersion>
+    <publishedAkkaVersion>2.3.11</publishedAkkaVersion>
   </properties>
 
   <groupId>sample</groupId>
