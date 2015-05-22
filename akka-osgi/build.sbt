@@ -11,7 +11,7 @@ Unidoc.javadocSettings
 
 OSGi.osgi
 
-libraryDependencies ++= Dependencies.osgi
+Dependencies.osgi
 
 parallelExecution in Test := false
 
