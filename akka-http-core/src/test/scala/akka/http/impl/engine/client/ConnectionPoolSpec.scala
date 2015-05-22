@@ -275,7 +275,7 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
                                     ccSettings: ClientConnectionSettings = ClientConnectionSettings(system)) = {
       val settings = ConnectionPoolSettings(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
-      flowTestBench(Http().cachedHostConnectionPool[T](serverHostName, serverPort, Nil, settings))
+      flowTestBench(Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
 
     def superPool[T](maxConnections: Int = 2,
@@ -286,7 +286,7 @@ class ConnectionPoolSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = O
                      ccSettings: ClientConnectionSettings = ClientConnectionSettings(system)) = {
       val settings = ConnectionPoolSettings(maxConnections, maxRetries, maxOpenRequests, pipeliningLimit,
         idleTimeout, ClientConnectionSettings(system))
-      flowTestBench(Http().superPool[T](Nil, settings))
+      flowTestBench(Http().superPool[T](settings))
     }
 
     def flowTestBench[T, Mat](poolFlow: Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat]) = {
