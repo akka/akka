@@ -148,7 +148,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "POST"
     }
   }
-  "0mapRouteResponse" in {
+  "0mapRouteResult" in {
     val rejectAll = // not particularly useful directive
       mapRouteResult {
         case _ => Rejected(List(AuthorizationFailedRejection))
@@ -190,6 +190,105 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       }
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "prefix:test"
+    }
+  }
+  "cancelRejections-filter-example" in {
+    def isMethodRejection: Rejection => Boolean = {
+      case MethodRejection(_) => true
+      case _                  => false
+    }
+
+    val route =
+      cancelRejections(isMethodRejection) {
+        post {
+          complete("Result")
+        }
+      }
+
+    Get("/") ~> route ~> check {
+      rejections shouldEqual Nil
+      handled shouldEqual false
+    }
+  }
+  "cancelRejection-example" in {
+    val route =
+      cancelRejection(MethodRejection(HttpMethods.POST)) {
+        post {
+          complete("Result")
+        }
+      }
+
+    Get("/") ~> route ~> check {
+      rejections shouldEqual Nil
+      handled shouldEqual false
+    }
+  }
+  "extractRequest-example" in {
+    val route =
+      extractRequest { request =>
+        complete(s"Request method is ${request.method.name} and content-type is ${request.entity.contentType}")
+      }
+
+    Post("/", "text") ~> route ~> check {
+      responseAs[String] shouldEqual "Request method is POST and content-type is text/plain; charset=UTF-8"
+    }
+    Get("/") ~> route ~> check {
+      responseAs[String] shouldEqual "Request method is GET and content-type is none/none"
+    }
+  }
+  "extractUri-example" in {
+    val route =
+      extractUri { uri =>
+        complete(s"Full URI: $uri")
+      }
+
+    Get("/") ~> route ~> check {
+      // tests are executed with the host assumed to be "example.com"
+      responseAs[String] shouldEqual "Full URI: http://example.com/"
+    }
+    Get("/test") ~> route ~> check {
+      responseAs[String] shouldEqual "Full URI: http://example.com/test"
+    }
+  }
+  "mapUnmatchedPath-example" in {
+    def ignore456(path: Uri.Path) = path match {
+      case s @ Uri.Path.Segment(head, tail) if head.startsWith("456") =>
+        val newHead = head.drop(3)
+        if (newHead.isEmpty) tail
+        else s.copy(head = head.drop(3))
+      case _ => path
+    }
+    val ignoring456 = mapUnmatchedPath(ignore456)
+
+    val route =
+      pathPrefix("123") {
+        ignoring456 {
+          path("abc") {
+            complete(s"Content")
+          }
+        }
+      }
+
+    Get("/123/abc") ~> route ~> check {
+      responseAs[String] shouldEqual "Content"
+    }
+    Get("/123456/abc") ~> route ~> check {
+      responseAs[String] shouldEqual "Content"
+    }
+  }
+  "extractUnmatchedPath-example" in {
+    val route =
+      pathPrefix("abc") {
+        extractUnmatchedPath { remaining =>
+          complete(s"Unmatched: '$remaining'")
+        }
+      }
+
+    Get("/abc") ~> route ~> check {
+      responseAs[String] shouldEqual "Unmatched: ''"
+    }
+    Get("/abc/456") ~> route ~> check {
+      responseAs[String] shouldEqual "Unmatched: '/456'"
     }
   }
 }

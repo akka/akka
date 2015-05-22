@@ -22,5 +22,5 @@ by the default :ref:`RejectionHandler <The RejectionHandler>`.
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
   :snippet: method-example

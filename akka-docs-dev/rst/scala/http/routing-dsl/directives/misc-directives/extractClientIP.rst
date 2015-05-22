@@ -21,6 +21,6 @@ setting ``akka.http.server.remote-address-header`` is set to ``on``. Per default
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
   :snippet: extractClientIP-example
 

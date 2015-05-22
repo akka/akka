@@ -19,5 +19,5 @@ Description
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0cancelRejections
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
+   :snippet: cancelRejections-filter-example
