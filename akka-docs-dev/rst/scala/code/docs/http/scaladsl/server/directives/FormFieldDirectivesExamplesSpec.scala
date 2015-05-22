@@ -9,9 +9,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.model._
 
 class FormFieldDirectivesExamplesSpec extends RoutingSpec {
-  // FIXME: investigate why it doesn't work without this import
-  import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
-
   "formFields" in {
     val route =
       formFields('color, 'age.as[Int]) { (color, age) =>
