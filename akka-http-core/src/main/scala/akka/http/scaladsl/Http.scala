@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{ Collection ⇒ JCollection }
 import javax.net.ssl.{ SSLParameters, SSLContext }
+import akka.http.impl.util.StreamUtils
 import akka.japi
 import com.typesafe.config.Config
 import scala.util.Try
@@ -79,17 +80,24 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                     interface: String, port: Int = -1,
                     settings: ServerSettings = ServerSettings(system),
                     httpsContext: Option[HttpsContext] = None,
-                    log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
-    bind(interface, port, settings, httpsContext, log).to {
-      Sink.foreach { incomingConnection ⇒
-        try incomingConnection.flow.joinMat(handler)(Keep.both).run()
-        catch {
-          case NonFatal(e) ⇒
-            log.error(e, "Could not materialize handling flow for {}", incomingConnection)
-            throw e
-        }
+                    log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] = {
+    def handleOneConnection(incomingConnection: IncomingConnection): Future[Unit] =
+      try
+        incomingConnection.flow
+          .viaMat(StreamUtils.identityFinishReporter)(Keep.right)
+          .joinMat(handler)(Keep.left)
+          .run()
+      catch {
+        case NonFatal(e) ⇒
+          log.error(e, "Could not materialize handling flow for {}", incomingConnection)
+          throw e
       }
-    }.run()
+
+    bind(interface, port, settings, httpsContext, log)
+      .mapAsyncUnordered(settings.maxConnections)(handleOneConnection)
+      .to(Sink.ignore)
+      .run()
+  }
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
