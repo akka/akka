@@ -10,7 +10,7 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.{ ClientConnectionSettings, ServerSettings }
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Promise, Future, Await }
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.ActorSystem
@@ -23,6 +23,8 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
+
+import scala.util.Success
 
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -85,6 +87,46 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .runWith(Source.single(HttpRequest(uri = "/abc")), Sink.head)
 
       Await.result(f, 1.second)
+      Await.result(b1.unbind(), 1.second)
+    }
+
+    "prevent more than the configured number of max-connections with bindAndHandle" in {
+      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val settings = ServerSettings(system).copy(maxConnections = 1)
+
+      val receivedSlow = Promise[Long]()
+      val receivedFast = Promise[Long]()
+
+      def handle(req: HttpRequest): Future[HttpResponse] = {
+        req.uri.path.toString match {
+          case "/slow" ⇒
+            receivedSlow.complete(Success(System.nanoTime()))
+            akka.pattern.after(1.seconds, system.scheduler)(Future.successful(HttpResponse()))
+          case "/fast" ⇒
+            receivedFast.complete(Success(System.nanoTime()))
+            Future.successful(HttpResponse())
+        }
+      }
+
+      val binding = Http().bindAndHandleAsync(handle, hostname, port, settings = settings)
+      val b1 = Await.result(binding, 3.seconds)
+
+      def runRequest(uri: Uri): Unit =
+        Http().outgoingConnection(hostname, port)
+          .runWith(Source.single(HttpRequest(uri = uri)), Sink.head)
+
+      runRequest("/slow")
+
+      // wait until first request was received (but not yet answered)
+      val slowTime = Await.result(receivedSlow.future, 2.second)
+
+      // should be blocked by the slow connection still being open
+      runRequest("/fast")
+
+      val fastTime = Await.result(receivedFast.future, 2.second)
+      val diff = fastTime - slowTime
+      diff should be > 1000000000L // the diff must be at least the time to complete the first request and to close the first connection
+
       Await.result(b1.unbind(), 1.second)
     }
 

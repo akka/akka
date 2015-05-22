@@ -12,7 +12,7 @@ import akka.stream.scaladsl.FlexiMerge._
 import org.reactivestreams.{ Subscription, Processor, Subscriber, Publisher }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Promise, ExecutionContext, Future }
 import akka.util.ByteString
 import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
@@ -285,6 +285,46 @@ private[http] object StreamUtils {
         } else super.onUpstreamFailure(cause, ctx)
     }
     () ⇒ stage
+  }
+
+  /**
+   * Returns a no-op flow that materialized to a future that will be completed when the flow gets a
+   * completion or error signal. It doesn't necessarily mean, though, that all of a streaming pipeline
+   * is finished, only that the part that contains this flow has finished work.
+   */
+  def identityFinishReporter[T]: Flow[T, T, Future[Unit]] = {
+    // copy from Sink.foreach
+    def newForeachStage(): (PushStage[T, T], Future[Unit]) = {
+      val promise = Promise[Unit]()
+
+      val stage = new PushStage[T, T] {
+        override def onPush(elem: T, ctx: Context[T]): SyncDirective = ctx.push(elem)
+
+        override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
+          promise.failure(cause)
+          ctx.fail(cause)
+        }
+
+        override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
+          promise.success(())
+          ctx.finish()
+        }
+
+        override def onDownstreamFinish(ctx: Context[T]): TerminationDirective = {
+          promise.success(())
+          ctx.finish()
+        }
+
+        override def decide(cause: Throwable): Supervision.Directive = {
+          // supervision will be implemented by #16916
+          promise.tryFailure(cause)
+          super.decide(cause)
+        }
+      }
+
+      (stage, promise.future)
+    }
+    Flow[T].transformMaterializing(newForeachStage)
   }
 }
 
