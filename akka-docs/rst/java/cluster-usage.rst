@@ -88,7 +88,7 @@ seed nodes in the existing cluster.
 If you don't configure seed nodes you need to join the cluster programmatically or manually.
 
 Manual joining can be performed by using ref:`cluster_jmx_java` or :ref:`cluster_command_line_java`.
-Joining programatically can be performed with ``Cluster.get(system).join``. Unsuccessful join attempts are 
+Joining programmatically can be performed with ``Cluster.get(system).join``. Unsuccessful join attempts are
 automatically retried after the time period defined in configuration property ``retry-unsuccessful-join-after``.
 Retries can be disabled by setting the property to ``off``.
 
@@ -127,7 +127,7 @@ status of the unreachable member must be changed to 'Down'. Changing status to '
 can be performed automatically or manually. By default it must be done manually, using 
 :ref:`cluster_jmx_java` or :ref:`cluster_command_line_java`.
 
-It can also be performed programatically with ``Cluster.get(system).down(address)``.
+It can also be performed programmatically with ``Cluster.get(system).down(address)``.
 
 You can enable automatic downing with configuration::
 
@@ -157,7 +157,7 @@ above.
 
 A more graceful exit can be performed if you tell the cluster that a node shall leave.
 This can be performed using :ref:`cluster_jmx_java` or :ref:`cluster_command_line_java`.
-It can also be performed programatically with ``Cluster.get(system).leave(address)``. 
+It can also be performed programmatically with ``Cluster.get(system).leave(address)``.
 
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving. The cluster extension, but not the actor system or JVM, of the 

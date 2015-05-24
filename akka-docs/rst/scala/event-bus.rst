@@ -115,7 +115,7 @@ type :class:`ActorRef`.
 
 This classification requires an :class:`ActorSystem` in order to perform book-keeping
 operations related to the subscribers being Actors, which can terminate without first
-unsubscribing from the EventBus. ManagedActorClassification maitains a system Actor which
+unsubscribing from the EventBus. ManagedActorClassification maintains a system Actor which
 takes care of unsubscribing terminated actors automatically.
 
 The necessary methods to be implemented are illustrated with the following example:
@@ -143,7 +143,7 @@ how a simple subscription works:
 
 .. includecode:: code/docs/event/LoggingDocSpec.scala#deadletters
 
-Similarily to `Actor Classification`_, :class:`EventStream` will automatically remove subscibers when they terminate.
+Similarly to `Actor Classification`_, :class:`EventStream` will automatically remove subscribers when they terminate.
 
 .. note::
    The event stream is a *local facility*, meaning that it will *not* distribute events to other nodes in a clustered environment (unless you subscribe a Remote Actor to the stream explicitly).

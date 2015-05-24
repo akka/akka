@@ -54,7 +54,7 @@ dispatcher to use, see more below). Here are some examples of how to create a
 The second line shows how to pass constructor arguments to the :class:`Actor`
 being created. The presence of a matching constructor is verified during
 construction of the :class:`Props` object, resulting in an
-:class:`IllegalArgumentEception` if no or multiple matching constructors are
+:class:`IllegalArgumentException` if no or multiple matching constructors are
 found.
 
 The third line demonstrates the use of a :class:`Creator<T extends Actor>`. The

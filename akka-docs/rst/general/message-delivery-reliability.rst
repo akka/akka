@@ -227,7 +227,7 @@ observer.
 Ordering of Local Message Sends
 -------------------------------
 
-Assuming strict FIFO mailboxes the abovementioned caveat of non-transitivity of
+Assuming strict FIFO mailboxes the aforementioned caveat of non-transitivity of
 the message ordering guarantee is eliminated under certain conditions. As you
 will note, these are quite subtle as it stands, and it is even possible that
 future performance optimizations will invalidate this whole paragraph. The

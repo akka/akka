@@ -411,7 +411,7 @@ Resolving Conflicts with Implicit ActorRef
 ------------------------------------------
 
 If you want the sender of messages inside your TestKit-based tests to be the ``testActor``
-simply mix in ``ÌmplicitSender`` into your test.
+simply mix in ``ImplicitSender`` into your test.
 
 .. includecode:: code/docs/testkit/PlainWordSpec.scala#implicit-sender
 
@@ -736,7 +736,7 @@ options:
 .. includecode:: code/docs/testkit/TestkitDocSpec.scala#logging-receive
 
 .
-  If the abovementioned setting is not given in the :ref:`configuration`, this method will
+  If the aforementioned setting is not given in the :ref:`configuration`, this method will
   pass through the given :class:`Receive` function unmodified, meaning that
   there is no runtime cost unless actually enabled.
 
@@ -815,11 +815,11 @@ Some `Specs2 <http://specs2.org>`_ users have contributed examples of how to wor
   with :class:`org.specs2.specification.Scope`.
 * The Specification traits provide a :class:`Duration` DSL which uses partly
   the same method names as :class:`scala.concurrent.duration.Duration`, resulting in ambiguous
-  implicits if ``scala.concurrent.duration._`` is imported. There are two work-arounds:
+  implicits if ``scala.concurrent.duration._`` is imported. There are two workarounds:
 
   * either use the Specification variant of Duration and supply an implicit
     conversion to the Akka Duration. This conversion is not supplied with the
-    Akka distribution because that would mean that our JAR files would dependon
+    Akka distribution because that would mean that our JAR files would depend on
     Specs2, which is not justified by this little feature.
 
   * or mix :class:`org.specs2.time.NoTimeConversions` into the Specification.
