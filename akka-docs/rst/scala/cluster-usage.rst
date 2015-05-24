@@ -82,7 +82,7 @@ seed nodes in the existing cluster.
 If you don't configure seed nodes you need to join the cluster programmatically or manually.
 
 Manual joining can be performed by using ref:`cluster_jmx_scala` or :ref:`cluster_command_line_scala`.
-Joining programatically can be performed with ``Cluster(system).join``. Unsuccessful join attempts are 
+Joining programmatically can be performed with ``Cluster(system).join``. Unsuccessful join attempts are
 automatically retried after the time period defined in configuration property ``retry-unsuccessful-join-after``.
 Retries can be disabled by setting the property to ``off``.
 
@@ -121,7 +121,7 @@ status of the unreachable member must be changed to 'Down'. Changing status to '
 can be performed automatically or manually. By default it must be done manually, using
 :ref:`cluster_jmx_scala` or :ref:`cluster_command_line_scala`.
 
-It can also be performed programatically with ``Cluster(system).down(address)``.
+It can also be performed programmatically with ``Cluster(system).down(address)``.
 
 You can enable automatic downing with configuration::
 
@@ -151,7 +151,7 @@ above.
 
 A more graceful exit can be performed if you tell the cluster that a node shall leave.
 This can be performed using :ref:`cluster_jmx_scala` or :ref:`cluster_command_line_scala`.
-It can also be performed programatically with ``Cluster(system).leave(address)``. 
+It can also be performed programmatically with ``Cluster(system).leave(address)``.
 
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving. The cluster extension, but not the actor system or JVM, of the 
@@ -598,7 +598,7 @@ of code should only run for a specific role.
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#test-statsService
 
 Once again we take advantage of the facilities in :ref:`testkit <akka-testkit>` to verify expected behavior.
-Here using ``testActor`` as sender (via ``ImplicitSender``) and verifing the reply with ``expectMsgPF``.
+Here using ``testActor`` as sender (via ``ImplicitSender``) and verifying the reply with ``expectMsgPF``.
 
 In the above code you can see ``node(third)``, which is useful facility to get the root actor reference of
 the actor system for a specific role. This can also be used to grab the ``akka.actor.Address`` of that node.

@@ -11,7 +11,7 @@ Typed Actors
 Akka Typed Actors is an implementation of the `Active Objects <http://en.wikipedia.org/wiki/Active_object>`_ pattern.
 Essentially turning method invocations into asynchronous dispatch instead of synchronous that has been the default way since Smalltalk came out.
 
-Typed Actors consist of 2 "parts", a public interface and an implementation, and if you've done any work in "enterprise" Java, this will be very familiar to you. As with normal Actors you have an external API (the public interface instance) that will delegate methodcalls asynchronously to
+Typed Actors consist of 2 "parts", a public interface and an implementation, and if you've done any work in "enterprise" Java, this will be very familiar to you. As with normal Actors you have an external API (the public interface instance) that will delegate method calls asynchronously to
 a private instance of the implementation.
 
 The advantage of Typed Actors vs. Actors is that with TypedActors you have a
@@ -143,7 +143,7 @@ This call is asynchronous, and the Future returned can be used for asynchronous 
 Stopping Typed Actors
 ---------------------
 
-Since Akkas Typed Actors are backed by Akka Actors they must be stopped when they aren't needed anymore.
+Since Akka's Typed Actors are backed by Akka Actors they must be stopped when they aren't needed anymore.
 
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala
    :include: typed-actor-stop

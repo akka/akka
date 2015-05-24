@@ -39,11 +39,11 @@ This concept remains the same in Akka ``2.3.4``, yet we rename ``processorId`` t
 and persistent messages can be used from different classes not only ``PersistentActor`` (Views, directly from Journals etc).
 
 Please note that ``persistenceId`` is **abstract** in the new API classes (``PersistentActor`` and ``PersistentView``),
-and we do **not** provide a default (actor-path derrived) value for it like we did for ``processorId``.
+and we do **not** provide a default (actor-path derived) value for it like we did for ``processorId``.
 The rationale behind this change being stricter de-coupling of your Actor hierarchy and the logical "which persistent entity this actor represents".
 A longer discussion on this subject can be found on `issue #15436 <https://github.com/akka/akka/issues/15436>`_ on github.
 
-In case you want to perserve the old behavior of providing the actor's path as the default ``persistenceId``, you can easily
+In case you want to preserve the old behavior of providing the actor's path as the default ``persistenceId``, you can easily
 implement it yourself either as a helper trait or simply by overriding ``persistenceId`` as follows::
 
     override def persistenceId = self.path.toStringWithoutAddress
@@ -57,9 +57,9 @@ Removed Processor in favour of extending PersistentActor with persistAsync
 The ``Processor`` is now deprecated since ``2.3.4`` and will be removed in ``2.4.x``.
 It's semantics replicated in ``PersistentActor`` in the form of an additional ``persist`` method: ``persistAsync``.
 
-In essence, the difference betwen ``persist`` and ``persistAsync`` is that the former will stash all incomming commands
+In essence, the difference between ``persist`` and ``persistAsync`` is that the former will stash all incoming commands
 until all persist callbacks have been processed, whereas the latter does not stash any commands. The new ``persistAsync``
-should be used in cases of low consistency yet high responsiveness requirements, the Actor can keep processing incomming
+should be used in cases of low consistency yet high responsiveness requirements, the Actor can keep processing incoming
 commands, even though not all previous events have been handled.
 
 When these ``persist`` and ``persistAsync`` are used together in the same ``PersistentActor``, the ``persist``
@@ -126,7 +126,7 @@ should always be valid for replay.
 Renamed View to PersistentView, which receives plain messages (Persistent() wrapper is gone)
 ============================================================================================
 Views used to receive messages wrapped as ``Persistent(payload, seqNr)``, this is no longer the case and views receive
-the ``payload`` as message from the ``Journal`` directly. The rationale here is that the wrapper aproach was inconsistent
+the ``payload`` as message from the ``Journal`` directly. The rationale here is that the wrapper approach was inconsistent
 with the other Akka Persistence APIs and also is not easily "discoverable" (you have to *know* you will be getting this Persistent wrapper).
 
 Instead, since ``2.3.4``, views get plain messages, and can use additional methods provided by the ``View`` to identify if a message

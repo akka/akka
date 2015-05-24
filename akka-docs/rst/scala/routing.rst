@@ -651,7 +651,7 @@ Start with the routing logic:
 
 ``select`` will be called for each message and in this example pick a few destinations by round-robin,
 by reusing the existing ``RoundRobinRoutingLogic`` and wrap the result in a ``SeveralRoutees``
-instance.  ``SeveralRoutees`` will send the message to all of the supplied routues.
+instance.  ``SeveralRoutees`` will send the message to all of the supplied routes.
 
 The implementation of the routing logic must be thread safe, since it might be used outside of actors.
 

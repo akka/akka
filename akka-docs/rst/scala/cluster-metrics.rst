@@ -57,7 +57,7 @@ Metrics extension periodically publishes current snapshot of the cluster metrics
 
 The publication period is controlled by the ``akka.cluster.metrics.collector.sample-period`` setting.
 
-The payload of the ``akka.cluster.metris.ClusterMetricsChanged`` event will contain
+The payload of the ``akka.cluster.metrics.ClusterMetricsChanged`` event will contain
 latest metrics of the node as well as other cluster member nodes metrics gossip
 which was received during the collector sample period.
 

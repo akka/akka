@@ -67,7 +67,7 @@ If you have been creating EventStreams manually, you now have to provide an acto
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/event/EventStreamSpec.scala#event-bus-start-unsubscriber-scala
 
-Please note that this change affects you only if you have implemented your own busses, Akka's own ``context.eventStream``
+Please note that this change affects you only if you have implemented your own buses, Akka's own ``context.eventStream``
 is still there and does not require any attention from you concerning this change.
 
 FSM notifies on same state transitions
@@ -169,7 +169,7 @@ and ``AbstractPersistentId``.
 The rationale behind this change being stricter de-coupling of your Actor hierarchy and the logical
 "which persistent entity this actor represents".
 
-In case you want to perserve the old behavior of providing the actor's path as the default ``persistenceId``, you can easily
+In case you want to preserve the old behavior of providing the actor's path as the default ``persistenceId``, you can easily
 implement it yourself either as a helper trait or simply by overriding ``persistenceId`` as follows::
 
     override def persistenceId = self.path.toStringWithoutAddress
