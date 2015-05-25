@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
