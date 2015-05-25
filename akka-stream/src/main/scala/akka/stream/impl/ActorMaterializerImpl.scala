@@ -10,6 +10,7 @@ import akka.dispatch.Dispatchers
 import akka.pattern.ask
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.GenJunctions.ZipWithModule
+import akka.stream.impl.GenJunctions.UnzipWithModule
 import akka.stream.impl.Junctions._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.ActorInterpreter
@@ -178,8 +179,8 @@ private[akka] case class ActorMaterializerImpl(
               case BalanceModule(shape, waitForDownstreams, _) ⇒
                 (Balance.props(effectiveSettings, shape.outArray.size, waitForDownstreams), shape.in, shape.outArray.toSeq)
 
-              case UnzipModule(shape, _) ⇒
-                (Unzip.props(effectiveSettings), shape.in, shape.outlets)
+              case unzip: UnzipWithModule ⇒
+                (unzip.props(effectiveSettings), unzip.inPorts.head, unzip.shape.outlets)
             }
             val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
             val size = outs.size
