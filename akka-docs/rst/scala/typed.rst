@@ -305,7 +305,7 @@ reply-to address in the message, which both burdens the user with this task but
 also places this aspect of protocol design where it belongs.
 
 The other prominent difference is the removal of the :class:`Actor` trait. In
-order to avoid closing over instable references from different execution
+order to avoid closing over unstable references from different execution
 contexts (e.g. Future transformations) we turned all remaining methods that
 were on this trait into messages: the behavior receives the
 :class:`ActorContext` as an argument during processing and the lifecycle hooks

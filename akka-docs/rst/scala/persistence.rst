@@ -170,7 +170,7 @@ In this case, a persistent actor must be recovered explicitly by sending it a ``
 
 .. warning::
 
-  If ``preStart`` is overriden by an empty implementation, incoming commands will not be processed by the
+  If ``preStart`` is overridden by an empty implementation, incoming commands will not be processed by the
   ``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
 
 In order to completely skip recovery, you can signal it with ``Recover(toSequenceNr = OL)``
@@ -226,7 +226,7 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persist-async
 
 .. note::
-  In order to implement the pattern known as "*command sourcing*" simply call ``persistAsync(cmd)(...)`` right away on all incomming
+  In order to implement the pattern known as "*command sourcing*" simply call ``persistAsync(cmd)(...)`` right away on all incoming
   messages, and handle them in the callback.
   
 .. warning::
@@ -240,7 +240,7 @@ Deferring actions until preceding persist handlers have executed
 
 Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
 ''happens-after the previous ``persistAsync`` handlers have been invoked''. ``PersistentActor`` provides an utility method
-called ``defer``, which works similarily to ``persistAsync`` yet does not persist the passed in event. It is recommended to
+called ``defer``, which works similarly to ``persistAsync`` yet does not persist the passed in event. It is recommended to
 use it for *read* operations, and actions which do not have corresponding events in your domain model.
 
 Using this method is very similar to the persist family of methods, yet it does **not** persist the passed in event.
@@ -447,7 +447,7 @@ destinations the destinations will see gaps in the sequence. It is not possible 
 However, you can send a custom correlation identifier in the message to the destination. You must then retain 
 a mapping between the internal ``deliveryId`` (passed into the ``deliveryIdToMessage`` function) and your custom 
 correlation id (passed into the message). You can do this by storing such mapping in a ``Map(correlationId -> deliveryId)`` 
-from which you can retrive the ``deliveryId`` to be passed into the ``confirmDelivery`` method once the receiver 
+from which you can retrieve the ``deliveryId`` to be passed into the ``confirmDelivery`` method once the receiver
 of your message has replied with your custom correlation id.
 
 The ``AtLeastOnceDelivery`` trait has a state consisting of unconfirmed messages and a
@@ -503,12 +503,12 @@ Plugins can be selected either by "default", for all persistent actors and views
 or "individually", when persistent actor or view defines it's own set of plugins.
 
 When persistent actor or view does NOT override ``journalPluginId`` and ``snapshotPluginId`` methods,
-persistense extension will use "default" journal and snapshot-store plugins configured in the ``reference.conf``::
+persistence extension will use "default" journal and snapshot-store plugins configured in the ``reference.conf``::
 
     akka.persistence.journal.plugin = ""
     akka.persistence.snapshot-store.plugin = ""
 
-However, these entires are provided as empty "", and require explicit user configuration via override in the user ``application.conf``.
+However, these entries are provided as empty "", and require explicit user configuration via override in the user ``application.conf``.
 For an example of journal plugin which writes messages to LevelDB see :ref:`local-leveldb-journal`. 
 For an example of snapshot store plugin which writes snapshots as individual files to the local filesystem see :ref:`local-snapshot-store`. 
 
@@ -709,6 +709,6 @@ the actor or view will be serviced by these specific persistence plugins instead
 .. includecode:: code/docs/persistence/PersistenceMultiDocSpec.scala#override-plugins
 
 Note that ``journalPluginId`` and ``snapshotPluginId`` must refer to properly configured ``reference.conf``
-plugin entires with standard ``class`` property as well as settings which are specific for those plugins, i.e.: 
+plugin entries with standard ``class`` property as well as settings which are specific for those plugins, i.e.:
 
 .. includecode:: code/docs/persistence/PersistenceMultiDocSpec.scala#override-config

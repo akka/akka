@@ -448,7 +448,7 @@ SSL can be used as the remote transport by adding ``akka.remote.netty.ssl``
 to the ``enabled-transport`` configuration section. See a description of the settings
 in the :ref:`remote-configuration-scala` section.
 
-The SSL support is implemented with Java Secure Socket Extension, please consult the offical
+The SSL support is implemented with Java Secure Socket Extension, please consult the official
 `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
 and related resources for troubleshooting.
 
