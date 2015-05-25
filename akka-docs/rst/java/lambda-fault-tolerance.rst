@@ -107,7 +107,7 @@ Test Application
 ----------------
 
 The following section shows the effects of the different directives in practice,
-wherefor a test setup is needed. First off, we need a suitable supervisor:
+where a test setup is needed. First off, we need a suitable supervisor:
 
 .. includecode:: code/docs/actorlambda/FaultHandlingTest.java
    :include: supervisor

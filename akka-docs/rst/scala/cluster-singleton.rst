@@ -88,7 +88,7 @@ In Scala:
 Here we limit the singleton to nodes tagged with the ``"worker"`` role, but all nodes, independent of
 role, can be used by specifying ``None`` as ``role`` parameter.
 
-The corresponding Java API for the ``singeltonProps`` function is ``akka.cluster.singleton.ClusterSingletonPropsFactory``.
+The corresponding Java API for the ``singletonProps`` function is ``akka.cluster.singleton.ClusterSingletonPropsFactory``.
 The Java API takes a plain String for the role parameter and ``null`` means that all nodes, independent of
 role, are used.
 

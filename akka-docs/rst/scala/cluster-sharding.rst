@@ -58,13 +58,13 @@ if needed.
 
 A shard is a group of entries that will be managed together. The grouping is defined by the
 ``shardResolver`` function shown above. For a specific entry identifier the shard identifier must always 
-be the same. Otherwise the entry actor might accidentily be started in several places at the same time.
+be the same. Otherwise the entry actor might accidentally be started in several places at the same time.
 
 Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution, 
 i.e. same amount of entries in each shard. As a rule of thumb, the number of shards should be a factor ten greater 
 than the planned maximum number of cluster nodes. Less shards than number of nodes will result in that some nodes 
 will not host any shards. Too many shards will result in less efficient management of the shards, e.g. rebalancing
-overhead, and increased latency because the corrdinator is involved in the routing of the first message for each
+overhead, and increased latency because the coordinator is involved in the routing of the first message for each
 shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping
 all nodes in the cluster.
 
@@ -121,7 +121,7 @@ Creating a good sharding algorithm is an interesting challenge in itself. Try to
 i.e. same amount of entries in each shard. As a rule of thumb, the number of shards should be a factor ten greater 
 than the planned maximum number of cluster nodes. Less shards than number of nodes will result in that some nodes 
 will not host any shards. Too many shards will result in less efficient management of the shards, e.g. rebalancing
-overhead, and increased latency because the corrdinator is involved in the routing of the first message for each
+overhead, and increased latency because the coordinator is involved in the routing of the first message for each
 shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping
 all nodes in the cluster.
 

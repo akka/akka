@@ -31,7 +31,7 @@ First, we define what our ``Extension`` should do:
 .. includecode:: code/docs/extension/ExtensionDocTest.java
    :include: extension
 
-Then we need to create an ``ExtensionId`` for our extension so we can grab ahold of it.
+Then we need to create an ``ExtensionId`` for our extension so we can grab a hold of it.
 
 .. includecode:: code/docs/extension/ExtensionDocTest.java
    :include: imports

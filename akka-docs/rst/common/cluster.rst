@@ -54,7 +54,7 @@ actor system instance at that ``hostname:port``. Akka uses the UID to be able to
 reliably trigger remote death watch. This means that the same actor system can never
 join a cluster again once it's been removed from that cluster. To re-join an actor
 system with the same ``hostname:port`` to a cluster you have to stop the actor system
-and start a new one with the same ``hotname:port`` which will then receive a different
+and start a new one with the same ``hostname:port`` which will then receive a different
 UID.
 
 The cluster membership state is a specialized `CRDT`_, which means that it has a monotonic
@@ -345,7 +345,7 @@ Failure Detection and Unreachability
 - unreachable*
     unreachable is not a real member states but more of a flag in addition
     to the state signaling that the cluster is unable to talk to this node,
-    after beeing unreachable the failure detector may detect it as reachable
+    after being unreachable the failure detector may detect it as reachable
     again and thereby remove the flag
 
 
