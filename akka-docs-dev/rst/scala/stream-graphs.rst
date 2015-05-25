@@ -30,6 +30,7 @@ Akka Streams currently provide these junctions (for a detailed list see :ref:`st
 
  - ``Broadcast[T]`` – *(1 input, N outputs)* given an input element emits to each output
  - ``Balance[T]`` – *(1 input, N outputs)* given an input element emits to one of its output ports
+ - ``UnzipWith[In,A,B,...]`` – *(1 input, N outputs)* takes a function of 1 input that given a value for each input emits N output elements (where N <= 20)
  - ``UnZip[A,B]`` – *(1 input, 2 outputs)* splits a stream of ``(A,B)`` tuples into two streams, one of type ``A`` and one of type ``B``
  - ``FlexiRoute[In]`` – *(1 input, N outputs)* enables writing custom fan out elements using a simple DSL
 
