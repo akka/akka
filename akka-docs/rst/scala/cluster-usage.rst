@@ -278,16 +278,21 @@ has at least the defined number of members.
 
 This callback can be used for other things than starting actors.
 
+How To Cleanup when Member is Removed
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 You can do some clean up in a ``registerOnMemberRemoved`` callback, which will
 be invoked when the current member status is changed to 'Removed' or the cluster have been shutdown,i.e.
 terminate the actor system.
 
+For example, this is how to shut down the ``ActorSystem`` and thereafter exit the JVM:
+
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/FactorialFrontend.scala#registerOnRemoved
 
 .. note::
-   Register a OnMemberRemoved callback on a cluster that have been shutdown ,the callback will be invoked immediately on
-   the caller thread,otherwise it will be invoked later when the current member status changed to 'Removed'.You may
-   want to install some cleanup handling after the cluster was started up,but the cluster might already be shutting
+   Register a OnMemberRemoved callback on a cluster that have been shutdown, the callback will be invoked immediately on
+   the caller thread, otherwise it will be invoked later when the current member status changed to 'Removed'. You may
+   want to install some cleanup handling after the cluster was started up, but the cluster might already be shutting
    down when you installing, and depending on the race is not healthy.
 
 Cluster Singleton

@@ -1130,8 +1130,12 @@ private[cluster] class OnMemberStatusChangedListener(callback: Runnable, status:
 
   override def preStart(): Unit =
     cluster.subscribe(self, to)
-  override def postStop(): Unit =
+
+  override def postStop(): Unit = {
+    if (status == Removed)
+      done()
     cluster.unsubscribe(self)
+  }
 
   def receive = {
     case state: CurrentClusterState ⇒

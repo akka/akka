@@ -166,7 +166,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         log.error(e, "Failed to startup Cluster. You can try to increase 'akka.actor.creation-timeout'.")
         shutdown()
         // don't re-throw, that would cause the extension to be re-recreated
-        // from shutdown() or other places, which may result in 
+        // from shutdown() or other places, which may result in
         // InvalidActorNameException: actor name [cluster] is not unique
         system.deadLetters
     }
@@ -329,6 +329,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   def registerOnMemberUp(callback: Runnable): Unit =
     clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
+
   /**
    * The supplied thunk will be run, once, when current cluster member is `Removed`.
    * and if the cluster have been shutdown,that thunk will run on the caller thread immediately.
