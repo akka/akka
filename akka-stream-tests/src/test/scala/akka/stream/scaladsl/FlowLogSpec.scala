@@ -4,10 +4,10 @@
 package akka.stream.scaladsl
 
 import akka.event.{ DummyClassForStringSources, Logging }
-import akka.stream._
-import akka.stream.OperationAttributes
 import akka.stream.OperationAttributes.LogLevels
 import akka.stream.testkit.{ AkkaSpec, ScriptedTest }
+import akka.stream.javadsl
+import akka.stream.{ ActorFlowMaterializer, FlowMaterializer, OperationAttributes }
 import akka.testkit.TestProbe
 
 import scala.util.control.NoStackTrace
@@ -24,8 +24,9 @@ class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
 
   "A Log" must {
 
-    val LogSrc = s"akka.stream.Log(akka://${Logging.simpleName(classOf[FlowLogSpec])})"
-    val LogClazz = classOf[DummyClassForStringSources]
+    val supervisorPath = "akka://FlowLogSpec/user/$a"
+    val LogSrc = s"akka.stream.Log($supervisorPath)"
+    val LogClazz = classOf[FlowMaterializer]
 
     "on Flow" must {
 

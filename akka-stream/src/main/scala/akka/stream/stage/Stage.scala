@@ -3,7 +3,8 @@
  */
 package akka.stream.stage
 
-import akka.stream.{ FlowMaterializer, OperationAttributes, Supervision }
+import akka.event.{ Logging, LogSource }
+import akka.stream.{ ActorFlowMaterializer, FlowMaterializer, OperationAttributes, Supervision }
 
 /**
  * General interface for stream transformation.
