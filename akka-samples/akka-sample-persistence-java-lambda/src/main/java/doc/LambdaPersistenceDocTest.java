@@ -13,13 +13,8 @@ import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.*;
 import scala.Option;
 import scala.PartialFunction;
-import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 import java.io.Serializable;
-
-import java.util.concurrent.TimeUnit;
-
-import static java.util.Arrays.asList;
 
 public class LambdaPersistenceDocTest {
 
@@ -373,7 +368,7 @@ public class LambdaPersistenceDocTest {
           sender().tell(e, self());
         });
 
-        defer(String.format("evt-%s-3", c), e -> {
+        deferAsync(String.format("evt-%s-3", c), e -> {
           sender().tell(e, self());
         });
       }

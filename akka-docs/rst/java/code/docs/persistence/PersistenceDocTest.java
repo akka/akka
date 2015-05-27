@@ -13,12 +13,8 @@ import akka.japi.Function;
 import akka.japi.Procedure;
 import akka.persistence.*;
 import scala.Option;
-import scala.concurrent.duration.Duration;
+
 import java.io.Serializable;
-
-import java.util.concurrent.TimeUnit;
-
-import static java.util.Arrays.asList;
 
 public class PersistenceDocTest {
 
@@ -367,7 +363,7 @@ public class PersistenceDocTest {
 
                 persistAsync(String.format("evt-%s-1", msg), replyToSender);
                 persistAsync(String.format("evt-%s-2", msg), replyToSender);
-                defer(String.format("evt-%s-3", msg), replyToSender);
+                deferAsync(String.format("evt-%s-3", msg), replyToSender);
             }
         }
         //#defer

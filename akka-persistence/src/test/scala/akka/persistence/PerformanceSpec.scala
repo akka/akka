@@ -46,7 +46,7 @@ object PerformanceSpec {
     }
 
     val controlBehavior: Receive = {
-      case StopMeasure        ⇒ defer(StopMeasure)(_ ⇒ sender() ! StopMeasure)
+      case StopMeasure        ⇒ deferAsync(StopMeasure)(_ ⇒ sender() ! StopMeasure)
       case FailAt(sequenceNr) ⇒ failAt = sequenceNr
     }
 

@@ -296,10 +296,10 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   /**
    * Defer the handler execution until all pending handlers have been executed.
    * Allows to define logic within the actor, which will respect the invocation-order-guarantee
-   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
+   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before `deferAsync`,
    * the corresponding handlers will be invoked in the same order as they were registered in.
    *
-   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
+   * This call will NOT result in `event` being persisted, use `persist` or `persistAsync` instead
    * if the given event should possible to replay.
    *
    * If there are no pending persist handler calls, the handler will be called immediately.
@@ -312,7 +312,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * @param event event to be handled in the future, when preceding persist operations have been processes
    * @param handler handler for the given `event`
    */
-  final def defer[A](event: A)(handler: A ⇒ Unit): Unit = {
+  final def deferAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
     if (pendingInvocations.isEmpty) {
       handler(event)
     } else {
@@ -320,28 +320,6 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       eventBatch = NonPersistentRepr(event, sender()) :: eventBatch
     }
   }
-
-  /**
-   * Defer the handler execution until all pending handlers have been executed.
-   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
-   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
-   * the corresponding handlers will be invoked in the same order as they were registered in.
-   *
-   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
-   * if the given event should possible to replay.
-   *
-   * If there are no pending persist handler calls, the handler will be called immediately.
-   *
-   * In the event of persistence failures (indicated by [[PersistenceFailure]] messages being sent to the
-   * [[PersistentActor]], you can handle these messages, which in turn will enable the deferred handlers to run afterwards.
-   * If persistence failure messages are left `unhandled`, the default behavior is to stop the Actor by
-   * throwing ActorKilledException, thus the handlers will not be run.
-   *
-   * @param events event to be handled in the future, when preceding persist operations have been processes
-   * @param handler handler for each `event`
-   */
-  final def defer[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
-    events.foreach(defer(_)(handler))
 
   /**
    * Permanently deletes all persistent messages with sequence numbers less than or equal `toSequenceNr`.
