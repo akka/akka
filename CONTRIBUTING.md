@@ -4,7 +4,7 @@
 
 * [Akka Contributor License Agreement](http://www.typesafe.com/contribute/cla)
 * [Akka Issue Tracker](http://doc.akka.io/docs/akka/current/project/issue-tracking.html)
-* [Scalariform](https://github.com/mdr/scalariform)
+* [Scalariform](https://github.com/daniel-trinh/scalariform)
 
 # Typesafe Project & Developer Guidelines
 
