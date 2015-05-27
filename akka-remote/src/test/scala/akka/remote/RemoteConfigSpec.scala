@@ -40,7 +40,7 @@ class RemoteConfigSpec extends AkkaSpec(
       LogBufferSizeExceeding should be(50000)
       SysMsgAckTimeout should be(0.3 seconds)
       SysResendTimeout should be(2 seconds)
-      SysMsgBufferSize should be(1000)
+      SysMsgBufferSize should be(20000)
       InitialSysMsgDeliveryTimeout should be(3 minutes)
       QuarantineDuration should be(5 days)
       CommandAckTimeout.duration should be(30 seconds)
