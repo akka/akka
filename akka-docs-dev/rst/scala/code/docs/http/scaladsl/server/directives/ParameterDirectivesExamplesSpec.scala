@@ -9,9 +9,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 
 class ParameterDirectivesExamplesSpec extends RoutingSpec {
-  // FIXME: investigate why it doesn't work without this import
-  import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
-
   "example-1" in {
     val route =
       parameter('color) { color =>
