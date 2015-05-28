@@ -15,6 +15,7 @@ import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
 import akka.dispatch.MailboxType
 import akka.dispatch.ProducesMessageQueue
+import akka.serialization.SerializerWithStringManifest
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -117,7 +118,15 @@ private[akka] trait Dispatch { this: ActorCell ⇒
         }).asInstanceOf[AnyRef]
         if (!unwrapped.isInstanceOf[NoSerializationVerificationNeeded]) {
           val s = SerializationExtension(system)
-          s.deserialize(s.serialize(unwrapped).get, unwrapped.getClass).get
+          val serializer = s.findSerializerFor(unwrapped)
+          val bytes = serializer.toBinary(unwrapped)
+          serializer match {
+            case ser2: SerializerWithStringManifest ⇒
+              val manifest = ser2.manifest(unwrapped)
+              s.deserialize(bytes, serializer.identifier, manifest).get != null
+            case _ ⇒
+              s.deserialize(bytes, unwrapped.getClass).get
+          }
         }
       }
       dispatcher.dispatch(this, msg)

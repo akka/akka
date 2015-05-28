@@ -7,7 +7,6 @@ package akka.util
 import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
-
 import scala.annotation.varargs
 import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
@@ -15,6 +14,7 @@ import scala.collection.immutable
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
+import java.nio.charset.StandardCharsets
 
 object ByteString {
 
@@ -42,7 +42,7 @@ object ByteString {
   /**
    * Creates a new ByteString by encoding a String as UTF-8.
    */
-  def apply(string: String): ByteString = apply(string, "UTF-8")
+  def apply(string: String): ByteString = apply(string, UTF_8)
 
   /**
    * Creates a new ByteString by encoding a String with a charset.
@@ -78,6 +78,11 @@ object ByteString {
    * Creates a new ByteString which will contain the representation of the given String in the given charset
    */
   def fromString(string: String, charset: String): ByteString = apply(string, charset)
+
+  /**
+   * Standard "UTF-8" charset
+   */
+  val UTF_8: String = StandardCharsets.UTF_8.name()
 
   /**
    * Creates a new ByteString by copying bytes out of a ByteBuffer.
@@ -484,7 +489,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   /**
    * Decodes this ByteString as a UTF-8 encoded String.
    */
-  final def utf8String: String = decodeString("UTF-8")
+  final def utf8String: String = decodeString(ByteString.UTF_8)
 
   /**
    * Decodes this ByteString using a charset to produce a String.
@@ -539,7 +544,7 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by encoding a String as UTF-8.
    */
-  def apply(string: String): CompactByteString = apply(string, "UTF-8")
+  def apply(string: String): CompactByteString = apply(string, ByteString.UTF_8)
 
   /**
    * Creates a new CompactByteString by encoding a String with a charset.
