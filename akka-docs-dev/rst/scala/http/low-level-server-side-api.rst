@@ -65,7 +65,7 @@ extension:
 .. includecode2:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: binding-example
 
-Arguments to the ``Http.bind`` method specify the interface and port to bind to and register interest in handling
+Arguments to the ``Http().bind`` method specify the interface and port to bind to and register interest in handling
 incoming HTTP connections. Additionally, the method also allows for the definition of socket options as well as a larger
 number of settings for configuring the server according to your needs.
 
