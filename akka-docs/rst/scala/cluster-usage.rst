@@ -275,7 +275,7 @@ before the leader changes member status of 'Joining' members to 'Up'.
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/resources/factorial.conf#role-min-nr-of-members
 
 You can start the actors in a ``registerOnMemberUp`` callback, which will 
-be invoked when the current member status is changed to 'Up',i.e. the cluster
+be invoked when the current member status is changed to 'Up', i.e. the cluster
 has at least the defined number of members.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/FactorialFrontend.scala#registerOnUp
