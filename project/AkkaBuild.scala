@@ -200,9 +200,9 @@ object AkkaBuild extends Build {
   lazy val benchJmh = Project(
     id = "akka-bench-jmh",
     base = file("akka-bench-jmh"),
-    dependencies = Seq(actor, stream, persistence, testkit).map(_ % "compile;compile->test"),
+    dependencies = Seq(actor, persistence, testkit, stream, http, httpCore).map(_ % "compile;compile->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.testkit,
+      libraryDependencies ++= Dependencies.testkit ++ Dependencies.Compile.metricsAll,
       publishArtifact in Compile := false
     ) ++ settings ++ jmhSettings
   )
@@ -1513,6 +1513,14 @@ object Dependencies {
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
 
+      // metrics, measurements, perf testing
+      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            // ApacheV2
+      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.1"            // ApacheV2
+      val metricsGraphite = "com.codahale.metrics"        % "metrics-graphite"             % "3.0.1"            // ApacheV2
+      val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            // Free BSD
+      val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "1.1.4"            // CC0
+      val metricsAll      = Seq(metrics, metricsJvm, metricsGraphite, latencyUtils, hdrHistogram)
+
     // Test
 
     object Test {
@@ -1541,13 +1549,7 @@ object Dependencies {
       // reactive streams tck
       val reactiveStreamsTck = "org.reactivestreams"      % "reactive-streams-tck"         % reactiveStreamsVersion % "test" // CC0
 
-      // metrics, measurements, perf testing
-      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
-      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.1"            % "test" // ApacheV2
-      val metricsGraphite = "com.codahale.metrics"        % "metrics-graphite"             % "3.0.1"            % "test" // ApacheV2
-      val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
-      val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "1.1.4"            % "test" // CC0
-      val metricsAll      = Seq(metrics, metricsJvm, metricsGraphite, latencyUtils, hdrHistogram)
+      val metricsAll = Compile.metricsAll.map(_ % "test")
     }
   }
 
