@@ -38,7 +38,7 @@ settings from the ``akka.http.routing`` configuration.
 
 This directive is transparent to non-``GET`` requests.
 
-See also: https://tools.ietf.org/html/draft-ietf-httpbis-p5-range/
+See also: https://tools.ietf.org/html/rfc7233
 
 
 Example
