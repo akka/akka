@@ -12,13 +12,13 @@ Opening HTTP Connections
 ------------------------
 
 With the connection-level API you open a new HTTP connection by materializing a ``Flow`` returned by the
-``Http.outgoingConnection(...)`` method. The target endpoint to which a connection is to be opened needs to be
-specified as an argument to ``Http.outgoingConnection(...)``. Here is an example:
+``Http().outgoingConnection(...)`` method. The target endpoint to which a connection is to be opened needs to be
+specified as an argument to ``Http().outgoingConnection(...)``. Here is an example:
 
 .. includecode:: ../../code/docs/http/scaladsl/HttpClientExampleSpec.scala
    :include: outgoing-connection-example
 
-Apart from the host name and port the ``Http.outgoingConnection(...)`` method also allows you to specify socket options
+Apart from the host name and port the ``Http().outgoingConnection(...)`` method also allows you to specify socket options
 and a number of configuration settings for the connection.
 
 Note that no connection is attempted until the returned flow is actually materialized! If the flow is materialized
