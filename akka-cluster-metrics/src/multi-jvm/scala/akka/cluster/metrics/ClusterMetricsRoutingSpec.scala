@@ -69,7 +69,7 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
 
       # Disable legacy metrics.
       akka.cluster.metrics.enabled=off
-      
+
       # Enable metrics estension.
       akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
 

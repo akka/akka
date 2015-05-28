@@ -231,4 +231,3 @@ class ClusterShardingCustomShardAllocationSpec extends MultiNodeSpec(ClusterShar
 
   }
 }
-
