@@ -11,11 +11,11 @@ Depending on your preference you can pick the flow-based or the future-based var
 Flow-Based Variant
 ------------------
 
-The flow-based variant of the request-level client-side API is presented by the ``Http.superPool(...)`` method.
+The flow-based variant of the request-level client-side API is presented by the ``Http().superPool(...)`` method.
 It creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
 depending on their respective effective URI.
 
-The ``Flow`` returned by ``Http.superPool(...)`` is very similar to the one from the :ref:`HostLevelApi`, so the
+The ``Flow`` returned by ``Http().superPool(...)`` is very similar to the one from the :ref:`HostLevelApi`, so the
 :ref:`using-a-host-connection-pool` section also applies here.
 
 However, there is one notable difference between a "host connection pool client flow" for the host-level API and a
@@ -33,7 +33,7 @@ Future-Based Variant
 Sometimes your HTTP client needs are very basic. You simply need the HTTP response for a certain request and don't
 want to bother with setting up a full-blown streaming infrastructure.
 
-For these cases Akka HTTP offers the ``Http.singleRequest(...)`` method, which simply turns an ``HttpRequest`` instance
+For these cases Akka HTTP offers the ``Http().singleRequest(...)`` method, which simply turns an ``HttpRequest`` instance
 into ``Future[HttpResponse]``. Internally the request is dispatched across the (cached) host connection pool for the
 request's effective URI.
 

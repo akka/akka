@@ -11,7 +11,7 @@ host/port combination).
 Requesting a Host Connection Pool
 ---------------------------------
 
-The best way to get a hold of a connection pool to a given target endpoint is the ``Http.cachedHostConnectionPool(...)``
+The best way to get a hold of a connection pool to a given target endpoint is the ``Http().cachedHostConnectionPool(...)``
 method, which returns a ``Flow`` that can be "baked" into an application-level stream setup. This flow is also called
 a "pool client flow".
 
@@ -22,7 +22,7 @@ Also, the HTTP layer transparently manages idle shutdown and restarting of conne
 The client flow instances therefore remain valid throughout the lifetime of the application, i.e. they can be
 materialized as often as required and the time between individual materialization is of no importance.
 
-When you request a pool client flow with ``Http.cachedHostConnectionPool(...)`` Akka HTTP will immediately start
+When you request a pool client flow with ``Http().cachedHostConnectionPool(...)`` Akka HTTP will immediately start
 the pool, even before the first client flow materialization. However, this running pool will not actually open the
 first connection to the target endpoint until the first request has arrived.
 
@@ -41,7 +41,7 @@ of the individual pool's ``max-connections`` settings allow!
 
 There is one setting that likely deserves a bit deeper explanation: ``max-open-requests``.
 This setting limits the maximum number of requests that can be open at any time for a single connection pool.
-If an application calls ``Http.cachedHostConnectionPool(...)`` 3 times (with the same endpoint and settings) it will get
+If an application calls ``Http().cachedHostConnectionPool(...)`` 3 times (with the same endpoint and settings) it will get
 back 3 different client flow instances for the same pool. If each of these client flows is then materialized 4 times
 (concurrently) the application will have 12 concurrently running client flow materializations.
 All of these share the resources of the single pool.
@@ -59,7 +59,7 @@ the same pooled connections.
 Using a Host Connection Pool
 ----------------------------
 
-The "pool client flow" returned by ``Http.cachedHostConnectionPool(...)`` has the following type::
+The "pool client flow" returned by ``Http().cachedHostConnectionPool(...)`` has the following type::
 
     Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool]
 
@@ -127,16 +127,16 @@ Completing a pool client flow will simply detach the flow from the pool. The con
 as it may be serving other client flows concurrently or in the future. Only after the configured ``idle-timeout`` for
 the pool has expired will Akka HTTP automatically terminate the pool and free all its resources.
 
-If a new client flow is requested with ``Http.cachedHostConnectionPool(...)`` or if an already existing client flow is
+If a new client flow is requested with ``Http().cachedHostConnectionPool(...)`` or if an already existing client flow is
 re-materialized the respective pool is automatically and transparently restarted.
 
 In addition to the automatic shutdown via the configured idle timeouts it's also possible to trigger the immediate
-shutdown of specific pool by calling ``shutdown()`` on the ``Http.HostConnectionPool`` instance that a pool client
+shutdown of specific pool by calling ``shutdown()`` on the ``Http().HostConnectionPool`` instance that a pool client
 flow materializes into. This ``shutdown()`` call produces a ``Future[Unit]`` which is fulfilled when the pool
 termination has been completed.
 
 It's also possible to trigger the immediate termination of *all* connection pools in the ``ActorSystem`` at the same
-time by calling ``Http.shutdownAllConnectionPools()``. This call too produces a ``Future[Unit]`` which is fulfilled when
+time by calling ``Http().shutdownAllConnectionPools()``. This call too produces a ``Future[Unit]`` which is fulfilled when
 all pools have terminated.
 
 
