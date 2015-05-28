@@ -1,18 +1,14 @@
-import akka.{ AkkaBuild, Dependencies, Formatting, MultiNode, Unidoc, OSGi }
+import akka.{ AkkaBuild, Dependencies, Formatting, MultiNode, ScaladocNoVerificationOfDiagrams, OSGi }
 import com.typesafe.tools.mima.plugin.MimaKeys
 
 AkkaBuild.defaultSettings
 
 Formatting.formatSettings
 
-Unidoc.scaladocSettingsNoVerificationOfDiagrams
-
-Unidoc.javadocSettings
-
 OSGi.clusterSharding
-
-MultiNode.multiJvmSettings
 
 Dependencies.clusterSharding
 
 //MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster-sharding").value
+
+enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)

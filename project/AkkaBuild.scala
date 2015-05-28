@@ -11,8 +11,6 @@ import java.util.Properties
 import akka.TestExtras.GraphiteBuildEvents
 import akka.TestExtras.JUnitFileReporting
 import akka.TestExtras.StatsDMetrics
-import akka.Unidoc.scaladocSettings
-import akka.Unidoc.unidocSettings
 import com.typesafe.sbt.S3Plugin.S3
 import com.typesafe.sbt.S3Plugin.s3Settings
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
@@ -39,9 +37,9 @@ object AkkaBuild extends Build {
   lazy val root = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ unidocSettings ++
-      SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++ scaladocSettings ++
-      GraphiteBuildEvents.settings ++ Protobuf.settings ++ Unidoc.settings(Seq(samples), Seq(remoteTests)) ++ Seq(
+    settings = parentSettings ++ Release.settings ++
+      SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++
+      GraphiteBuildEvents.settings ++ Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
 
@@ -130,11 +128,11 @@ object AkkaBuild extends Build {
     base = file("akka-cluster-tools"),
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
   ) configs (MultiJvm)
-  
+
   lazy val clusterSharding = Project(
     id = "akka-cluster-sharding",
     base = file("akka-cluster-sharding"),
-    dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", 
+    dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
         persistence % "compile;test->provided", clusterTools)
   ) configs (MultiJvm)
 
@@ -200,7 +198,7 @@ object AkkaBuild extends Build {
     base = file("akka-samples"),
     settings = parentSettings ++ ActivatorDist.settings,
     // FIXME osgiDiningHakkersSampleMavenTest temporarily removed from aggregate due to #16703
-    aggregate = if (!CommandLineOptions.aggregateSamples) Nil else
+    aggregate = if (!Sample.CliOptions.aggregateSamples) Nil else
       Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala, sampleFsmJavaLambda,
         sampleMainJava, sampleMainScala, sampleMainJavaLambda, sampleMultiNodeScala,
         samplePersistenceJava, samplePersistenceScala, samplePersistenceJavaLambda,
@@ -228,7 +226,7 @@ object AkkaBuild extends Build {
 
   lazy val sampleRemoteJava = Sample.project("akka-sample-remote-java")
   lazy val sampleRemoteScala = Sample.project("akka-sample-remote-scala")
-  
+
   lazy val sampleSupervisionJavaLambda = Sample.project("akka-sample-supervision-java-lambda")
 
   lazy val osgiDiningHakkersSampleMavenTest = Project(id = "akka-sample-osgi-dining-hakkers-maven-test",
@@ -306,7 +304,7 @@ object AkkaBuild extends Build {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  lazy val defaultSettings = baseSettings ++ resolverSettings ++ TestExtras.Filter.settings ++
+  lazy val defaultSettings = resolverSettings ++ TestExtras.Filter.settings ++
     Protobuf.settings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
