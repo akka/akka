@@ -59,7 +59,13 @@ object FactorialFrontend {
     //#registerOnUp
 
     //#registerOnRemoved
-    Cluster(system).registerOnMemberRemoved{
+    Cluster(system).registerOnMemberRemoved {
+      // exit JVM when ActorSystem has been terminated
+      system.registerOnTermination(System.exit(-1))
+      // in case ActorSystem shutdown takes longer than 10 seconds,
+      // exit the JVM forcefully anyway
+      system.scheduler.scheduleOnce(10.seconds)(System.exit(-1))(system.dispatcher)
+      // shut down ActorSystem
       system.terminate()
     }
     //#registerOnRemoved
