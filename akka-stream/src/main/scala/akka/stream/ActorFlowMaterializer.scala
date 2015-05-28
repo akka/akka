@@ -157,6 +157,9 @@ abstract class ActorFlowMaterializer extends FlowMaterializer {
    */
   private[akka] def system: ActorSystem
 
+  /** INTERNAL API */
+  private[akka] def supervisor: ActorRef
+
 }
 
 /**
