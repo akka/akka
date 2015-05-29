@@ -46,7 +46,8 @@ class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
         enterBarrier("deployed")
         val ponger = system.actorSelection(node(node2) / "user" / "ponger")
         ponger ! "ping"
-        expectMsg("pong")
+        import scala.concurrent.duration._
+        expectMsg(10.seconds, "pong")
       }
 
       runOn(node2) {
