@@ -8,6 +8,47 @@ import akka.japi.Util.immutableSeq
 import java.net.MalformedURLException
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 
+/**
+ * Java API
+ */
+object ActorPaths {
+  // static forwarders to `object ActorPath`, since `trait ActorPath`
+  // could not be changed to `abstract ActorPath` in a binary compatible way
+
+  /**
+   * Parse string as actor path; throws java.net.MalformedURLException if unable to do so.
+   */
+  def fromString(s: String): ActorPath = ActorPath.fromString(s)
+
+  /**
+   * Validates the given actor path element and throws an [[InvalidActorNameException]] if invalid.
+   * See [[#isValidPathElement]] for a non-throwing version.
+   *
+   * @param element actor path element to be validated
+   */
+  final def validatePathElement(element: String): Unit = ActorPath.validatePathElement(element)
+
+  /**
+   * Validates the given actor path element and throws an [[InvalidActorNameException]] if invalid.
+   * See [[#isValidPathElement]] for a non-throwing version.
+   *
+   * @param element actor path element to be validated
+   * @param fullPath optional fullPath element that may be included for better error messages; null if not given
+   */
+  final def validatePathElement(element: String, fullPath: String): Unit =
+    ActorPath.validatePathElement(element, fullPath)
+
+  /**
+   * This method is used to validate a path element (Actor Name).
+   * Since Actors form a tree, it is addressable using an URL, therefore an Actor Name has to conform to:
+   * <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC-2396</a>.
+   *
+   * User defined Actor names may not start from a `$` sign - these are reserved for system names.
+   */
+  final def isValidPathElement(s: String): Boolean = ActorPath.isValidPathElement(s)
+
+}
+
 object ActorPath {
   /**
    * Parse string as actor path; throws java.net.MalformedURLException if unable to do so.
@@ -108,7 +149,7 @@ object ActorPath {
  * when comparing actor paths.
  */
 @SerialVersionUID(1L)
-sealed abstract class ActorPath extends Comparable[ActorPath] with Serializable {
+sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * The Address under which this path can be reached; walks up the tree to
    * the RootActorPath.

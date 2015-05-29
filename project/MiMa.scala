@@ -486,12 +486,6 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorSystem.terminate"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorSystem.whenTerminated"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ExtendedActorSystem.logFilter"),
-      // the type hierarchy of class akka.actor.ChildActorPath has changed in new version. Missing types {akka.actor.ActorPath}
-      ProblemFilters.exclude[MissingTypesProblem]("akka.actor.ChildActorPath"),
-      // the type hierarchy of class akka.actor.RootActorPath has changed in new version. Missing types {akka.actor.ActorPath}
-      ProblemFilters.exclude[MissingTypesProblem]("akka.actor.RootActorPath"),
-      // declaration of trait akka.actor.ActorPath has changed to class akka.actor.ActorPath in new version; changing trait to class breaks client code
-      ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.actor.ActorPath"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorPath.ValidSymbols"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.actor.LocalActorRefProvider.terminationPromise"),
       ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorFactoryConsumer"),
