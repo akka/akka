@@ -5,9 +5,7 @@ package akka.stream.impl.io
 
 import java.net.InetSocketAddress
 import scala.concurrent.{ Future, Promise }
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
+import akka.actor._
 import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
 import akka.stream.{ FlowMaterializer, ActorFlowMaterializerSettings }
@@ -18,7 +16,6 @@ import akka.util.ByteString
 import org.reactivestreams.Subscriber
 import akka.stream.ConnectionException
 import akka.stream.BindFailedException
-import akka.actor.ActorLogging
 
 /**
  * INTERNAL API
@@ -29,6 +26,7 @@ private[akka] object TcpListenStreamActor {
             flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
             bindCmd: Tcp.Bind, materializerSettings: ActorFlowMaterializerSettings): Props = {
     Props(new TcpListenStreamActor(localAddressPromise, unbindPromise, flowSubscriber, bindCmd, materializerSettings))
+      .withDeploy(Deploy.local)
   }
 }
 

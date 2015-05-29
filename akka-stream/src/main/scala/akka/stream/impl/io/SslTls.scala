@@ -10,7 +10,7 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
 import javax.net.ssl._
-import akka.actor.{ Props, Actor, ActorLogging, ActorRef }
+import akka.actor._
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
@@ -35,7 +35,7 @@ private[akka] object SslTlsCipherActor {
             tracing: Boolean,
             role: Role,
             closing: Closing): Props =
-    Props(new SslTlsCipherActor(settings, sslContext, firstSession, tracing, role, closing))
+    Props(new SslTlsCipherActor(settings, sslContext, firstSession, tracing, role, closing)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
   final val TransportOut = 0

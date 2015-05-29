@@ -27,10 +27,10 @@ private[akka] object TcpStreamActor {
                     connectCmd: Connect,
                     materializerSettings: ActorFlowMaterializerSettings): Props =
     Props(new OutboundTcpStreamActor(processorPromise, localAddressPromise, connectCmd,
-      materializerSettings)).withDispatcher(materializerSettings.dispatcher)
+      materializerSettings)).withDispatcher(materializerSettings.dispatcher).withDeploy(Deploy.local)
 
   def inboundProps(connection: ActorRef, settings: ActorFlowMaterializerSettings): Props =
-    Props(new InboundTcpStreamActor(connection, settings)).withDispatcher(settings.dispatcher)
+    Props(new InboundTcpStreamActor(connection, settings)).withDispatcher(settings.dispatcher).withDeploy(Deploy.local)
 }
 
 /**

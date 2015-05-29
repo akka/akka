@@ -1,4 +1,4 @@
-package akka.stream.io.impl
+package akka.stream.impl.io
 
 import akka.stream.ActorOperationAttributes.Dispatcher
 import akka.stream.{ ActorFlowMaterializer, MaterializationContext }

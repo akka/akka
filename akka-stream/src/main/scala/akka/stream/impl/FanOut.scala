@@ -7,21 +7,17 @@ import akka.stream.scaladsl.FlexiRoute.RouteLogic
 import akka.stream.{ AbruptTerminationException, Shape, ActorFlowMaterializerSettings }
 
 import scala.collection.immutable
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.Props
+import akka.actor._
 import org.reactivestreams.Subscription
-import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
  */
 private[akka] object FanOut {
 
-  final case class SubstreamRequestMore(id: Int, demand: Long) extends DeadLetterSuppression
-  final case class SubstreamCancel(id: Int) extends DeadLetterSuppression
-  final case class SubstreamSubscribePending(id: Int) extends DeadLetterSuppression
+  final case class SubstreamRequestMore(id: Int, demand: Long) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class SubstreamCancel(id: Int) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class SubstreamSubscribePending(id: Int) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
   class SubstreamSubscription(val parent: ActorRef, val id: Int) extends Subscription {
     override def request(elements: Long): Unit = parent ! SubstreamRequestMore(id, elements)
@@ -33,7 +29,7 @@ private[akka] object FanOut {
     override def createSubscription(): Subscription = new SubstreamSubscription(actor, id)
   }
 
-  final case class ExposedPublishers(publishers: immutable.Seq[ActorPublisher[Any]]) extends DeadLetterSuppression
+  final case class ExposedPublishers(publishers: immutable.Seq[ActorPublisher[Any]]) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
   class OutputBunch(outputCount: Int, impl: ActorRef, pump: Pump) {
     private var bunchCancelled = false
@@ -294,7 +290,7 @@ private[akka] abstract class FanOut(val settings: ActorFlowMaterializerSettings,
  */
 private[akka] object Broadcast {
   def props(settings: ActorFlowMaterializerSettings, outputPorts: Int): Props =
-    Props(new Broadcast(settings, outputPorts))
+    Props(new Broadcast(settings, outputPorts)).withDeploy(Deploy.local)
 }
 
 /**
@@ -314,7 +310,7 @@ private[akka] class Broadcast(_settings: ActorFlowMaterializerSettings, _outputP
  */
 private[akka] object Balance {
   def props(settings: ActorFlowMaterializerSettings, outputPorts: Int, waitForAllDownstreams: Boolean): Props =
-    Props(new Balance(settings, outputPorts, waitForAllDownstreams))
+    Props(new Balance(settings, outputPorts, waitForAllDownstreams)).withDeploy(Deploy.local)
 }
 
 /**
@@ -341,7 +337,7 @@ private[akka] class Balance(_settings: ActorFlowMaterializerSettings, _outputPor
  */
 private[akka] object Unzip {
   def props(settings: ActorFlowMaterializerSettings): Props =
-    Props(new Unzip(settings))
+    Props(new Unzip(settings)).withDeploy(Deploy.local)
 }
 
 /**
@@ -373,5 +369,5 @@ private[akka] class Unzip(_settings: ActorFlowMaterializerSettings) extends FanO
  */
 private[akka] object FlexiRoute {
   def props[T, S <: Shape](settings: ActorFlowMaterializerSettings, ports: S, routeLogic: RouteLogic[T]): Props =
-    Props(new FlexiRouteImpl(settings, ports, routeLogic))
+    Props(new FlexiRouteImpl(settings, ports, routeLogic)).withDeploy(Deploy.local)
 }

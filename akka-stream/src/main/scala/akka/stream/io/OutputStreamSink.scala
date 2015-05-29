@@ -6,7 +6,7 @@ package akka.stream.io
 import java.io.OutputStream
 
 import akka.japi.function.Creator
-import akka.stream.io.impl.OutputStreamSink
+import akka.stream.impl.io.OutputStreamSink
 import akka.stream.scaladsl.Sink
 import akka.stream.{ ActorOperationAttributes, OperationAttributes, javadsl }
 import akka.util.ByteString

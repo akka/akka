@@ -246,7 +246,7 @@ private[akka] class FlowNameCounter extends Extension {
  * INTERNAL API
  */
 private[akka] object StreamSupervisor {
-  def props(settings: ActorFlowMaterializerSettings): Props = Props(new StreamSupervisor(settings))
+  def props(settings: ActorFlowMaterializerSettings): Props = Props(new StreamSupervisor(settings)).withDeploy(Deploy.local)
 
   final case class Materialize(props: Props, name: String) extends DeadLetterSuppression
 

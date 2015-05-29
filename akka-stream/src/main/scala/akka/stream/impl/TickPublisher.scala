@@ -4,13 +4,12 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
-import akka.actor.{ Actor, ActorRef, Cancellable, Props, SupervisorStrategy }
+import akka.actor._
 import akka.stream.ActorFlowMaterializerSettings
 import org.reactivestreams.{ Subscriber, Subscription }
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-import akka.actor.DeadLetterSuppression
 import akka.event.Logging
 
 /**
@@ -19,7 +18,9 @@ import akka.event.Logging
 private[akka] object TickPublisher {
   def props(initialDelay: FiniteDuration, interval: FiniteDuration, tick: Any,
             settings: ActorFlowMaterializerSettings, cancelled: AtomicBoolean): Props =
-    Props(new TickPublisher(initialDelay, interval, tick, settings, cancelled)).withDispatcher(settings.dispatcher)
+    Props(new TickPublisher(initialDelay, interval, tick, settings, cancelled))
+      .withDispatcher(settings.dispatcher)
+      .withDeploy(Deploy.local)
 
   object TickPublisherSubscription {
     case object Cancel extends DeadLetterSuppression

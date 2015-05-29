@@ -59,7 +59,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   val faultyFlow: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ in.andThenMat { () ⇒
     val props = Props(new BrokenActorInterpreter(settings, List(fusing.Map({ x: Any ⇒ x }, stoppingDecider)), "a3"))
-      .withDispatcher("akka.test.stream-dispatcher")
+      .withDispatcher("akka.test.stream-dispatcher").withDeploy(Deploy.local)
     val processor = ActorProcessorFactory[Any, Any](system.actorOf(
       props,
       "borken-stage-actor"))

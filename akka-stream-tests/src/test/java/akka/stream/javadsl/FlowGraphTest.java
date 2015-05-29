@@ -5,6 +5,7 @@ package akka.stream.javadsl;
 
 import akka.actor.ActorRef;
 import akka.japi.Pair;
+import akka.pattern.Patterns;
 import akka.stream.*;
 import akka.stream.javadsl.FlowGraph.Builder;
 import akka.stream.stage.*;
@@ -223,7 +224,7 @@ public class FlowGraphTest extends StreamTest {
         b.from(Source.single(1)).to(out);
         b.from(b.materializedValue()).to(Sink.foreach(new Procedure<Future<Integer>>(){
           public void apply(Future<Integer> mat) throws Exception {
-            probe.ref().tell(mat, ActorRef.noSender());
+            Patterns.pipe(mat, system.dispatcher()).to(probe.ref());
           }
         }));
       }
@@ -232,10 +233,7 @@ public class FlowGraphTest extends StreamTest {
     final Integer result = Await.result(future, Duration.create(300, TimeUnit.MILLISECONDS));
     assertEquals(1, (int) result);
 
-    final Future<Integer> future2 = probe.expectMsgClass(Future.class);
-
-    final Integer result2 = Await.result(future2, Duration.create(300, TimeUnit.MILLISECONDS));
-    assertEquals(1, (int) result2);
+    probe.expectMsg(1);
   }
 
 }

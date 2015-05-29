@@ -10,13 +10,7 @@ import scala.concurrent.{ Promise, ExecutionContext, Future }
 import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success }
 import scala.util.control.NoStackTrace
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.Props
+import akka.actor._
 import akka.io.Inet.SocketOption
 import akka.io.{ Tcp ⇒ IoTcp }
 import akka.stream._
@@ -25,7 +19,6 @@ import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Processor, Subscriber, Subscription }
-import akka.actor.actorRef2Scala
 import akka.stream.impl.io.TcpStreamActor
 import akka.stream.impl.io.TcpListenStreamActor
 import akka.stream.impl.io.DelayedInitProcessor
@@ -77,7 +70,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
 
   private val manager: ActorRef = system.systemActorOf(Props[StreamTcpManager]
-    .withDispatcher(IoTcp(system).Settings.ManagementDispatcher), name = "IO-TCP-STREAM")
+    .withDispatcher(IoTcp(system).Settings.ManagementDispatcher).withDeploy(Deploy.local), name = "IO-TCP-STREAM")
 
   private class BindSource(
     val endpoint: InetSocketAddress,

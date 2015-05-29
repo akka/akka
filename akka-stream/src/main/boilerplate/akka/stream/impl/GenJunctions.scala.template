@@ -4,6 +4,7 @@
 package akka.stream.impl
 
 import akka.actor.Props
+import akka.actor.Deploy
 import akka.stream._
 import akka.stream.impl.Junctions.FanInModule
 import akka.stream.impl.StreamLayout.Module
@@ -29,7 +30,7 @@ private[akka] object GenJunctions {
     override def carbonCopy: Module = ZipWith1Module(shape.deepCopy(), f, attributes)
 
     override def props(settings: ActorFlowMaterializerSettings): Props =
-      Props(new Zip1With(settings, f.asInstanceOf[Function1[[#Any#], Any]]))
+      Props(new Zip1With(settings, f.asInstanceOf[Function1[[#Any#], Any]])).withDeploy(Deploy.local)
   }#
   ]
 

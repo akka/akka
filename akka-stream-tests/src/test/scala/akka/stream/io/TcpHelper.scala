@@ -3,7 +3,7 @@
  */
 package akka.stream.io
 
-import akka.actor.{ Actor, ActorRef, Props }
+import akka.actor._
 import akka.io.Tcp.{ ResumeReading, Register, ConnectionClosed, Closed }
 import akka.io.{ IO, Tcp }
 import akka.stream.testkit._
@@ -17,9 +17,10 @@ import akka.stream.testkit.TestUtils.temporaryServerAddress
 import scala.concurrent.duration._
 
 object TcpHelper {
-  case class ClientWrite(bytes: ByteString)
-  case class ClientRead(count: Int, readTo: ActorRef)
-  case class ClientClose(cmd: Tcp.CloseCommand)
+  case class ClientWrite(bytes: ByteString) extends NoSerializationVerificationNeeded
+  case class ClientRead(count: Int, readTo: ActorRef) extends NoSerializationVerificationNeeded
+  case class ClientClose(cmd: Tcp.CloseCommand) extends NoSerializationVerificationNeeded
+  case class ReadResult(bytes: ByteString) extends NoSerializationVerificationNeeded
 
   // FIXME: Workaround object just to force a ResumeReading that will poll for a possibly pending close event
   // See https://github.com/akka/akka/issues/16552
@@ -69,7 +70,7 @@ object TcpHelper {
       case Tcp.Received(bytes) ⇒
         readBuffer ++= bytes
         if (readBuffer.size >= toRead) {
-          readTo ! readBuffer
+          readTo ! ReadResult(readBuffer)
           readBuffer = ByteString.empty
           toRead = 0
           readTo = context.system.deadLetters
@@ -136,7 +137,7 @@ trait TcpHelper { this: TestKitBase ⇒
 
     def read(count: Int): Unit = connectionActor ! ClientRead(count, connectionProbe.ref)
 
-    def waitRead(): ByteString = connectionProbe.expectMsgType[ByteString]
+    def waitRead(): ByteString = connectionProbe.expectMsgType[ReadResult].bytes
     def confirmedClose(): Unit = connectionActor ! ClientClose(Tcp.ConfirmedClose)
     def close(): Unit = connectionActor ! ClientClose(Tcp.Close)
     def abort(): Unit = connectionActor ! ClientClose(Tcp.Abort)

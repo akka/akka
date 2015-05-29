@@ -7,11 +7,11 @@ import java.util.LinkedList
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.TimerTransformer
 import scala.util.control.NonFatal
-import akka.actor.Props
+import akka.actor.{ Deploy, Props }
 
 private[akka] object TimerTransformerProcessorsImpl {
   def props(settings: ActorFlowMaterializerSettings, transformer: TimerTransformer[Any, Any]): Props =
-    Props(new TimerTransformerProcessorsImpl(settings, transformer))
+    Props(new TimerTransformerProcessorsImpl(settings, transformer)).withDeploy(Deploy.local)
 }
 
 /**

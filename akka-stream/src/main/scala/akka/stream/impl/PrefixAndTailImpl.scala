@@ -6,14 +6,14 @@ package akka.stream.impl
 import scala.collection.immutable
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.scaladsl.Source
-import akka.actor.Props
+import akka.actor.{ Deploy, Props }
 
 /**
  * INTERNAL API
  */
 private[akka] object PrefixAndTailImpl {
   def props(settings: ActorFlowMaterializerSettings, takeMax: Int): Props =
-    Props(new PrefixAndTailImpl(settings, takeMax))
+    Props(new PrefixAndTailImpl(settings, takeMax)).withDeploy(Deploy.local)
 }
 
 /**

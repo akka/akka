@@ -4,8 +4,7 @@
 package akka.stream.io
 
 import java.io.File
-
-import akka.stream.io.impl.SynchronousFileSource
+import akka.stream.impl.io.SynchronousFileSource
 import akka.stream.scaladsl.Source
 import akka.stream.{ ActorOperationAttributes, OperationAttributes, javadsl }
 import akka.util.ByteString

@@ -154,7 +154,7 @@ private[akka] object ActorOutputBoundary {
   /**
    * INTERNAL API.
    */
-  private case object ContinuePulling extends DeadLetterSuppression
+  private case object ContinuePulling extends DeadLetterSuppression with NoSerializationVerificationNeeded
 }
 
 /**
@@ -308,9 +308,9 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
  */
 private[akka] object ActorInterpreter {
   def props(settings: ActorFlowMaterializerSettings, ops: Seq[Stage[_, _]], materializer: ActorFlowMaterializer, attributes: OperationAttributes = OperationAttributes.none): Props =
-    Props(new ActorInterpreter(settings, ops, materializer, attributes))
+    Props(new ActorInterpreter(settings, ops, materializer, attributes)).withDeploy(Deploy.local)
 
-  case class AsyncInput(op: AsyncStage[Any, Any, Any], ctx: AsyncContext[Any, Any], event: Any) extends DeadLetterSuppression
+  case class AsyncInput(op: AsyncStage[Any, Any, Any], ctx: AsyncContext[Any, Any], event: Any) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 }
 
 /**

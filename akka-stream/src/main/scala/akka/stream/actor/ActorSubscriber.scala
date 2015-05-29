@@ -5,16 +5,7 @@ package akka.stream.actor
 
 import java.util.concurrent.ConcurrentHashMap
 import org.reactivestreams.{ Subscriber, Subscription }
-import akka.actor.AbstractActor
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.UntypedActor
-import akka.actor.DeadLetterSuppression
+import akka.actor._
 import akka.stream.impl.ReactiveStreamsCompliance
 
 object ActorSubscriber {
@@ -28,17 +19,17 @@ object ActorSubscriber {
   /**
    * INTERNAL API
    */
-  @SerialVersionUID(1L) private[akka] final case class OnSubscribe(subscription: Subscription)
-    extends DeadLetterSuppression
+  private[akka] final case class OnSubscribe(subscription: Subscription)
+    extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
 }
 
-sealed abstract class ActorSubscriberMessage extends DeadLetterSuppression
+sealed abstract class ActorSubscriberMessage extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
 object ActorSubscriberMessage {
-  @SerialVersionUID(1L) final case class OnNext(element: Any) extends ActorSubscriberMessage
-  @SerialVersionUID(1L) final case class OnError(cause: Throwable) extends ActorSubscriberMessage
-  @SerialVersionUID(1L) case object OnComplete extends ActorSubscriberMessage
+  final case class OnNext(element: Any) extends ActorSubscriberMessage
+  final case class OnError(cause: Throwable) extends ActorSubscriberMessage
+  case object OnComplete extends ActorSubscriberMessage
 
   /**
    * Java API: get the singleton instance of the `OnComplete` message

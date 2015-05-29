@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io.impl
+package akka.stream.impl.io
 
 import java.io.{ File, InputStream }
 

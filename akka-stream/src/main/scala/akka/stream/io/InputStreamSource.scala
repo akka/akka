@@ -6,7 +6,7 @@ package akka.stream.io
 import java.io.InputStream
 
 import akka.japi.function.Creator
-import akka.stream.io.impl.InputStreamSource
+import akka.stream.impl.io.InputStreamSource
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Source._
 import akka.stream.{ OperationAttributes, javadsl }

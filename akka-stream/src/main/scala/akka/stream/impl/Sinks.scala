@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import java.io.File
 import java.util.concurrent.atomic.AtomicReference
-import akka.actor.{ ActorRef, Props }
+import akka.actor.{ Deploy, ActorRef, Props }
 import akka.stream.ActorOperationAttributes.Dispatcher
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.OperationAttributes
@@ -83,7 +83,7 @@ private[akka] final class FanoutPublisherSink[In](
     val actorMaterializer = ActorFlowMaterializer.downcast(context.materializer)
     val fanoutActor = actorMaterializer.actorOf(context,
       Props(new FanoutProcessorImpl(actorMaterializer.effectiveSettings(context.effectiveAttributes),
-        initialBufferSize, maximumBufferSize)))
+        initialBufferSize, maximumBufferSize)).withDeploy(Deploy.local))
     val fanoutProcessor = ActorProcessorFactory[In, In](fanoutActor)
     (fanoutProcessor, fanoutProcessor)
   }
