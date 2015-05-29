@@ -1,51 +1,53 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io.impl
+package akka.stream.impl.io
 
-import java.io.InputStream
+import java.io.{ File, RandomAccessFile }
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 
-import akka.actor.{ ActorLogging, DeadLetterSuppression, Props }
-import akka.io.DirectByteBufferPool
+import akka.actor.{ Deploy, ActorLogging, DeadLetterSuppression, Props }
 import akka.stream.actor.ActorPublisherMessage
 import akka.util.ByteString
-import akka.util.ByteString.ByteString1C
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 
 /** INTERNAL API */
-private[akka] object InputStreamPublisher {
-
-  def props(is: InputStream, completionPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int): Props = {
+private[akka] object SynchronousFilePublisher {
+  def props(f: File, completionPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
     require(initialBuffer > 0, s"initialBuffer must be > 0 (was $initialBuffer)")
     require(maxBuffer >= initialBuffer, s"maxBuffer must be >= initialBuffer (was $maxBuffer)")
 
-    Props(classOf[InputStreamPublisher], is, completionPromise, chunkSize, initialBuffer, maxBuffer)
+    Props(classOf[SynchronousFilePublisher], f, completionPromise, chunkSize, initialBuffer, maxBuffer)
+      .withDeploy(Deploy.local)
   }
 
   private final case object Continue extends DeadLetterSuppression
+
 }
 
 /** INTERNAL API */
-private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+private[akka] class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
   extends akka.stream.actor.ActorPublisher[ByteString]
   with ActorLogging {
 
-  // TODO possibly de-duplicate with SynchronousFilePublisher?
+  import SynchronousFilePublisher._
 
-  import InputStreamPublisher._
-
-  val buffs = new DirectByteBufferPool(chunkSize, maxBuffer)
   var eofReachedAtOffset = Long.MinValue
 
   var readBytesTotal = 0L
-  var availableChunks: Vector[ByteString] = Vector.empty
+  var availableChunks: Vector[ByteString] = Vector.empty // TODO possibly resign read-ahead-ing and make fusable as Stage
+
+  private var raf: RandomAccessFile = _
+  private var chan: FileChannel = _
 
   override def preStart() = {
     try {
-      readAndSignal(initialBuffer)
+      raf = new RandomAccessFile(f, "r") // best way to express this in JDK6, OpenOption are available since JDK7
+      chan = raf.getChannel
     } catch {
       case ex: Exception ⇒
         onErrorThenStop(ex)
@@ -87,23 +89,20 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
 
   /** BLOCKING I/O READ */
   def loadChunk() = try {
-    val arr = Array.ofDim[Byte](chunkSize)
+    val buf = ByteBuffer.allocate(chunkSize)
 
     // blocking read
-    val readBytes = is.read(arr)
+    val readBytes = chan.read(buf)
 
     readBytes match {
       case -1 ⇒
         // had nothing to read into this chunk
-        eofReachedAtOffset = readBytes
+        eofReachedAtOffset = chan.position
         log.debug("No more bytes available to read (got `-1` or `0` from `read`), marking final bytes of file @ " + eofReachedAtOffset)
 
       case _ ⇒
         readBytesTotal += readBytes
-        if (readBytes == chunkSize) availableChunks :+= ByteString1C(arr)
-        else availableChunks :+= ByteString1C(arr).take(readBytes)
-
-      // valid read, continue
+        availableChunks :+= ByteString(buf.array).take(readBytes)
     }
   } catch {
     case ex: Exception ⇒
@@ -116,6 +115,7 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
     super.postStop()
     bytesReadPromise.trySuccess(readBytesTotal)
 
-    if (is ne null) is.close()
+    try if (chan ne null) chan.close()
+    finally if (raf ne null) raf.close()
   }
 }

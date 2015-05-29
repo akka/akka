@@ -5,28 +5,28 @@ package akka.stream.impl
 
 import language.existentials
 import org.reactivestreams.Subscription
-import akka.actor.DeadLetterSuppression
+import akka.actor.{ NoSerializationVerificationNeeded, DeadLetterSuppression }
 
 /**
  * INTERNAL API
  */
-private[akka] case object SubscribePending extends DeadLetterSuppression
+private[akka] case object SubscribePending extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
 /**
  * INTERNAL API
  */
 private[akka] final case class RequestMore(subscription: ActorSubscription[_], demand: Long)
-  extends DeadLetterSuppression
+  extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
 /**
  * INTERNAL API
  */
 private[akka] final case class Cancel(subscription: ActorSubscription[_])
-  extends DeadLetterSuppression
+  extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
 /**
  * INTERNAL API
  */
 private[akka] final case class ExposedPublisher(publisher: ActorPublisher[Any])
-  extends DeadLetterSuppression
+  extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
