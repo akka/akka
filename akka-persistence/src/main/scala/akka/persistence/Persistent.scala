@@ -7,10 +7,7 @@ package akka.persistence
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ List ⇒ JList }
 
-import scala.collection.immutable
-
 import akka.actor.{ ActorContext, ActorRef }
-import akka.japi.Util.immutableSeq
 import akka.pattern.PromiseActorRef
 import akka.persistence.serialization.Message
 
@@ -40,12 +37,16 @@ private[persistence] final case class NonPersistentRepr(payload: Any, sender: Ac
  * @see [[akka.persistence.journal.AsyncRecovery]]
  */
 trait PersistentRepr extends PersistentEnvelope with Message {
-  import scala.collection.JavaConverters._
 
   /**
    * This persistent message's payload.
    */
   def payload: Any
+
+  /**
+   * Returns the persistent payload's manifest if available
+   */
+  def manifest: String
 
   /**
    * Persistent id that journals a persistent message
@@ -61,6 +62,11 @@ trait PersistentRepr extends PersistentEnvelope with Message {
    * Creates a new persistent message with the specified `payload`.
    */
   def withPayload(payload: Any): PersistentRepr
+
+  /**
+   * Creates a new persistent message with the specified `manifest`.
+   */
+  def withManifest(manifest: String): PersistentRepr
 
   /**
    * `true` if this message is marked as deleted.
@@ -83,10 +89,10 @@ trait PersistentRepr extends PersistentEnvelope with Message {
 }
 
 object PersistentRepr {
-  /**
-   * Plugin API: value of an undefined processor id.
-   */
+  /** Plugin API: value of an undefined persistenceId or manifest. */
   val Undefined = ""
+  /** Plugin API: value of an undefined / identity event adapter. */
+  val UndefinedId = 0
 
   /**
    * Plugin API.
@@ -95,9 +101,10 @@ object PersistentRepr {
     payload: Any,
     sequenceNr: Long = 0L,
     persistenceId: String = PersistentRepr.Undefined,
+    manifest: String = PersistentRepr.Undefined,
     deleted: Boolean = false,
     sender: ActorRef = null): PersistentRepr =
-    PersistentImpl(payload, sequenceNr, persistenceId, deleted, sender)
+    PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender)
 
   /**
    * Java API, Plugin API.
@@ -115,20 +122,21 @@ object PersistentRepr {
  * INTERNAL API.
  */
 private[persistence] final case class PersistentImpl(
-  payload: Any,
-  sequenceNr: Long,
+  override val payload: Any,
+  override val sequenceNr: Long,
   override val persistenceId: String,
-  deleted: Boolean,
-  sender: ActorRef) extends PersistentRepr {
+  override val manifest: String,
+  override val deleted: Boolean,
+  override val sender: ActorRef) extends PersistentRepr {
 
   def withPayload(payload: Any): PersistentRepr =
     copy(payload = payload)
 
-  def update(
-    sequenceNr: Long,
-    persistenceId: String,
-    deleted: Boolean,
-    sender: ActorRef) =
+  def withManifest(manifest: String): PersistentRepr =
+    if (this.manifest == manifest) this
+    else copy(manifest = manifest)
+
+  def update(sequenceNr: Long, persistenceId: String, deleted: Boolean, sender: ActorRef) =
     copy(sequenceNr = sequenceNr, persistenceId = persistenceId, deleted = deleted, sender = sender)
 
 }

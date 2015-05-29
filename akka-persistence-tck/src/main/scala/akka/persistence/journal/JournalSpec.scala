@@ -46,7 +46,7 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
     extension.journalFor(null)
 
   def replayedMessage(snr: Long, deleted: Boolean = false, confirms: Seq[String] = Nil): ReplayedMessage =
-    ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, deleted, Actor.noSender))
+    ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, "", deleted, Actor.noSender))
 
   def writeMessages(from: Int, to: Int, pid: String, sender: ActorRef): Unit = {
     val msgs = from to to map { i ⇒ PersistentRepr(payload = s"a-${i}", sequenceNr = i, persistenceId = pid, sender = sender) }
@@ -56,7 +56,7 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
 
     probe.expectMsg(WriteMessagesSuccessful)
     from to to foreach { i ⇒
-      probe.expectMsgPF() { case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, `sender`), _) ⇒ payload should be(s"a-${i}") }
+      probe.expectMsgPF() { case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`), _) ⇒ payload should be(s"a-${i}") }
     }
   }
 

@@ -20,7 +20,7 @@ import akka.util._
  *
  * A journal that delegates actual storage to a target actor. For testing only.
  */
-private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash {
+private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash with ActorLogging {
   import AsyncWriteProxy._
   import AsyncWriteTarget._
 
@@ -32,7 +32,8 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
       store = ref
       unstashAll()
       context.become(initialized)
-    case _ ⇒ stash()
+    case x ⇒
+      stash()
   }
 
   implicit def timeout: Timeout
@@ -43,8 +44,8 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
     (store ? DeleteMessagesTo(persistenceId, toSequenceNr, permanent)).mapTo[Unit]
 
-  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] = {
-    val replayCompletionPromise = Promise[Unit]
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit] = {
+    val replayCompletionPromise = Promise[Unit]()
     val mediator = context.actorOf(Props(classOf[ReplayMediator], replayCallback, replayCompletionPromise, timeout.duration).withDeploy(Deploy.local))
     store.tell(ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max), mediator)
     replayCompletionPromise.future

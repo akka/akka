@@ -4,20 +4,19 @@
 
 package akka.persistence.serialization
 
-import scala.concurrent.duration
-import scala.concurrent.duration.Duration
-import scala.language.existentials
-import com.google.protobuf._
 import akka.actor.{ ActorPath, ExtendedActorSystem }
-import akka.japi.Util.immutableSeq
+import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot ⇒ AtLeastOnceDeliverySnap, UnconfirmedDelivery }
 import akka.persistence._
+import akka.persistence.fsm.PersistentFsmActor.StateChangeEvent
 import akka.persistence.serialization.MessageFormats._
 import akka.serialization._
-import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot ⇒ AtLeastOnceDeliverySnap }
-import akka.persistence.AtLeastOnceDelivery.UnconfirmedDelivery
+import com.google.protobuf._
+
 import scala.collection.immutable.VectorBuilder
-import akka.persistence.fsm.PersistentFsmActor.StateChangeEvent
+import scala.concurrent.duration
 import akka.actor.Actor
+import scala.concurrent.duration.Duration
+import scala.language.existentials
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.
@@ -164,6 +163,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       payload(persistentMessage.getPayload),
       persistentMessage.getSequenceNr,
       if (persistentMessage.hasPersistenceId) persistentMessage.getPersistenceId else Undefined,
+      if (persistentMessage.hasManifest) persistentMessage.getManifest else Undefined,
       persistentMessage.getDeleted,
       if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender) else Actor.noSender)
   }
