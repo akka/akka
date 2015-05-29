@@ -4,24 +4,21 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
-import akka.actor.ActorLogging
-import akka.actor.Cancellable
-import akka.actor.{ Actor, ActorRef }
+import akka.actor._
 import akka.stream.ActorFlowMaterializerSettings
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
  */
 private[akka] object MultiStreamOutputProcessor {
   final case class SubstreamKey(id: Long)
-  final case class SubstreamRequestMore(substream: SubstreamKey, demand: Long) extends DeadLetterSuppression
-  final case class SubstreamCancel(substream: SubstreamKey) extends DeadLetterSuppression
-  final case class SubstreamSubscribe(substream: SubstreamKey, subscriber: Subscriber[Any]) extends DeadLetterSuppression
-  final case class SubstreamSubscriptionTimeout(substream: SubstreamKey) extends DeadLetterSuppression
+  final case class SubstreamRequestMore(substream: SubstreamKey, demand: Long) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class SubstreamCancel(substream: SubstreamKey) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class SubstreamSubscribe(substream: SubstreamKey, subscriber: Subscriber[Any]) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class SubstreamSubscriptionTimeout(substream: SubstreamKey) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
   class SubstreamSubscription(val parent: ActorRef, val substreamKey: SubstreamKey) extends Subscription {
     override def request(elements: Long): Unit = parent ! SubstreamRequestMore(substreamKey, elements)
@@ -316,10 +313,10 @@ private[akka] object MultiStreamInputProcessor {
     }
   }
 
-  case class SubstreamOnComplete(key: SubstreamKey) extends DeadLetterSuppression
-  case class SubstreamOnNext(key: SubstreamKey, element: Any) extends DeadLetterSuppression
-  case class SubstreamOnError(key: SubstreamKey, e: Throwable) extends DeadLetterSuppression
-  case class SubstreamStreamOnSubscribe(key: SubstreamKey, subscription: Subscription) extends DeadLetterSuppression
+  case class SubstreamOnComplete(key: SubstreamKey) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  case class SubstreamOnNext(key: SubstreamKey, element: Any) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  case class SubstreamOnError(key: SubstreamKey, e: Throwable) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  case class SubstreamStreamOnSubscribe(key: SubstreamKey, subscription: Subscription) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
   class SubstreamInput(val key: SubstreamKey, bufferSize: Int, processor: MultiStreamInputProcessorLike, pump: Pump) extends BatchingInputBuffer(bufferSize, pump) {
     // Not driven directly

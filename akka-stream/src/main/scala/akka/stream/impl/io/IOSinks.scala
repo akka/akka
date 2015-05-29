@@ -1,13 +1,12 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io.impl
+package akka.stream.impl.io
 
 import java.io.{ File, OutputStream }
 
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.io.impl.IOSettings._
 import akka.stream.{ ActorFlowMaterializer, MaterializationContext, OperationAttributes, SinkShape }
 import akka.util.ByteString
 
@@ -27,7 +26,7 @@ private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attr
 
     val bytesWrittenPromise = Promise[Long]()
     val props = SynchronousFileSubscriber.props(f, bytesWrittenPromise, settings.maxInputBufferSize, append)
-    val dispatcher = fileIoDispatcher(context)
+    val dispatcher = IOSettings.fileIoDispatcher(context)
 
     val ref = mat.actorOf(context, props.withDispatcher(dispatcher))
     (akka.stream.actor.ActorSubscriber[ByteString](ref), bytesWrittenPromise.future)

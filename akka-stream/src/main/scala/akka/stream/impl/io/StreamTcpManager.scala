@@ -10,7 +10,7 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.Actor
+import akka.actor.{ NoSerializationVerificationNeeded, Actor, DeadLetterSuppression }
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
 import akka.stream.ActorFlowMaterializerSettings
@@ -20,7 +20,6 @@ import akka.stream.scaladsl.{ Tcp ⇒ StreamTcp }
 import akka.util.ByteString
 import org.reactivestreams.Processor
 import org.reactivestreams.Subscriber
-import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
@@ -37,7 +36,7 @@ private[akka] object StreamTcpManager {
     options: immutable.Traversable[SocketOption],
     connectTimeout: Duration,
     idleTimeout: Duration)
-    extends DeadLetterSuppression
+    extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
   /**
    * INTERNAL API
@@ -50,13 +49,13 @@ private[akka] object StreamTcpManager {
     backlog: Int,
     options: immutable.Traversable[SocketOption],
     idleTimeout: Duration)
-    extends DeadLetterSuppression
+    extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
   /**
    * INTERNAL API
    */
   private[akka] final case class ExposedProcessor(processor: Processor[ByteString, ByteString])
-    extends DeadLetterSuppression
+    extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
 }
 
