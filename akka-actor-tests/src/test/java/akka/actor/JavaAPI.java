@@ -41,6 +41,8 @@ public class JavaAPI {
     final GetRoutees r = GetRoutees.getInstance();
     final NoRouter nr = NoRouter.getInstance();
     final FromConfig fc = FromConfig.getInstance();
+
+    final ActorPath p = ActorPaths.fromString("akka.tcp://Sys@localhost:1234/user/abc");
   }
 
   @Test
