@@ -1,8 +1,8 @@
 .. _migration-2.4:
 
-################################
- Migration Guide 2.3.x to 2.4.x
-################################
+##############################
+Migration Guide 2.3.x to 2.4.x
+##############################
 
 The 2.4 release contains some structural changes that require some
 simple, mechanical source-level changes in client code.
@@ -160,8 +160,11 @@ Default interval for TestKit.awaitAssert changed to 100 ms
 Default check interval changed from 800 ms to 100 ms. You can define the interval explicitly if you need a
 longer interval.
 
-persistenceId
-=============
+Akka Persistence
+================
+
+Mendatory persistenceId
+-----------------------
 
 It is now mandatory to define the ``persistenceId`` in subclasses of ``PersistentActor``, ``UntypedPersistentActor``
 and ``AbstractPersistentId``.
