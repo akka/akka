@@ -222,30 +222,8 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param event event to be handled in the future, when preceding persist operations have been processes
    * @param handler handler for the given `event`
    */
-  final def defer[A](event: A)(handler: Procedure[A]): Unit =
-    super[Eventsourced].defer(event)(event ⇒ handler(event))
-
-  /**
-   * Defer the handler execution until all pending handlers have been executed.
-   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
-   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
-   * the corresponding handlers will be invoked in the same order as they were registered in.
-   *
-   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
-   * if the given event should possible to replay.
-   *
-   * If there are no pending persist handler calls, the handler will be called immediately.
-   *
-   * In the event of persistence failures (indicated by [[PersistenceFailure]] messages being sent to the
-   * [[PersistentActor]], you can handle these messages, which in turn will enable the deferred handlers to run afterwards.
-   * If persistence failure messages are left `unhandled`, the default behavior is to stop the Actor, thus the handlers
-   * will not be run.
-   *
-   * @param events event to be handled in the future, when preceding persist operations have been processes
-   * @param handler handler for each `event`
-   */
-  final def defer[A](events: JIterable[A])(handler: Procedure[A]): Unit =
-    super[Eventsourced].defer(Util.immutableSeq(events))(event ⇒ handler(event))
+  final def deferAsync[A](event: A)(handler: Procedure[A]): Unit =
+    super[Eventsourced].deferAsync(event)(event ⇒ handler(event))
 
   /**
    * Java API: recovery handler that receives persisted events during recovery. If a state snapshot
@@ -331,6 +309,17 @@ abstract class AbstractPersistentActor extends AbstractActor with PersistentActo
     persistAsync(event)(event ⇒ handler(event))
 
   /**
+   * Java API: asynchronously persists `events` in specified order. This is equivalent to calling
+   * `persistAsync[A](event: A)(handler: A => Unit)` multiple times with the same `handler`,
+   * except that `events` are persisted atomically with this method.
+   *
+   * @param events events to be persisted
+   * @param handler handler for each persisted `events`
+   */
+  final def persistAsync[A](events: JIterable[A], handler: Procedure[A]): Unit =
+    persistAsync(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  /**
    * Defer the handler execution until all pending handlers have been executed.
    * Allows to define logic within the actor, which will respect the invocation-order-guarantee
    * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
@@ -349,41 +338,8 @@ abstract class AbstractPersistentActor extends AbstractActor with PersistentActo
    * @param event event to be handled in the future, when preceding persist operations have been processes
    * @param handler handler for the given `event`
    */
-  final def defer[A](event: A)(handler: Procedure[A]): Unit =
-    super.defer(event)(event ⇒ handler(event))
-
-  /**
-   * Defer the handler execution until all pending handlers have been executed.
-   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
-   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
-   * the corresponding handlers will be invoked in the same order as they were registered in.
-   *
-   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
-   * if the given event should possible to replay.
-   *
-   * If there are no pending persist handler calls, the handler will be called immediately.
-   *
-   * In the event of persistence failures (indicated by [[PersistenceFailure]] messages being sent to the
-   * [[PersistentActor]], you can handle these messages, which in turn will enable the deferred handlers to run afterwards.
-   * If persistence failure messages are left `unhandled`, the default behavior is to stop the Actor, thus the handlers
-   * will not be run.
-   *
-   * @param events event to be handled in the future, when preceding persist operations have been processes
-   * @param handler handler for each `event`
-   */
-  final def defer[A](events: JIterable[A])(handler: Procedure[A]): Unit =
-    super.defer(Util.immutableSeq(events))(event ⇒ handler(event))
-
-  /**
-   * Java API: asynchronously persists `events` in specified order. This is equivalent to calling
-   * `persistAsync[A](event: A)(handler: A => Unit)` multiple times with the same `handler`,
-   * except that `events` are persisted atomically with this method.
-   *
-   * @param events events to be persisted
-   * @param handler handler for each persisted `events`
-   */
-  final def persistAsync[A](events: JIterable[A], handler: Procedure[A]): Unit =
-    persistAsync(Util.immutableSeq(events))(event ⇒ handler(event))
+  final def deferAsync[A](event: A)(handler: Procedure[A]): Unit =
+    super.deferAsync(event)(event ⇒ handler(event))
 
   override def receive = super[PersistentActor].receive
 
