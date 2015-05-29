@@ -98,6 +98,21 @@ public final class MessageFormats {
      */
     com.google.protobuf.ByteString
         getSenderBytes();
+
+    // optional string manifest = 12;
+    /**
+     * <code>optional string manifest = 12;</code>
+     */
+    boolean hasManifest();
+    /**
+     * <code>optional string manifest = 12;</code>
+     */
+    java.lang.String getManifest();
+    /**
+     * <code>optional string manifest = 12;</code>
+     */
+    com.google.protobuf.ByteString
+        getManifestBytes();
   }
   /**
    * Protobuf type {@code PersistentMessage}
@@ -181,6 +196,11 @@ public final class MessageFormats {
             case 90: {
               bitField0_ |= 0x00000010;
               sender_ = input.readBytes();
+              break;
+            }
+            case 98: {
+              bitField0_ |= 0x00000020;
+              manifest_ = input.readBytes();
               break;
             }
           }
@@ -387,12 +407,56 @@ public final class MessageFormats {
       }
     }
 
+    // optional string manifest = 12;
+    public static final int MANIFEST_FIELD_NUMBER = 12;
+    private java.lang.Object manifest_;
+    /**
+     * <code>optional string manifest = 12;</code>
+     */
+    public boolean hasManifest() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional string manifest = 12;</code>
+     */
+    public java.lang.String getManifest() {
+      java.lang.Object ref = manifest_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          manifest_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string manifest = 12;</code>
+     */
+    public com.google.protobuf.ByteString
+        getManifestBytes() {
+      java.lang.Object ref = manifest_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        manifest_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private void initFields() {
       payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
       sequenceNr_ = 0L;
       persistenceId_ = "";
       deleted_ = false;
       sender_ = "";
+      manifest_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -427,6 +491,9 @@ public final class MessageFormats {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeBytes(11, getSenderBytes());
       }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeBytes(12, getManifestBytes());
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -455,6 +522,10 @@ public final class MessageFormats {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(11, getSenderBytes());
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(12, getManifestBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -587,6 +658,8 @@ public final class MessageFormats {
         bitField0_ = (bitField0_ & ~0x00000008);
         sender_ = "";
         bitField0_ = (bitField0_ & ~0x00000010);
+        manifest_ = "";
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -639,6 +712,10 @@ public final class MessageFormats {
           to_bitField0_ |= 0x00000010;
         }
         result.sender_ = sender_;
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.manifest_ = manifest_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -672,6 +749,11 @@ public final class MessageFormats {
         if (other.hasSender()) {
           bitField0_ |= 0x00000010;
           sender_ = other.sender_;
+          onChanged();
+        }
+        if (other.hasManifest()) {
+          bitField0_ |= 0x00000020;
+          manifest_ = other.manifest_;
           onChanged();
         }
         this.mergeUnknownFields(other.getUnknownFields());
@@ -1082,6 +1164,80 @@ public final class MessageFormats {
   }
   bitField0_ |= 0x00000010;
         sender_ = value;
+        onChanged();
+        return this;
+      }
+
+      // optional string manifest = 12;
+      private java.lang.Object manifest_ = "";
+      /**
+       * <code>optional string manifest = 12;</code>
+       */
+      public boolean hasManifest() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>optional string manifest = 12;</code>
+       */
+      public java.lang.String getManifest() {
+        java.lang.Object ref = manifest_;
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
+          manifest_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string manifest = 12;</code>
+       */
+      public com.google.protobuf.ByteString
+          getManifestBytes() {
+        java.lang.Object ref = manifest_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          manifest_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string manifest = 12;</code>
+       */
+      public Builder setManifest(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        manifest_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string manifest = 12;</code>
+       */
+      public Builder clearManifest() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        manifest_ = getDefaultInstance().getManifest();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string manifest = 12;</code>
+       */
+      public Builder setManifestBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
+        manifest_ = value;
         onChanged();
         return this;
       }
@@ -3900,21 +4056,22 @@ public final class MessageFormats {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\024MessageFormats.proto\"\204\001\n\021PersistentMes" +
+      "\n\024MessageFormats.proto\"\226\001\n\021PersistentMes" +
       "sage\022#\n\007payload\030\001 \001(\0132\022.PersistentPayloa" +
       "d\022\022\n\nsequenceNr\030\002 \001(\003\022\025\n\rpersistenceId\030\003" +
-      " \001(\t\022\017\n\007deleted\030\004 \001(\010\022\016\n\006sender\030\013 \001(\t\"S\n" +
-      "\021PersistentPayload\022\024\n\014serializerId\030\001 \002(\005" +
-      "\022\017\n\007payload\030\002 \002(\014\022\027\n\017payloadManifest\030\003 \001" +
-      "(\014\"\356\001\n\033AtLeastOnceDeliverySnapshot\022\031\n\021cu" +
-      "rrentDeliveryId\030\001 \002(\003\022O\n\025unconfirmedDeli" +
-      "veries\030\002 \003(\01320.AtLeastOnceDeliverySnapsh" +
-      "ot.UnconfirmedDelivery\032c\n\023UnconfirmedDel",
-      "ivery\022\022\n\ndeliveryId\030\001 \002(\003\022\023\n\013destination" +
-      "\030\002 \002(\t\022#\n\007payload\030\003 \002(\0132\022.PersistentPayl" +
-      "oad\"F\n\032PersistentStateChangeEvent\022\027\n\017sta" +
-      "teIdentifier\030\001 \002(\t\022\017\n\007timeout\030\002 \001(\tB\"\n\036a" +
-      "kka.persistence.serializationH\001"
+      " \001(\t\022\017\n\007deleted\030\004 \001(\010\022\016\n\006sender\030\013 \001(\t\022\020\n" +
+      "\010manifest\030\014 \001(\t\"S\n\021PersistentPayload\022\024\n\014" +
+      "serializerId\030\001 \002(\005\022\017\n\007payload\030\002 \002(\014\022\027\n\017p" +
+      "ayloadManifest\030\003 \001(\014\"\356\001\n\033AtLeastOnceDeli" +
+      "verySnapshot\022\031\n\021currentDeliveryId\030\001 \002(\003\022" +
+      "O\n\025unconfirmedDeliveries\030\002 \003(\01320.AtLeast" +
+      "OnceDeliverySnapshot.UnconfirmedDelivery",
+      "\032c\n\023UnconfirmedDelivery\022\022\n\ndeliveryId\030\001 " +
+      "\002(\003\022\023\n\013destination\030\002 \002(\t\022#\n\007payload\030\003 \002(" +
+      "\0132\022.PersistentPayload\"F\n\032PersistentState" +
+      "ChangeEvent\022\027\n\017stateIdentifier\030\001 \002(\t\022\017\n\007" +
+      "timeout\030\002 \001(\tB\"\n\036akka.persistence.serial" +
+      "izationH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -3926,7 +4083,7 @@ public final class MessageFormats {
           internal_static_PersistentMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PersistentMessage_descriptor,
-              new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", });
+              new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", "Manifest", });
           internal_static_PersistentPayload_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_PersistentPayload_fieldAccessorTable = new

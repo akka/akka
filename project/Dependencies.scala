@@ -36,6 +36,11 @@ object Dependencies {
     // TODO remove with metrics from akka-cluster
     val sigar         = "org.fusesource"              % "sigar"                        % "1.6.4"       // ApacheV2
 
+    object Docs {
+      val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
+      val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
+    }
+
     object Test {
       val commonsMath  = "org.apache.commons"          % "commons-math"                 % "2.2"              % "test" // ApacheV2
       val commonsIo    = "commons-io"                  % "commons-io"                   % "2.4"              % "test" // ApacheV2
@@ -111,7 +116,7 @@ object Dependencies {
 
   val osgi = l ++= Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest.value, Test.junit)
 
-  val docs = l ++= Seq(Test.scalatest.value, Test.junit, Test.junitIntf)
+  val docs = l ++= Seq(Test.scalatest.value, Test.junit, Test.junitIntf, Docs.sprayJson, Docs.gson)
 
   val contrib = l ++= Seq(Test.junitIntf, Test.commonsIo)
 }
