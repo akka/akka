@@ -33,6 +33,7 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
+      .withRemovalMargin(Cluster(system).settings.DownRemovalMargin)
 
   /**
    * Create settings from a configuration with the same layout as
@@ -42,9 +43,8 @@ object ClusterSingletonManagerSettings {
     new ClusterSingletonManagerSettings(
       singletonName = config.getString("singleton-name"),
       role = roleOption(config.getString("role")),
-      maxHandOverRetries = config.getInt("max-hand-over-retries"),
-      maxTakeOverRetries = config.getInt("max-take-over-retries"),
-      retryInterval = config.getDuration("retry-interval", MILLISECONDS).millis)
+      removalMargin = Duration.Zero, // defaults to ClusterSettins.DownRemovalMargin
+      handOverRetryInterval = config.getDuration("hand-over-retry-interval", MILLISECONDS).millis)
 
   /**
    * Java API: Create settings from the default configuration
@@ -73,40 +73,24 @@ object ClusterSingletonManagerSettings {
  *   If the role is not specified it's a singleton among all nodes in
  *   the cluster.
  *
- * @param maxHandOverRetries When a node is becoming oldest it sends
- *   hand-over request to previous oldest. This is retried with the
- *   `retryInterval` until the previous oldest confirms that the hand
- *   over has started, or this `maxHandOverRetries` limit has been
- *   reached. If the retry limit is reached it takes the decision to be
- *   the new oldest if previous oldest is unknown (typically removed),
- *   otherwise it initiates a new round by throwing
- *   [[akka.cluster.singleton.ClusterSingletonManagerIsStuck]] and expecting
- *   restart with fresh state. For a cluster with many members you might
- *   need to increase this retry limit because it takes longer time to
- *   propagate changes across all nodes.
+ * @param removalMargin Margin until the singleton instance that belonged to
+ *   a downed/removed partition is created in surviving partition. The purpose of
+ *   this margin is that in case of a network partition the singleton actors
+ *   in the non-surviving partitions must be stopped before corresponding actors
+ *   are started somewhere else. This is especially important for persistent
+ *   actors.
  *
- * @param maxTakeOverRetries When a oldest node leaves the cluster it is
- *   not oldest any more and then it sends take over request to the new oldest to
- *   initiate the hand-over process. This is retried with the `retryInterval` until
- *   this retry limit has been reached. If the retry limit is reached it initiates
- *   a new round by throwing [[akka.cluster.singleton.ClusterSingletonManagerIsStuck]]
- *   and expecting restart with fresh state. This will also cause the singleton actor
- *   to be stopped. `maxTakeOverRetries` must be less than `maxHandOverRetries` to
- *   ensure that new oldest doesn't start singleton actor before previous is
- *   stopped for certain corner cases.
- *
- * @param retryInterval Interval for hand over and take over messages
+ * @param handOverRetryInterval When a node is becoming oldest it sends hand-over
+ *   request to previous oldest, that might be leaving the cluster. This is
+ *   retried with this interval until the previous oldest confirms that the hand
+ *   over has started or the previous oldest member is removed from the cluster
+ *   (+ `removalMargin`).
  */
 final class ClusterSingletonManagerSettings(
   val singletonName: String,
   val role: Option[String],
-  val maxHandOverRetries: Int,
-  val maxTakeOverRetries: Int,
-  val retryInterval: FiniteDuration) extends NoSerializationVerificationNeeded {
-
-  // to ensure that new oldest doesn't start singleton actor before previous is stopped for certain corner cases
-  require(maxTakeOverRetries < maxHandOverRetries,
-    s"maxTakeOverRetries [${maxTakeOverRetries}]must be < maxHandOverRetries [${maxHandOverRetries}]")
+  val removalMargin: FiniteDuration,
+  val handOverRetryInterval: FiniteDuration) extends NoSerializationVerificationNeeded {
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
 
@@ -114,17 +98,17 @@ final class ClusterSingletonManagerSettings(
 
   def withRole(role: Option[String]) = copy(role = role)
 
-  def withRetry(maxHandOverRetries: Int, maxTakeOverRetries: Int, retryInterval: FiniteDuration): ClusterSingletonManagerSettings =
-    copy(maxHandOverRetries = maxHandOverRetries,
-      maxTakeOverRetries = maxTakeOverRetries,
-      retryInterval = retryInterval)
+  def withRemovalMargin(removalMargin: FiniteDuration): ClusterSingletonManagerSettings =
+    copy(removalMargin = removalMargin)
+
+  def withHandOverRetryInterval(retryInterval: FiniteDuration): ClusterSingletonManagerSettings =
+    copy(handOverRetryInterval = retryInterval)
 
   private def copy(singletonName: String = singletonName,
                    role: Option[String] = role,
-                   maxHandOverRetries: Int = maxHandOverRetries,
-                   maxTakeOverRetries: Int = maxTakeOverRetries,
-                   retryInterval: FiniteDuration = retryInterval): ClusterSingletonManagerSettings =
-    new ClusterSingletonManagerSettings(singletonName, role, maxHandOverRetries, maxTakeOverRetries, retryInterval)
+                   removalMargin: FiniteDuration = removalMargin,
+                   handOverRetryInterval: FiniteDuration = handOverRetryInterval): ClusterSingletonManagerSettings =
+    new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
 }
 
 object ClusterSingletonManager {
@@ -202,6 +186,7 @@ object ClusterSingletonManager {
                                    newOldestOption: Option[Address]) extends Data
     final case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
     case object EndData extends Data
+    final case class DelayedMemberRemoved(member: Member)
 
     val HandOverRetryTimer = "hand-over-retry"
     val TakeOverRetryTimer = "take-over-retry"
@@ -353,10 +338,7 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * but more than one active singletons is prevented by all reasonable means. Some
  * corner cases are eventually resolved by configurable timeouts.
  *
- * You access the singleton actor with `actorSelection` using the names you have
- * specified when creating the ClusterSingletonManager. You can subscribe to
- * [[akka.cluster.ClusterEvent.MemberEvent]] and sort the members by age
- * ([[akka.cluster.Member#isOlderThan]]) to keep track of oldest member.
+ * You access the singleton actor with [[ClusterSingletonProxy]].
  * Alternatively the singleton actor may broadcast its existence when it is started.
  *
  * Use factory method [[ClusterSingletonManager#props]] to create the
@@ -392,6 +374,15 @@ class ClusterSingletonManager(
 
   require(role.forall(cluster.selfRoles.contains),
     s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
+
+  val removalMargin =
+    if (settings.removalMargin <= Duration.Zero) cluster.settings.DownRemovalMargin
+    else settings.removalMargin
+
+  val (maxHandOverRetries, maxTakeOverRetries) = {
+    val n = (removalMargin.toMillis / handOverRetryInterval.toMillis).toInt
+    (n + 3, math.max(1, n - 3))
+  }
 
   // started when when self member is Up
   var oldestChangedBuffer: ActorRef = _
@@ -485,16 +476,19 @@ class ClusterSingletonManager(
         stay using YoungerData(oldestOption)
       }
 
-    case Event(MemberRemoved(m, _), YoungerData(Some(previousOldest))) if m.address == previousOldest ⇒
-      logInfo("Previous oldest removed [{}]", m.address)
-      addRemoved(m.address)
-      // transition when OldestChanged
-      stay using YoungerData(None)
-
     case Event(MemberRemoved(m, _), _) if m.address == cluster.selfAddress ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
 
+    case Event(MemberRemoved(m, _), _) ⇒
+      scheduleDelayedMemberRemoved(m)
+      stay
+
+    case Event(DelayedMemberRemoved(m), YoungerData(Some(previousOldest))) if m.address == previousOldest ⇒
+      logInfo("Previous oldest removed [{}]", m.address)
+      addRemoved(m.address)
+      // transition when OldestChanged
+      stay using YoungerData(None)
   }
 
   when(BecomingOldest) {
@@ -514,10 +508,18 @@ class ClusterSingletonManager(
         stay
       }
 
-    case Event(MemberRemoved(m, _), BecomingOldestData(Some(previousOldest))) if m.address == previousOldest ⇒
+    case Event(MemberRemoved(m, _), _) if m.address == cluster.selfAddress ⇒
+      logInfo("Self removed, stopping ClusterSingletonManager")
+      stop()
+
+    case Event(MemberRemoved(m, _), _) ⇒
+      scheduleDelayedMemberRemoved(m)
+      stay
+
+    case Event(DelayedMemberRemoved(m), BecomingOldestData(Some(previousOldest))) if m.address == previousOldest ⇒
       logInfo("Previous oldest [{}] removed", previousOldest)
       addRemoved(m.address)
-      stay
+      gotoOldest()
 
     case Event(TakeOverFromMe, BecomingOldestData(None)) ⇒
       sender() ! HandOverToMe
@@ -533,17 +535,23 @@ class ClusterSingletonManager(
       if (count <= maxHandOverRetries) {
         logInfo("Retry [{}], sending HandOverToMe to [{}]", count, previousOldestOption)
         previousOldestOption foreach { peer(_) ! HandOverToMe }
-        setTimer(HandOverRetryTimer, HandOverRetry(count + 1), retryInterval, repeat = false)
+        setTimer(HandOverRetryTimer, HandOverRetry(count + 1), handOverRetryInterval, repeat = false)
         stay()
       } else if (previousOldestOption forall removed.contains) {
         // can't send HandOverToMe, previousOldest unknown for new node (or restart)
         // previous oldest might be down or removed, so no TakeOverFromMe message is received
         logInfo("Timeout in BecomingOldest. Previous oldest unknown, removed and no TakeOver request.")
         gotoOldest()
-      } else
+      } else if (cluster.isTerminated)
+        stop()
+      else
         throw new ClusterSingletonManagerIsStuck(
           s"Becoming singleton oldest was stuck because previous oldest [${previousOldestOption}] is unresponsive")
+  }
 
+  def scheduleDelayedMemberRemoved(m: Member): Unit = {
+    log.debug("Schedule DelayedMemberRemoved for [{}]", m.address)
+    context.system.scheduler.scheduleOnce(removalMargin, self, DelayedMemberRemoved(m))(context.dispatcher)
   }
 
   def gotoOldest(): State = {
@@ -565,11 +573,11 @@ class ClusterSingletonManager(
         case Some(a) ⇒
           // send TakeOver request in case the new oldest doesn't know previous oldest
           peer(a) ! TakeOverFromMe
-          setTimer(TakeOverRetryTimer, TakeOverRetry(1), retryInterval, repeat = false)
+          setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
           goto(WasOldest) using WasOldestData(singleton, singletonTerminated, newOldestOption = Some(a))
         case None ⇒
           // new oldest will initiate the hand-over
-          setTimer(TakeOverRetryTimer, TakeOverRetry(1), retryInterval, repeat = false)
+          setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
           goto(WasOldest) using WasOldestData(singleton, singletonTerminated, newOldestOption = None)
       }
 
@@ -585,13 +593,19 @@ class ClusterSingletonManager(
       if (count <= maxTakeOverRetries) {
         logInfo("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption)
         newOldestOption foreach { peer(_) ! TakeOverFromMe }
-        setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), retryInterval, repeat = false)
+        setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval, repeat = false)
         stay
-      } else
+      } else if (cluster.isTerminated)
+        stop()
+      else
         throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newOldestOption}] never occured")
 
     case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, _)) ⇒
       gotoHandingOver(singleton, singletonTerminated, Some(sender()))
+
+    case Event(MemberRemoved(m, _), _) if m.address == cluster.selfAddress && !selfExited ⇒
+      logInfo("Self removed, stopping ClusterSingletonManager")
+      stop()
 
     case Event(MemberRemoved(m, _), WasOldestData(singleton, singletonTerminated, Some(newOldest))) if !selfExited && m.address == newOldest ⇒
       addRemoved(m.address)
@@ -657,6 +671,10 @@ class ClusterSingletonManager(
       if (!selfExited) logInfo("Member removed [{}]", m.address)
       addRemoved(m.address)
       stay
+    case Event(DelayedMemberRemoved(m), _) ⇒
+      if (!selfExited) logInfo("Member removed [{}]", m.address)
+      addRemoved(m.address)
+      stay
     case Event(TakeOverFromMe, _) ⇒
       logInfo("Ignoring TakeOver request in [{}] from [{}].", stateName, sender().path.address)
       stay
@@ -670,7 +688,7 @@ class ClusterSingletonManager(
   }
 
   onTransition {
-    case _ -> BecomingOldest ⇒ setTimer(HandOverRetryTimer, HandOverRetry(1), retryInterval, repeat = false)
+    case _ -> BecomingOldest ⇒ setTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval, repeat = false)
   }
 
   onTransition {
