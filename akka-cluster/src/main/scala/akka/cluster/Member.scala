@@ -20,8 +20,7 @@ import MemberStatus._
 @SerialVersionUID(1L)
 class Member private[cluster] (
   val uniqueAddress: UniqueAddress,
-  /** INTERNAL API **/
-  private[cluster] val upNumber: Int,
+  private[cluster] val upNumber: Int, // INTERNAL API
   val status: MemberStatus,
   val roles: Set[String]) extends Serializable {
 
