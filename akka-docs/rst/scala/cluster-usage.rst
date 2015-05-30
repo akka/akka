@@ -98,7 +98,7 @@ supposed to be the first seed node, and that should be placed first in parameter
 
 Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in 
 configuration property ``seed-node-timeout``. Unsuccessful attempt to join a specific seed node is
-automatically retried after the configured ``retry-unsuccessful-join-after`. Retrying means that it
+automatically retried after the configured ``retry-unsuccessful-join-after``. Retrying means that it
 tries to contact all seed nodes and then joins the node that answers first. The first node in the list
 of seed nodes will join itself if it cannot contact any of the other seed nodes within the
 configured ``seed-node-timeout``.
