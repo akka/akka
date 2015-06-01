@@ -6,10 +6,12 @@ package akka.http.impl.engine.client
 
 import language.existentials
 import java.net.InetSocketAddress
+import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 import scala.collection.immutable
 import akka.actor._
-import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+import akka.http.scaladsl.model.{ HttpEntity, HttpResponse, HttpRequest }
+import akka.http.scaladsl.util.FastFuture
 import akka.http.ConnectionPoolSettings
 import akka.http.impl.util._
 import akka.stream.impl.{ SubscribePending, ExposedPublisher, ActorProcessor }
@@ -22,15 +24,16 @@ private object PoolSlot {
 
   sealed trait ProcessorOut
   final case class ResponseDelivery(response: ResponseContext) extends ProcessorOut
-  sealed trait SlotEvent extends ProcessorOut
-  sealed trait SimpleSlotEvent extends SlotEvent
+  sealed trait RawSlotEvent extends ProcessorOut
+  sealed trait SlotEvent extends RawSlotEvent
   object SlotEvent {
-    final case class RequestCompleted(slotIx: Int) extends SimpleSlotEvent
-    final case class Disconnected(slotIx: Int, failedRequests: Int) extends SimpleSlotEvent
-    final case class RetryRequest(rc: RequestContext) extends SlotEvent
+    final case class RequestCompletedFuture(future: Future[RequestCompleted]) extends RawSlotEvent
+    final case class RetryRequest(rc: RequestContext) extends RawSlotEvent
+    final case class RequestCompleted(slotIx: Int) extends SlotEvent
+    final case class Disconnected(slotIx: Int, failedRequests: Int) extends SlotEvent
   }
 
-  type Ports = FanOutShape2[RequestContext, ResponseContext, SlotEvent]
+  type Ports = FanOutShape2[RequestContext, ResponseContext, RawSlotEvent]
 
   private val slotProcessorActorName = new SeqActorName("SlotProcessor")
 
@@ -43,7 +46,7 @@ private object PoolSlot {
     +--------->| Processor +------------->| (MapConcat) +------------->| (MapConcat) +---->| Split      +------------->
                |           |  Processor-  |             |  Out         |             |     |            |  Context                                  
                +-----------+  Out]        +-------------+              +-------------+     +-----+------+                                    
-                                                                                                 | SlotEvent                                                    
+                                                                                                 | RawSlotEvent                                                    
                                                                                                  | (to Conductor
                                                                                                  |  via slotEventMerge)
                                                                                                  v 
@@ -150,8 +153,21 @@ private object PoolSlot {
       case FromConnection(OnNext(response: HttpResponse)) ⇒
         val requestContext = inflightRequests.head
         inflightRequests = inflightRequests.tail
-        val delivery = ResponseDelivery(ResponseContext(requestContext, Success(response)))
-        val requestCompleted = SlotEvent.RequestCompleted(slotIx)
+        val (entity, whenCompleted) = response.entity match {
+          case x: HttpEntity.Strict ⇒ x -> FastFuture.successful(())
+          case x: HttpEntity.Default ⇒
+            val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
+            x.copy(data = newData) -> whenCompleted
+          case x: HttpEntity.CloseDelimited ⇒
+            val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
+            x.copy(data = newData) -> whenCompleted
+          case x: HttpEntity.Chunked ⇒
+            val (newChunks, whenCompleted) = StreamUtils.captureTermination(x.chunks)
+            x.copy(chunks = newChunks) -> whenCompleted
+        }
+        val delivery = ResponseDelivery(ResponseContext(requestContext, Success(response withEntity entity)))
+        import fm.executionContext
+        val requestCompleted = SlotEvent.RequestCompletedFuture(whenCompleted.map(_ ⇒ SlotEvent.RequestCompleted(slotIx)))
         onNext(delivery :: requestCompleted :: Nil)
 
       case FromConnection(OnComplete) ⇒ handleDisconnect(None)
@@ -211,11 +227,11 @@ private object PoolSlot {
   }
 
   // FIXME: remove when #17038 is cleared
-  private class SlotEventSplit extends FlexiRoute[ProcessorOut, FanOutShape2[ProcessorOut, ResponseContext, SlotEvent]](
+  private class SlotEventSplit extends FlexiRoute[ProcessorOut, FanOutShape2[ProcessorOut, ResponseContext, RawSlotEvent]](
     new FanOutShape2("PoolSlot.SlotEventSplit"), OperationAttributes.name("PoolSlot.SlotEventSplit")) {
     import FlexiRoute._
 
-    def createRouteLogic(s: FanOutShape2[ProcessorOut, ResponseContext, SlotEvent]): RouteLogic[ProcessorOut] =
+    def createRouteLogic(s: FanOutShape2[ProcessorOut, ResponseContext, RawSlotEvent]): RouteLogic[ProcessorOut] =
       new RouteLogic[ProcessorOut] {
         val initialState: State[_] = State(DemandFromAny(s)) {
           case (_, _, ResponseDelivery(x)) ⇒
@@ -223,7 +239,7 @@ private object PoolSlot {
               ctx.emit(s.out0)(x)
               initialState
             }
-          case (_, _, x: SlotEvent) ⇒
+          case (_, _, x: RawSlotEvent) ⇒
             State(DemandFrom(s.out1)) { (ctx, _, _) ⇒
               ctx.emit(s.out1)(x)
               initialState
