@@ -309,7 +309,7 @@ private[akka] object ActorProcessorFactory {
       case Log(n, e, l, _)            ⇒ (ActorInterpreter.props(settings, List(fusing.Log(n, e, l)), materializer, att), ())
       case GroupBy(f, _)              ⇒ (GroupByProcessorImpl.props(settings, f), ())
       case PrefixAndTail(n, _)        ⇒ (PrefixAndTailImpl.props(settings, n), ())
-      case SplitWhen(p, _)            ⇒ (SplitWhenProcessorImpl.props(settings, p), ())
+      case Split(d, _)                ⇒ (SplitWhereProcessorImpl.props(settings, d), ())
       case ConcatAll(_)               ⇒ (ConcatAllImpl.props(materializer), ())
       case StageFactory(mkStage, _)   ⇒ (ActorInterpreter.props(settings, List(mkStage()), materializer, att), ())
       case TimerTransform(mkStage, _) ⇒ (TimerTransformerProcessorsImpl.props(settings, mkStage()), ())
