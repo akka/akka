@@ -25,6 +25,8 @@ object OverflowStrategy {
    */
   private[akka] final case object DropBuffer extends OverflowStrategy
 
+  private[akka] final case object DropNew extends OverflowStrategy
+
   /**
    * INTERNAL API
    */
@@ -53,6 +55,11 @@ object OverflowStrategy {
    * If the buffer is full when a new element arrives, drops all the buffered elements to make space for the new element.
    */
   def dropBuffer: OverflowStrategy = DropBuffer
+
+  /**
+   * If the buffer is full when a new element arrives, drops the new element.
+   */
+  def dropNew: OverflowStrategy = DropNew
 
   /**
    * If the buffer is full when a new element is available this strategy backpressures the upstream publisher until

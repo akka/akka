@@ -63,6 +63,8 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
         case DropBuffer ⇒
           buffer.clear()
           buffer.enqueue(elem)
+        case DropNew ⇒
+        // do not enqueue new element if the buffer is full
         case Fail ⇒
           onErrorThenStop(new Fail.BufferOverflowException(s"Buffer overflow (max capacity was: $bufferSize)!"))
         case Backpressure ⇒
