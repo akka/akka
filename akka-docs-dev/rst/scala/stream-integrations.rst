@@ -137,7 +137,7 @@ Integrating with External Services
 ==================================
 
 Stream transformations and side effects involving external non-stream based services can be
-performed with ``mapAsync`` or ``mapAsyncUnordered``.
+performed with ``mapAsync``, ``mapAsyncUnordered`` or ``foreachParallel``.
 
 For example, sending emails to the authors of selected tweets using an external
 email service:

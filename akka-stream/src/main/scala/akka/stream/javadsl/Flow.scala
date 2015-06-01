@@ -9,7 +9,7 @@ import akka.japi.{ Util, Pair }
 import akka.japi.function
 import akka.stream.scaladsl
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.stage.Stage
 import akka.stream.impl.{ Stages, StreamLayout }
@@ -246,6 +246,34 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapAsyncUnordered(parallelism)(f.apply))
+
+  /**
+   * Transform stream by applying the given function to each of the elements
+   * as they pass through this processing step. The function wraps in `Future` and the
+   * value of that future will be emitted downstreams. As many futures as requested elements by
+   * downstream may run in parallel and each processed element will be emitted dowstream
+   * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
+   * in the same order as received from upstream.
+   *
+   * If the group by function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Stop]] the stream will be completed with failure.
+   *
+   * If the group by function `f` throws an exception the supervision decision is
+   * [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
+   * the element is dropped and the stream continues.
+   *
+   * '''Emits when''' any of the functions complete
+   *
+   * '''Backpressures when''' the number of functions wrapped in futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all functions has returned values and all elements has been emitted
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @see [[#mapAsyncUnordered]]
+   */
+  def foreachParallel[T](parallelism: Int, f: function.Function[Out, T], ec: ExecutionContext): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.foreachParallel(parallelism)(f.apply)(ec))
 
   /**
    * Only pass on those elements that satisfy the given predicate.

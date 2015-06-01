@@ -15,7 +15,7 @@ import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.language.higherKinds
 import akka.stream.stage._
 import akka.stream.impl.{ Stages, StreamLayout, FlowModule }
@@ -438,6 +438,36 @@ trait FlowOps[+Out, +Mat] {
    */
   def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] =
     andThen(MapAsyncUnordered(parallelism, f.asInstanceOf[Any ⇒ Future[Any]]))
+
+  /**
+   * Transform stream by applying the given function to each of the elements
+   * as they pass through this processing step. The function wraps in `Future` and the
+   * value of that future will be emitted downstreams. As many futures as requested elements by
+   * downstream may run in parallel and each processed element will be emitted dowstream
+   * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
+   * in the same order as received from upstream.
+   *
+   * If the group by function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Stop]] the stream will be completed with failure.
+   *
+   * If the group by function `f` throws an exception the supervision decision is
+   * [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
+   * the element is dropped and the stream continues.
+   *
+   * '''Emits when''' any of the functions complete
+   *
+   * '''Backpressures when''' the number of functions wrapped in futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all functions has returned values and all elements has been emitted
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @see [[#mapAsyncUnordered]]
+   */
+  def foreachParallel[T](parallelism: Int)(f: Out ⇒ T)(implicit ec: ExecutionContext): Repr[T, Mat] =
+    andThen(MapAsyncUnordered(
+      parallelism,
+      { out: Out ⇒ Future(f(out))(ec) }.asInstanceOf[Any ⇒ Future[Any]]))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
