@@ -100,6 +100,23 @@ object PersistenceDocSpec {
     }
   }
 
+  object Backoff {
+    abstract class MyActor extends Actor {
+      import PersistAsync.MyPersistentActor
+      //#backoff
+      val childProps = Props[MyPersistentActor]
+      val props = BackoffSupervisor.props(
+        childProps,
+        childName = "myActor",
+        minBackoff = 3.seconds,
+        maxBackoff = 30.seconds,
+        randomFactor = 0.2)
+      context.actorOf(props, name = "mySupervisor")
+      //#backoff
+    }
+
+  }
+
   object AtLeastOnce {
     //#at-least-once-example
     import akka.actor.{ Actor, ActorPath }

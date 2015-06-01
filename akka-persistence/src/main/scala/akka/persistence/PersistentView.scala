@@ -8,12 +8,12 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import akka.actor.AbstractActor
 import akka.actor.Actor
-import akka.actor.ActorKilledException
 import akka.actor.Cancellable
 import akka.actor.Stash
 import akka.actor.StashFactory
 import akka.actor.UntypedActor
 import akka.dispatch.Envelope
+import akka.actor.ActorLogging
 
 /**
  * Instructs a [[PersistentView]] to update itself. This will run a single incremental message replay with
@@ -80,7 +80,8 @@ private[akka] object PersistentView {
  *  - [[autoUpdate]] for turning automated updates on or off
  *  - [[autoUpdateReplayMax]] for limiting the number of replayed messages per view update cycle
  */
-trait PersistentView extends Actor with Snapshotter with Stash with StashFactory with PersistenceIdentity {
+trait PersistentView extends Actor with Snapshotter with Stash with StashFactory with PersistenceIdentity
+  with ActorLogging {
   import PersistentView._
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
@@ -205,16 +206,15 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
     super.postStop()
   }
 
-  override def unhandled(message: Any): Unit = {
-    message match {
-      case RecoveryCompleted ⇒ // mute
-      case RecoveryFailure(cause) ⇒
-        val errorMsg = s"PersistentView killed after recovery failure (persisten id = [${persistenceId}]). " +
-          "To avoid killing persistent actors on recovery failure, a PersistentView must handle RecoveryFailure messages. " +
-          "RecoveryFailure was caused by: " + cause
-        throw new ActorKilledException(errorMsg)
-      case m ⇒ super.unhandled(m)
-    }
+  /**
+   * Called whenever a message replay fails. By default it logs the error.
+   * Subclass may override to customize logging.
+   * The `PersistentView` will not stop or throw exception due to this.
+   * It will try again on next update.
+   */
+  protected def onReplayError(cause: Throwable): Unit = {
+    log.error(cause, "Persistence view failure when replaying events for persistenceId [{}]. " +
+      "Last known sequence number [{}]", persistenceId, lastSequenceNr)
   }
 
   private def changeState(state: State): Unit = {
@@ -265,7 +265,6 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
         sso.foreach {
           case SelectedSnapshot(metadata, snapshot) ⇒
             setLastSequenceNr(metadata.sequenceNr)
-            // Since we are recovering we can ignore the receive behavior from the stack
             PersistentView.super.aroundReceive(receive, SnapshotOffer(metadata, snapshot))
         }
         changeState(replayStarted(await = true))
@@ -279,64 +278,70 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
    * events.
    *
    * If replay succeeds it switches to `initializing` state and requests the highest stored sequence
-   * number from the journal. Otherwise RecoveryFailure is emitted.
-   * If replay succeeds the `onReplaySuccess` callback method is called, otherwise `onReplayFailure`.
+   * number from the journal.
+   *
+   * If replay succeeds the `onReplaySuccess` callback method is called, otherwise `onReplayError` is called and
+   * remaining replay events are consumed (ignored).
    *
    * If processing of a replayed event fails, the exception is caught and
-   * stored for later `RecoveryFailure` message and state is changed to `recoveryFailed`.
+   * stored for later and state is changed to `recoveryFailed`.
    *
-   * All incoming messages are stashed.
+   * All incoming messages are stashed when `await` is true.
    */
   private def replayStarted(await: Boolean) = new State {
     override def toString: String = s"replay started"
     override def recoveryRunning: Boolean = true
 
-    private var stashUpdate = await
-
     override def stateReceive(receive: Receive, message: Any) = message match {
-      case ScheduledUpdate(_) ⇒ // ignore
-      case Update(false, _)   ⇒ // ignore
-      case u @ Update(true, _) if !stashUpdate ⇒
-        stashUpdate = true
-        internalStash.stash()
-      case r: Recover ⇒ // ignore
       case ReplayedMessage(p) ⇒
         try {
           updateLastSequenceNr(p)
           PersistentView.super.aroundReceive(receive, p.payload)
         } catch {
           case NonFatal(t) ⇒
-            changeState(replayFailed(t, p))
+            changeState(ignoreRemainingReplay(t))
         }
       case ReplayMessagesSuccess ⇒
-        onReplayComplete(await)
+        onReplayComplete()
       case ReplayMessagesFailure(cause) ⇒
-        onReplayComplete(await)
-        PersistentView.super.aroundReceive(receive, RecoveryFailure(cause)(None))
+        try onReplayError(cause) finally onReplayComplete()
+      case ScheduledUpdate(_) ⇒ // ignore
+      case r: Recover         ⇒ // ignore
+      case Update(a, _) ⇒
+        if (a)
+          internalStash.stash()
       case other ⇒
-        internalStash.stash()
+        if (await)
+          internalStash.stash()
+        else {
+          try {
+            PersistentView.super.aroundReceive(receive, other)
+          } catch {
+            case NonFatal(t) ⇒
+              changeState(ignoreRemainingReplay(t))
+          }
+        }
     }
 
     /**
-     * Switches to `idle` state and schedules the next update if `autoUpdate` returns `true`.
+     * Switches to `idle`
      */
-    private def onReplayComplete(await: Boolean): Unit = {
+    private def onReplayComplete(): Unit = {
       changeState(idle)
-      if (await) internalStash.unstashAll()
+      internalStash.unstashAll()
     }
   }
 
   /**
-   * Consumes remaining replayed messages and then emits RecoveryFailure to the
-   * `receive` behavior.
+   * Consumes remaining replayed messages and then throw the exception.
    */
-  private def replayFailed(cause: Throwable, failed: PersistentRepr) = new State {
+  private def ignoreRemainingReplay(cause: Throwable) = new State {
 
     override def toString: String = "replay failed"
     override def recoveryRunning: Boolean = true
 
     override def stateReceive(receive: Receive, message: Any) = message match {
-      case ReplayedMessage(p) ⇒ updateLastSequenceNr(p)
+      case ReplayedMessage(p) ⇒
       case ReplayMessagesFailure(_) ⇒
         replayCompleted(receive)
         // journal couldn't tell the maximum stored sequence number, hence the next
@@ -351,8 +356,8 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
     def replayCompleted(receive: Receive): Unit = {
       // in case the actor resumes the state must be `idle`
       changeState(idle)
-
-      PersistentView.super.aroundReceive(receive, RecoveryFailure(cause)(Some((failed.sequenceNr, failed.payload))))
+      internalStash.unstashAll()
+      throw cause
     }
   }
 
