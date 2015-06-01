@@ -26,6 +26,7 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.cluster.singleton.ClusterSingletonManagerSettings
+import akka.persistence.BackoffSupervisor
 
 object ClusterShardingSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -198,9 +199,14 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
     List("counter", "rebalancingCounter", "PersistentCounterEntities", "AnotherPersistentCounter",
       "PersistentCounter", "RebalancingPersistentCounter", "AutoMigrateRegionTest").foreach { typeName ⇒
         val rebalanceEnabled = typeName.toLowerCase.startsWith("rebalancing")
+        val singletonProps = BackoffSupervisor.props(
+          childProps = coordinatorProps(typeName, rebalanceEnabled),
+          childName = "coordinator",
+          minBackoff = 5.seconds,
+          maxBackoff = 5.seconds,
+          randomFactor = 0.1).withDeploy(Deploy.local)
         system.actorOf(ClusterSingletonManager.props(
-          singletonProps = ShardCoordinatorSupervisor.props(failureBackoff = 5.seconds,
-            coordinatorProps(typeName, rebalanceEnabled)),
+          singletonProps,
           terminationMessage = PoisonPill,
           settings = ClusterSingletonManagerSettings(system)),
           name = typeName + "Coordinator")

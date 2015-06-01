@@ -449,7 +449,12 @@ private[akka] class ClusterShardingGuardian extends Actor {
       val shardRegion = context.child(encName).getOrElse {
         if (context.child(cName).isEmpty) {
           val coordinatorProps = ShardCoordinator.props(typeName, settings, allocationStrategy)
-          val singletonProps = ShardCoordinatorSupervisor.props(coordinatorFailureBackoff, coordinatorProps)
+          val singletonProps = BackoffSupervisor.props(
+            childProps = coordinatorProps,
+            childName = "coordinator",
+            minBackoff = coordinatorFailureBackoff,
+            maxBackoff = coordinatorFailureBackoff * 5,
+            randomFactor = 0.2).withDeploy(Deploy.local)
           val singletonSettings = settings.coordinatorSingletonSettings
             .withSingletonName("singleton").withRole(role)
           context.actorOf(ClusterSingletonManager.props(
@@ -651,6 +656,12 @@ object ShardRegion {
   }
 
   private case object Retry extends ShardRegionCommand
+
+  /**
+   * When an remembering entities and the shard stops unexpected (e.g. persist failure), we
+   * restart it after a back off using this message.
+   */
+  private final case class RestartShard(shardId: ShardId)
 
   private def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
@@ -884,14 +895,17 @@ class ShardRegion(
     } else if (shardsByRef.contains(ref)) {
       val shardId: ShardId = shardsByRef(ref)
 
-      //Are we meant to be handing off, or is this a unknown stop?
+      shardsByRef = shardsByRef - ref
+      shards = shards - shardId
       if (handingOff.contains(ref)) {
-        shardsByRef = shardsByRef - ref
-        shards = shards - shardId
         handingOff = handingOff - ref
         log.debug("Shard [{}] handoff complete", shardId)
       } else {
-        throw new IllegalStateException(s"Shard [$shardId] terminated while not being handed off.")
+        // if persist fails it will stop
+        log.debug("Shard [{}]  terminated while not being handed off", shardId)
+        if (rememberEntities) {
+          context.system.scheduler.scheduleOnce(shardFailureBackoff, self, RestartShard(shardId))
+        }
       }
 
       if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty)
@@ -924,31 +938,47 @@ class ShardRegion(
     }
   }
 
-  def deliverMessage(msg: Any, snd: ActorRef): Unit = {
-    val shard = extractShardId(msg)
-    regionByShard.get(shard) match {
-      case Some(ref) if ref == self ⇒
-        getShard(shard).tell(msg, snd)
-      case Some(ref) ⇒
-        log.debug("Forwarding request for shard [{}] to [{}]", shard, ref)
-        ref.tell(msg, snd)
-      case None if (shard == null || shard == "") ⇒
-        log.warning("Shard must not be empty, dropping message [{}]", msg.getClass.getName)
-        context.system.deadLetters ! msg
-      case None ⇒
-        if (!shardBuffers.contains(shard)) {
-          log.debug("Request shard [{}] home", shard)
-          coordinator.foreach(_ ! GetShardHome(shard))
+  def deliverMessage(msg: Any, snd: ActorRef): Unit =
+    msg match {
+      case RestartShard(shardId) ⇒
+        regionByShard.get(shardId) match {
+          case Some(ref) ⇒
+            if (ref == self)
+              getShard(shardId)
+          case None ⇒
+            if (!shardBuffers.contains(shardId)) {
+              log.debug("Request shard [{}] home", shardId)
+              coordinator.foreach(_ ! GetShardHome(shardId))
+            }
+            val buf = shardBuffers.getOrElse(shardId, Vector.empty)
+            shardBuffers = shardBuffers.updated(shardId, buf :+ ((msg, snd)))
         }
-        if (totalBufferSize >= bufferSize) {
-          log.debug("Buffer is full, dropping message for shard [{}]", shard)
-          context.system.deadLetters ! msg
-        } else {
-          val buf = shardBuffers.getOrElse(shard, Vector.empty)
-          shardBuffers = shardBuffers.updated(shard, buf :+ ((msg, snd)))
+
+      case _ ⇒
+        val shardId = extractShardId(msg)
+        regionByShard.get(shardId) match {
+          case Some(ref) if ref == self ⇒
+            getShard(shardId).tell(msg, snd)
+          case Some(ref) ⇒
+            log.debug("Forwarding request for shard [{}] to [{}]", shardId, ref)
+            ref.tell(msg, snd)
+          case None if (shardId == null || shardId == "") ⇒
+            log.warning("Shard must not be empty, dropping message [{}]", msg.getClass.getName)
+            context.system.deadLetters ! msg
+          case None ⇒
+            if (!shardBuffers.contains(shardId)) {
+              log.debug("Request shard [{}] home", shardId)
+              coordinator.foreach(_ ! GetShardHome(shardId))
+            }
+            if (totalBufferSize >= bufferSize) {
+              log.debug("Buffer is full, dropping message for shard [{}]", shardId)
+              context.system.deadLetters ! msg
+            } else {
+              val buf = shardBuffers.getOrElse(shardId, Vector.empty)
+              shardBuffers = shardBuffers.updated(shardId, buf :+ ((msg, snd)))
+            }
         }
     }
-  }
 
   def getShard(id: ShardId): ActorRef = shards.getOrElse(
     id,
@@ -986,20 +1016,10 @@ class ShardRegion(
 private[akka] object Shard {
   import ShardRegion.EntityId
 
-  object State {
-    val Empty = State()
-  }
-
   /**
    * A Shard command
    */
   sealed trait ShardCommand
-
-  /**
-   * When a `StateChange` fails to write to the journal, we will retry it after a back
-   * off.
-   */
-  final case class RetryPersistence(payload: StateChange) extends ShardCommand
 
   /**
    * When an remembering entities and the entity stops without issuing a `Passivate`, we
@@ -1021,6 +1041,10 @@ private[akka] object Shard {
    * `State` change for an entity which has terminated.
    */
   @SerialVersionUID(1L) final case class EntityStopped(entityId: EntityId) extends StateChange
+
+  object State {
+    val Empty = State()
+  }
 
   /**
    * Persistent state of the Shard.
@@ -1061,7 +1085,7 @@ private[akka] class Shard(
 
   import ShardRegion.{ handOffStopperProps, EntityId, Msg, Passivate }
   import ShardCoordinator.Internal.{ HandOff, ShardStopped }
-  import Shard.{ State, RetryPersistence, RestartEntity, EntityStopped, EntityStarted }
+  import Shard.{ State, RestartEntity, EntityStopped, EntityStarted }
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
   import akka.persistence.RecoveryCompleted
@@ -1108,17 +1132,15 @@ private[akka] class Shard(
   }
 
   override def receiveCommand: Receive = {
-    case Terminated(ref)                                ⇒ receiveTerminated(ref)
-    case msg: CoordinatorMessage                        ⇒ receiveCoordinatorMessage(msg)
-    case msg: ShardCommand                              ⇒ receiveShardCommand(msg)
-    case msg: ShardRegionCommand                        ⇒ receiveShardRegionCommand(msg)
-    case PersistenceFailure(payload: StateChange, _, _) ⇒ persistenceFailure(payload)
-    case msg if extractEntityId.isDefinedAt(msg)        ⇒ deliverMessage(msg, sender())
+    case Terminated(ref)                         ⇒ receiveTerminated(ref)
+    case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
+    case msg: ShardCommand                       ⇒ receiveShardCommand(msg)
+    case msg: ShardRegionCommand                 ⇒ receiveShardRegionCommand(msg)
+    case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
   }
 
   def receiveShardCommand(msg: ShardCommand): Unit = msg match {
-    case RetryPersistence(payload) ⇒ retryPersistence(payload)
-    case RestartEntity(id)         ⇒ getEntity(id)
+    case RestartEntity(id) ⇒ getEntity(id)
   }
 
   def receiveShardRegionCommand(msg: ShardRegionCommand): Unit = msg match {
@@ -1130,26 +1152,6 @@ private[akka] class Shard(
     case HandOff(`shardId`) ⇒ handOff(sender())
     case HandOff(shard)     ⇒ log.warning("Shard [{}] can not hand off for another Shard [{}]", shardId, shard)
     case _                  ⇒ unhandled(msg)
-  }
-
-  def persistenceFailure(payload: StateChange): Unit = {
-    log.debug("Persistence of [{}] failed, will backoff and retry", payload)
-    if (!messageBuffers.isDefinedAt(payload.entityId)) {
-      messageBuffers = messageBuffers.updated(payload.entityId, Vector.empty)
-    }
-
-    import context.dispatcher
-    context.system.scheduler.scheduleOnce(shardFailureBackoff, self, RetryPersistence(payload))
-  }
-
-  def retryPersistence(payload: StateChange): Unit = {
-    log.debug("Retrying Persistence of [{}]", payload)
-    persist(payload) { _ ⇒
-      payload match {
-        case msg: EntityStarted ⇒ sendMsgBuffer(msg)
-        case msg: EntityStopped ⇒ passivateCompleted(msg)
-      }
-    }
   }
 
   def handOff(replyTo: ActorRef): Unit = handOffStopper match {
@@ -1284,45 +1286,6 @@ private[akka] class Shard(
       state = state.copy(state.entities + id)
       a
     }
-  }
-}
-
-/**
- * INTERNAL API
- * @see [[ClusterSharding$ ClusterSharding extension]]
- */
-private[akka] object ShardCoordinatorSupervisor {
-  /**
-   * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
-   */
-  def props(failureBackoff: FiniteDuration, coordinatorProps: Props): Props =
-    Props(new ShardCoordinatorSupervisor(failureBackoff, coordinatorProps))
-      .withDeploy(Deploy.local)
-
-  /**
-   * INTERNAL API
-   */
-  private case object StartCoordinator
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class ShardCoordinatorSupervisor(failureBackoff: FiniteDuration, coordinatorProps: Props) extends Actor {
-  import ShardCoordinatorSupervisor._
-
-  def startCoordinator(): Unit = {
-    // it will be stopped in case of PersistenceFailure
-    context.watch(context.actorOf(coordinatorProps, "coordinator"))
-  }
-
-  override def preStart(): Unit = startCoordinator()
-
-  def receive = {
-    case Terminated(_) ⇒
-      import context.dispatcher
-      context.system.scheduler.scheduleOnce(failureBackoff, self, StartCoordinator)
-    case StartCoordinator ⇒ startCoordinator()
   }
 }
 
