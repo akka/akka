@@ -58,10 +58,10 @@ object SnapshotFailureRobustnessSpec {
   }
 }
 
-class SnapshotFailureRobustnessSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotFailureRobustnessSpec", serialization = "off", extraConfig = Some(
+class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "SnapshotFailureRobustnessSpec", serialization = "off", extraConfig = Some(
   """
   akka.persistence.snapshot-store.local.class = "akka.persistence.SnapshotFailureRobustnessSpec$FailingLocalSnapshotStore"
-  """))) with PersistenceSpec with ImplicitSender {
+  """))) with ImplicitSender {
 
   import SnapshotFailureRobustnessSpec._
 

@@ -152,7 +152,7 @@ object PersistentViewSpec {
   }
 }
 
-abstract class PersistentViewSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
+abstract class PersistentViewSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
   import akka.persistence.PersistentViewSpec._
 
   var persistentActor: ActorRef = _

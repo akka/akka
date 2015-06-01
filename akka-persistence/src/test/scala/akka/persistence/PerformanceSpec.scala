@@ -111,7 +111,7 @@ object PerformanceSpec {
   }
 }
 
-class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "PerformanceSpec", serialization = "off").withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with PersistenceSpec with ImplicitSender {
+class PerformanceSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "PerformanceSpec", serialization = "off").withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with ImplicitSender {
   import PerformanceSpec._
 
   val loadCycles = system.settings.config.getInt("akka.persistence.performance.cycles.load")

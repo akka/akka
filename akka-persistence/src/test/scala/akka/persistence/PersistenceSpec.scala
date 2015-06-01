@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.reflect.ClassTag
 import scala.util.control.NoStackTrace
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterEach
@@ -18,7 +18,7 @@ import org.scalatest.BeforeAndAfterEach
 import akka.actor.Props
 import akka.testkit.AkkaSpec
 
-trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec ⇒
+abstract class PersistenceSpec(config: Config) extends AkkaSpec(config) with BeforeAndAfterEach with Cleanup { this: AkkaSpec ⇒
   private var _name: String = _
 
   lazy val extension = Persistence(system)
