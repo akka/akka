@@ -10,16 +10,17 @@ import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.stream.scaladsl._
 import akka.stream._
+import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model.HttpMethod
 import akka.http.impl.util._
 
 private object PoolConductor {
   import PoolFlow.RequestContext
-  import PoolSlot.{ SlotEvent, SimpleSlotEvent }
+  import PoolSlot.{ RawSlotEvent, SlotEvent }
 
   case class Ports(
     requestIn: Inlet[RequestContext],
-    slotEventIn: Inlet[SlotEvent],
+    slotEventIn: Inlet[RawSlotEvent],
     slotOuts: immutable.Seq[Outlet[RequestContext]]) extends Shape {
 
     override val inlets = requestIn :: slotEventIn :: Nil
@@ -34,7 +35,7 @@ private object PoolConductor {
     override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape =
       Ports(
         inlets.head.asInstanceOf[Inlet[RequestContext]],
-        inlets.last.asInstanceOf[Inlet[SlotEvent]],
+        inlets.last.asInstanceOf[Inlet[RawSlotEvent]],
         outlets.asInstanceOf[immutable.Seq[Outlet[RequestContext]]])
   }
 
@@ -47,11 +48,15 @@ private object PoolConductor {
     +--------->|   Merge   +---->| Selector  +-------------->| (MapConcat) +---->|  (Flexi   +-------------->
                |           |     |           |               |             |     |   Route)  +-------------->
                +----+------+     +-----+-----+               +-------------+     +-----------+       to slots     
-                    ^                  ^                                                               
-                    |                  | SimpleSlotEvent                                              
+                    ^                  ^ 
+                    |                  | SlotEvent
+                    |             +----+----+
+                    |             | flatten | mapAsync
+                    |             +----+----+
+                    |                  | RawSlotEvent
                     | Request-         |                                                               
                     | Context     +---------+
-                    +-------------+  retry  |<-------- Slot Event (from slotEventMerge)
+                    +-------------+  retry  |<-------- RawSlotEvent (from slotEventMerge)
                                   |  Split  |
                                   +---------+
 
@@ -67,10 +72,15 @@ private object PoolConductor {
       val doubler = Flow[SwitchCommand].mapConcat(x ⇒ x :: x :: Nil) // work-around for https://github.com/akka/akka/issues/17004
       val route = b.add(new Route(slotCount))
       val retrySplit = b.add(new RetrySplit())
+      val flatten = Flow[RawSlotEvent].mapAsyncUnordered(slotCount) {
+        case x: SlotEvent.Disconnected                ⇒ FastFuture.successful(x)
+        case SlotEvent.RequestCompletedFuture(future) ⇒ future
+        case x                                        ⇒ throw new IllegalStateException("Unexpected " + x)
+      }
 
       retryMerge.out ~> slotSelector.in0
       slotSelector.out ~> doubler ~> route.in
-      retrySplit.out0 ~> slotSelector.in1
+      retrySplit.out0 ~> flatten ~> slotSelector.in1
       retrySplit.out1 ~> retryMerge.in1
 
       Ports(retryMerge.in0, retrySplit.in, route.outlets.asInstanceOf[immutable.Seq[Outlet[RequestContext]]])
@@ -97,11 +107,11 @@ private object PoolConductor {
   private object Busy extends Busy(1)
 
   private class SlotSelector(slotCount: Int, maxRetries: Int, pipeliningLimit: Int, log: LoggingAdapter)
-    extends FlexiMerge[SwitchCommand, FanInShape2[RequestContext, SimpleSlotEvent, SwitchCommand]](
+    extends FlexiMerge[SwitchCommand, FanInShape2[RequestContext, SlotEvent, SwitchCommand]](
       new FanInShape2("PoolConductor.SlotSelector"), OperationAttributes.name("PoolConductor.SlotSelector")) {
     import FlexiMerge._
 
-    def createMergeLogic(s: FanInShape2[RequestContext, SimpleSlotEvent, SwitchCommand]): MergeLogic[SwitchCommand] =
+    def createMergeLogic(s: FanInShape2[RequestContext, SlotEvent, SwitchCommand]): MergeLogic[SwitchCommand] =
       new MergeLogic[SwitchCommand] {
         val slotStates = Array.fill[SlotState](slotCount)(Unconnected)
         def initialState = nextState(0)
@@ -197,16 +207,16 @@ private object PoolConductor {
   }
 
   // FIXME: remove when #17038 is cleared
-  private class RetrySplit extends FlexiRoute[SlotEvent, FanOutShape2[SlotEvent, SimpleSlotEvent, RequestContext]](
+  private class RetrySplit extends FlexiRoute[RawSlotEvent, FanOutShape2[RawSlotEvent, RawSlotEvent, RequestContext]](
     new FanOutShape2("PoolConductor.RetrySplit"), OperationAttributes.name("PoolConductor.RetrySplit")) {
     import FlexiRoute._
 
-    def createRouteLogic(s: FanOutShape2[SlotEvent, SimpleSlotEvent, RequestContext]): RouteLogic[SlotEvent] =
-      new RouteLogic[SlotEvent] {
+    def createRouteLogic(s: FanOutShape2[RawSlotEvent, RawSlotEvent, RequestContext]): RouteLogic[RawSlotEvent] =
+      new RouteLogic[RawSlotEvent] {
         def initialState: State[_] = State(DemandFromAll(s)) { (ctx, _, ev) ⇒
           ev match {
-            case x: SimpleSlotEvent         ⇒ ctx.emit(s.out0)(x)
             case SlotEvent.RetryRequest(rc) ⇒ ctx.emit(s.out1)(rc)
+            case x                          ⇒ ctx.emit(s.out0)(x)
           }
           SameState
         }

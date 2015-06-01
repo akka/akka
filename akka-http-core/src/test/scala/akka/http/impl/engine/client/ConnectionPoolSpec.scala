@@ -16,7 +16,7 @@ import akka.util.ByteString
 import akka.http.scaladsl.{ TestUtils, Http }
 import akka.http.impl.util.{ SingletonException, StreamUtils }
 import akka.http.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
-import akka.stream.io.{ SessionBytes, SendBytes, SslTlsInbound, SslTlsOutbound }
+import akka.stream.io.{ SessionBytes, SendBytes, SslTlsOutbound }
 import akka.stream.{ BidiShape, ActorFlowMaterializer }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber, AkkaSpec }
 import akka.stream.scaladsl._
@@ -81,6 +81,35 @@ class ConnectionPoolSpec extends AkkaSpec("""
         case x                ⇒ fail(x.toString)
       }
       Seq(r1, r2).map(t ⇒ connNr(t._1.get)) should contain allOf (1, 2)
+    }
+
+    "open a second connection if the request on the first one is dispatch but not yet completed" in new TestSetup {
+      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
+
+      val responseEntityPub = TestPublisher.probe[ByteString]()
+
+      override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
+        case request @ HttpRequest(_, Uri.Path("/a"), _, _, _) ⇒
+          val entity = HttpEntity.Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source(responseEntityPub))
+          super.testServerHandler(connNr)(request) withEntity entity
+        case x ⇒ super.testServerHandler(connNr)(x)
+      }
+
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      responseOutSub.request(1)
+      acceptIncomingConnection()
+      val (Success(r1), 42) = responseOut.expectNext()
+      val responseEntityProbe = TestSubscriber.probe[ByteString]()
+      r1.entity.dataBytes.runWith(Sink(responseEntityProbe))
+      responseEntityProbe.expectSubscription().request(2)
+      responseEntityPub.sendNext(ByteString("YEAH"))
+      responseEntityProbe.expectNext(ByteString("YEAH"))
+
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
+      responseOutSub.request(1)
+      acceptIncomingConnection()
+      val (Success(r2), 43) = responseOut.expectNext()
+      connNr(r2) shouldEqual 2
     }
 
     "not open a second connection if there is an idle one available" in new TestSetup {
@@ -258,12 +287,11 @@ class ConnectionPoolSpec extends AkkaSpec("""
     val (serverEndpoint, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
 
     def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
-      case HttpRequest(_, uri, headers, entity, _) ⇒
-        val responseHeaders =
-          ConnNrHeader(connNr) +:
-            RawHeader("Req-Uri", uri.toString) +: headers.map(h ⇒ RawHeader("Req-" + h.name, h.value))
-        HttpResponse(headers = responseHeaders, entity = entity)
+      case r: HttpRequest ⇒ HttpResponse(headers = responseHeaders(r, connNr), entity = r.entity)
     }
+
+    def responseHeaders(r: HttpRequest, connNr: Int) =
+      ConnNrHeader(connNr) +: RawHeader("Req-Uri", r.uri.toString) +: r.headers.map(h ⇒ RawHeader("Req-" + h.name, h.value))
 
     def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString = bytes
 

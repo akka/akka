@@ -40,11 +40,11 @@ private object PoolFlow {
                              ^          |          |     |              |                        
                              |          |      +-------------------+    |                        
                              |          |      |                   |    |                        
-                   SlotEvent |          +----> | Connection Slot 3 +---->                        
+                RawSlotEvent |          +----> | Connection Slot 3 +---->                        
                              |                 |                   |                             
                              |                 +---------------+---+                             
                              |                     |     |     |                                    
-                       +-----------+    SlotEvent  |     |     | 
+                       +-----------+  RawSlotEvent |     |     | 
                        | slotEvent | <-------------+     |     |
                        |   Merge   | <-------------------+     |                                  
                        |           | <-------------------------+                                  
@@ -79,7 +79,7 @@ private object PoolFlow {
         .tabulate(maxConnections)(PoolSlot(_, connectionFlow, remoteAddress, settings))
         .map(b.add(_))
       val responseMerge = b.add(Merge[ResponseContext](maxConnections))
-      val slotEventMerge = b.add(Merge[PoolSlot.SlotEvent](maxConnections))
+      val slotEventMerge = b.add(Merge[PoolSlot.RawSlotEvent](maxConnections))
 
       slotEventMerge.out ~> conductor.slotEventIn
       for ((slot, ix) ← slots.zipWithIndex) {

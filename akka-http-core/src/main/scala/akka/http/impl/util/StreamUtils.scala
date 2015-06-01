@@ -7,10 +7,9 @@ package akka.http.impl.util
 import java.io.InputStream
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.{ SourceModule, SinkModule, ActorFlowMaterializerImpl, PublisherSink }
+import akka.stream.impl.{ SourceModule, SinkModule, PublisherSink }
 import akka.stream.scaladsl.FlexiMerge._
 import org.reactivestreams.{ Subscription, Processor, Subscriber, Publisher }
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.{ Promise, ExecutionContext, Future }
 import akka.util.ByteString
@@ -62,6 +61,22 @@ private[http] object StreamUtils {
     }
 
     Flow[ByteString].transform(() ⇒ transformer).named("transformError")
+  }
+
+  def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
+    val promise = Promise[Unit]()
+    val transformer = new PushStage[T, T] {
+      def onPush(element: T, ctx: Context[T]) = ctx.push(element)
+      override def onUpstreamFinish(ctx: Context[T]) = {
+        promise.success(())
+        super.onUpstreamFinish(ctx)
+      }
+      override def onUpstreamFailure(cause: Throwable, ctx: Context[T]) = {
+        promise.failure(cause)
+        ctx.fail(cause)
+      }
+    }
+    source.transform(() ⇒ transformer) -> promise.future
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, Unit] = {
