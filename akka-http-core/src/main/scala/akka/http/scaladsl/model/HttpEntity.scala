@@ -300,8 +300,8 @@ object HttpEntity {
   }
   object Chunked {
     /**
-     * Returns a ``Chunked`` entity where one Chunk is produced for every non-empty ByteString of the given
-     * ``Publisher[ByteString]``.
+     * Returns a ``Chunked`` entity where one Chunk is produced for every non-empty ByteString produced by the given
+     * ``Source``.
      */
     def fromData(contentType: ContentType, chunks: Source[ByteString, Any]): Chunked =
       Chunked(contentType, chunks.collect[ChunkStreamPart] {
