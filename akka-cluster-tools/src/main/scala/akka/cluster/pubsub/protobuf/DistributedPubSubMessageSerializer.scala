@@ -27,40 +27,57 @@ import akka.serialization.Serialization
 import akka.actor.ActorRef
 import akka.serialization.SerializationExtension
 import scala.collection.immutable.TreeMap
+import akka.serialization.SerializerWithStringManifest
 
 /**
  * Protobuf serializer of DistributedPubSubMediator messages.
  */
-class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
+class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem)
+  extends SerializerWithStringManifest with BaseSerializer {
+
+  private lazy val serialization = SerializationExtension(system)
 
   private final val BufferSize = 1024 * 4
 
-  private val fromBinaryMap = collection.immutable.HashMap[Class[_ <: DistributedPubSubMessage], Array[Byte] ⇒ AnyRef](
-    classOf[Status] -> statusFromBinary,
-    classOf[Delta] -> deltaFromBinary,
-    classOf[Send] -> sendFromBinary,
-    classOf[SendToAll] -> sendToAllFromBinary,
-    classOf[Publish] -> publishFromBinary)
+  private val StatusManifest = "A"
+  private val DeltaManifest = "B"
+  private val SendManifest = "C"
+  private val SendToAllManifest = "D"
+  private val PublishManifest = "E"
 
-  def includeManifest: Boolean = true
+  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
+    StatusManifest -> statusFromBinary,
+    DeltaManifest -> deltaFromBinary,
+    SendManifest -> sendFromBinary,
+    SendToAllManifest -> sendToAllFromBinary,
+    PublishManifest -> publishFromBinary)
 
-  def toBinary(obj: AnyRef): Array[Byte] = obj match {
+  override def manifest(obj: AnyRef): String = obj match {
+    case _: Status    ⇒ StatusManifest
+    case _: Delta     ⇒ DeltaManifest
+    case _: Send      ⇒ SendManifest
+    case _: SendToAll ⇒ SendToAllManifest
+    case _: Publish   ⇒ PublishManifest
+    case _ ⇒
+      throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
+  }
+
+  override def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case m: Status    ⇒ compress(statusToProto(m))
     case m: Delta     ⇒ compress(deltaToProto(m))
     case m: Send      ⇒ sendToProto(m).toByteArray
     case m: SendToAll ⇒ sendToAllToProto(m).toByteArray
     case m: Publish   ⇒ publishToProto(m).toByteArray
     case _ ⇒
-      throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
+      throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = clazz match {
-    case Some(c) ⇒ fromBinaryMap.get(c.asInstanceOf[Class[DistributedPubSubMessage]]) match {
+  override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
+    fromBinaryMap.get(manifest) match {
       case Some(f) ⇒ f(bytes)
-      case None    ⇒ throw new IllegalArgumentException(s"Unimplemented deserialization of message class $c in DistributedPubSubMessageSerializer")
+      case None ⇒ throw new IllegalArgumentException(
+        s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
-    case _ ⇒ throw new IllegalArgumentException("Need a message class to be able to deserialize bytes in DistributedPubSubMessageSerializer")
-  }
 
   def compress(msg: MessageLite): Array[Byte] = {
     val bos = new ByteArrayOutputStream(BufferSize)
@@ -189,21 +206,30 @@ class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem) extend
 
   private def payloadToProto(msg: Any): dm.Payload = {
     val m = msg.asInstanceOf[AnyRef]
-    val msgSerializer = SerializationExtension(system).findSerializerFor(m)
+    val msgSerializer = serialization.findSerializerFor(m)
     val builder = dm.Payload.newBuilder().
       setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(m)))
       .setSerializerId(msgSerializer.identifier)
-    if (msgSerializer.includeManifest)
-      builder.setMessageManifest(ByteString.copyFromUtf8(m.getClass.getName))
+
+    msgSerializer match {
+      case ser2: SerializerWithStringManifest ⇒
+        val manifest = ser2.manifest(m)
+        if (manifest != "")
+          builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
+      case _ ⇒
+        if (msgSerializer.includeManifest)
+          builder.setMessageManifest(ByteString.copyFromUtf8(m.getClass.getName))
+    }
+
     builder.build()
   }
 
   private def payloadFromProto(payload: dm.Payload): AnyRef = {
-    SerializationExtension(system).deserialize(
+    val manifest = if (payload.hasMessageManifest) payload.getMessageManifest.toStringUtf8 else ""
+    serialization.deserialize(
       payload.getEnclosedMessage.toByteArray,
       payload.getSerializerId,
-      if (payload.hasMessageManifest)
-        Some(system.dynamicAccess.getClassFor[AnyRef](payload.getMessageManifest.toStringUtf8).get) else None).get
+      manifest).get
   }
 
 }

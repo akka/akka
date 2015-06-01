@@ -7,34 +7,36 @@ package akka.cluster.metrics.protobuf
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 import java.{ lang ⇒ jl }
-
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages ⇒ cm }
 import akka.cluster.metrics.{ ClusterMetricsMessage, ClusterMetricsSettings, EWMA, Metric, MetricsGossip, MetricsGossipEnvelope, NodeMetrics }
 import akka.serialization.BaseSerializer
 import akka.util.ClassLoaderObjectInputStream
 import com.google.protobuf.{ ByteString, MessageLite }
-
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferConverter, setAsJavaSetConverter }
+import akka.serialization.SerializerWithStringManifest
 
 /**
  * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.
  */
-class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
+class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
   private final val BufferSize = 4 * 1024
 
-  private val fromBinaryMap = collection.immutable.HashMap[Class[_ <: ClusterMetricsMessage], Array[Byte] ⇒ AnyRef](
-    classOf[MetricsGossipEnvelope] -> metricsGossipEnvelopeFromBinary)
+  private val MetricsGossipEnvelopeManifest = "a"
 
-  override val includeManifest: Boolean = true
+  override def manifest(obj: AnyRef): String = obj match {
+    case _: MetricsGossipEnvelope ⇒ MetricsGossipEnvelopeManifest
+    case _ ⇒
+      throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
+  }
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case m: MetricsGossipEnvelope ⇒
       compress(metricsGossipEnvelopeToProto(m))
     case _ ⇒
-      throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
+      throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   def compress(msg: MessageLite): Array[Byte] = {
@@ -61,12 +63,10 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     out.toByteArray
   }
 
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = clazz match {
-    case Some(c) ⇒ fromBinaryMap.get(c.asInstanceOf[Class[ClusterMetricsMessage]]) match {
-      case Some(f) ⇒ f(bytes)
-      case None    ⇒ throw new IllegalArgumentException(s"Unimplemented deserialization of message class $c in metrics")
-    }
-    case _ ⇒ throw new IllegalArgumentException("Need a metrics message class to be able to deserialize bytes in metrics")
+  override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
+    case MetricsGossipEnvelopeManifest ⇒ metricsGossipEnvelopeFromBinary(bytes)
+    case _ ⇒ throw new IllegalArgumentException(
+      s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}")
   }
 
   private def addressToProto(address: Address): cm.Address.Builder = address match {

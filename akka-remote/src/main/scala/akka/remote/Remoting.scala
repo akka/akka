@@ -22,12 +22,13 @@ import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
 import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.util.ByteString.UTF_8
 
 /**
  * INTERNAL API
  */
 private[remote] object AddressUrlEncoder {
-  def apply(address: Address): String = URLEncoder.encode(address.toString, "utf-8")
+  def apply(address: Address): String = URLEncoder.encode(address.toString, UTF_8)
 }
 
 /**

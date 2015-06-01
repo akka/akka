@@ -15,12 +15,13 @@ package docs.serialization {
   import akka.actor.ExtendedActorSystem
   import akka.actor.Extension
   import akka.actor.Address
+  import java.nio.charset.StandardCharsets
 
   //#my-own-serializer
   class MyOwnSerializer extends Serializer {
 
     // This is whether "fromBinary" requires a "clazz" or not
-    def includeManifest: Boolean = false
+    def includeManifest: Boolean = true
 
     // Pick a unique identifier for your Serializer,
     // you've got a couple of billions to choose from,
@@ -37,7 +38,6 @@ package docs.serialization {
 
     // "fromBinary" deserializes the given array,
     // using the type hint (if any, see "includeManifest" above)
-    // into the optionally provided classLoader.
     def fromBinary(bytes: Array[Byte],
                    clazz: Option[Class[_]]): AnyRef = {
       // Put your code that deserializes here
@@ -48,8 +48,52 @@ package docs.serialization {
   }
   //#my-own-serializer
 
+  //#my-own-serializer2
+  class MyOwnSerializer2 extends SerializerWithStringManifest {
+
+    val CustomerManifest = "customer"
+    val UserManifest = "user"
+    val UTF_8 = StandardCharsets.UTF_8.name()
+
+    // Pick a unique identifier for your Serializer,
+    // you've got a couple of billions to choose from,
+    // 0 - 16 is reserved by Akka itself
+    def identifier = 1234567
+
+    // The manifest (type hint) that will be provided in the fromBinary method
+    // Use `""` if manifest is not needed.
+    def manifest(obj: AnyRef): String =
+      obj match {
+        case _: Customer => CustomerManifest
+        case _: User     => UserManifest
+      }
+
+    // "toBinary" serializes the given object to an Array of Bytes
+    def toBinary(obj: AnyRef): Array[Byte] = {
+      // Put the real code that serializes the object here
+      obj match {
+        case Customer(name) => name.getBytes(UTF_8)
+        case User(name)     => name.getBytes(UTF_8)
+      }
+    }
+
+    // "fromBinary" deserializes the given array,
+    // using the type hint
+    def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
+      // Put the real code that deserializes here
+      manifest match {
+        case CustomerManifest =>
+          Customer(new String(bytes, UTF_8))
+        case UserManifest =>
+          User(new String(bytes, UTF_8))
+      }
+    }
+  }
+  //#my-own-serializer2
+
   trait MyOwnSerializable
   final case class Customer(name: String) extends MyOwnSerializable
+  final case class User(name: String) extends MyOwnSerializable
 
   class SerializationDocSpec extends AkkaSpec {
     "demonstrate configuration of serialize messages" in {

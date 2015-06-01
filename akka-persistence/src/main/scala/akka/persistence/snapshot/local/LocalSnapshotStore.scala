@@ -17,6 +17,7 @@ import akka.persistence._
 import akka.persistence.snapshot._
 import akka.persistence.serialization._
 import akka.serialization.SerializationExtension
+import akka.util.ByteString.UTF_8
 
 /**
  * INTERNAL API.
@@ -102,13 +103,13 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     try { p(stream) } finally { stream.close() }
 
   private def snapshotFile(metadata: SnapshotMetadata, extension: String = ""): File =
-    new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.persistenceId, "UTF-8")}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
+    new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.persistenceId, UTF_8)}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
   private def snapshotMetadata(persistenceId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
     val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
     if (files eq null) Nil // if the dir was removed
     else files.map(_.getName).collect {
-      case FilenamePattern(pid, snr, tms) ⇒ SnapshotMetadata(URLDecoder.decode(pid, "UTF-8"), snr.toLong, tms.toLong)
+      case FilenamePattern(pid, snr, tms) ⇒ SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr.toLong, tms.toLong)
     }.filter(md ⇒ criteria.matches(md) && !saving.contains(md)).toVector
   }
 
