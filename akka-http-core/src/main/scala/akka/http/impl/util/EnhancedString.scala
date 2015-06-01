@@ -53,7 +53,7 @@ private[http] class EnhancedString(val underlying: String) extends AnyVal {
   }
 
   /**
-   * Returns Some(String) if the underlying string is non-emtpy, None otherwise
+   * Returns Some(String) if the underlying string is non-empty, None otherwise
    */
   def toOption: Option[String] =
     if ((underlying eq null) || underlying.isEmpty) None else Some(underlying)

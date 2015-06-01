@@ -18,17 +18,17 @@ trait CookieDirectives {
    * Extracts an HttpCookie with the given name. If the cookie is not present the
    * request is rejected with a respective [[MissingCookieRejection]].
    */
-  def cookie(name: String): Directive1[HttpCookie] =
+  def cookie(name: String): Directive1[HttpCookiePair] =
     headerValue(findCookie(name)) | reject(MissingCookieRejection(name))
 
   /**
    * Extracts an HttpCookie with the given name.
    * If the cookie is not present a value of `None` is extracted.
    */
-  def optionalCookie(name: String): Directive1[Option[HttpCookie]] =
+  def optionalCookie(name: String): Directive1[Option[HttpCookiePair]] =
     optionalHeaderValue(findCookie(name))
 
-  private def findCookie(name: String): HttpHeader ⇒ Option[HttpCookie] = {
+  private def findCookie(name: String): HttpHeader ⇒ Option[HttpCookiePair] = {
     case Cookie(cookies) ⇒ cookies.find(_.name == name)
     case _               ⇒ None
   }
@@ -44,7 +44,7 @@ trait CookieDirectives {
    */
   def deleteCookie(first: HttpCookie, more: HttpCookie*): Directive0 =
     respondWithHeaders((first :: more.toList).map { c ⇒
-      `Set-Cookie`(c.copy(content = "deleted", expires = Some(DateTime.MinValue)))
+      `Set-Cookie`(c.copy(value = "deleted", expires = Some(DateTime.MinValue)))
     })
 
   /**

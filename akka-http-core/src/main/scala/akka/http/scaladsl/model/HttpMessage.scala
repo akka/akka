@@ -199,7 +199,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
   /**
    * All cookies provided by the client in one or more `Cookie` headers.
    */
-  def cookies: immutable.Seq[HttpCookie] = for (`Cookie`(cookies) ← headers; cookie ← cookies) yield cookie
+  def cookies: immutable.Seq[HttpCookiePair] = for (`Cookie`(cookies) ← headers; cookie ← cookies) yield cookie
 
   /**
    * Determines whether the given media-type is accepted by the client.
