@@ -130,6 +130,26 @@ public final class FI {
 
   /**
    * Functional interface for an application.
+   *
+   * @param <I1> the first input type, that this Apply will be applied to
+   * @param <I2> the second input type, that this Apply will be applied to
+   * @param <I3> the third input type, that this Apply will be applied to
+   * @param <I4> the fourth input type, that this Apply will be applied to
+   */
+  public static interface UnitApply4<I1, I2, I3, I4> {
+    /**
+     * The application to perform.
+     *
+     * @param i1 an instance that the application is performed on
+     * @param i2 an instance that the application is performed on
+     * @param i3 an instance that the application is performed on
+     * @param i4 an instance that the application is performed on
+     */
+    public void apply(I1 i1, I2 i2, I3 i3, I4 i4) throws Exception;
+  }
+
+  /**
+   * Functional interface for an application.
    */
   public static interface UnitApplyVoid {
     /**
