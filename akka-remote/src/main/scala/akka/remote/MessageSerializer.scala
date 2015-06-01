@@ -8,6 +8,7 @@ import akka.remote.WireFormats._
 import com.google.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializationExtension
+import akka.serialization.SerializerWithStringManifest
 
 /**
  * INTERNAL API
@@ -23,7 +24,7 @@ private[akka] object MessageSerializer {
     SerializationExtension(system).deserialize(
       messageProtocol.getMessage.toByteArray,
       messageProtocol.getSerializerId,
-      if (messageProtocol.hasMessageManifest) Some(system.dynamicAccess.getClassFor[AnyRef](messageProtocol.getMessageManifest.toStringUtf8).get) else None).get
+      if (messageProtocol.hasMessageManifest) messageProtocol.getMessageManifest.toStringUtf8 else "").get
   }
 
   /**
@@ -35,8 +36,15 @@ private[akka] object MessageSerializer {
     val builder = SerializedMessage.newBuilder
     builder.setMessage(ByteString.copyFrom(serializer.toBinary(message)))
     builder.setSerializerId(serializer.identifier)
-    if (serializer.includeManifest)
-      builder.setMessageManifest(ByteString.copyFromUtf8(message.getClass.getName))
+    serializer match {
+      case ser2: SerializerWithStringManifest ⇒
+        val manifest = ser2.manifest(message)
+        if (manifest != "")
+          builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
+      case _ ⇒
+        if (serializer.includeManifest)
+          builder.setMessageManifest(ByteString.copyFromUtf8(message.getClass.getName))
+    }
     builder.build
   }
 }

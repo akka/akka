@@ -95,8 +95,37 @@ First you need to create a class definition of your ``Serializer`` like so:
    :include: imports,my-own-serializer
    :exclude: ...
 
+The manifest is a type hint so that the same serializer can be used for different
+classes. The manifest parameter in ``fromBinary`` is the class of the object that
+was serialized. In ``fromBinary`` you can match on the class and deserialize the
+bytes to different objects.
+
 Then you only need to fill in the blanks, bind it to a name in your :ref:`configuration` and then
 list which classes that should be serialized using it.
+
+Serializer with String Manifest
+-------------------------------
+
+The ``Serializer`` illustrated above supports a class based manifest (type hint).
+For serialization of data that need to evolve over time the `SerializerWithStringManifest`
+is recommended instead of ``Serializer`` because the manifest (type hint) is a ``String``
+instead of a ``Class``. That means that the class can be moved/removed and the serializer
+can still deserialize old data by matching  on the ``String``. This is especially useful
+for :ref:`persistence-scala`.
+
+The manifest string can also encode a version number that can be used in ``fromBinary`` to
+deserialize in different ways to migrate old data to new domain objects.
+
+If the data was originally serialized with ``Serializer`` and in a later version of the
+system you change to ``SerializerWithStringManifest`` the manifest string will be the full
+class name if you used ``includeManifest=true``, otherwise it will be the empty string.
+
+This is how a ``SerializerWithStringManifest`` looks like:
+
+.. includecode:: code/docs/serialization/SerializationDocSpec.scala#my-own-serializer2
+
+You must also bind it to a name in your :ref:`configuration` and then list which classes
+that should be serialized using it.
 
 Serializing ActorRefs
 ---------------------

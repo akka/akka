@@ -34,6 +34,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   val AtLeastOnceDeliverySnapshotClass = classOf[AtLeastOnceDeliverySnap]
   val PersistentStateChangeEventClass = classOf[StateChangeEvent]
 
+  private lazy val serialization = SerializationExtension(system)
+
   override val includeManifest: Boolean = true
 
   private lazy val transportInformation: Option[Serialization.Information] = {
@@ -127,10 +129,18 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
   private def persistentPayloadBuilder(payload: AnyRef) = {
     def payloadBuilder() = {
-      val serializer = SerializationExtension(system).findSerializerFor(payload)
+      val serializer = serialization.findSerializerFor(payload)
       val builder = PersistentPayload.newBuilder()
 
-      if (serializer.includeManifest) builder.setPayloadManifest(ByteString.copyFromUtf8(payload.getClass.getName))
+      serializer match {
+        case ser2: SerializerWithStringManifest ⇒
+          val manifest = ser2.manifest(payload)
+          if (manifest != "")
+            builder.setPayloadManifest(ByteString.copyFromUtf8(manifest))
+        case _ ⇒
+          if (serializer.includeManifest)
+            builder.setPayloadManifest(ByteString.copyFromUtf8(payload.getClass.getName))
+      }
 
       builder.setPayload(ByteString.copyFrom(serializer.toBinary(payload)))
       builder.setSerializerId(serializer.identifier)
@@ -158,13 +168,13 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   }
 
   private def payload(persistentPayload: PersistentPayload): Any = {
-    val payloadClass = if (persistentPayload.hasPayloadManifest)
-      Some(system.dynamicAccess.getClassFor[AnyRef](persistentPayload.getPayloadManifest.toStringUtf8).get) else None
+    val manifest = if (persistentPayload.hasPayloadManifest)
+      persistentPayload.getPayloadManifest.toStringUtf8 else ""
 
-    SerializationExtension(system).deserialize(
+    serialization.deserialize(
       persistentPayload.getPayload.toByteArray,
       persistentPayload.getSerializerId,
-      payloadClass).get
+      manifest).get
   }
 
 }

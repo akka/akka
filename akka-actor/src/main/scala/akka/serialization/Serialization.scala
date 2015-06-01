@@ -13,6 +13,7 @@ import java.io.NotSerializableException
 import scala.util.{ Try, DynamicVariable, Failure }
 import scala.collection.immutable
 import scala.util.control.NonFatal
+import scala.util.Success
 
 object Serialization {
 
@@ -91,7 +92,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
 
   /**
    * Deserializes the given array of bytes using the specified serializer id,
-   * using the optional type hint to the Serializer and the optional ClassLoader ot load it into.
+   * using the optional type hint to the Serializer.
    * Returns either the resulting object or an Exception if one was thrown.
    */
   def deserialize[T](bytes: Array[Byte], serializerId: Int, clazz: Option[Class[_ <: T]]): Try[T] =
@@ -105,8 +106,36 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     }
 
   /**
+   * Deserializes the given array of bytes using the specified serializer id,
+   * using the optional type hint to the Serializer.
+   * Returns either the resulting object or an Exception if one was thrown.
+   */
+  def deserialize(bytes: Array[Byte], serializerId: Int, manifest: String): Try[AnyRef] =
+    Try {
+      val serializer = try serializerByIdentity(serializerId) catch {
+        case _: NoSuchElementException ⇒ throw new NotSerializableException(
+          s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
+            "akka.actor.serializers is not in synch between the two systems.")
+      }
+      serializer match {
+        case s2: SerializerWithStringManifest ⇒ s2.fromBinary(bytes, manifest)
+        case s1 ⇒
+          if (manifest == "")
+            s1.fromBinary(bytes, None)
+          else {
+            system.dynamicAccess.getClassFor[AnyRef](manifest) match {
+              case Success(classManifest) ⇒
+                s1.fromBinary(bytes, Some(classManifest))
+              case Failure(e) ⇒
+                throw new NotSerializableException(
+                  s"Cannot find manifest class [$manifest] for serializer with id [$serializerId].")
+            }
+          }
+      }
+    }
+
+  /**
    * Deserializes the given array of bytes using the specified type to look up what Serializer should be used.
-   * You can specify an optional ClassLoader to load the object into.
    * Returns either the resulting object or an Exception if one was thrown.
    */
   def deserialize[T](bytes: Array[Byte], clazz: Class[T]): Try[T] =
@@ -118,10 +147,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Throws akka.ConfigurationException if no `serialization-bindings` is configured for the
    *   class of the object.
    */
-  def findSerializerFor(o: AnyRef): Serializer = o match {
-    case null  ⇒ NullSerializer
-    case other ⇒ serializerFor(other.getClass)
-  }
+  def findSerializerFor(o: AnyRef): Serializer =
+    if (o eq null) NullSerializer else serializerFor(o.getClass)
 
   /**
    * Returns the configured Serializer for the given Class. The configured Serializer
@@ -205,5 +232,6 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   val serializerByIdentity: Map[Int, Serializer] =
     Map(NullSerializer.identifier -> NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
+
 }
 
