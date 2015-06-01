@@ -216,6 +216,44 @@ public class FlowTest extends StreamTest {
 
   }
 
+  @Test
+  public void mustBeAbleToUseSplitAfter() {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<String> input = Arrays.asList("A", "B", "C", ".", "D", ".", "E", "F");
+    final Flow<String, Source<String, BoxedUnit>, ?> flow = Flow.of(String.class).splitAfter(new Predicate<String>() {
+      public boolean test(String elem) {
+        return elem.equals(".");
+      }
+    });
+
+    Source.from(input).via(flow).runForeach(new Procedure<Source<String, BoxedUnit>>() {
+      @Override
+      public void apply(Source<String, BoxedUnit> subStream) throws Exception {
+        subStream.grouped(10).runForeach(new Procedure<List<String>>() {
+          @Override
+          public void apply(List<String> chunk) throws Exception {
+            probe.getRef().tell(chunk, ActorRef.noSender());
+          }
+        }, materializer);
+      }
+    }, materializer);
+
+    for (Object o : probe.receiveN(3)) {
+      @SuppressWarnings("unchecked")
+      List<String> chunk = (List<String>) o;
+      if (chunk.get(0).equals("A")) {
+        assertEquals(Arrays.asList("A", "B", "C", "."), chunk);
+      } else if (chunk.get(0).equals("D")) {
+        assertEquals(Arrays.asList("D", "."), chunk);
+      } else if (chunk.get(0).equals("E")) {
+        assertEquals(Arrays.asList("E", "F"), chunk);
+      } else {
+        assertEquals("[A, B, C, .] or [D, .] or [E, F]", chunk);
+      }
+    }
+
+  }
+
   public <T> Creator<Stage<T, T>> op() {
     return new akka.japi.function.Creator<Stage<T, T>>() {
       @Override
