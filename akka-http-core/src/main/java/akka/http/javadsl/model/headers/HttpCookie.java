@@ -10,7 +10,8 @@ import akka.japi.Option;
 
 public abstract class HttpCookie {
     public abstract String name();
-    public abstract String content();
+    public abstract String value();
+    public abstract HttpCookiePair pair();
 
     public abstract Option<DateTime> getExpires();
     public abstract Option<Long> getMaxAge();
@@ -20,9 +21,9 @@ public abstract class HttpCookie {
     public abstract boolean httpOnly();
     public abstract Option<String> getExtension();
 
-    public static HttpCookie create(String name, String content) {
+    public static HttpCookie create(String name, String value) {
         return new akka.http.scaladsl.model.headers.HttpCookie(
-                name, content,
+                name, value,
                 Util.<akka.http.scaladsl.model.DateTime>scalaNone(), Util.scalaNone(), Util.<String>scalaNone(), Util.<String>scalaNone(),
                 false, false,
                 Util.<String>scalaNone());
@@ -30,7 +31,7 @@ public abstract class HttpCookie {
     @SuppressWarnings("unchecked")
     public static HttpCookie create(
         String name,
-        String content,
+        String value,
         Option<DateTime> expires,
         Option<Long> maxAge,
         Option<String> domain,
@@ -39,7 +40,7 @@ public abstract class HttpCookie {
         boolean httpOnly,
         Option<String> extension) {
         return new akka.http.scaladsl.model.headers.HttpCookie(
-                name, content,
+                name, value,
                 Util.<DateTime, akka.http.scaladsl.model.DateTime>convertOptionToScala(expires),
                 ((Option<Object>) (Option) maxAge).asScala(),
                 domain.asScala(),

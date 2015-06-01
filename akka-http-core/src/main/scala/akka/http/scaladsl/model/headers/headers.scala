@@ -384,20 +384,19 @@ final case class `Content-Type` private[http] (contentType: ContentType) extends
 
 // https://tools.ietf.org/html/rfc6265#section-4.2
 object Cookie extends ModeledCompanion {
-  implicit val cookieNameValueOnlyRenderer: Renderer[HttpCookie] = new Renderer[HttpCookie] {
-    def render[R <: Rendering](r: R, c: HttpCookie): r.type = r ~~ c.name ~~ '=' ~~ c.content
-  }
-  def apply(first: HttpCookie, more: HttpCookie*): Cookie = apply(immutable.Seq(first +: more: _*))
-  implicit val cookiesRenderer = Renderer.seqRenderer[HttpCookie](separator = "; ") // cache
+  def apply(first: HttpCookiePair, more: HttpCookiePair*): Cookie = apply(immutable.Seq(first +: more: _*))
+  def apply(name: String, value: String): Cookie = apply(HttpCookiePair(name, value))
+  def apply(values: (String, String)*): Cookie = apply(values.map(HttpCookiePair(_)).toList)
+  implicit val cookiePairsRenderer = Renderer.seqRenderer[HttpCookiePair](separator = "; ") // cache
 }
-final case class Cookie(cookies: immutable.Seq[HttpCookie]) extends jm.headers.Cookie with ModeledHeader {
+final case class Cookie(cookies: immutable.Seq[HttpCookiePair]) extends jm.headers.Cookie with ModeledHeader {
   require(cookies.nonEmpty, "cookies must not be empty")
-  import Cookie.cookiesRenderer
+  import Cookie.cookiePairsRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ cookies
   protected def companion = Cookie
 
   /** Java API */
-  def getCookies: Iterable[jm.headers.HttpCookie] = cookies.asJava
+  def getCookies: Iterable[jm.headers.HttpCookiePair] = cookies.asJava
 }
 
 // http://tools.ietf.org/html/rfc7231#section-7.1.1.2

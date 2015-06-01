@@ -13,10 +13,10 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
   "cookie" in {
     val route =
       cookie("userName") { nameCookie =>
-        complete(s"The logged in user is '${nameCookie.content}'")
+        complete(s"The logged in user is '${nameCookie.value}'")
       }
 
-    Get("/") ~> Cookie(HttpCookie("userName", "paul")) ~> route ~> check {
+    Get("/") ~> Cookie("userName" -> "paul") ~> route ~> check {
       responseAs[String] shouldEqual "The logged in user is 'paul'"
     }
     // missing cookie
@@ -30,11 +30,11 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
   "optionalCookie" in {
     val route =
       optionalCookie("userName") {
-        case Some(nameCookie) => complete(s"The logged in user is '${nameCookie.content}'")
+        case Some(nameCookie) => complete(s"The logged in user is '${nameCookie.value}'")
         case None             => complete("No user logged in")
       }
 
-    Get("/") ~> Cookie(HttpCookie("userName", "paul")) ~> route ~> check {
+    Get("/") ~> Cookie("userName" -> "paul") ~> route ~> check {
       responseAs[String] shouldEqual "The logged in user is 'paul'"
     }
     Get("/") ~> route ~> check {
@@ -49,18 +49,18 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
 
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "The user was logged out"
-      header[`Set-Cookie`] shouldEqual Some(`Set-Cookie`(HttpCookie("userName", content = "deleted", expires = Some(DateTime.MinValue))))
+      header[`Set-Cookie`] shouldEqual Some(`Set-Cookie`(HttpCookie("userName", value = "deleted", expires = Some(DateTime.MinValue))))
     }
   }
   "setCookie" in {
     val route =
-      setCookie(HttpCookie("userName", content = "paul")) {
+      setCookie(HttpCookie("userName", value = "paul")) {
         complete("The user was logged in")
       }
 
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "The user was logged in"
-      header[`Set-Cookie`] shouldEqual Some(`Set-Cookie`(HttpCookie("userName", content = "paul")))
+      header[`Set-Cookie`] shouldEqual Some(`Set-Cookie`(HttpCookie("userName", value = "paul")))
     }
   }
 }
