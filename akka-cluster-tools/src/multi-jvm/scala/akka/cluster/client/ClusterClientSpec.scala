@@ -18,6 +18,7 @@ import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.actor.Address
 import akka.cluster.pubsub._
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 object ClusterClientSpec extends MultiNodeConfig {
   val client = role("client")
@@ -31,13 +32,17 @@ object ClusterClientSpec extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.client.heartbeat-interval = 1s
+    akka.cluster.client.acceptable-heartbeat-pause = 3s
     """))
+
+  testTransport(on = true)
 
   class TestService(testActor: ActorRef) extends Actor {
     def receive = {
       case msg ⇒
         testActor forward msg
-        sender() ! "ack"
+        sender() ! msg + "-ack"
     }
   }
 
@@ -77,11 +82,13 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     }
   }
 
-  def roleName(addr: Address): Option[RoleName] = roles.find(node(_).address == addr)
+  var remainingServerRoleNames = Set(first, second, third, fourth)
 
-  def initialContacts = Set(
-    node(second) / "user" / "receptionist",
-    node(third) / "user" / "receptionist")
+  def roleName(addr: Address): Option[RoleName] = remainingServerRoleNames.find(node(_).address == addr)
+
+  def initialContacts = (remainingServerRoleNames - first - fourth).map { r ⇒
+    node(r) / "user" / "receptionist"
+  }
 
   "A ClusterClient" must {
 
@@ -104,9 +111,10 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     "communicate to actor on any node in cluster" in within(10 seconds) {
       runOn(client) {
         val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)))
+          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client1")
         c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
-        expectMsg("ack")
+        expectMsg("hello-ack")
+        system.stop(c)
       }
       runOn(fourth) {
         expectMsg("hello")
@@ -140,7 +148,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       //#client
       runOn(client) {
         val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)))
+          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client")
         c ! ClusterClient.Send("/user/serviceA", "hello", localAffinity = true)
         c ! ClusterClient.SendToAll("/user/serviceB", "hi")
       }
@@ -151,7 +159,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         receiveN(3).toSet should ===(Set("hello", "hi"))
       }
 
-      { //not used, only demo
+      lazy val docOnly = { //not used, only demo
         //#initialContacts
         val initialContacts = Set(
           system.actorSelection("akka.tcp://OtherSys@host1:2552/user/receptionist"),
@@ -164,7 +172,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       enterBarrier("after-3")
     }
 
-    "re-establish connection to receptionist when connection is lost" in within(30 seconds) {
+    "re-establish connection to another receptionist when server is shutdown" in within(30 seconds) {
       runOn(first, second, third, fourth) {
         val service2 = system.actorOf(Props(classOf[TestService], testActor), "service2")
         ClusterClientReceptionist(system).registerService(service2)
@@ -174,20 +182,24 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       runOn(client) {
         val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)))
+          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client2")
 
         c ! ClusterClient.Send("/user/service2", "bonjour", localAffinity = true)
-        expectMsg("ack")
+        expectMsg("bonjour-ack")
         val lastSenderAddress = lastSender.path.address
         val receptionistRoleName = roleName(lastSenderAddress) match {
           case Some(r) ⇒ r
           case None    ⇒ fail("unexpected missing roleName: " + lastSender.path.address)
         }
         testConductor.exit(receptionistRoleName, 0).await
-        awaitAssert {
-          c ! ClusterClient.Send("/user/service2", "hi again", localAffinity = true)
-          expectMsg(1 second, "ack")
+        remainingServerRoleNames -= receptionistRoleName
+        within(remaining - 3.seconds) {
+          awaitAssert {
+            c ! ClusterClient.Send("/user/service2", "hi again", localAffinity = true)
+            expectMsg(1 second, "hi again-ack")
+          }
         }
+        system.stop(c)
       }
       enterBarrier("verifed-3")
       receiveWhile(2 seconds) {
@@ -195,6 +207,46 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         case other      ⇒ fail("unexpected message: " + other)
       }
       enterBarrier("after-4")
+    }
+
+    "re-establish connection to receptionist after partition" in within(30 seconds) {
+      runOn(client) {
+        val c = system.actorOf(ClusterClient.props(
+          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client3")
+
+        c ! ClusterClient.Send("/user/service2", "bonjour2", localAffinity = true)
+        expectMsg("bonjour2-ack")
+        val lastSenderAddress = lastSender.path.address
+        val receptionistRoleName = roleName(lastSenderAddress) match {
+          case Some(r) ⇒ r
+          case None    ⇒ fail("unexpected missing roleName: " + lastSender.path.address)
+        }
+        // shutdown all but the one that the client is connected to
+        remainingServerRoleNames.foreach { r ⇒
+          if (r != receptionistRoleName)
+            testConductor.exit(r, 0).await
+        }
+        remainingServerRoleNames = Set(receptionistRoleName)
+        // network partition between client and server
+        testConductor.blackhole(client, receptionistRoleName, Direction.Both).await
+        c ! ClusterClient.Send("/user/service2", "ping", localAffinity = true)
+        // if we would use remote watch the failure detector would trigger and
+        // connection quarantined
+        expectNoMsg(5 seconds)
+
+        testConductor.passThrough(client, receptionistRoleName, Direction.Both).await
+
+        val expectedAddress = node(receptionistRoleName).address
+        awaitAssert {
+          c ! ClusterClient.Send("/user/service2", "bonjour3", localAffinity = true)
+          expectMsg(1 second, "bonjour3-ack")
+          val lastSenderAddress = lastSender.path.address
+          lastSenderAddress should be(expectedAddress)
+        }
+        system.stop(c)
+      }
+
+      enterBarrier("after-5")
     }
 
   }
