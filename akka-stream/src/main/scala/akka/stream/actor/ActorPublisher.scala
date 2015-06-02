@@ -4,21 +4,11 @@
 package akka.stream.actor
 
 import java.util.concurrent.ConcurrentHashMap
-import akka.actor.Cancellable
+import akka.actor._
 import akka.stream.impl.{ ReactiveStreamsCompliance, StreamSubscriptionTimeoutSupport }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
-import akka.actor.AbstractActor
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.UntypedActor
 import concurrent.duration.Duration
 import concurrent.duration.FiniteDuration
-import akka.actor.DeadLetterSuppression
 import akka.stream.impl.CancelledSubscription
 import akka.stream.impl.ReactiveStreamsCompliance._
 
@@ -35,7 +25,7 @@ object ActorPublisher {
    * INTERNAL API
    */
   private[akka] object Internal {
-    final case class Subscribe(subscriber: Subscriber[Any]) extends DeadLetterSuppression
+    final case class Subscribe(subscriber: Subscriber[Any]) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
     sealed trait LifecycleState
     case object PreSubscriber extends LifecycleState
@@ -55,20 +45,20 @@ object ActorPublisherMessage {
    * more elements.
    * @param n number of requested elements
    */
-  @SerialVersionUID(1L) final case class Request(n: Long) extends ActorPublisherMessage
+  final case class Request(n: Long) extends ActorPublisherMessage with NoSerializationVerificationNeeded
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber cancels the
    * subscription.
    */
-  @SerialVersionUID(1L) final case object Cancel extends Cancel
+  final case object Cancel extends Cancel with NoSerializationVerificationNeeded
   sealed class Cancel extends ActorPublisherMessage
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor in order to signal the exceeding of an subscription timeout.
    * Once the actor receives this message, this publisher will already be in cancelled state, thus the actor should clean-up and stop itself.
    */
-  @SerialVersionUID(1L) final case object SubscriptionTimeoutExceeded extends SubscriptionTimeoutExceeded
+  final case object SubscriptionTimeoutExceeded extends SubscriptionTimeoutExceeded with NoSerializationVerificationNeeded
   sealed abstract class SubscriptionTimeoutExceeded extends ActorPublisherMessage
 
   /**

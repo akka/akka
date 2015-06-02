@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io.impl
+package akka.stream.impl.io
 
 import java.io.OutputStream
 
-import akka.actor.{ ActorLogging, Props }
+import akka.actor.{ Deploy, ActorLogging, Props }
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
 
@@ -15,7 +15,7 @@ import scala.concurrent.Promise
 private[akka] object OutputStreamSubscriber {
   def props(os: OutputStream, completionPromise: Promise[Long], bufSize: Int) = {
     require(bufSize > 0, "buffer size must be > 0")
-    Props(classOf[OutputStreamSubscriber], os, completionPromise, bufSize)
+    Props(classOf[OutputStreamSubscriber], os, completionPromise, bufSize).withDeploy(Deploy.local)
   }
 
 }

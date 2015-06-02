@@ -5,8 +5,8 @@ package akka.stream.io
 
 import java.io.File
 
+import akka.stream.impl.io.SynchronousFileSink
 import akka.stream.{ OperationAttributes, javadsl, ActorOperationAttributes }
-import akka.stream.io.impl.SynchronousFileSink
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 
@@ -28,7 +28,7 @@ object SynchronousFileSink {
    * unless configured otherwise by using [[ActorOperationAttributes]].
    */
   def apply(f: File, append: Boolean = false): Sink[ByteString, Future[Long]] =
-    new Sink(new impl.SynchronousFileSink(f, append, DefaultAttributes, Sink.shape("SynchronousFileSink")))
+    new Sink(new SynchronousFileSink(f, append, DefaultAttributes, Sink.shape("SynchronousFileSink")))
 
   /**
    * Java API

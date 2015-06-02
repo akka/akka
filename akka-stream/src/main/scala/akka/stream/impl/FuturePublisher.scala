@@ -7,16 +7,11 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.Status
-import akka.actor.SupervisorStrategy
+import akka.actor._
 import akka.stream.ActorFlowMaterializerSettings
 import akka.pattern.pipe
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
-import akka.actor.DeadLetterSuppression
 import scala.util.control.NonFatal
 
 /**
@@ -24,12 +19,14 @@ import scala.util.control.NonFatal
  */
 private[akka] object FuturePublisher {
   def props(future: Future[Any], settings: ActorFlowMaterializerSettings): Props =
-    Props(new FuturePublisher(future, settings)).withDispatcher(settings.dispatcher)
+    Props(new FuturePublisher(future, settings)).withDispatcher(settings.dispatcher).withDeploy(Deploy.local)
 
   object FutureSubscription {
-    final case class Cancel(subscription: FutureSubscription) extends DeadLetterSuppression
-    final case class RequestMore(subscription: FutureSubscription, elements: Long) extends DeadLetterSuppression
+    final case class Cancel(subscription: FutureSubscription) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+    final case class RequestMore(subscription: FutureSubscription, elements: Long) extends DeadLetterSuppression with NoSerializationVerificationNeeded
   }
+
+  case class FutureValue(value: Any) extends NoSerializationVerificationNeeded
 
   class FutureSubscription(ref: ActorRef) extends Subscription {
     import akka.stream.impl.FuturePublisher.FutureSubscription._
@@ -44,7 +41,7 @@ private[akka] object FuturePublisher {
  */
 // FIXME why do we need to have an actor to drive a Future?
 private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMaterializerSettings) extends Actor {
-  import akka.stream.impl.FuturePublisher.FutureSubscription
+  import akka.stream.impl.FuturePublisher._
   import akka.stream.impl.FuturePublisher.FutureSubscription.Cancel
   import akka.stream.impl.FuturePublisher.FutureSubscription.RequestMore
   import ReactiveStreamsCompliance._
@@ -69,7 +66,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMate
     case SubscribePending ⇒
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
       import context.dispatcher
-      future.pipeTo(self)
+      future.map(FutureValue) pipeTo (self)
       context.become(active)
   }
 
@@ -94,7 +91,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMate
         futureValue = Some(Failure(ex))
         pushToAll()
       }
-    case value ⇒
+    case FutureValue(value) ⇒
       if (futureValue.isEmpty) {
         futureValue = Some(Success(value))
         pushToAll()

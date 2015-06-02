@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.{ PoisonPill, DeadLetterSuppression, ActorLogging, Cancellable }
+import akka.actor._
 import akka.stream.FlowMaterializer
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
 import akka.stream.actor.ActorPublisherMessage._
@@ -22,7 +22,7 @@ import akka.http.scaladsl.Http
 import PoolFlow._
 
 private object PoolInterfaceActor {
-  final case class PoolRequest(request: HttpRequest, responsePromise: Promise[HttpResponse])
+  final case class PoolRequest(request: HttpRequest, responsePromise: Promise[HttpResponse]) extends NoSerializationVerificationNeeded
 
   case object Shutdown extends DeadLetterSuppression
 
