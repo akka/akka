@@ -101,7 +101,7 @@ FlowGraphs are constructed like this:
 
 As you can see, inside the :class:`FlowGraph` we use an implicit graph builder to mutably construct the graph
 using the ``~>`` "edge operator" (also read as "connect" or "via" or "to"). Once we have the FlowGraph in the value ``g``
-*it is immutable, thread-safe, and freely shareable*. A graph can can be ``run()`` directly - assuming all
+*it is immutable, thread-safe, and freely shareable*. A graph can be ``run()`` directly - assuming all
 ports (sinks/sources) within a flow have been connected properly. It is possible to construct partial graphs
 where this is not required but this will be covered in detail in :ref:`partial-flow-graph-scala`.
 
@@ -124,7 +124,7 @@ elements*" this can be expressed using the ``buffer`` element:
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#tweets-slow-consumption-dropHead
 
 The ``buffer`` element takes an explicit and required ``OverflowStrategy``, which defines how the buffer should react
-when it receives another element element while it is full. Strategies provided include dropping the oldest element (``dropHead``),
+when it receives another element while it is full. Strategies provided include dropping the oldest element (``dropHead``),
 dropping the entire buffer, signalling errors etc. Be sure to pick and choose the strategy that fits your use case best.
 
 Materialized values
