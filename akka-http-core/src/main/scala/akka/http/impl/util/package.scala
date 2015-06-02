@@ -80,7 +80,7 @@ package object util {
   private[http] def installEventStreamLoggerFor(channel: Class[_])(implicit system: ActorSystem): Unit = {
     synchronized {
       if (eventStreamLogger == null)
-        eventStreamLogger = system.actorOf(Props[util.EventStreamLogger], name = "event-stream-logger")
+        eventStreamLogger = system.actorOf(Props[util.EventStreamLogger].withDeploy(Deploy.local), name = "event-stream-logger")
     }
     system.eventStream.subscribe(eventStreamLogger, channel)
   }

@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import akka.http.HostConnectionPoolSetup
-import akka.actor.{ Props, ActorSystem, ActorRef }
+import akka.actor.{ Deploy, Props, ActorSystem, ActorRef }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
 import akka.stream.FlowMaterializer
@@ -40,7 +40,7 @@ private[http] class PoolGateway(hcps: HostConnectionPoolSetup,
 
   private val state = {
     val shutdownCompletedPromise = Promise[Unit]()
-    val props = Props(new PoolInterfaceActor(hcps, shutdownCompletedPromise, this))
+    val props = Props(new PoolInterfaceActor(hcps, shutdownCompletedPromise, this)).withDeploy(Deploy.local)
     val ref = system.actorOf(props, PoolInterfaceActor.name.next())
     new AtomicReference[State](Running(ref, _shutdownStartedPromise, shutdownCompletedPromise))
   }

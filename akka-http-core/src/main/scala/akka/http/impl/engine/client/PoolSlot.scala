@@ -56,7 +56,8 @@ private object PoolSlot {
 
       val slotProcessor = b.add {
         Flow[RequestContext] andThenMat { () ⇒
-          val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)), slotProcessorActorName.next())
+          val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
+            slotProcessorActorName.next())
           (ActorProcessor[RequestContext, List[ProcessorOut]](actor), ())
         }
       }
@@ -85,9 +86,9 @@ private object PoolSlot {
 
     var exposedPublisher: akka.stream.impl.ActorPublisher[Any] = _
     var inflightRequests = immutable.Queue.empty[RequestContext]
-    val runnableFlow = Source.actorPublisher[HttpRequest](Props(new FlowInportActor(self)))
+    val runnableFlow = Source.actorPublisher[HttpRequest](Props(new FlowInportActor(self)).withDeploy(Deploy.local))
       .via(connectionFlow)
-      .toMat(Sink.actorSubscriber[HttpResponse](Props(new FlowOutportActor(self))))(Keep.both)
+      .toMat(Sink.actorSubscriber[HttpResponse](Props(new FlowOutportActor(self)).withDeploy(Deploy.local)))(Keep.both)
 
     def requestStrategy = ZeroRequestStrategy
     def receive = waitingExposedPublisher
@@ -187,7 +188,7 @@ private object PoolSlot {
     def shutdown(): Unit = context.stop(self)
   }
 
-  private case class FromConnection(ev: Any)
+  private case class FromConnection(ev: Any) extends NoSerializationVerificationNeeded
 
   private class FlowInportActor(slotProcessor: ActorRef) extends ActorPublisher[HttpRequest] {
     def receive: Receive = {
