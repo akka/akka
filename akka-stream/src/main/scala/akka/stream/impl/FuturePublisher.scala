@@ -26,6 +26,8 @@ private[akka] object FuturePublisher {
     final case class RequestMore(subscription: FutureSubscription, elements: Long) extends DeadLetterSuppression with NoSerializationVerificationNeeded
   }
 
+  case class FutureValue(value: Any) extends NoSerializationVerificationNeeded
+
   class FutureSubscription(ref: ActorRef) extends Subscription {
     import akka.stream.impl.FuturePublisher.FutureSubscription._
     def cancel(): Unit = ref ! Cancel(this)
@@ -39,7 +41,7 @@ private[akka] object FuturePublisher {
  */
 // FIXME why do we need to have an actor to drive a Future?
 private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMaterializerSettings) extends Actor {
-  import akka.stream.impl.FuturePublisher.FutureSubscription
+  import akka.stream.impl.FuturePublisher._
   import akka.stream.impl.FuturePublisher.FutureSubscription.Cancel
   import akka.stream.impl.FuturePublisher.FutureSubscription.RequestMore
   import ReactiveStreamsCompliance._
@@ -64,7 +66,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMate
     case SubscribePending ⇒
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
       import context.dispatcher
-      future.pipeTo(self)
+      future.map(FutureValue) pipeTo (self)
       context.become(active)
   }
 
@@ -89,7 +91,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMate
         futureValue = Some(Failure(ex))
         pushToAll()
       }
-    case value ⇒
+    case FutureValue(value) ⇒
       if (futureValue.isEmpty) {
         futureValue = Some(Success(value))
         pushToAll()

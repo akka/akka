@@ -10,7 +10,7 @@ import org.reactivestreams.{ Subscriber, Publisher }
 import scala.util.control.NonFatal
 import akka.util.ByteString
 import akka.event.LoggingAdapter
-import akka.actor.{ ActorRef, Props }
+import akka.actor.{ Deploy, ActorRef, Props }
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage.PushPullStage
@@ -52,7 +52,7 @@ private[http] object HttpServerBluePrint {
         val actor = new TokenSourceActor(OneHundredContinue)
         oneHundredContinueRef = Some(actor.context.self)
         actor
-      }
+      }.withDeploy(Deploy.local)
     }, errorMsg = "Http.serverLayer is currently not reusable. You need to create a new instance for each materialization.")
 
     val requestParsingFlow = Flow[ByteString].transform(() ⇒

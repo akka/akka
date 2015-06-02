@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import akka.actor.Props
+import akka.actor.{ Deploy, Props }
 import akka.stream.impl.SplitDecision.SplitDecision
 import akka.stream.scaladsl.Source
 import akka.stream.{ ActorFlowMaterializerSettings, Supervision }
@@ -35,7 +35,7 @@ private[akka] object SplitDecision {
  */
 private[akka] object SplitWhereProcessorImpl {
   def props(settings: ActorFlowMaterializerSettings, splitPredicate: Any ⇒ SplitDecision): Props =
-    Props(new SplitWhereProcessorImpl(settings, in ⇒ splitPredicate(in)))
+    Props(new SplitWhereProcessorImpl(settings, in ⇒ splitPredicate(in))).withDeploy(Deploy.local)
 }
 
 /**
