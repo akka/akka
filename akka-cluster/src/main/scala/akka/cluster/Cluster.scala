@@ -4,32 +4,24 @@
 
 package akka.cluster
 
-import language.implicitConversions
-import akka.actor._
-import akka.actor.Status._
-import akka.ConfigurationException
-import akka.dispatch.MonitorableThreadFactory
-import akka.event.Logging
-import akka.pattern._
-import akka.remote._
-import akka.routing._
-import akka.util._
-import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.annotation.tailrec
-import scala.collection.immutable
 import java.io.Closeable
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
-import scala.concurrent.{ ExecutionContext, Await }
-import com.typesafe.config.ConfigFactory
-import akka.remote.DefaultFailureDetectorRegistry
-import akka.remote.FailureDetector
-import com.typesafe.config.Config
-import akka.event.LoggingAdapter
 import java.util.concurrent.ThreadFactory
-import scala.util.control.NonFatal
+import java.util.concurrent.atomic.AtomicBoolean
+
+import akka.ConfigurationException
+import akka.actor._
+import akka.dispatch.MonitorableThreadFactory
+import akka.event.{ Logging, LoggingAdapter }
+import akka.pattern._
+import akka.remote.{ DefaultFailureDetectorRegistry, FailureDetector, _ }
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.annotation.varargs
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext }
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -65,8 +57,8 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   import ClusterEvent._
 
   val settings = new ClusterSettings(system.settings.config, system.name)
-  import settings._
   import InfoLogger._
+  import settings._
 
   /**
    * The address including a `uid` of this cluster member.
@@ -122,7 +114,6 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   private[cluster] val scheduler: Scheduler = {
     if (system.scheduler.maxFrequency < 1.second / SchedulerTickDuration) {
-      import scala.collection.JavaConverters._
       logInfo("Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
         "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
         (1000 / system.scheduler.maxFrequency).toInt, SchedulerTickDuration.toMillis)
@@ -175,7 +166,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         log.error(e, "Failed to startup Cluster. You can try to increase 'akka.actor.creation-timeout'.")
         shutdown()
         // don't re-throw, that would cause the extension to be re-recreated
-        // from shutdown() or other places, which may result in 
+        // from shutdown() or other places, which may result in
         // InvalidActorNameException: actor name [cluster] is not unique
         system.deadLetters
     }
@@ -328,7 +319,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * a certain size.
    */
   def registerOnMemberUp[T](code: ⇒ T): Unit =
-    registerOnMemberUp(new Runnable { def run = code })
+    registerOnMemberUp(new Runnable { def run() = code })
 
   /**
    * Java API: The supplied callback will be run, once, when current cluster member is `Up`.
@@ -336,8 +327,28 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * to defer some action, such as starting actors, until the cluster has reached
    * a certain size.
    */
-  def registerOnMemberUp(callback: Runnable): Unit = clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
+  def registerOnMemberUp(callback: Runnable): Unit =
+    clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
 
+  /**
+   * The supplied thunk will be run, once, when current cluster member is `Removed`.
+   * and if the cluster have been shutdown,that thunk will run on the caller thread immediately.
+   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.shutdown()`.
+   */
+  def registerOnMemberRemoved[T](code: ⇒ T): Unit =
+    registerOnMemberRemoved(new Runnable { override def run(): Unit = code })
+
+  /**
+   * Java API: The supplied thunk will be run, once, when current cluster member is `Removed`.
+   * and if the cluster have been shutdown,that thunk will run on the caller thread immediately.
+   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.shutdown()`.
+   */
+  def registerOnMemberRemoved(callback: Runnable): Unit = {
+    if (_isTerminated.get())
+      callback.run()
+    else
+      clusterDaemons ! InternalClusterAction.AddOnMemberRemovedListener(callback)
+  }
   // ========================================================
   // ===================== INTERNAL API =====================
   // ========================================================

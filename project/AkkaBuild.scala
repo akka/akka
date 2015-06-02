@@ -1087,7 +1087,10 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.akka$cluster$Gossip$$convergenceMemberStatus"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.isLeader"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.leader"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.roleLeader")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.roleLeader"),
+      
+      // #16736
+      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.OnMemberUpListener")
     )
   }
 
