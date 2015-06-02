@@ -6,12 +6,12 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.OverflowStrategy
 import akka.stream.OverflowStrategy.Fail.BufferOverflowException
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
 
 class FlowBufferSpec extends AkkaSpec {
@@ -146,6 +146,26 @@ class FlowBufferSpec extends AkkaSpec {
       subscriber.expectNext(-1)
 
       sub.cancel()
+    }
+
+    "drop new elements if buffer is full and configured so" in {
+      val (publisher, subscriber) = TestSource.probe[Int].buffer(100, overflowStrategy = OverflowStrategy.dropNew).toMat(TestSink.probe[Int])(Keep.both).run()
+
+      // Fill up buffer
+      for (i ← 1 to 150) publisher.sendNext(i)
+
+      // drain
+      for (i ← 1 to 100) {
+        subscriber.requestNext(i)
+      }
+
+      subscriber.request(1)
+      subscriber.expectNoMsg(1.seconds)
+
+      publisher.sendNext(-1)
+      subscriber.requestNext(-1)
+
+      subscriber.cancel()
     }
 
     "fail upstream if buffer is full and configured so" in assertAllStagesStopped {
