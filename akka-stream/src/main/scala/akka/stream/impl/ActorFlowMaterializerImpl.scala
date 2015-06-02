@@ -132,18 +132,18 @@ private[akka] case class ActorFlowMaterializerImpl(
             val (props, inputs, output) = fanin match {
 
               case MergeModule(shape, _) ⇒
-                (FairMerge.props(effectiveSettings, shape.inArray.size), shape.inArray.toSeq, shape.out)
+                (FairMerge.props(effectiveSettings, shape.inSeq.size), shape.inSeq, shape.out)
 
               case f: FlexiMergeModule[t, p] ⇒
                 val flexi = f.flexi(f.shape)
                 (FlexiMerge.props(effectiveSettings, f.shape, flexi), f.shape.inlets, f.shape.outlets.head)
 
               case MergePreferredModule(shape, _) ⇒
-                (UnfairMerge.props(effectiveSettings, shape.inlets.size), shape.preferred +: shape.inArray.toSeq, shape.out)
+                (UnfairMerge.props(effectiveSettings, shape.inlets.size), shape.preferred +: shape.inSeq, shape.out)
 
               case ConcatModule(shape, _) ⇒
-                require(shape.inArray.size == 2, "currently only supporting concatenation of exactly two inputs") // TODO
-                (Concat.props(effectiveSettings), shape.inArray.toSeq, shape.out)
+                require(shape.inSeq.size == 2, "currently only supporting concatenation of exactly two inputs") // TODO
+                (Concat.props(effectiveSettings), shape.inSeq, shape.out)
 
               case zip: ZipWithModule ⇒
                 (zip.props(effectiveSettings), zip.shape.inlets, zip.outPorts.head)

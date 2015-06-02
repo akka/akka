@@ -224,6 +224,38 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }
     }
 
+    "build with variance when indices are not specified" in {
+      FlowGraph.closed() { implicit b ⇒
+        import FlowGraph.Implicits._
+        val fruitMerge = b.add(Merge[Fruit](2))
+        Source[Fruit](apples) ~> fruitMerge
+        Source[Apple](apples) ~> fruitMerge
+        fruitMerge ~> Sink.head[Fruit]
+        "fruitMerge ~> Sink.head[Apple]" shouldNot compile
+
+        val appleMerge = b.add(Merge[Apple](1))
+        "Source[Fruit](apples) ~> appleMerge" shouldNot compile
+        Source[Apple](apples) ~> appleMerge
+        appleMerge ~> Sink.head[Fruit]
+
+        val appleMerge2 = b.add(Merge[Apple](1))
+        Source[Apple](apples) ~> appleMerge2
+        appleMerge2 ~> Sink.head[Apple]
+
+        val fruitBcast = b.add(Broadcast[Fruit](1))
+        Source[Fruit](apples) ~> fruitBcast
+        //Source[Apple](apples) ~> fruitBcast // FIXME: should compile #16997
+        fruitBcast ~> Sink.head[Fruit]
+        "fruitBcast ~> Sink.head[Apple]" shouldNot compile
+
+        val appleBcast = b.add(Broadcast[Apple](2))
+        "Source[Fruit](apples) ~> appleBcast" shouldNot compile
+        Source[Apple](apples) ~> appleBcast
+        appleBcast ~> Sink.head[Fruit]
+        appleBcast ~> Sink.head[Apple]
+      }
+    }
+
     "build with implicits and variance" in {
       FlowGraph.closed() { implicit b ⇒
         def appleSource = b.add(Source(TestPublisher.manualProbe[Apple]))
