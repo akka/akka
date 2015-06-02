@@ -107,6 +107,11 @@ we want to be nice to jobs that has been waiting for long, then this option can 
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#explicit-buffers-droptail
 
+Instead of dropping the youngest element from the tail of the buffer a new element can be dropped without
+enqueueing it to the buffer at all.
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#explicit-buffers-dropnew
+
 Here is another example with a queue of 1000 jobs, but it makes space for the new element by
 dropping one element from the *head* of the buffer. This is the *oldest*
 waiting job. This is the preferred strategy if jobs are expected to be

@@ -19,7 +19,7 @@ import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 
 public class StreamBuffersRateDocTest {
-  
+
   static class Job {}
 
   static ActorSystem system;
@@ -47,7 +47,7 @@ public class StreamBuffersRateDocTest {
       .runWith(Sink.ignore(), mat);
     //#pipelining
   }
-  
+
   @Test
   @SuppressWarnings("unused")
   public void demonstrateBufferSizes() {
@@ -68,31 +68,31 @@ public class StreamBuffersRateDocTest {
         .map(elem -> elem / 2)); // the buffer size of this map is the default
     //#section-buffer
   }
-  
+
   @Test
   public void demonstrateBufferAbstractionLeak() {
     //#buffering-abstraction-leak
-    final FiniteDuration oneSecond = 
+    final FiniteDuration oneSecond =
         FiniteDuration.create(1, TimeUnit.SECONDS);
-    final Source<String, Cancellable> msgSource = 
+    final Source<String, Cancellable> msgSource =
         Source.from(oneSecond, oneSecond, "message!");
-    final Source<String, Cancellable> tickSource = 
+    final Source<String, Cancellable> tickSource =
         Source.from(oneSecond.mul(3), oneSecond.mul(3), "tick");
     final Flow<String, Integer, BoxedUnit> conflate =
         Flow.of(String.class).conflate(
-            first -> 1, (count, elem) -> count + 1); 
+            first -> 1, (count, elem) -> count + 1);
 
     FlowGraph.factory().closed(b -> {
-      final FanInShape2<String, Integer, Integer> zipper = 
+      final FanInShape2<String, Integer, Integer> zipper =
           b.graph(ZipWith.create((String tick, Integer count) -> count));
-      
+
       b.from(msgSource).via(conflate).to(zipper.in1());
       b.from(tickSource).to(zipper.in0());
       b.from(zipper.out()).to(Sink.foreach(elem -> System.out.println(elem)));
     }).run(mat);
     //#buffering-abstraction-leak
   }
-  
+
   @Test
   public void demonstrateExplicitBuffers() {
     final Source<Job, BoxedUnit> inboundJobsConnector = Source.empty();
@@ -106,6 +106,10 @@ public class StreamBuffersRateDocTest {
     jobs.buffer(1000, OverflowStrategy.dropTail());
     //#explicit-buffers-droptail
 
+    //#explicit-buffers-dropnew
+    jobs.buffer(1000, OverflowStrategy.dropNew());
+    //#explicit-buffers-dropnew
+
     //#explicit-buffers-drophead
     jobs.buffer(1000, OverflowStrategy.dropHead());
     //#explicit-buffers-drophead
@@ -118,5 +122,5 @@ public class StreamBuffersRateDocTest {
     jobs.buffer(1000, OverflowStrategy.fail());
     //#explicit-buffers-fail
   }
-  
+
 }

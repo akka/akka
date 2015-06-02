@@ -249,6 +249,10 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
         buffer.enqueue(elem)
         ctx.pull()
       }
+      case DropNew ⇒ { (ctx, elem) ⇒
+        if (!buffer.isFull) buffer.enqueue(elem)
+        ctx.pull()
+      }
       case Backpressure ⇒ { (ctx, elem) ⇒
         buffer.enqueue(elem)
         if (buffer.isFull) ctx.holdUpstream()
