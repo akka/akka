@@ -1147,6 +1147,8 @@ object ShardCoordinator {
 
   private case object AfterRecover
 
+  private final case class DelayedShardRegionTerminated(region: ActorRef)
+
   /**
    * INTERNAL API. Rebalancing process is performed by this actor.
    * It sends [[BeginHandOff]] to all `ShardRegion` actors followed by
@@ -1201,8 +1203,11 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
 
   override def persistenceId = self.path.toStringWithoutAddress
 
+  val removalMargin = Cluster(context.system).settings.DownRemovalMargin
+
   var persistentState = State.empty
   var rebalanceInProgress = Set.empty[ShardId]
+  var aliveRegions = Set.empty[ActorRef]
 
   import context.dispatcher
   val rebalanceTask = context.system.scheduler.schedule(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
@@ -1252,6 +1257,7 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
   override def receiveCommand: Receive = {
     case Register(region) ⇒
       log.debug("ShardRegion registered: [{}]", region)
+      aliveRegions += region
       if (persistentState.regions.contains(region))
         sender() ! RegisterAck(self)
       else
@@ -1272,18 +1278,21 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
           sender() ! RegisterAck(self)
         }
 
-    case Terminated(ref) ⇒
+    case t @ Terminated(ref) ⇒
       if (persistentState.regions.contains(ref)) {
-        log.debug("ShardRegion terminated: [{}]", ref)
-        persist(ShardRegionTerminated(ref)) { evt ⇒
-          persistentState = persistentState.updated(evt)
-        }
+        if (removalMargin != Duration.Zero && t.addressTerminated && aliveRegions(ref))
+          context.system.scheduler.scheduleOnce(removalMargin, self, DelayedShardRegionTerminated(ref))
+        else
+          regionTerminated(ref)
       } else if (persistentState.regionProxies.contains(ref)) {
         log.debug("ShardRegion proxy terminated: [{}]", ref)
         persist(ShardRegionProxyTerminated(ref)) { evt ⇒
           persistentState = persistentState.updated(evt)
         }
       }
+
+    case DelayedShardRegionTerminated(ref) ⇒
+      regionTerminated(ref)
 
     case GetShardHome(shard) ⇒
       if (!rebalanceInProgress.contains(shard)) {
@@ -1350,6 +1359,14 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
   def shuttingDown: Receive = {
     case _ ⇒ // ignore all
   }
+  def regionTerminated(ref: ActorRef): Unit =
+    if (persistentState.regions.contains(ref)) {
+      log.debug("ShardRegion terminated: [{}]", ref)
+      persist(ShardRegionTerminated(ref)) { evt ⇒
+        persistentState = persistentState.updated(evt)
+        aliveRegions -= ref
+      }
+    }
 
 }
 

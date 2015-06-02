@@ -109,7 +109,8 @@ An actor system can only join a cluster once. Additional attempts will be ignore
 When it has successfully joined it must be restarted to be able to join another
 cluster or to join the same cluster again. It can use the same host name and port
 after the restart, when it come up as new incarnation of existing member in the cluster,
-trying to join in ,then the existing one will be removed from the cluster and then it will be allowed to join.
+trying to join in, then the existing one will be removed from the cluster and then it will
+be allowed to join.
 
 
 .. _automatic-vs-manual-downing-java:
