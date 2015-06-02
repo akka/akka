@@ -124,7 +124,7 @@ public class AbstractPersistentFsmActorTest {
             FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
-            new Within(duration("0.9 seconds"), duration("1.1 seconds")) {
+            new Within(duration("0.9 seconds"), duration("1.9 seconds")) {
                 @Override
                 protected void run() {
                     FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
@@ -132,7 +132,7 @@ public class AbstractPersistentFsmActorTest {
                 }
             };
 
-            new Within(duration("1.9 seconds"), duration("2.1 seconds")) {
+            new Within(duration("1.9 seconds"), duration("2.9 seconds")) {
                 @Override
                 protected void run() {
                     expectTerminated(fsmRef);
@@ -310,7 +310,7 @@ public class AbstractPersistentFsmActorTest {
             currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.SHOPPING);
 
-            new Within(duration("0.9 seconds"), duration("1.1 seconds")) {
+            new Within(duration("0.9 seconds"), duration("1.9 seconds")) {
                 @Override
                 protected void run() {
                     FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
@@ -329,7 +329,7 @@ public class AbstractPersistentFsmActorTest {
             currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.INACTIVE);
 
-            new Within(duration("1.9 seconds"), duration("2.1 seconds")) {
+            new Within(duration("1.9 seconds"), duration("2.9 seconds")) {
                 @Override
                 protected void run() {
                     expectTerminated(recoveredFsmRef2);
