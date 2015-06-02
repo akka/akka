@@ -125,7 +125,7 @@ object GraphFlexiMergeSpec {
     def createMergeLogic(p: PortT) = new MergeLogic[String] {
       var throwFromOnComplete = false
 
-      override def initialState = State(ReadAny(p.inArray: _*)) {
+      override def initialState = State(ReadAny(p.inSeq: _*)) {
         (ctx, input, element) ⇒
           if (element == "cancel")
             ctx.cancel(input)

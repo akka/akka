@@ -452,7 +452,7 @@ object FlowGraph extends GraphApply {
 
     @tailrec
     private[stream] def findIn[I, O](b: Builder[_], junction: UniformFanInShape[I, O], n: Int): Inlet[I] = {
-      if (n == junction.inArray.length)
+      if (n == junction.inSeq.length)
         throw new IllegalArgumentException(s"no more inlets free on $junction")
       else if (b.module.upstreams.contains(junction.in(n))) findIn(b, junction, n + 1)
       else junction.in(n)
@@ -473,7 +473,7 @@ object FlowGraph extends GraphApply {
 
       def ~>[Out](junction: UniformFanInShape[T, Out])(implicit b: Builder[_]): PortOps[Out, Unit] = {
         def bind(n: Int): Unit = {
-          if (n == junction.inArray.length)
+          if (n == junction.inSeq.length)
             throw new IllegalArgumentException(s"no more inlets free on $junction")
           else if (b.module.upstreams.contains(junction.in(n))) bind(n + 1)
           else b.addEdge(importAndGetPort(b), junction.in(n))
