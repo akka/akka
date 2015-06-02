@@ -197,9 +197,10 @@ That means they will start buffering incoming messages for that shard, in the sa
 shard location is unknown. During the rebalance process the coordinator will not answer any
 requests for the location of shards that are being rebalanced, i.e. local buffering will
 continue until the handoff is completed. The ``ShardRegion`` responsible for the rebalanced shard
-will stop all entries in that shard by sending ``PoisonPill`` to them. When all entries have
-been terminated the ``ShardRegion`` owning the entries will acknowledge the handoff as completed
-to the coordinator. Thereafter the coordinator will reply to requests for the location of
+will stop all entries in that shard by sending the specified ``handOffStopMessage`` 
+(default ``PoisonPill``) to them. When all entries have been terminated the ``ShardRegion``
+owning the entries will acknowledge the handoff as completed to the coordinator. 
+Thereafter the coordinator will reply to requests for the location of
 the shard and thereby allocate a new home for the shard and then buffered messages in the
 ``ShardRegion`` actors are delivered to the new location. This means that the state of the entries
 are not transferred or migrated. If the state of the entries are of importance it should be
@@ -274,6 +275,25 @@ using a ``Passivate``.
 Note that the state of the entries themselves will not be restored unless they have been made persistent,
 e.g. with ``akka-persistence``.
 
+Graceful Shutdown
+-----------------
+
+You can send the message ``ClusterSharding.GracefulShutdown`` message (``ClusterSharding.gracefulShutdownInstance
+in Java) to the ``ShardRegion`` actor to handoff all shards that are hosted by that ``ShardRegion`` and then the
+``ShardRegion`` actor will be stopped. You can ``watch`` the ``ShardRegion`` actor to know when it is completed.
+During this period other regions will buffer messages for those shards in the same way as when a rebalance is
+triggered by the coordinator. When the shards have been stopped the coordinator will allocate these shards elsewhere.
+
+When the ``ShardRegion`` has terminated you probably want to ``leave`` the cluster, and shut down the ``ActorSystem``.
+
+This is how to do it in Java: 
+
+.. includecode:: ../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java#graceful-shutdown
+
+This is how to do it in Scala: 
+
+.. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingGracefulShutdownSpec.scala#graceful-shutdown 
+
 Dependencies
 ------------
 
@@ -290,7 +310,6 @@ maven::
     <artifactId>akka-cluster-sharding_@binVersion@</artifactId>
     <version>@version@</version>
   </dependency>
-
 
 Configuration
 -------------

@@ -139,7 +139,8 @@ class ClusterShardingCustomShardAllocationSpec extends MultiNodeSpec(ClusterShar
       rememberEntries = false,
       idExtractor = idExtractor,
       shardResolver = shardResolver,
-      allocationStrategy = TestAllocationStrategy(allocator))
+      allocationStrategy = TestAllocationStrategy(allocator),
+      handOffStopMessage = PoisonPill)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
