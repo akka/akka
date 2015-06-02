@@ -212,7 +212,8 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
     bufferSize = 1000,
     rememberEntries = rememberEntries,
     idExtractor = idExtractor,
-    shardResolver = shardResolver),
+    shardResolver = shardResolver,
+    handOffStopMessage = PoisonPill),
     name = typeName + "Region")
 
   lazy val region = createRegion("counter", rememberEntries = false)
