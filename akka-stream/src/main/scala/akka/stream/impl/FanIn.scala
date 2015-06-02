@@ -3,13 +3,11 @@
  */
 package akka.stream.impl
 
-import akka.actor.{ ActorRef, ActorLogging, Actor }
-import akka.actor.Props
+import akka.actor._
 import akka.stream.{ AbruptTerminationException, ActorFlowMaterializerSettings, InPort, Shape }
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
 import akka.stream.scaladsl.FlexiMerge.MergeLogic
 import org.reactivestreams.{ Subscription, Subscriber }
-import akka.actor.DeadLetterSuppression
 
 import scala.collection.immutable
 
@@ -18,10 +16,10 @@ import scala.collection.immutable
  */
 private[akka] object FanIn {
 
-  final case class OnError(id: Int, cause: Throwable) extends DeadLetterSuppression
-  final case class OnComplete(id: Int) extends DeadLetterSuppression
-  final case class OnNext(id: Int, e: Any) extends DeadLetterSuppression
-  final case class OnSubscribe(id: Int, subscription: Subscription) extends DeadLetterSuppression
+  final case class OnError(id: Int, cause: Throwable) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class OnComplete(id: Int) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class OnNext(id: Int, e: Any) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class OnSubscribe(id: Int, subscription: Subscription) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
   private[akka] final case class SubInput[T](impl: ActorRef, id: Int) extends Subscriber[T] {
     override def onError(cause: Throwable): Unit = {
@@ -264,7 +262,7 @@ private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, 
  */
 private[akka] object FairMerge {
   def props(settings: ActorFlowMaterializerSettings, inputPorts: Int): Props =
-    Props(new FairMerge(settings, inputPorts))
+    Props(new FairMerge(settings, inputPorts)).withDeploy(Deploy.local)
 }
 
 /**
@@ -287,7 +285,7 @@ private[akka] object UnfairMerge {
   val DefaultPreferred = 0
 
   def props(settings: ActorFlowMaterializerSettings, inputPorts: Int): Props =
-    Props(new UnfairMerge(settings, inputPorts, DefaultPreferred))
+    Props(new UnfairMerge(settings, inputPorts, DefaultPreferred)).withDeploy(Deploy.local)
 }
 
 /**
@@ -309,14 +307,14 @@ private[akka] final class UnfairMerge(_settings: ActorFlowMaterializerSettings,
  */
 private[akka] object FlexiMerge {
   def props[T, S <: Shape](settings: ActorFlowMaterializerSettings, ports: S, mergeLogic: MergeLogic[T]): Props =
-    Props(new FlexiMergeImpl(settings, ports, mergeLogic))
+    Props(new FlexiMergeImpl(settings, ports, mergeLogic)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
 private[akka] object Concat {
-  def props(settings: ActorFlowMaterializerSettings): Props = Props(new Concat(settings))
+  def props(settings: ActorFlowMaterializerSettings): Props = Props(new Concat(settings)).withDeploy(Deploy.local)
 }
 
 /**

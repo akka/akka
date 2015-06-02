@@ -4,8 +4,7 @@
 package akka.stream.testkit
 
 import scala.language.existentials
-import akka.actor.ActorSystem
-import akka.actor.DeadLetterSuppression
+import akka.actor.{ NoSerializationVerificationNeeded, ActorSystem, DeadLetterSuppression }
 import akka.stream._
 import akka.stream.impl._
 import akka.testkit.TestProbe
@@ -359,12 +358,12 @@ private[testkit] object StreamTestKit {
   import TestPublisher._
   import TestSubscriber._
 
-  sealed trait PublisherEvent extends DeadLetterSuppression
+  sealed trait PublisherEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded
   final case class Subscribe(subscription: Subscription) extends PublisherEvent
   final case class CancelSubscription(subscription: Subscription) extends PublisherEvent
   final case class RequestMore(subscription: Subscription, elements: Long) extends PublisherEvent
 
-  sealed trait SubscriberEvent extends DeadLetterSuppression
+  sealed trait SubscriberEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded
   final case class OnSubscribe(subscription: Subscription) extends SubscriberEvent
   final case class OnNext[I](element: I) extends SubscriberEvent
   final case object OnComplete extends SubscriberEvent

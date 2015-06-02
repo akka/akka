@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io.impl
+package akka.stream.impl.io
 
 import java.io.{ File, RandomAccessFile }
 import java.nio.channels.FileChannel
 
-import akka.actor.{ ActorLogging, Props }
+import akka.actor.{ Deploy, ActorLogging, Props }
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
 
@@ -16,7 +16,7 @@ import scala.concurrent.Promise
 private[akka] object SynchronousFileSubscriber {
   def props(f: File, completionPromise: Promise[Long], bufSize: Int, append: Boolean) = {
     require(bufSize > 0, "buffer size must be > 0")
-    Props(classOf[SynchronousFileSubscriber], f, completionPromise, bufSize, append)
+    Props(classOf[SynchronousFileSubscriber], f, completionPromise, bufSize, append).withDeploy(Deploy.local)
   }
 
 }
