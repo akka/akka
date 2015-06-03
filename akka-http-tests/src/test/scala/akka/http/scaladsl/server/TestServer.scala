@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-import akka.http.scaladsl.server.directives.UserCredentials
+import akka.http.scaladsl.server.directives.Credentials
 import com.typesafe.config.{ ConfigFactory, Config }
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -23,7 +23,7 @@ object TestServer extends App {
   import Directives._
 
   def auth: AuthenticatorPF[String] = {
-    case p @ UserCredentials.Provided(name) if p.verifySecret(name + "-password") ⇒ name
+    case p @ Credentials.Provided(name) if p.verify(name + "-password") ⇒ name
   }
 
   val bindingFuture = Http().bindAndHandle({
