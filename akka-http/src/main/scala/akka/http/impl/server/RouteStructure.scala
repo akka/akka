@@ -6,7 +6,7 @@ package akka.http.impl.server
 
 import java.io.File
 import akka.http.javadsl.model.ws.Message
-import akka.http.javadsl.server.values.{ PathMatcher, HttpBasicAuthenticator }
+import akka.http.javadsl.server.values.{ PathMatcher, HttpBasicAuthenticator, OAuth2Authenticator }
 import akka.stream.javadsl.Flow
 
 import scala.language.existentials
@@ -54,6 +54,7 @@ private[http] object RouteStructure {
   }
   case class Extract(extractions: Seq[StandaloneExtractionImpl[_]])(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
   case class BasicAuthentication(authenticator: HttpBasicAuthenticator[_])(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
+  case class OAuth2Authentication(authenticator: OAuth2Authenticator[_])(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
   case class EncodeResponse(coders: immutable.Seq[Coder])(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
   case class DecodeRequest(coders: immutable.Seq[Coder])(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
 
