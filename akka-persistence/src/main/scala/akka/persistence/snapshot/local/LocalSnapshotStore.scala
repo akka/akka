@@ -8,16 +8,16 @@ package akka.persistence.snapshot.local
 import java.io._
 import java.net.{ URLDecoder, URLEncoder }
 
+import akka.actor.ActorLogging
+import akka.persistence._
+import akka.persistence.serialization._
+import akka.persistence.snapshot._
+import akka.serialization.SerializationExtension
+import akka.util.ByteString.UTF_8
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util._
-
-import akka.actor.ActorLogging
-import akka.persistence._
-import akka.persistence.snapshot._
-import akka.persistence.serialization._
-import akka.serialization.SerializationExtension
-import akka.util.ByteString.UTF_8
 
 /**
  * INTERNAL API.
@@ -45,7 +45,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     //
     // TODO: make number of loading attempts configurable
     //
-    val metadata = snapshotMetadata(persistenceId, criteria).sorted.takeRight(3)
+    val metadata = snapshotMetadatas(persistenceId, criteria).sorted.takeRight(3)
     Future(load(metadata))(streamDispatcher)
   }
 
@@ -58,13 +58,26 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     saving -= metadata
   }
 
-  def delete(metadata: SnapshotMetadata): Unit = {
+  def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
     saving -= metadata
-    snapshotFile(metadata).delete()
+    Future {
+      // multiple snapshot files here mean that there were multiple snapshots for this seqNr, we delete all of them
+      // usually snapshot-stores would keep one snapshot per sequenceNr however here in the file-based one we timestamp
+      // snapshots and allow multiple to be kept around (for the same seqNr) if desired
+      snapshotFiles(metadata).map(_.delete())
+    }(streamDispatcher).map(_ ⇒ ())(streamDispatcher)
   }
 
-  def delete(persistenceId: String, criteria: SnapshotSelectionCriteria) = {
-    snapshotMetadata(persistenceId, criteria).foreach(delete)
+  def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = {
+    val metadatas = snapshotMetadatas(persistenceId, criteria)
+    Future.sequence {
+      metadatas.map(deleteAsync)
+    }(collection.breakOut, streamDispatcher).map(_ ⇒ ())(streamDispatcher)
+  }
+
+  private def snapshotFiles(metadata: SnapshotMetadata): immutable.Seq[File] = {
+    // pick all files for this persistenceId and sequenceNr, old journals could have created multiple entries with appended timestamps
+    snapshotDir.listFiles(new SnapshotSeqNrFilenameFilter(metadata.persistenceId, metadata.sequenceNr)).toVector
   }
 
   @scala.annotation.tailrec
@@ -81,7 +94,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
 
   protected def save(metadata: SnapshotMetadata, snapshot: Any): Unit = {
     val tmpFile = withOutputStream(metadata)(serialize(_, Snapshot(snapshot)))
-    tmpFile.renameTo(snapshotFile(metadata))
+    tmpFile.renameTo(snapshotFileForWrite(metadata))
   }
 
   protected def deserialize(inputStream: InputStream): Snapshot =
@@ -91,21 +104,22 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     outputStream.write(serializationExtension.findSerializerFor(snapshot).toBinary(snapshot))
 
   protected def withOutputStream(metadata: SnapshotMetadata)(p: (OutputStream) ⇒ Unit): File = {
-    val tmpFile = snapshotFile(metadata, extension = "tmp")
+    val tmpFile = snapshotFileForWrite(metadata, extension = "tmp")
     withStream(new BufferedOutputStream(new FileOutputStream(tmpFile)), p)
     tmpFile
   }
 
   private def withInputStream[T](metadata: SnapshotMetadata)(p: (InputStream) ⇒ T): T =
-    withStream(new BufferedInputStream(new FileInputStream(snapshotFile(metadata))), p)
+    withStream(new BufferedInputStream(new FileInputStream(snapshotFileForWrite(metadata))), p)
 
   private def withStream[A <: Closeable, B](stream: A, p: A ⇒ B): B =
     try { p(stream) } finally { stream.close() }
 
-  private def snapshotFile(metadata: SnapshotMetadata, extension: String = ""): File =
+  /** Only by persistenceId and sequenceNr, timestamp is informational - accomodates for 2.13.x series files */
+  private def snapshotFileForWrite(metadata: SnapshotMetadata, extension: String = ""): File =
     new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.persistenceId, UTF_8)}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
-  private def snapshotMetadata(persistenceId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
+  private def snapshotMetadatas(persistenceId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
     val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
     if (files eq null) Nil // if the dir was removed
     else files.map(_.getName).collect {
@@ -128,11 +142,24 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     dir
   }
 
-  private class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
-    def accept(dir: File, name: String): Boolean =
+  private final class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
+    def accept(dir: File, name: String): Boolean = {
       name match {
         case FilenamePattern(pid, snr, tms) ⇒ pid.equals(URLEncoder.encode(persistenceId))
         case _                              ⇒ false
       }
+    }
+  }
+
+  private final class SnapshotSeqNrFilenameFilter(persistenceId: String, sequenceNr: Long) extends FilenameFilter {
+    private final def matches(pid: String, snr: String): Boolean =
+      pid.equals(URLEncoder.encode(persistenceId)) && Try(snr.toLong == sequenceNr).getOrElse(false)
+
+    def accept(dir: File, name: String): Boolean =
+      name match {
+        case FilenamePattern(pid, snr, tms) ⇒ matches(pid, snr)
+        case _                              ⇒ false
+      }
+
   }
 }

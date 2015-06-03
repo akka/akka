@@ -14,7 +14,7 @@ import akka.persistence._
 /**
  * Abstract snapshot store.
  */
-trait SnapshotStore extends Actor {
+trait SnapshotStore extends Actor with ActorLogging {
   import SnapshotProtocol._
   import context.dispatcher
 
@@ -29,6 +29,7 @@ trait SnapshotStore extends Actor {
       } recover {
         case e ⇒ LoadSnapshotResult(None, toSequenceNr)
       } pipeTo p
+
     case SaveSnapshot(metadata, snapshot) ⇒
       val p = sender()
       val md = metadata.copy(timestamp = System.currentTimeMillis)
@@ -37,18 +38,34 @@ trait SnapshotStore extends Actor {
       } recover {
         case e ⇒ SaveSnapshotFailure(metadata, e)
       } to (self, p)
+
     case evt @ SaveSnapshotSuccess(metadata) ⇒
-      saved(metadata)
-      sender() ! evt // sender is persistentActor
+      try saved(metadata) finally sender() ! evt // sender is persistentActor
+
     case evt @ SaveSnapshotFailure(metadata, _) ⇒
-      delete(metadata)
-      sender() ! evt // sender is persistentActor
+      try deleteAsync(metadata) finally sender() ! evt // sender is persistentActor
+
     case d @ DeleteSnapshot(metadata) ⇒
-      delete(metadata)
-      if (publish) context.system.eventStream.publish(d)
+      val p = sender()
+      deleteAsync(metadata) map {
+        case _ ⇒
+          log.warning("deleting by: " + d)
+          DeleteSnapshotSuccess(metadata)
+      } recover {
+        case e ⇒ DeleteSnapshotFailure(metadata, e)
+      } pipeTo p onComplete {
+        case _ if publish ⇒ context.system.eventStream.publish(d)
+      }
+
     case d @ DeleteSnapshots(persistenceId, criteria) ⇒
-      delete(persistenceId, criteria)
-      if (publish) context.system.eventStream.publish(d)
+      val p = sender()
+      deleteAsync(persistenceId, criteria) map {
+        case _ ⇒ DeleteSnapshotsSuccess(criteria)
+      } recover {
+        case e ⇒ DeleteSnapshotsFailure(criteria, e)
+      } pipeTo p onComplete {
+        case _ if publish ⇒ context.system.eventStream.publish(d)
+      }
   }
 
   //#snapshot-store-plugin-api
@@ -73,7 +90,7 @@ trait SnapshotStore extends Actor {
    *
    * @param metadata snapshot metadata.
    */
-  def saved(metadata: SnapshotMetadata)
+  def saved(metadata: SnapshotMetadata): Unit
 
   /**
    * Plugin API: deletes the snapshot identified by `metadata`.
@@ -81,7 +98,7 @@ trait SnapshotStore extends Actor {
    * @param metadata snapshot metadata.
    */
 
-  def delete(metadata: SnapshotMetadata)
+  def deleteAsync(metadata: SnapshotMetadata): Future[Unit]
 
   /**
    * Plugin API: deletes all snapshots matching `criteria`.
@@ -89,6 +106,6 @@ trait SnapshotStore extends Actor {
    * @param persistenceId id of the persistent actor.
    * @param criteria selection criteria for deleting.
    */
-  def delete(persistenceId: String, criteria: SnapshotSelectionCriteria)
+  def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit]
   //#snapshot-store-plugin-api
 }

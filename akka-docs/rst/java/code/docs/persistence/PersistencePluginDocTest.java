@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import akka.actor.*;
+import akka.dispatch.Futures;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.iq80.leveldb.util.FileUtils;
@@ -76,11 +77,13 @@ public class PersistencePluginDocTest {
         }
 
         @Override
-        public void doDelete(SnapshotMetadata metadata) throws Exception {
+        public Future<Void> doDelete(SnapshotMetadata metadata) throws Exception {
+            return Futures.successful(null);
         }
 
         @Override
-        public void doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception {
+        public Future<Void> doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception {
+            return Futures.successful(null);
         }
     }
 

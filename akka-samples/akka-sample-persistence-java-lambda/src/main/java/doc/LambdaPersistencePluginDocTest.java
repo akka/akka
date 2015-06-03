@@ -5,6 +5,7 @@
 package doc;
 
 //#plugin-imports
+import akka.dispatch.Futures;
 import akka.persistence.*;
 import akka.persistence.journal.japi.*;
 import akka.persistence.snapshot.japi.*;
@@ -69,11 +70,13 @@ public class LambdaPersistencePluginDocTest {
     }
 
     @Override
-    public void doDelete(SnapshotMetadata metadata) throws Exception {
+    public Future<Void> doDelete(SnapshotMetadata metadata) throws Exception {
+      return Futures.successful(null);
     }
 
     @Override
-    public void doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception {
+    public Future<Void> doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception {
+      return Futures.successful(null);
     }
   }
 
