@@ -145,13 +145,13 @@ object ThrottlerTransportAdapter {
   }
 
   /**
-   * Management Command to force dissocation of an address.
+   * Management Command to force disassociation of an address.
    */
   @SerialVersionUID(1L)
   final case class ForceDisassociate(address: Address)
 
   /**
-   * Management Command to force dissocation of an address with an explicit error.
+   * Management Command to force disassociation of an address with an explicit error.
    */
   @SerialVersionUID(1L)
   final case class ForceDisassociateExplicitly(address: Address, reason: DisassociateInfo)

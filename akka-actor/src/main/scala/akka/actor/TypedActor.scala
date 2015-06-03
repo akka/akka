@@ -59,7 +59,7 @@ trait TypedActorFactory {
   }
 
   /**
-   * Returns wether the supplied AnyRef is a TypedActor proxy or not
+   * Returns whether the supplied AnyRef is a TypedActor proxy or not
    */
   def isTypedActor(proxyOrNot: AnyRef): Boolean
 
@@ -654,7 +654,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   }
 
   /**
-   * Returns wether the supplied AnyRef is a TypedActor proxy or not
+   * Returns whether the supplied AnyRef is a TypedActor proxy or not
    */
   def isTypedActor(proxyOrNot: AnyRef): Boolean = invocationHandlerFor(proxyOrNot) ne null
 
@@ -675,7 +675,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
       proxy
     } else {
       proxyVar set proxy // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-      actorVar set actorRef //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
+      actorVar set actorRef //Make sure the InvocationHandler gets a hold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
       proxyVar.get
     }
   }

@@ -69,7 +69,7 @@ object JournalPerfSpec {
  * if their plugin's performance is roughly as expected. It also validates the plugin still works under "more messages" scenarios.
  *
  * In case your journal plugin needs some kind of setup or teardown, override the `beforeAll` or `afterAll`
- * methods (don't forget to call `super` in your overriden methods).
+ * methods (don't forget to call `super` in your overridden methods).
  *
  * For a Java and JUnit consumable version of the TCK please refer to [[akka.persistence.japi.journal.JavaJournalPerfSpec]].
  *
@@ -87,7 +87,7 @@ abstract class JournalPerfSpec(config: Config) extends JournalSpec(config) {
     testProbe.expectMsg(awaitDuration, cmnds.last)
   }
 
-  /** Executes a block of code multiple times (no warmup) */
+  /** Executes a block of code multiple times (no warm-up) */
   def measure(msg: Duration ⇒ String)(block: ⇒ Unit): Unit = {
     val measurements = Array.ofDim[Duration](measurementIterations)
     var i = 0
@@ -112,7 +112,7 @@ abstract class JournalPerfSpec(config: Config) extends JournalSpec(config) {
   /** Override in order to customize timeouts used for expectMsg, in order to tune the awaits to your journal's perf */
   private def awaitDuration: FiniteDuration = awaitDurationMillis.millis
 
-  /** Numbe of messages sent to the PersistentActor under test for each test iteration */
+  /** Number of messages sent to the PersistentActor under test for each test iteration */
   def eventsCount: Int = 10 * 1000
 
   /** Number of measurement iterations each test will be run. */

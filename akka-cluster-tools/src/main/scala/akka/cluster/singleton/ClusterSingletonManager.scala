@@ -154,7 +154,7 @@ object ClusterSingletonManager {
    */
   private object Internal {
     /**
-     * Sent from new oldest to previous oldest to initate the
+     * Sent from new oldest to previous oldest to initiate the
      * hand-over process. `HandOverInProgress` and `HandOverDone`
      * are expected replies.
      */

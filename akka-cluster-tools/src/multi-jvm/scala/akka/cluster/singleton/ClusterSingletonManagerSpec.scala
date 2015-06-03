@@ -70,7 +70,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
   }
 
   /**
-   * This channel is extremly strict with regards to
+   * This channel is extremely strict with regards to
    * registration and unregistration of consumer to
    * be able to detect misbehaviour (e.g. two active
    * singleton instances).

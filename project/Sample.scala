@@ -41,7 +41,7 @@ object Sample {
         val dependencies = buildDependencies.value
         val classpathWithProjectDependencies = dependencies.classpath.map {
           case (proj, deps) if proj.project == project.id =>
-            // add project dependency for every akka library dependnecy
+            // add project dependency for every akka library dependency
             (proj, deps ++ projectDependencies.map(ResolvedClasspathDependency(_, None)))
           case (project, deps) => (project, deps)
         }

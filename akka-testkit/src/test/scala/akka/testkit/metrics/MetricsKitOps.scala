@@ -27,7 +27,7 @@ private[akka] trait MetricsKitOps extends MetricKeyDSL {
 
   /**
    * Used to measure timing of known number of operations over time.
-   * While not being the most percise, it allows to measure a coarse op/s without injecting counters to the measured operation (potentially hot-loop).
+   * While not being the most precise, it allows to measure a coarse op/s without injecting counters to the measured operation (potentially hot-loop).
    *
    * Do not use for short running pieces of code.
    */

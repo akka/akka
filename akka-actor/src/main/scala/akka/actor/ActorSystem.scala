@@ -133,7 +133,7 @@ object ActorSystem {
    * falls back to the ClassLoader associated with the ActorSystem class.
    * If an ExecutionContext is given, it will be used as the default executor inside this ActorSystem.
    * If no ExecutionContext is given, the system will fallback to the executor configured under "akka.actor.default-dispatcher.default-executor.fallback".
-   * The system will use the passed in config, or falls back to the deafult reference configuration using the ClassLoader.
+   * The system will use the passed in config, or falls back to the default reference configuration using the ClassLoader.
    *
    * @see <a href="http://typesafehub.github.io/config/v1.3.0/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
@@ -828,7 +828,7 @@ private[akka] class ActorSystemImpl(
     private[this] final val done = Promise[T]()
     private[this] final val ref = new AtomicReference(done)
 
-    // onComplete never fires twice so safe to avoid nullcheck
+    // onComplete never fires twice so safe to avoid null check
     upStreamTerminated onComplete { t ⇒ ref.getAndSet(null).complete(t) }
 
     /**

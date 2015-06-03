@@ -20,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  *
  * The TestTransport is basically a shared memory between actor systems. The TestTransport could be programmed to
  * emulate different failure modes of a Transport implementation. TestTransport keeps a log of the activities it was
- * requested to do. This class is not optimized for performace and MUST not be used as an in-memory transport in
+ * requested to do. This class is not optimized for performance and MUST not be used as an in-memory transport in
  * production systems.
  */
 class TestTransport(
@@ -177,7 +177,7 @@ object TestTransport {
   /**
    * Test utility to make behavior of functions that return some Future[B] controllable from tests. This tool is able
    * to overwrite default behavior with any generic behavior, including failure, and exposes control to the timing of
-   * the completition of the returned future.
+   * the completion of the returned future.
    *
    * The utility is implemented as a stack of behaviors, where the behavior on the top of the stack represents the
    * currently active behavior. The bottom of the stack always contains the defaultBehavior which can not be popped

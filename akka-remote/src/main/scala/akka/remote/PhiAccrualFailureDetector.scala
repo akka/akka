@@ -186,7 +186,7 @@ private[akka] object HeartbeatHistory {
    * Create an empty HeartbeatHistory, without any history.
    * Can only be used as starting point for appending intervals.
    * The stats (mean, variance, stdDeviation) are not defined for
-   * for empty HeartbeatHistory, i.e. throws AritmeticException.
+   * for empty HeartbeatHistory, i.e. throws ArithmeticException.
    */
   def apply(maxSampleSize: Int): HeartbeatHistory = HeartbeatHistory(
     maxSampleSize = maxSampleSize,
@@ -201,7 +201,7 @@ private[akka] object HeartbeatHistory {
  * It is capped by the number of samples specified in `maxSampleSize`.
  *
  * The stats (mean, variance, stdDeviation) are not defined for
- * for empty HeartbeatHistory, i.e. throws AritmeticException.
+ * for empty HeartbeatHistory, i.e. throws ArithmeticException.
  */
 private[akka] final case class HeartbeatHistory private (
   maxSampleSize: Int,

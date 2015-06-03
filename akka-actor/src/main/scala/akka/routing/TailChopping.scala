@@ -83,7 +83,7 @@ private[akka] final case class TailChoppingRoutees(
 }
 
 /**
- * A router poll thats sends the message to a first, random picked, routee,
+ * A router poll that sends the message to a first, random picked, routee,
  * then wait a specified `interval` and then send to a second, random picked, and so on till one full cycle..
  *
  * The configuration parameter trumps the constructor arguments. This means that
@@ -169,7 +169,7 @@ final case class TailChoppingPool(
   def withDispatcher(dispatcherId: String): TailChoppingPool = copy(routerDispatcher = dispatcherId)
 
   /**
-   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * Uses the resizer and/or the supervisor strategy of the given RouterConfig
    * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
    */

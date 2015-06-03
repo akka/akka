@@ -104,7 +104,7 @@ final case class PostRestart(failure: Throwable) extends Signal
  *
  * <b>IMPORTANT NOTE:</b> if the actor terminated by switching to the
  * `Stopped` behavior then this signal will be ignored (i.e. the
- * Stopped behvavior will do nothing in reaction to it).
+ * Stopped behavior will do nothing in reaction to it).
  */
 @SerialVersionUID(1L)
 final case object PostStop extends Signal

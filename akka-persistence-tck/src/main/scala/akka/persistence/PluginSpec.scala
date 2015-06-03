@@ -18,7 +18,7 @@ abstract class PluginSpec(val config: Config) extends TestKitBase with WordSpecL
   private var _pid: String = _
 
   // used to avoid messages be delivered to a restarted actor,
-  // this is akka-persistence internals and journals themselfes don't really care
+  // this is akka-persistence internals and journals themselves don't really care
   protected val actorInstanceId = 1
 
   override protected def beforeEach(): Unit =

@@ -389,7 +389,7 @@ trait TestKitBase {
    * partial function matches and returns false. Use it to ignore certain
    * messages while waiting for a specific message.
    *
-   * @return the last received messsage, i.e. the first one for which the
+   * @return the last received message, i.e. the first one for which the
    *         partial function returned true
    */
   def fishForMessage(max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, Boolean]): Any = {

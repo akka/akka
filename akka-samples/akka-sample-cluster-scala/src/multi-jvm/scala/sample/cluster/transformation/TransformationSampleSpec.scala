@@ -79,7 +79,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
         val transformationFrontend = system.actorOf(Props[TransformationFrontend], name = "frontend")
         transformationFrontend ! TransformationJob("hello")
         expectMsgPF() {
-          // no backends yet, service unavailble
+          // no backends yet, service unavailable
           case JobFailed(_, TransformationJob("hello")) =>
         }
       }

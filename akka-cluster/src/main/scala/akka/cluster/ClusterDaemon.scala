@@ -128,7 +128,7 @@ private[cluster] object InternalClusterAction {
   final case class PublisherCreated(publisher: ActorRef)
 
   /**
-   * Comand to [[akka.cluster.ClusterDaemon]] to create a
+   * Command to [[akka.cluster.ClusterDaemon]] to create a
    * [[akka.cluster.OnMemberStatusChangedListener]].
    */
   final case class AddOnMemberUpListener(callback: Runnable) extends NoSerializationVerificationNeeded
