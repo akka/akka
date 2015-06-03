@@ -12,9 +12,9 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /**
- * Represents existing or missing Http Basic authentication credentials.
+ * Represents existing or missing OAuth 2 authentication credentials.
  */
-trait BasicCredentials {
+trait OAuth2Credentials {
   /**
    * Were credentials provided in the request?
    */
@@ -32,13 +32,13 @@ trait BasicCredentials {
 }
 
 /**
- * Implement this class to provide an HTTP Basic authentication check. The [[authenticate]] method needs to be implemented
+ * Implement this class to provide an OAuth 2 Bearer Token authentication check. The [[authenticate]] method needs to be implemented
  * to check if the supplied or missing credentials are authenticated and provide a domain level object representing
  * the user as a [[RequestVal]].
  */
-abstract class HttpBasicAuthenticator[T](val realm: String) extends AbstractDirective with ExtractionImplBase[T] with RequestVal[T] {
+abstract class OAuth2Authenticator[T](val realm: String) extends AbstractDirective with ExtractionImplBase[T] with RequestVal[T] {
   protected[http] implicit def classTag: ClassTag[T] = reflect.classTag[AnyRef].asInstanceOf[ClassTag[T]]
-  def authenticate(credentials: BasicCredentials): Future[Option[T]]
+  def authenticate(credentials: OAuth2Credentials): Future[Option[T]]
 
   /**
    * Creates a return value for use in [[authenticate]] that successfully authenticates the requests and provides
@@ -55,5 +55,5 @@ abstract class HttpBasicAuthenticator[T](val realm: String) extends AbstractDire
    * INTERNAL API
    */
   protected[http] final def createRoute(first: Route, others: Array[Route]): Route =
-    RouteStructure.BasicAuthentication(this)(first, others.toList)
+    RouteStructure.OAuth2Authentication(this)(first, others.toList)
 }

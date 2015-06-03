@@ -17,11 +17,23 @@ public class HttpBasicAuthenticationTest extends JUnitRouteTest {
     HttpBasicAuthenticator<String> authenticatedUser =
         new HttpBasicAuthenticator<String>("test-realm") {
             @Override
-            public Future<Option<String>> authenticate(BasicUserCredentials credentials) {
+            public Future<Option<String>> authenticate(BasicCredentials credentials) {
                 if (credentials.available() && // no anonymous access
-                        credentials.userName().equals("sina") &&
-                        credentials.verifySecret("1234"))
+                        credentials.identifier().equals("sina") &&
+                        credentials.verify("1234"))
                     return authenticateAs("Sina");
+                else return refuseAccess();
+            }
+        };
+
+    OAuth2Authenticator<String> authenticatedToken =
+        new OAuth2Authenticator<String>("test-realm") {
+            @Override
+            public Future<Option<String>> authenticate(OAuth2Credentials credentials) {
+                if (credentials.available() && // no anonymous access
+                        credentials.identifier().equals("myToken") &&
+                        credentials.verify("myToken"))
+                    return authenticateAs("myToken");
                 else return refuseAccess();
             }
         };
@@ -29,16 +41,21 @@ public class HttpBasicAuthenticationTest extends JUnitRouteTest {
     Handler1<String> helloWorldHandler =
         new Handler1<String>() {
             @Override
-            public RouteResult apply(RequestContext ctx, String user) {
-                return ctx.complete("Hello "+user+"!");
+            public RouteResult apply(RequestContext ctx, String identifier) {
+                return ctx.complete("Identified as "+identifier+"!");
             }
         };
 
     TestRoute route =
         testRoute(
-            path("secure").route(
+            path("basicSecure").route(
                 authenticatedUser.route(
                     handleWith1(authenticatedUser, helloWorldHandler)
+                )
+            ),
+            path("oauthSecure").route(
+                authenticatedToken.route(
+                    handleWith1(authenticatedToken, helloWorldHandler)
                 )
             )
         );
@@ -46,16 +63,26 @@ public class HttpBasicAuthenticationTest extends JUnitRouteTest {
     @Test
     public void testCorrectUser() {
         HttpRequest authenticatedRequest =
-            HttpRequest.GET("/secure")
+            HttpRequest.GET("/basicSecure")
                 .addHeader(Authorization.basic("sina", "1234"));
 
         route.run(authenticatedRequest)
             .assertStatusCode(200)
-            .assertEntity("Hello Sina!");
+            .assertEntity("Identified as Sina!");
+    }
+    @Test
+    public void testCorrectToken() {
+        HttpRequest authenticatedRequest =
+          HttpRequest.GET("/oauthSecure")
+            .addHeader(Authorization.oauth2("myToken"));
+
+        route.run(authenticatedRequest)
+          .assertStatusCode(200)
+          .assertEntity("Identified as myToken!");
     }
     @Test
     public void testRejectAnonymousAccess() {
-        route.run(HttpRequest.GET("/secure"))
+        route.run(HttpRequest.GET("/basicSecure"))
             .assertStatusCode(401)
             .assertEntity("The resource requires authentication, which was not supplied with the request")
             .assertHeaderExists("WWW-Authenticate", "Basic realm=\"test-realm\"");
@@ -63,7 +90,7 @@ public class HttpBasicAuthenticationTest extends JUnitRouteTest {
     @Test
     public void testRejectUnknownUser() {
         HttpRequest authenticatedRequest =
-            HttpRequest.GET("/secure")
+            HttpRequest.GET("/basicSecure")
                 .addHeader(Authorization.basic("joe", "0000"));
 
         route.run(authenticatedRequest)
@@ -73,7 +100,7 @@ public class HttpBasicAuthenticationTest extends JUnitRouteTest {
     @Test
     public void testRejectWrongPassword() {
         HttpRequest authenticatedRequest =
-            HttpRequest.GET("/secure")
+            HttpRequest.GET("/basicSecure")
                 .addHeader(Authorization.basic("sina", "1235"));
 
         route.run(authenticatedRequest)
