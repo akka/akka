@@ -17,7 +17,7 @@ object SnapshotStoreSpec {
  * Plugin authors are highly encouraged to include it in their plugin's test suites.
  *
  * In case your journal plugin needs some kind of setup or teardown, override the `beforeAll` or `afterAll`
- * methods (don't forget to call `super` in your overriden methods).
+ * methods (don't forget to call `super` in your overridden methods).
  *
  * For a Java and JUnit consumable version of the TCK please refer to [[akka.persistence.japi.snapshot.JavaSnapshotStoreSpec]].
  *

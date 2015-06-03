@@ -46,7 +46,7 @@ class Chopstick extends Actor {
 }
 
 /*
-* A hakker is an awesome dude or dudett who either thinks about hacking or has to eat ;-)
+* A hakker is an awesome dude or dudette who either thinks about hacking or has to eat ;-)
 */
 class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
 

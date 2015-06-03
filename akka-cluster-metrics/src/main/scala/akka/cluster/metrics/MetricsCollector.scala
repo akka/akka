@@ -81,7 +81,7 @@ private[metrics] object MetricsCollector {
  * Loads JVM and system metrics through JMX monitoring beans.
  *
  * @param address The [[akka.actor.Address]] of the node being sampled
- * @param decay how quickly the exponential weighting of past data is decayed
+ * @param decayFactor how quickly the exponential weighting of past data is decayed
  */
 class JmxMetricsCollector(address: Address, decayFactor: Double) extends MetricsCollector {
   import StandardMetrics._
@@ -184,7 +184,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
  * to missing classes or native libraries.
  *
  * @param address The [[akka.actor.Address]] of the node being sampled
- * @param decay how quickly the exponential weighting of past data is decayed
+ * @param decayFactor how quickly the exponential weighting of past data is decayed
  * @param sigar the org.hyperic.Sigar instance
  */
 class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: SigarProxy)

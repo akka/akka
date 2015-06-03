@@ -96,7 +96,7 @@ abstract class ClusterAccrualFailureDetectorSpec
       enterBarrier("third-shutdown")
 
       runOn(first, second) {
-        // remaning nodes should detect failure...
+        // remaining nodes should detect failure...
         awaitCond(!cluster.failureDetector.isAvailable(third), 15.seconds)
         // other connections still ok
         cluster.failureDetector.isAvailable(first) should ===(true)

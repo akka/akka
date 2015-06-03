@@ -126,7 +126,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
    *
    * The actual check if the subscriber still has subscriptions is performed by the `EventStreamUnsubscriber`,
    * because it's an expensive operation, and we don want to block client-code for that long, the Actor will eventually
-   * catch up and perform the apropriate operation.
+   * catch up and perform the appropriate operation.
    */
   @tailrec
   private def unregisterIfNoMoreSubscribedChannels(subscriber: ActorRef): Unit = {

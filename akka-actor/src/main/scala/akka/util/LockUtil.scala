@@ -138,7 +138,7 @@ class Switch(startAsOn: Boolean = false) {
   def isOn: Boolean = switch.get
 
   /**
-   * Returns whether the switch is IMMEDDIATELY off (no locking)
+   * Returns whether the switch is IMMEDIATELY off (no locking)
    */
   def isOff: Boolean = !isOn
 }

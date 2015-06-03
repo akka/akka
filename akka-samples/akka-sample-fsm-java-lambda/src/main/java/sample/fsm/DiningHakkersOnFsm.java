@@ -54,7 +54,7 @@ public class DiningHakkersOnFsm {
       event((event, data) -> (event == Put) && (data.hakker == sender()), (event, data) ->
         goTo(CS.Available).using(new TakenBy(context().system().deadLetters()))));
 
-    // Initialze the chopstick
+    // Initialize the chopstick
     initialize();
     }
   }

@@ -20,7 +20,7 @@ import akka.util.BoxedType
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
  * to the TestEventListener to install a filter, and `UnMute` to
- * deinstall it.
+ * uninstall it.
  *
  * You should always prefer the filter methods in the package object
  * (see [[akka.testkit]] `filterEvents` and `filterException`) or on the
@@ -31,7 +31,7 @@ sealed trait TestEvent
 /**
  * Implementation helpers of the EventFilter facilities: send <code>Mute</code>
  * to the TestEventFilter to install a filter, and <code>UnMute</code> to
- * deinstall it.
+ * uninstall it.
  *
  * You should always prefer the filter methods in the package object
  * (see [[akka.testkit]] `filterEvents` and `filterException`) or on the

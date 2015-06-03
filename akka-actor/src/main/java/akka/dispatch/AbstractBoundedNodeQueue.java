@@ -137,7 +137,7 @@ public abstract class AbstractBoundedNodeQueue<T> {
      */
     public final int size() {
         //Order of operations is extremely important here
-        // If no item was dequeued between when we looked at the count of the enqueueing end,
+        // If no item was dequeued between when we looked at the count of the enqueuing end,
         // there should be no out-of-bounds
         for(;;) {
             final int deqCountBefore = getDeq().count;

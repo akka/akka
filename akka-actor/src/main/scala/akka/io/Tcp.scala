@@ -26,7 +26,7 @@ import java.lang.{ Iterable ⇒ JIterable }
  * In order to open an outbound connection send a [[Tcp.Connect]] message
  * to the [[TcpExt#manager]].
  *
- * In order to start listening for inbound connetions send a [[Tcp.Bind]]
+ * In order to start listening for inbound connections send a [[Tcp.Bind]]
  * message to the [[TcpExt#manager]].
  *
  * The Java API for generating TCP commands is available at [[TcpMessage]].

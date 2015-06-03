@@ -399,7 +399,7 @@ private[akka] object ClusterShardingGuardian {
 }
 
 /**
- * INTERNAL API. [[ShardRegion]] and [[ShardCoordinator]] actors are createad as children
+ * INTERNAL API. [[ShardRegion]] and [[ShardCoordinator]] actors are created as children
  * of this actor.
  */
 private[akka] class ClusterShardingGuardian extends Actor {
@@ -1467,7 +1467,7 @@ object ShardCoordinator {
      */
     @SerialVersionUID(1L) final case class RegisterProxy(shardRegionProxy: ActorRef) extends CoordinatorCommand
     /**
-     * Acknowledgement from `ShardCoordinator` that [[Register]] or [[RegisterProxy]] was sucessful.
+     * Acknowledgement from `ShardCoordinator` that [[Register]] or [[RegisterProxy]] was successful.
      */
     @SerialVersionUID(1L) final case class RegisterAck(coordinator: ActorRef) extends CoordinatorMessage
     /**
@@ -1484,7 +1484,7 @@ object ShardCoordinator {
      */
     @SerialVersionUID(1L) final case class ShardHome(shard: ShardId, ref: ActorRef) extends CoordinatorMessage
     /**
-     * `ShardCoodinator` informs a `ShardRegion` that it is hosting this shard
+     * `ShardCoordinator` informs a `ShardRegion` that it is hosting this shard
      */
     @SerialVersionUID(1L) final case class HostShard(shard: ShardId) extends CoordinatorMessage
     /**
@@ -1505,7 +1505,7 @@ object ShardCoordinator {
      */
     @SerialVersionUID(1L) final case class BeginHandOffAck(shard: ShardId) extends CoordinatorCommand
     /**
-     * When all `ShardRegion` actors have acknoledged the `BeginHandOff` the
+     * When all `ShardRegion` actors have acknowledged the `BeginHandOff` the
      * `ShardCoordinator` sends this message to the `ShardRegion` responsible for the
      * shard. The `ShardRegion` is supposed to stop all entries in that shard and when
      * all entries have terminated reply with `ShardStopped` to the `ShardCoordinator`.
@@ -1872,7 +1872,7 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
 
     case ShardHome(_, _) ⇒
     //On rebalance, we send ourselves a GetShardHome message to reallocate a
-    // shard. This recieve handles the "response" from that message. i.e. Ingores it.
+    // shard. This receive handles the "response" from that message. i.e. ignores it.
 
     case ClusterShuttingDown ⇒
       log.debug("Shutting down ShardCoordinator")

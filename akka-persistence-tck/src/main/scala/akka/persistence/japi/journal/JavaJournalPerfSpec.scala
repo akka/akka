@@ -20,7 +20,7 @@ import org.scalatest.junit.JUnitRunner
  * It is *NOT* meant to be a comprehensive benchmark, but rather aims to help plugin developers to easily determine
  * if their plugin's performance is roughly as expected. It also validates the plugin still works under "more messages" scenarios.
  *
- * The measurements are by default printed to `System.out`, if you want to customise this please override the [[#info]] method.
+ * The measurements are by default printed to `System.out`, if you want to customize this please override the [[#info]] method.
  *
  * The benchmark iteration and message counts are easily customisable by overriding these methods:
  *
@@ -36,7 +36,7 @@ import org.scalatest.junit.JUnitRunner
  * }}}
  *
  * In case your journal plugin needs some kind of setup or teardown, override the `beforeAll` or `afterAll`
- * methods (don't forget to call `super` in your overriden methods).
+ * methods (don't forget to call `super` in your overridden methods).
  *
  * @see [[akka.persistence.journal.JournalSpec]]
  * @see [[akka.persistence.journal.JournalPerfSpec]]

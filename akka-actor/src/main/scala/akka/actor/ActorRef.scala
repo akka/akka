@@ -465,7 +465,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
-/** Subscribe to this class to be notified about all DeadLetters (also the supressed ones). */
+/** Subscribe to this class to be notified about all DeadLetters (also the suppressed ones). */
 sealed trait AllDeadLetters {
   def message: Any
   def sender: ActorRef

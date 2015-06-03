@@ -52,7 +52,7 @@ private[io] trait ChannelRegistry {
 /**
  * Implementations of this interface are sent as actor messages back to a channel actor as
  * a result of it having called `register` on the `ChannelRegistry`.
- * Enables a channel actor to directly schedule interest setting tasks to the selector mgmt. dispatcher.
+ * Enables a channel actor to directly schedule interest setting tasks to the selector management dispatcher.
  */
 private[io] trait ChannelRegistration extends NoSerializationVerificationNeeded {
   def enableInterest(op: Int)
