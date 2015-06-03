@@ -25,26 +25,38 @@ trait Snapshotter extends Actor {
    */
   def snapshotSequenceNr: Long
 
+  /**
+   * Instructs the snapshot store to load the specified snapshot and send it via an [[SnapshotOffer]]
+   * to the running [[PersistentActor]].
+   */
   def loadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long) =
     snapshotStore ! LoadSnapshot(persistenceId, criteria, toSequenceNr)
 
   /**
-   * Saves a `snapshot` of this snapshotter's state. If saving succeeds, this snapshotter will receive a
-   * [[SaveSnapshotSuccess]] message, otherwise a [[SaveSnapshotFailure]] message.
+   * Saves a `snapshot` of this snapshotter's state.
+   *
+   * The [[PersistentActor]] will be notified about the success or failure of this
+   * via an [[SaveSnapshotSuccess]] or [[SaveSnapshotFailure]] message.
    */
   def saveSnapshot(snapshot: Any): Unit = {
     snapshotStore ! SaveSnapshot(SnapshotMetadata(snapshotterId, snapshotSequenceNr), snapshot)
   }
 
   /**
-   * Deletes a snapshot identified by `sequenceNr` and `timestamp`.
+   * Deletes the snapshot identified by `sequenceNr`.
+   *
+   * The [[PersistentActor]] will be notified about the status of the deletion
+   * via an [[DeleteSnapshotSuccess]] or [[DeleteSnapshotFailure]] message.
    */
-  def deleteSnapshot(sequenceNr: Long, timestamp: Long): Unit = {
-    snapshotStore ! DeleteSnapshot(SnapshotMetadata(snapshotterId, sequenceNr, timestamp))
+  def deleteSnapshot(sequenceNr: Long): Unit = {
+    snapshotStore ! DeleteSnapshot(SnapshotMetadata(snapshotterId, sequenceNr))
   }
 
   /**
    * Deletes all snapshots matching `criteria`.
+   *
+   * The [[PersistentActor]] will be notified about the status of the deletion
+   * via an [[DeleteSnapshotsSuccess]] or [[DeleteSnapshotsFailure]] message.
    */
   def deleteSnapshots(criteria: SnapshotSelectionCriteria): Unit = {
     snapshotStore ! DeleteSnapshots(snapshotterId, criteria)

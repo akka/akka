@@ -45,7 +45,7 @@ interface SnapshotStorePlugin {
    * @param metadata
    *          snapshot metadata.
    */
-  void doDelete(SnapshotMetadata metadata) throws Exception;
+  Future<Void> doDelete(SnapshotMetadata metadata) throws Exception;
 
   /**
    * Java API, Plugin API: deletes all snapshots matching `criteria`.
@@ -55,6 +55,6 @@ interface SnapshotStorePlugin {
    * @param criteria
    *          selection criteria for deleting.
    */
-  void doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception;
+  Future<Void> doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception;
   //#snapshot-store-plugin-api
 }

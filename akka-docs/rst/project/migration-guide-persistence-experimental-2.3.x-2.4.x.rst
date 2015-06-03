@@ -8,7 +8,6 @@ Migration Guide Akka Persistence (experimental) 2.3.3 to 2.3.4 (and 2.4.x)
 is provided for Persistence while under the *experimental* flag. The goal of this phase is to gather user feedback
 before we freeze the APIs in a major release.
 
-
 defer renamed to deferAsync
 ===========================
 The ``defer`` method in ``PersistentActor`` was renamed to ``deferAsync`` as it matches the semantics
@@ -204,3 +203,17 @@ To continue using LevelDB based persistence plugins it is now required for relat
 to include an additional explicit dependency declaration for the LevelDB artifacts. 
 This change allows production akka deployments to avoid need for the LevelDB provisioning. 
 Please see persistence extension ``reference.conf`` for details. 
+
+SnapshotStore: Snapshots can now be deleted asynchronously (and report failures)
+================================================================================
+Previously the ``SnapshotStore`` plugin SPI did not allow for asynchronous deletion of snapshots,
+and failures of deleting a snapshot may have been even silently ignored.
+
+Now ``SnapshotStore``s must return a ``Future`` representing the deletion of the snapshot.
+If this future completes successfully the ``PersistentActor`` which initiated the snapshotting will
+be notified via an ``DeleteSnapshotSuccess`` message. If the deletion fails for some reason a ``DeleteSnapshotFailure``
+will be sent to the actor instead.
+
+For ``criteria`` based deletion of snapshots (``def deleteSnapshots(criteria: SnapshotSelectionCriteria)``) equivalent
+``DeleteSnapshotsSuccess`` and ``DeleteSnapshotsFailure`` messages are sent, which contain the specified criteria,
+instead of ``SnapshotMetadata`` as is the case with the single snapshot deletion messages.

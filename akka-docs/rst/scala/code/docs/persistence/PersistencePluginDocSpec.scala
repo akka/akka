@@ -139,8 +139,8 @@ class MySnapshotStore extends SnapshotStore {
                 criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
   def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = ???
   def saved(metadata: SnapshotMetadata): Unit = ???
-  def delete(metadata: SnapshotMetadata): Unit = ???
-  def delete(persistenceId: String, criteria: SnapshotSelectionCriteria): Unit = ???
+  def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = ???
+  def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = ???
 }
 
 object PersistenceTCKDoc {

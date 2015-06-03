@@ -4,11 +4,11 @@
 
 package akka.persistence.snapshot.japi
 
-import scala.concurrent.Future
-
 import akka.japi.{ Option ⇒ JOption }
 import akka.persistence._
 import akka.persistence.snapshot.{ SnapshotStore ⇒ SSnapshotStore }
+
+import scala.concurrent.Future
 
 /**
  * Java API: abstract snapshot store.
@@ -22,13 +22,13 @@ abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
   final def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] =
     doSaveAsync(metadata, snapshot).map(Unit.unbox)
 
-  final def saved(metadata: SnapshotMetadata) =
+  final def saved(metadata: SnapshotMetadata): Unit =
     onSaved(metadata)
 
-  final def delete(metadata: SnapshotMetadata) =
-    doDelete(metadata)
+  final def delete(metadata: SnapshotMetadata): Future[Unit] =
+    doDelete(metadata).map(_ ⇒ ())
 
-  final def delete(persistenceId: String, criteria: SnapshotSelectionCriteria) =
-    doDelete(persistenceId: String, criteria: SnapshotSelectionCriteria)
+  final def delete(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] =
+    doDelete(persistenceId: String, criteria: SnapshotSelectionCriteria).map(_ ⇒ ())
 
 }

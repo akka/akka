@@ -5,6 +5,7 @@
 package akka.persistence.journal.japi;
 
 import akka.persistence.*;
+import scala.concurrent.Future;
 
 interface SyncWritePlugin {
   //#sync-write-plugin-api
