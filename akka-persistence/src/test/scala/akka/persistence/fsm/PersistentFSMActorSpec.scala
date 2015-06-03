@@ -59,7 +59,7 @@ abstract class PersistentFSMActorSpec(config: Config) extends PersistenceSpec(co
       expectTerminated(fsmRef)
     }
 
-    "function as a regular FSM on state timeout" in {
+    "function as a regular FSM on state timeout" taggedAs TimingTest in {
       val persistenceId = name
       val fsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, dummyReportActorRef))
 
@@ -73,11 +73,11 @@ abstract class PersistentFSMActorSpec(config: Config) extends PersistenceSpec(co
       expectMsg(CurrentState(fsmRef, LookingAround))
       expectMsg(Transition(fsmRef, LookingAround, Shopping))
 
-      within(0.9 seconds, 1.1 seconds) {
+      within(0.9 seconds, 1.9 seconds) {
         expectMsg(Transition(fsmRef, Shopping, Inactive))
       }
 
-      within(1.9 seconds, 2.1 seconds) {
+      within(1.9 seconds, 2.9 seconds) {
         expectTerminated(fsmRef)
       }
     }
@@ -181,7 +181,7 @@ abstract class PersistentFSMActorSpec(config: Config) extends PersistenceSpec(co
       expectTerminated(fsmRef)
     }
 
-    "recover successfully with correct state timeout" in {
+    "recover successfully with correct state timeout" taggedAs TimingTest in {
       val persistenceId = name
       val fsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, dummyReportActorRef))
 
@@ -205,7 +205,7 @@ abstract class PersistentFSMActorSpec(config: Config) extends PersistenceSpec(co
 
       expectMsg(CurrentState(recoveredFsmRef, Shopping))
 
-      within(0.9 seconds, 1.1 seconds) {
+      within(0.9 seconds, 1.9 seconds) {
         expectMsg(Transition(recoveredFsmRef, Shopping, Inactive))
       }
 
@@ -219,7 +219,7 @@ abstract class PersistentFSMActorSpec(config: Config) extends PersistenceSpec(co
 
       expectMsg(CurrentState(recoveredFsmRef, Inactive))
 
-      within(1.9 seconds, 2.1 seconds) {
+      within(1.9 seconds, 2.9 seconds) {
         expectTerminated(recoveredFsmRef)
       }
     }
