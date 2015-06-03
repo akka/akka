@@ -100,8 +100,8 @@ FlowGraphs are constructed like this:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#flow-graph-broadcast
 
-As you can see, we use graph builder to mutably construct the graph using the ``addEdge`` method. Once we have the 
-FlowGraph in the value ``g`` *it is immutable, thread-safe, and freely shareable*. A graph can can be ``run()`` directly - 
+As you can see, we use graph builder to mutably construct the graph using the ``addEdge`` method. Once we have the
+FlowGraph in the value ``g`` *it is immutable, thread-safe, and freely shareable*. A graph can be ``run()`` directly -
 assuming all ports (sinks/sources) within a flow have been connected properly. It is possible to construct :class:`PartialFlowGraph` s
 where this is not required but this will be covered in detail in :ref:`partial-flow-graph-java`.
 
@@ -124,7 +124,7 @@ elements*" this can be expressed using the ``buffer`` element:
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#tweets-slow-consumption-dropHead
 
 The ``buffer`` element takes an explicit and required ``OverflowStrategy``, which defines how the buffer should react
-when it receives another element element while it is full. Strategies provided include dropping the oldest element (``dropHead``),
+when it receives another element while it is full. Strategies provided include dropping the oldest element (``dropHead``),
 dropping the entire buffer, signalling failures etc. Be sure to pick and choose the strategy that fits your use case best.
 
 Materialized values
