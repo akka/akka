@@ -4,34 +4,44 @@
 
 package akka.http
 
-import akka.ConfigurationException
-import akka.actor.{ ActorSystem, ActorRefFactory }
-import akka.http.impl.util._
-import akka.http.scaladsl.model.HttpHeader
-import akka.http.scaladsl.model.headers.{ Host, Server }
 import com.typesafe.config.Config
 
-import scala.concurrent.duration._
 import scala.language.implicitConversions
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+import akka.ConfigurationException
+import akka.actor.{ ActorSystem, ActorRefFactory }
+import akka.io.Inet.SocketOption
+
+import akka.http.impl.util._
+
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.headers.{ Host, Server }
 
 final case class ServerSettings(
   serverHeader: Option[Server],
   timeouts: ServerSettings.Timeouts,
+  maxConnections: Int,
   remoteAddressHeader: Boolean,
   rawRequestUriHeader: Boolean,
   transparentHeadRequests: Boolean,
   verboseErrorMessages: Boolean,
   responseHeaderSizeHint: Int,
+  backlog: Int,
+  socketOptions: immutable.Traversable[SocketOption],
   defaultHostHeader: Host,
   parserSettings: ParserSettings) {
 
-  require(0 <= responseHeaderSizeHint, "response-size-hint must be > 0")
+  require(0 < maxConnections, "max-connections must be > 0")
+  require(0 < responseHeaderSizeHint, "response-size-hint must be > 0")
+  require(0 < backlog, "backlog must be > 0")
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.server") {
   final case class Timeouts(idleTimeout: Duration,
                             bindTimeout: FiniteDuration) {
-    require(bindTimeout >= Duration.Zero, "bindTimeout must be > 0")
+    require(bindTimeout > Duration.Zero, "bindTimeout must be > 0")
   }
   implicit def timeoutsShortcut(s: ServerSettings): Timeouts = s.timeouts
 
@@ -40,11 +50,14 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
     Timeouts(
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getFiniteDuration "bind-timeout"),
+    c getInt "max-connections",
     c getBoolean "remote-address-header",
     c getBoolean "raw-request-uri-header",
     c getBoolean "transparent-head-requests",
     c getBoolean "verbose-error-messages",
     c getIntBytes "response-header-size-hint",
+    c getInt "backlog",
+    SocketOptionSettings fromSubConfig c.getConfig("socket-options"),
     defaultHostHeader =
       HttpHeader.parse("Host", c getString "default-host-header") match {
         case HttpHeader.ParsingResult.Ok(x: Host, Nil) ⇒ x

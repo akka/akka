@@ -4,18 +4,24 @@
 
 package akka.http
 
-import akka.actor.ActorSystem
-import akka.http.impl.util._
-import akka.http.scaladsl.model.headers.`User-Agent`
-import com.typesafe.config.Config
+import akka.io.Inet.SocketOption
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.collection.immutable
+
+import com.typesafe.config.Config
+import akka.actor.ActorSystem
+
+import akka.http.impl.util._
+
+import akka.http.scaladsl.model.headers.`User-Agent`
 
 final case class ClientConnectionSettings(
   userAgentHeader: Option[`User-Agent`],
   connectingTimeout: FiniteDuration,
   idleTimeout: Duration,
   requestHeaderSizeHint: Int,
+  socketOptions: immutable.Traversable[SocketOption],
   parserSettings: ParserSettings) {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
@@ -29,6 +35,7 @@ object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettin
       c getFiniteDuration "connecting-timeout",
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getIntBytes "request-header-size-hint",
+      SocketOptionSettings fromSubConfig c.getConfig("socket-options"),
       ParserSettings fromSubConfig c.getConfig("parsing"))
   }
 
