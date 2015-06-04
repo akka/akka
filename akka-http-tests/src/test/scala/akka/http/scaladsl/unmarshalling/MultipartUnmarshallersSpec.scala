@@ -49,13 +49,23 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
             |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity.empty(MediaTypes.`text/xml`), List(Age(12))))
       }
-      "an implicitly typed part (without headers)" in {
+      "an implicitly typed part (without headers) (Strict)" in {
         Unmarshal(HttpEntity(`multipart/mixed` withBoundary "XYZABC",
           """--XYZABC
             |
             |Perfectly fine part content.
             |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Perfectly fine part content.")))
+      }
+      "an implicitly typed part (without headers) (Default)" in {
+        val content = """--XYZABC
+                        |
+                        |Perfectly fine part content.
+                        |--XYZABC--""".stripMarginWithNewline("\r\n")
+        val byteStrings = content.map(c ⇒ ByteString(c.toString)) // one-char ByteStrings
+        Unmarshal(HttpEntity.Default(`multipart/mixed` withBoundary "XYZABC", content.length, Source(byteStrings)))
+          .to[Multipart.General] should haveParts(
+            Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Perfectly fine part content.")))
       }
       "one non-empty form-data part" in {
         Unmarshal(HttpEntity(`multipart/form-data` withBoundary "-",
