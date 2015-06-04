@@ -54,7 +54,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
     akka.cluster.roles = [compute]
     #//#router-deploy-config
     akka.actor.deployment {
-      /singleton/statsService/workerRouter {
+      /statsService/singleton/workerRouter {
           router = consistent-hashing-pool
           nr-of-instances = 100
           cluster {
@@ -105,10 +105,10 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
       system.actorOf(ClusterSingletonManager.props(
         Props[StatsService],
         terminationMessage = PoisonPill,
-        settings = ClusterSingletonManagerSettings(system).withSingletonName("statsService")),
-        name = "singleton")
+        settings = ClusterSingletonManagerSettings(system)),
+        name = "statsService")
 
-      system.actorOf(ClusterSingletonProxy.props("/user/singleton/statsService",
+      system.actorOf(ClusterSingletonProxy.props("/user/statsService",
         ClusterSingletonProxySettings(system).withRole("compute")), "statsServiceProxy")
 
       testConductor.enter("all-up")

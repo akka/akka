@@ -89,22 +89,12 @@ In Scala:
 
 .. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala#create-singleton-manager
 
-Here we limit the singleton to nodes tagged with the ``"worker"`` role, but all nodes, independent of
-role, can be used by specifying ``None`` as ``role`` parameter.
-
-The corresponding Java API for the ``singletonProps`` function is ``akka.cluster.singleton.ClusterSingletonPropsFactory``.
-The Java API takes a plain String for the role parameter and ``null`` means that all nodes, independent of
-role, are used.
-
 In Java:
 
 .. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java#create-singleton-manager
 
-.. note::
-
-  The ``singletonProps``/``singletonPropsFactory`` is invoked when creating
-  the singleton actor and it must not use members that are not thread safe, e.g.
-  mutable state in enclosing actor.
+Here we limit the singleton to nodes tagged with the ``"worker"`` role, but all nodes, independent of
+role, can be used by not specifying ``withRole``.
 
 Here we use an application specific ``terminationMessage`` to be able to close the
 resources before actually stopping the singleton actor. Note that ``PoisonPill`` is a

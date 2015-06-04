@@ -33,13 +33,12 @@ object StatsSampleOneMaster {
       system.actorOf(ClusterSingletonManager.props(
         singletonProps = Props[StatsService],
         terminationMessage = PoisonPill,
-        settings = ClusterSingletonManagerSettings(system)
-          .withSingletonName("statsService").withRole("compute")),
-        name = "singleton")
+        settings = ClusterSingletonManagerSettings(system).withRole("compute")),
+        name = "statsService")
       //#create-singleton-manager
 
       //#singleton-proxy
-      system.actorOf(ClusterSingletonProxy.props(singletonPath = "/user/singleton/statsService",
+      system.actorOf(ClusterSingletonProxy.props(singletonManagerPath = "/user/statsService",
         settings = ClusterSingletonProxySettings(system).withRole("compute")),
         name = "statsServiceProxy")
       //#singleton-proxy

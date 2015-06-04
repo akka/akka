@@ -353,10 +353,7 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * but more than one active singletons is prevented by all reasonable means. Some
  * corner cases are eventually resolved by configurable timeouts.
  *
- * You access the singleton actor with `actorSelection` using the names you have
- * specified when creating the ClusterSingletonManager. You can subscribe to
- * [[akka.cluster.ClusterEvent.MemberEvent]] and sort the members by age
- * ([[akka.cluster.Member#isOlderThan]]) to keep track of oldest member.
+ * You access the singleton actor with [[ClusterSingletonProxy]].
  * Alternatively the singleton actor may broadcast its existence when it is started.
  *
  * Use factory method [[ClusterSingletonManager#props]] to create the
@@ -547,8 +544,8 @@ class ClusterSingletonManager(
   }
 
   def gotoOldest(): State = {
-    logInfo("Singleton manager [{}] starting singleton actor", cluster.selfAddress)
     val singleton = context watch context.actorOf(singletonProps, singletonName)
+    logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
     goto(Oldest) using OldestData(singleton)
   }
 
