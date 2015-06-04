@@ -121,8 +121,8 @@ class ClusterShardingGracefulShutdownSpec extends MultiNodeSpec(ClusterShardingG
     val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
     ClusterSharding(system).start(
       typeName = "Entity",
-      entryProps = Some(Props[Entity]),
-      roleOverride = None,
+      entryProps = Props[Entity],
+      role = None,
       rememberEntries = false,
       idExtractor = idExtractor,
       shardResolver = shardResolver,
