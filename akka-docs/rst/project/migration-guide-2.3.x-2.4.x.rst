@@ -227,6 +227,15 @@ The classes changed package name from ``akka.contrib.pattern`` to ``akka.cluster
 
 The configuration properties changed name to ``akka.cluster.sharding``.
 
+ClusterSharding construction
+============================
+
+Role is defined as parameter to the ``start`` method of the ``ClusterSharding`` extension
+instead of in configuration, so that it can be defined per entry type.
+
+Starting the ``ShardRegion`` in proxy mode is now done with the ``startProxy`` method 
+of the ``ClusterSharding`` extension instead of the optional ``entryProps`` parameter.
+
 ClusterSingletonManager and ClusterSingletonProxy construction
 ==============================================================
 

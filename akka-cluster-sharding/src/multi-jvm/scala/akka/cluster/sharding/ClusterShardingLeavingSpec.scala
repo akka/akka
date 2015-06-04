@@ -123,8 +123,8 @@ class ClusterShardingLeavingSpec extends MultiNodeSpec(ClusterShardingLeavingSpe
   def startSharding(): Unit = {
     ClusterSharding(system).start(
       typeName = "Entity",
-      entryProps = Some(Props[Entity]),
-      roleOverride = None,
+      entryProps = Props[Entity],
+      role = None,
       rememberEntries = false,
       idExtractor = idExtractor,
       shardResolver = shardResolver)

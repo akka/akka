@@ -490,16 +490,16 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       //#counter-start
       val counterRegion: ActorRef = ClusterSharding(system).start(
         typeName = "Counter",
-        entryProps = Some(Props[Counter]),
-        roleOverride = None,
+        entryProps = Props[Counter],
+        role = None,
         rememberEntries = false,
         idExtractor = idExtractor,
         shardResolver = shardResolver)
       //#counter-start
       ClusterSharding(system).start(
         typeName = "AnotherCounter",
-        entryProps = Some(Props[Counter]),
-        roleOverride = None,
+        entryProps = Props[Counter],
+        role = None,
         rememberEntries = false,
         idExtractor = idExtractor,
         shardResolver = shardResolver)
@@ -540,8 +540,8 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
     runOn(first) {
       val counterRegionViaStart: ActorRef = ClusterSharding(system).start(
         typeName = "ApiTest",
-        entryProps = Some(Props[Counter]),
-        roleOverride = None,
+        entryProps = Props[Counter],
+        role = None,
         rememberEntries = false,
         idExtractor = idExtractor,
         shardResolver = shardResolver)

@@ -239,9 +239,8 @@ Proxy Only Mode
 
 The ``ShardRegion`` actor can also be started in proxy only mode, i.e. it will not
 host any entries itself, but knows how to delegate messages to the right location.
-A ``ShardRegion`` starts in proxy only mode if the roles of the node does not include
-the node role specified in ``akka.contrib.cluster.sharding.role`` config property
-or if the specified `entryProps` is ``None`` / ``null``.
+A ``ShardRegion`` is started in proxy only mode with the method ``ClusterSharding.startProxy``
+method.
 
 Passivation
 -----------

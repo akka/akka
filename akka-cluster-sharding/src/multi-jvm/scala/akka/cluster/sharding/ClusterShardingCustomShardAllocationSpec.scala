@@ -134,8 +134,8 @@ class ClusterShardingCustomShardAllocationSpec extends MultiNodeSpec(ClusterShar
   def startSharding(): Unit = {
     ClusterSharding(system).start(
       typeName = "Entity",
-      entryProps = Some(Props[Entity]),
-      roleOverride = None,
+      entryProps = Props[Entity],
+      role = None,
       rememberEntries = false,
       idExtractor = idExtractor,
       shardResolver = shardResolver,
