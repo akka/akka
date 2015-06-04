@@ -98,7 +98,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
         else parsePreamble(input, 0)
       } else parsePreamble(input, 0)
     } catch {
-      case NotEnoughDataException ⇒ continue((input, _) ⇒ tryParseInitialBoundary(input))
+      case NotEnoughDataException ⇒ continue(input, 0)((newInput, _) ⇒ tryParseInitialBoundary(newInput))
     }
 
   def parsePreamble(input: ByteString, offset: Int): StateResult =
