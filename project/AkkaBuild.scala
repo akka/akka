@@ -393,7 +393,7 @@ object AkkaBuild extends Build {
   lazy val httpTestkit = Project(
     id = "akka-http-testkit-experimental",
     base = file("akka-http-testkit"),
-    dependencies = Seq(http, httpJackson),
+    dependencies = Seq(http),
     settings =
       defaultSettings ++ formatSettings ++ scaladocSettings ++
         javadocSettings ++ OSGi.httpTestKit ++
