@@ -17,6 +17,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import com.typesafe.config.Config
 import akka.actor.NoSerializationVerificationNeeded
+import akka.event.Logging
 
 object ClusterSingletonProxySettings {
 
@@ -33,6 +34,7 @@ object ClusterSingletonProxySettings {
    */
   def apply(config: Config): ClusterSingletonProxySettings =
     new ClusterSingletonProxySettings(
+      singletonName = config.getString("singleton-name"),
       role = roleOption(config.getString("role")),
       singletonIdentificationInterval = config.getDuration("singleton-identification-interval", MILLISECONDS).millis,
       bufferSize = config.getInt("buffer-size"))
@@ -58,6 +60,7 @@ object ClusterSingletonProxySettings {
 }
 
 /**
+ * @param singletonName The actor name of the singleton actor that is started by the [[ClusterSingletonManager]].
  * @param role The role of the cluster nodes where the singleton can be deployed. If None, then any node will do.
  * @param singletonIdentificationInterval Interval at which the proxy will try to resolve the singleton instance.
  * @param bufferSize If the location of the singleton is unknown the proxy will buffer this number of messages
@@ -66,11 +69,14 @@ object ClusterSingletonProxySettings {
  *   immediately if the location of the singleton is unknown.
  */
 final class ClusterSingletonProxySettings(
+  val singletonName: String,
   val role: Option[String],
   val singletonIdentificationInterval: FiniteDuration,
   val bufferSize: Int) extends NoSerializationVerificationNeeded {
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
+
+  def withSingletonName(name: String): ClusterSingletonProxySettings = copy(singletonName = name)
 
   def withRole(role: String): ClusterSingletonProxySettings = copy(role = ClusterSingletonProxySettings.roleOption(role))
 
@@ -82,21 +88,23 @@ final class ClusterSingletonProxySettings(
   def withBufferSize(bufferSize: Int): ClusterSingletonProxySettings =
     copy(bufferSize = bufferSize)
 
-  private def copy(role: Option[String] = role,
+  private def copy(singletonName: String = singletonName,
+                   role: Option[String] = role,
                    singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
                    bufferSize: Int = bufferSize): ClusterSingletonProxySettings =
-    new ClusterSingletonProxySettings(role, singletonIdentificationInterval, bufferSize)
+    new ClusterSingletonProxySettings(singletonName, role, singletonIdentificationInterval, bufferSize)
 }
 
 object ClusterSingletonProxy {
   /**
    * Scala API: Factory method for `ClusterSingletonProxy` [[akka.actor.Props]].
    *
-   * @param singletonPath The logical path of the singleton, i.e., /user/singletonManager/singleton.
+   * @param singletonManagerPath The logical path of the singleton manager, e.g. `/user/singletonManager`,
+   *   which ends with the name you defined in `actorOf` when creating the [[ClusterSingletonManager]].
    * @param settings see [[ClusterSingletonProxySettings]]
    */
-  def props(singletonPath: String, settings: ClusterSingletonProxySettings): Props =
-    Props(new ClusterSingletonProxy(singletonPath, settings)).withDeploy(Deploy.local)
+  def props(singletonManagerPath: String, settings: ClusterSingletonProxySettings): Props =
+    Props(new ClusterSingletonProxy(singletonManagerPath, settings)).withDeploy(Deploy.local)
 
   private case object TryToIdentifySingleton
 
@@ -120,12 +128,12 @@ object ClusterSingletonProxy {
  * Note that this is a best effort implementation: messages can always be lost due to the distributed nature of the
  * actors involved.
  */
-final class ClusterSingletonProxy(singletonPathString: String, settings: ClusterSingletonProxySettings) extends Actor with ActorLogging {
+final class ClusterSingletonProxy(singletonManagerPath: String, settings: ClusterSingletonProxySettings) extends Actor with ActorLogging {
   import settings._
-  val singletonPath = singletonPathString.split("/")
+  val singletonPath = (singletonManagerPath + "/" + settings.singletonName).split("/")
   var identifyCounter = 0
   var identifyId = createIdentifyId(identifyCounter)
-  def createIdentifyId(i: Int) = "identify-singleton-" + singletonPath mkString "/" + i
+  def createIdentifyId(i: Int) = "identify-singleton-" + singletonPath.mkString("/") + i
   var identifyTimer: Option[Cancellable] = None
 
   val cluster = Cluster(context.system)
@@ -221,7 +229,7 @@ final class ClusterSingletonProxy(singletonPathString: String, settings: Cluster
     // singleton identification logic
     case ActorIdentity(identifyId, Some(s)) ⇒
       // if the new singleton is defined, deliver all buffered messages
-      log.info("Singleton identified: {}", s.path)
+      log.info("Singleton identified at [{}]", s.path)
       singleton = Some(s)
       context.watch(s)
       cancelTimer()
@@ -231,7 +239,7 @@ final class ClusterSingletonProxy(singletonPathString: String, settings: Cluster
       membersByAge.headOption.foreach {
         oldest ⇒
           val singletonAddress = RootActorPath(oldest.address) / singletonPath
-          log.debug("Trying to identify singleton at {}", singletonAddress)
+          log.debug("Trying to identify singleton at [{}]", singletonAddress)
           context.actorSelection(singletonAddress) ! Identify(identifyId)
       }
     case Terminated(ref) ⇒
@@ -244,7 +252,9 @@ final class ClusterSingletonProxy(singletonPathString: String, settings: Cluster
     case msg: Any ⇒
       singleton match {
         case Some(s) ⇒
-          log.debug("Forwarding message type [{}] to current singleton instance", msg.getClass.getName)
+          if (log.isDebugEnabled)
+            log.debug("Forwarding message of type [{}] to current singleton instance at [{}]: {}",
+              Logging.simpleName(msg.getClass.getName), s.path)
           s forward msg
         case None ⇒
           buffer(msg)

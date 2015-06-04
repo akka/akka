@@ -35,16 +35,16 @@ public class StatsSampleOneMasterMain {
 
       //#create-singleton-manager
       ClusterSingletonManagerSettings settings = ClusterSingletonManagerSettings.create(system)
-          .withSingletonName("statsService").withRole("compute");
+          .withRole("compute");
       system.actorOf(ClusterSingletonManager.props(
           Props.create(StatsService.class), PoisonPill.getInstance(), settings),
-          "singleton");
+          "statsService");
       //#create-singleton-manager
 
       //#singleton-proxy
       ClusterSingletonProxySettings proxySettings =
           ClusterSingletonProxySettings.create(system).withRole("compute");
-      system.actorOf(ClusterSingletonProxy.props("/user/singleton/statsService",
+      system.actorOf(ClusterSingletonProxy.props("/user/statsService",
           proxySettings), "statsServiceProxy");
       //#singleton-proxy
     }
