@@ -18,18 +18,16 @@ import akka.io.Inet
 final case class HostConnectionPoolSetup(host: String, port: Int, setup: ConnectionPoolSetup)
 
 final case class ConnectionPoolSetup(
-  options: immutable.Traversable[Inet.SocketOption],
   settings: ConnectionPoolSettings,
   httpsContext: Option[HttpsContext],
   log: LoggingAdapter)
 
 object ConnectionPoolSetup {
   /** Java API */
-  def create(options: JIterable[Inet.SocketOption],
-             settings: ConnectionPoolSettings,
+  def create(settings: ConnectionPoolSettings,
              httpsContext: akka.japi.Option[akka.http.javadsl.HttpsContext],
              log: LoggingAdapter): ConnectionPoolSetup =
-    ConnectionPoolSetup(immutableSeq(options), settings, httpsContext.map(_.asInstanceOf[HttpsContext]), log)
+    ConnectionPoolSetup(settings, httpsContext.map(_.asInstanceOf[HttpsContext]), log)
 }
 
 final case class ConnectionPoolSettings(
