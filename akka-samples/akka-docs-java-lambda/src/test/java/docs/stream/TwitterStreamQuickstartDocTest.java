@@ -265,8 +265,8 @@ public class TwitterStreamQuickstartDocTest {
   
   @Test
   public void demonstrateBroadcast() {
-    final Sink<Author, BoxedUnit> writeAuthors = Sink.ignore();
-    final Sink<Hashtag, BoxedUnit> writeHashtags = Sink.ignore();
+    final Sink<Author, Future<BoxedUnit>> writeAuthors = Sink.ignore();
+    final Sink<Hashtag, Future<BoxedUnit>> writeHashtags = Sink.ignore();
 
     //#flow-graph-broadcast
     FlowGraph.factory().closed(b -> {
