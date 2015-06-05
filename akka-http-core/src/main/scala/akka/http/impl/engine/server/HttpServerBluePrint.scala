@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.server
 
+import java.net.InetSocketAddress
+
 import akka.http.ServerSettings
 import akka.stream.io._
 import org.reactivestreams.{ Subscriber, Publisher }
@@ -32,7 +34,7 @@ private[http] object HttpServerBluePrint {
 
   type ServerShape = BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest]
 
-  def apply(settings: ServerSettings, log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[ServerShape, Unit] = {
+  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[ServerShape, Unit] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -65,10 +67,15 @@ private[http] object HttpServerBluePrint {
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .via(headAndTailFlow)
         .map {
-          case (RequestStart(method, uri, protocol, headers, createEntity, _, _), entityParts) ⇒
-            val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, defaultHostHeader)
+          case (RequestStart(method, uri, protocol, hdrs, createEntity, _, _), entityParts) ⇒
+            val effectiveUri = HttpRequest.effectiveUri(uri, hdrs, securedConnection = false, defaultHostHeader)
             val effectiveMethod = if (method == HttpMethods.HEAD && transparentHeadRequests) HttpMethods.GET else method
-            HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
+            val effectiveHeaders =
+              if (settings.remoteAddressHeader && remoteAddress.isDefined)
+                headers.`Remote-Address`(RemoteAddress(remoteAddress.get.getAddress)) +: hdrs
+              else hdrs
+
+            HttpRequest(effectiveMethod, effectiveUri, effectiveHeaders, createEntity(entityParts), protocol)
           case (_, src) ⇒ src.runWith(Sink.ignore)
         }.collect {
           case r: HttpRequest ⇒ r

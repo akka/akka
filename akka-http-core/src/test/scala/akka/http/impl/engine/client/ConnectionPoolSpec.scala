@@ -280,7 +280,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       // TODO getHostString in Java7
       Tcp().bind(serverEndpoint.getHostName, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)
         .map { c ⇒
-          val layer = Http().serverLayer(serverSettings, log)
+          val layer = Http().serverLayer(serverSettings, log = log)
           Http.IncomingConnection(c.localAddress, c.remoteAddress, layer atop rawBytesInjection join c.flow)
         }.runWith(sink)
       if (autoAccept) null else incomingConnections.expectSubscription()

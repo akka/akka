@@ -61,7 +61,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
       Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, settings.timeouts.idleTimeout)
     connections.map {
       case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
-        val layer = serverLayer(settings, log)
+        val layer = serverLayer(settings, Some(remoteAddress), log)
         IncomingConnection(localAddress, remoteAddress, layer atop tlsStage join flow)
     }.mapMaterializedValue {
       _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
@@ -155,8 +155,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * can only be materialized once.
    */
   def serverLayer(settings: ServerSettings,
+                  remoteAddress: Option[InetSocketAddress] = None,
                   log: LoggingAdapter = system.log)(implicit mat: FlowMaterializer): ServerLayer =
-    BidiFlow.wrap(HttpServerBluePrint(settings, log))
+    BidiFlow.wrap(HttpServerBluePrint(settings, remoteAddress, log))
 
   /**
    * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
