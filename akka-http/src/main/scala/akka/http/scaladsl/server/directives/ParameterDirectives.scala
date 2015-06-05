@@ -137,7 +137,7 @@ object ParameterDirectives extends ParameterDirectives {
       paramDef[T, fold.Out](fold(BasicDirectives.pass, _))
 
     object ConvertParamDefAndConcatenate extends BinaryPolyFunc {
-      implicit def from[P, TA, TB](implicit pdef: ParamDef[P] { type Out = Directive[TB] }, ev: Join[TA, TB]) =
+      implicit def from[P, TA, TB](implicit pdef: ParamDef[P] { type Out = Directive[TB] }, ev: Join[TA, TB]): BinaryPolyFunc.Case[Directive[TA], P, ConvertParamDefAndConcatenate.type] { type Out = Directive[ev.Out] } =
         at[Directive[TA], P] { (a, t) ⇒ a & pdef(t) }
     }
   }
