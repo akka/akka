@@ -150,15 +150,15 @@ private[akka] class HeadSink[In](val attributes: OperationAttributes, shape: Sin
  * Attaches a subscriber to this stream which will just discard all received
  * elements.
  */
-private[akka] final class BlackholeSink(val attributes: OperationAttributes, shape: SinkShape[Any]) extends SinkModule[Any, Unit](shape) {
+private[akka] final class BlackholeSink(val attributes: OperationAttributes, shape: SinkShape[Any]) extends SinkModule[Any, Future[Unit]](shape) {
 
   override def create(context: MaterializationContext) = {
-    val effectiveSettings = ActorFlowMaterializer.downcast(context.materializer)
-      .effectiveSettings(context.effectiveAttributes)
-    (new BlackholeSubscriber[Any](effectiveSettings.maxInputBufferSize), ())
+    val effectiveSettings = ActorFlowMaterializer.downcast(context.materializer).effectiveSettings(context.effectiveAttributes)
+    val p = Promise[Unit]()
+    (new BlackholeSubscriber[Any](effectiveSettings.maxInputBufferSize, p), p.future)
   }
 
-  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Unit] = new BlackholeSink(attributes, shape)
+  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Future[Unit]] = new BlackholeSink(attributes, shape)
   override def withAttributes(attr: OperationAttributes): Module = new BlackholeSink(attr, amendShape(attr))
 }
 

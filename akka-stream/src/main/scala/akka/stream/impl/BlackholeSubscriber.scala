@@ -4,14 +4,14 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
-
+import scala.concurrent.Promise
 import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API
  */
 
-private[akka] class BlackholeSubscriber[T](highWatermark: Int) extends Subscriber[T] {
+private[akka] class BlackholeSubscriber[T](highWatermark: Int, onComplete: Promise[Unit]) extends Subscriber[T] {
 
   private val lowWatermark = Math.max(1, highWatermark / 2)
   private var requested = 0L
@@ -26,10 +26,11 @@ private[akka] class BlackholeSubscriber[T](highWatermark: Int) extends Subscribe
 
   override def onError(cause: Throwable): Unit = {
     ReactiveStreamsCompliance.requireNonNullException(cause)
+    onComplete.tryFailure(cause)
     ()
   }
 
-  override def onComplete(): Unit = ()
+  override def onComplete(): Unit = onComplete.trySuccess(())
 
   override def onNext(element: T): Unit = {
     ReactiveStreamsCompliance.requireNonNullElement(element)

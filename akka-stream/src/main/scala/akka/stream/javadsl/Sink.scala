@@ -47,7 +47,7 @@ object Sink {
   /**
    * A `Sink` that will consume the stream and discard the elements.
    */
-  def ignore[T](): Sink[T, Unit] =
+  def ignore[T](): Sink[T, Future[Unit]] =
     new Sink(scaladsl.Sink.ignore)
 
   /**
