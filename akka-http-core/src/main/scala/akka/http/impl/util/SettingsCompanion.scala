@@ -4,7 +4,7 @@
 
 package akka.http.impl.util
 
-import java.net.InetAddress
+import java.net.{ InetSocketAddress, InetAddress }
 import com.typesafe.config.{ ConfigFactory, Config }
 import com.typesafe.config.ConfigFactory._
 import scala.util.control.NonFatal
@@ -49,7 +49,7 @@ private[http] abstract class SettingsCompanion[T](prefix: String) {
 private[http] object SettingsCompanion {
   lazy val configAdditions: Config = {
     val localHostName =
-      try InetAddress.getLocalHost.getHostName // TODO: upgrade to `getHostString` once we are on JDK7
+      try new InetSocketAddress(InetAddress.getLocalHost, 80).getHostStringJava6Compatible
       catch { case NonFatal(_) ⇒ "" }
     ConfigFactory.parseMap(Map("akka.http.hostname" -> localHostName).asJava)
   }

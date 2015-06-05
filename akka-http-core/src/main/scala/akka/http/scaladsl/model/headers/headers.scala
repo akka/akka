@@ -90,7 +90,7 @@ sealed abstract case class Expect private () extends ModeledHeader {
 
 // http://tools.ietf.org/html/rfc7230#section-5.4
 object Host extends ModeledCompanion {
-  def apply(address: InetSocketAddress): Host = apply(address.getHostName, address.getPort) // TODO: upgrade to `getHostString` once we are on JDK7
+  def apply(address: InetSocketAddress): Host = apply(address.getHostStringJava6Compatible, address.getPort)
   def apply(host: String): Host = apply(host, 0)
   def apply(host: String, port: Int): Host = apply(Uri.Host(host), port)
   val empty = Host("")
