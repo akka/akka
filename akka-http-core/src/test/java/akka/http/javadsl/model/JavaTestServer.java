@@ -39,9 +39,9 @@ public class JavaTestServer {
                                     System.out.println("Handling request to " + request.getUri());
 
                                     if (request.getUri().path().equals("/"))
-                                        return Websocket.handleWebsocketRequestWith(request, echoMessages(), materializer);
+                                        return Websocket.handleWebsocketRequestWith(request, echoMessages());
                                     else if (request.getUri().path().equals("/greeter"))
-                                        return Websocket.handleWebsocketRequestWith(request, greeter(), materializer);
+                                        return Websocket.handleWebsocketRequestWith(request, greeter());
                                     else
                                         return JavaApiTestCases.handleRequest(request);
                                 }
