@@ -676,7 +676,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |""".stripMarginWithNewline("\r\n"))
 
       val request = expectRequest
-      request.headers should contain(`Remote-Address`(RemoteAddress(theAddress)))
+      request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
     }
   }
   class TestSetup extends HttpServerTestSetupBase {
