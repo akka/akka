@@ -36,7 +36,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         HttpRequest(GET, "/abc") should renderTo {
           """GET /abc HTTP/1.1
             |Host: test.com:8080
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |
             |"""
         }
@@ -46,7 +46,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         HttpRequest(GET, "/abc<def") should renderTo {
           """GET /abc%3Cdef HTTP/1.1
             |Host: test.com:8080
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |
             |"""
         }
@@ -61,7 +61,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
             |X-Fancy: naa
             |Age: 0
             |Host: spray.io:9999
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |Content-Length: 0
             |
             |"""
@@ -77,7 +77,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
             |X-Fancy: naa
             |Cache-Control: public
             |Host: spray.io
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |Content-Type: text/plain; charset=UTF-8
             |Content-Length: 19
             |
@@ -94,7 +94,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
             |X-Fancy: naa
             |Cache-Control: public
             |Host: spray.io
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |Content-Length: 19
             |
             |The content please!"""
@@ -107,7 +107,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
             """PUT /abc/xyz HTTP/1.1
               |Transfer-Encoding: fancy
               |Host: test.com:8080
-              |User-Agent: spray-can/1.0.0
+              |User-Agent: akka-http/1.0.0
               |Content-Type: text/plain; charset=UTF-8
               |Content-Length: 19
               |
@@ -123,7 +123,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         HttpRequest(PUT, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain`, source())) should renderTo {
           """PUT /abc/xyz HTTP/1.1
             |Host: test.com:8080
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |Content-Type: text/plain
             |Content-Length: 0
             |
@@ -136,7 +136,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
           source("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
           """POST /abc/xyz HTTP/1.1
               |Host: test.com:8080
-              |User-Agent: spray-can/1.0.0
+              |User-Agent: akka-http/1.0.0
               |Transfer-Encoding: chunked
               |Content-Type: text/plain
               |
@@ -161,7 +161,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
           Source(chunks))) should renderTo {
           """POST /abc/xyz HTTP/1.1
             |Host: test.com:8080
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |Transfer-Encoding: chunked
             |Content-Type: text/plain
             |
@@ -187,7 +187,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
           Source(chunks))) should renderTo {
           """POST /abc/xyz HTTP/1.1
             |Host: test.com:8080
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |Transfer-Encoding: chunked
             |Content-Type: text/plain
             |
@@ -207,7 +207,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
             """POST /abc/xyz HTTP/1.1
               |Transfer-Encoding: fancy, chunked
               |Host: test.com:8080
-              |User-Agent: spray-can/1.0.0
+              |User-Agent: akka-http/1.0.0
               |Content-Type: text/plain
               |
               |4
@@ -275,7 +275,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         HttpRequest(GET, "/abc", List(`Raw-Request-URI`("/def"))) should renderTo {
           """GET /def HTTP/1.1
             |Host: test.com:8080
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |
             |"""
         }
@@ -285,7 +285,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         HttpRequest(GET, "/abc", List(`Raw-Request-URI`("/def%80%fe%ff"))) should renderTo {
           """GET /def%80%fe%ff HTTP/1.1
             |Host: test.com:8080
-            |User-Agent: spray-can/1.0.0
+            |User-Agent: akka-http/1.0.0
             |
             |"""
         }
@@ -295,7 +295,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
 
   override def afterAll() = system.shutdown()
 
-  class TestSetup(val userAgent: Option[`User-Agent`] = Some(`User-Agent`("spray-can/1.0.0")),
+  class TestSetup(val userAgent: Option[`User-Agent`] = Some(`User-Agent`("akka-http/1.0.0")),
                   serverAddress: InetSocketAddress = new InetSocketAddress("test.com", 8080))
     extends HttpRequestRendererFactory(userAgent, requestHeaderSizeHint = 64, NoLogging) {
 
