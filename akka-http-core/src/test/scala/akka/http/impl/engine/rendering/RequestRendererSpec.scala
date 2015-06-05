@@ -52,6 +52,16 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         }
       }
 
+      "GET request to a literal IPv6 address" in new TestSetup(serverAddress = new InetSocketAddress("[::1]", 8080)) {
+        HttpRequest(GET, uri = "/abc") should renderTo {
+          """GET /abc HTTP/1.1
+            |Host: [0:0:0:0:0:0:0:1]:8080
+            |User-Agent: akka-http/1.0.0
+            |
+            |"""
+        }
+      }
+
       "POST request, a few headers (incl. a custom Host header) and no body" in new TestSetup() {
         HttpRequest(POST, "/abc/xyz", List(
           RawHeader("X-Fancy", "naa"),
