@@ -46,7 +46,7 @@ private[http] class UriParser(val input: ParserInput,
     }
 
   def parseHost(): Host =
-    rule(host ~ EOI).run() match {
+    rule(relaxedHost ~ EOI).run() match {
       case Right(_) => _host
       case Left(error) => fail(error, "URI host")
     }
@@ -122,9 +122,10 @@ private[http] class UriParser(val input: ParserInput,
 
   def `hostAndPort-pushed` = rule { hostAndPort ~ push(_host) ~ push(_port) }
 
-  def host = rule {
-    `IP-literal` | capture(`ip-v4-address`) ~ &(colonSlashEOI) ~> ((b, a) => _host = IPv4Host(b, a)) | `reg-name`
-  }
+  def host = rule { `IP-literal` | ipv4Host | `reg-name` }
+
+  /** A relaxed host rule to use in `parseHost` that also recognizes IPv6 address without the brackets. */
+  def relaxedHost = rule { `IP-literal` | ipv6Host | ipv4Host | `reg-name` }
 
   def port = rule {
     DIGIT ~ run(_port = lastChar - '0') ~ optional(
@@ -134,7 +135,10 @@ private[http] class UriParser(val input: ParserInput,
             DIGIT ~ run(_port = 10 * _port + lastChar - '0')))))
   }
 
-  def `IP-literal` = rule { '[' ~ capture(`ip-v6-address`) ~ ']' ~> ((b, a) => _host = IPv6Host(b, a)) } // IPvFuture not currently recognized
+  def `IP-literal` = rule { '[' ~ ipv6Host ~ ']' } // IPvFuture not currently recognized
+
+  def ipv4Host = rule { capture(`ip-v4-address`) ~ &(colonSlashEOI) ~> ((b, a) => _host = IPv4Host(b, a)) }
+  def ipv6Host = rule { capture(`ip-v6-address`) ~> ((b, a) => _host = IPv6Host(b, a)) }
 
   def `reg-name` = rule(
     clearSBForDecoding() ~ oneOrMore(`lower-reg-name-char` ~ appendSB() | UPPER_ALPHA ~ appendLowered() | `pct-encoded`) ~
