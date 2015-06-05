@@ -4,6 +4,7 @@
 
 package akka.http.impl.model.parser
 
+import akka.http.scaladsl.model.HttpHeader.ParsingResult
 import org.scalatest.{ Matchers, FreeSpec }
 import org.scalatest.matchers.{ Matcher, MatchResult }
 import akka.http.impl.util._

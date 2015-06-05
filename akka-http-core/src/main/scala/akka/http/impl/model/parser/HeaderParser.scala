@@ -67,6 +67,19 @@ private[http] class HeaderParser(val input: ParserInput) extends Parser with Dyn
 private[http] object HeaderParser {
   object RuleNotFoundException extends SingletonException
 
+  def parseFull(headerName: String, value: String): HeaderParser#Result = {
+    import akka.parboiled2.EOI
+    val v = value + EOI // this makes sure the parser isn't broken even if there's no trailing garbage in this value
+    val parser = new HeaderParser(v)
+    dispatch(parser, headerName) match {
+      case r @ Right(_) if parser.cursor == v.length ⇒ r
+      case r @ Right(_) ⇒
+        Left(ErrorInfo("Header parsing error",
+          s"Rule for $headerName accepted trailing garbage. Is the parser missing a trailing EOI?"))
+      case Left(e) ⇒ Left(e.copy(summary = e.summary.filterNot(_ == EOI), detail = e.detail.filterNot(_ == EOI)))
+    }
+  }
+
   val (dispatch, ruleNames) = DynamicRuleDispatch[HeaderParser, HttpHeader :: HNil](
     "accept",
     "accept-charset",

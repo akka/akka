@@ -37,7 +37,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://www.w3.org/TR/cors/#access-control-allow-origin-response-header
   def `access-control-allow-origin` = rule(
-    ws('*') ~ push(`Access-Control-Allow-Origin`.`*`)
+    ws('*') ~ EOI ~ push(`Access-Control-Allow-Origin`.`*`)
       | `origin-list-or-null` ~ EOI ~> (origins ⇒ `Access-Control-Allow-Origin`.forRange(HttpOriginRange(origins: _*))))
 
   // http://www.w3.org/TR/cors/#access-control-expose-headers-response-header
@@ -108,7 +108,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://tools.ietf.org/html/rfc7231#section-5.1.1
   def `expect` = rule {
-    ignoreCase("100-continue") ~ OWS ~ push(Expect.`100-continue`)
+    ignoreCase("100-continue") ~ OWS ~ EOI ~ push(Expect.`100-continue`)
   }
 
   // http://tools.ietf.org/html/rfc7234#section-5.3
@@ -126,7 +126,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://tools.ietf.org/html/rfc7232#section-3.1
   def `if-match` = rule(
-    ws('*') ~ push(`If-Match`.`*`)
+    ws('*') ~ EOI ~ push(`If-Match`.`*`)
       | oneOrMore(`entity-tag`).separatedBy(listSep) ~ EOI ~> (tags ⇒ `If-Match`(EntityTagRange(tags: _*))))
 
   // http://tools.ietf.org/html/rfc7232#section-3.3
@@ -134,7 +134,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://tools.ietf.org/html/rfc7232#section-3.2
   def `if-none-match` = rule {
-    ws('*') ~ push(`If-None-Match`.`*`) |
+    ws('*') ~ EOI ~ push(`If-None-Match`.`*`) |
       oneOrMore(`entity-tag`).separatedBy(listSep) ~ EOI ~> (tags ⇒ `If-None-Match`(EntityTagRange(tags: _*)))
   }
 
@@ -175,7 +175,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   }
 
   // http://tools.ietf.org/html/rfc7231#section-7.4.2
-  def server = rule { products ~> (Server(_)) }
+  def server = rule { products ~ EOI ~> (Server(_)) }
 
   // http://tools.ietf.org/html/rfc7230#section-3.3.1
   def `transfer-encoding` = rule {
@@ -189,7 +189,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://tools.ietf.org/html/rfc7230#section-6.7
   def upgrade = rule {
-    oneOrMore(protocol).separatedBy(listSep) ~> (Upgrade(_))
+    oneOrMore(protocol).separatedBy(listSep) ~ EOI ~> (Upgrade(_))
   }
 
   def protocol = rule {
@@ -197,7 +197,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   }
 
   // http://tools.ietf.org/html/rfc7231#section-5.5.3
-  def `user-agent` = rule { products ~> (`User-Agent`(_)) }
+  def `user-agent` = rule { products ~ EOI ~> (`User-Agent`(_)) }
 
   // http://tools.ietf.org/html/rfc7235#section-4.1
   def `www-authenticate` = rule {
