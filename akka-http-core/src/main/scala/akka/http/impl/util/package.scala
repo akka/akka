@@ -4,6 +4,8 @@
 
 package akka.http.impl
 
+import java.net.InetSocketAddress
+
 import language.implicitConversions
 import language.higherKinds
 import java.nio.charset.Charset
@@ -38,6 +40,8 @@ package object util {
   private[http] implicit def enhanceConfig(config: Config): EnhancedConfig = new EnhancedConfig(config)
   private[http] implicit def enhanceString_(s: String): EnhancedString = new EnhancedString(s)
   private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
+  private[http] implicit def enhanceInetSocketAddress(address: InetSocketAddress): EnhancedInetSocketAddress =
+    new EnhancedInetSocketAddress(address)
   private[http] implicit def enhanceByteStrings(byteStrings: TraversableOnce[ByteString]): EnhancedByteStringTraversableOnce =
     new EnhancedByteStringTraversableOnce(byteStrings)
   private[http] implicit def enhanceByteStrings[Mat](byteStrings: Source[ByteString, Mat]): EnhancedByteStringSource[Mat] =
