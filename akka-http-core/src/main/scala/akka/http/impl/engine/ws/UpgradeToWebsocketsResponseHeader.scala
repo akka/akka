@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.headers.CustomHeader
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
 
-private[http] case class UpgradeToWebsocketResponseHeader(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit val mat: FlowMaterializer)
+private[http] case class UpgradeToWebsocketResponseHeader(handlerFlow: Flow[FrameEvent, FrameEvent, Any])
   extends InternalCustomHeader("UpgradeToWebsocketResponseHeader") {
 }
 
