@@ -40,7 +40,7 @@ class WebsocketDirectivesSpec extends RoutingSpec {
     new InternalCustomHeader("UpgradeToWebsocketMock") with UpgradeToWebsocket {
       def requestedProtocols: Seq[String] = Nil
 
-      def handleMessages(handlerFlow: Flow[Message, Message, Any], subprotocol: Option[String])(implicit mat: FlowMaterializer): HttpResponse =
+      def handleMessages(handlerFlow: Flow[Message, Message, Any], subprotocol: Option[String]): HttpResponse =
         HttpResponse(StatusCodes.SwitchingProtocols)
     }
 }

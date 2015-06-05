@@ -84,7 +84,7 @@ private[http] object Handshake {
       val header = new UpgradeToWebsocketLowLevel {
         def requestedProtocols: Seq[String] = supportedProtocols
 
-        def handleFrames(handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String])(implicit mat: FlowMaterializer): HttpResponse = {
+        def handleFrames(handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String]): HttpResponse = {
           require(subprotocol.forall(chosen ⇒ supportedProtocols.contains(chosen)),
             s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
           buildResponse(key.get, handlerFlow, subprotocol)
@@ -113,7 +113,7 @@ private[http] object Handshake {
         concatenated value to obtain a 20-byte value and base64-
         encoding (see Section 4 of [RFC4648]) this 20-byte hash.
    */
-  def buildResponse(key: `Sec-WebSocket-Key`, handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String])(implicit mat: FlowMaterializer): HttpResponse =
+  def buildResponse(key: `Sec-WebSocket-Key`, handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String]): HttpResponse =
     HttpResponse(
       StatusCodes.SwitchingProtocols,
       subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(Seq(p))).toList :::
