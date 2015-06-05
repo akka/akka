@@ -72,7 +72,7 @@ private[http] object HttpServerBluePrint {
             val effectiveMethod = if (method == HttpMethods.HEAD && transparentHeadRequests) HttpMethods.GET else method
             val effectiveHeaders =
               if (settings.remoteAddressHeader && remoteAddress.isDefined)
-                headers.`Remote-Address`(RemoteAddress(remoteAddress.get.getAddress)) +: hdrs
+                headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
               else hdrs
 
             HttpRequest(effectiveMethod, effectiveUri, effectiveHeaders, createEntity(entityParts), protocol)
