@@ -115,11 +115,11 @@ object FormFieldDirectives extends FormFieldDirectives {
     import akka.http.scaladsl.server.util.TupleOps._
     import akka.http.scaladsl.server.util.BinaryPolyFunc
 
-    implicit def forTuple[T](implicit fold: FoldLeft[Directive0, T, ConvertParamDefAndConcatenate.type]): FieldDefAux[T, fold.Out] =
+    implicit def forTuple[T](implicit fold: FoldLeft[Directive0, T, ConvertFieldDefAndConcatenate.type]): FieldDefAux[T, fold.Out] =
       fieldDef[T, fold.Out](fold(pass, _))
 
-    object ConvertParamDefAndConcatenate extends BinaryPolyFunc {
-      implicit def from[P, TA, TB](implicit fdef: FieldDefAux[P, Directive[TB]], ev: Join[TA, TB]) =
+    object ConvertFieldDefAndConcatenate extends BinaryPolyFunc {
+      implicit def from[P, TA, TB](implicit fdef: FieldDefAux[P, Directive[TB]], ev: Join[TA, TB]): BinaryPolyFunc.Case[Directive[TA], P, ConvertFieldDefAndConcatenate.type] { type Out = Directive[ev.Out] } =
         at[Directive[TA], P] { (a, t) ⇒ a & fdef(t) }
     }
   }
