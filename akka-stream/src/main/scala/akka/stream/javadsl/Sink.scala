@@ -65,7 +65,7 @@ object Sink {
    */
   def foreach[T](f: function.Procedure[T]): Sink[T, Future[Unit]] =
     new Sink(scaladsl.Sink.foreach(f.apply))
-  
+
   /**
    * A `Sink` that will invoke the given procedure for each received element in parallel. The sink is materialized
    * into a [[scala.concurrent.Future]].

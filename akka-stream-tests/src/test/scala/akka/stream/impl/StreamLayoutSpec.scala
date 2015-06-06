@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
-import org.reactivestreams.{ Subscription, Subscriber, Publisher }
+import org.reactivestreams.{ Processor, Subscription, Subscriber, Publisher }
 import akka.stream._
 
 class StreamLayoutSpec extends AkkaSpec {
@@ -188,6 +188,7 @@ class StreamLayoutSpec extends AkkaSpec {
         assignPort(outPort, publisher)
       }
     }
+    override protected def createIdentityProcessor: Processor[Any, Any] = null // Not used in test
   }
 
   def checkMaterialized(topLevel: Module): (Set[TestPublisher], Set[TestSubscriber]) = {

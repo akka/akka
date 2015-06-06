@@ -60,8 +60,8 @@ private[akka] class PublisherSink[In](val attributes: OperationAttributes, shape
   override def toString: String = "PublisherSink"
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
-    val pub = new VirtualPublisher[In]
-    val sub = new VirtualSubscriber[In](pub)
+    val pub = new PublisherSinkVirtualPublisher[In]
+    val sub = new PublisherSinkVirtualSubscriber[In](pub)
     (sub, pub)
   }
 
