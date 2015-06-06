@@ -221,7 +221,7 @@ object Source extends SourceApply {
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
   def apply[T](future: Future[T]): Source[T, Unit] =
-    new Source(new FutureSource(future, DefaultAttributes.futureSource, shape("FutureSource")))
+    Source.single(future).mapAsync(1)(identity).withAttributes(DefaultAttributes.futureSource)
 
   /**
    * Elements are emitted periodically with the specified interval.
