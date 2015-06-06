@@ -9,7 +9,6 @@ import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.impl.SynchronousIterablePublisher
 import org.reactivestreams.Subscription
 import akka.testkit.TestProbe
 import org.reactivestreams.Subscriber
@@ -68,79 +67,6 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
     p.subscribe(c)
     c.expectSubscriptionAndError().getMessage should be("no next")
     c.expectNoMsg(100.millis)
-  }
-}
-
-class SynchronousIterableSpec extends AbstractFlowIteratorSpec {
-  override def testName = "A Flow based on small collection"
-  override def createSource(elements: Int): Source[Int, Unit] =
-    Source(SynchronousIterablePublisher(1 to elements, "range"))
-
-  "not produce after cancel from onNext" in {
-    val p = SynchronousIterablePublisher(1 to 5, "range")
-    val probe = TestProbe()
-    p.subscribe(new Subscriber[Int] {
-      var sub: Subscription = _
-      override def onError(cause: Throwable): Unit = probe.ref ! cause
-      override def onComplete(): Unit = probe.ref ! "complete"
-      override def onNext(element: Int): Unit = {
-        probe.ref ! element
-        if (element == 3) sub.cancel()
-      }
-      override def onSubscribe(subscription: Subscription): Unit = {
-        sub = subscription
-        sub.request(10)
-      }
-    })
-
-    probe.expectMsg(1)
-    probe.expectMsg(2)
-    probe.expectMsg(3)
-    probe.expectNoMsg(500.millis)
-  }
-
-  "produce onError when iterator throws" in {
-    val iterable = new immutable.Iterable[Int] {
-      override def iterator: Iterator[Int] =
-        (1 to 3).iterator.map(x ⇒ if (x == 2) throw new IllegalStateException("not two") else x)
-    }
-    val p = SynchronousIterablePublisher(iterable, "iterable")
-    val c = TestSubscriber.manualProbe[Int]()
-    p.subscribe(c)
-    val sub = c.expectSubscription()
-    sub.request(1)
-    c.expectNext(1)
-    c.expectNoMsg(100.millis)
-    sub.request(2)
-    c.expectError.getMessage should be("not two")
-    sub.request(2)
-    c.expectNoMsg(100.millis)
-  }
-
-  "handle reentrant requests" in {
-    val N = 50000
-    val p = SynchronousIterablePublisher(1 to N, "range")
-    val probe = TestProbe()
-    p.subscribe(new Subscriber[Int] {
-      var sub: Subscription = _
-      override def onError(cause: Throwable): Unit = probe.ref ! cause
-      override def onComplete(): Unit = probe.ref ! "complete"
-      override def onNext(element: Int): Unit = {
-        probe.ref ! element
-        sub.request(1)
-
-      }
-      override def onSubscribe(subscription: Subscription): Unit = {
-        sub = subscription
-        sub.request(1)
-      }
-    })
-    probe.receiveN(N) should be((1 to N).toVector)
-    probe.expectMsg("complete")
-  }
-
-  "have a toString that doesn't OOME" in {
-    SynchronousIterablePublisher(1 to 3, "range").toString should be("range")
   }
 }
 
