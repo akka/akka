@@ -55,17 +55,7 @@ private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out
 private[akka] final class SubscriberSource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Subscriber[Out]](shape) {
 
   override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
-    val processor = new Processor[Out, Out] {
-      @volatile private var subscriber: Subscriber[_ >: Out] = null
-
-      override def subscribe(s: Subscriber[_ >: Out]): Unit = subscriber = s
-
-      override def onError(t: Throwable): Unit = subscriber.onError(t)
-      override def onSubscribe(s: Subscription): Unit = subscriber.onSubscribe(s)
-      override def onComplete(): Unit = subscriber.onComplete()
-      override def onNext(t: Out): Unit = subscriber.onNext(t)
-    }
-
+    val processor = new SubscriberSourceVirtualProcessor[Out]
     (processor, processor)
   }
 

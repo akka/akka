@@ -111,6 +111,9 @@ private[akka] case class ActorFlowMaterializerImpl(
         }
       }
 
+      override protected def createIdentityProcessor: Processor[Any, Any] =
+        processorFor(Identity(OperationAttributes.none), OperationAttributes.none, settings)._1
+
       private def processorFor(op: StageModule,
                                effectiveAttributes: OperationAttributes,
                                effectiveSettings: ActorFlowMaterializerSettings): (Processor[Any, Any], Any) = op match {
