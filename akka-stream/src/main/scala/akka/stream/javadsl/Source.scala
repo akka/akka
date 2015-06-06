@@ -112,7 +112,9 @@ object Source {
     // but there is not anything we can do to prevent that from happening.
     // ConcurrentModificationException will be thrown in some cases.
     val scalaIterable = new immutable.Iterable[O] {
+
       import collection.JavaConverters._
+
       override def iterator: Iterator[O] = iterable.iterator().asScala
     }
     new Source(scaladsl.Source(scalaIterable))
@@ -215,7 +217,11 @@ object Source {
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
-  def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = new Source(scaladsl.Source.wrap(g))
+  def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] =
+    g match {
+      case s: Source[T, M] ⇒ s
+      case other           ⇒ new Source(scaladsl.Source.wrap(other))
+    }
 }
 
 /**
