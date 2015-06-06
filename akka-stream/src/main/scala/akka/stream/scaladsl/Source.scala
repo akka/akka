@@ -202,8 +202,10 @@ object Source extends SourceApply {
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
-  // TODO optimize if no wrapping needed
-  def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = new Source(g.module)
+  def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
+    case s: Source[T, M] ⇒ s
+    case other           ⇒ new Source(other.module)
+  }
 
   /**
    * Helper to create [[Source]] from `Iterable`.

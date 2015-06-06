@@ -17,7 +17,11 @@ object BidiFlow {
    * A graph with the shape of a BidiFlow logically is a BidiFlow, this method makes
    * it so also in type.
    */
-  def wrap[I1, O1, I2, O2, M](g: Graph[BidiShape[I1, O1, I2, O2], M]): BidiFlow[I1, O1, I2, O2, M] = new BidiFlow(scaladsl.BidiFlow.wrap(g))
+  def wrap[I1, O1, I2, O2, M](g: Graph[BidiShape[I1, O1, I2, O2], M]): BidiFlow[I1, O1, I2, O2, M] =
+    g match {
+      case bidi: BidiFlow[I1, O1, I2, O2, M] ⇒ bidi
+      case other                             ⇒ new BidiFlow(scaladsl.BidiFlow.wrap(other))
+    }
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping

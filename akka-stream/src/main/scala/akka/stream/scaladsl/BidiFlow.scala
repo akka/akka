@@ -130,7 +130,11 @@ object BidiFlow extends BidiFlowApply {
    * A graph with the shape of a flow logically is a flow, this method makes
    * it so also in type.
    */
-  def wrap[I1, O1, I2, O2, Mat](graph: Graph[BidiShape[I1, O1, I2, O2], Mat]): BidiFlow[I1, O1, I2, O2, Mat] = new BidiFlow(graph.module)
+  def wrap[I1, O1, I2, O2, Mat](graph: Graph[BidiShape[I1, O1, I2, O2], Mat]): BidiFlow[I1, O1, I2, O2, Mat] =
+    graph match {
+      case bidi: BidiFlow[I1, O1, I2, O2, Mat] ⇒ bidi
+      case other                               ⇒ new BidiFlow(other.module)
+    }
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
