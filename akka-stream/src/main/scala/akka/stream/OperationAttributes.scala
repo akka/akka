@@ -37,7 +37,7 @@ final case class OperationAttributes private (attributes: immutable.Seq[Operatio
       val result = new java.util.ArrayList[T]
       attributes.foreach { a ⇒
         if (c.isInstance(a))
-          result.add(a.asInstanceOf[T])
+          result.add(c.cast(a))
       }
       result
     }
@@ -47,8 +47,8 @@ final case class OperationAttributes private (attributes: immutable.Seq[Operatio
    * If no such attribute exists the `default` value is returned.
    */
   def getAttribute[T <: Attribute](c: Class[T], default: T): T =
-    attributes.find(a ⇒ c.isInstance(a)) match {
-      case Some(a) ⇒ a.asInstanceOf[T]
+    attributes.find(c.isInstance) match {
+      case Some(a) ⇒ c.cast(a)
       case None    ⇒ default
     }
 
