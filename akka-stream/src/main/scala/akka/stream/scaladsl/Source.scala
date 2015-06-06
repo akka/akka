@@ -7,7 +7,7 @@ import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream._
 import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, SynchronousIterablePublisher, _ }
+import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
 import akka.stream.stage.{ Context, PushPullStage, SyncDirective, TerminationDirective }
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -17,7 +17,7 @@ import akka.stream.stage.{ TerminationDirective, Directive, Context, PushPullSta
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 import akka.actor.Props
-import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, SynchronousIterablePublisher }
+import akka.stream.impl.{ EmptyPublisher, ErrorPublisher }
 import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
@@ -165,6 +165,9 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
 
 object Source extends SourceApply {
 
+  private[this] final val _id: Any ⇒ Any = x ⇒ x
+  private[this] final def id[A]: A ⇒ A = _id.asInstanceOf[A ⇒ A]
+
   private[stream] def apply[Out, Mat](module: SourceModule[Out, Mat]): Source[Out, Mat] =
     new Source(module)
 
@@ -212,7 +215,7 @@ object Source extends SourceApply {
    * beginning) regardless of when they subscribed.
    */
   def apply[T](iterable: immutable.Iterable[T]): Source[T, Unit] =
-    Source.single(iterable).mapConcat(identity).withAttributes(DefaultAttributes.iterableSource)
+    Source.single(iterable).mapConcat(id).withAttributes(DefaultAttributes.iterableSource)
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -221,7 +224,7 @@ object Source extends SourceApply {
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
   def apply[T](future: Future[T]): Source[T, Unit] =
-    Source.single(future).mapAsync(1)(identity).withAttributes(DefaultAttributes.futureSource)
+    Source.single(future).mapAsyncUnordered(1)(id).withAttributes(DefaultAttributes.futureSource)
 
   /**
    * Elements are emitted periodically with the specified interval.
