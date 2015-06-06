@@ -35,6 +35,8 @@ object OSGi {
 
   val clusterMetrics = exports(Seq("akka.cluster.metrics.*"), imports = Seq(protobufImport(),kamonImport(),sigarImport()))
 
+  val contrib = exports(Seq("akka.contrib.*"))
+
   val osgi = exports(Seq("akka.osgi.*"))
 
   val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
