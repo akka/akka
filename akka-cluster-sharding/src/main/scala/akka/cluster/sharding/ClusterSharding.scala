@@ -450,7 +450,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
         if (context.child(cName).isEmpty) {
           val coordinatorProps = ShardCoordinator.props(settings, allocationStrategy)
           val singletonProps = ShardCoordinatorSupervisor.props(coordinatorFailureBackoff, coordinatorProps)
-          val singletonSettings = ClusterSingletonManagerSettings(context.system)
+          val singletonSettings = settings.coordinatorSingletonSettings
             .withSingletonName("singleton").withRole(role)
           context.actorOf(ClusterSingletonManager.props(
             singletonProps,

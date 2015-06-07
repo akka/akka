@@ -5,10 +5,10 @@ package akka.cluster.sharding
 
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
 import com.typesafe.config.Config
+import akka.cluster.singleton.ClusterSingletonManagerSettings
 
 object ClusterShardingSettings {
   /**
@@ -38,12 +38,15 @@ object ClusterShardingSettings {
       leastShardAllocationMaxSimultaneousRebalance =
         config.getInt("least-shard-allocation-strategy.max-simultaneous-rebalance"))
 
+    val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
+
     new ClusterShardingSettings(
       role = roleOption(config.getString("role")),
       rememberEntries = config.getBoolean("remember-entries"),
       journalPluginId = config.getString("journal-plugin-id"),
       snapshotPluginId = config.getString("snapshot-plugin-id"),
-      tuningParameters)
+      tuningParameters,
+      coordinatorSingletonSettings)
   }
 
   /**
@@ -98,7 +101,8 @@ final class ClusterShardingSettings(
   val rememberEntries: Boolean,
   val journalPluginId: String,
   val snapshotPluginId: String,
-  val tuningParameters: ClusterShardingSettings.TuningParameters) extends NoSerializationVerificationNeeded {
+  val tuningParameters: ClusterShardingSettings.TuningParameters,
+  val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))
 
@@ -116,15 +120,20 @@ final class ClusterShardingSettings(
   def withTuningParameters(tuningParameters: ClusterShardingSettings.TuningParameters): ClusterShardingSettings =
     copy(tuningParameters = tuningParameters)
 
+  def withCoordinatorSingletonSettings(coordinatorSingletonSettings: ClusterSingletonManagerSettings): ClusterShardingSettings =
+    copy(coordinatorSingletonSettings = coordinatorSingletonSettings)
+
   private def copy(role: Option[String] = role,
                    rememberEntries: Boolean = rememberEntries,
                    journalPluginId: String = journalPluginId,
                    snapshotPluginId: String = snapshotPluginId,
-                   tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters): ClusterShardingSettings =
+                   tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
+                   coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
       role,
       rememberEntries,
       journalPluginId,
       snapshotPluginId,
-      tuningParameters)
+      tuningParameters,
+      coordinatorSingletonSettings)
 }
