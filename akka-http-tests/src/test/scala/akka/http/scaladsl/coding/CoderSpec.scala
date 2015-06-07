@@ -11,6 +11,8 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.util.Random
 import scala.util.control.NoStackTrace
 import org.scalatest.{ Inspectors, WordSpec }
 import akka.util.ByteString
@@ -96,8 +98,6 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
       ourDecode(compressed) should equal(inputBytes)
     }
 
-    extraTests()
-
     "shouldn't produce huge ByteStrings for some input" in {
       val array = new Array[Byte](10) // FIXME
       util.Arrays.fill(array, 1.toByte)
@@ -114,6 +114,27 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
         bs.forall(_ == 1) should equal(true)
       }
     }
+
+    "be able to decode chunk-by-chunk (depending on input chunks)" in {
+      val minLength = 100
+      val maxLength = 1000
+      val numElements = 1000
+
+      val random = ThreadLocalRandom.current()
+      val sizes = Seq.fill(numElements)(random.nextInt(minLength, maxLength))
+      def createByteString(size: Int): ByteString =
+        ByteString(Array.fill(size)(1.toByte))
+
+      val sizesAfterRoundtrip =
+        Source(() ⇒ sizes.toIterator.map(createByteString))
+          .via(Coder.encoderFlow)
+          .via(Coder.decoderFlow)
+          .runFold(Seq.empty[Int])(_ :+ _.size)
+
+      sizes shouldEqual sizesAfterRoundtrip.awaitResult(1.second)
+    }
+
+    extraTests()
   }
 
   def encode(s: String) = ourEncode(ByteString(s, "UTF8"))

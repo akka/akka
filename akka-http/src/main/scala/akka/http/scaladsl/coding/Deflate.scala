@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.coding
 
+import java.lang.reflect.{ Method, InvocationTargetException }
 import java.util.zip.{ Inflater, Deflater }
 import akka.stream.stage._
 import akka.util.{ ByteStringBuilder, ByteString }
@@ -13,6 +14,8 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings
 
+import scala.util.control.NonFatal
+
 class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
   val encoding = HttpEncodings.deflate
   def newCompressor = new DeflateCompressor
@@ -21,6 +24,8 @@ class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with Str
 object Deflate extends Deflate(Encoder.DefaultFilter)
 
 class DeflateCompressor extends Compressor {
+  import DeflateCompressor._
+
   protected lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, false)
 
   override final def compressAndFlush(input: ByteString): ByteString = {
@@ -40,35 +45,14 @@ class DeflateCompressor extends Compressor {
   protected def compressWithBuffer(input: ByteString, buffer: Array[Byte]): ByteString = {
     assert(deflater.needsInput())
     deflater.setInput(input.toArray)
-    drain(buffer)
+    drainDeflater(deflater, buffer)
   }
-  protected def flushWithBuffer(buffer: Array[Byte]): ByteString = {
-    // trick the deflater into flushing: switch compression level
-    // FIXME: use proper APIs and SYNC_FLUSH when Java 6 support is dropped
-    deflater.deflate(EmptyByteArray, 0, 0)
-    deflater.setLevel(Deflater.NO_COMPRESSION)
-    val res1 = drain(buffer)
-    deflater.setLevel(Deflater.BEST_COMPRESSION)
-    val res2 = drain(buffer)
-    res1 ++ res2
-  }
+  protected def flushWithBuffer(buffer: Array[Byte]): ByteString = DeflateCompressor.flush(deflater, buffer)
   protected def finishWithBuffer(buffer: Array[Byte]): ByteString = {
     deflater.finish()
-    val res = drain(buffer)
+    val res = drainDeflater(deflater, buffer)
     deflater.end()
     res
-  }
-
-  @tailrec
-  protected final def drain(buffer: Array[Byte], result: ByteStringBuilder = new ByteStringBuilder()): ByteString = {
-    val len = deflater.deflate(buffer)
-    if (len > 0) {
-      result ++= ByteString.fromArray(buffer, 0, len)
-      drain(buffer, result)
-    } else {
-      assert(deflater.needsInput())
-      result.result()
-    }
   }
 
   private def newTempBuffer(size: Int = 65536): Array[Byte] =
@@ -80,6 +64,54 @@ class DeflateCompressor extends Compressor {
     // This value will hopefully provide a good compromise between memory churn and
     // excessive fragmentation of ByteStrings.
     new Array[Byte](size)
+}
+
+private[http] object DeflateCompressor {
+  // TODO: remove reflective call once Java 6 support is dropped
+  /**
+   * Compatibility mode: reflectively call deflate(..., flushMode) if available or use a hack otherwise
+   */
+  private[this] val flushImplementation: (Deflater, Array[Byte]) ⇒ ByteString = {
+    def flushHack(deflater: Deflater, buffer: Array[Byte]): ByteString = {
+      // hack: change compression mode to provoke flushing
+      deflater.deflate(EmptyByteArray, 0, 0)
+      deflater.setLevel(Deflater.NO_COMPRESSION)
+      val res1 = drainDeflater(deflater, buffer)
+      deflater.setLevel(Deflater.BEST_COMPRESSION)
+      val res2 = drainDeflater(deflater, buffer)
+      res1 ++ res2
+    }
+    def reflectiveDeflateWithSyncMode(method: Method, syncFlushConstant: Int)(deflater: Deflater, buffer: Array[Byte]): ByteString =
+      try {
+        val written = method.invoke(deflater, buffer, 0: java.lang.Integer, buffer.length: java.lang.Integer, syncFlushConstant: java.lang.Integer).asInstanceOf[Int]
+        ByteString.fromArray(buffer, 0, written)
+      } catch {
+        case t: InvocationTargetException ⇒ throw t.getTargetException
+      }
+
+    try {
+      val deflateWithFlush = classOf[Deflater].getMethod("deflate", classOf[Array[Byte]], classOf[Int], classOf[Int], classOf[Int])
+      require(deflateWithFlush.getReturnType == classOf[Int])
+      val flushModeSync = classOf[Deflater].getField("SYNC_FLUSH").get(null).asInstanceOf[Int]
+      reflectiveDeflateWithSyncMode(deflateWithFlush, flushModeSync)
+    } catch {
+      case NonFatal(e) ⇒ flushHack
+    }
+  }
+
+  def flush(deflater: Deflater, buffer: Array[Byte]): ByteString = flushImplementation(deflater, buffer)
+
+  @tailrec
+  def drainDeflater(deflater: Deflater, buffer: Array[Byte], result: ByteStringBuilder = new ByteStringBuilder()): ByteString = {
+    val len = deflater.deflate(buffer)
+    if (len > 0) {
+      result ++= ByteString.fromArray(buffer, 0, len)
+      drainDeflater(deflater, buffer, result)
+    } else {
+      assert(deflater.needsInput())
+      result.result()
+    }
+  }
 }
 
 class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {

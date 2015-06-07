@@ -28,15 +28,22 @@ private[http] object StreamUtils {
   /**
    * Creates a transformer that will call `f` for each incoming ByteString and output its result. After the complete
    * input has been read it will call `finish` once to determine the final ByteString to post to the output.
+   * Empty ByteStrings are discarded.
    */
   def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): Stage[ByteString, ByteString] = {
     new PushPullStage[ByteString, ByteString] {
-      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective =
-        ctx.push(f(element))
+      override def onPush(element: ByteString, ctx: Context[ByteString]): SyncDirective = {
+        val data = f(element)
+        if (data.nonEmpty) ctx.push(data)
+        else ctx.pull()
+      }
 
       override def onPull(ctx: Context[ByteString]): SyncDirective =
-        if (ctx.isFinishing) ctx.pushAndFinish(finish())
-        else ctx.pull()
+        if (ctx.isFinishing) {
+          val data = finish()
+          if (data.nonEmpty) ctx.pushAndFinish(data)
+          else ctx.finish()
+        } else ctx.pull()
 
       override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = ctx.absorbTermination()
     }

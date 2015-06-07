@@ -26,6 +26,8 @@ trait Encoder {
 
   def encode(input: ByteString): ByteString = newCompressor.compressAndFinish(input)
 
+  def encoderFlow: Flow[ByteString, ByteString, Unit] = Flow[ByteString].transform(newEncodeTransformer)
+
   def newCompressor: Compressor
 
   def newEncodeTransformer(): Stage[ByteString, ByteString] = {
