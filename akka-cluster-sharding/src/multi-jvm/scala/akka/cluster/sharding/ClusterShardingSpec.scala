@@ -48,7 +48,6 @@ object ClusterShardingSpec extends MultiNodeConfig {
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingSpec"
     akka.cluster.sharding {
-      role = backend
       retry-interval = 1 s
       handoff-timeout = 10 s
       shard-start-timeout = 5s
@@ -183,11 +182,17 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
   }
 
   def createCoordinator(): Unit = {
-    val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
-    def coordinatorProps(rebalanceEnabled: Boolean) =
-      ShardCoordinator.props(handOffTimeout = 10.seconds, shardStartTimeout = 10.seconds,
-        rebalanceInterval = if (rebalanceEnabled) 2.seconds else 3600.seconds,
-        snapshotInterval = 3600.seconds, allocationStrategy)
+    def coordinatorProps(rebalanceEnabled: Boolean) = {
+      val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
+      val cfg = ConfigFactory.parseString(s"""
+      handoff-timeout = 10s
+      shard-start-timeout = 10s
+      rebalance-interval = ${if (rebalanceEnabled) "2s" else "3600s"}
+      snapshot-interval = 3600s
+      """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
+      val settings = ClusterShardingSettings(cfg)
+      ShardCoordinator.props(settings, allocationStrategy)
+    }
 
     List("counter", "rebalancingCounter", "PersistentCounterEntries", "AnotherPersistentCounter",
       "PersistentCounter", "RebalancingPersistentCounter", "AutoMigrateRegionTest").foreach { coordinatorName ⇒
@@ -200,21 +205,26 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       }
   }
 
-  def createRegion(typeName: String, rememberEntries: Boolean): ActorRef = system.actorOf(ShardRegion.props(
-    typeName = typeName,
-    entryProps = Props[Counter],
-    role = None,
-    coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
-    retryInterval = 1.second,
-    shardFailureBackoff = 1.second,
-    entryRestartBackoff = 1.second,
-    snapshotInterval = 1.hour,
-    bufferSize = 1000,
-    rememberEntries = rememberEntries,
-    idExtractor = idExtractor,
-    shardResolver = shardResolver,
-    handOffStopMessage = PoisonPill),
-    name = typeName + "Region")
+  def createRegion(typeName: String, rememberEntries: Boolean): ActorRef = {
+    val cfg = ConfigFactory.parseString("""
+      retry-interval = 1s
+      shard-failure-backoff = 1s
+      entry-restart-backoff = 1s
+      snapshot-interval = 3600s
+      buffer-size = 1000
+      """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
+    val settings = ClusterShardingSettings(cfg)
+      .withRememberEntries(rememberEntries)
+    system.actorOf(ShardRegion.props(
+      typeName = typeName,
+      entryProps = Props[Counter],
+      settings = settings,
+      coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
+      idExtractor = idExtractor,
+      shardResolver = shardResolver,
+      handOffStopMessage = PoisonPill),
+      name = typeName + "Region")
+  }
 
   lazy val region = createRegion("counter", rememberEntries = false)
   lazy val rebalancingRegion = createRegion("rebalancingCounter", rememberEntries = false)
@@ -319,12 +329,15 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
 
     "support proxy only mode" in within(10.seconds) {
       runOn(second) {
+        val cfg = ConfigFactory.parseString("""
+          retry-interval = 1s
+          buffer-size = 1000
+        """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
+        val settings = ClusterShardingSettings(cfg)
         val proxy = system.actorOf(ShardRegion.proxyProps(
           typeName = "counter",
-          role = None,
+          settings,
           coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
-          retryInterval = 1.second,
-          bufferSize = 1000,
           idExtractor = idExtractor,
           shardResolver = shardResolver),
           name = "regionProxy")
@@ -491,16 +504,14 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       val counterRegion: ActorRef = ClusterSharding(system).start(
         typeName = "Counter",
         entryProps = Props[Counter],
-        role = None,
-        rememberEntries = false,
+        settings = ClusterShardingSettings(system),
         idExtractor = idExtractor,
         shardResolver = shardResolver)
       //#counter-start
       ClusterSharding(system).start(
         typeName = "AnotherCounter",
         entryProps = Props[Counter],
-        role = None,
-        rememberEntries = false,
+        settings = ClusterShardingSettings(system),
         idExtractor = idExtractor,
         shardResolver = shardResolver)
     }
@@ -541,8 +552,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       val counterRegionViaStart: ActorRef = ClusterSharding(system).start(
         typeName = "ApiTest",
         entryProps = Props[Counter],
-        role = None,
-        rememberEntries = false,
+        settings = ClusterShardingSettings(system),
         idExtractor = idExtractor,
         shardResolver = shardResolver)
 

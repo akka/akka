@@ -5,17 +5,20 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 import java.util.concurrent.ConcurrentHashMap
-import akka.cluster.sharding.Shard.{ ShardCommand, StateChange }
-import akka.cluster.sharding.ShardCoordinator.Internal.SnapshotTick
+
 import scala.collection.immutable
 import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.util.Success
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.ActorSystem
+import akka.actor.Cancellable
+import akka.actor.Deploy
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -27,22 +30,22 @@ import akka.actor.ReceiveTimeout
 import akka.actor.RootActorPath
 import akka.actor.Terminated
 import akka.cluster.Cluster
+import akka.cluster.ClusterEvent.ClusterDomainEvent
+import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberUp
-import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.Member
 import akka.cluster.MemberStatus
-import akka.pattern.ask
-import akka.persistence._
-import akka.cluster.ClusterEvent.ClusterDomainEvent
+import akka.cluster.sharding.Shard.{ ShardCommand, StateChange }
+import akka.cluster.sharding.ShardCoordinator.Internal.SnapshotTick
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.cluster.singleton.ClusterSingletonManagerSettings
-import scala.concurrent.Future
 import akka.dispatch.ExecutionContexts
+import akka.persistence._
+import akka.pattern.ask
 import akka.pattern.pipe
-import scala.util.Success
 import akka.util.ByteString
 
 /**
@@ -165,6 +168,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] with ExtensionIdProv
 
   override def createExtension(system: ExtendedActorSystem): ClusterSharding =
     new ClusterSharding(system)
+
 }
 
 /**
@@ -177,31 +181,11 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
   private val cluster = Cluster(system)
 
-  /**
-   * INTERNAL API
-   */
-  private[akka] object Settings {
-    val config = system.settings.config.getConfig("akka.cluster.sharding")
-
-    val GuardianName: String = config.getString("guardian-name")
-    val CoordinatorFailureBackoff = config.getDuration("coordinator-failure-backoff", MILLISECONDS).millis
-    val RetryInterval: FiniteDuration = config.getDuration("retry-interval", MILLISECONDS).millis
-    val BufferSize: Int = config.getInt("buffer-size")
-    val HandOffTimeout: FiniteDuration = config.getDuration("handoff-timeout", MILLISECONDS).millis
-    val ShardStartTimeout: FiniteDuration = config.getDuration("shard-start-timeout", MILLISECONDS).millis
-    val ShardFailureBackoff = config.getDuration("shard-failure-backoff", MILLISECONDS).millis
-    val EntryRestartBackoff = config.getDuration("entry-restart-backoff", MILLISECONDS).millis
-    val RebalanceInterval: FiniteDuration = config.getDuration("rebalance-interval", MILLISECONDS).millis
-    val SnapshotInterval: FiniteDuration = config.getDuration("snapshot-interval", MILLISECONDS).millis
-    val LeastShardAllocationRebalanceThreshold: Int =
-      config.getInt("least-shard-allocation-strategy.rebalance-threshold")
-    val LeastShardAllocationMaxSimultaneousRebalance: Int =
-      config.getInt("least-shard-allocation-strategy.max-simultaneous-rebalance")
-  }
-
-  import Settings._
   private val regions: ConcurrentHashMap[String, ActorRef] = new ConcurrentHashMap
-  private lazy val guardian = system.actorOf(Props[ClusterShardingGuardian], Settings.GuardianName)
+  private lazy val guardian = {
+    val guardianName: String = system.settings.config.getString("akka.cluster.sharding.guardian-name")
+    system.actorOf(Props[ClusterShardingGuardian], guardianName)
+  }
 
   private[akka] def requireClusterRole(role: Option[String]): Unit =
     require(role.forall(cluster.selfRoles.contains),
@@ -219,11 +203,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * @param entryProps the `Props` of the entry actors that will be created by the `ShardRegion`
    * @param role specifies that this entry type requires cluster nodes with a specific role.
    *   If the role is not specified all nodes in the cluster are used.
-   * @param rememberEntries true if entry actors shall created be automatically restarted upon `Shard`
-   *   restart. i.e. if the `Shard` is started on a different `ShardRegion` due to rebalance or crash.
-   * @param idExtractor partial function to extract the entry id and the message to send to the
-   *   entry from the incoming message, if the partial function does not match the message will
-   *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
+   * @param settings configuration settings, see [[ClusterShardingSettings]]
    * @param shardResolver function to determine the shard id for an incoming message, only messages
    *   that passed the `idExtractor` will be used
    * @param allocationStrategy possibility to use a custom shard allocation and
@@ -235,16 +215,15 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def start(
     typeName: String,
     entryProps: Props,
-    role: Option[String],
-    rememberEntries: Boolean,
+    settings: ClusterShardingSettings,
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver,
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: Any): ActorRef = {
 
-    requireClusterRole(role)
+    requireClusterRole(settings.role)
     implicit val timeout = system.settings.CreationTimeout
-    val startMsg = Start(typeName, entryProps, role, rememberEntries,
+    val startMsg = Start(typeName, entryProps, settings,
       idExtractor, shardResolver, allocationStrategy, handOffStopMessage)
     val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
     regions.put(typeName, shardRegion)
@@ -264,10 +243,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *
    * @param typeName the name of the entry type
    * @param entryProps the `Props` of the entry actors that will be created by the `ShardRegion`
-   * @param role specifies that this entry type requires cluster nodes with a specific role.
-   *   If the role is not specified all nodes in the cluster are used.
-   * @param rememberEntries true if entry actors shall created be automatically restarted upon `Shard`
-   *   restart. i.e. if the `Shard` is started on a different `ShardRegion` due to rebalance or crash.
+   * @param settings configuration settings, see [[ClusterShardingSettings]]
    * @param idExtractor partial function to extract the entry id and the message to send to the
    *   entry from the incoming message, if the partial function does not match the message will
    *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
@@ -278,14 +254,15 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def start(
     typeName: String,
     entryProps: Props,
-    role: Option[String],
-    rememberEntries: Boolean,
+    settings: ClusterShardingSettings,
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver): ActorRef = {
 
-    start(typeName, entryProps, role, rememberEntries, idExtractor, shardResolver,
-      new LeastShardAllocationStrategy(LeastShardAllocationRebalanceThreshold, LeastShardAllocationMaxSimultaneousRebalance),
-      PoisonPill)
+    val allocationStrategy = new LeastShardAllocationStrategy(
+      settings.tuningParameters.leastShardAllocationRebalanceThreshold,
+      settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance)
+
+    start(typeName, entryProps, settings, idExtractor, shardResolver, allocationStrategy, PoisonPill)
   }
 
   /**
@@ -298,10 +275,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *
    * @param typeName the name of the entry type
    * @param entryProps the `Props` of the entry actors that will be created by the `ShardRegion`
-   * @param role specifies that this entry type requires cluster nodes with a specific role.
-   *   If the role is not specified all nodes in the cluster are used.
-   * @param rememberEntries true if entry actors shall created be automatically restarted upon `Shard`
-   *   restart. i.e. if the `Shard` is started on a different `ShardRegion` due to rebalance or crash.
+   * @param settings configuration settings, see [[ClusterShardingSettings]]
    * @param messageExtractor functions to extract the entry id, shard id, and the message to send to the
    *   entry from the incoming message
    * @param allocationStrategy possibility to use a custom shard allocation and
@@ -313,13 +287,12 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def start(
     typeName: String,
     entryProps: Props,
-    role: Option[String],
-    rememberEntries: Boolean,
+    settings: ClusterShardingSettings,
     messageExtractor: ShardRegion.MessageExtractor,
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: Any): ActorRef = {
 
-    start(typeName, entryProps, role, rememberEntries,
+    start(typeName, entryProps, settings,
       idExtractor = {
         case msg if messageExtractor.entryId(msg) ne null ⇒
           (messageExtractor.entryId(msg), messageExtractor.entryMessage(msg))
@@ -342,10 +315,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *
    * @param typeName the name of the entry type
    * @param entryProps the `Props` of the entry actors that will be created by the `ShardRegion`
-   * @param role specifies that this entry type requires cluster nodes with a specific role.
-   *   If the role is not specified all nodes in the cluster are used.
-   * @param rememberEntries true if entry actors shall created be automatically restarted upon `Shard`
-   *   restart. i.e. if the `Shard` is started on a different `ShardRegion` due to rebalance or crash.
+   * @param settings configuration settings, see [[ClusterShardingSettings]]
    * @param messageExtractor functions to extract the entry id, shard id, and the message to send to the
    *   entry from the incoming message
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
@@ -353,13 +323,14 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def start(
     typeName: String,
     entryProps: Props,
-    role: Option[String],
-    rememberEntries: Boolean,
+    settings: ClusterShardingSettings,
     messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
-    start(typeName, entryProps, role, rememberEntries, messageExtractor,
-      new LeastShardAllocationStrategy(LeastShardAllocationRebalanceThreshold, LeastShardAllocationMaxSimultaneousRebalance),
-      PoisonPill)
+    val allocationStrategy = new LeastShardAllocationStrategy(
+      settings.tuningParameters.leastShardAllocationRebalanceThreshold,
+      settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance)
+
+    start(typeName, entryProps, settings, messageExtractor, allocationStrategy, PoisonPill)
   }
 
   /**
@@ -388,7 +359,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     shardResolver: ShardRegion.ShardResolver): ActorRef = {
 
     implicit val timeout = system.settings.CreationTimeout
-    val startMsg = StartProxy(typeName, role, idExtractor, shardResolver)
+    val settings = ClusterShardingSettings(system).withRole(role)
+    val startMsg = StartProxy(typeName, settings, idExtractor, shardResolver)
     val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
     regions.put(typeName, shardRegion)
     shardRegion
@@ -441,11 +413,11 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
  */
 private[akka] object ClusterShardingGuardian {
   import ShardCoordinator.ShardAllocationStrategy
-  final case class Start(typeName: String, entryProps: Props, role: Option[String], rememberEntries: Boolean,
+  final case class Start(typeName: String, entryProps: Props, settings: ClusterShardingSettings,
                          idExtractor: ShardRegion.IdExtractor, shardResolver: ShardRegion.ShardResolver,
                          allocationStrategy: ShardAllocationStrategy, handOffStopMessage: Any)
     extends NoSerializationVerificationNeeded
-  final case class StartProxy(typeName: String, role: Option[String],
+  final case class StartProxy(typeName: String, settings: ClusterShardingSettings,
                               idExtractor: ShardRegion.IdExtractor, shardResolver: ShardRegion.ShardResolver)
     extends NoSerializationVerificationNeeded
   final case class Started(shardRegion: ActorRef) extends NoSerializationVerificationNeeded
@@ -460,7 +432,6 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
   val cluster = Cluster(context.system)
   val sharding = ClusterSharding(context.system)
-  import sharding.Settings._
 
   private def coordinatorSingletonManagerName(encName: String): String =
     encName + "Coordinator"
@@ -469,15 +440,16 @@ private[akka] class ClusterShardingGuardian extends Actor {
     (self.path / coordinatorSingletonManagerName(encName) / "singleton" / "coordinator").toStringWithoutAddress
 
   def receive = {
-    case Start(typeName, entryProps, role, rememberEntries, idExtractor, shardResolver, allocationStrategy, handOffStopMessage) ⇒
+    case Start(typeName, entryProps, settings, idExtractor, shardResolver, allocationStrategy, handOffStopMessage) ⇒
+      import settings.role
+      import settings.tuningParameters.coordinatorFailureBackoff
       val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
       val cName = coordinatorSingletonManagerName(encName)
       val cPath = coordinatorPath(encName)
       val shardRegion = context.child(encName).getOrElse {
         if (context.child(cName).isEmpty) {
-          val coordinatorProps = ShardCoordinator.props(handOffTimeout = HandOffTimeout, shardStartTimeout = ShardStartTimeout,
-            rebalanceInterval = RebalanceInterval, snapshotInterval = SnapshotInterval, allocationStrategy)
-          val singletonProps = ShardCoordinatorSupervisor.props(CoordinatorFailureBackoff, coordinatorProps)
+          val coordinatorProps = ShardCoordinator.props(settings, allocationStrategy)
+          val singletonProps = ShardCoordinatorSupervisor.props(coordinatorFailureBackoff, coordinatorProps)
           val singletonSettings = ClusterSingletonManagerSettings(context.system)
             .withSingletonName("singleton").withRole(role)
           context.actorOf(ClusterSingletonManager.props(
@@ -490,14 +462,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
         context.actorOf(ShardRegion.props(
           typeName = typeName,
           entryProps = entryProps,
-          role = role,
+          settings = settings,
           coordinatorPath = cPath,
-          retryInterval = RetryInterval,
-          snapshotInterval = SnapshotInterval,
-          shardFailureBackoff = ShardFailureBackoff,
-          entryRestartBackoff = EntryRestartBackoff,
-          bufferSize = BufferSize,
-          rememberEntries = rememberEntries,
           idExtractor = idExtractor,
           shardResolver = shardResolver,
           handOffStopMessage = handOffStopMessage),
@@ -505,17 +471,15 @@ private[akka] class ClusterShardingGuardian extends Actor {
       }
       sender() ! Started(shardRegion)
 
-    case StartProxy(typeName, role, idExtractor, shardResolver) ⇒
+    case StartProxy(typeName, settings, idExtractor, shardResolver) ⇒
       val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
       val cName = coordinatorSingletonManagerName(encName)
       val cPath = coordinatorPath(encName)
       val shardRegion = context.child(encName).getOrElse {
         context.actorOf(ShardRegion.proxyProps(
           typeName = typeName,
-          role = role,
+          settings = settings,
           coordinatorPath = cPath,
-          retryInterval = RetryInterval,
-          bufferSize = BufferSize,
           idExtractor = idExtractor,
           shardResolver = shardResolver),
           name = encName)
@@ -538,19 +502,13 @@ object ShardRegion {
   private[akka] def props(
     typeName: String,
     entryProps: Props,
-    role: Option[String],
+    settings: ClusterShardingSettings,
     coordinatorPath: String,
-    retryInterval: FiniteDuration,
-    shardFailureBackoff: FiniteDuration,
-    entryRestartBackoff: FiniteDuration,
-    snapshotInterval: FiniteDuration,
-    bufferSize: Int,
-    rememberEntries: Boolean,
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver,
     handOffStopMessage: Any): Props =
-    Props(new ShardRegion(typeName, Some(entryProps), role, coordinatorPath, retryInterval, shardFailureBackoff, entryRestartBackoff,
-      snapshotInterval, bufferSize, rememberEntries, idExtractor, shardResolver, handOffStopMessage))
+    Props(new ShardRegion(typeName, Some(entryProps), settings, coordinatorPath, idExtractor,
+      shardResolver, handOffStopMessage)).withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -559,14 +517,12 @@ object ShardRegion {
    */
   private[akka] def proxyProps(
     typeName: String,
-    role: Option[String],
+    settings: ClusterShardingSettings,
     coordinatorPath: String,
-    retryInterval: FiniteDuration,
-    bufferSize: Int,
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver): Props =
-    Props(new ShardRegion(typeName, None, role, coordinatorPath, retryInterval, Duration.Zero, Duration.Zero,
-      Duration.Zero, bufferSize, false, idExtractor, shardResolver, PoisonPill))
+    Props(new ShardRegion(typeName, None, settings, coordinatorPath, idExtractor, shardResolver, PoisonPill))
+      .withDeploy(Deploy.local)
 
   /**
    * Marker type of entry identifier (`String`).
@@ -688,7 +644,7 @@ object ShardRegion {
 
   private[akka] def handOffStopperProps(
     shard: String, replyTo: ActorRef, entries: Set[ActorRef], stopMessage: Any): Props =
-    Props(new HandOffStopper(shard, replyTo, entries, stopMessage))
+    Props(new HandOffStopper(shard, replyTo, entries, stopMessage)).withDeploy(Deploy.local)
 }
 
 /**
@@ -701,20 +657,16 @@ object ShardRegion {
 class ShardRegion(
   typeName: String,
   entryProps: Option[Props],
-  role: Option[String],
+  settings: ClusterShardingSettings,
   coordinatorPath: String,
-  retryInterval: FiniteDuration,
-  shardFailureBackoff: FiniteDuration,
-  entryRestartBackoff: FiniteDuration,
-  snapshotInterval: FiniteDuration,
-  bufferSize: Int,
-  rememberEntries: Boolean,
   idExtractor: ShardRegion.IdExtractor,
   shardResolver: ShardRegion.ShardResolver,
   handOffStopMessage: Any) extends Actor with ActorLogging {
 
   import ShardCoordinator.Internal._
   import ShardRegion._
+  import settings._
+  import settings.tuningParameters._
 
   val cluster = Cluster(context.system)
 
@@ -969,11 +921,7 @@ class ShardRegion(
             typeName,
             id,
             props,
-            shardFailureBackoff,
-            entryRestartBackoff,
-            snapshotInterval,
-            bufferSize,
-            rememberEntries,
+            settings,
             idExtractor,
             shardResolver,
             handOffStopMessage),
@@ -1050,16 +998,12 @@ private[akka] object Shard {
   def props(typeName: String,
             shardId: ShardRegion.ShardId,
             entryProps: Props,
-            shardFailureBackoff: FiniteDuration,
-            entryRestartBackoff: FiniteDuration,
-            snapshotInterval: FiniteDuration,
-            bufferSize: Int,
-            rememberEntries: Boolean,
+            settings: ClusterShardingSettings,
             idExtractor: ShardRegion.IdExtractor,
             shardResolver: ShardRegion.ShardResolver,
             handOffStopMessage: Any): Props =
-    Props(new Shard(typeName, shardId, entryProps, shardFailureBackoff, entryRestartBackoff, snapshotInterval,
-      bufferSize, rememberEntries, idExtractor, shardResolver, handOffStopMessage))
+    Props(new Shard(typeName, shardId, entryProps, settings, idExtractor, shardResolver, handOffStopMessage))
+      .withDeploy(Deploy.local)
 }
 
 /**
@@ -1074,11 +1018,7 @@ private[akka] class Shard(
   typeName: String,
   shardId: ShardRegion.ShardId,
   entryProps: Props,
-  shardFailureBackoff: FiniteDuration,
-  entryRestartBackoff: FiniteDuration,
-  snapshotInterval: FiniteDuration,
-  bufferSize: Int,
-  rememberEntries: Boolean,
+  settings: ClusterShardingSettings,
   idExtractor: ShardRegion.IdExtractor,
   shardResolver: ShardRegion.ShardResolver,
   handOffStopMessage: Any) extends PersistentActor with ActorLogging {
@@ -1090,10 +1030,16 @@ private[akka] class Shard(
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
   import akka.persistence.RecoveryCompleted
 
+  import settings.rememberEntries
+  import settings.tuningParameters._
   import context.dispatcher
   val snapshotTask = context.system.scheduler.schedule(snapshotInterval, snapshotInterval, self, SnapshotTick)
 
   override def persistenceId = s"/sharding/${typeName}Shard/${shardId}"
+
+  override def journalPluginId: String = settings.journalPluginId
+
+  override def snapshotPluginId: String = settings.snapshotPluginId
 
   var state = State.Empty
   var idByRef = Map.empty[ActorRef, EntryId]
@@ -1309,6 +1255,7 @@ private[akka] object ShardCoordinatorSupervisor {
    */
   def props(failureBackoff: FiniteDuration, coordinatorProps: Props): Props =
     Props(new ShardCoordinatorSupervisor(failureBackoff, coordinatorProps))
+      .withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -1348,9 +1295,9 @@ object ShardCoordinator {
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
    */
-  private[akka] def props(handOffTimeout: FiniteDuration, shardStartTimeout: FiniteDuration, rebalanceInterval: FiniteDuration, snapshotInterval: FiniteDuration,
+  private[akka] def props(settings: ClusterShardingSettings,
                           allocationStrategy: ShardAllocationStrategy): Props =
-    Props(new ShardCoordinator(handOffTimeout, shardStartTimeout, rebalanceInterval, snapshotInterval, allocationStrategy))
+    Props(new ShardCoordinator(settings, allocationStrategy)).withDeploy(Deploy.local)
 
   /**
    * Interface of the pluggable shard allocation and rebalancing logic used by the [[ShardCoordinator]].
@@ -1670,15 +1617,18 @@ object ShardCoordinator {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: FiniteDuration, rebalanceInterval: FiniteDuration,
-                       snapshotInterval: FiniteDuration, allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
+class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
   extends PersistentActor with ActorLogging {
   import ShardCoordinator._
   import ShardCoordinator.Internal._
   import ShardRegion.ShardId
-  import akka.actor.Cancellable
+  import settings.tuningParameters._
 
   override def persistenceId = self.path.toStringWithoutAddress
+
+  override def journalPluginId: String = settings.journalPluginId
+
+  override def snapshotPluginId: String = settings.snapshotPluginId
 
   var persistentState = State.empty
   var rebalanceInProgress = Set.empty[ShardId]

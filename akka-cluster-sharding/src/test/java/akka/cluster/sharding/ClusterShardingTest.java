@@ -70,8 +70,9 @@ public class ClusterShardingTest {
 
     //#counter-start
     Option<String> roleOption = Option.none();
+    ClusterShardingSettings settings = ClusterShardingSettings.create(system);
     ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter",
-      Props.create(Counter.class), Option.java2ScalaOption(roleOption), false, messageExtractor);
+      Props.create(Counter.class), settings, messageExtractor);
     //#counter-start
 
     //#counter-usage

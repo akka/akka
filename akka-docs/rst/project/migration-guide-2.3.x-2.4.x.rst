@@ -230,8 +230,10 @@ The configuration properties changed name to ``akka.cluster.sharding``.
 ClusterSharding construction
 ============================
 
-Role is defined as parameter to the ``start`` method of the ``ClusterSharding`` extension
-instead of in configuration, so that it can be defined per entry type.
+Several parameters of the ``start`` method of the ``ClusterSharding`` extension are now defined
+in a settings object ``ClusterShardingSettings``.
+It can be created from system configuration properties and also amended with API.
+These settings can be defined differently per entry type if needed.
 
 Starting the ``ShardRegion`` in proxy mode is now done with the ``startProxy`` method 
 of the ``ClusterSharding`` extension instead of the optional ``entryProps`` parameter.
