@@ -112,8 +112,7 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
     ClusterSharding(system).start(
       typeName = "Entity",
       entryProps = Props[Entity],
-      role = None,
-      rememberEntries = true,
+      settings = ClusterShardingSettings(system).withRememberEntries(true),
       idExtractor = idExtractor,
       shardResolver = shardResolver)
   }

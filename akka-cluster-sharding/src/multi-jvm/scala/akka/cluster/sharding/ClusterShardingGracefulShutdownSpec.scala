@@ -122,8 +122,7 @@ class ClusterShardingGracefulShutdownSpec extends MultiNodeSpec(ClusterShardingG
     ClusterSharding(system).start(
       typeName = "Entity",
       entryProps = Props[Entity],
-      role = None,
-      rememberEntries = false,
+      settings = ClusterShardingSettings(system),
       idExtractor = idExtractor,
       shardResolver = shardResolver,
       allocationStrategy,

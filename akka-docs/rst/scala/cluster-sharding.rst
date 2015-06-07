@@ -260,11 +260,13 @@ Remembering Entries
 -------------------
 
 The list of entries in each ``Shard`` can be made persistent (durable) by setting
-the ``rememberEntries`` flag to true when calling ``ClusterSharding.start``. When configured
-to remember entries, whenever a ``Shard`` is rebalanced onto another node or recovers after a
-crash it will recreate all the entries which were previously running in that ``Shard``. To
-permanently stop entries, a ``Passivate`` message must be sent to the parent the ``Shard``, otherwise the
-entry will be automatically restarted after the entry restart backoff specified in the configuration.
+the ``rememberEntries`` flag to true in ``ClusterShardingSettings`` when calling 
+``ClusterSharding.start``. When configured to remember entries, whenever a ``Shard`` 
+is rebalanced onto another node or recovers after a crash it will recreate all the
+entries which were previously running in that ``Shard``. To permanently stop entries, 
+a ``Passivate`` message must be sent to the parent the ``Shard``, otherwise the
+entry will be automatically restarted after the entry restart backoff specified in 
+the configuration.
 
 When ``rememberEntries`` is set to false, a ``Shard`` will not automatically restart any entries
 after a rebalance or recovering from a crash. Entries will only be started once the first message
