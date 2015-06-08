@@ -45,6 +45,7 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.ByteString
 import akka.actor.Address
+import java.util.Optional
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -382,10 +383,10 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    */
   def startProxy(
     typeName: String,
-    role: Option[String],
+    role: Optional[String],
     messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
-    startProxy(typeName, role,
+    startProxy(typeName, Option(role.orElse(null)),
       idExtractor = {
         case msg if messageExtractor.entryId(msg) ne null ⇒
           (messageExtractor.entryId(msg), messageExtractor.entryMessage(msg))
