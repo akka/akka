@@ -628,7 +628,7 @@ completely.
 
 Event Adapters help in situations where:
 
-- **Version Migration** – existing events stored in *Version 1* should be "upcasted" to a new *Version 2* representation,
+- **Version Migrations** – existing events stored in *Version 1* should be "upcasted" to a new *Version 2* representation,
   and the process of doing so involves actual code, not just changes on the serialization layer. For these scenarios
   the ``toJournal`` function is usually an identity function, however the ``fromJournal`` is implemented as
   ``v1.Event=>v2.Event``, performing the neccessary mapping inside the fromJournal method.

@@ -29,7 +29,7 @@ import scala.annotation.varargs
  * }}}
  */
 
-final class ReadJournal(backing: akka.persistence.query.scaladsl.ReadJournal) {
+trait ReadJournal {
 
   /**
    * Java API
@@ -40,7 +40,7 @@ final class ReadJournal(backing: akka.persistence.query.scaladsl.ReadJournal) {
    * query, typically specific to the journal implementation.
    *
    */
-  @varargs def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M] =
-    backing.query(q, hints: _*).asJava
+  @varargs def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M]
+
 
 }

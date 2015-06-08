@@ -1,10 +1,10 @@
-.. _persistence-query-scala:
+.. _persistence-query-java:
 
 #################
 Persistence Query
 #################
 
-Akka persistence query complements :ref:`persistence-scala` by providing a universal asynchronous stream based
+Akka persistence query complements :ref:`persistence-java` by providing a universal asynchronous stream based
 query interface that various journal plugins can implement in order to expose their query capabilities.
 
 The most typical use case of persistence query is implementing the so-called query side (also known as "read side")
@@ -56,10 +56,10 @@ Read journals are implemented as `Community plugins`_, each targeting a specific
 databases). For example, given a library that provides a ``akka.persistence.query.noop-read-journal`` obtaining the related
 journal is as simple as:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#basic-usage
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#basic-usage
 
 Journal implementers are encouraged to put this identified in a variable known to the user, such that one can access it via
-``journalFor(NoopJournal.identifier)``, however this is not enforced.
+``getJournalFor(NoopJournal.identifier)``, however this is not enforced.
 
 Read journal implementations are available as `Community plugins`_.
 
@@ -81,19 +81,19 @@ The predefined queries are:
 By default this stream should be assumed to be a "live" stream, which means that the journal should keep emitting new
 persistence ids as they come into the system:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#all-persistence-ids-live
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#all-persistence-ids-live
 
 If your usage does not require a live stream, you can disable refreshing by using *hints*, providing the built-in
 ``NoRefresh`` hint to the query:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#all-persistence-ids-snap
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#all-persistence-ids-snap
 
 ``EventsByPersistenceId`` is a query equivalent to replaying a :ref:`PersistentActor <event-sourcing>`,
 however, since it is a stream it is possible to keep it alive and watch for additional incoming events persisted by the
 persistent actor identified by the given ``persistenceId``. Most journal will have to revert to polling in order to achieve
 this, which can be configured using the ``RefreshInterval`` query hint:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#events-by-persistent-id-refresh
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#events-by-persistent-id-refresh
 
 ``EventsByTag`` allows querying events regardles of which ``persistenceId`` they are associated with. This query is hard to
 implement in some journals or may need some additional preparation of the used data store to be executed efficiently,
@@ -110,10 +110,10 @@ depends on the used journal.
   on relational databases, yet may be hard to implement efficiently on plain key-value datastores.
 
 In the example below we query all events which have been tagged (we assume this was performed by the write-side using an
-:ref:`EventAdapter <event-adapters-scala>`, or that the journal is smart enough that it can figure out what we mean by this
+:ref:`EventAdapter <event-adapters-java>`, or that the journal is smart enough that it can figure out what we mean by this
 tag - for example if the journal stored the events as json it may try to find those with the field ``tag`` set to this value etc.).
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#events-by-tag
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#events-by-tag
 
 As you can see, we can use all the usual stream combinators available from `Akka Streams`_ on the resulting query stream,
 including for example taking the first 10 and cancelling the stream. It is worth pointing out that the built-in ``EventsByTag``
@@ -133,10 +133,10 @@ stream, for example if it's finite or infinite, strictly ordered or not ordered 
 is defined as the ``M`` type parameter of a query (``Query[T,M]``), which allows journals to provide users with their
 specialised query object, as demonstrated in the sample below:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#materialized-query-metadata
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#materialized-query-metadata
 
-.. _materialized values: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala/stream-quickstart.html#Materialized_values
-.. _Akka Streams: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala.html
+.. _materialized values: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/java/stream-quickstart.html#Materialized_values
+.. _Akka Streams: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/java.html
 .. _Community plugins: http://akka.io/community/#plugins-to-akka-persistence-query
 
 Performance and denormalization
@@ -166,7 +166,7 @@ Materialize view to Reactive Streams compatible datastore
 If the read datastore exposes it an `Reactive Streams`_ interface then implementing a simple projection
 is as simple as, using the read-journal and feeding it into the databases driver interface, for example like so:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#projection-into-different-store-rs
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#projection-into-different-store-rs
 
 .. _Reactive Streams: http://reactive-streams.org
 
@@ -179,7 +179,7 @@ you may have to implement the write logic using plain functions or Actors instea
 In case your write logic is state-less and you just need to convert the events from one data data type to another
 before writing into the alternative datastore, then the projection is as simple as:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#projection-into-different-store-simple
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#projection-into-different-store-simple
 
 Resumable projections
 ---------------------
@@ -192,13 +192,13 @@ The example below additionally highlights how you would use Actors to implement 
 you need to do some complex logic that would be best handled inside an Actor before persisting the event
 into the other datastore:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#projection-into-different-store-actor-run
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#projection-into-different-store-actor-run
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#projection-into-different-store-actor
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#projection-into-different-store-actor
 
 .. _Command & Query Responsibility Segragation: https://msdn.microsoft.com/en-us/library/jj554200.aspx
 
-.. _read-journal-plugin-api-scala:
+.. _read-journal-plugin-api-java:
 
 Query plugins
 =============
@@ -221,15 +221,14 @@ For example if the user accidentally passed in an ``SqlQuery()`` to a key-value 
 
 Below is a simple journal implementation:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#my-read-journal
+.. includecode:: code/docs/persistence/PersistenceQueryDocTest.java#my-read-journal
 
 And the ``EventsByTag`` could be backed by such an Actor for example:
 
-.. includecode:: code/docs/persistence/query/MyEventsByTagPublisher.scala#events-by-tag-publisher
+.. includecode:: code/docs/persistence/query/MyEventsByTagJavaPublisher.java#events-by-tag-publisher
 
 Plugin TCK
 ----------
 
 TODO, not available yet.
-
 
