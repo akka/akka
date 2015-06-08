@@ -10,12 +10,11 @@ import akka.actor.ActorSystem
 import akka.persistence.journal.{ EventAdapter, EventSeq }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
-import org.scalautils.ConversionCheckedTripleEquals
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ConversionCheckedTripleEquals {
+class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   val anything: Query[String, _] = null
 
@@ -42,12 +41,24 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
         }.getMessage should include("missing persistence read journal")
       }
     }
+
+    "expose scaladsl implemented journal as javadsl.ReadJournal" in {
+      withActorSystem() { system ⇒
+        val j: javadsl.ReadJournal = PersistenceQuery.get(system).getReadJournalFor(MockReadJournal.Identifier)
+      }
+    }
+    "expose javadsl implemented journal as scaladsl.ReadJournal" in {
+      withActorSystem() { system ⇒
+        val j: scaladsl.ReadJournal = PersistenceQuery.get(system).readJournalFor(MockJavaReadJournal.Identifier)
+      }
+    }
   }
 
   private val systemCounter = new AtomicInteger()
   private def withActorSystem(conf: String = "")(block: ActorSystem ⇒ Unit): Unit = {
     val config =
       MockReadJournal.config
+        .withFallback(MockJavaReadJournal.config)
         .withFallback(ConfigFactory.parseString(conf))
         .withFallback(ConfigFactory.parseString(eventAdaptersConfig))
         .withFallback(ConfigFactory.load())

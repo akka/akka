@@ -36,3 +36,9 @@ abstract class ReadJournal {
   def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M]
 
 }
+
+/** INTERNAL API */
+private[akka] final class ReadJournalAdapter(backing: akka.persistence.query.javadsl.ReadJournal) extends ReadJournal {
+  override def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M] =
+    backing.query(q, hints: _*).asScala
+}
