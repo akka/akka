@@ -54,7 +54,7 @@ object AkkaBuild extends Build {
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, 
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
-      slf4j, agent, persistence, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed)
+      slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -64,7 +64,7 @@ object AkkaBuild extends Build {
     // samples don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, 
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
-      slf4j, persistence, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed)
+      slf4j, persistence, persistenceQuery, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed)
   ).disablePlugins(ValidatePullRequest)
 
   lazy val actor = Project(
@@ -163,6 +163,12 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, remote % "test->test", testkit % "test->test")
   )
 
+  lazy val persistenceQuery = Project(
+    id = "akka-persistence-query-experimental",
+    base = file("akka-persistence-query"),
+    dependencies = Seq(persistence % "compile;provided->provided;test->test", testkit % "compile;test->test")
+  )
+
   lazy val persistenceTck = Project(
     id = "akka-persistence-experimental-tck",
     base = file("akka-persistence-tck"),
@@ -192,7 +198,7 @@ object AkkaBuild extends Build {
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test",
       remote % "compile;test->test", cluster, clusterMetrics, slf4j, agent, camel, osgi,
-      persistence % "compile;provided->provided;test->test", persistenceTck,
+      persistence % "compile;provided->provided;test->test", persistenceTck, persistenceQuery,
       typed % "compile;test->test", distributedData)
   )
 
