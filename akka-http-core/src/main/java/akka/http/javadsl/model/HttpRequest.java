@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model;
 
+import akka.http.impl.util.JavaAccessors;
+
 /**
  * Represents an Http request.
  */
@@ -47,14 +49,14 @@ public abstract class HttpRequest implements HttpMessage, HttpMessage.MessageTra
      * Returns a default request to be modified using the `withX` methods.
      */
     public static HttpRequest create() {
-        return Accessors.HttpRequest();
+        return JavaAccessors.HttpRequest();
     }
 
     /**
      * Returns a default request to the specified URI to be modified using the `withX` methods.
      */
     public static HttpRequest create(String uri) {
-        return Accessors.HttpRequest(uri);
+        return JavaAccessors.HttpRequest(uri);
     }
 
     /**
