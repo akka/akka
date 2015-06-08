@@ -32,7 +32,7 @@ object SynchronousFileSource {
 
   /**
    * Creates a synchronous (Java 6 compatible) Source from a Files contents.
-   * Emitted elements are [[ByteString]] elements, chubnked by default by [[DefaultChunkSize]] bytes.
+   * Emitted elements are [[ByteString]] elements, chunked by default by [[DefaultChunkSize]] bytes.
    *
    * This source is backed by an Actor which will use the dedicated thread-pool base dispatcher.
    * You can configure the default dispatcher for this Source by changing the `akka.stream.file-io-dispatcher` or
