@@ -87,7 +87,7 @@ private[http] class FrameEventParser extends ByteStringParserStage[FrameEvent] {
         if (thisFrameData.length == length) ReadFrameHeader
         else readData(length - thisFrameData.length)
 
-      pushAndBecomeWithRemaining(FrameStart(header, thisFrameData), nextState, remaining, ctx)
+      pushAndBecomeWithRemaining(FrameStart(header, thisFrameData.compact), nextState, remaining, ctx)
     }
   }
 
@@ -103,7 +103,7 @@ private[http] class FrameEventParser extends ByteStringParserStage[FrameEvent] {
           val frameData = elem.take(remaining.toInt)
           val remainingData = elem.drop(remaining.toInt)
 
-          pushAndBecomeWithRemaining(FrameData(frameData, lastPart = true), ReadFrameHeader, remainingData, ctx)
+          pushAndBecomeWithRemaining(FrameData(frameData.compact, lastPart = true), ReadFrameHeader, remainingData, ctx)
         }
     }
 
