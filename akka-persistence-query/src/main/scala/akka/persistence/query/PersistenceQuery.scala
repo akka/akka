@@ -7,8 +7,9 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
 import akka.event.Logging
+import akka.stream.javadsl.Source
 
-import scala.annotation.tailrec
+import scala.annotation.{varargs, tailrec}
 import scala.util.Failure
 
 /**
@@ -62,7 +63,12 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
    * Returns the [[akka.persistence.query.javadsl.ReadJournal]] specified by the given read journal configuration entry.
    */
   final def getReadJournalFor(readJournalPluginId: String): javadsl.ReadJournal =
-    new javadsl.ReadJournal(readJournalFor(readJournalPluginId))
+    new javadsl.ReadJournal {
+      val backing = readJournalFor(readJournalPluginId)
+      @varargs def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M] =
+        backing.query(q, hints: _*).asJava
+    }
+
 
   private def createPlugin(configPath: String): scaladsl.ReadJournal = {
     require(!isEmpty(configPath) && system.settings.config.hasPath(configPath),

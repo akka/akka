@@ -28,8 +28,7 @@ object PersistenceQueryDocSpec {
   //#my-read-journal
   class MyReadJournal(system: ExtendedActorSystem) extends ReadJournal {
 
-    // TODO from config
-    private val defaulRefreshInterval: FiniteDuration = 3.seconds
+    private val defaulRefreshInterval = 3.seconds
 
     override def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M] =
       q match {

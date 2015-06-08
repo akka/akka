@@ -22,13 +22,13 @@ object MyEventsByTagPublisher {
 //#events-by-tag-publisher
 class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteDuration)
   extends ActorPublisher[EventEnvelope] {
-  import MyEventsByTagPublisher._
 
   private case object Continue
 
-  private val limit = 1000
+  private val connection: java.sql.Connection = ???
 
-  private var currentId = 0L
+  private val Limit = 1000
+  private var currentOffset = offset
   var buf = Vector.empty[EventEnvelope]
 
   import context.dispatcher
@@ -48,14 +48,35 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
       context.stop(self)
   }
 
+  object Select {
+    private def statement() = connection.prepareStatement(
+      """
+        SELECT id, persistent_repr FROM journal
+        WHERE tag = ? AND id >= ?
+        ORDER BY id LIMIT ?
+      """)
+
+    def run(tag: String, from: Long, limit: Int): Vector[(Long, Array[Byte])] = {
+      val s = statement()
+      try {
+        s.setString(1, tag)
+        s.setLong(2, from)
+        s.setLong(3, limit)
+        val rs = s.executeQuery()
+
+        val b = Vector.newBuilder[(Long, Array[Byte])]
+        while (rs.next())
+          b += (rs.getLong(1) -> rs.getBytes(2))
+        b.result()
+      } finally s.close()
+    }
+  }
+
   def query(): Unit =
     if (buf.isEmpty) {
       try {
-        // Could be an SQL query, for example:
-        //      "SELECT id, persistent_repr FROM journal WHERE tag = like ? and " +
-        //        "id >= ? ORDER BY id limit ?"
-        val result: Vector[(Long, Array[Byte])] = ???
-        currentId = if (result.nonEmpty) result.last._1 else currentId
+        val result = Select.run(tag, currentOffset, Limit)
+        currentOffset = if (result.nonEmpty) result.last._1 else currentOffset
         val serialization = SerializationExtension(context.system)
 
         buf = result.map {
