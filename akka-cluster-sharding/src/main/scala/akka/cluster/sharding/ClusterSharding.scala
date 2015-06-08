@@ -5,13 +5,11 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 import java.util.concurrent.ConcurrentHashMap
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -47,6 +45,7 @@ import akka.persistence._
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.ByteString
+import akka.actor.Address
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -612,6 +611,29 @@ object ShardRegion {
    */
   def gracefulShutdownInstance = GracefulShutdown
 
+  /*
+   * Send this message to the `ShardRegion` actor to request for [[CurrentRegions]],
+   * which contains the addresses of all registered regions.
+   * Intended for testing purpose to see when cluster sharding is "ready".
+   */
+  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionCommand
+
+  def getCurrentRegionsInstance = GetCurrentRegions
+
+  /**
+   * Reply to [[GetCurrentRegions]]
+   */
+  @SerialVersionUID(1L) final case class CurrentRegions(regions: Set[Address]) {
+    /**
+     * Java API
+     */
+    def getRegions: java.util.Set[Address] = {
+      import scala.collection.JavaConverters._
+      regions.asJava
+    }
+
+  }
+
   private case object Retry extends ShardRegionCommand
 
   private def roleOption(role: String): Option[String] =
@@ -827,6 +849,12 @@ class ShardRegion(
       log.debug("Starting graceful shutdown of region and all its shards")
       gracefulShutdownInProgress = true
       sendGracefulShutdownToCoordinator()
+
+    case GetCurrentRegions ⇒
+      coordinator match {
+        case Some(c) ⇒ c.forward(GetCurrentRegions)
+        case None    ⇒ sender() ! CurrentRegions(Set.empty)
+      }
 
     case _ ⇒ unhandled(cmd)
   }
@@ -1845,6 +1873,13 @@ class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: Sh
       // can't stop because supervisor will start it again,
       // it will soon be stopped when singleton is stopped
       context.become(shuttingDown)
+
+    case ShardRegion.GetCurrentRegions ⇒
+      val reply = ShardRegion.CurrentRegions(persistentState.regions.keySet.map { ref ⇒
+        if (ref.path.address.host.isEmpty) Cluster(context.system).selfAddress
+        else ref.path.address
+      })
+      sender() ! reply
 
     case _: CurrentClusterState ⇒
   }
