@@ -5,6 +5,7 @@
 package akka.http.javadsl.model;
 
 import akka.http.scaladsl.model.HttpEntity$;
+import akka.japi.Option;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 
@@ -69,6 +70,11 @@ public interface HttpEntity {
      * Returns if this entity is a subtype of HttpEntityIndefiniteLength.
      */
     public abstract boolean isIndefiniteLength();
+
+    /**
+     * Returns Some(contentLength) if the length is defined and none otherwise.
+     */
+    public abstract Option<Long> getContentLengthOption();
 
     /**
      * Returns a stream of data bytes this entity consists of.
