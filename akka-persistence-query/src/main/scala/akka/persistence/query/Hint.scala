@@ -3,6 +3,8 @@
  */
 package akka.persistence.query
 
+import java.util.concurrent.TimeUnit
+
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -21,6 +23,12 @@ trait Hint
  * A plugin may optionally support this [[Hint]] for defining such a refresh interval.
  */
 final case class RefreshInterval(interval: FiniteDuration) extends Hint
+object RefreshInterval {
+  /** Java API */
+  def create(length: Long, unit: TimeUnit): RefreshInterval = new RefreshInterval(FiniteDuration(length, unit))
+  /** Java API */
+  def create(interval: FiniteDuration): RefreshInterval = new RefreshInterval(interval)
+}
 
 /**
  * Indicates that the event stream is supposed to be completed immediately when it

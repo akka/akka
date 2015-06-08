@@ -26,7 +26,7 @@ import scala.annotation.varargs;
  *
  * final Source&lt;EventEnvelope, ?&gt; events =
  *   journal.query(new EventsByTag("mytag", 0L));
- * </pre></code>
+ * </code></pre>
  */
 
 public interface ReadJournal {
