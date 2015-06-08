@@ -42,6 +42,7 @@ import static org.junit.matchers.JUnitMatchers.hasItems;
 
 public class AbstractPersistentFSMTest {
     private static Option<String> none = Option.none();
+
     @ClassRule
     public static AkkaJUnitActorSystemResource actorSystemResource =
             new AkkaJUnitActorSystemResource("PersistentFSMJavaTest", PersistenceSpec.config(

@@ -12,6 +12,7 @@ Actors
    routing
    fsm
    persistence
+   persistence-query
    testing
    actordsl
    typed-actors
