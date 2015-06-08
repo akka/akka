@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.model;
 
+import akka.http.impl.util.JavaAccessors$;
 import akka.http.scaladsl.model.UriJavaAccessor;
 import akka.japi.Option;
 import akka.parboiled2.ParserInput$;
@@ -161,28 +162,28 @@ public abstract class Uri {
      * Creates a default Uri to be modified using the modification methods.
      */
     public static Uri create() {
-        return Accessors$.MODULE$.Uri(akka.http.scaladsl.model.Uri.Empty$.MODULE$);
+        return JavaAccessors$.MODULE$.Uri(akka.http.scaladsl.model.Uri.Empty$.MODULE$);
     }
 
     /**
      * Returns a Uri created by parsing the given string representation.
      */
     public static Uri create(String uri) {
-        return Accessors$.MODULE$.Uri(akka.http.scaladsl.model.Uri.apply(uri));
+        return JavaAccessors$.MODULE$.Uri(akka.http.scaladsl.model.Uri.apply(uri));
     }
 
     /**
      * Returns a Uri created by parsing the given string representation and parsing-mode.
      */
     public static Uri create(String uri, akka.http.scaladsl.model.Uri.ParsingMode parsingMode) {
-        return Accessors$.MODULE$.Uri(akka.http.scaladsl.model.Uri.apply(ParserInput$.MODULE$.apply(uri), parsingMode));
+        return JavaAccessors$.MODULE$.Uri(akka.http.scaladsl.model.Uri.apply(ParserInput$.MODULE$.apply(uri), parsingMode));
     }
 
     /**
      * Returns a Uri created by parsing the given string representation, charset, and parsing-mode.
      */
     public static Uri create(String uri, Charset charset, akka.http.scaladsl.model.Uri.ParsingMode parsingMode) {
-        return Accessors$.MODULE$.Uri(akka.http.scaladsl.model.Uri.apply(ParserInput$.MODULE$.apply(uri), charset, parsingMode));
+        return JavaAccessors$.MODULE$.Uri(akka.http.scaladsl.model.Uri.apply(ParserInput$.MODULE$.apply(uri), charset, parsingMode));
     }
 
 }

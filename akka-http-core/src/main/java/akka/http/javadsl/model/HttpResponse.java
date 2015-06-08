@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model;
 
+import akka.http.impl.util.JavaAccessors;
+
 /**
  * Represents an Http response.
  */
@@ -37,6 +39,6 @@ public abstract class HttpResponse implements HttpMessage, HttpMessage.MessageTr
      * Returns a default response to be changed using the `withX` methods.
      */
     public static HttpResponse create() {
-        return Accessors.HttpResponse();
+        return JavaAccessors.HttpResponse();
     }
 }

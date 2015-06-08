@@ -5,6 +5,8 @@
 package akka.http.scaladsl.model
 
 import java.lang.{ Iterable ⇒ JIterable }
+import akka.http.impl.util
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
@@ -266,7 +268,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
   def withUri(uri: Uri): HttpRequest = copy(uri = uri)
 
   /** Java API */
-  override def getUri: jm.Uri = jm.Accessors.Uri(uri)
+  override def getUri: jm.Uri = util.JavaAccessors.Uri(uri)
   /** Java API */
   override def withUri(relativeUri: akka.http.javadsl.model.Uri): HttpRequest = copy(uri = relativeUri.asInstanceOf[JavaUri].uri)
 }

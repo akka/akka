@@ -10,7 +10,6 @@ import scala.collection.immutable
 import scala.reflect.ClassTag
 import akka.japi
 import akka.http.impl.model.JavaUri
-import akka.http.javadsl.model.Accessors
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.{ model ⇒ sm }
 
@@ -147,7 +146,7 @@ object JavaMapping {
 
   implicit object Uri extends JavaMapping[jm.Uri, sm.Uri] {
     def toScala(javaObject: jm.Uri): Uri.S = cast[JavaUri](javaObject).uri
-    def toJava(scalaObject: sm.Uri): Uri.J = Accessors.Uri(scalaObject)
+    def toJava(scalaObject: sm.Uri): Uri.J = JavaAccessors.Uri(scalaObject)
   }
 
   private def cast[T](obj: AnyRef)(implicit classTag: ClassTag[T]): T =
