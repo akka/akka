@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.rendering
 
+import java.lang.reflect.Modifier
 import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
@@ -34,6 +35,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
     try {
       val m = classOf[InetSocketAddress].getDeclaredMethod("getHostString")
       require(m.getReturnType == classOf[String])
+      require(Modifier.isPublic(m.getModifiers))
       address ⇒ m.invoke(address).asInstanceOf[String]
     } catch {
       case NonFatal(_) ⇒ _.getHostName
