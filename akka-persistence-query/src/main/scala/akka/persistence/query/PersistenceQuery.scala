@@ -7,9 +7,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
 import akka.event.Logging
-import akka.stream.javadsl.Source
 
-import scala.annotation.{varargs, tailrec}
+import scala.annotation.tailrec
 import scala.util.Failure
 
 /**
@@ -63,12 +62,7 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
    * Returns the [[akka.persistence.query.javadsl.ReadJournal]] specified by the given read journal configuration entry.
    */
   final def getReadJournalFor(readJournalPluginId: String): javadsl.ReadJournal =
-    new javadsl.ReadJournal {
-      val backing = readJournalFor(readJournalPluginId)
-      @varargs def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M] =
-        backing.query(q, hints: _*).asJava
-    }
-
+    new javadsl.ReadJournalAdapter(readJournalFor(readJournalPluginId))
 
   private def createPlugin(configPath: String): scaladsl.ReadJournal = {
     require(!isEmpty(configPath) && system.settings.config.hasPath(configPath),
@@ -79,14 +73,24 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
     log.debug(s"Create plugin: ${pluginActorName} ${pluginClassName}")
     val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
 
-    val plugin = system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil)
-      .orElse(system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, Nil))
-      .recoverWith {
-        case ex: Exception ⇒ Failure.apply(new IllegalArgumentException(s"Unable to create read journal plugin instance for path [$configPath], class [$pluginClassName]!", ex))
-      }
+    // TODO remove duplication
+    val scalaPlugin =
+      if (classOf[scaladsl.ReadJournal].isAssignableFrom(pluginClass))
+        system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil)
+          .orElse(system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, Nil))
+          .recoverWith {
+            case ex: Exception ⇒ Failure.apply(new IllegalArgumentException(s"Unable to create read journal plugin instance for path [$configPath], class [$pluginClassName]!", ex))
+          }
+      else if (classOf[javadsl.ReadJournal].isAssignableFrom(pluginClass))
+        system.dynamicAccess.createInstanceFor[javadsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil)
+          .orElse(system.dynamicAccess.createInstanceFor[javadsl.ReadJournal](pluginClass, Nil))
+          .map(jj ⇒ new scaladsl.ReadJournalAdapter(jj))
+          .recoverWith {
+            case ex: Exception ⇒ Failure.apply(new IllegalArgumentException(s"Unable to create read journal plugin instance for path [$configPath], class [$pluginClassName]!", ex))
+          }
+      else throw new IllegalArgumentException(s"Configured class ${pluginClass} does not extend")
 
-    // TODO possibly apply event adapters here
-    plugin.get
+    scalaPlugin.get
   }
 
   /** Check for default or missing identity. */

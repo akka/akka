@@ -69,7 +69,6 @@ public class PersistenceQueryDocTest {
         private <I, M> akka.japi.function.Function<I, M> noMaterializedValue () {
           return param -> (M) null;
         }
-
   }
     //#my-read-journal
 }
