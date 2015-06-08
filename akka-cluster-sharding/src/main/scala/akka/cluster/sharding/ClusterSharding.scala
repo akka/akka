@@ -37,7 +37,6 @@ import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.Shard.{ ShardCommand, StateChange }
-import akka.cluster.sharding.ShardCoordinator.Internal.SnapshotTick
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.dispatch.ExecutionContexts
@@ -803,9 +802,6 @@ class ShardRegion(
       coordinator = Some(coord)
       requestShardBufferHomes()
 
-    case SnapshotTick ⇒
-      context.children.foreach(_ ! SnapshotTick)
-
     case BeginHandOff(shard) ⇒
       log.debug("BeginHandOff shard [{}]", shard)
       if (regionByShard.contains(shard)) {
@@ -989,11 +985,6 @@ private[akka] object Shard {
   final case class RetryPersistence(payload: StateChange) extends ShardCommand
 
   /**
-   * The Snapshot tick for the shards
-   */
-  private case object SnapshotTick extends ShardCommand
-
-  /**
    * When an remembering entries and the entry stops without issuing a `Passivate`, we
    * restart it after a back off using this message.
    */
@@ -1053,15 +1044,13 @@ private[akka] class Shard(
 
   import ShardRegion.{ handOffStopperProps, EntryId, Msg, Passivate }
   import ShardCoordinator.Internal.{ HandOff, ShardStopped }
-  import Shard.{ State, RetryPersistence, RestartEntry, EntryStopped, EntryStarted, SnapshotTick }
+  import Shard.{ State, RetryPersistence, RestartEntry, EntryStopped, EntryStarted }
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
   import akka.persistence.RecoveryCompleted
 
   import settings.rememberEntries
   import settings.tuningParameters._
-  import context.dispatcher
-  val snapshotTask = context.system.scheduler.schedule(snapshotInterval, snapshotInterval, self, SnapshotTick)
 
   override def persistenceId = s"/sharding/${typeName}Shard/${shardId}"
 
@@ -1074,19 +1063,25 @@ private[akka] class Shard(
   var refById = Map.empty[EntryId, ActorRef]
   var passivating = Set.empty[ActorRef]
   var messageBuffers = Map.empty[EntryId, Vector[(Msg, ActorRef)]]
+  var persistCount = 0
 
   var handOffStopper: Option[ActorRef] = None
-
-  override def postStop(): Unit = {
-    super.postStop()
-    snapshotTask.cancel()
-  }
 
   def totalBufferSize = messageBuffers.foldLeft(0) { (sum, entry) ⇒ sum + entry._2.size }
 
   def processChange[A](event: A)(handler: A ⇒ Unit): Unit =
-    if (rememberEntries) persist(event)(handler)
-    else handler(event)
+    if (rememberEntries) {
+      saveSnapshotWhenNeeded()
+      persist(event)(handler)
+    } else handler(event)
+
+  def saveSnapshotWhenNeeded(): Unit = {
+    persistCount += 1
+    if (persistCount % snapshotAfter == 0) {
+      log.debug("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
+      saveSnapshot(state)
+    }
+  }
 
   override def receiveRecover: Receive = {
     case EntryStarted(id) if rememberEntries ⇒ state = state.copy(state.entries + id)
@@ -1105,7 +1100,6 @@ private[akka] class Shard(
   }
 
   def receiveShardCommand(msg: ShardCommand): Unit = msg match {
-    case SnapshotTick              ⇒ saveSnapshot(state)
     case RetryPersistence(payload) ⇒ retryPersistence(payload)
     case RestartEntry(id)          ⇒ getEntry(id)
   }
@@ -1127,6 +1121,7 @@ private[akka] class Shard(
       messageBuffers = messageBuffers.updated(payload.entryId, Vector.empty)
     }
 
+    import context.dispatcher
     context.system.scheduler.scheduleOnce(shardFailureBackoff, self, RetryPersistence(payload))
   }
 
@@ -1172,6 +1167,7 @@ private[akka] class Shard(
       } else {
         if (rememberEntries && !passivating.contains(ref)) {
           log.debug("Entry [{}] stopped without passivating, will restart after backoff", id)
+          import context.dispatcher
           context.system.scheduler.scheduleOnce(entryRestartBackoff, self, RestartEntry(id))
         } else processChange(EntryStopped(id))(passivateCompleted)
       }
@@ -1252,6 +1248,7 @@ private[akka] class Shard(
       case None if rememberEntries ⇒
         //Note; we only do this if remembering, otherwise the buffer is an overhead
         messageBuffers = messageBuffers.updated(id, Vector((msg, snd)))
+        saveSnapshotWhenNeeded()
         persist(EntryStarted(id))(sendMsgBuffer)
 
       case None ⇒
@@ -1462,10 +1459,6 @@ object ShardCoordinator {
      */
     @SerialVersionUID(1L) final case class RegisterAck(coordinator: ActorRef) extends CoordinatorMessage
     /**
-     * Periodic message to trigger persistent snapshot
-     */
-    @SerialVersionUID(1L) final case object SnapshotTick extends CoordinatorMessage
-    /**
      * `ShardRegion` requests the location of a shard by sending this message
      * to the `ShardCoordinator`.
      */
@@ -1663,17 +1656,16 @@ class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: Sh
   var unAckedHostShards = Map.empty[ShardId, Cancellable]
   // regions that have requested handoff, for graceful shutdown
   var gracefulShutdownInProgress = Set.empty[ActorRef]
+  var persistCount = 0
 
   import context.dispatcher
   val rebalanceTask = context.system.scheduler.schedule(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
-  val snapshotTask = context.system.scheduler.schedule(snapshotInterval, snapshotInterval, self, SnapshotTick)
 
   Cluster(context.system).subscribe(self, ClusterShuttingDown.getClass)
 
   override def postStop(): Unit = {
     super.postStop()
     rebalanceTask.cancel()
-    snapshotTask.cancel()
     Cluster(context.system).unsubscribe(self)
   }
 
@@ -1725,6 +1717,7 @@ class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: Sh
         sender() ! RegisterAck(self)
       else {
         gracefulShutdownInProgress -= region
+        saveSnapshotWhenNeeded()
         persist(ShardRegionRegistered(region)) { evt ⇒
           val firstRegion = persistentState.regions.isEmpty
 
@@ -1741,12 +1734,14 @@ class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: Sh
       log.debug("ShardRegion proxy registered: [{}]", proxy)
       if (persistentState.regionProxies.contains(proxy))
         sender() ! RegisterAck(self)
-      else
+      else {
+        saveSnapshotWhenNeeded()
         persist(ShardRegionProxyRegistered(proxy)) { evt ⇒
           persistentState = persistentState.updated(evt)
           context.watch(proxy)
           sender() ! RegisterAck(self)
         }
+      }
 
     case Terminated(ref) ⇒
       if (persistentState.regions.contains(ref)) {
@@ -1757,12 +1752,14 @@ class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: Sh
 
         gracefulShutdownInProgress -= ref
 
+        saveSnapshotWhenNeeded()
         persist(ShardRegionTerminated(ref)) { evt ⇒
           persistentState = persistentState.updated(evt)
           allocateShardHomes()
         }
       } else if (persistentState.regionProxies.contains(ref)) {
         log.debug("ShardRegion proxy terminated: [{}]", ref)
+        saveSnapshotWhenNeeded()
         persist(ShardRegionProxyTerminated(ref)) { evt ⇒
           persistentState = persistentState.updated(evt)
         }
@@ -1835,13 +1832,14 @@ class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: Sh
       log.debug("Rebalance shard [{}] done [{}]", shard, ok)
       // The shard could have been removed by ShardRegionTerminated
       if (persistentState.shards.contains(shard))
-        if (ok)
+        if (ok) {
+          saveSnapshotWhenNeeded()
           persist(ShardHomeDeallocated(shard)) { evt ⇒
             persistentState = persistentState.updated(evt)
             log.debug("Shard [{}] deallocated", evt.shard)
             allocateShardHomes()
           }
-        else // rebalance not completed, graceful shutdown will be retried
+        } else // rebalance not completed, graceful shutdown will be retried
           gracefulShutdownInProgress -= persistentState.shards(shard)
 
     case GracefulShutdownReq(region) ⇒
@@ -1853,10 +1851,6 @@ class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: Sh
             continueRebalance(shards.toSet)
           case None ⇒
         }
-
-    case SnapshotTick ⇒
-      log.debug("Saving persistent snapshot")
-      saveSnapshot(persistentState)
 
     case SaveSnapshotSuccess(_) ⇒
       log.debug("Persistent snapshot saved successfully")
@@ -1888,6 +1882,14 @@ class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: Sh
     case _ ⇒ // ignore all
   }
 
+  def saveSnapshotWhenNeeded(): Unit = {
+    persistCount += 1
+    if (persistCount % snapshotAfter == 0) {
+      log.debug("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
+      saveSnapshot(persistentState)
+    }
+  }
+
   def sendHostShardMsg(shard: ShardId, region: ActorRef): Unit = {
     region ! HostShard(shard)
     val cancel = context.system.scheduler.scheduleOnce(shardStartTimeout, self, ResendShardHost(shard, region))
@@ -1902,6 +1904,7 @@ class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: Sh
         case Some(ref) ⇒ getShardHomeSender ! ShardHome(shard, ref)
         case None ⇒
           if (persistentState.regions.contains(region) && !gracefulShutdownInProgress.contains(region)) {
+            saveSnapshotWhenNeeded()
             persist(ShardHomeAllocated(shard, region)) { evt ⇒
               persistentState = persistentState.updated(evt)
               log.debug("Shard [{}] allocated at [{}]", evt.shard, evt.region)

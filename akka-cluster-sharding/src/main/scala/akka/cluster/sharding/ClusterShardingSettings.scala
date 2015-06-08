@@ -32,7 +32,7 @@ object ClusterShardingSettings {
       shardFailureBackoff = config.getDuration("shard-failure-backoff", MILLISECONDS).millis,
       entryRestartBackoff = config.getDuration("entry-restart-backoff", MILLISECONDS).millis,
       rebalanceInterval = config.getDuration("rebalance-interval", MILLISECONDS).millis,
-      snapshotInterval = config.getDuration("snapshot-interval", MILLISECONDS).millis,
+      snapshotAfter = config.getInt("snapshot-after"),
       leastShardAllocationRebalanceThreshold =
         config.getInt("least-shard-allocation-strategy.rebalance-threshold"),
       leastShardAllocationMaxSimultaneousRebalance =
@@ -76,7 +76,7 @@ object ClusterShardingSettings {
     val shardFailureBackoff: FiniteDuration,
     val entryRestartBackoff: FiniteDuration,
     val rebalanceInterval: FiniteDuration,
-    val snapshotInterval: FiniteDuration,
+    val snapshotAfter: Int,
     val leastShardAllocationRebalanceThreshold: Int,
     val leastShardAllocationMaxSimultaneousRebalance: Int)
 }

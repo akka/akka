@@ -190,7 +190,6 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       handoff-timeout = 10s
       shard-start-timeout = 10s
       rebalance-interval = ${if (rebalanceEnabled) "2s" else "3600s"}
-      snapshot-interval = 3600s
       """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
       val settings = ClusterShardingSettings(cfg)
       ShardCoordinator.props(settings, allocationStrategy)
@@ -212,7 +211,6 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       retry-interval = 1s
       shard-failure-backoff = 1s
       entry-restart-backoff = 1s
-      snapshot-interval = 3600s
       buffer-size = 1000
       """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
     val settings = ClusterShardingSettings(cfg)
