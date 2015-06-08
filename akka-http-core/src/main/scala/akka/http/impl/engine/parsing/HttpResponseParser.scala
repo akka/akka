@@ -132,7 +132,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
   // currently we do not check for `settings.maxContentLength` overflow
   def parseToCloseBody(input: ByteString, bodyStart: Int): StateResult = {
     if (input.length > bodyStart)
-      emit(EntityPart(input drop bodyStart))
+      emit(EntityPart(input.drop(bodyStart).compact))
     continue(parseToCloseBody)
   }
 }
