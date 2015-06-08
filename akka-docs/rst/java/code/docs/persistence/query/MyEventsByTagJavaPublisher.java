@@ -5,6 +5,7 @@
 package docs.persistence.query;
 
 import akka.actor.Cancellable;
+import akka.actor.Scheduler;
 import akka.japi.Pair;
 import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.PersistentRepr;
@@ -23,6 +24,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -39,21 +41,28 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
   private final String CONTINUE = "CONTINUE";
   private final int LIMIT = 1000;
   private long currentOffset;
-  private List<EventEnvelope> buf = new ArrayList<>();
+  private List<EventEnvelope> buf = new LinkedList<>();
 
   private Cancellable continueTask;
 
-  public MyEventsByTagJavaPublisher(Connection connection, String tag, Long offset, FiniteDuration refreshInterval) {
+  public MyEventsByTagJavaPublisher(Connection connection,
+                                    String tag,
+                                    Long offset,
+                                    FiniteDuration refreshInterval) {
     this.connection = connection;
     this.tag = tag;
     this.currentOffset = offset;
 
-    this.continueTask = context().system().scheduler().schedule(refreshInterval, refreshInterval, self(), CONTINUE, context().dispatcher(), self());
+    final Scheduler scheduler = context().system().scheduler();
+    this.continueTask = scheduler
+      .schedule(refreshInterval, refreshInterval, self(), CONTINUE,
+                context().dispatcher(), self());
+
     receive(ReceiveBuilder
-      .matchEquals(CONTINUE, (in) -> {
-        query();
-        deliverBuf();
-      })
+              .matchEquals(CONTINUE, (in) -> {
+                query();
+                deliverBuf();
+              })
       .match(Cancel.class, (in) -> {
         context().stop(self());
       })
@@ -71,33 +80,33 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
 
   private void query() {
     if (buf.isEmpty()) {
-      try {
-        PreparedStatement s = connection.prepareStatement(
-          "SELECT id, persistent_repr " +
-            "FROM journal WHERE tag = ? AND id >= ? " +
-            "ORDER BY id LIMIT ?");
+      final String query = "SELECT id, persistent_repr " +
+        "FROM journal WHERE tag = ? AND id >= ? " +
+        "ORDER BY id LIMIT ?";
 
+      try (PreparedStatement s = connection.prepareStatement(query)) {
         s.setString(1, tag);
         s.setLong(2, currentOffset);
         s.setLong(3, LIMIT);
-        final ResultSet rs = s.executeQuery();
+        try (ResultSet rs = s.executeQuery()) {
 
-        final List<Pair<Long, byte[]>> res = new ArrayList<>(LIMIT);
-        while (rs.next())
-          res.add(Pair.create(rs.getLong(1), rs.getBytes(2)));
+          final List<Pair<Long, byte[]>> res = new ArrayList<>(LIMIT);
+          while (rs.next())
+            res.add(Pair.create(rs.getLong(1), rs.getBytes(2)));
 
-        if (!res.isEmpty()) {
-          currentOffset = res.get(res.size() - 1).first();
+          if (!res.isEmpty()) {
+            currentOffset = res.get(res.size() - 1).first();
+          }
+
+          buf = res.stream().map(in -> {
+            final Long id = in.first();
+            final byte[] bytes = in.second();
+
+            final PersistentRepr p = serialization.deserialize(bytes, PersistentRepr.class).get();
+
+            return new EventEnvelope(id, p.persistenceId(), p.sequenceNr(), p.payload());
+          }).collect(toList());
         }
-
-        buf = res.stream().map(in -> {
-          final Long id = in.first();
-          final byte[] bytes = in.second();
-
-          final PersistentRepr p = serialization.deserialize(bytes, PersistentRepr.class).get();
-
-          return new EventEnvelope(id, p.persistenceId(), p.sequenceNr(), p.payload());
-        }).collect(toList());
       } catch(Exception e) {
           onErrorThenStop(e);
       }

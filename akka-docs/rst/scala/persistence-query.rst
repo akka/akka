@@ -14,12 +14,6 @@ side of an application, however it can help to migrate data from the write side 
 simple scenarios Persistence Query may be powerful enough to fulful the query needs of your app, however we highly
 recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arrises.
 
-While queries can be performed directly on the same datastore, it is also a very common pattern to use the queries
-to create *projections* of the write-side's events and store them into a separate datastore which is optimised for more
-complex queries. This architectural pattern of projecting the data into a query optimised datastore, with possibly some
-transformation or canculations along the way is the core use-case and recommended style of using Akka Persistence Query
-- pulling out of one Journal and storing into another one.
-
 .. warning::
 
   This module is marked as **“experimental”** as of its introduction in Akka 2.4.0. We will continue to
@@ -58,7 +52,7 @@ journal is as simple as:
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#basic-usage
 
-Journal implementers are encouraged to put this identified in a variable known to the user, such that one can access it via
+Journal implementers are encouraged to put this identifier in a variable known to the user, such that one can access it via
 ``journalFor(NoopJournal.identifier)``, however this is not enforced.
 
 Read journal implementations are available as `Community plugins`_.
@@ -90,7 +84,7 @@ If your usage does not require a live stream, you can disable refreshing by usin
 
 ``EventsByPersistenceId`` is a query equivalent to replaying a :ref:`PersistentActor <event-sourcing>`,
 however, since it is a stream it is possible to keep it alive and watch for additional incoming events persisted by the
-persistent actor identified by the given ``persistenceId``. Most journal will have to revert to polling in order to achieve
+persistent actor identified by the given ``persistenceId``. Most journals will have to revert to polling in order to achieve
 this, which can be configured using the ``RefreshInterval`` query hint:
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#events-by-persistent-id-refresh
@@ -120,7 +114,6 @@ including for example taking the first 10 and cancelling the stream. It is worth
 query has an optionally supported offset parameter (of type ``Long``) which the journals can use to implement resumable-streams.
 For example a journal may be able to use a WHERE clause to begin the read starting from a specific row, or in a datastore
 that is able to order events by insertion time it could treat the Long as a timestamp and select only older events.
-Again, specific capabilities are specific to the journal you are using, so you have to
 
 
 Materialized values of queries
@@ -152,18 +145,18 @@ means that data stores which are able to scale to accomodate these requirements 
 
 On the other hand the same application may have some complex statistics view or we may have analists working with the data
 to figure out best bidding strategies and trends – this often requires some kind of expressive query capabilities like
-for example SQL or writing Spark jobs to analyse the data. Trefore the data stored in the write-side needs to be
+for example SQL or writing Spark jobs to analyse the data. Therefore the data stored in the write-side needs to be
 projected into the other read-optimised datastore.
 
 .. note::
   When refering to **Materialized Views** in Akka Persistence think of it as "some persistent storage of the result of a Query".
-  In other words, it means that the view is created once, in order to be afterwards queries multiple times, as in this format
+  In other words, it means that the view is created once, in order to be afterwards queried multiple times, as in this format
   it may be more efficient or interesting to query it (instead of the source events directly).
 
 Materialize view to Reactive Streams compatible datastore
 ---------------------------------------------------------
 
-If the read datastore exposes it an `Reactive Streams`_ interface then implementing a simple projection
+If the read datastore exposes an `Reactive Streams`_ interface then implementing a simple projection
 is as simple as, using the read-journal and feeding it into the databases driver interface, for example like so:
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#projection-into-different-store-rs

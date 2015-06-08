@@ -67,10 +67,9 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
   private def createPlugin(configPath: String): scaladsl.ReadJournal = {
     require(!isEmpty(configPath) && system.settings.config.hasPath(configPath),
       s"'reference.conf' is missing persistence read journal plugin config path: '${configPath}'")
-    val pluginActorName = configPath
     val pluginConfig = system.settings.config.getConfig(configPath)
     val pluginClassName = pluginConfig.getString("class")
-    log.debug(s"Create plugin: ${pluginActorName} ${pluginClassName}")
+    log.debug(s"Create plugin: ${configPath} ${pluginClassName}")
     val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
 
     // TODO remove duplication

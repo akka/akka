@@ -20,7 +20,11 @@ trait Query[T, M]
  *
  * A plugin may optionally support this [[Query]].
  */
-final case object AllPersistenceIds extends Query[String, Unit]
+final case object AllPersistenceIds extends AllPersistenceIds {
+  /** Java API */
+  final def getInstance: AllPersistenceIds = this
+}
+abstract class AllPersistenceIds extends Query[String, Unit]
 
 /**
  * Query events for a specific `PersistentActor` identified by `persistenceId`.
@@ -34,7 +38,19 @@ final case object AllPersistenceIds extends Query[String, Unit]
  */
 final case class EventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue)
   extends Query[Any, Unit]
+object EventsByPersistenceId {
+  /** Java API */
+  def create(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): EventsByPersistenceId =
+    EventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr)
 
+  /** Java API */
+  def create(persistenceId: String, fromSequenceNr: Long): EventsByPersistenceId =
+    EventsByPersistenceId(persistenceId, fromSequenceNr)
+
+  /** Java API */
+  def create(persistenceId: String): EventsByPersistenceId =
+    EventsByPersistenceId(persistenceId)
+}
 /**
  * Query events that have a specific tag. A tag can for example correspond to an
  * aggregate root type (in DDD terminology).
@@ -56,6 +72,12 @@ final case class EventsByPersistenceId(persistenceId: String, fromSequenceNr: Lo
  * A plugin may optionally support this [[Query]].
  */
 final case class EventsByTag(tag: String, offset: Long = 0L) extends Query[EventEnvelope, Unit]
+object EventsByTag {
+  /** Java API */
+  def create(tag: String): EventsByTag = EventsByTag(tag)
+  /** Java API */
+  def create(tag: String, offset: Long): EventsByTag = EventsByTag(tag)
+}
 
 /**
  * Event wrapper adding meta data for the events in the result stream of

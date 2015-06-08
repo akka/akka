@@ -11,7 +11,6 @@ import akka.serialization.SerializationExtension
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 
-import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 
 object MyEventsByTagPublisher {
@@ -90,17 +89,15 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
       }
     }
 
-  @tailrec final def deliverBuf(): Unit =
+  final def deliverBuf(): Unit =
     if (totalDemand > 0 && buf.nonEmpty) {
       if (totalDemand <= Int.MaxValue) {
         val (use, keep) = buf.splitAt(totalDemand.toInt)
         buf = keep
         use foreach onNext
       } else {
-        val (use, keep) = buf.splitAt(Int.MaxValue)
-        buf = keep
-        use foreach onNext
-        deliverBuf()
+        buf foreach onNext
+        buf = Vector.empty
       }
     }
 }
