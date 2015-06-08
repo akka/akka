@@ -30,14 +30,14 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
    * using the getHostString() method. This avoids a reverse DNS query from calling getHostName()
    * if the original host string is an IP address.
    */
-  private[http] val hostString: InetSocketAddress ⇒ String =
-    try {
-      val m = classOf[InetSocketAddress].getDeclaredMethod("getHostString")
-      require(m.getReturnType == classOf[String])
-      address ⇒ m.invoke(address).asInstanceOf[String]
+  private[http] val hostString: InetSocketAddress ⇒ String = {
+    val m = classOf[InetSocketAddress].getDeclaredMethod("getHostString")
+    address ⇒ try {
+      m.invoke(address).asInstanceOf[String]
     } catch {
-      case NonFatal(_) ⇒ _.getHostName
+      case NonFatal(_) ⇒ address.getHostName
     }
+  }
 
   final class HttpRequestRenderer extends PushStage[RequestRenderingContext, Source[ByteString, Any]] {
 
