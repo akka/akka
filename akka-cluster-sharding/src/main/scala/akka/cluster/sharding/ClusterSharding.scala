@@ -446,7 +446,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
       val cPath = coordinatorPath(encName)
       val shardRegion = context.child(encName).getOrElse {
         if (context.child(cName).isEmpty) {
-          val coordinatorProps = ShardCoordinator.props(settings, allocationStrategy)
+          val coordinatorProps = ShardCoordinator.props(typeName, settings, allocationStrategy)
           val singletonProps = ShardCoordinatorSupervisor.props(coordinatorFailureBackoff, coordinatorProps)
           val singletonSettings = settings.coordinatorSingletonSettings
             .withSingletonName("singleton").withRole(role)
@@ -1320,9 +1320,9 @@ object ShardCoordinator {
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
    */
-  private[akka] def props(settings: ClusterShardingSettings,
+  private[akka] def props(typeName: String, settings: ClusterShardingSettings,
                           allocationStrategy: ShardAllocationStrategy): Props =
-    Props(new ShardCoordinator(settings, allocationStrategy)).withDeploy(Deploy.local)
+    Props(new ShardCoordinator(typeName: String, settings, allocationStrategy)).withDeploy(Deploy.local)
 
   /**
    * Interface of the pluggable shard allocation and rebalancing logic used by the [[ShardCoordinator]].
@@ -1638,14 +1638,15 @@ object ShardCoordinator {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-class ShardCoordinator(settings: ClusterShardingSettings, allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
+class ShardCoordinator(typeName: String, settings: ClusterShardingSettings,
+                       allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
   extends PersistentActor with ActorLogging {
   import ShardCoordinator._
   import ShardCoordinator.Internal._
   import ShardRegion.ShardId
   import settings.tuningParameters._
 
-  override def persistenceId = self.path.toStringWithoutAddress
+  override def persistenceId = s"/sharding/${typeName}Coordinator"
 
   override def journalPluginId: String = settings.journalPluginId
 

@@ -184,7 +184,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
   }
 
   def createCoordinator(): Unit = {
-    def coordinatorProps(rebalanceEnabled: Boolean) = {
+    def coordinatorProps(typeName: String, rebalanceEnabled: Boolean) = {
       val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
       val cfg = ConfigFactory.parseString(s"""
       handoff-timeout = 10s
@@ -192,17 +192,18 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       rebalance-interval = ${if (rebalanceEnabled) "2s" else "3600s"}
       """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
       val settings = ClusterShardingSettings(cfg)
-      ShardCoordinator.props(settings, allocationStrategy)
+      ShardCoordinator.props(typeName, settings, allocationStrategy)
     }
 
     List("counter", "rebalancingCounter", "PersistentCounterEntries", "AnotherPersistentCounter",
-      "PersistentCounter", "RebalancingPersistentCounter", "AutoMigrateRegionTest").foreach { coordinatorName ⇒
-        val rebalanceEnabled = coordinatorName.toLowerCase.startsWith("rebalancing")
+      "PersistentCounter", "RebalancingPersistentCounter", "AutoMigrateRegionTest").foreach { typeName ⇒
+        val rebalanceEnabled = typeName.toLowerCase.startsWith("rebalancing")
         system.actorOf(ClusterSingletonManager.props(
-          singletonProps = ShardCoordinatorSupervisor.props(failureBackoff = 5.seconds, coordinatorProps(rebalanceEnabled)),
+          singletonProps = ShardCoordinatorSupervisor.props(failureBackoff = 5.seconds,
+            coordinatorProps(typeName, rebalanceEnabled)),
           terminationMessage = PoisonPill,
           settings = ClusterSingletonManagerSettings(system)),
-          name = coordinatorName + "Coordinator")
+          name = typeName + "Coordinator")
       }
   }
 
