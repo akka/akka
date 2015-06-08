@@ -98,7 +98,7 @@ private[akka] class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[
       case -1 ⇒
         // had nothing to read into this chunk
         eofReachedAtOffset = chan.position
-        log.debug("No more bytes available to read (got `-1` or `0` from `read`), marking final bytes of file @ " + eofReachedAtOffset)
+        log.debug("No more bytes available to read (got `-1` from `read`), marking final bytes of file @ " + eofReachedAtOffset)
 
       case _ ⇒
         readBytesTotal += readBytes
