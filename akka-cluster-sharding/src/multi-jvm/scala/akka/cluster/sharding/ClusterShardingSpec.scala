@@ -5,6 +5,8 @@ package akka.cluster.sharding
 
 import akka.cluster.sharding.ShardCoordinator.Internal.{ ShardStopped, HandOff }
 import akka.cluster.sharding.ShardRegion.Passivate
+import akka.cluster.sharding.ShardRegion.GetCurrentRegions
+import akka.cluster.sharding.ShardRegion.CurrentRegions
 import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
@@ -264,6 +266,9 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         region ! EntryEnvelope(1, Decrement)
         region ! Get(1)
         expectMsg(2)
+
+        region ! GetCurrentRegions
+        expectMsg(CurrentRegions(Set(Cluster(system).selfAddress)))
       }
 
       enterBarrier("after-2")
@@ -308,6 +313,9 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         region ! Get(2)
         expectMsg(3)
         lastSender.path should ===(region.path / "2" / "2")
+
+        region ! GetCurrentRegions
+        expectMsg(CurrentRegions(Set(Cluster(system).selfAddress, node(first).address)))
       }
 
       enterBarrier("after-3")
