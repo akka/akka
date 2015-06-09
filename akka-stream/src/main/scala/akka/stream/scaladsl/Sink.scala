@@ -95,7 +95,7 @@ object Sink extends SinkApply {
   /**
    * A `Sink` that will consume the stream and discard the elements.
    */
-  def ignore: Sink[Any, Unit] =
+  def ignore: Sink[Any, Future[Unit]] =
     new Sink(new BlackholeSink(DefaultAttributes.ignoreSink, shape("BlackholeSink")))
 
   /**
