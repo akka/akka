@@ -200,11 +200,12 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *
    * @param typeName the name of the entity type
    * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
-   * @param role specifies that this entity type requires cluster nodes with a specific role.
-   *   If the role is not specified all nodes in the cluster are used.
    * @param settings configuration settings, see [[ClusterShardingSettings]]
-   * @param shardResolver function to determine the shard id for an incoming message, only messages
-   *   that passed the `idExtractor` will be used
+   * @param extractEntityId partial function to extract the entity id and the message to send to the
+   *   entity from the incoming message, if the partial function does not match the message will
+   *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
+   * @param extractShardId function to determine the shard id for an incoming message, only messages
+   *   that passed the `extractEntityId` will be used
    * @param allocationStrategy possibility to use a custom shard allocation and
    *   rebalancing logic
    * @param handOffStopMessage the message that will be sent to entities when they are to be stopped
@@ -215,15 +216,15 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     typeName: String,
     entityProps: Props,
     settings: ClusterShardingSettings,
-    idExtractor: ShardRegion.IdExtractor,
-    shardResolver: ShardRegion.ShardResolver,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: Any): ActorRef = {
 
     requireClusterRole(settings.role)
     implicit val timeout = system.settings.CreationTimeout
     val startMsg = Start(typeName, entityProps, settings,
-      idExtractor, shardResolver, allocationStrategy, handOffStopMessage)
+      extractEntityId, extractShardId, allocationStrategy, handOffStopMessage)
     val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
     regions.put(typeName, shardRegion)
     shardRegion
@@ -243,29 +244,29 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * @param typeName the name of the entity type
    * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
    * @param settings configuration settings, see [[ClusterShardingSettings]]
-   * @param idExtractor partial function to extract the entity id and the message to send to the
+   * @param extractEntityId partial function to extract the entity id and the message to send to the
    *   entity from the incoming message, if the partial function does not match the message will
    *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
-   * @param shardResolver function to determine the shard id for an incoming message, only messages
-   *   that passed the `idExtractor` will be used
+   * @param extractShardId function to determine the shard id for an incoming message, only messages
+   *   that passed the `extractEntityId` will be used
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
     typeName: String,
     entityProps: Props,
     settings: ClusterShardingSettings,
-    idExtractor: ShardRegion.IdExtractor,
-    shardResolver: ShardRegion.ShardResolver): ActorRef = {
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId): ActorRef = {
 
     val allocationStrategy = new LeastShardAllocationStrategy(
       settings.tuningParameters.leastShardAllocationRebalanceThreshold,
       settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance)
 
-    start(typeName, entityProps, settings, idExtractor, shardResolver, allocationStrategy, PoisonPill)
+    start(typeName, entityProps, settings, extractEntityId, extractShardId, allocationStrategy, PoisonPill)
   }
 
   /**
-   * Java API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
+   * Java/Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
@@ -292,17 +293,17 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     handOffStopMessage: Any): ActorRef = {
 
     start(typeName, entityProps, settings,
-      idExtractor = {
+      extractEntityId = {
         case msg if messageExtractor.entityId(msg) ne null ⇒
           (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
       },
-      shardResolver = msg ⇒ messageExtractor.shardId(msg),
+      extractShardId = msg ⇒ messageExtractor.shardId(msg),
       allocationStrategy = allocationStrategy,
       handOffStopMessage = handOffStopMessage)
   }
 
   /**
-   * Java API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
+   * Java/Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
@@ -344,29 +345,29 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * @param typeName the name of the entity type
    * @param role specifies that this entity type is located on cluster nodes with a specific role.
    *   If the role is not specified all nodes in the cluster are used.
-   * @param idExtractor partial function to extract the entity id and the message to send to the
+   * @param extractEntityId partial function to extract the entity id and the message to send to the
    *   entity from the incoming message, if the partial function does not match the message will
    *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
-   * @param shardResolver function to determine the shard id for an incoming message, only messages
-   *   that passed the `idExtractor` will be used
+   * @param extractShardId function to determine the shard id for an incoming message, only messages
+   *   that passed the `extractEntityId` will be used
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def startProxy(
     typeName: String,
     role: Option[String],
-    idExtractor: ShardRegion.IdExtractor,
-    shardResolver: ShardRegion.ShardResolver): ActorRef = {
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId): ActorRef = {
 
     implicit val timeout = system.settings.CreationTimeout
     val settings = ClusterShardingSettings(system).withRole(role)
-    val startMsg = StartProxy(typeName, settings, idExtractor, shardResolver)
+    val startMsg = StartProxy(typeName, settings, extractEntityId, extractShardId)
     val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
     regions.put(typeName, shardRegion)
     shardRegion
   }
 
   /**
-   * Java API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
+   * Java/Scala API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
    * i.e. it will delegate messages to other `ShardRegion` actors on other nodes, but not host any
    * entity actors itself. The [[ShardRegion]] actor for this type can later be retrieved with the
    * [[#shardRegion]] method.
@@ -387,11 +388,11 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
     startProxy(typeName, Option(role.orElse(null)),
-      idExtractor = {
+      extractEntityId = {
         case msg if messageExtractor.entityId(msg) ne null ⇒
           (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
       },
-      shardResolver = msg ⇒ messageExtractor.shardId(msg))
+      extractShardId = msg ⇒ messageExtractor.shardId(msg))
 
   }
 
@@ -413,11 +414,11 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 private[akka] object ClusterShardingGuardian {
   import ShardCoordinator.ShardAllocationStrategy
   final case class Start(typeName: String, entityProps: Props, settings: ClusterShardingSettings,
-                         idExtractor: ShardRegion.IdExtractor, shardResolver: ShardRegion.ShardResolver,
+                         extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId,
                          allocationStrategy: ShardAllocationStrategy, handOffStopMessage: Any)
     extends NoSerializationVerificationNeeded
   final case class StartProxy(typeName: String, settings: ClusterShardingSettings,
-                              idExtractor: ShardRegion.IdExtractor, shardResolver: ShardRegion.ShardResolver)
+                              extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId)
     extends NoSerializationVerificationNeeded
   final case class Started(shardRegion: ActorRef) extends NoSerializationVerificationNeeded
 }
@@ -439,7 +440,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
     (self.path / coordinatorSingletonManagerName(encName) / "singleton" / "coordinator").toStringWithoutAddress
 
   def receive = {
-    case Start(typeName, entityProps, settings, idExtractor, shardResolver, allocationStrategy, handOffStopMessage) ⇒
+    case Start(typeName, entityProps, settings, extractEntityId, extractShardId, allocationStrategy, handOffStopMessage) ⇒
       import settings.role
       import settings.tuningParameters.coordinatorFailureBackoff
       val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
@@ -463,14 +464,14 @@ private[akka] class ClusterShardingGuardian extends Actor {
           entityProps = entityProps,
           settings = settings,
           coordinatorPath = cPath,
-          idExtractor = idExtractor,
-          shardResolver = shardResolver,
+          extractEntityId = extractEntityId,
+          extractShardId = extractShardId,
           handOffStopMessage = handOffStopMessage),
           name = encName)
       }
       sender() ! Started(shardRegion)
 
-    case StartProxy(typeName, settings, idExtractor, shardResolver) ⇒
+    case StartProxy(typeName, settings, extractEntityId, extractShardId) ⇒
       val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
       val cName = coordinatorSingletonManagerName(encName)
       val cPath = coordinatorPath(encName)
@@ -479,8 +480,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
           typeName = typeName,
           settings = settings,
           coordinatorPath = cPath,
-          idExtractor = idExtractor,
-          shardResolver = shardResolver),
+          extractEntityId = extractEntityId,
+          extractShardId = extractShardId),
           name = encName)
       }
       sender() ! Started(shardRegion)
@@ -503,11 +504,11 @@ object ShardRegion {
     entityProps: Props,
     settings: ClusterShardingSettings,
     coordinatorPath: String,
-    idExtractor: ShardRegion.IdExtractor,
-    shardResolver: ShardRegion.ShardResolver,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any): Props =
-    Props(new ShardRegion(typeName, Some(entityProps), settings, coordinatorPath, idExtractor,
-      shardResolver, handOffStopMessage)).withDeploy(Deploy.local)
+    Props(new ShardRegion(typeName, Some(entityProps), settings, coordinatorPath, extractEntityId,
+      extractShardId, handOffStopMessage)).withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -518,9 +519,9 @@ object ShardRegion {
     typeName: String,
     settings: ClusterShardingSettings,
     coordinatorPath: String,
-    idExtractor: ShardRegion.IdExtractor,
-    shardResolver: ShardRegion.ShardResolver): Props =
-    Props(new ShardRegion(typeName, None, settings, coordinatorPath, idExtractor, shardResolver, PoisonPill))
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId): Props =
+    Props(new ShardRegion(typeName, None, settings, coordinatorPath, extractEntityId, extractShardId, PoisonPill))
       .withDeploy(Deploy.local)
 
   /**
@@ -545,14 +546,14 @@ object ShardRegion {
    * message to support wrapping in message envelope that is unwrapped before
    * sending to the entity actor.
    */
-  type IdExtractor = PartialFunction[Msg, (EntityId, Msg)]
+  type ExtractEntityId = PartialFunction[Msg, (EntityId, Msg)]
   /**
    * Interface of the function used by the [[ShardRegion]] to
    * extract the shard id from an incoming message.
-   * Only messages that passed the [[IdExtractor]] will be used
+   * Only messages that passed the [[ExtractEntityId]] will be used
    * as input to this function.
    */
-  type ShardResolver = Msg ⇒ ShardId
+  type ExtractShardId = Msg ⇒ ShardId
 
   /**
    * Java API: Interface of functions to extract entity id,
@@ -577,6 +578,21 @@ object ShardRegion {
      * function will be used as input to this function.
      */
     def shardId(message: Any): String
+  }
+
+  /**
+   * Convenience implementation of [[ShardRegion.MessageExtractor]] that
+   * construct `shardId` based on the `hashCode` of the `entityId`. The number
+   * of unique shards is limited by the given `maxNumberOfShards`.
+   */
+  abstract class HashCodeMessageExtractor(maxNumberOfShards: Int) extends MessageExtractor {
+    /**
+     * Default implementation pass on the message as is.
+     */
+    override def entityMessage(message: Any): Any = message
+
+    override def shardId(message: Any): String =
+      (math.abs(entityId(message).hashCode) % maxNumberOfShards).toString
   }
 
   sealed trait ShardRegionCommand
@@ -621,7 +637,7 @@ object ShardRegion {
   def getCurrentRegionsInstance = GetCurrentRegions
 
   /**
-   * Reply to [[GetCurrentRegions]]
+   * Reply to `GetCurrentRegions`
    */
   @SerialVersionUID(1L) final case class CurrentRegions(regions: Set[Address]) {
     /**
@@ -681,8 +697,8 @@ class ShardRegion(
   entityProps: Option[Props],
   settings: ClusterShardingSettings,
   coordinatorPath: String,
-  idExtractor: ShardRegion.IdExtractor,
-  shardResolver: ShardRegion.ShardResolver,
+  extractEntityId: ShardRegion.ExtractEntityId,
+  extractShardId: ShardRegion.ExtractShardId,
   handOffStopMessage: Any) extends Actor with ActorLogging {
 
   import ShardCoordinator.Internal._
@@ -743,12 +759,12 @@ class ShardRegion(
   }
 
   def receive = {
-    case Terminated(ref)                     ⇒ receiveTerminated(ref)
-    case evt: ClusterDomainEvent             ⇒ receiveClusterEvent(evt)
-    case state: CurrentClusterState          ⇒ receiveClusterState(state)
-    case msg: CoordinatorMessage             ⇒ receiveCoordinatorMessage(msg)
-    case cmd: ShardRegionCommand             ⇒ receiveCommand(cmd)
-    case msg if idExtractor.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
+    case Terminated(ref)                         ⇒ receiveTerminated(ref)
+    case evt: ClusterDomainEvent                 ⇒ receiveClusterEvent(evt)
+    case state: CurrentClusterState              ⇒ receiveClusterState(state)
+    case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
+    case cmd: ShardRegionCommand                 ⇒ receiveCommand(cmd)
+    case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
@@ -909,7 +925,7 @@ class ShardRegion(
   }
 
   def deliverMessage(msg: Any, snd: ActorRef): Unit = {
-    val shard = shardResolver(msg)
+    val shard = extractShardId(msg)
     regionByShard.get(shard) match {
       case Some(ref) if ref == self ⇒
         getShard(shard).tell(msg, snd)
@@ -947,8 +963,8 @@ class ShardRegion(
             id,
             props,
             settings,
-            idExtractor,
-            shardResolver,
+            extractEntityId,
+            extractShardId,
             handOffStopMessage),
           name))
         shards = shards.updated(id, shard)
@@ -1019,10 +1035,10 @@ private[akka] object Shard {
             shardId: ShardRegion.ShardId,
             entityProps: Props,
             settings: ClusterShardingSettings,
-            idExtractor: ShardRegion.IdExtractor,
-            shardResolver: ShardRegion.ShardResolver,
+            extractEntityId: ShardRegion.ExtractEntityId,
+            extractShardId: ShardRegion.ExtractShardId,
             handOffStopMessage: Any): Props =
-    Props(new Shard(typeName, shardId, entityProps, settings, idExtractor, shardResolver, handOffStopMessage))
+    Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
       .withDeploy(Deploy.local)
 }
 
@@ -1039,8 +1055,8 @@ private[akka] class Shard(
   shardId: ShardRegion.ShardId,
   entityProps: Props,
   settings: ClusterShardingSettings,
-  idExtractor: ShardRegion.IdExtractor,
-  shardResolver: ShardRegion.ShardResolver,
+  extractEntityId: ShardRegion.ExtractEntityId,
+  extractShardId: ShardRegion.ExtractShardId,
   handOffStopMessage: Any) extends PersistentActor with ActorLogging {
 
   import ShardRegion.{ handOffStopperProps, EntityId, Msg, Passivate }
@@ -1097,7 +1113,7 @@ private[akka] class Shard(
     case msg: ShardCommand                              ⇒ receiveShardCommand(msg)
     case msg: ShardRegionCommand                        ⇒ receiveShardRegionCommand(msg)
     case PersistenceFailure(payload: StateChange, _, _) ⇒ persistenceFailure(payload)
-    case msg if idExtractor.isDefinedAt(msg)            ⇒ deliverMessage(msg, sender())
+    case msg if extractEntityId.isDefinedAt(msg)        ⇒ deliverMessage(msg, sender())
   }
 
   def receiveShardCommand(msg: ShardCommand): Unit = msg match {
@@ -1221,7 +1237,7 @@ private[akka] class Shard(
   }
 
   def deliverMessage(msg: Any, snd: ActorRef): Unit = {
-    val (id, payload) = idExtractor(msg)
+    val (id, payload) = extractEntityId(msg)
     if (id == null || id == "") {
       log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
       context.system.deadLetters ! msg

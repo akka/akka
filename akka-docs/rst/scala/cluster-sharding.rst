@@ -57,7 +57,7 @@ The message sent to the entity actor is what ``entityMessage`` returns and that 
 if needed.
 
 A shard is a group of entities that will be managed together. The grouping is defined by the
-``shardResolver`` function shown above. For a specific entity identifier the shard identifier must always 
+``extractShardId`` function shown above. For a specific entity identifier the shard identifier must always 
 be the same. Otherwise the entity actor might accidentally be started in several places at the same time.
 
 Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution, 
@@ -68,8 +68,9 @@ overhead, and increased latency because the coordinator is involved in the routi
 shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping
 all nodes in the cluster.
 
-A simple sharding algorithm that works fine in most cases is to take the ``hashCode`` of the entity identifier modulo
-number of shards.
+A simple sharding algorithm that works fine in most cases is to take the absolute value of the ``hashCode`` of
+the entity identifier modulo number of shards. As a convenience this is provided by the 
+``ShardRegion.HashCodeMessageExtractor``.
 
 Messages to the entities are always sent via the local ``ShardRegion``. The ``ShardRegion`` actor reference for a
 named entity type is returned by ``ClusterSharding.start`` and it can also be retrieved with ``ClusterSharding.shardRegion``.
@@ -98,7 +99,7 @@ method. ``ClusterSharding.start`` gives you the reference which you can pass alo
 
 .. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#counter-start
 
-The ``idExtractor`` and ``shardResolver`` are two application specific functions to extract the entity
+The ``extractEntityId`` and ``extractShardId`` are two application specific functions to extract the entity
 identifier and the shard identifier from incoming messages.
 
 .. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#counter-extractor
@@ -109,12 +110,12 @@ This example illustrates two different ways to define the entity identifier in t
  * The ``EntityEnvelope`` holds the identifier, and the actual message that is
    sent to the entity actor is wrapped in the envelope.
 
-Note how these two messages types are handled in the ``idExtractor`` function shown above.
-The message sent to the entity actor is the second part of the tuple return by the ``idExtractor`` and that makes it 
+Note how these two messages types are handled in the ``extractEntityId`` function shown above.
+The message sent to the entity actor is the second part of the tuple return by the ``extractEntityId`` and that makes it 
 possible to unwrap envelopes if needed.
 
 A shard is a group of entities that will be managed together. The grouping is defined by the
-``shardResolver`` function shown above. For a specific entity identifier the shard identifier must always 
+``extractShardId`` function shown above. For a specific entity identifier the shard identifier must always 
 be the same. 
 
 Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution, 

@@ -241,6 +241,9 @@ of the ``ClusterSharding`` extension instead of the optional ``entryProps`` para
 Entry was renamed to Entity, for example in the ``MessagesExtractor`` in the Java API
 and the ``EntityId`` type in the Scala API.
 
+``idExtractor`` function was renamed to ``extractEntityId``. ``shardResolver`` function 
+was renamed to ``extractShardId``.
+
 ClusterSingletonManager and ClusterSingletonProxy construction
 ==============================================================
 
