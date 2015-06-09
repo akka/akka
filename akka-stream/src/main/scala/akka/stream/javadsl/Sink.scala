@@ -9,7 +9,7 @@ import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
 /** Java API */
@@ -65,6 +65,20 @@ object Sink {
    */
   def foreach[T](f: function.Procedure[T]): Sink[T, Future[Unit]] =
     new Sink(scaladsl.Sink.foreach(f.apply))
+  
+  /**
+   * A `Sink` that will invoke the given procedure for each received element in parallel. The sink is materialized
+   * into a [[scala.concurrent.Future]].
+   *
+   * If `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Stop]] the `Future` will be completed with failure.
+   *
+   * If `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]] the
+   * element is dropped and the stream continues.
+   */
+  def foreachParallel[T](parallel: Int)(f: function.Procedure[T])(ec: ExecutionContext): Sink[T, Future[Unit]] =
+    new Sink(scaladsl.Sink.foreachParallel(parallel)(f.apply)(ec))
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]]
