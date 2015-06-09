@@ -106,8 +106,8 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   }
 
   "simple broadcast" in {
-    val writeAuthors: Sink[Author, Unit] = Sink.ignore
-    val writeHashtags: Sink[Hashtag, Unit] = Sink.ignore
+    val writeAuthors: Sink[Author, Future[Unit]] = Sink.ignore
+    val writeHashtags: Sink[Hashtag, Future[Unit]] = Sink.ignore
 
     // format: OFF
     //#flow-graph-broadcast
