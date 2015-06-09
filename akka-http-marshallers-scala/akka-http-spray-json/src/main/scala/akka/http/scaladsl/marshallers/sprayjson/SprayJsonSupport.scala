@@ -31,8 +31,8 @@ trait SprayJsonSupport {
   implicit def sprayJsonMarshallerConverter[T](writer: RootJsonWriter[T])(implicit printer: JsonPrinter = PrettyPrinter): ToEntityMarshaller[T] =
     sprayJsonMarshaller[T](writer, printer)
   implicit def sprayJsonMarshaller[T](implicit writer: RootJsonWriter[T], printer: JsonPrinter = PrettyPrinter): ToEntityMarshaller[T] =
-    sprayJsValueMarshaller[T] compose writer.write
-  implicit def sprayJsValueMarshaller[T](implicit writer: RootJsonWriter[T], printer: JsonPrinter = PrettyPrinter): ToEntityMarshaller[JsValue] =
-    Marshaller.StringMarshaller.wrap(ContentTypes.`application/json`)(printer.apply)
+    sprayJsValueMarshaller compose writer.write
+  implicit def sprayJsValueMarshaller(implicit printer: JsonPrinter = PrettyPrinter): ToEntityMarshaller[JsValue] =
+    Marshaller.StringMarshaller.wrap(ContentTypes.`application/json`)(printer)
 }
 object SprayJsonSupport extends SprayJsonSupport
