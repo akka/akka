@@ -302,7 +302,11 @@ object Flow extends FlowApply {
    * A graph with the shape of a flow logically is a flow, this method makes
    * it so also in type.
    */
-  def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] = new Flow(g.module)
+  def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
+    g match {
+      case f: Flow[I, O, M] ⇒ f
+      case other            ⇒ new Flow(other.module)
+    }
 
   /**
    * Helper to create `Flow` from a pair of sink and source.
