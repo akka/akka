@@ -68,11 +68,11 @@ object ClusterShardingLeavingSpec extends MultiNodeConfig {
     }
   }
 
-  val idExtractor: ShardRegion.IdExtractor = {
+  val extractEntityId: ShardRegion.ExtractEntityId = {
     case m @ Ping(id) ⇒ (id, m)
   }
 
-  val shardResolver: ShardRegion.ShardResolver = {
+  val extractShardId: ShardRegion.ExtractShardId = {
     case Ping(id: String) ⇒ id.charAt(0).toString
   }
 
@@ -125,8 +125,8 @@ class ClusterShardingLeavingSpec extends MultiNodeSpec(ClusterShardingLeavingSpe
       typeName = "Entity",
       entityProps = Props[Entity],
       settings = ClusterShardingSettings(system),
-      idExtractor = idExtractor,
-      shardResolver = shardResolver)
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")

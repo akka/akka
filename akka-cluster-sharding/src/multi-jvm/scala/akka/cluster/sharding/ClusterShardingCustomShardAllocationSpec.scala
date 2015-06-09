@@ -52,11 +52,11 @@ object ClusterShardingCustomShardAllocationSpec extends MultiNodeConfig {
     }
   }
 
-  val idExtractor: ShardRegion.IdExtractor = {
+  val extractEntityId: ShardRegion.ExtractEntityId = {
     case id: Int ⇒ (id.toString, id)
   }
 
-  val shardResolver: ShardRegion.ShardResolver = msg ⇒ msg match {
+  val extractShardId: ShardRegion.ExtractShardId = msg ⇒ msg match {
     case id: Int ⇒ id.toString
   }
 
@@ -136,8 +136,8 @@ class ClusterShardingCustomShardAllocationSpec extends MultiNodeSpec(ClusterShar
       typeName = "Entity",
       entityProps = Props[Entity],
       settings = ClusterShardingSettings(system),
-      idExtractor = idExtractor,
-      shardResolver = shardResolver,
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId,
       allocationStrategy = TestAllocationStrategy(allocator),
       handOffStopMessage = PoisonPill)
   }

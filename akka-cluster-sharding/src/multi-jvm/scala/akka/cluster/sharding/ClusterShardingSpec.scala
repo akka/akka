@@ -111,14 +111,14 @@ object ClusterShardingSpec extends MultiNodeConfig {
   }
   //#counter-actor
 
-  val idExtractor: ShardRegion.IdExtractor = {
+  val extractEntityId: ShardRegion.ExtractEntityId = {
     case EntityEnvelope(id, payload) ⇒ (id.toString, payload)
     case msg @ Get(id)               ⇒ (id.toString, msg)
   }
 
   val numberOfShards = 12
 
-  val shardResolver: ShardRegion.ShardResolver = {
+  val extractShardId: ShardRegion.ExtractShardId = {
     case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
     case Get(id)               ⇒ (id % numberOfShards).toString
   }
@@ -130,14 +130,14 @@ object ClusterShardingDocCode {
   import ClusterShardingSpec._
 
   //#counter-extractor
-  val idExtractor: ShardRegion.IdExtractor = {
+  val extractEntityId: ShardRegion.ExtractEntityId = {
     case EntityEnvelope(id, payload) ⇒ (id.toString, payload)
     case msg @ Get(id)               ⇒ (id.toString, msg)
   }
 
   val numberOfShards = 100
 
-  val shardResolver: ShardRegion.ShardResolver = {
+  val extractShardId: ShardRegion.ExtractShardId = {
     case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
     case Get(id)               ⇒ (id % numberOfShards).toString
   }
@@ -221,8 +221,8 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       entityProps = Props[Counter],
       settings = settings,
       coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
-      idExtractor = idExtractor,
-      shardResolver = shardResolver,
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId,
       handOffStopMessage = PoisonPill),
       name = typeName + "Region")
   }
@@ -345,8 +345,8 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
           typeName = "counter",
           settings,
           coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
-          idExtractor = idExtractor,
-          shardResolver = shardResolver),
+          extractEntityId = extractEntityId,
+          extractShardId = extractShardId),
           name = "regionProxy")
 
         proxy ! Get(1)
@@ -512,15 +512,15 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         typeName = "Counter",
         entityProps = Props[Counter],
         settings = ClusterShardingSettings(system),
-        idExtractor = idExtractor,
-        shardResolver = shardResolver)
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
       //#counter-start
       ClusterSharding(system).start(
         typeName = "AnotherCounter",
         entityProps = Props[Counter],
         settings = ClusterShardingSettings(system),
-        idExtractor = idExtractor,
-        shardResolver = shardResolver)
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
     }
     enterBarrier("extension-started")
     runOn(fifth) {
@@ -560,8 +560,8 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         typeName = "ApiTest",
         entityProps = Props[Counter],
         settings = ClusterShardingSettings(system),
-        idExtractor = idExtractor,
-        shardResolver = shardResolver)
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
 
       val counterRegionViaGet: ActorRef = ClusterSharding(system).shardRegion("ApiTest")
 

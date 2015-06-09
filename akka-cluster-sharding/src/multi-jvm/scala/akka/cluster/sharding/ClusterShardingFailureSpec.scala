@@ -62,12 +62,12 @@ object ClusterShardingFailureSpec extends MultiNodeConfig {
     }
   }
 
-  val idExtractor: ShardRegion.IdExtractor = {
+  val extractEntityId: ShardRegion.ExtractEntityId = {
     case m @ Get(id)    ⇒ (id, m)
     case m @ Add(id, _) ⇒ (id, m)
   }
 
-  val shardResolver: ShardRegion.ShardResolver = {
+  val extractShardId: ShardRegion.ExtractShardId = {
     case Get(id)    ⇒ id.charAt(0).toString
     case Add(id, _) ⇒ id.charAt(0).toString
   }
@@ -113,8 +113,8 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
       typeName = "Entity",
       entityProps = Props[Entity],
       settings = ClusterShardingSettings(system).withRememberEntities(true),
-      idExtractor = idExtractor,
-      shardResolver = shardResolver)
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
