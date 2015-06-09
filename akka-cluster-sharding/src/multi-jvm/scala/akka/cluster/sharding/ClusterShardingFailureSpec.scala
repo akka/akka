@@ -111,8 +111,8 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
   def startSharding(): Unit = {
     ClusterSharding(system).start(
       typeName = "Entity",
-      entryProps = Props[Entity],
-      settings = ClusterShardingSettings(system).withRememberEntries(true),
+      entityProps = Props[Entity],
+      settings = ClusterShardingSettings(system).withRememberEntities(true),
       idExtractor = idExtractor,
       shardResolver = shardResolver)
   }
@@ -183,17 +183,17 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
       runOn(first) {
         region ! Get("21")
         expectMsg(Value("21", 3))
-        val entry21 = lastSender
-        val shard2 = system.actorSelection(entry21.path.parent)
+        val entity21 = lastSender
+        val shard2 = system.actorSelection(entity21.path.parent)
 
         //Test the ShardCoordinator allocating shards during a journal failure
         region ! Add("30", 3)
 
-        //Test the Shard starting entries and persisting during a journal failure
+        //Test the Shard starting entities and persisting during a journal failure
         region ! Add("11", 1)
 
         //Test the Shard passivate works during a journal failure
-        shard2.tell(Passivate(PoisonPill), entry21)
+        shard2.tell(Passivate(PoisonPill), entity21)
         region ! Add("21", 1)
 
         region ! Get("21")
