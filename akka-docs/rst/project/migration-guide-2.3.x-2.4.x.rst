@@ -238,6 +238,9 @@ These settings can be defined differently per entry type if needed.
 Starting the ``ShardRegion`` in proxy mode is now done with the ``startProxy`` method 
 of the ``ClusterSharding`` extension instead of the optional ``entryProps`` parameter.
 
+Entry was renamed to Entity, for example in the ``MessagesExtractor`` in the Java API
+and the ``EntityId`` type in the Scala API.
+
 ClusterSingletonManager and ClusterSingletonProxy construction
 ==============================================================
 

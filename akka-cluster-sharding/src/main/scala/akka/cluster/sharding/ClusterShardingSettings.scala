@@ -30,7 +30,7 @@ object ClusterShardingSettings {
       handOffTimeout = config.getDuration("handoff-timeout", MILLISECONDS).millis,
       shardStartTimeout = config.getDuration("shard-start-timeout", MILLISECONDS).millis,
       shardFailureBackoff = config.getDuration("shard-failure-backoff", MILLISECONDS).millis,
-      entryRestartBackoff = config.getDuration("entry-restart-backoff", MILLISECONDS).millis,
+      entityRestartBackoff = config.getDuration("entity-restart-backoff", MILLISECONDS).millis,
       rebalanceInterval = config.getDuration("rebalance-interval", MILLISECONDS).millis,
       snapshotAfter = config.getInt("snapshot-after"),
       leastShardAllocationRebalanceThreshold =
@@ -42,7 +42,7 @@ object ClusterShardingSettings {
 
     new ClusterShardingSettings(
       role = roleOption(config.getString("role")),
-      rememberEntries = config.getBoolean("remember-entries"),
+      rememberEntities = config.getBoolean("remember-entities"),
       journalPluginId = config.getString("journal-plugin-id"),
       snapshotPluginId = config.getString("snapshot-plugin-id"),
       tuningParameters,
@@ -74,7 +74,7 @@ object ClusterShardingSettings {
     val handOffTimeout: FiniteDuration,
     val shardStartTimeout: FiniteDuration,
     val shardFailureBackoff: FiniteDuration,
-    val entryRestartBackoff: FiniteDuration,
+    val entityRestartBackoff: FiniteDuration,
     val rebalanceInterval: FiniteDuration,
     val snapshotAfter: Int,
     val leastShardAllocationRebalanceThreshold: Int,
@@ -82,23 +82,23 @@ object ClusterShardingSettings {
 }
 
 /**
- * @param role specifies that this entry type requires cluster nodes with a specific role.
+ * @param role specifies that this entity type requires cluster nodes with a specific role.
  *   If the role is not specified all nodes in the cluster are used.
- * @param rememberEntries true if active entry actors shall be automatically restarted upon `Shard`
+ * @param rememberEntities true if active entity actors shall be automatically restarted upon `Shard`
  *   restart. i.e. if the `Shard` is started on a different `ShardRegion` due to rebalance or crash.
- * @param journalPluginId Absolute path to the journal plugin configuration entry that is to
+ * @param journalPluginId Absolute path to the journal plugin configuration entity that is to
  *   be used for the internal persistence of ClusterSharding. If not defined the default
- *   journal plugin is used. Note that this is not related to persistence used by the entry
+ *   journal plugin is used. Note that this is not related to persistence used by the entity
  *   actors.
- * @param snapshotPluginId Absolute path to the snapshot plugin configuration entry that is to
+ * @param snapshotPluginId Absolute path to the snapshot plugin configuration entity that is to
  *   be used for the internal persistence of ClusterSharding. If not defined the default
- *   snapshot plugin is used. Note that this is not related to persistence used by the entry
+ *   snapshot plugin is used. Note that this is not related to persistence used by the entity
  *   actors.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
   val role: Option[String],
-  val rememberEntries: Boolean,
+  val rememberEntities: Boolean,
   val journalPluginId: String,
   val snapshotPluginId: String,
   val tuningParameters: ClusterShardingSettings.TuningParameters,
@@ -108,8 +108,8 @@ final class ClusterShardingSettings(
 
   def withRole(role: Option[String]): ClusterShardingSettings = copy(role = role)
 
-  def withRememberEntries(rememberEntries: Boolean): ClusterShardingSettings =
-    copy(rememberEntries = rememberEntries)
+  def withRememberEntities(rememberEntities: Boolean): ClusterShardingSettings =
+    copy(rememberEntities = rememberEntities)
 
   def withJournalPluginId(journalPluginId: String): ClusterShardingSettings =
     copy(journalPluginId = journalPluginId)
@@ -124,14 +124,14 @@ final class ClusterShardingSettings(
     copy(coordinatorSingletonSettings = coordinatorSingletonSettings)
 
   private def copy(role: Option[String] = role,
-                   rememberEntries: Boolean = rememberEntries,
+                   rememberEntities: Boolean = rememberEntities,
                    journalPluginId: String = journalPluginId,
                    snapshotPluginId: String = snapshotPluginId,
                    tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
                    coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
       role,
-      rememberEntries,
+      rememberEntities,
       journalPluginId,
       snapshotPluginId,
       tuningParameters,

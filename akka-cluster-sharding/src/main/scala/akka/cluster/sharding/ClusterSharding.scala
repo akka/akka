@@ -54,40 +54,40 @@ import java.util.Optional
  * several nodes in the cluster and you want to be able to interact with them using their
  * logical identifier, but without having to care about their physical location in the cluster,
  * which might also change over time. It could for example be actors representing Aggregate Roots in
- * Domain-Driven Design terminology. Here we call these actors "entries". These actors
+ * Domain-Driven Design terminology. Here we call these actors "entities". These actors
  * typically have persistent (durable) state, but this feature is not limited to
  * actors with persistent state.
  *
- * In this context sharding means that actors with an identifier, so called entries,
- * can be automatically distributed across multiple nodes in the cluster. Each entry
- * actor runs only at one place, and messages can be sent to the entry without requiring
+ * In this context sharding means that actors with an identifier, so called entities,
+ * can be automatically distributed across multiple nodes in the cluster. Each entity
+ * actor runs only at one place, and messages can be sent to the entity without requiring
  * the sender to know the location of the destination actor. This is achieved by sending
  * the messages via a [[ShardRegion]] actor provided by this extension, which knows how
- * to route the message with the entry id to the final destination.
+ * to route the message with the entity id to the final destination.
  *
  * This extension is supposed to be used by first, typically at system startup on each node
- * in the cluster, registering the supported entry types with the [[ClusterSharding#start]]
- * method and then the `ShardRegion` actor for a named entry type can be retrieved with
- * [[ClusterSharding#shardRegion]]. Messages to the entries are always sent via the local
+ * in the cluster, registering the supported entity types with the [[ClusterSharding#start]]
+ * method and then the `ShardRegion` actor for a named entity type can be retrieved with
+ * [[ClusterSharding#shardRegion]]. Messages to the entities are always sent via the local
  * `ShardRegion`. Some settings can be configured as described in the `akka.cluster.sharding`
  * section of the `reference.conf`.
  *
  * The `ShardRegion` actor is started on each node in the cluster, or group of nodes
  * tagged with a specific role. The `ShardRegion` is created with two application specific
- * functions to extract the entry identifier and the shard identifier from incoming messages.
- * A shard is a group of entries that will be managed together. For the first message in a
+ * functions to extract the entity identifier and the shard identifier from incoming messages.
+ * A shard is a group of entities that will be managed together. For the first message in a
  * specific shard the `ShardRegion` request the location of the shard from a central coordinator,
  * the [[ShardCoordinator]]. The `ShardCoordinator` decides which `ShardRegion` that
  * owns the shard. The `ShardRegion` receives the decided home of the shard
  * and if that is the `ShardRegion` instance itself it will create a local child
- * actor representing the entry and direct all messages for that entry to it.
+ * actor representing the entity and direct all messages for that entity to it.
  * If the shard home is another `ShardRegion` instance messages will be forwarded
  * to that `ShardRegion` instance instead. While resolving the location of a
  * shard incoming messages for that shard are buffered and later delivered when the
  * shard home is known. Subsequent messages to the resolved shard can be delivered
  * to the target destination immediately without involving the `ShardCoordinator`.
  *
- * To make sure that at most one instance of a specific entry actor is running somewhere
+ * To make sure that at most one instance of a specific entity actor is running somewhere
  * in the cluster it is important that all nodes have the same view of where the shards
  * are located. Therefore the shard allocation decisions are taken by the central
  * `ShardCoordinator`, which is running as a cluster singleton, i.e. one instance on
@@ -100,18 +100,18 @@ import java.util.Optional
  * This strategy can be replaced by an application specific implementation.
  *
  * To be able to use newly added members in the cluster the coordinator facilitates rebalancing
- * of shards, i.e. migrate entries from one node to another. In the rebalance process the
+ * of shards, i.e. migrate entities from one node to another. In the rebalance process the
  * coordinator first notifies all `ShardRegion` actors that a handoff for a shard has started.
  * That means they will start buffering incoming messages for that shard, in the same way as if the
  * shard location is unknown. During the rebalance process the coordinator will not answer any
  * requests for the location of shards that are being rebalanced, i.e. local buffering will
  * continue until the handoff is completed. The `ShardRegion` responsible for the rebalanced shard
- * will stop all entries in that shard by sending `PoisonPill` to them. When all entries have
- * been terminated the `ShardRegion` owning the entries will acknowledge the handoff as completed
+ * will stop all entities in that shard by sending `PoisonPill` to them. When all entities have
+ * been terminated the `ShardRegion` owning the entities will acknowledge the handoff as completed
  * to the coordinator. Thereafter the coordinator will reply to requests for the location of
  * the shard and thereby allocate a new home for the shard and then buffered messages in the
- * `ShardRegion` actors are delivered to the new location. This means that the state of the entries
- * are not transferred or migrated. If the state of the entries are of importance it should be
+ * `ShardRegion` actors are delivered to the new location. This means that the state of the entities
+ * are not transferred or migrated. If the state of the entities are of importance it should be
  * persistent (durable), e.g. with `akka-persistence`, so that it can be recovered at the new
  * location.
  *
@@ -131,7 +131,7 @@ import java.util.Optional
  * with known location are still available, while messages for new (unknown) shards
  * are buffered until the new `ShardCoordinator` becomes available.
  *
- * As long as a sender uses the same `ShardRegion` actor to deliver messages to an entry
+ * As long as a sender uses the same `ShardRegion` actor to deliver messages to an entity
  * actor the order of the messages is preserved. As long as the buffer limit is not reached
  * messages are delivered on a best effort basis, with at-most once delivery semantics,
  * in the same way as ordinary message sending. Reliable end-to-end messaging, with
@@ -143,21 +143,21 @@ import java.util.Optional
  * shard resolution, e.g. to avoid too fine grained shards.
  *
  * The `ShardRegion` actor can also be started in proxy only mode, i.e. it will not
- * host any entries itself, but knows how to delegate messages to the right location.
+ * host any entities itself, but knows how to delegate messages to the right location.
  * A `ShardRegion` starts in proxy only mode if the roles of the node does not include
  * the node role specified in `akka.cluster.sharding.role` config property
- * or if the specified `entryProps` is `None`/`null`.
+ * or if the specified `entityProps` is `None`/`null`.
  *
- * If the state of the entries are persistent you may stop entries that are not used to
+ * If the state of the entities are persistent you may stop entities that are not used to
  * reduce memory consumption. This is done by the application specific implementation of
- * the entry actors for example by defining receive timeout (`context.setReceiveTimeout`).
- * If a message is already enqueued to the entry when it stops itself the enqueued message
+ * the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
+ * If a message is already enqueued to the entity when it stops itself the enqueued message
  * in the mailbox will be dropped. To support graceful passivation without loosing such
- * messages the entry actor can send [[ShardRegion.Passivate]] to its parent `ShardRegion`.
- * The specified wrapped message in `Passivate` will be sent back to the entry, which is
+ * messages the entity actor can send [[ShardRegion.Passivate]] to its parent `ShardRegion`.
+ * The specified wrapped message in `Passivate` will be sent back to the entity, which is
  * then supposed to stop itself. Incoming messages will be buffered by the `ShardRegion`
- * between reception of `Passivate` and termination of the entry. Such buffered messages
- * are thereafter delivered to a new incarnation of the entry.
+ * between reception of `Passivate` and termination of the entity. Such buffered messages
+ * are thereafter delivered to a new incarnation of the entity.
  *
  */
 object ClusterSharding extends ExtensionId[ClusterSharding] with ExtensionIdProvider {
@@ -191,29 +191,29 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
   /**
-   * Scala API: Register a named entry type by defining the [[akka.actor.Props]] of the entry actor
-   * and functions to extract entry and shard identifier from messages. The [[ShardRegion]] actor
+   * Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
+   * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
-   * @param typeName the name of the entry type
-   * @param entryProps the `Props` of the entry actors that will be created by the `ShardRegion`
-   * @param role specifies that this entry type requires cluster nodes with a specific role.
+   * @param typeName the name of the entity type
+   * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
+   * @param role specifies that this entity type requires cluster nodes with a specific role.
    *   If the role is not specified all nodes in the cluster are used.
    * @param settings configuration settings, see [[ClusterShardingSettings]]
    * @param shardResolver function to determine the shard id for an incoming message, only messages
    *   that passed the `idExtractor` will be used
    * @param allocationStrategy possibility to use a custom shard allocation and
    *   rebalancing logic
-   * @param handOffStopMessage the message that will be sent to entries when they are to be stopped
+   * @param handOffStopMessage the message that will be sent to entities when they are to be stopped
    *   for a rebalance or graceful shutdown of a `ShardRegion`, e.g. `PoisonPill`.
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
     typeName: String,
-    entryProps: Props,
+    entityProps: Props,
     settings: ClusterShardingSettings,
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver,
@@ -222,7 +222,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
     requireClusterRole(settings.role)
     implicit val timeout = system.settings.CreationTimeout
-    val startMsg = Start(typeName, entryProps, settings,
+    val startMsg = Start(typeName, entityProps, settings,
       idExtractor, shardResolver, allocationStrategy, handOffStopMessage)
     val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
     regions.put(typeName, shardRegion)
@@ -230,8 +230,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * Register a named entry type by defining the [[akka.actor.Props]] of the entry actor and
-   * functions to extract entry and shard identifier from messages. The [[ShardRegion]] actor
+   * Register a named entity type by defining the [[akka.actor.Props]] of the entity actor and
+   * functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
@@ -240,11 +240,11 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
-   * @param typeName the name of the entry type
-   * @param entryProps the `Props` of the entry actors that will be created by the `ShardRegion`
+   * @param typeName the name of the entity type
+   * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
    * @param settings configuration settings, see [[ClusterShardingSettings]]
-   * @param idExtractor partial function to extract the entry id and the message to send to the
-   *   entry from the incoming message, if the partial function does not match the message will
+   * @param idExtractor partial function to extract the entity id and the message to send to the
+   *   entity from the incoming message, if the partial function does not match the message will
    *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
    * @param shardResolver function to determine the shard id for an incoming message, only messages
    *   that passed the `idExtractor` will be used
@@ -252,7 +252,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    */
   def start(
     typeName: String,
-    entryProps: Props,
+    entityProps: Props,
     settings: ClusterShardingSettings,
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver): ActorRef = {
@@ -261,40 +261,40 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       settings.tuningParameters.leastShardAllocationRebalanceThreshold,
       settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance)
 
-    start(typeName, entryProps, settings, idExtractor, shardResolver, allocationStrategy, PoisonPill)
+    start(typeName, entityProps, settings, idExtractor, shardResolver, allocationStrategy, PoisonPill)
   }
 
   /**
-   * Java API: Register a named entry type by defining the [[akka.actor.Props]] of the entry actor
-   * and functions to extract entry and shard identifier from messages. The [[ShardRegion]] actor
+   * Java API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
+   * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
-   * @param typeName the name of the entry type
-   * @param entryProps the `Props` of the entry actors that will be created by the `ShardRegion`
+   * @param typeName the name of the entity type
+   * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
    * @param settings configuration settings, see [[ClusterShardingSettings]]
-   * @param messageExtractor functions to extract the entry id, shard id, and the message to send to the
-   *   entry from the incoming message
+   * @param messageExtractor functions to extract the entity id, shard id, and the message to send to the
+   *   entity from the incoming message
    * @param allocationStrategy possibility to use a custom shard allocation and
    *   rebalancing logic
-   * @param handOffStopMessage the message that will be sent to entries when they are to be stopped
+   * @param handOffStopMessage the message that will be sent to entities when they are to be stopped
    *   for a rebalance or graceful shutdown of a `ShardRegion`, e.g. `PoisonPill`.
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
     typeName: String,
-    entryProps: Props,
+    entityProps: Props,
     settings: ClusterShardingSettings,
     messageExtractor: ShardRegion.MessageExtractor,
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: Any): ActorRef = {
 
-    start(typeName, entryProps, settings,
+    start(typeName, entityProps, settings,
       idExtractor = {
-        case msg if messageExtractor.entryId(msg) ne null ⇒
-          (messageExtractor.entryId(msg), messageExtractor.entryMessage(msg))
+        case msg if messageExtractor.entityId(msg) ne null ⇒
+          (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
       },
       shardResolver = msg ⇒ messageExtractor.shardId(msg),
       allocationStrategy = allocationStrategy,
@@ -302,8 +302,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * Java API: Register a named entry type by defining the [[akka.actor.Props]] of the entry actor
-   * and functions to extract entry and shard identifier from messages. The [[ShardRegion]] actor
+   * Java API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
+   * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
@@ -312,16 +312,16 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
-   * @param typeName the name of the entry type
-   * @param entryProps the `Props` of the entry actors that will be created by the `ShardRegion`
+   * @param typeName the name of the entity type
+   * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
    * @param settings configuration settings, see [[ClusterShardingSettings]]
-   * @param messageExtractor functions to extract the entry id, shard id, and the message to send to the
-   *   entry from the incoming message
+   * @param messageExtractor functions to extract the entity id, shard id, and the message to send to the
+   *   entity from the incoming message
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
     typeName: String,
-    entryProps: Props,
+    entityProps: Props,
     settings: ClusterShardingSettings,
     messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
@@ -329,23 +329,23 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       settings.tuningParameters.leastShardAllocationRebalanceThreshold,
       settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance)
 
-    start(typeName, entryProps, settings, messageExtractor, allocationStrategy, PoisonPill)
+    start(typeName, entityProps, settings, messageExtractor, allocationStrategy, PoisonPill)
   }
 
   /**
-   * Scala API: Register a named entry type `ShardRegion` on this node that will run in proxy only mode,
+   * Scala API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
    * i.e. it will delegate messages to other `ShardRegion` actors on other nodes, but not host any
-   * entry actors itself. The [[ShardRegion]] actor for this type can later be retrieved with the
+   * entity actors itself. The [[ShardRegion]] actor for this type can later be retrieved with the
    * [[#shardRegion]] method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
-   * @param typeName the name of the entry type
-   * @param role specifies that this entry type is located on cluster nodes with a specific role.
+   * @param typeName the name of the entity type
+   * @param role specifies that this entity type is located on cluster nodes with a specific role.
    *   If the role is not specified all nodes in the cluster are used.
-   * @param idExtractor partial function to extract the entry id and the message to send to the
-   *   entry from the incoming message, if the partial function does not match the message will
+   * @param idExtractor partial function to extract the entity id and the message to send to the
+   *   entity from the incoming message, if the partial function does not match the message will
    *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
    * @param shardResolver function to determine the shard id for an incoming message, only messages
    *   that passed the `idExtractor` will be used
@@ -366,19 +366,19 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * Java API: Register a named entry type `ShardRegion` on this node that will run in proxy only mode,
+   * Java API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
    * i.e. it will delegate messages to other `ShardRegion` actors on other nodes, but not host any
-   * entry actors itself. The [[ShardRegion]] actor for this type can later be retrieved with the
+   * entity actors itself. The [[ShardRegion]] actor for this type can later be retrieved with the
    * [[#shardRegion]] method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
    *
-   * @param typeName the name of the entry type
-   * @param role specifies that this entry type is located on cluster nodes with a specific role.
+   * @param typeName the name of the entity type
+   * @param role specifies that this entity type is located on cluster nodes with a specific role.
    *   If the role is not specified all nodes in the cluster are used.
-   * @param messageExtractor functions to extract the entry id, shard id, and the message to send to the
-   *   entry from the incoming message
+   * @param messageExtractor functions to extract the entity id, shard id, and the message to send to the
+   *   entity from the incoming message
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def startProxy(
@@ -388,17 +388,17 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
     startProxy(typeName, Option(role.orElse(null)),
       idExtractor = {
-        case msg if messageExtractor.entryId(msg) ne null ⇒
-          (messageExtractor.entryId(msg), messageExtractor.entryMessage(msg))
+        case msg if messageExtractor.entityId(msg) ne null ⇒
+          (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
       },
       shardResolver = msg ⇒ messageExtractor.shardId(msg))
 
   }
 
   /**
-   * Retrieve the actor reference of the [[ShardRegion]] actor responsible for the named entry type.
-   * The entry type must be registered with the [[#start]] method before it can be used here.
-   * Messages to the entry is always sent via the `ShardRegion`.
+   * Retrieve the actor reference of the [[ShardRegion]] actor responsible for the named entity type.
+   * The entity type must be registered with the [[#start]] method before it can be used here.
+   * Messages to the entity is always sent via the `ShardRegion`.
    */
   def shardRegion(typeName: String): ActorRef = regions.get(typeName) match {
     case null ⇒ throw new IllegalArgumentException(s"Shard type [$typeName] must be started first")
@@ -412,7 +412,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
  */
 private[akka] object ClusterShardingGuardian {
   import ShardCoordinator.ShardAllocationStrategy
-  final case class Start(typeName: String, entryProps: Props, settings: ClusterShardingSettings,
+  final case class Start(typeName: String, entityProps: Props, settings: ClusterShardingSettings,
                          idExtractor: ShardRegion.IdExtractor, shardResolver: ShardRegion.ShardResolver,
                          allocationStrategy: ShardAllocationStrategy, handOffStopMessage: Any)
     extends NoSerializationVerificationNeeded
@@ -439,7 +439,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
     (self.path / coordinatorSingletonManagerName(encName) / "singleton" / "coordinator").toStringWithoutAddress
 
   def receive = {
-    case Start(typeName, entryProps, settings, idExtractor, shardResolver, allocationStrategy, handOffStopMessage) ⇒
+    case Start(typeName, entityProps, settings, idExtractor, shardResolver, allocationStrategy, handOffStopMessage) ⇒
       import settings.role
       import settings.tuningParameters.coordinatorFailureBackoff
       val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
@@ -460,7 +460,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
         context.actorOf(ShardRegion.props(
           typeName = typeName,
-          entryProps = entryProps,
+          entityProps = entityProps,
           settings = settings,
           coordinatorPath = cPath,
           idExtractor = idExtractor,
@@ -500,13 +500,13 @@ object ShardRegion {
    */
   private[akka] def props(
     typeName: String,
-    entryProps: Props,
+    entityProps: Props,
     settings: ClusterShardingSettings,
     coordinatorPath: String,
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver,
     handOffStopMessage: Any): Props =
-    Props(new ShardRegion(typeName, Some(entryProps), settings, coordinatorPath, idExtractor,
+    Props(new ShardRegion(typeName, Some(entityProps), settings, coordinatorPath, idExtractor,
       shardResolver, handOffStopMessage)).withDeploy(Deploy.local)
 
   /**
@@ -524,9 +524,9 @@ object ShardRegion {
       .withDeploy(Deploy.local)
 
   /**
-   * Marker type of entry identifier (`String`).
+   * Marker type of entity identifier (`String`).
    */
-  type EntryId = String
+  type EntityId = String
   /**
    * Marker type of shard identifier (`String`).
    */
@@ -537,15 +537,15 @@ object ShardRegion {
   type Msg = Any
   /**
    * Interface of the partial function used by the [[ShardRegion]] to
-   * extract the entry id and the message to send to the entry from an
+   * extract the entity id and the message to send to the entity from an
    * incoming message. The implementation is application specific.
    * If the partial function does not match the message will be
    * `unhandled`, i.e. posted as `Unhandled` messages on the event stream.
    * Note that the extracted  message does not have to be the same as the incoming
    * message to support wrapping in message envelope that is unwrapped before
-   * sending to the entry actor.
+   * sending to the entity actor.
    */
-  type IdExtractor = PartialFunction[Msg, (EntryId, Msg)]
+  type IdExtractor = PartialFunction[Msg, (EntityId, Msg)]
   /**
    * Interface of the function used by the [[ShardRegion]] to
    * extract the shard id from an incoming message.
@@ -555,25 +555,25 @@ object ShardRegion {
   type ShardResolver = Msg ⇒ ShardId
 
   /**
-   * Java API: Interface of functions to extract entry id,
-   * shard id, and the message to send to the entry from an
+   * Java API: Interface of functions to extract entity id,
+   * shard id, and the message to send to the entity from an
    * incoming message.
    */
   trait MessageExtractor {
     /**
-     * Extract the entry id from an incoming `message`. If `null` is returned
+     * Extract the entity id from an incoming `message`. If `null` is returned
      * the message will be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
      */
-    def entryId(message: Any): String
+    def entityId(message: Any): String
     /**
-     * Extract the message to send to the entry from an incoming `message`.
+     * Extract the message to send to the entity from an incoming `message`.
      * Note that the extracted message does not have to be the same as the incoming
      * message to support wrapping in message envelope that is unwrapped before
-     * sending to the entry actor.
+     * sending to the entity actor.
      */
-    def entryMessage(message: Any): Any
+    def entityMessage(message: Any): Any
     /**
-     * Extract the entry id from an incoming `message`. Only messages that passed the [[#entryId]]
+     * Extract the entity id from an incoming `message`. Only messages that passed the [[#entityId]]
      * function will be used as input to this function.
      */
     def shardId(message: Any): String
@@ -582,16 +582,16 @@ object ShardRegion {
   sealed trait ShardRegionCommand
 
   /**
-   * If the state of the entries are persistent you may stop entries that are not used to
+   * If the state of the entities are persistent you may stop entities that are not used to
    * reduce memory consumption. This is done by the application specific implementation of
-   * the entry actors for example by defining receive timeout (`context.setReceiveTimeout`).
-   * If a message is already enqueued to the entry when it stops itself the enqueued message
+   * the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
+   * If a message is already enqueued to the entity when it stops itself the enqueued message
    * in the mailbox will be dropped. To support graceful passivation without loosing such
-   * messages the entry actor can send this `Passivate` message to its parent `ShardRegion`.
-   * The specified wrapped `stopMessage` will be sent back to the entry, which is
+   * messages the entity actor can send this `Passivate` message to its parent `ShardRegion`.
+   * The specified wrapped `stopMessage` will be sent back to the entity, which is
    * then supposed to stop itself. Incoming messages will be buffered by the `ShardRegion`
-   * between reception of `Passivate` and termination of the entry. Such buffered messages
-   * are thereafter delivered to a new incarnation of the entry.
+   * between reception of `Passivate` and termination of the entity. Such buffered messages
+   * are thereafter delivered to a new incarnation of the entity.
    *
    * [[akka.actor.PoisonPill]] is a perfectly fine `stopMessage`.
    */
@@ -640,19 +640,19 @@ object ShardRegion {
     if (role == "") None else Option(role)
 
   /**
-   * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entries and when all of
+   * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entities and when all of
    * them have terminated it replies with `ShardStopped`.
    */
-  private[akka] class HandOffStopper(shard: String, replyTo: ActorRef, entries: Set[ActorRef], stopMessage: Any)
+  private[akka] class HandOffStopper(shard: String, replyTo: ActorRef, entities: Set[ActorRef], stopMessage: Any)
     extends Actor {
     import ShardCoordinator.Internal.ShardStopped
 
-    entries.foreach { a ⇒
+    entities.foreach { a ⇒
       context watch a
       a ! stopMessage
     }
 
-    var remaining = entries
+    var remaining = entities
 
     def receive = {
       case Terminated(ref) ⇒
@@ -665,12 +665,12 @@ object ShardRegion {
   }
 
   private[akka] def handOffStopperProps(
-    shard: String, replyTo: ActorRef, entries: Set[ActorRef], stopMessage: Any): Props =
-    Props(new HandOffStopper(shard, replyTo, entries, stopMessage)).withDeploy(Deploy.local)
+    shard: String, replyTo: ActorRef, entities: Set[ActorRef], stopMessage: Any): Props =
+    Props(new HandOffStopper(shard, replyTo, entities, stopMessage)).withDeploy(Deploy.local)
 }
 
 /**
- * This actor creates children entry actors on demand for the shards that it is told to be
+ * This actor creates children entity actors on demand for the shards that it is told to be
  * responsible for. It delegates messages targeted to other shards to the responsible
  * `ShardRegion` actor on other nodes.
  *
@@ -678,7 +678,7 @@ object ShardRegion {
  */
 class ShardRegion(
   typeName: String,
-  entryProps: Option[Props],
+  entityProps: Option[Props],
   settings: ClusterShardingSettings,
   coordinatorPath: String,
   idExtractor: ShardRegion.IdExtractor,
@@ -704,7 +704,7 @@ class ShardRegion(
   var handingOff = Set.empty[ActorRef]
   var gracefulShutdownInProgress = false
 
-  def totalBufferSize = shardBuffers.foldLeft(0) { (sum, entry) ⇒ sum + entry._2.size }
+  def totalBufferSize = shardBuffers.foldLeft(0) { (sum, entity) ⇒ sum + entity._2.size }
 
   import context.dispatcher
   val retryTask = context.system.scheduler.schedule(retryInterval, retryInterval, self, Retry)
@@ -888,7 +888,7 @@ class ShardRegion(
   }
 
   def registrationMessage: Any =
-    if (entryProps.isDefined) Register(self) else RegisterProxy(self)
+    if (entityProps.isDefined) Register(self) else RegisterProxy(self)
 
   def requestShardBufferHomes(): Unit = {
     shardBuffers.foreach {
@@ -936,7 +936,7 @@ class ShardRegion(
 
   def getShard(id: ShardId): ActorRef = shards.getOrElse(
     id,
-    entryProps match {
+    entityProps match {
       case Some(props) ⇒
         log.debug("Starting shard [{}] in region", id)
 
@@ -968,7 +968,7 @@ class ShardRegion(
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 private[akka] object Shard {
-  import ShardRegion.EntryId
+  import ShardRegion.EntityId
 
   object State {
     val Empty = State()
@@ -986,50 +986,50 @@ private[akka] object Shard {
   final case class RetryPersistence(payload: StateChange) extends ShardCommand
 
   /**
-   * When an remembering entries and the entry stops without issuing a `Passivate`, we
+   * When an remembering entities and the entity stops without issuing a `Passivate`, we
    * restart it after a back off using this message.
    */
-  final case class RestartEntry(entry: EntryId) extends ShardCommand
+  final case class RestartEntity(entity: EntityId) extends ShardCommand
 
   /**
    * A case class which represents a state change for the Shard
    */
-  sealed trait StateChange { val entryId: EntryId }
+  sealed trait StateChange { val entityId: EntityId }
 
   /**
-   * `State` change for starting an entry in this `Shard`
+   * `State` change for starting an entity in this `Shard`
    */
-  @SerialVersionUID(1L) final case class EntryStarted(entryId: EntryId) extends StateChange
+  @SerialVersionUID(1L) final case class EntityStarted(entityId: EntityId) extends StateChange
 
   /**
-   * `State` change for an entry which has terminated.
+   * `State` change for an entity which has terminated.
    */
-  @SerialVersionUID(1L) final case class EntryStopped(entryId: EntryId) extends StateChange
+  @SerialVersionUID(1L) final case class EntityStopped(entityId: EntityId) extends StateChange
 
   /**
    * Persistent state of the Shard.
    */
   @SerialVersionUID(1L) final case class State private (
-    entries: Set[EntryId] = Set.empty)
+    entities: Set[EntityId] = Set.empty)
 
   /**
    * Factory method for the [[akka.actor.Props]] of the [[Shard]] actor.
    */
   def props(typeName: String,
             shardId: ShardRegion.ShardId,
-            entryProps: Props,
+            entityProps: Props,
             settings: ClusterShardingSettings,
             idExtractor: ShardRegion.IdExtractor,
             shardResolver: ShardRegion.ShardResolver,
             handOffStopMessage: Any): Props =
-    Props(new Shard(typeName, shardId, entryProps, settings, idExtractor, shardResolver, handOffStopMessage))
+    Props(new Shard(typeName, shardId, entityProps, settings, idExtractor, shardResolver, handOffStopMessage))
       .withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  *
- * This actor creates children entry actors on demand that it is told to be
+ * This actor creates children entity actors on demand that it is told to be
  * responsible for.
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -1037,20 +1037,20 @@ private[akka] object Shard {
 private[akka] class Shard(
   typeName: String,
   shardId: ShardRegion.ShardId,
-  entryProps: Props,
+  entityProps: Props,
   settings: ClusterShardingSettings,
   idExtractor: ShardRegion.IdExtractor,
   shardResolver: ShardRegion.ShardResolver,
   handOffStopMessage: Any) extends PersistentActor with ActorLogging {
 
-  import ShardRegion.{ handOffStopperProps, EntryId, Msg, Passivate }
+  import ShardRegion.{ handOffStopperProps, EntityId, Msg, Passivate }
   import ShardCoordinator.Internal.{ HandOff, ShardStopped }
-  import Shard.{ State, RetryPersistence, RestartEntry, EntryStopped, EntryStarted }
+  import Shard.{ State, RetryPersistence, RestartEntity, EntityStopped, EntityStarted }
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
   import akka.persistence.RecoveryCompleted
 
-  import settings.rememberEntries
+  import settings.rememberEntities
   import settings.tuningParameters._
 
   override def persistenceId = s"/sharding/${typeName}Shard/${shardId}"
@@ -1060,18 +1060,18 @@ private[akka] class Shard(
   override def snapshotPluginId: String = settings.snapshotPluginId
 
   var state = State.Empty
-  var idByRef = Map.empty[ActorRef, EntryId]
-  var refById = Map.empty[EntryId, ActorRef]
+  var idByRef = Map.empty[ActorRef, EntityId]
+  var refById = Map.empty[EntityId, ActorRef]
   var passivating = Set.empty[ActorRef]
-  var messageBuffers = Map.empty[EntryId, Vector[(Msg, ActorRef)]]
+  var messageBuffers = Map.empty[EntityId, Vector[(Msg, ActorRef)]]
   var persistCount = 0
 
   var handOffStopper: Option[ActorRef] = None
 
-  def totalBufferSize = messageBuffers.foldLeft(0) { (sum, entry) ⇒ sum + entry._2.size }
+  def totalBufferSize = messageBuffers.foldLeft(0) { (sum, entity) ⇒ sum + entity._2.size }
 
   def processChange[A](event: A)(handler: A ⇒ Unit): Unit =
-    if (rememberEntries) {
+    if (rememberEntities) {
       saveSnapshotWhenNeeded()
       persist(event)(handler)
     } else handler(event)
@@ -1085,10 +1085,10 @@ private[akka] class Shard(
   }
 
   override def receiveRecover: Receive = {
-    case EntryStarted(id) if rememberEntries ⇒ state = state.copy(state.entries + id)
-    case EntryStopped(id) if rememberEntries ⇒ state = state.copy(state.entries - id)
-    case SnapshotOffer(_, snapshot: State)   ⇒ state = snapshot
-    case RecoveryCompleted                   ⇒ state.entries foreach getEntry
+    case EntityStarted(id) if rememberEntities ⇒ state = state.copy(state.entities + id)
+    case EntityStopped(id) if rememberEntities ⇒ state = state.copy(state.entities - id)
+    case SnapshotOffer(_, snapshot: State)     ⇒ state = snapshot
+    case RecoveryCompleted                     ⇒ state.entities foreach getEntity
   }
 
   override def receiveCommand: Receive = {
@@ -1102,7 +1102,7 @@ private[akka] class Shard(
 
   def receiveShardCommand(msg: ShardCommand): Unit = msg match {
     case RetryPersistence(payload) ⇒ retryPersistence(payload)
-    case RestartEntry(id)          ⇒ getEntry(id)
+    case RestartEntity(id)         ⇒ getEntity(id)
   }
 
   def receiveShardRegionCommand(msg: ShardRegionCommand): Unit = msg match {
@@ -1118,8 +1118,8 @@ private[akka] class Shard(
 
   def persistenceFailure(payload: StateChange): Unit = {
     log.debug("Persistence of [{}] failed, will backoff and retry", payload)
-    if (!messageBuffers.isDefinedAt(payload.entryId)) {
-      messageBuffers = messageBuffers.updated(payload.entryId, Vector.empty)
+    if (!messageBuffers.isDefinedAt(payload.entityId)) {
+      messageBuffers = messageBuffers.updated(payload.entityId, Vector.empty)
     }
 
     import context.dispatcher
@@ -1130,8 +1130,8 @@ private[akka] class Shard(
     log.debug("Retrying Persistence of [{}]", payload)
     persist(payload) { _ ⇒
       payload match {
-        case msg: EntryStarted ⇒ sendMsgBuffer(msg)
-        case msg: EntryStopped ⇒ passivateCompleted(msg)
+        case msg: EntityStarted ⇒ sendMsgBuffer(msg)
+        case msg: EntityStopped ⇒ passivateCompleted(msg)
       }
     }
   }
@@ -1141,7 +1141,7 @@ private[akka] class Shard(
     case None ⇒
       log.debug("HandOff shard [{}]", shardId)
 
-      if (state.entries.nonEmpty) {
+      if (state.entities.nonEmpty) {
         handOffStopper = Some(context.watch(context.actorOf(
           handOffStopperProps(shardId, replyTo, idByRef.keySet, handOffStopMessage))))
 
@@ -1161,56 +1161,56 @@ private[akka] class Shard(
     } else if (idByRef.contains(ref) && handOffStopper.isEmpty) {
       val id = idByRef(ref)
       if (messageBuffers.getOrElse(id, Vector.empty).nonEmpty) {
-        //Note; because we're not persisting the EntryStopped, we don't need
-        // to persist the EntryStarted either.
-        log.debug("Starting entry [{}] again, there are buffered messages for it", id)
-        sendMsgBuffer(EntryStarted(id))
+        //Note; because we're not persisting the EntityStopped, we don't need
+        // to persist the EntityStarted either.
+        log.debug("Starting entity [{}] again, there are buffered messages for it", id)
+        sendMsgBuffer(EntityStarted(id))
       } else {
-        if (rememberEntries && !passivating.contains(ref)) {
-          log.debug("Entry [{}] stopped without passivating, will restart after backoff", id)
+        if (rememberEntities && !passivating.contains(ref)) {
+          log.debug("Entity [{}] stopped without passivating, will restart after backoff", id)
           import context.dispatcher
-          context.system.scheduler.scheduleOnce(entryRestartBackoff, self, RestartEntry(id))
-        } else processChange(EntryStopped(id))(passivateCompleted)
+          context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
+        } else processChange(EntityStopped(id))(passivateCompleted)
       }
 
       passivating = passivating - ref
     }
   }
 
-  def passivate(entry: ActorRef, stopMessage: Any): Unit = {
-    idByRef.get(entry) match {
+  def passivate(entity: ActorRef, stopMessage: Any): Unit = {
+    idByRef.get(entity) match {
       case Some(id) if !messageBuffers.contains(id) ⇒
-        log.debug("Passivating started on entry {}", id)
+        log.debug("Passivating started on entity {}", id)
 
-        passivating = passivating + entry
+        passivating = passivating + entity
         messageBuffers = messageBuffers.updated(id, Vector.empty)
-        entry ! stopMessage
+        entity ! stopMessage
 
       case _ ⇒ //ignored
     }
   }
 
-  // EntryStopped persistence handler
-  def passivateCompleted(event: EntryStopped): Unit = {
-    log.debug("Entry stopped [{}]", event.entryId)
+  // EntityStopped persistence handler
+  def passivateCompleted(event: EntityStopped): Unit = {
+    log.debug("Entity stopped [{}]", event.entityId)
 
-    val ref = refById(event.entryId)
+    val ref = refById(event.entityId)
     idByRef -= ref
-    refById -= event.entryId
+    refById -= event.entityId
 
-    state = state.copy(state.entries - event.entryId)
-    messageBuffers = messageBuffers - event.entryId
+    state = state.copy(state.entities - event.entityId)
+    messageBuffers = messageBuffers - event.entityId
   }
 
-  // EntryStarted persistence handler
-  def sendMsgBuffer(event: EntryStarted): Unit = {
+  // EntityStarted persistence handler
+  def sendMsgBuffer(event: EntityStarted): Unit = {
     //Get the buffered messages and remove the buffer
-    val messages = messageBuffers.getOrElse(event.entryId, Vector.empty)
-    messageBuffers = messageBuffers - event.entryId
+    val messages = messageBuffers.getOrElse(event.entityId, Vector.empty)
+    messageBuffers = messageBuffers - event.entityId
 
     if (messages.nonEmpty) {
-      log.debug("Sending message buffer for entry [{}] ([{}] messages)", event.entryId, messages.size)
-      getEntry(event.entryId)
+      log.debug("Sending message buffer for entity [{}] ([{}] messages)", event.entityId, messages.size)
+      getEntity(event.entityId)
 
       //Now there is no deliveryBuffer we can try to redeliver
       // and as the child exists, the message will be directly forwarded
@@ -1230,42 +1230,42 @@ private[akka] class Shard(
         case None ⇒ deliverTo(id, msg, payload, snd)
 
         case Some(buf) if totalBufferSize >= bufferSize ⇒
-          log.debug("Buffer is full, dropping message for entry [{}]", id)
+          log.debug("Buffer is full, dropping message for entity [{}]", id)
           context.system.deadLetters ! msg
 
         case Some(buf) ⇒
-          log.debug("Message for entry [{}] buffered", id)
+          log.debug("Message for entity [{}] buffered", id)
           messageBuffers = messageBuffers.updated(id, buf :+ ((msg, snd)))
       }
     }
   }
 
-  def deliverTo(id: EntryId, msg: Any, payload: Msg, snd: ActorRef): Unit = {
+  def deliverTo(id: EntityId, msg: Any, payload: Msg, snd: ActorRef): Unit = {
     val name = URLEncoder.encode(id, "utf-8")
     context.child(name) match {
       case Some(actor) ⇒
         actor.tell(payload, snd)
 
-      case None if rememberEntries ⇒
+      case None if rememberEntities ⇒
         //Note; we only do this if remembering, otherwise the buffer is an overhead
         messageBuffers = messageBuffers.updated(id, Vector((msg, snd)))
         saveSnapshotWhenNeeded()
-        persist(EntryStarted(id))(sendMsgBuffer)
+        persist(EntityStarted(id))(sendMsgBuffer)
 
       case None ⇒
-        getEntry(id).tell(payload, snd)
+        getEntity(id).tell(payload, snd)
     }
   }
 
-  def getEntry(id: EntryId): ActorRef = {
+  def getEntity(id: EntityId): ActorRef = {
     val name = URLEncoder.encode(id, "utf-8")
     context.child(name).getOrElse {
-      log.debug("Starting entry [{}] in shard [{}]", id, shardId)
+      log.debug("Starting entity [{}] in shard [{}]", id, shardId)
 
-      val a = context.watch(context.actorOf(entryProps, name))
+      val a = context.watch(context.actorOf(entityProps, name))
       idByRef = idByRef.updated(a, id)
       refById = refById.updated(id, a)
-      state = state.copy(state.entries + id)
+      state = state.copy(state.entities + id)
       a
     }
   }
@@ -1492,12 +1492,12 @@ object ShardCoordinator {
     /**
      * When all `ShardRegion` actors have acknoledged the `BeginHandOff` the
      * `ShardCoordinator` sends this message to the `ShardRegion` responsible for the
-     * shard. The `ShardRegion` is supposed to stop all entries in that shard and when
-     * all entries have terminated reply with `ShardStopped` to the `ShardCoordinator`.
+     * shard. The `ShardRegion` is supposed to stop all entities in that shard and when
+     * all entities have terminated reply with `ShardStopped` to the `ShardCoordinator`.
      */
     @SerialVersionUID(1L) final case class HandOff(shard: ShardId) extends CoordinatorMessage
     /**
-     * Reply to `HandOff` when all entries in the shard have been terminated.
+     * Reply to `HandOff` when all entities in the shard have been terminated.
      */
     @SerialVersionUID(1L) final case class ShardStopped(shard: ShardId) extends CoordinatorCommand
 
