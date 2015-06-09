@@ -118,7 +118,11 @@ object Sink {
    * A graph with the shape of a sink logically is a sink, this method makes
    * it so also in type.
    */
-  def wrap[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] = new Sink(scaladsl.Sink.wrap(g))
+  def wrap[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
+    g match {
+      case s: Sink[T, M] ⇒ s
+      case other         ⇒ new Sink(scaladsl.Sink.wrap(other))
+    }
 }
 
 /**
