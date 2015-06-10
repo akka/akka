@@ -251,6 +251,10 @@ Parameters to the ``Props`` factory methods have been moved to settings object `
 and ``ClusterSingletonProxySettings``. These can be created from system configuration properties and also
 amended with API as needed.
 
+The buffer size of the ``ClusterSingletonProxy`` can be defined in the ``ClusterSingletonProxySettings``
+instead of defining ``stash-capacity`` of the mailbox. Buffering can be disabled by using a 
+buffer size of 0.
+
 DistributedPubSub construction
 ==============================
 
