@@ -44,10 +44,14 @@ the oldest node in the cluster and resolve the singleton's ``ActorRef`` by expli
 singleton's ``actorSelection`` the ``akka.actor.Identify`` message and waiting for it to reply.
 This is performed periodically if the singleton doesn't reply within a certain (configurable) time.
 Given the implementation, there might be periods of time during which the ``ActorRef`` is unavailable,
-e.g., when a node leaves the cluster. In these cases, the proxy will stash away all messages until it
-is able to identify the singleton. It's worth noting that messages can always be lost because of the
-distributed nature of these actors. As always, additional logic should be implemented in the singleton
-(acknowledgement) and in the client (retry) actors to ensure at-least-once message delivery.
+e.g., when a node leaves the cluster. In these cases, the proxy will buffer the messages sent to the 
+singleton and then deliver them when the singleton is finally available. If the buffer is full
+the ``ClusterSingletonProxy`` will drop old messages when new messages are sent via the proxy.
+The size of the buffer is configurable and it can be disabled by using a buffer size of 0.
+
+It's worth noting that messages can always be lost because of the distributed nature of these actors.
+As always, additional logic should be implemented in the singleton (acknowledgement) and in the
+client (retry) actors to ensure at-least-once message delivery.
 
 Potential problems to be aware of
 ---------------------------------
