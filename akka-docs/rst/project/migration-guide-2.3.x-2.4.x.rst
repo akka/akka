@@ -272,6 +272,10 @@ The parameters of the ``Props`` factory methods in the ``ClusterClient`` compani
 has been moved to settings object ``ClusterClientSettings``. This can be created from
 system configuration properties and also amended with API as needed.
 
+The buffer size of the ``ClusterClient`` can be defined in the ``ClusterClientSettings``
+instead of defining ``stash-capacity`` of the mailbox. Buffering can be disabled by using a 
+buffer size of 0.
+
 Normally, the ``ClusterReceptionist`` actor is started by the ``ClusterReceptionistExtension``.
 This extension has been renamed to ``ClusterClientReceptionist``. It is also possible to start
 it as an ordinary actor if you need multiple instances of it with different settings.
