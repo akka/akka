@@ -6,15 +6,15 @@ package akka.http.scaladsl.model
 
 import language.implicitConversions
 import java.io.File
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable ⇒ JIterable, Long ⇒ JLong }
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
 import akka.util.ByteString
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
-import akka.stream
 import akka.stream.io.SynchronousFileSource
+import akka.{ japi, stream }
 import akka.stream.TimerTransformer
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
@@ -33,6 +33,16 @@ sealed trait HttpEntity extends jm.HttpEntity {
    * The `ContentType` associated with this entity.
    */
   def contentType: ContentType
+
+  /**
+   * Some(content length) if a length is defined for this entity, None otherwise.
+   * A length is only defined for Strict and Default entity types.
+   *
+   * In many cases it's dangerous to rely on the (non-)existence of a content-length.
+   * HTTP intermediaries like (transparent) proxies are allowed to change the transfer-encoding
+   * which can result in the entity being delivered as another type as expected.
+   */
+  def contentLengthOption: Option[Long]
 
   /**
    * A stream of the data of this entity.
@@ -84,6 +94,10 @@ sealed trait HttpEntity extends jm.HttpEntity {
   /** Java API */
   def getDataBytes: stream.javadsl.Source[ByteString, _] = stream.javadsl.Source.adapt(dataBytes)
 
+  /** Java API */
+  def getContentLengthOption: japi.Option[JLong] =
+    japi.Option.fromScalaOption(contentLengthOption.asInstanceOf[Option[JLong]]) // Scala autoboxing
+
   // default implementations, should be overridden
   def isCloseDelimited: Boolean = false
   def isIndefiniteLength: Boolean = false
@@ -111,6 +125,7 @@ sealed trait ResponseEntity extends HttpEntity with jm.ResponseEntity {
 sealed trait UniversalEntity extends jm.UniversalEntity with MessageEntity with BodyPartEntity {
   def withContentType(contentType: ContentType): UniversalEntity
   def contentLength: Long
+  def contentLengthOption: Option[Long] = Some(contentLength)
 
   /**
    * Transforms this' entities data bytes with a transformer that will produce exactly the number of bytes given as
@@ -181,7 +196,6 @@ object HttpEntity {
                            contentLength: Long,
                            data: Source[ByteString, Any])
     extends jm.HttpEntityDefault with UniversalEntity {
-
     require(contentLength > 0, "contentLength must be positive (use `HttpEntity.empty(contentType)` for empty entities)")
     def isKnownEmpty = false
     override def isDefault: Boolean = true
@@ -208,6 +222,7 @@ object HttpEntity {
   private[http] sealed trait WithoutKnownLength extends HttpEntity {
     def contentType: ContentType
     def data: Source[ByteString, Any]
+    def contentLengthOption: Option[Long] = None
 
     def isKnownEmpty = data eq Source.empty
 
@@ -257,6 +272,8 @@ object HttpEntity {
     extends jm.HttpEntityChunked with MessageEntity {
 
     def isKnownEmpty = chunks eq Source.empty
+    def contentLengthOption: Option[Long] = None
+
     override def isChunked: Boolean = true
 
     def dataBytes: Source[ByteString, Any] = chunks.map(_.data).filter(_.nonEmpty)
