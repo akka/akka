@@ -60,7 +60,7 @@ object HttpHeader {
       parser.`header-field-value`.run() match {
         case Success(preProcessedValue) ⇒
           try {
-            HeaderParser.dispatch(new HeaderParser(preProcessedValue), name.toLowerCase) match {
+            HeaderParser.parseFull(name.toLowerCase, preProcessedValue) match {
               case Right(header) ⇒ ParsingResult.Ok(header, Nil)
               case Left(info) ⇒
                 val errors = info.withSummaryPrepended(s"Illegal HTTP header '$name'") :: Nil

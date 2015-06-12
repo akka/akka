@@ -18,10 +18,8 @@ trait WebsocketDirectives {
    * [[ExpectedWebsocketRequestRejection]].
    */
   def handleWebsocketMessages(handler: Flow[Message, Message, Any]): Route =
-    extractFlowMaterializer { implicit mat ⇒
-      optionalHeaderValueByType[UpgradeToWebsocket]() {
-        case Some(upgrade) ⇒ complete(upgrade.handleMessages(handler))
-        case None          ⇒ reject(ExpectedWebsocketRequestRejection)
-      }
+    optionalHeaderValueByType[UpgradeToWebsocket]() {
+      case Some(upgrade) ⇒ complete(upgrade.handleMessages(handler))
+      case None          ⇒ reject(ExpectedWebsocketRequestRejection)
     }
 }
