@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.server
 
+import java.net.InetSocketAddress
+
 import akka.stream.io.{ SendBytes, SslTlsOutbound, SessionBytes }
 
 import scala.concurrent.duration.FiniteDuration
@@ -30,12 +32,13 @@ abstract class HttpServerTestSetupBase {
   val responses = TestPublisher.manualProbe[HttpResponse]
 
   def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
+  def remoteAddress: Option[InetSocketAddress] = None
 
   val (netIn, netOut) = {
     val netIn = TestPublisher.manualProbe[ByteString]
     val netOut = TestSubscriber.manualProbe[ByteString]
 
-    FlowGraph.closed(HttpServerBluePrint(settings, NoLogging)) { implicit b ⇒
+    FlowGraph.closed(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒
       server ⇒
         import FlowGraph.Implicits._
         Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2

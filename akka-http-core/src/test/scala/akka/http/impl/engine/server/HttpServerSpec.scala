@@ -4,7 +4,8 @@
 
 package akka.http.impl.engine.server
 
-import akka.actor.ActorSystem
+import java.net.{ InetAddress, InetSocketAddress }
+
 import akka.http.ServerSettings
 
 import scala.util.Random
@@ -13,7 +14,7 @@ import scala.concurrent.duration._
 import org.scalatest.Inside
 import akka.util.ByteString
 import akka.stream.scaladsl._
-import akka.stream.{ FlowMaterializer, ActorFlowMaterializer }
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
@@ -658,6 +659,24 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |""".stripMarginWithNewline("\r\n"))
 
       expectRequest shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
+    }
+
+    "support remote-address-header" in new TestSetup {
+      lazy val theAddress = InetAddress.getByName("127.5.2.1")
+
+      override def remoteAddress: Option[InetSocketAddress] =
+        Some(new InetSocketAddress(theAddress, 8080))
+
+      override def settings: ServerSettings =
+        super.settings.copy(remoteAddressHeader = true)
+
+      send("""GET / HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      val request = expectRequest
+      request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
     }
   }
   class TestSetup extends HttpServerTestSetupBase {

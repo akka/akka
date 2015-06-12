@@ -25,20 +25,6 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
 
   def newRenderer: HttpRequestRenderer = new HttpRequestRenderer
 
-  /**
-   * Retrieve the original host string that was given (IP or DNS name) if running Java 7 or later
-   * using the getHostString() method. This avoids a reverse DNS query from calling getHostName()
-   * if the original host string is an IP address.
-   */
-  private[http] val hostString: InetSocketAddress ⇒ String =
-    try {
-      val m = classOf[InetSocketAddress].getDeclaredMethod("getHostString")
-      require(m.getReturnType == classOf[String])
-      address ⇒ m.invoke(address).asInstanceOf[String]
-    } catch {
-      case NonFatal(_) ⇒ _.getHostName
-    }
-
   final class HttpRequestRenderer extends PushStage[RequestRenderingContext, Source[ByteString, Any]] {
 
     override def onPush(ctx: RequestRenderingContext, opCtx: Context[Source[ByteString, Any]]): SyncDirective = {
@@ -107,7 +93,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
           }
 
           case Nil ⇒
-            if (!hostHeaderSeen) r ~~ Host(hostString(ctx.serverAddress), ctx.serverAddress.getPort) ~~ CrLf
+            if (!hostHeaderSeen) r ~~ Host(ctx.serverAddress) ~~ CrLf
             if (!userAgentSeen && userAgentHeader.isDefined) r ~~ userAgentHeader.get ~~ CrLf
             if (entity.isChunked && !entity.isKnownEmpty && !transferEncodingSeen)
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
