@@ -451,7 +451,7 @@ private[http] object HttpHeaderParser {
       // TODO: optimize by running the header value parser directly on the input ByteString (rather than an extracted String)
       val (headerValue, endIx) = scanHeaderValue(input, valueStart, valueStart + maxHeaderValueLength)()
       val trimmedHeaderValue = headerValue.trim
-      val header = HeaderParser.dispatch(new HeaderParser(trimmedHeaderValue), headerName) match {
+      val header = HeaderParser.parseFull(headerName, trimmedHeaderValue) match {
         case Right(h) ⇒ h
         case Left(error) ⇒
           onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header"))

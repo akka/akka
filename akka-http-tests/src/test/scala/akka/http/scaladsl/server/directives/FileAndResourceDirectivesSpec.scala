@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
-import java.io.{ File, FileOutputStream }
+import java.io.File
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Properties
@@ -15,6 +15,7 @@ import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
+import akka.http.scaladsl.TestUtils.writeAllText
 
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
@@ -355,13 +356,6 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   }
 
   def prep(s: String) = s.stripMarginWithNewline("\n")
-
-  def writeAllText(text: String, file: File): Unit = {
-    val fos = new FileOutputStream(file)
-    try {
-      fos.write(text.getBytes("UTF-8"))
-    } finally fos.close()
-  }
 
   def evaluateTo[T](t: T, atMost: Duration = 100.millis)(implicit ec: ExecutionContext): Matcher[Future[T]] =
     be(t).compose[Future[T]] { fut ⇒
