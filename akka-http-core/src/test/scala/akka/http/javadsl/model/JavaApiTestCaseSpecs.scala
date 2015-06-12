@@ -5,11 +5,11 @@
 package akka.http.javadsl.model
 
 import akka.http.javadsl.model.headers.Cookie
+import akka.http.scaladsl.model
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import org.scalatest.{ FreeSpec, MustMatchers }
 
 import scala.collection.immutable
-import org.scalatest.{ MustMatchers, FreeSpec }
-import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import akka.http.scaladsl.model
 
 class JavaApiTestCaseSpecs extends FreeSpec with MustMatchers {
   "JavaApiTestCases should work as intended" - {
@@ -50,11 +50,11 @@ class JavaApiTestCaseSpecs extends FreeSpec with MustMatchers {
     }
     "createUriForOrder" in {
       JavaApiTestCases.createUriForOrder("123", "149", "42") must be(
-        Accessors.Uri(model.Uri("/order?orderId=123&price=149&amount=42")))
+        Uri.create("/order?orderId=123&price=149&amount=42"))
     }
     "addSessionId" in {
-      val origin = Accessors.Uri("/order?orderId=123")
-      JavaApiTestCases.addSessionId(origin) must be(Accessors.Uri("/order?orderId=123&session=abcdefghijkl"))
+      val origin = Uri.create("/order?orderId=123")
+      JavaApiTestCases.addSessionId(origin) must be(Uri.create("/order?orderId=123&session=abcdefghijkl"))
     }
   }
 }

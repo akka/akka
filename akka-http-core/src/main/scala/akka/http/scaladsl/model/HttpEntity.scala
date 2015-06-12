@@ -14,6 +14,7 @@ import akka.util.ByteString
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.stream
+import akka.stream.io.SynchronousFileSource
 import akka.stream.TimerTransformer
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
@@ -131,9 +132,9 @@ object HttpEntity {
   def apply(contentType: ContentType, contentLength: Long, data: Source[ByteString, Any]): UniversalEntity =
     if (contentLength == 0) empty(contentType) else Default(contentType, contentLength, data)
 
-  def apply(contentType: ContentType, file: File): UniversalEntity = {
+  def apply(contentType: ContentType, file: File, chunkSize: Int = SynchronousFileSource.DefaultChunkSize): UniversalEntity = {
     val fileLength = file.length
-    if (fileLength > 0) Default(contentType, fileLength, ???) // FIXME: attach from-file-Publisher
+    if (fileLength > 0) Default(contentType, fileLength, SynchronousFileSource(file, chunkSize))
     else empty(contentType)
   }
 
