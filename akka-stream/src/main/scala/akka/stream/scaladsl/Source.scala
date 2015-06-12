@@ -243,13 +243,16 @@ object Source extends SourceApply {
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
   def single[T](element: T): Source[T, Unit] =
-    apply(SingleElementPublisher(element, "SingleSource")).withAttributes(DefaultAttributes.singleSource) // FIXME optimize
+    apply(SingleElementPublisher(element, "SingleSource")).withAttributes(DefaultAttributes.singleSource)
 
   /**
    * Create a `Source` that will continually emit the given element.
    */
   def repeat[T](element: T): Source[T, Unit] =
-    apply(() ⇒ Iterator.continually(element)).withAttributes(DefaultAttributes.repeat) // FIXME optimize
+    apply(new immutable.Iterable[T] {
+      override val iterator: Iterator[T] = Iterator.continually(element)
+      override def toString: String = "Iterable.continually(" + element + ")"
+    }).withAttributes(DefaultAttributes.repeat)
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
