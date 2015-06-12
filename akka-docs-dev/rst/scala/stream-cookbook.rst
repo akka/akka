@@ -96,22 +96,8 @@ Parsing lines from a stream of ByteStrings
 characters (or, alternatively, containing binary frames delimited by a special delimiter byte sequence) which
 needs to be parsed.
 
-We express our solution as a :class:`StatefulStage` because it has support for emitting multiple elements easily
-through its ``emit(iterator, ctx)`` helper method. Since an incoming ByteString chunk might contain multiple lines (frames)
-this feature comes in handy.
-
-To create the parser we only need to hook into the ``onPush`` handler. We maintain a buffer of bytes (expressed as
-a :class:`ByteString`) by simply concatenating incoming chunks with it. Since we don't want to allow unbounded size
-lines (records) we always check if the buffer size is larger than the allowed ``maximumLineBytes`` value, and terminate
-the stream if this invariant is violated.
-
-After we updated the buffer, we try to find the terminator sequence as a subsequence of the current buffer. To be
-efficient, we also maintain a pointer ``nextPossibleMatch`` into the buffer so that we only search that part of the
-buffer where new matches are possible.
-
-The search for a match is done in two steps: first we try to search for the first character of the terminator sequence
-in the buffer. If we find a match, we do a full subsequence check to see if we had a false positive or not. The parsing
-logic is recursive to be able to parse multiple lines (records) contained in the decoding buffer.
+The :class:`Framing` helper object contains a convenience method to parse messages from a stream of ``ByteStrings``
+and in particular it has basic support for parsing text lines:
 
 .. includecode:: code/docs/stream/cookbook/RecipeParseLines.scala#parse-lines
 
