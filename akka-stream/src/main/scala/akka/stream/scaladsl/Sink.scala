@@ -6,10 +6,9 @@ package akka.stream.scaladsl
 import akka.stream.javadsl
 import akka.actor.{ ActorRef, Props }
 import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.Stages.{ MapAsyncUnordered, DefaultAttributes }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.Context
 import akka.stream.stage.PushStage
 import akka.stream.stage.SyncDirective
@@ -18,7 +17,7 @@ import akka.stream.OperationAttributes._
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage }
 import org.reactivestreams.{ Publisher, Subscriber }
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -141,6 +140,24 @@ object Sink extends SinkApply {
   }
 
   /**
+   * A `Sink` that will invoke the given function to each of the elements
+   * as they pass in. The sink is materialized into a [[scala.concurrent.Future]]
+   *
+   * If `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Stop]] the `Future` will be completed with failure.
+   *
+   * If `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]] the
+   * element is dropped and the stream continues.
+   *
+   * @see [[#mapAsyncUnordered]]
+   */
+  def foreachParallel[T](parallelism: Int)(f: T ⇒ Unit)(implicit ec: ExecutionContext): Sink[T, Future[Unit]] =
+    Flow[T].andThen(
+      MapAsyncUnordered(parallelism,
+        { out: T ⇒ Future(f(out)) }.asInstanceOf[Any ⇒ Future[Unit]])).toMat(Sink.ignore)(Keep.right)
+
+  /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
    * output (or the given `zero` value) and the element as input.
    * The returned [[scala.concurrent.Future]] will be completed with value of the final
@@ -193,10 +210,12 @@ object Sink extends SinkApply {
     def newOnCompleteStage(): PushStage[T, Unit] = {
       new PushStage[T, Unit] {
         override def onPush(elem: T, ctx: Context[Unit]): SyncDirective = ctx.pull()
+
         override def onUpstreamFailure(cause: Throwable, ctx: Context[Unit]): TerminationDirective = {
           callback(Failure(cause))
           ctx.fail(cause)
         }
+
         override def onUpstreamFinish(ctx: Context[Unit]): TerminationDirective = {
           callback(Success[Unit](()))
           ctx.finish()
