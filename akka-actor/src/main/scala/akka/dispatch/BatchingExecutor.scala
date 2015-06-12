@@ -85,8 +85,8 @@ private[akka] trait BatchingExecutor extends Executor {
     override final def run(): Unit = {
       require(_tasksLocal.get eq null)
       _tasksLocal set this // Install ourselves as the current batch
-      val prevBlockContext = _blockContext.get
-      _blockContext.set(BlockContext.current)
+      val firstInvocation = _blockContext.get eq null
+      if (firstInvocation) _blockContext.set(BlockContext.current)
       BlockContext.withBlockContext(this) {
         try processBatch(this) catch {
           case t: Throwable ⇒
@@ -94,7 +94,7 @@ private[akka] trait BatchingExecutor extends Executor {
             throw t
         } finally {
           _tasksLocal.remove()
-          _blockContext.set(prevBlockContext)
+          if (firstInvocation) _blockContext.remove()
         }
       }
     }
