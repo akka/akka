@@ -170,11 +170,11 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
     val remainingInputBytes = input.length - bodyStart
     if (remainingInputBytes > 0) {
       if (remainingInputBytes < remainingBodyBytes) {
-        emit(EntityPart(input drop bodyStart))
+        emit(EntityPart(input.drop(bodyStart).compact))
         continue(parseFixedLengthBody(remainingBodyBytes - remainingInputBytes, isLastMessage))
       } else {
         val offset = bodyStart + remainingBodyBytes.toInt
-        emit(EntityPart(input.slice(bodyStart, offset)))
+        emit(EntityPart(input.slice(bodyStart, offset).compact))
         emit(MessageEnd)
         setCompletionHandling(CompletionOk)
         if (isLastMessage) terminate()
@@ -211,7 +211,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
       if (chunkSize > 0) {
         val chunkBodyEnd = cursor + chunkSize
         def result(terminatorLen: Int) = {
-          emit(EntityChunk(HttpEntity.Chunk(input.slice(cursor, chunkBodyEnd), extension)))
+          emit(EntityChunk(HttpEntity.Chunk(input.slice(cursor, chunkBodyEnd).compact, extension)))
           Trampoline(_ ⇒ parseChunk(input, chunkBodyEnd + terminatorLen, isLastMessage))
         }
         byteChar(input, chunkBodyEnd) match {
@@ -252,7 +252,9 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
   def continue(input: ByteString, offset: Int)(next: (ByteString, Int) ⇒ StateResult): StateResult = {
     state =
       math.signum(offset - input.length) match {
-        case -1 ⇒ more ⇒ next(input ++ more, offset)
+        case -1 ⇒
+          val remaining = input.drop(offset)
+          (more ⇒ next(remaining ++ more, 0))
         case 0 ⇒ next(_, 0)
         case 1 ⇒ throw new IllegalStateException
       }
