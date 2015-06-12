@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.model.headers
 
+import akka.http.javadsl.model.headers
 import akka.parboiled2.CharPredicate
 import akka.japi.{ Option ⇒ JOption }
 import akka.http.scaladsl.model.DateTime
@@ -77,6 +78,20 @@ final case class HttpCookie(
   def getMaxAge: JOption[java.lang.Long] = maxAge.asJava
   /** Java API */
   def getExpires: JOption[jm.DateTime] = expires.asJava
+  /** Java API */
+  def withExpires(dateTime: jm.DateTime): headers.HttpCookie = copy(expires = Some(dateTime.asScala))
+  /** Java API */
+  def withDomain(domain: String): headers.HttpCookie = copy(domain = Some(domain))
+  /** Java API */
+  def withPath(path: String): headers.HttpCookie = copy(path = Some(path))
+  /** Java API */
+  def withMaxAge(maxAge: Long): headers.HttpCookie = copy(maxAge = Some(maxAge))
+  /** Java API */
+  def withSecure(secure: Boolean): headers.HttpCookie = copy(secure = secure)
+  /** Java API */
+  def withHttpOnly(httpOnly: Boolean): headers.HttpCookie = copy(httpOnly = httpOnly)
+  /** Java API */
+  def withExtension(extension: String): headers.HttpCookie = copy(extension = Some(extension))
 }
 
 object HttpCookie {
