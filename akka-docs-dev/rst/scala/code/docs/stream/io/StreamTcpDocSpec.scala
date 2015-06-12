@@ -41,11 +41,13 @@ class StreamTcpDocSpec extends AkkaSpec {
         Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
 
       //#echo-server-simple-handle
+      import akka.stream.io.Framing
+
       connections runForeach { connection =>
         println(s"New connection from: ${connection.remoteAddress}")
 
         val echo = Flow[ByteString]
-          .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
+          .via(Framing.lines("\n", maximumLineBytes = 256, allowTruncation = false))
           .map(_ + "!!!\n")
           .map(ByteString(_))
 
@@ -60,7 +62,9 @@ class StreamTcpDocSpec extends AkkaSpec {
     val connections = Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
     val serverProbe = TestProbe()
 
+    import akka.stream.io.Framing
     //#welcome-banner-chat-server
+
     connections runForeach { connection =>
 
       val serverLogic = Flow() { implicit b =>
@@ -81,7 +85,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
         val welcome = Source.single(ByteString(welcomeMsg))
         val echo = b.add(Flow[ByteString]
-          .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
+          .via(Framing.lines("\n", maximumLineBytes = 256, allowTruncation = false))
           //#welcome-banner-chat-server
           .map { command ⇒ serverProbe.ref ! command; command }
           //#welcome-banner-chat-server
@@ -101,6 +105,7 @@ class StreamTcpDocSpec extends AkkaSpec {
       connection.handleWith(serverLogic)
     }
 
+    import akka.stream.io.Framing
     //#welcome-banner-chat-server
 
     val input = new AtomicReference("Hello world" :: "What a lovely day" :: Nil)
@@ -131,7 +136,7 @@ class StreamTcpDocSpec extends AkkaSpec {
       }
 
       val repl = Flow[ByteString]
-        .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
+        .via(Framing.lines("\n", maximumLineBytes = 256, allowTruncation = false))
         .map(text => println("Server: " + text))
         .map(_ => readLine("> "))
         .transform(() ⇒ replParser)

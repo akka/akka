@@ -137,6 +137,34 @@ object BidiFlow extends BidiFlowApply {
     }
 
   /**
+   * Wraps two Flows to create a ''BidiFlow''. The materialized value of the resulting BidiFlow is determined
+   * by the combiner function passed in the second argument list.
+   *
+   * {{{
+   *     +----------------------------+
+   *     | Resulting BidiFlow         |
+   *     |                            |
+   *     |  +----------------------+  |
+   * I1 ~~> |        Flow1         | ~~> O1
+   *     |  +----------------------+  |
+   *     |                            |
+   *     |  +----------------------+  |
+   * O2 <~~ |        Flow2         | <~~ I2
+   *     |  +----------------------+  |
+   *     +----------------------------+
+   * }}}
+   *
+   */
+  def wrap[I1, O1, I2, O2, M1, M2, M](
+    flow1: Graph[FlowShape[I1, O1], M1],
+    flow2: Graph[FlowShape[I2, O2], M2])(combine: (M1, M2) ⇒ M): BidiFlow[I1, O1, I2, O2, M] = {
+    BidiFlow(flow1, flow2)(combine) { implicit b ⇒
+      (f1, f2) ⇒
+        BidiShape(f1.inlet, f1.outlet, f2.inlet, f2.outlet)
+    }
+  }
+
+  /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
    * stage each, expressed by the two functions.
    */

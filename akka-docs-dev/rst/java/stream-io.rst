@@ -23,8 +23,9 @@ which will emit an :class:`IncomingConnection` element for each new connection t
 
 Next, we simply handle *each* incoming connection using a :class:`Flow` which will be used as the processing stage
 to handle and emit ByteStrings from and to the TCP Socket. Since one :class:`ByteString` does not have to necessarily
-correspond to exactly one line of text (the client might be sending the line in chunks) we use the ``parseLines``
-recipe from the :ref:`cookbook-parse-lines-java` Akka Streams Cookbook recipe to chunk the inputs up into actual lines of text.
+correspond to exactly one line of text (the client might be sending the line in chunks) we use the ``lines``
+helper Flow from ``akka.stream.io.Framing`` to chunk the inputs up into actual lines of text. The last boolean
+argument indicates that we require an explicit line ending even for the last message before the connection is closed.
 In this example we simply add exclamation marks to each incoming text message and push it through the flow:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/io/StreamTcpDocTest.java#echo-server-simple-handle

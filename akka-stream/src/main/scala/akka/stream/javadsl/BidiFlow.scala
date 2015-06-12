@@ -4,10 +4,7 @@
 package akka.stream.javadsl
 
 import akka.japi.function
-import akka.stream.scaladsl
-import akka.stream.Graph
-import akka.stream.BidiShape
-import akka.stream.OperationAttributes
+import akka.stream._
 
 object BidiFlow {
 
@@ -22,6 +19,32 @@ object BidiFlow {
       case bidi: BidiFlow[I1, O1, I2, O2, M] ⇒ bidi
       case other                             ⇒ new BidiFlow(scaladsl.BidiFlow.wrap(other))
     }
+
+  /**
+   * Wraps two Flows to create a ''BidiFlow''. The materialized value of the resulting BidiFlow is determined
+   * by the combiner function passed in the second argument list.
+   *
+   * {{{
+   *     +----------------------------+
+   *     | Resulting BidiFlow         |
+   *     |                            |
+   *     |  +----------------------+  |
+   * I1 ~~> |        Flow1         | ~~> O1
+   *     |  +----------------------+  |
+   *     |                            |
+   *     |  +----------------------+  |
+   * O2 <~~ |        Flow2         | <~~ I2
+   *     |  +----------------------+  |
+   *     +----------------------------+
+   * }}}
+   *
+   */
+  def wrap[I1, O1, I2, O2, M1, M2, M](
+    flow1: Graph[FlowShape[I1, O1], M1],
+    flow2: Graph[FlowShape[I2, O2], M2],
+    combine: function.Function2[M1, M2, M]): BidiFlow[I1, O1, I2, O2, M] = {
+    new BidiFlow(scaladsl.BidiFlow.wrap(flow1, flow2)(combinerToScala(combine)))
+  }
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
