@@ -51,6 +51,20 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)) must collectBytesTo(abc, fgh, ijk)
       }
     }
+    "support contentLength" - {
+      "Strict" in {
+        Strict(tpe, abc).contentLengthOption mustEqual Some(3)
+      }
+      "Default" in {
+        Default(tpe, 11, source(abc, de, fgh, ijk)).contentLengthOption mustEqual Some(11)
+      }
+      "CloseDelimited" in {
+        CloseDelimited(tpe, source(abc, de, fgh, ijk)).contentLengthOption mustEqual None
+      }
+      "Chunked" in {
+        Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk))).contentLengthOption mustEqual None
+      }
+    }
     "support toStrict" - {
       "Strict" in {
         Strict(tpe, abc) must strictifyTo(Strict(tpe, abc))
