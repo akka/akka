@@ -83,6 +83,55 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseDropWhile() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<Integer, ?> source = Source.from(Arrays.asList(0, 1, 2, 3));
+    final Flow<Integer, Integer, ?> flow = Flow.of(Integer.class).dropWhile
+            (new Predicate<Integer>() {
+              public boolean test(Integer elem) {
+                return elem < 2;
+              }
+            });
+
+    final Future<BoxedUnit> future = source.via(flow).runWith(Sink.foreach(new Procedure<Integer>() { // Scala Future
+      public void apply(Integer elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgEquals(2);
+    probe.expectMsgEquals(3);
+    Await.ready(future, Duration.apply(200, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  public void mustBeAbleToUseTakeWhile() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<Integer, ?> source = Source.from(Arrays.asList(0, 1, 2, 3));
+    final Flow<Integer, Integer, ?> flow = Flow.of(Integer.class).takeWhile
+            (new Predicate<Integer>() {
+              public boolean test(Integer elem) {
+                return elem < 2;
+              }
+            });
+
+    final Future<BoxedUnit> future = source.via(flow).runWith(Sink.foreach(new Procedure<Integer>() { // Scala Future
+      public void apply(Integer elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgEquals(0);
+    probe.expectMsgEquals(1);
+
+    FiniteDuration duration = Duration.apply(200, TimeUnit.MILLISECONDS);
+
+    probe.expectNoMsg(duration);
+    Await.ready(future, duration);
+  }
+
+
+  @Test
   public void mustBeAbleToUseTransform() {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
