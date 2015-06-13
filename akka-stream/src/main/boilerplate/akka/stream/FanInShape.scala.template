@@ -7,18 +7,24 @@ import scala.collection.immutable
 import scala.annotation.varargs
 
 object FanInShape {
-  sealed trait Init[+O]
-  case class Name(name: String) extends Init[Nothing]
-  case class Ports[O](out: Outlet[O], ins: immutable.Seq[Inlet[_]]) extends Init[O]
+  sealed trait Init[+O] {
+    def outlet: Outlet[O]
+    def inlets: immutable.Seq[Inlet[_]]
+    def name: String
+  }
+  final case class Name(override val name: String) extends Init[Nothing] {
+    override def outlet: Outlet[Nothing] = Outlet(s"$name.out")
+    override def inlets: immutable.Seq[Inlet[_]] = Nil
+  }
+  final case class Ports[O](override val outlet: Outlet[O], override val inlets: immutable.Seq[Inlet[_]]) extends Init[O] {
+    override def name: String = "FanIn"
+  }
 }
 
-abstract class FanInShape[O](init: FanInShape.Init[O]) extends Shape {
+abstract class FanInShape[O] private (_out: Outlet[O], _registered: Iterator[Inlet[_]], _name: String) extends Shape {
   import FanInShape._
 
-  final private[this] val (_out, _registered, _name) = init match {
-    case Name(name)   => (new Outlet[O](s"$name.out"), Nil.iterator, name)
-    case Ports(o, it) => (o, it.iterator, "FanIn")
-  }
+  def this(init: FanInShape.Init[O]) = this(init.outlet, init.inlets.iterator, init.name)
 
   final def out: Outlet[O] = _out
   final override def outlets: immutable.Seq[Outlet[_]] = _out :: Nil
@@ -26,14 +32,14 @@ abstract class FanInShape[O](init: FanInShape.Init[O]) extends Shape {
 
   private var _inlets: Vector[Inlet[_]] = Vector.empty
   protected def newInlet[T](name: String): Inlet[T] = {
-    val p = if (_registered.hasNext) _registered.next().asInstanceOf[Inlet[T]] else new Inlet[T](s"${_name}.$name")
+    val p = if (_registered.hasNext) _registered.next().asInstanceOf[Inlet[T]] else Inlet[T](s"${_name}.$name")
     _inlets :+= p
     p
   }
 
   protected def construct(init: Init[O]): FanInShape[O]
 
-  def deepCopy(): FanInShape[O] = construct(Ports[O](new Outlet(_out.toString), inlets.map(i => new Inlet(i.toString))))
+  def deepCopy(): FanInShape[O] = construct(Ports[O](_out.carbonCopy(), inlets.map(_.carbonCopy())))
   final def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): FanInShape[O] = {
     require(outlets.size == 1, s"proposed outlets [${outlets.mkString(", ")}] do not fit FanInShape")
     require(inlets.size == _inlets.size, s"proposed inlets [${inlets.mkString(", ")}] do not fit FanInShape")

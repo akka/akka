@@ -245,7 +245,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   /** INTERNAL API */
   override private[stream] def andThen[U](op: StageModule): Repr[U, Mat] = {
     //No need to copy here, op is a fresh instance
-    if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat]]
+    if (op.isInstanceOf[Stages.Identity]) this.asInstanceOf[Repr[U, Mat]]
+    else if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat]]
     else new Flow(module.growConnect(op, shape.outlet, op.inPort).replaceShape(FlowShape(shape.inlet, op.outPort)))
   }
 
@@ -288,7 +289,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
 object Flow extends FlowApply {
 
-  private def shape[I, O](name: String): FlowShape[I, O] = FlowShape(new Inlet(name + ".in"), new Outlet(name + ".out"))
+  private def shape[I, O](name: String): FlowShape[I, O] = FlowShape(Inlet(name + ".in"), Outlet(name + ".out"))
 
   /**
    * Helper to create `Flow` without a [[Source]] or a [[Sink]].
@@ -311,6 +312,7 @@ object Flow extends FlowApply {
    */
   def wrap[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
     Flow(sink, source)(f) { implicit b ⇒ (in, out) ⇒ (in.inlet, out.outlet) }
+
 }
 
 /**
@@ -922,7 +924,7 @@ trait FlowOps[+Out, +Mat] {
    *
    */
   def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U, Mat] = strategy match {
-    case _: FlattenStrategy.Concat[Out] | _: javadsl.FlattenStrategy.Concat[Out, _] ⇒ andThen(ConcatAll())
+    case scaladsl.FlattenStrategy.Concat | javadsl.FlattenStrategy.Concat ⇒ andThen(ConcatAll())
     case _ ⇒
       throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
   }

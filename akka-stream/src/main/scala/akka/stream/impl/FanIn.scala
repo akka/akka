@@ -37,6 +37,13 @@ private[akka] object FanIn {
     }
   }
 
+  type State = Byte
+  final val Marked = 1
+  final val Pending = 2
+  final val Depleted = 4
+  final val Completed = 8
+  final val Cancelled = 16
+
   abstract class InputBunch(inputCount: Int, bufferSize: Int, pump: Pump) {
     private var allCancelled = false
 
@@ -46,22 +53,39 @@ private[akka] object FanIn {
       }
     }
 
-    private val marked = Array.ofDim[Boolean](inputCount)
+    private[this] final val states = Array.ofDim[State](inputCount)
     private var markCount = 0
-    private val pending = Array.ofDim[Boolean](inputCount)
     private var markedPending = 0
-    private val depleted = Array.ofDim[Boolean](inputCount)
-    private val completed = Array.ofDim[Boolean](inputCount)
     private var markedDepleted = 0
-    private val cancelled = Array.ofDim[Boolean](inputCount)
+
+    private[this] final def hasState(index: Int, flag: Int): Boolean =
+      (states(index) & flag) != 0
+    private[this] final def setState(index: Int, flag: Int, on: Boolean): Unit =
+      states(index) = if (on) (states(index) | flag).toByte else (states(index) & ~flag).toByte
+
+    private[this] final def cancelled(index: Int): Boolean = hasState(index, Cancelled)
+    private[this] final def cancelled(index: Int, on: Boolean): Unit = setState(index, Cancelled, on)
+
+    private[this] final def completed(index: Int): Boolean = hasState(index, Completed)
+    private[this] final def completed(index: Int, on: Boolean): Unit = setState(index, Completed, on)
+
+    private[this] final def depleted(index: Int): Boolean = hasState(index, Depleted)
+    private[this] final def depleted(index: Int, on: Boolean): Unit = setState(index, Depleted, on)
+
+    private[this] final def pending(index: Int): Boolean = hasState(index, Pending)
+    private[this] final def pending(index: Int, on: Boolean): Unit = setState(index, Pending, on)
+
+    private[this] final def marked(index: Int): Boolean = hasState(index, Marked)
+    private[this] final def marked(index: Int, on: Boolean): Unit = setState(index, Marked, on)
 
     override def toString: String =
       s"""|InputBunch
-          |  marked:    ${marked.mkString(", ")}
-          |  pending:   ${pending.mkString(", ")}
-          |  depleted:  ${depleted.mkString(", ")}
-          |  completed: ${completed.mkString(", ")}
-          |  cancelled: ${cancelled.mkString(", ")}
+          |  marked:    ${states.iterator.map(marked(_)).mkString(", ")}
+          |  pending:   ${states.iterator.map(pending(_)).mkString(", ")}
+          |  depleted:  ${states.iterator.map(depleted(_)).mkString(", ")}
+          |  completed: ${states.iterator.map(completed(_)).mkString(", ")}
+          |  cancelled: ${states.iterator.map(cancelled(_)).mkString(", ")}
+          |
           |    mark=$markCount pend=$markedPending depl=$markedDepleted pref=$preferredId""".stripMargin
 
     private var preferredId = 0
@@ -81,7 +105,7 @@ private[akka] object FanIn {
     def cancel(input: Int) =
       if (!cancelled(input)) {
         inputs(input).cancel()
-        cancelled(input) = true
+        cancelled(input, true)
         unmarkInput(input)
       }
 
@@ -93,7 +117,7 @@ private[akka] object FanIn {
       if (!marked(input)) {
         if (depleted(input)) markedDepleted += 1
         if (pending(input)) markedPending += 1
-        marked(input) = true
+        marked(input, true)
         markCount += 1
       }
     }
@@ -102,7 +126,7 @@ private[akka] object FanIn {
       if (marked(input)) {
         if (depleted(input)) markedDepleted -= 1
         if (pending(input)) markedPending -= 1
-        marked(input) = false
+        marked(input, false)
         markCount -= 1
       }
     }
@@ -147,11 +171,11 @@ private[akka] object FanIn {
       val elem = input.dequeueInputElement()
       if (!input.inputsAvailable) {
         if (marked(id)) markedPending -= 1
-        pending(id) = false
+        pending(id, false)
       }
       if (input.inputsDepleted) {
         if (marked(id)) markedDepleted += 1
-        depleted(id) = true
+        depleted(id, true)
         onDepleted(id)
       }
       elem
@@ -198,15 +222,15 @@ private[akka] object FanIn {
         inputs(id).subreceive(ActorSubscriber.OnSubscribe(subscription))
       case OnNext(id, elem) ⇒
         if (marked(id) && !pending(id)) markedPending += 1
-        pending(id) = true
+        pending(id, true)
         inputs(id).subreceive(ActorSubscriberMessage.OnNext(elem))
       case OnComplete(id) ⇒
         if (!pending(id)) {
           if (marked(id) && !depleted(id)) markedDepleted += 1
-          depleted(id) = true
+          depleted(id, true)
           onDepleted(id)
         }
-        completed(id) = true
+        completed(id, true)
         inputs(id).subreceive(ActorSubscriberMessage.OnComplete)
       case OnError(id, e) ⇒
         onError(id, e)

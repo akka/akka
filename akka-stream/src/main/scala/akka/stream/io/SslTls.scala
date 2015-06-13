@@ -124,10 +124,10 @@ object SslTls {
   private[akka] object TlsModule {
     def apply(attributes: Attributes, sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, closing: Closing): TlsModule = {
       val name = attributes.nameOrDefault(s"StreamTls($role)")
-      val cipherIn = new Inlet[ByteString](s"$name.cipherIn")
-      val cipherOut = new Outlet[ByteString](s"$name.cipherOut")
-      val plainIn = new Inlet[SslTlsOutbound](s"$name.transportIn")
-      val plainOut = new Outlet[SslTlsInbound](s"$name.transportOut")
+      val cipherIn = Inlet[ByteString](s"$name.cipherIn")
+      val cipherOut = Outlet[ByteString](s"$name.cipherOut")
+      val plainIn = Inlet[SslTlsOutbound](s"$name.transportIn")
+      val plainOut = Outlet[SslTlsInbound](s"$name.transportOut")
       val shape = new BidiShape(plainIn, cipherOut, cipherIn, plainOut)
       TlsModule(plainIn, plainOut, cipherIn, cipherOut, shape, attributes, sslContext, firstSession, role, closing)
     }

@@ -693,7 +693,5 @@ object FlowGraph extends GraphApply {
     implicit class SourceShapeArrow[T](val s: SourceShape[T]) extends AnyVal with CombinerBase[T] {
       override def importAndGetPort(b: Builder[_]): Outlet[T] = s.outlet
     }
-
   }
-
 }
