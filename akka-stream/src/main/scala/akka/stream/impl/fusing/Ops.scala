@@ -6,6 +6,7 @@ package akka.stream.impl.fusing
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.stream.Attributes.LogLevels
+import akka.stream.Supervision.Resume
 import akka.stream.impl.{ FixedSizeBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
@@ -85,6 +86,34 @@ private[akka] final case class Collect[In, Out](pf: PartialFunction[In, Out], de
     }
 
   override def decide(t: Throwable): Supervision.Directive = decider(t)
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final case class Recover[T](pf: PartialFunction[Throwable, T]) extends PushPullStage[T, T] {
+  import Collect.NotApplied
+  var recovered: Option[T] = None
+
+  override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
+    ctx.push(elem)
+  }
+
+  override def onPull(ctx: Context[T]): SyncDirective =
+    recovered match {
+      case Some(value) ⇒ ctx.pushAndFinish(value)
+      case None        ⇒ ctx.pull()
+    }
+
+  override def onUpstreamFailure(t: Throwable, ctx: Context[T]): TerminationDirective = {
+    pf.applyOrElse(t, NotApplied) match {
+      case NotApplied ⇒ ctx.fail(t)
+      case result: T @unchecked ⇒
+        recovered = Some(result)
+        ctx.absorbTermination()
+    }
+  }
+
 }
 
 /**

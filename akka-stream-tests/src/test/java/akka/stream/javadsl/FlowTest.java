@@ -6,6 +6,7 @@ package akka.stream.javadsl;
 import akka.actor.ActorRef;
 import akka.dispatch.Foreach;
 import akka.dispatch.Futures;
+import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.stream.Outlet;
 import akka.stream.OverflowStrategy;
@@ -18,6 +19,7 @@ import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
 import org.reactivestreams.Publisher;
+import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -517,4 +519,35 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals("B");
     probe.expectMsgEquals("C");
   }
+
+  @Test
+  public void mustBeAbleToRecover() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<Integer, ?> source = Source.from(Arrays.asList(0, 1, 2, 3));
+    final Flow<Integer, Integer, ?> flow = Flow.of(Integer.class).map(
+            new Function<Integer, Integer>() {
+              public Integer apply(Integer elem) {
+                if (elem == 2) throw new RuntimeException("ex");
+                else return elem;
+              }
+            })
+            .recover(new JavaPartialFunction<Throwable, Integer>() {
+              public Integer apply(Throwable elem, boolean isCheck) {
+                if (isCheck) return null;
+                return 0;
+              }
+            });
+
+    final Future<BoxedUnit> future = source.via(flow).runWith(Sink.foreach(new Procedure<Integer>() {
+      public void apply(Integer elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgEquals(0);
+    probe.expectMsgEquals(1);
+    probe.expectMsgEquals(0);
+    Await.ready(future, Duration.apply(200, TimeUnit.MILLISECONDS));
+  }
+
 }
