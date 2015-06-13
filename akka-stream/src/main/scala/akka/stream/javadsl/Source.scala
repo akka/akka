@@ -327,6 +327,14 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     new Source(delegate.map(f.apply))
 
   /**
+   * Recover allows to send last element on failure and gracefully complete the stream
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   */
+  def recover[T >: Out](pf: PartialFunction[Throwable, T]): javadsl.Source[T, Mat] =
+    new Source(delegate.recover(pf))
+
+  /**
    * Transform each input element into a sequence of output elements that is
    * then flattened into the output stream.
    *

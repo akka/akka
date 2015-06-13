@@ -7,6 +7,7 @@ import akka.event.LoggingAdapter
 import akka.stream._
 import akka.japi.{ Util, Pair }
 import akka.japi.function
+import akka.stream.impl.Stages.Recover
 import akka.stream.scaladsl
 import akka.stream.scaladsl.{ Keep, Sink, Source }
 import org.reactivestreams.{ Subscription, Publisher, Subscriber, Processor }
@@ -467,6 +468,23 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * '''Cancels when''' downstream cancels
    */
   def dropWhile(p: function.Predicate[Out]): javadsl.Flow[In, Out, Mat] = new Flow(delegate.dropWhile(p.test))
+
+  /**
+   * Recover allows to send last element on failure and gracefully complete the stream
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def recover[T >: Out](pf: PartialFunction[Throwable, T]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.recover(pf))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
