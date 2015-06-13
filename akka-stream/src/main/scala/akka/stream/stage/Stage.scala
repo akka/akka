@@ -60,36 +60,40 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
    * INTERNAL API
    */
   private[stream] def enterAndPush(elem: Out): Unit = {
-    context.enter()
-    context.push(elem)
-    context.execute()
+    val c = context
+    c.enter()
+    c.push(elem)
+    c.execute()
   }
 
   /**
    * INTERNAL API
    */
   private[stream] def enterAndPull(): Unit = {
-    context.enter()
-    context.pull()
-    context.execute()
+    val c = context
+    c.enter()
+    c.pull()
+    c.execute()
   }
 
   /**
    * INTERNAL API
    */
   private[stream] def enterAndFinish(): Unit = {
-    context.enter()
-    context.finish()
-    context.execute()
+    val c = context
+    c.enter()
+    c.finish()
+    c.execute()
   }
 
   /**
    * INTERNAL API
    */
   private[stream] def enterAndFail(e: Throwable): Unit = {
-    context.enter()
-    context.fail(e)
-    context.execute()
+    val c = context
+    c.enter()
+    c.fail(e)
+    c.execute()
   }
 
   /**
@@ -186,7 +190,6 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
    * if there are any state that should be cleared before restarting, e.g. by returning a new instance.
    */
   def restart(): Stage[In, Out] = this
-
 }
 
 /**
@@ -341,8 +344,8 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
    */
   abstract class State extends StageState[In, Out]
 
-  private var emitting = false
-  private var _current: StageState[In, Out] = _
+  private[this] var emitting = false
+  private[this] var _current: StageState[In, Out] = _
   become(initial)
 
   /**
