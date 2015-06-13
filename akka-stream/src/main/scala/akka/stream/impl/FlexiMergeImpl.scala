@@ -4,11 +4,8 @@
 package akka.stream.impl
 
 import akka.stream.scaladsl.FlexiMerge.{ Read, ReadAll, ReadAny, ReadPreferred }
-import akka.stream.{ Shape, InPort }
-import akka.stream.{ ActorMaterializerSettings, scaladsl }
-
-import scala.collection.breakOut
-import scala.collection.immutable
+import akka.stream.{ Shape, InPort, ActorMaterializerSettings, scaladsl }
+import scala.collection.{ breakOut, immutable }
 import scala.util.control.NonFatal
 
 /**

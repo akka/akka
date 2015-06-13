@@ -138,10 +138,9 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
            backlog: Int = 100,
            options: immutable.Traversable[SocketOption] = Nil,
            halfClose: Boolean = false,
-           idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
+           idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] =
     new Source(new BindSource(new InetSocketAddress(interface, port), backlog, options, halfClose, idleTimeout,
-      Attributes.none, SourceShape(new Outlet("BindSource.out"))))
-  }
+      Attributes.none, SourceShape(Outlet("BindSource.out"))))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`

@@ -37,6 +37,14 @@ private[akka] object FanIn {
     }
   }
 
+  final val Marked = 1
+  final val Pending = 2
+  final val Depleted = 4
+  final val Completed = 8
+  final val Cancelled = 16
+
+  type State = Byte
+
   abstract class InputBunch(inputCount: Int, bufferSize: Int, pump: Pump) {
     private var allCancelled = false
 
@@ -46,22 +54,28 @@ private[akka] object FanIn {
       }
     }
 
-    private val marked = Array.ofDim[Boolean](inputCount)
+    private val states = Array.ofDim[State](inputCount)
     private var markCount = 0
-    private val pending = Array.ofDim[Boolean](inputCount)
     private var markedPending = 0
-    private val depleted = Array.ofDim[Boolean](inputCount)
-    private val completed = Array.ofDim[Boolean](inputCount)
     private var markedDepleted = 0
-    private val cancelled = Array.ofDim[Boolean](inputCount)
+
+    private[this] final def has(s: State, f: Int): Boolean = (s & f) != 0
+    private[this] final def set(input: Int, f: Int): Unit = {
+      val s = states(input)
+      states(input) = (s | f).toByte
+    }
+    private[this] final def unset(input: Int, f: Int): Unit = {
+      val s = states(input)
+      states(input) = (s & ~f).toByte
+    }
 
     override def toString: String =
       s"""|InputBunch
-          |  marked:    ${marked.mkString(", ")}
-          |  pending:   ${pending.mkString(", ")}
-          |  depleted:  ${depleted.mkString(", ")}
-          |  completed: ${completed.mkString(", ")}
-          |  cancelled: ${cancelled.mkString(", ")}
+          |  marked:    ${states.iterator.map(has(_, Marked)).mkString(", ")}
+          |  pending:   ${states.iterator.map(has(_, Pending)).mkString(", ")}
+          |  depleted:  ${states.iterator.map(has(_, Depleted)).mkString(", ")}
+          |  completed: ${states.iterator.map(has(_, Completed)).mkString(", ")}
+          |  cancelled: ${states.iterator.map(has(_, Cancelled)).mkString(", ")}
           |    mark=$markCount pend=$markedPending depl=$markedDepleted pref=$preferredId""".stripMargin
 
     private var preferredId = 0
@@ -78,31 +92,35 @@ private[akka] object FanIn {
         }
       }
 
-    def cancel(input: Int) =
-      if (!cancelled(input)) {
+    def cancel(input: Int) = {
+      val state = states(input)
+      if (!has(state, Cancelled)) {
         inputs(input).cancel()
-        cancelled(input) = true
+        set(input, Cancelled)
         unmarkInput(input)
       }
+    }
 
     def onError(input: Int, e: Throwable): Unit
 
     def onDepleted(input: Int): Unit = ()
 
     def markInput(input: Int): Unit = {
-      if (!marked(input)) {
-        if (depleted(input)) markedDepleted += 1
-        if (pending(input)) markedPending += 1
-        marked(input) = true
+      val state = states(input)
+      if (!has(state, Marked)) {
+        if (has(state, Depleted)) markedDepleted += 1
+        if (has(state, Pending)) markedPending += 1
+        set(input, Marked)
         markCount += 1
       }
     }
 
     def unmarkInput(input: Int): Unit = {
-      if (marked(input)) {
-        if (depleted(input)) markedDepleted -= 1
-        if (pending(input)) markedPending -= 1
-        marked(input) = false
+      val state = states(input)
+      if (has(state, Marked)) {
+        if (has(state, Depleted)) markedDepleted -= 1
+        if (has(state, Pending)) markedPending -= 1
+        unset(input, Marked)
         markCount -= 1
       }
     }
@@ -123,35 +141,38 @@ private[akka] object FanIn {
       }
     }
 
-    def isPending(input: Int): Boolean = pending(input)
+    def isPending(input: Int): Boolean = has(states(input), Pending)
 
-    def isDepleted(input: Int): Boolean = depleted(input)
+    def isDepleted(input: Int): Boolean = has(states(input), Depleted)
 
-    def isCancelled(input: Int): Boolean = cancelled(input)
+    def isCancelled(input: Int): Boolean = has(states(input), Cancelled)
 
     def idToDequeue(): Int = {
       var id = preferredId
-      while (!(marked(id) && pending(id))) {
+      var state = states(id)
+      while (!(has(state, Marked) && has(state, Pending))) {
         id += 1
         if (id == inputCount) id = 0
         assert(id != preferredId, "Tried to dequeue without waiting for any input")
+        state = states(id)
       }
       id
     }
 
     def dequeue(id: Int): Any = {
-      require(!isDepleted(id), s"Can't dequeue from depleted $id")
-      require(isPending(id), s"No pending input at $id")
+      val state = states(id)
+      require(!has(state, Depleted), s"Can't dequeue from depleted $id")
+      require(has(state, Pending), s"No pending input at $id")
       _lastDequeuedId = id
       val input = inputs(id)
       val elem = input.dequeueInputElement()
       if (!input.inputsAvailable) {
-        if (marked(id)) markedPending -= 1
-        pending(id) = false
+        if (has(state, Marked)) markedPending -= 1
+        unset(id, Pending)
       }
       if (input.inputsDepleted) {
-        if (marked(id)) markedDepleted += 1
-        depleted(id) = true
+        if (has(state, Marked)) markedDepleted += 1
+        set(id, Depleted)
         onDepleted(id)
       }
       elem
@@ -183,13 +204,19 @@ private[akka] object FanIn {
     }
 
     def inputsAvailableFor(id: Int) = new TransferState {
-      override def isCompleted: Boolean = depleted(id) || cancelled(id)
-      override def isReady: Boolean = pending(id)
+      override def isCompleted: Boolean = {
+        val state = states(id)
+        has(state, Depleted) || has(state, Cancelled)
+      }
+      override def isReady: Boolean = has(states(id), Pending)
     }
 
     def inputsOrCompleteAvailableFor(id: Int) = new TransferState {
       override def isCompleted: Boolean = false
-      override def isReady: Boolean = pending(id) || depleted(id)
+      override def isReady: Boolean = {
+        val state = states(id)
+        has(state, Depleted) || has(state, Pending)
+      }
     }
 
     // FIXME: Eliminate re-wraps
@@ -197,16 +224,18 @@ private[akka] object FanIn {
       case OnSubscribe(id, subscription) ⇒
         inputs(id).subreceive(ActorSubscriber.OnSubscribe(subscription))
       case OnNext(id, elem) ⇒
-        if (marked(id) && !pending(id)) markedPending += 1
-        pending(id) = true
+        val state = states(id)
+        if (has(state, Marked) && !has(state, Pending)) markedPending += 1
+        set(id, Pending)
         inputs(id).subreceive(ActorSubscriberMessage.OnNext(elem))
       case OnComplete(id) ⇒
-        if (!pending(id)) {
-          if (marked(id) && !depleted(id)) markedDepleted += 1
-          depleted(id) = true
+        val state = states(id)
+        if (!has(state, Pending)) {
+          if (has(state, Marked) && !has(state, Depleted)) markedDepleted += 1
+          set(id, Depleted)
           onDepleted(id)
         }
-        completed(id) = true
+        set(id, Completed)
         inputs(id).subreceive(ActorSubscriberMessage.OnComplete)
       case OnError(id, e) ⇒
         onError(id, e)
