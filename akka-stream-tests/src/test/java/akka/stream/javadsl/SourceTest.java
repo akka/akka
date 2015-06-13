@@ -8,6 +8,7 @@ import akka.actor.Cancellable;
 import akka.dispatch.Foreach;
 import akka.dispatch.Futures;
 import akka.dispatch.OnSuccess;
+import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.stream.OverflowStrategy;
 import akka.stream.StreamTest;
@@ -519,6 +520,35 @@ public class SourceTest extends StreamTest {
 
     probe.expectNoMsg(duration);
     Await.ready(future, duration);
+  }
+
+  @Test
+  public void mustBeAbleToRecover() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<Integer, ?> source = Source.from(Arrays.asList(0, 1, 2, 3)).map(
+            new Function<Integer, Integer>() {
+              public Integer apply(Integer elem) {
+                if (elem == 2) throw new RuntimeException("ex");
+                else return elem;
+              }
+            })
+            .recover(new JavaPartialFunction<Throwable, Integer>() {
+              public Integer apply(Throwable elem, boolean isCheck) {
+                if (isCheck) return null;
+                return 0;
+              }
+            });
+
+    final Future<BoxedUnit> future = source.runWith(Sink.foreach(new Procedure<Integer>() {
+      public void apply(Integer elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgEquals(0);
+    probe.expectMsgEquals(1);
+    probe.expectMsgEquals(0);
+    Await.ready(future, Duration.apply(200, TimeUnit.MILLISECONDS));
   }
 
 }
