@@ -128,9 +128,8 @@ private[akka] case class ActorMaterializerImpl(
         case Identity(attr)                       ⇒ (new VirtualProcessor, ())
         case _ ⇒
           val (opprops, mat) = ActorProcessorFactory.props(ActorMaterializerImpl.this, op, effectiveAttributes)
-          val processor = ActorProcessorFactory[Any, Any](
-            actorOf(opprops, stageName(effectiveAttributes), effectiveSettings.dispatcher))
-          processor -> mat
+          ActorProcessorFactory[Any, Any](
+            actorOf(opprops, stageName(effectiveAttributes), effectiveSettings.dispatcher)) -> mat
       }
 
       private def materializeJunction(op: JunctionModule,

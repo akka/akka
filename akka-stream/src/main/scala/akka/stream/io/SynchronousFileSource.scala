@@ -4,15 +4,13 @@
 package akka.stream.io
 
 import java.io.File
-import akka.stream.impl.io.SynchronousFileSource
 import akka.stream.scaladsl.Source
 import akka.stream.{ ActorAttributes, Attributes, javadsl }
 import akka.util.ByteString
-
 import scala.concurrent.Future
 
 object SynchronousFileSource {
-
+  import akka.stream.impl.io.SynchronousFileSource
   final val DefaultChunkSize = 8192
   final val DefaultAttributes = Attributes.name("synchronousFileSource")
 

@@ -19,6 +19,6 @@ object TestSource {
   /**
    * A Source that materializes to a [[TestPublisher.Probe]].
    */
-  def probe[T]()(implicit system: ActorSystem) = new Source[T, TestPublisher.Probe[T]](new StreamTestKit.ProbeSource(none, SourceShape(new Outlet("ProbeSource.out"))))
+  def probe[T]()(implicit system: ActorSystem) = new Source[T, TestPublisher.Probe[T]](new StreamTestKit.ProbeSource(none, SourceShape(Outlet("ProbeSource.out"))))
 
 }

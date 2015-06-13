@@ -140,7 +140,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
            halfClose: Boolean = false,
            idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
     new Source(new BindSource(new InetSocketAddress(interface, port), backlog, options, halfClose, idleTimeout,
-      Attributes.none, SourceShape(new Outlet("BindSource.out"))))
+      Attributes.none, SourceShape(Outlet("BindSource.out"))))
   }
 
   /**

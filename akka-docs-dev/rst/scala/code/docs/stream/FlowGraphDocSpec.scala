@@ -131,9 +131,9 @@ class FlowGraphDocSpec extends AkkaSpec {
       // A Shape must be able to create a copy of itself. Basically
       // it means a new instance with copies of the ports
       override def deepCopy() = PriorityWorkerPoolShape(
-        new Inlet[In](jobsIn.toString),
-        new Inlet[In](priorityJobsIn.toString),
-        new Outlet[Out](resultsOut.toString))
+        jobsIn.carbonCopy(),
+        priorityJobsIn.carbonCopy(),
+        resultsOut.carbonCopy())
 
       // A Shape must also be able to create itself from existing ports
       override def copyFromPorts(
