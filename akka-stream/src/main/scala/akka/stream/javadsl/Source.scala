@@ -407,6 +407,24 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     new Source(delegate.dropWithin(d))
 
   /**
+   * Terminate processing (and cancel the upstream publisher) after predicate returned false for the first time.
+   * Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * @param p predicate is evaluated for each new element until first time returns false
+   */
+  def takeWhile(p: function.Predicate[Out]): javadsl.Source[Out, Mat] = new Source(delegate.takeWhile(p.test))
+
+  /**
+   * Discard elements at the beginning of the stream while predicate is true.
+   * No elements will be dropped after predicate first time returned false.
+   *
+   * @param p predicate is evaluated for each new element until first time returns false
+   */
+  def dropWhile(p: function.Predicate[Out]): javadsl.Source[Out, Mat] = new Source(delegate.dropWhile(p.test))
+
+  /**
    * Terminate processing (and cancel the upstream publisher) after the given
    * number of elements. Due to input buffering some elements may have been
    * requested from upstream publishers that will then not be processed downstream

@@ -382,6 +382,39 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
     new Flow(delegate.dropWithin(d))
 
   /**
+   * Terminate processing (and cancel the upstream publisher) after predicate
+   * returns false for the first time. Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * The stream will be completed without producing any elements if predicate is false for
+   * the first stream element.
+   *
+   * '''Emits when''' the predicate is true
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' predicate returned false or upstream completes
+   *
+   * '''Cancels when''' predicate returned false or downstream cancels
+   */
+  def takeWhile(p: function.Predicate[Out]): javadsl.Flow[In, Out, Mat] = new Flow(delegate.takeWhile(p.test))
+
+  /**
+   * Discard elements at the beginning of the stream while predicate is true.
+   * All elements will be taken after predicate returns false first time.
+   *
+   * '''Emits when''' predicate returned false and for all following stream elements
+   *
+   * '''Backpressures when''' predicate returned false and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def dropWhile(p: function.Predicate[Out]): javadsl.Flow[In, Out, Mat] = new Flow(delegate.dropWhile(p.test))
+
+  /**
    * Terminate processing (and cancel the upstream publisher) after the given
    * number of elements. Due to input buffering some elements may have been
    * requested from upstream publishers that will then not be processed downstream
