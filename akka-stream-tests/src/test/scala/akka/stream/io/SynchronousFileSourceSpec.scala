@@ -180,7 +180,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       } finally shutdown(sys)
     }
 
-    "allow overriding the dispatcher using OperationAttributes" in {
+    "allow overriding the dispatcher using Attributes" in {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val mat = ActorMaterializer()(sys)
       implicit val timeout = Timeout(500.millis)

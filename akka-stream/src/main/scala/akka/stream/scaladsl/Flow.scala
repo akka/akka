@@ -6,6 +6,8 @@ package akka.stream.scaladsl
 import scala.language.higherKinds
 
 import akka.event.LoggingAdapter
+import akka.stream.impl.Stages.{ Recover, MaterializingStageFactory, StageModule }
+import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream._
 import akka.stream.Attributes._
 import akka.stream.stage._
@@ -15,10 +17,15 @@ import akka.stream.impl.Stages.{ DirectProcessor, MaterializingStageFactory, Sta
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.util.Collections.EmptyImmutableSeq
 import org.reactivestreams.{ Subscription, Publisher, Subscriber, Processor }
+import org.reactivestreams.Processor
+import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.Future
+import scala.language.higherKinds
+import akka.stream.stage._
+import akka.stream.impl.{ Stages, StreamLayout, FlowModule }
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -373,6 +380,22 @@ trait FlowOps[+Out, +Mat] {
   type Repr[+O, +M] <: FlowOps[O, M]
 
   private final val _identity = (x: Any) ⇒ x
+
+  /**
+   * Recover allows to send last element on failure and gracefully complete the stream
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T, Mat] = andThen(Recover(pf.asInstanceOf[PartialFunction[Any, Any]]))
 
   /**
    * Transform this stream by applying the given function to each of the elements

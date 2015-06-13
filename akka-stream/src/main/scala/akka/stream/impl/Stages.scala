@@ -26,6 +26,7 @@ private[stream] object Stages {
     val map = name("map")
     val filter = name("filter")
     val collect = name("collect")
+    val recover = name("recover")
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val grouped = name("grouped")
@@ -136,6 +137,11 @@ private[stream] object Stages {
   }
 
   final case class Collect(pf: PartialFunction[Any, Any], attributes: Attributes = collect) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+    override protected def newInstance: StageModule = this.copy()
+  }
+
+  final case class Recover(pf: PartialFunction[Any, Any], attributes: Attributes = recover) extends StageModule {
     def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
