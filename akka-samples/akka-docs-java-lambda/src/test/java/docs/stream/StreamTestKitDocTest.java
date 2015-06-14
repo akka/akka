@@ -54,7 +54,7 @@ public class StreamTestKitDocTest {
 
     final Future<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4))
       .runWith(sinkUnderTest, mat);
-    final Integer result = Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
+    final Integer result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
     assert(result == 20);
     //#strict-collection
   }
@@ -69,7 +69,7 @@ public class StreamTestKitDocTest {
       .grouped(10)
       .runWith(Sink.head(), mat);
     final List<Integer> result =
-      Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
+      Await.result(future, Duration.create(1, TimeUnit.SECONDS));
     assertEquals(result, Collections.nCopies(10, 2));
     //#grouped-infinite
   }
@@ -82,7 +82,7 @@ public class StreamTestKitDocTest {
 
     final Future<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
       .via(flowUnderTest).runWith(Sink.fold(0, (agg, next) -> agg + next), mat);
-    final Integer result = Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
+    final Integer result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
     assert(result == 10);
     //#folded-stream
   }
@@ -99,7 +99,7 @@ public class StreamTestKitDocTest {
       .grouped(2)
       .runWith(Sink.head(), mat);
     akka.pattern.Patterns.pipe(future, system.dispatcher()).to(probe.ref());
-    probe.expectMsg(Duration.create(100, TimeUnit.MILLISECONDS),
+    probe.expectMsg(Duration.create(1, TimeUnit.SECONDS),
       Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))
     );
     //#pipeto-testprobe
@@ -120,9 +120,9 @@ public class StreamTestKitDocTest {
       .to(Sink.actorRef(probe.ref(), Tick.COMPLETED)).run(mat);
     probe.expectMsg(Duration.create(1, TimeUnit.SECONDS), Tick.TOCK);
     probe.expectNoMsg(Duration.create(100, TimeUnit.MILLISECONDS));
-    probe.expectMsg(Duration.create(200, TimeUnit.MILLISECONDS), Tick.TOCK);
+    probe.expectMsg(Duration.create(1, TimeUnit.SECONDS), Tick.TOCK);
     cancellable.cancel();
-    probe.expectMsg(Duration.create(200, TimeUnit.MILLISECONDS), Tick.COMPLETED);
+    probe.expectMsg(Duration.create(1, TimeUnit.SECONDS), Tick.COMPLETED);
     //#sink-actorref
   }
 
@@ -145,7 +145,7 @@ public class StreamTestKitDocTest {
     ref.tell(3, ActorRef.noSender());
     ref.tell(new akka.actor.Status.Success("done"), ActorRef.noSender());
 
-    final String result = Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
+    final String result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
     assertEquals(result, "123");
     //#source-actorref
   }
@@ -190,7 +190,7 @@ public class StreamTestKitDocTest {
     final Future<Integer> future = probeAndFuture.second();
     probe.sendError(new Exception("boom"));
 
-    Await.ready(future, Duration.create(100, TimeUnit.MILLISECONDS));
+    Await.ready(future, Duration.create(1, TimeUnit.SECONDS));
     final Throwable exception = ((Failure)future.value().get()).exception();
     assertEquals(exception.getMessage(), "boom");
     //#injecting-failure
