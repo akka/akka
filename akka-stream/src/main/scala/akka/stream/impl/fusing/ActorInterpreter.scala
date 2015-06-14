@@ -374,11 +374,12 @@ private[akka] class ActorInterpreter(val settings: ActorMaterializerSettings, va
   override def postStop(): Unit = {
     // This should handle termination while interpreter is running. If the upstream have been closed already this
     // call has no effect and therefore do the right thing: nothing.
-    try upstream.onInternalError(AbruptTerminationException(self))
+    val ex = AbruptTerminationException(self)
+    try upstream.onInternalError(ex)
     // Will only have an effect if the above call to the interpreter failed to emit a proper failure to the downstream
     // otherwise this will have no effect
     finally {
-      downstream.fail(AbruptTerminationException(self))
+      downstream.fail(ex)
       upstream.cancel()
     }
   }

@@ -596,35 +596,11 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     // When we exit the scope of a copied module,  pick up the Subscribers/Publishers belonging to exposed ports of
     // the original module and assign them to the copy ports in the outer scope that we will return to
     enclosing.copyOf.shape.inlets.iterator.zip(enclosing.shape.inlets.iterator).foreach {
-      case (original, exposed) ⇒
-        assignPort(exposed, scopeSubscribers(original))
+      case (original, exposed) ⇒ assignPort(exposed, scopeSubscribers(original))
     }
 
     enclosing.copyOf.shape.outlets.iterator.zip(enclosing.shape.outlets.iterator).foreach {
-      case (original, exposed) ⇒
-        assignPort(exposed, scopePublishers(original))
-    }
-
-  }
-
-  // Cancels all intermediate Publishers and fails all intermediate Subscribers.
-  // (This is an attempt to clean up after an exception during materialization)
-  private def panic(cause: Throwable): Unit = {
-    val panicError = new MaterializationPanic(cause)
-    for (subMap ← subscribersStack; sub ← subMap.valuesIterator) {
-      sub.onSubscribe(new Subscription {
-        override def cancel(): Unit = ()
-        override def request(n: Long): Unit = sub.onError(panicError)
-      })
-    }
-
-    for (pubMap ← publishersStack; pub ← pubMap.valuesIterator) {
-      pub.subscribe(new Subscriber[Any] {
-        override def onSubscribe(s: Subscription): Unit = s.cancel()
-        override def onComplete(): Unit = ()
-        override def onError(t: Throwable): Unit = ()
-        override def onNext(t: Any): Unit = ()
-      })
+      case (original, exposed) ⇒ assignPort(exposed, scopePublishers(original))
     }
   }
 
@@ -635,9 +611,18 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
       s"The top level module cannot be materialized because it has unconnected ports: ${(topLevel.inPorts ++ topLevel.outPorts).mkString(", ")}")
     try materializeModule(topLevel, topLevel.attributes)
     catch {
-      case NonFatal(e) ⇒
-        panic(e)
-        throw e
+      case NonFatal(cause) ⇒
+        // PANIC!!! THE END OF THE MATERIALIZATION IS NEAR!
+        // Cancels all intermediate Publishers and fails all intermediate Subscribers.
+        // (This is an attempt to clean up after an exception during materialization)
+        val errorPublisher = new ErrorPublisher(new MaterializationPanic(cause), "")
+        for (subMap ← subscribersStack; sub ← subMap.valuesIterator)
+          errorPublisher.subscribe(sub)
+
+        for (pubMap ← publishersStack; pub ← pubMap.valuesIterator)
+          pub.subscribe(new CancellingSubscriber)
+
+        throw cause
     }
   }
 

@@ -61,7 +61,7 @@ private[akka] final case class DropWhile[T](p: T ⇒ Boolean, decider: Supervisi
       taking = true
       ctx.push(elem)
     } else {
-      ctx.pull
+      ctx.pull()
     }
 
   override def decide(t: Throwable): Supervision.Directive = decider(t)
@@ -74,7 +74,7 @@ private[akka] final object Collect {
   final val NotApplied: Any ⇒ Any = _ ⇒ Collect.NotApplied
 }
 
-private[akka] final case class Collect[In, Out](decider: Supervision.Decider)(pf: PartialFunction[In, Out]) extends PushStage[In, Out] {
+private[akka] final case class Collect[In, Out](pf: PartialFunction[In, Out], decider: Supervision.Decider) extends PushStage[In, Out] {
 
   import Collect.NotApplied
 
@@ -183,7 +183,7 @@ private[akka] final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out, de
  * INTERNAL API
  */
 private[akka] final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, decider: Supervision.Decider) extends PushPullStage[In, Out] {
-  private var aggregator = zero
+  private[this] var aggregator: Out = zero
 
   override def onPush(elem: In, ctx: Context[Out]): SyncDirective = {
     aggregator = f(aggregator, elem)

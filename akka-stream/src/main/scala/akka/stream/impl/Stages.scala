@@ -35,6 +35,7 @@ private[stream] object Stages {
     val takeWhile = name("takeWhile")
     val dropWhile = name("dropWhile")
     val scan = name("scan")
+    val fold = name("fold")
     val buffer = name("buffer")
     val conflate = name("conflate")
     val expand = name("expand")
@@ -188,6 +189,11 @@ private[stream] object Stages {
   }
 
   final case class Scan(zero: Any, f: (Any, Any) ⇒ Any, attributes: Attributes = scan) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+    override protected def newInstance: StageModule = this.copy()
+  }
+
+  final case class Fold(zero: Any, f: (Any, Any) ⇒ Any, attributes: Attributes = fold) extends StageModule {
     def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }

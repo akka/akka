@@ -324,7 +324,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       val pf: PartialFunction[Int, Int] =
         { case x: Int ⇒ if (x == 0) throw TE else x }
       new TestSetup(Seq(
-        Collect(restartingDecider)(pf))) {
+        Collect(pf, restartingDecider))) {
         downstream.requestOne()
         lastEvents() should be(Set(RequestOne))
         upstream.onNext(2)

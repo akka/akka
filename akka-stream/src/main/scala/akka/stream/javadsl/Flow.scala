@@ -332,6 +332,26 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
     new Flow(delegate.scan(zero)(f.apply))
 
   /**
+   * Similar to `scan` but only emits its result when the upstream completes,
+   * after which it also completes. Applies the given function `f` towards its current and next value,
+   * yielding the next current value.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision#restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def fold[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.fold(zero)(f.apply))
+
+  /**
    * Chunk up this stream into groups of elements received within a time window,
    * or limited by the given number of elements, whatever happens first.
    * Empty groups will not be emitted if no elements are received from upstream.
