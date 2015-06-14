@@ -79,6 +79,13 @@ private[akka] case object CancelledSubscription extends Subscription {
   override def cancel(): Unit = ()
 }
 
+private[akka] final class CancellingSubscriber[T] extends Subscriber[T] {
+  override def onError(t: Throwable): Unit = ()
+  override def onSubscribe(s: Subscription): Unit = s.cancel()
+  override def onComplete(): Unit = ()
+  override def onNext(t: T): Unit = ()
+}
+
 /**
  * INTERNAL API
  */
