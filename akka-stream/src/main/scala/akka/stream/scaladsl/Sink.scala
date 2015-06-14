@@ -10,7 +10,7 @@ import akka.stream.impl.Stages.{ MapAsyncUnordered, DefaultAttributes }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.Attributes._
-import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage, SyncDirective }
+import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.concurrent.{ ExecutionContext, Future, Promise }
@@ -118,7 +118,7 @@ object Sink extends SinkApply {
    * element is dropped and the stream continues.
    *
    * @see [[#mapAsyncUnordered]]
-   */
+   */ // FIXME Why is this method even useful?
   def foreachParallel[T](parallelism: Int)(f: T ⇒ Unit)(implicit ec: ExecutionContext): Sink[T, Future[Unit]] =
     Flow[T].mapAsyncUnordered(parallelism)(t ⇒ Future(f(t))).toMat(Sink.ignore)(Keep.right)
 
