@@ -37,6 +37,12 @@ class PublisherSinkSpec extends AkkaSpec {
       Await.result(f2, 3.seconds) should be(15)
 
     }
+
+    "work with SubscriberSource" in {
+      val (sub, pub) = Source.subscriber[Int].toMat(Sink.publisher)(Keep.both).run()
+      Source(1 to 100).to(Sink(sub)).run()
+      Await.result(Source(pub).grouped(1000).runWith(Sink.head), 3.seconds) should ===(1 to 100)
+    }
   }
 
 }
