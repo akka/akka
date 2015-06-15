@@ -7,7 +7,7 @@ import java.io.{ File, OutputStream }
 
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.{ ActorFlowMaterializer, MaterializationContext, OperationAttributes, SinkShape }
+import akka.stream.{ ActorMaterializer, MaterializationContext, Attributes, SinkShape }
 import akka.util.ByteString
 
 import scala.concurrent.{ Future, Promise }
@@ -17,11 +17,11 @@ import scala.concurrent.{ Future, Promise }
  * Creates simple synchronous (Java 6 compatible) Sink which writes all incoming elements to the given file
  * (creating it before hand if neccessary).
  */
-private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attributes: OperationAttributes, shape: SinkShape[ByteString])
+private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attributes: Attributes, shape: SinkShape[ByteString])
   extends SinkModule[ByteString, Future[Long]](shape) {
 
   override def create(context: MaterializationContext) = {
-    val mat = ActorFlowMaterializer.downcast(context.materializer)
+    val mat = ActorMaterializer.downcast(context.materializer)
     val settings = mat.effectiveSettings(context.effectiveAttributes)
 
     val bytesWrittenPromise = Promise[Long]()
@@ -35,7 +35,7 @@ private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attr
   override protected def newInstance(shape: SinkShape[ByteString]): SinkModule[ByteString, Future[Long]] =
     new SynchronousFileSink(f, append, attributes, shape)
 
-  override def withAttributes(attr: OperationAttributes): Module =
+  override def withAttributes(attr: Attributes): Module =
     new SynchronousFileSink(f, append, attr, amendShape(attr))
 }
 
@@ -44,11 +44,11 @@ private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attr
  * Creates simple synchronous (Java 6 compatible) Sink which writes all incoming elements to the given file
  * (creating it before hand if neccessary).
  */
-private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, val attributes: OperationAttributes, shape: SinkShape[ByteString])
+private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, val attributes: Attributes, shape: SinkShape[ByteString])
   extends SinkModule[ByteString, Future[Long]](shape) {
 
   override def create(context: MaterializationContext) = {
-    val mat = ActorFlowMaterializer.downcast(context.materializer)
+    val mat = ActorMaterializer.downcast(context.materializer)
     val settings = mat.effectiveSettings(context.effectiveAttributes)
     val bytesWrittenPromise = Promise[Long]()
 
@@ -63,6 +63,6 @@ private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, va
   override protected def newInstance(shape: SinkShape[ByteString]): SinkModule[ByteString, Future[Long]] =
     new OutputStreamSink(createOutput, attributes, shape)
 
-  override def withAttributes(attr: OperationAttributes): Module =
+  override def withAttributes(attr: Attributes): Module =
     new OutputStreamSink(createOutput, attr, amendShape(attr))
 }

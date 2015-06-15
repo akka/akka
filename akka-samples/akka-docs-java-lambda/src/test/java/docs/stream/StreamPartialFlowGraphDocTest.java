@@ -38,7 +38,7 @@ public class StreamPartialFlowGraphDocTest {
     system = null;
   }
   
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
   
   @Test
   public void demonstrateBuildWithOpenPorts() throws Exception {

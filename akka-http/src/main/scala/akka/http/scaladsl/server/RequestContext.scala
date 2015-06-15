@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 
 import scala.concurrent.{ Future, ExecutionContext }
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
@@ -30,7 +30,7 @@ trait RequestContext {
   /**
    * The default FlowMaterializer.
    */
-  implicit def flowMaterializer: FlowMaterializer
+  implicit def flowMaterializer: Materializer
 
   /**
    * The default LoggingAdapter to be used for logging messages related to this request.
@@ -47,7 +47,7 @@ trait RequestContext {
    */
   def reconfigure(
     executionContext: ExecutionContext = executionContext,
-    flowMaterializer: FlowMaterializer = flowMaterializer,
+    flowMaterializer: Materializer = flowMaterializer,
     log: LoggingAdapter = log,
     settings: RoutingSettings = settings): RequestContext
 
@@ -81,7 +81,7 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the new HttpRequest.
    */
-  def withFlowMaterializer(materializer: FlowMaterializer): RequestContext
+  def withFlowMaterializer(materializer: Materializer): RequestContext
 
   /**
    * Returns a copy of this context with the new LoggingAdapter.

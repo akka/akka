@@ -11,7 +11,7 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.model.headers.ContentEncoding;
 import akka.http.javadsl.model.headers.HttpEncodings;
-import akka.stream.ActorFlowMaterializer;
+import akka.stream.ActorMaterializer;
 import akka.util.ByteString;
 import org.junit.*;
 import scala.concurrent.Await;
@@ -35,7 +35,7 @@ public class CodingDirectivesTest extends JUnitRouteTest {
         system = null;
     }
 
-    final ActorFlowMaterializer mat = ActorFlowMaterializer.create(system);
+    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     @Test
     public void testAutomaticEncodingWhenNoEncodingRequested() throws Exception {

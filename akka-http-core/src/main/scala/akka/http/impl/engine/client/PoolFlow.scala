@@ -11,7 +11,7 @@ import scala.concurrent.{ Promise, Future }
 import scala.util.Try
 import akka.event.LoggingAdapter
 import akka.actor._
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
@@ -69,7 +69,7 @@ private object PoolFlow {
   */
   def apply(connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
             remoteAddress: InetSocketAddress, settings: ConnectionPoolSettings, log: LoggingAdapter)(
-              implicit system: ActorSystem, fm: FlowMaterializer): Flow[RequestContext, ResponseContext, Unit] =
+              implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, Unit] =
     Flow() { implicit b ⇒
       import settings._
       import FlowGraph.Implicits._

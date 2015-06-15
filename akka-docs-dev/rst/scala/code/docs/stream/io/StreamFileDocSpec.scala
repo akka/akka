@@ -19,7 +19,7 @@ import scala.concurrent.Future
 class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   implicit val ec = system.dispatcher
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   // silence sysout
   def println(s: String) = ()
@@ -56,7 +56,7 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
   "configure dispatcher in code" in {
     //#custom-dispatcher-code
     SynchronousFileSink(file)
-      .withAttributes(ActorOperationAttributes.dispatcher("custom-file-io-dispatcher"))
+      .withAttributes(ActorAttributes.dispatcher("custom-file-io-dispatcher"))
     //#custom-dispatcher-code
   }
 

@@ -99,7 +99,7 @@ private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: S
   private val interpreter = new OneBoundedInterpreter(upstream +: ops.asInstanceOf[Seq[Stage[_, _]]] :+ downstream,
     (op, ctx, evt) ⇒ throw new UnsupportedOperationException("IteratorInterpreter is fully synchronous"),
     NoLogging,
-    NoFlowMaterializer)
+    NoMaterializer)
   interpreter.init()
 
   def iterator: Iterator[O] = downstream

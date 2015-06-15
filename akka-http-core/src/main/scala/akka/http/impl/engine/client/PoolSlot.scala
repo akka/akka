@@ -50,7 +50,7 @@ private object PoolSlot {
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
             remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
-            settings: ConnectionPoolSettings)(implicit system: ActorSystem, fm: FlowMaterializer): Graph[Ports, Any] =
+            settings: ConnectionPoolSettings)(implicit system: ActorSystem, fm: Materializer): Graph[Ports, Any] =
     FlowGraph.partial() { implicit b ⇒
       import FlowGraph.Implicits._
 
@@ -81,7 +81,7 @@ private object PoolSlot {
    * shutting down completely).
    */
   private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-                              settings: ConnectionPoolSettings)(implicit fm: FlowMaterializer)
+                              settings: ConnectionPoolSettings)(implicit fm: Materializer)
     extends ActorSubscriber with ActorPublisher[List[ProcessorOut]] with ActorLogging {
 
     var exposedPublisher: akka.stream.impl.ActorPublisher[Any] = _
@@ -212,7 +212,7 @@ private object PoolSlot {
 
   // FIXME: remove when #17038 is cleared
   private class SlotEventSplit extends FlexiRoute[ProcessorOut, FanOutShape2[ProcessorOut, ResponseContext, SlotEvent]](
-    new FanOutShape2("PoolSlot.SlotEventSplit"), OperationAttributes.name("PoolSlot.SlotEventSplit")) {
+    new FanOutShape2("PoolSlot.SlotEventSplit"), Attributes.name("PoolSlot.SlotEventSplit")) {
     import FlexiRoute._
 
     def createRouteLogic(s: FanOutShape2[ProcessorOut, ResponseContext, SlotEvent]): RouteLogic[ProcessorOut] =

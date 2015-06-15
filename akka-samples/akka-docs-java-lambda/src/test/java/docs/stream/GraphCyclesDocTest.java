@@ -10,7 +10,6 @@ import scala.runtime.BoxedUnit;
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.japi.*;
 import akka.stream.scaladsl.MergePreferred.MergePreferredShape;
 import akka.testkit.JavaTestKit;
 
@@ -31,7 +30,7 @@ public class GraphCyclesDocTest {
     system = null;
   }
   
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
   
   final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(1, 2, 3, 4, 5));
   

@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.{ server, Http }
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.impl.server.RouteImplementation
-import akka.stream.{ ActorFlowMaterializer, FlowMaterializer }
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.scaladsl.{ Keep, Sink }
 
 trait HttpServiceBase {
@@ -18,20 +18,20 @@ trait HttpServiceBase {
    */
   def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem): Future[ServerBinding] = {
     implicit val sys = system
-    implicit val mat = ActorFlowMaterializer()
+    implicit val mat = ActorMaterializer()
     handleConnectionsWithRoute(interface, port, route, system, mat)
   }
 
   /**
    * Starts a server on the given interface and port and uses the route to handle incoming requests.
    */
-  def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: FlowMaterializer): Future[ServerBinding] =
+  def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: Materializer): Future[ServerBinding] =
     handleConnectionsWithRoute(interface, port, route, system, flowMaterializer)
 
   /**
    * Uses the route to handle incoming connections and requests for the ServerBinding.
    */
-  def handleConnectionsWithRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: FlowMaterializer): Future[ServerBinding] = {
+  def handleConnectionsWithRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: Materializer): Future[ServerBinding] = {
     implicit val sys = system
     implicit val mat = flowMaterializer
 

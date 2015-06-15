@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, Inlet, Outlet }
+import akka.stream.{ ActorMaterializer, ActorFlowMaterializerSettings, Inlet, Outlet }
 
 import scala.concurrent.duration._
 

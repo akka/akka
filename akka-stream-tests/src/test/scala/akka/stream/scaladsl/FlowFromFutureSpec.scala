@@ -7,7 +7,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -16,7 +16,7 @@ class FlowFromFutureSpec extends AkkaSpec {
 
   val settings = ActorFlowMaterializerSettings(system)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "A Flow based on a Future" must {
     "produce one element from already successful Future" in assertAllStagesStopped {

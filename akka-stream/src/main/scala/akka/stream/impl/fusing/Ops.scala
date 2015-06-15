@@ -5,7 +5,7 @@ package akka.stream.impl.fusing
 
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
-import akka.stream.OperationAttributes.LogLevels
+import akka.stream.Attributes.LogLevels
 import akka.stream.impl.{ FixedSizeBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
@@ -540,7 +540,7 @@ private[akka] final case class Log[T](name: String, extract: T ⇒ Any, logAdapt
     log = logAdapter match {
       case Some(l) ⇒ l
       case _ ⇒
-        val mat = try ActorFlowMaterializer.downcast(ctx.materializer)
+        val mat = try ActorMaterializer.downcast(ctx.materializer)
         catch {
           case ex: Exception ⇒
             throw new RuntimeException("Log stage can only provide LoggingAdapter when used with ActorFlowMaterializer! " +
@@ -598,10 +598,10 @@ private[akka] object Log {
   final val fromLifecycleContext = new LogSource[LifecycleContext] {
 
     // do not expose private context classes (of OneBoundedInterpreter)
-    override def getClazz(t: LifecycleContext): Class[_] = classOf[FlowMaterializer]
+    override def getClazz(t: LifecycleContext): Class[_] = classOf[Materializer]
 
     override def genString(t: LifecycleContext): String = {
-      try s"$DefaultLoggerName(${ActorFlowMaterializer.downcast(t.materializer).supervisor.path})"
+      try s"$DefaultLoggerName(${ActorMaterializer.downcast(t.materializer).supervisor.path})"
       catch {
         case ex: Exception ⇒ LogSource.fromString.genString(DefaultLoggerName)
       }

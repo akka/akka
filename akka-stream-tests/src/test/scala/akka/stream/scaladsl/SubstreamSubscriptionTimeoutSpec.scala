@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.actor.{ ExtendedActorSystem, ActorIdentity, ActorRef, Identify }
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -35,7 +35,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
   implicit val dispatcher = system.dispatcher
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "groupBy" must {
 

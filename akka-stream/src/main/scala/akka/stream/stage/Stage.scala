@@ -4,7 +4,7 @@
 package akka.stream.stage
 
 import akka.event.{ Logging, LogSource }
-import akka.stream.{ ActorFlowMaterializer, FlowMaterializer, OperationAttributes, Supervision }
+import akka.stream.{ ActorMaterializer, Materializer, Attributes, Supervision }
 
 /**
  * General interface for stream transformation.
@@ -537,10 +537,10 @@ trait LifecycleContext {
    * Returns the FlowMaterializer that was used to materialize this [[Stage]].
    * It can be used to materialize sub-flows.
    */
-  def materializer: FlowMaterializer
+  def materializer: Materializer
 
   /** Returns operation attributes associated with the this Stage */
-  def attributes: OperationAttributes
+  def attributes: Attributes
 }
 
 /**

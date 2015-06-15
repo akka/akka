@@ -76,7 +76,7 @@ class MaterializationBenchmark {
   import MaterializationBenchmark._
 
   implicit val system = ActorSystem("MaterializationBenchmark")
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   var flowWithMap: RunnableFlow[Unit] = _
   var graphWithJunctions: RunnableFlow[Unit] = _

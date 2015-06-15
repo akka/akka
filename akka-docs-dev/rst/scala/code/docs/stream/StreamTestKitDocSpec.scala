@@ -10,7 +10,7 @@ import akka.stream.testkit.scaladsl._
 
 class StreamTestKitDocSpec extends AkkaSpec {
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "test source probe" in {
 
