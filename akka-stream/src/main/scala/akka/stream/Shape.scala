@@ -6,10 +6,28 @@ package akka.stream
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
+/**
+ * An input port of a StreamLayout.Module. This type logically belongs
+ * into the impl package but must live here due to how `sealed` works.
+ */
 sealed abstract class InPort
+/**
+ * An output port of a StreamLayout.Module. This type logically belongs
+ * into the impl package but must live here due to how `sealed` works.
+ */
 sealed abstract class OutPort
 
+/**
+ * An Inlet is a typed input to a Shape. Its partner in the Module view
+ * is the InPort (which does not bear an element type because Modules only
+ * express the internal structural hierarchy of stream topologies).
+ */
 final class Inlet[-T](override val toString: String) extends InPort
+/**
+ * An Outlet is a typed output to a Shape. Its partner in the Module view
+ * is the OutPort (which does not bear an element type because Modules only
+ * express the internal structural hierarchy of stream topologies).
+ */
 final class Outlet[+T](override val toString: String) extends OutPort
 
 /**
