@@ -83,6 +83,10 @@ final class RemoteSettings(val config: Config) {
     config.getMillisDuration("akka.remote.resend-interval")
   } requiring (_ > Duration.Zero, "resend-interval must be > 0")
 
+  val SysResendLimit: Int = {
+    config.getInt("akka.remote.resend-limit")
+  } requiring (_ > 0, "resend-limit must be > 0")
+
   val SysMsgBufferSize: Int = {
     getInt("akka.remote.system-message-buffer-size")
   } requiring (_ > 0, "system-message-buffer-size must be > 0")

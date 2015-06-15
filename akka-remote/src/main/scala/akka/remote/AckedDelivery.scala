@@ -101,7 +101,9 @@ case class AckedSendBuffer[T <: HasSequenceNumber](
   def acknowledge(ack: Ack): AckedSendBuffer[T] = {
     if (ack.cumulativeAck > maxSeq)
       throw new IllegalArgumentException(s"Highest SEQ so far was $maxSeq but cumulative ACK is ${ack.cumulativeAck}")
-    val newNacked = (nacked ++ nonAcked) filter { m ⇒ ack.nacks(m.seq) }
+    val newNacked =
+      if (ack.nacks.isEmpty) Vector.empty
+      else (nacked ++ nonAcked) filter { m ⇒ ack.nacks(m.seq) }
     if (newNacked.size < ack.nacks.size) throw new ResendUnfulfillableException
     else this.copy(
       nonAcked = nonAcked.filter { m ⇒ m.seq > ack.cumulativeAck },
@@ -181,7 +183,8 @@ case class AckedReceiveBuffer[T <: HasSequenceNumber](
       prev = bufferedMsg.seq
     }
 
-    (this.copy(buf = buf filterNot deliver.contains, lastDelivered = updatedLastDelivered), deliver, ack)
+    val newBuf = if (deliver.isEmpty) buf else buf.filterNot(deliver.contains)
+    (this.copy(buf = newBuf, lastDelivered = updatedLastDelivered), deliver, ack)
   }
 
   /**
