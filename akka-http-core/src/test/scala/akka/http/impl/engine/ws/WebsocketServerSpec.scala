@@ -6,7 +6,7 @@ package akka.http.impl.engine.ws
 
 import akka.http.impl.engine.ws.Protocol.Opcode
 import akka.http.scaladsl.model.ws._
-import akka.stream.scaladsl.{ Sink, Flow, Source }
+import akka.stream.scaladsl.{ Keep, Sink, Flow, Source }
 import akka.stream.testkit.Utils
 import akka.util.ByteString
 import org.scalatest.{ Matchers, FreeSpec }
@@ -42,7 +42,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
 
           val source =
             Source(List(1, 2, 3, 4, 5)).map(num ⇒ TextMessage.Strict(s"Message $num"))
-          val handler = Flow.wrap(Sink.ignore, source)((_, _) ⇒ ())
+          val handler = Flow.wrap(Sink.ignore, source)(Keep.none)
           val response = upgrade.get.handleMessages(handler)
           responsesSub.sendNext(response)
 
