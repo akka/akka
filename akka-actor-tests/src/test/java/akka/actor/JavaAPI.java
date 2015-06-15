@@ -7,6 +7,10 @@ package akka.actor;
 import akka.event.Logging;
 import akka.event.Logging.LoggerInitialized;
 import akka.japi.Creator;
+import akka.japi.Pair;
+import akka.japi.tuple.Tuple22;
+import akka.japi.tuple.Tuple3;
+import akka.japi.tuple.Tuple4;
 import akka.routing.CurrentRoutees;
 import akka.routing.FromConfig;
 import akka.routing.NoRouter;
@@ -117,6 +121,14 @@ public class JavaAPI {
     final TestProbe probe = new TestProbe(system);
     probe.send(ref, "get");
     probe.expectMsg("a-null-0-0");
+  }
+
+  @Test
+  @SuppressWarnings("unused")
+  public void mustCompileTupleCreation() {
+    final Pair<Integer, String> p = Pair.create(1, "2");
+    final Tuple4<Integer, String, Integer, Long> t4 = Tuple4.create(1, "2", 3, 4L);
+    Tuple22.create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22);
   }
 
   public static class ActorWithConstructorParams extends UntypedActor {
