@@ -25,7 +25,7 @@ class FlowFoldSpec extends AkkaSpec {
 
     "propagate an error" in assertAllStagesStopped {
       val error = new Exception with NoStackTrace
-      val future = Source[Unit](() ⇒ throw error).runFold(())((_, _) ⇒ ())
+      val future = Source[Unit](() ⇒ throw error).runFold(())(Keep.none)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
