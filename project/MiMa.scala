@@ -534,7 +534,10 @@ object MiMa extends AutoPlugin {
       FilterAnyProblem("akka.remote.RemoteWatcher$UnwatchRemote"),
       FilterAnyProblem("akka.remote.RemoteWatcher$Rewatch"),
       FilterAnyProblem("akka.remote.RemoteWatcher$RewatchRemote"),
-      FilterAnyProblem("akka.remote.RemoteWatcher$Stats")
+      FilterAnyProblem("akka.remote.RemoteWatcher$Stats"),
+
+      // toString is available on any object, mima is confused due to a generated toString appearing #17722
+      ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Pair.toString")
 
      )
   }

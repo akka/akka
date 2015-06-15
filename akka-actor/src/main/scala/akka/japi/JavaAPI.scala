@@ -4,14 +4,15 @@
 
 package akka.japi
 
-import language.implicitConversions
+import java.util.Collections.{ emptyList, singletonList }
+
+import akka.util.Collections.EmptyImmutableSeq
 
 import scala.collection.immutable
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.util.control.NoStackTrace
 import scala.runtime.AbstractPartialFunction
-import akka.util.Collections.EmptyImmutableSeq
-import java.util.Collections.{ emptyList, singletonList }
+import scala.util.control.NoStackTrace
 
 /**
  * A Function interface. Used to create first-class-functions is Java.
@@ -53,10 +54,18 @@ trait Predicate[T] {
 }
 
 /**
- * Java API: Represents a tuple of two elements.
+ * Java API
+ * Represents a pair (tuple) of two elements.
+ *
+ * Additional tuple types for 3 to 22 values are defined in the `akka.japi.tuple` package, e.g. [[akka.japi.tuple.Tuple3]].
  */
 @SerialVersionUID(1L)
-case class Pair[A, B](first: A, second: B)
+case class Pair[A, B](first: A, second: B) {
+  def toScala: (A, B) = (first, second)
+}
+object Pair {
+  def create[A, B](first: A, second: B): Pair[A, B] = new Pair(first, second)
+}
 
 /**
  * A constructor/factory, takes no parameters but creates a new value of type T every call.
