@@ -77,6 +77,28 @@ object GraphFlexiRouteSpec {
     }
   }
 
+  class StartStopTestRoute(lifecycleProbe: ActorRef)
+    extends FlexiRoute[String, FanOutShape2[String, String, String]](new FanOutShape2("StartStopTest"), OperationAttributes.name("StartStopTest")) {
+    import FlexiRoute._
+
+    def createRouteLogic(p: PortT) = new RouteLogic[String] {
+      val select = p.out0 | p.out1
+
+      override def preStart(): Unit = lifecycleProbe ! "preStart"
+      override def postStop(): Unit = lifecycleProbe ! "postStop"
+
+      override def initialState = State(DemandFromAny(p)) {
+        (ctx, port, element) ⇒
+          lifecycleProbe ! element
+          if (element == "fail") throw new IllegalStateException("test failure")
+          ctx.emit(select(port))(element)
+
+          SameState
+      }
+    }
+
+  }
+
   class TestRoute(completionProbe: ActorRef)
     extends FlexiRoute[String, FanOutShape2[String, String, String]](new FanOutShape2("TestRoute"), OperationAttributes.name("TestRoute")) {
     import FlexiRoute._
@@ -421,6 +443,41 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s1.expectComplete()
       s2.expectComplete()
       autoPublisher.expectCancellation()
+    }
+
+    "handle preStart and postStop" in assertAllStagesStopped {
+      val p = TestProbe()
+
+      FlowGraph.closed() { implicit b ⇒
+        val r = b.add(new StartStopTestRoute(p.ref))
+
+        Source(List("1", "2", "3")) ~> r.in
+        r.out0 ~> Sink.ignore
+        r.out1 ~> Sink.ignore
+      }.run()
+
+      p.expectMsg("preStart")
+      p.expectMsg("1")
+      p.expectMsg("2")
+      p.expectMsg("3")
+      p.expectMsg("postStop")
+    }
+
+    "invoke postStop after error" in assertAllStagesStopped {
+      val p = TestProbe()
+
+      FlowGraph.closed() { implicit b ⇒
+        val r = b.add(new StartStopTestRoute(p.ref))
+
+        Source(List("1", "fail", "2", "3")) ~> r.in
+        r.out0 ~> Sink.ignore
+        r.out1 ~> Sink.ignore
+      }.run()
+
+      p.expectMsg("preStart")
+      p.expectMsg("1")
+      p.expectMsg("fail")
+      p.expectMsg("postStop")
     }
 
   }
