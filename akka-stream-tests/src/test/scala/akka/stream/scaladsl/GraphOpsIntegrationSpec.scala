@@ -3,13 +3,13 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit._
 import akka.util.ByteString
 import akka.stream.{ Inlet, Outlet, Shape, Graph }
 import org.scalactic.ConversionCheckedTripleEquals
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 object GraphOpsIntegrationSpec {
   import FlowGraph.Implicits._
@@ -52,7 +52,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
   val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "FlowGraphs" must {
 
@@ -89,7 +89,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
     }
 
     "support wikipedia Topological_sorting 2" in {
-      import OperationAttributes.name
+      import Attributes.name
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
       val seqSink = Sink.head[Seq[Int]]
 

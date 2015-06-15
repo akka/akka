@@ -65,7 +65,7 @@ object Sink {
    */
   def foreach[T](f: function.Procedure[T]): Sink[T, Future[Unit]] =
     new Sink(scaladsl.Sink.foreach(f.apply))
-  
+
   /**
    * A `Sink` that will invoke the given procedure for each received element in parallel. The sink is materialized
    * into a [[scala.concurrent.Future]].
@@ -156,7 +156,7 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
   /**
    * Connect this `Sink` to a `Source` and run it.
    */
-  def runWith[M](source: Graph[SourceShape[In], M], materializer: FlowMaterializer): M =
+  def runWith[M](source: Graph[SourceShape[In], M], materializer: Materializer): M =
     asScala.runWith(source)(materializer)
 
   /**
@@ -165,7 +165,7 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Sink[In, Mat2] =
     new Sink(delegate.mapMaterializedValue(f.apply _))
 
-  override def withAttributes(attr: OperationAttributes): javadsl.Sink[In, Mat] =
+  override def withAttributes(attr: Attributes): javadsl.Sink[In, Mat] =
     new Sink(delegate.withAttributes(attr))
 
   override def named(name: String): javadsl.Sink[In, Mat] =

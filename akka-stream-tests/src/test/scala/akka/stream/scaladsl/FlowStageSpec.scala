@@ -4,12 +4,12 @@
 package akka.stream.scaladsl
 
 import akka.actor.PoisonPill
-import akka.stream.{ OperationAttributes, OverflowStrategy, ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ Attributes, OverflowStrategy, ActorMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.stage._
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -24,7 +24,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
   val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "A Flow with transform operations" must {
     "produce one-to-one transformation as expected" in assertAllStagesStopped {

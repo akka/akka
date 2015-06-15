@@ -1,6 +1,6 @@
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, FlowShape }
+import akka.stream.{ ActorMaterializer, ActorFlowMaterializerSettings, FlowShape }
 import akka.stream.testkit.AkkaSpec
 
 import scala.concurrent.{ Await, Future }
@@ -12,7 +12,7 @@ class GraphPartialSpec extends AkkaSpec {
   val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "FlowFlowGraph.partial" must {
     import FlowGraph.Implicits._

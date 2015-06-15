@@ -98,7 +98,7 @@ private object PoolConductor {
 
   private class SlotSelector(slotCount: Int, maxRetries: Int, pipeliningLimit: Int, log: LoggingAdapter)
     extends FlexiMerge[SwitchCommand, FanInShape2[RequestContext, SimpleSlotEvent, SwitchCommand]](
-      new FanInShape2("PoolConductor.SlotSelector"), OperationAttributes.name("PoolConductor.SlotSelector")) {
+      new FanInShape2("PoolConductor.SlotSelector"), Attributes.name("PoolConductor.SlotSelector")) {
     import FlexiMerge._
 
     def createMergeLogic(s: FanInShape2[RequestContext, SimpleSlotEvent, SwitchCommand]): MergeLogic[SwitchCommand] =
@@ -177,7 +177,7 @@ private object PoolConductor {
   }
 
   private class Route(slotCount: Int) extends FlexiRoute[SwitchCommand, UniformFanOutShape[SwitchCommand, RequestContext]](
-    new UniformFanOutShape(slotCount, "PoolConductor.Route"), OperationAttributes.name("PoolConductor.Route")) {
+    new UniformFanOutShape(slotCount, "PoolConductor.Route"), Attributes.name("PoolConductor.Route")) {
     import FlexiRoute._
 
     def createRouteLogic(s: UniformFanOutShape[SwitchCommand, RequestContext]): RouteLogic[SwitchCommand] =
@@ -198,7 +198,7 @@ private object PoolConductor {
 
   // FIXME: remove when #17038 is cleared
   private class RetrySplit extends FlexiRoute[SlotEvent, FanOutShape2[SlotEvent, SimpleSlotEvent, RequestContext]](
-    new FanOutShape2("PoolConductor.RetrySplit"), OperationAttributes.name("PoolConductor.RetrySplit")) {
+    new FanOutShape2("PoolConductor.RetrySplit"), Attributes.name("PoolConductor.RetrySplit")) {
     import FlexiRoute._
 
     def createRouteLogic(s: FanOutShape2[SlotEvent, SimpleSlotEvent, RequestContext]): RouteLogic[SlotEvent] =

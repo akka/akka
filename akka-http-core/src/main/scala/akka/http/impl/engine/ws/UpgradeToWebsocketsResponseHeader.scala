@@ -5,7 +5,7 @@
 package akka.http.impl.engine.ws
 
 import akka.http.scaladsl.model.headers.CustomHeader
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 
 private[http] case class UpgradeToWebsocketResponseHeader(handlerFlow: Flow[FrameEvent, FrameEvent, Any])

@@ -8,7 +8,7 @@ import akka.event.Logging
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.TestPublisher
 import org.reactivestreams.Publisher
@@ -27,7 +27,7 @@ abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherS
 
   def this() = this(false)
 
-  implicit lazy val materializer = ActorFlowMaterializer(
+  implicit lazy val materializer = ActorMaterializer(
     ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 512, maxSize = 512))(system)
 
   override def createFailedPublisher(): Publisher[T] =

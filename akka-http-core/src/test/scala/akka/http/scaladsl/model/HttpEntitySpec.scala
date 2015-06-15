@@ -13,7 +13,7 @@ import org.scalatest.matchers.Matcher
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.impl.util.StreamUtils
 
@@ -30,7 +30,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
   override def afterAll() = system.shutdown()
 
   "HttpEntity" - {

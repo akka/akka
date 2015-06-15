@@ -5,11 +5,11 @@ package akka.stream.scaladsl
 
 import akka.actor.Actor
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 
 /**
  * Mix this trait into your [[akka.actor.Actor]] if you need an implicit
- * [[akka.stream.FlowMaterializer]] in scope.
+ * [[akka.stream.Materializer]] in scope.
  *
  * Subclass may override [[#flowMaterializerSettings]] to define custom
  * [[akka.stream.ActorFlowMaterializerSettings]] for the `FlowMaterializer`.
@@ -22,5 +22,5 @@ trait ImplicitFlowMaterializer { this: Actor ⇒
    */
   def flowMaterializerSettings: ActorFlowMaterializerSettings = ActorFlowMaterializerSettings(context.system)
 
-  final implicit val flowMaterializer: ActorFlowMaterializer = ActorFlowMaterializer(Some(flowMaterializerSettings))
+  final implicit val flowMaterializer: ActorMaterializer = ActorMaterializer(Some(flowMaterializerSettings))
 }

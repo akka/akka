@@ -1,7 +1,7 @@
 package docs.stream.cookbook
 
 import akka.event.Logging
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit.{ EventFilter, TestProbe }
 
@@ -30,7 +30,7 @@ class RecipeLoggingElements extends RecipeSpec {
       //#log-custom
       // customise log levels
       mySource.log("before-map")
-        .withAttributes(OperationAttributes.logLevels(onElement = Logging.WarningLevel))
+        .withAttributes(Attributes.logLevels(onElement = Logging.WarningLevel))
         .map(analyse)
 
       // or provide custom logging adapter

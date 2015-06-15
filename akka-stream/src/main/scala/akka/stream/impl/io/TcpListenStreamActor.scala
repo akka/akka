@@ -8,7 +8,7 @@ import scala.concurrent.{ Future, Promise }
 import akka.actor._
 import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
-import akka.stream.{ FlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ Materializer, ActorFlowMaterializerSettings }
 import akka.stream.impl._
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.{ Tcp ⇒ StreamTcp }

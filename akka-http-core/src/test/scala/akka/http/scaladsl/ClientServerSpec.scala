@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.ActorSystem
 import akka.testkit.EventFilter
-import akka.stream.{ ActorFlowMaterializer, BindFailedException }
+import akka.stream.{ ActorMaterializer, BindFailedException }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.http.scaladsl.model.HttpEntity._
@@ -34,7 +34,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     akka.log-dead-letters = OFF""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "The low-level HTTP infrastructure" should {
 

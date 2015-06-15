@@ -8,17 +8,17 @@ import akka.stream.testkit.Utils._
 import org.scalactic.ConversionCheckedTripleEquals
 import akka.util.ByteString
 import akka.stream.BidiShape
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
-  import OperationAttributes._
+  import Attributes._
   import FlowGraph.Implicits._
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   val bidi = BidiFlow() { b ⇒
     val top = b.add(Flow[Int].map(x ⇒ x.toLong + 2).withAttributes(name("top")))

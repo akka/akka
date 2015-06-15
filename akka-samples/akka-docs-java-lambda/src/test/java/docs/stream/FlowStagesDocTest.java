@@ -38,7 +38,7 @@ public class FlowStagesDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
   
   static //#one-to-one
   public class Map<A, B> extends PushPullStage<A, B> {

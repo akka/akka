@@ -7,7 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 
 import akka.stream.testkit._
@@ -17,7 +17,7 @@ class FlowExpandSpec extends AkkaSpec {
   val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "Expand" must {
 

@@ -6,7 +6,7 @@ package docs.stream
 import scala.concurrent.duration._
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import scala.concurrent.Future
 import akka.testkit.TestProbe
 import akka.actor.ActorRef
@@ -15,8 +15,8 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.stream.OperationAttributes
-import akka.stream.ActorOperationAttributes
+import akka.stream.Attributes
+import akka.stream.ActorAttributes
 import scala.concurrent.ExecutionContext
 import akka.stream.ActorFlowMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
@@ -124,7 +124,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "calling external service with mapAsync" in {
     val probe = TestProbe()
@@ -172,7 +172,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
     //#email-addresses-mapAsync-supervision
-    import ActorOperationAttributes.supervisionStrategy
+    import ActorAttributes.supervisionStrategy
     import Supervision.resumingDecider
 
     val emailAddresses: Source[String, Unit] =
@@ -270,7 +270,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       .map { phoneNo =>
         smsServer.send(TextMessage(to = phoneNo, body = "I like your tweet"))
       }
-      .withAttributes(ActorOperationAttributes.dispatcher("blocking-dispatcher"))
+      .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"))
     val sendTextMessages: RunnableFlow[Unit] =
       phoneNumbers.via(send).to(Sink.ignore)
 
@@ -322,7 +322,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = ActorFlowMaterializer(
+    implicit val mat = ActorMaterializer(
       ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
@@ -354,7 +354,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = ActorFlowMaterializer(
+    implicit val mat = ActorMaterializer(
       ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))

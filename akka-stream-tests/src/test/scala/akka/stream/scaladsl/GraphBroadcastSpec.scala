@@ -4,7 +4,7 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 
 import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings }
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 
@@ -13,7 +13,7 @@ class GraphBroadcastSpec extends AkkaSpec {
   val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "A broadcast" must {
     import FlowGraph.Implicits._

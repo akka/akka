@@ -12,8 +12,8 @@ import akka.stream.impl._
 import akka.stream.stage.Context
 import akka.stream.stage.PushStage
 import akka.stream.stage.SyncDirective
-import akka.stream.{ SinkShape, Inlet, Outlet, Graph, OperationAttributes }
-import akka.stream.OperationAttributes._
+import akka.stream.{ SinkShape, Inlet, Outlet, Graph, Attributes }
+import akka.stream.Attributes._
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage }
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -33,16 +33,16 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
    * of the `Source`, e.g. the `Subscriber` of a [[Source#subscriber]].
    */
-  def runWith[Mat2](source: Graph[SourceShape[In], Mat2])(implicit materializer: FlowMaterializer): Mat2 =
+  def runWith[Mat2](source: Graph[SourceShape[In], Mat2])(implicit materializer: Materializer): Mat2 =
     Source.wrap(source).to(this).run()
 
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
     new Sink(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
-  override def withAttributes(attr: OperationAttributes): Sink[In, Mat] =
+  override def withAttributes(attr: Attributes): Sink[In, Mat] =
     new Sink(module.withAttributes(attr).wrap())
 
-  override def named(name: String): Sink[In, Mat] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Sink[In, Mat] = withAttributes(Attributes.name(name))
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Sink[In, Mat] = new javadsl.Sink(this)

@@ -15,7 +15,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import scala.Unit;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.Promise;
@@ -44,7 +43,7 @@ public class FlowDocTest {
         system = null;
     }
 
-    final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+    final Materializer mat = ActorMaterializer.create(system);
 
     @Test
     public void sourceIsImmutable() throws Exception {
