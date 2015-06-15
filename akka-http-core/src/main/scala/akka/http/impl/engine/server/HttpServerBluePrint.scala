@@ -296,7 +296,7 @@ private[http] object HttpServerBluePrint {
     val flow =
       Flow[ByteString]
         .transform[FrameEvent](() ⇒ new FrameEventParser)
-        .via(Flow.wrap(sink, source)((_, _) ⇒ ()))
+        .via(Flow.wrap(sink, source)(Keep.none))
         .transform(() ⇒ new FrameEventRenderer)
 
     new WebsocketSetup {
