@@ -14,7 +14,7 @@ import scala.util.control.NonFatal
  */
 private[akka] class FlexiRouteImpl[T, S <: Shape](_settings: ActorFlowMaterializerSettings,
                                                   shape: S,
-                                                  routeLogic: scaladsl.FlexiRoute.RouteLogic[T])
+                                                  val routeLogic: scaladsl.FlexiRoute.RouteLogic[T])
   extends FanOut(_settings, shape.outlets.size) {
 
   import akka.stream.scaladsl.FlexiRoute._
@@ -30,6 +30,16 @@ private[akka] class FlexiRouteImpl[T, S <: Shape](_settings: ActorFlowMaterializ
   private var completion: CompletionT = _
   // needed to ensure that at most one element is emitted from onInput
   private val emitted = Array.ofDim[Boolean](outputCount)
+
+  override def preStart(): Unit = {
+    super.preStart()
+    routeLogic.preStart()
+  }
+
+  override def postStop(): Unit = {
+    try routeLogic.postStop()
+    finally super.postStop()
+  }
 
   override protected val outputBunch = new OutputBunch(outputCount, self, this) {
     override def onCancel(output: Int): Unit =

@@ -17,7 +17,7 @@ import scala.util.control.NonFatal
 private[akka] class FlexiMergeImpl[T, S <: Shape](
   _settings: ActorFlowMaterializerSettings,
   shape: S,
-  mergeLogic: scaladsl.FlexiMerge.MergeLogic[T]) extends FanIn(_settings, shape.inlets.size) {
+  val mergeLogic: scaladsl.FlexiMerge.MergeLogic[T]) extends FanIn(_settings, shape.inlets.size) {
 
   private type StateT = mergeLogic.State[_]
   private type CompletionT = mergeLogic.CompletionHandling
@@ -30,6 +30,16 @@ private[akka] class FlexiMergeImpl[T, S <: Shape](
   private var completion: CompletionT = _
   // needed to ensure that at most one element is emitted from onInput
   private var emitted = false
+
+  override def preStart(): Unit = {
+    super.preStart()
+    mergeLogic.preStart()
+  }
+
+  override def postStop(): Unit = {
+    try mergeLogic.postStop()
+    finally super.postStop()
+  }
 
   override protected val inputBunch = new FanIn.InputBunch(inputCount, settings.maxInputBufferSize, this) {
     override def onError(input: Int, e: Throwable): Unit = {

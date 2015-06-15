@@ -63,6 +63,25 @@ object GraphFlexiMergeSpec {
     }
   }
 
+  class StartStopTest(lifecycleProbe: ActorRef)
+    extends FlexiMerge[String, FanInShape2[String, String, String]](new FanInShape2("StartStopTest"), OperationAttributes.name("StartStopTest")) {
+
+    def createMergeLogic(p: PortT) = new MergeLogic[String] {
+
+      override def preStart(): Unit = lifecycleProbe ! "preStart"
+      override def postStop(): Unit = lifecycleProbe ! "postStop"
+
+      override def initialState = State(ReadAny(p.in0, p.in1)) {
+        (ctx, port, element) ⇒
+          lifecycleProbe ! element
+          if (element == "fail") throw new IllegalStateException("test failure")
+
+          ctx.emit(element)
+          SameState
+      }
+    }
+  }
+
   class MyZip[A, B] extends FlexiMerge[(A, B), FanInShape2[A, B, (A, B)]](new FanInShape2("MyZip"), OperationAttributes.name("MyZip")) {
     def createMergeLogic(p: PortT): MergeLogic[(A, B)] = new MergeLogic[(A, B)] {
       var lastInA: A = _
@@ -705,6 +724,41 @@ class GraphFlexiMergeSpec extends AkkaSpec {
           merge.out ~> sink.inlet
       }
       Await.result(graph.run(), 1.second) should equal(3)
+    }
+
+    "handle preStart and postStop" in assertAllStagesStopped {
+      val p = TestProbe()
+
+      FlowGraph.closed() { implicit b ⇒
+        val m = b.add(new StartStopTest(p.ref))
+
+        Source(List("1", "2", "3")) ~> m.in0
+        Source.empty ~> m.in1
+        m.out ~> Sink.ignore
+      }.run()
+
+      p.expectMsg("preStart")
+      p.expectMsg("1")
+      p.expectMsg("2")
+      p.expectMsg("3")
+      p.expectMsg("postStop")
+    }
+
+    "invoke postStop after error" in assertAllStagesStopped {
+      val p = TestProbe()
+
+      FlowGraph.closed() { implicit b ⇒
+        val m = b.add(new StartStopTest(p.ref))
+
+        Source(List("1", "fail", "2", "3")) ~> m.in0
+        Source.empty ~> m.in1
+        m.out ~> Sink.ignore
+      }.run()
+
+      p.expectMsg("preStart")
+      p.expectMsg("1")
+      p.expectMsg("fail")
+      p.expectMsg("postStop")
     }
   }
 

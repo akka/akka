@@ -159,6 +159,19 @@ object FlexiMerge {
   abstract class MergeLogic[T, Out] {
     def initialState: State[T, Out]
     def initialCompletionHandling: CompletionHandling[Out] = defaultCompletionHandling
+
+    /**
+     * This method is executed during the startup of this stage, before the processing of the elements
+     * begin.
+     */
+    def preStart(): Unit = ()
+
+    /**
+     * This method is executed during shutdown of this stage, after processing of elements stopped, or the
+     * stage failed.
+     */
+    def postStop(): Unit = ()
+
     /**
      * Return this from [[State]] `onInput` to use same state for next element.
      */
@@ -238,6 +251,9 @@ object FlexiMerge {
     class MergeLogicWrapper[T, Out](delegate: MergeLogic[T, Out]) extends scaladsl.FlexiMerge.MergeLogic[Out] {
 
       override def initialState: State[T] = wrapState(delegate.initialState)
+
+      override def preStart() = delegate.preStart()
+      override def postStop() = delegate.postStop()
 
       override def initialCompletionHandling: this.CompletionHandling =
         wrapCompletionHandling(delegate.initialCompletionHandling)

@@ -66,6 +66,18 @@ object FlexiRoute {
     def initialCompletionHandling: CompletionHandling = defaultCompletionHandling
 
     /**
+     * This method is executed during the startup of this stage, before the processing of the elements
+     * begin.
+     */
+    def preStart(): Unit = ()
+
+    /**
+     * This method is executed during shutdown of this stage, after processing of elements stopped, or the
+     * stage failed.
+     */
+    def postStop(): Unit = ()
+
+    /**
      * Context that is passed to the `onInput` function of [[State]].
      * The context provides means for performing side effects, such as emitting elements
      * downstream.

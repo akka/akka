@@ -139,6 +139,18 @@ object FlexiRoute {
     def initialCompletionHandling: CompletionHandling[In] = defaultCompletionHandling
 
     /**
+     * This method is executed during the startup of this stage, before the processing of the elements
+     * begin.
+     */
+    def preStart(): Unit = ()
+
+    /**
+     * This method is executed during shutdown of this stage, after processing of elements stopped, or the
+     * stage failed.
+     */
+    def postStop(): Unit = ()
+
+    /**
      * Return this from [[State]] `onInput` to use same state for next element.
      */
     def sameState[T]: State[T, In] = FlexiRoute.sameStateInstance.asInstanceOf[State[T, In]]
@@ -201,6 +213,9 @@ object FlexiRoute {
    */
   private[akka] object Internal {
     class RouteLogicWrapper[In](delegate: RouteLogic[In]) extends scaladsl.FlexiRoute.RouteLogic[In] {
+
+      override def preStart(): Unit = delegate.preStart()
+      override def postStop(): Unit = delegate.postStop()
 
       override def initialState: this.State[_] = wrapState(delegate.initialState)
 
