@@ -186,7 +186,6 @@ class StreamLayoutSpec extends AkkaSpec {
         assignPort(outPort, publisher)
       }
     }
-    override protected def createIdentityProcessor: Processor[Any, Any] = null // Not used in test
   }
 
   def checkMaterialized(topLevel: Module): (Set[TestPublisher], Set[TestSubscriber]) = {
