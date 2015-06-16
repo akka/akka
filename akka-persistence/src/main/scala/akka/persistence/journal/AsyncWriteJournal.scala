@@ -47,7 +47,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       // Send replayed messages and replay result to persistentActor directly. No need
       // to resequence replayed messages relative to written and looped messages.
       asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) { p ⇒
-        if (!p.deleted || replayDeleted) persistentActor.tell(ReplayedMessage(p), p.sender)
+        if (!p.deleted || replayDeleted) persistentActor.tell(ReplayedMessage(p), Actor.noSender)
       } map {
         case _ ⇒ ReplayMessagesSuccess
       } recover {
