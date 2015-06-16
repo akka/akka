@@ -27,7 +27,11 @@ import scala.util._
 private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLogging {
   private val FilenamePattern = """^snapshot-(.+)-(\d+)-(\d+)""".r
 
+  import akka.util.Helpers._
   private val config = context.system.settings.config.getConfig("akka.persistence.snapshot-store.local")
+  private val maxLoadAttempts = config.getInt("max-load-attempts")
+    .requiring(_ > 1, "max-load-attempts must be >= 1")
+
   private val streamDispatcher = context.system.dispatchers.lookup(config.getString("stream-dispatcher"))
   private val dir = new File(config.getString("dir"))
 
@@ -38,14 +42,11 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     //
     // Heuristics:
     //
-    // Select youngest 3 snapshots that match upper bound. This may help in situations
-    // where saving of a snapshot could not be completed because of a JVM crash. Hence,
-    // an attempt to load that snapshot will fail but loading an older snapshot may
-    // succeed.
+    // Select youngest `maxLoadAttempts` snapshots that match upper bound.
+    // This may help in situations where saving of a snapshot could not be completed because of a JVM crash.
+    // Hence, an attempt to load that snapshot will fail but loading an older snapshot may succeed.
     //
-    // TODO: make number of loading attempts configurable
-    //
-    val metadata = snapshotMetadatas(persistenceId, criteria).sorted.takeRight(3)
+    val metadata = snapshotMetadatas(persistenceId, criteria).sorted.takeRight(maxLoadAttempts)
     Future(load(metadata))(streamDispatcher)
   }
 
