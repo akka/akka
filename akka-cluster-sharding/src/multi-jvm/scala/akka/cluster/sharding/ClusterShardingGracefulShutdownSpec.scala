@@ -56,11 +56,11 @@ object ClusterShardingGracefulShutdownSpec extends MultiNodeConfig {
     }
   }
 
-  val idExtractor: ShardRegion.IdExtractor = {
+  val extractEntityId: ShardRegion.ExtractEntityId = {
     case id: Int ⇒ (id.toString, id)
   }
 
-  val shardResolver: ShardRegion.ShardResolver = msg ⇒ msg match {
+  val extractShardId: ShardRegion.ExtractShardId = msg ⇒ msg match {
     case id: Int ⇒ id.toString
   }
 
@@ -121,11 +121,10 @@ class ClusterShardingGracefulShutdownSpec extends MultiNodeSpec(ClusterShardingG
     val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
     ClusterSharding(system).start(
       typeName = "Entity",
-      entryProps = Some(Props[Entity]),
-      roleOverride = None,
-      rememberEntries = false,
-      idExtractor = idExtractor,
-      shardResolver = shardResolver,
+      entityProps = Props[Entity],
+      settings = ClusterShardingSettings(system),
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId,
       allocationStrategy,
       handOffStopMessage = StopEntity)
   }

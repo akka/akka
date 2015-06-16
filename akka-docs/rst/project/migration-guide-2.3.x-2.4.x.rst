@@ -227,6 +227,23 @@ The classes changed package name from ``akka.contrib.pattern`` to ``akka.cluster
 
 The configuration properties changed name to ``akka.cluster.sharding``.
 
+ClusterSharding construction
+============================
+
+Several parameters of the ``start`` method of the ``ClusterSharding`` extension are now defined
+in a settings object ``ClusterShardingSettings``.
+It can be created from system configuration properties and also amended with API.
+These settings can be defined differently per entry type if needed.
+
+Starting the ``ShardRegion`` in proxy mode is now done with the ``startProxy`` method 
+of the ``ClusterSharding`` extension instead of the optional ``entryProps`` parameter.
+
+Entry was renamed to Entity, for example in the ``MessagesExtractor`` in the Java API
+and the ``EntityId`` type in the Scala API.
+
+``idExtractor`` function was renamed to ``extractEntityId``. ``shardResolver`` function 
+was renamed to ``extractShardId``.
+
 ClusterSingletonManager and ClusterSingletonProxy construction
 ==============================================================
 

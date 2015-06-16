@@ -33,7 +33,7 @@ object ClusterShardingLeavingSpec extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
@@ -68,11 +68,11 @@ object ClusterShardingLeavingSpec extends MultiNodeConfig {
     }
   }
 
-  val idExtractor: ShardRegion.IdExtractor = {
+  val extractEntityId: ShardRegion.ExtractEntityId = {
     case m @ Ping(id) ⇒ (id, m)
   }
 
-  val shardResolver: ShardRegion.ShardResolver = {
+  val extractShardId: ShardRegion.ExtractShardId = {
     case Ping(id: String) ⇒ id.charAt(0).toString
   }
 
@@ -123,11 +123,10 @@ class ClusterShardingLeavingSpec extends MultiNodeSpec(ClusterShardingLeavingSpe
   def startSharding(): Unit = {
     ClusterSharding(system).start(
       typeName = "Entity",
-      entryProps = Some(Props[Entity]),
-      roleOverride = None,
-      rememberEntries = false,
-      idExtractor = idExtractor,
-      shardResolver = shardResolver)
+      entityProps = Props[Entity],
+      settings = ClusterShardingSettings(system),
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
