@@ -4,9 +4,9 @@
 
 package akka.persistence.snapshot.japi
 
-import akka.japi.{ Option ⇒ JOption }
 import akka.persistence._
 import akka.persistence.snapshot.{ SnapshotStore ⇒ SSnapshotStore }
+import akka.japi.Util._
 
 import scala.concurrent.Future
 
@@ -16,19 +16,16 @@ import scala.concurrent.Future
 abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
   import context.dispatcher
 
-  final def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria) =
-    doLoadAsync(persistenceId, criteria).map(_.asScala)
+  override final def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] =
+    doLoadAsync(persistenceId, criteria).map(option)
 
-  final def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] =
+  override final def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] =
     doSaveAsync(metadata, snapshot).map(Unit.unbox)
 
-  final def saved(metadata: SnapshotMetadata): Unit =
-    onSaved(metadata)
+  override final def deleteAsync(metadata: SnapshotMetadata): Future[Unit] =
+    doDeleteAsync(metadata).map(_ ⇒ ())
 
-  final def delete(metadata: SnapshotMetadata): Future[Unit] =
-    doDelete(metadata).map(_ ⇒ ())
-
-  final def delete(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] =
-    doDelete(persistenceId: String, criteria: SnapshotSelectionCriteria).map(_ ⇒ ())
+  override final def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] =
+    doDeleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria).map(_ ⇒ ())
 
 }

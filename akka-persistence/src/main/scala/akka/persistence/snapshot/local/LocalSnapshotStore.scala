@@ -20,7 +20,7 @@ import scala.concurrent.Future
 import scala.util._
 
 /**
- * INTERNAL API.
+ * INTERNAL API
  *
  * Local filesystem backed snapshot store.
  */
@@ -38,7 +38,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   private val serializationExtension = SerializationExtension(context.system)
   private var saving = immutable.Set.empty[SnapshotMetadata] // saving in progress
 
-  def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
+  override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
     //
     // Heuristics:
     //
@@ -50,16 +50,13 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     Future(load(metadata))(streamDispatcher)
   }
 
-  def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
+  override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
     saving += metadata
-    Future(save(metadata, snapshot))(streamDispatcher)
+    val completion = Future(save(metadata, snapshot))(streamDispatcher)
+    completion
   }
 
-  def saved(metadata: SnapshotMetadata): Unit = {
-    saving -= metadata
-  }
-
-  def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
+  override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
     saving -= metadata
     Future {
       // multiple snapshot files here mean that there were multiple snapshots for this seqNr, we delete all of them
@@ -69,11 +66,18 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     }(streamDispatcher).map(_ ⇒ ())(streamDispatcher)
   }
 
-  def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = {
+  override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = {
     val metadatas = snapshotMetadatas(persistenceId, criteria)
     Future.sequence {
       metadatas.map(deleteAsync)
     }(collection.breakOut, streamDispatcher).map(_ ⇒ ())(streamDispatcher)
+  }
+
+  override def receivePluginInternal: Receive = {
+    case SaveSnapshotSuccess(metadata) ⇒ saving -= metadata
+    case _: SaveSnapshotFailure        ⇒ // ignore
+    case _: DeleteSnapshotsSuccess     ⇒ // ignore
+    case _: DeleteSnapshotsFailure     ⇒ // ignore
   }
 
   private def snapshotFiles(metadata: SnapshotMetadata): immutable.Seq[File] = {
