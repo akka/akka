@@ -254,8 +254,12 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
+  final def persistAll[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
+    events.foreach(persist(_)(handler)) // TODO the atomic part should be handled by issue #15377
+
+  @deprecated("use persistAll instead", "2.4")
   final def persist[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
-    events.foreach(persist(_)(handler))
+    persistAll(events)(handler)
 
   /**
    * Asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -290,8 +294,12 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
-  final def persistAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
+  final def persistAllAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
     events.foreach(persistAsync(_)(handler))
+
+  @deprecated("use persistAllAsync instead", "2.4")
+  final def persistAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
+    persistAllAsync(events)(handler)
 
   /**
    * Defer the handler execution until all pending handlers have been executed.

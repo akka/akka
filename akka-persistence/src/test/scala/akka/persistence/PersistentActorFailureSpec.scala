@@ -105,7 +105,7 @@ object PersistentActorFailureSpec {
         recoveryFailureProbe.foreach { _ ! r }
     }
 
-    override def receiveRecover: Receive = failingRecover orElse super.receiveRecover
+    override def receiveRecover: Receive = failingRecover.orElse[Any, Unit](super.receiveRecover)
 
   }
 
