@@ -21,54 +21,67 @@ trait SnapshotStore extends Actor with ActorLogging {
   private val extension = Persistence(context.system)
   private val publish = extension.settings.internal.publishPluginCommands
 
-  final def receive = {
+  final def receive = receiveSnapshotStore.orElse[Any, Unit](receivePluginInternal)
+
+  final val receiveSnapshotStore: Actor.Receive = {
     case LoadSnapshot(persistenceId, criteria, toSequenceNr) ⇒
-      val p = sender()
       loadAsync(persistenceId, criteria.limit(toSequenceNr)) map {
         sso ⇒ LoadSnapshotResult(sso, toSequenceNr)
       } recover {
         case e ⇒ LoadSnapshotResult(None, toSequenceNr)
-      } pipeTo p
+      } pipeTo senderPersistentActor()
 
     case SaveSnapshot(metadata, snapshot) ⇒
-      val p = sender()
       val md = metadata.copy(timestamp = System.currentTimeMillis)
       saveAsync(md, snapshot) map {
         _ ⇒ SaveSnapshotSuccess(md)
       } recover {
         case e ⇒ SaveSnapshotFailure(metadata, e)
-      } to (self, p)
+      } to (self, senderPersistentActor())
 
-    case evt @ SaveSnapshotSuccess(metadata) ⇒
-      try saved(metadata) finally sender() ! evt // sender is persistentActor
-
+    case evt: SaveSnapshotSuccess ⇒
+      try tryReceivePluginInternal(evt) finally senderPersistentActor ! evt // sender is persistentActor
     case evt @ SaveSnapshotFailure(metadata, _) ⇒
-      try deleteAsync(metadata) finally sender() ! evt // sender is persistentActor
+      try {
+        tryReceivePluginInternal(evt)
+        deleteAsync(metadata)
+      } finally senderPersistentActor() ! evt // sender is persistentActor
 
     case d @ DeleteSnapshot(metadata) ⇒
-      val p = sender()
       deleteAsync(metadata) map {
-        case _ ⇒
-          log.warning("deleting by: " + d)
-          DeleteSnapshotSuccess(metadata)
+        case _ ⇒ DeleteSnapshotSuccess(metadata)
       } recover {
         case e ⇒ DeleteSnapshotFailure(metadata, e)
-      } pipeTo p onComplete {
-        case _ if publish ⇒ context.system.eventStream.publish(d)
-      }
+      } to (self, senderPersistentActor())
+      if (publish) context.system.eventStream.publish(d)
+
+    case evt: DeleteSnapshotSuccess ⇒
+      try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
+    case evt: DeleteSnapshotFailure ⇒
+      try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
 
     case d @ DeleteSnapshots(persistenceId, criteria) ⇒
-      val p = sender()
       deleteAsync(persistenceId, criteria) map {
         case _ ⇒ DeleteSnapshotsSuccess(criteria)
       } recover {
         case e ⇒ DeleteSnapshotsFailure(criteria, e)
-      } pipeTo p onComplete {
-        case _ if publish ⇒ context.system.eventStream.publish(d)
-      }
+      } to (self, senderPersistentActor())
+      if (publish) context.system.eventStream.publish(d)
+
+    case evt: DeleteSnapshotsFailure ⇒
+      try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt // sender is persistentActor
+    case evt: DeleteSnapshotsSuccess ⇒
+      try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
   }
 
+  /** Documents intent that the sender() is expected to be the PersistentActor */
+  @inline private final def senderPersistentActor(): ActorRef = sender()
+
+  private def tryReceivePluginInternal(evt: Any): Unit =
+    if (receivePluginInternal.isDefinedAt(evt)) receivePluginInternal(evt)
+
   //#snapshot-store-plugin-api
+
   /**
    * Plugin API: asynchronously loads a snapshot.
    *
@@ -86,13 +99,6 @@ trait SnapshotStore extends Actor with ActorLogging {
   def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit]
 
   /**
-   * Plugin API: called after successful saving of a snapshot.
-   *
-   * @param metadata snapshot metadata.
-   */
-  def saved(metadata: SnapshotMetadata): Unit
-
-  /**
    * Plugin API: deletes the snapshot identified by `metadata`.
    *
    * @param metadata snapshot metadata.
@@ -107,5 +113,12 @@ trait SnapshotStore extends Actor with ActorLogging {
    * @param criteria selection criteria for deleting.
    */
   def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit]
+
+  /**
+   * Plugin API
+   * Allows plugin implementers to use `f pipeTo self` and
+   * handle additional messages for implementing advanced features
+   */
+  def receivePluginInternal: Actor.Receive = Actor.emptyBehavior
   //#snapshot-store-plugin-api
 }

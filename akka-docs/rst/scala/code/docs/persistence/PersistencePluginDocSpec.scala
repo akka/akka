@@ -4,6 +4,7 @@
 
 package docs.persistence
 
+import akka.actor.Actor.Receive
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import com.typesafe.config._
@@ -132,15 +133,20 @@ class MyJournal extends AsyncWriteJournal {
                             replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
   def asyncReadHighestSequenceNr(persistenceId: String,
                                  fromSequenceNr: Long): Future[Long] = ???
+
+  // optionally override:
+  override def receivePluginInternal: Receive = super.receivePluginInternal
 }
 
 class MySnapshotStore extends SnapshotStore {
   def loadAsync(persistenceId: String,
                 criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
   def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = ???
-  def saved(metadata: SnapshotMetadata): Unit = ???
   def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = ???
   def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = ???
+
+  // optionally override:
+  override def receivePluginInternal: Receive = super.receivePluginInternal
 }
 
 object PersistenceTCKDoc {

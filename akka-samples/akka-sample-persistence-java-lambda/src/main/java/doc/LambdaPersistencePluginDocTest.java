@@ -16,8 +16,8 @@ import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
 import akka.japi.pf.ReceiveBuilder;
 import scala.concurrent.Future;
-import akka.japi.Option;
 import akka.japi.Procedure;
+import java.util.Optional;
 
 
 public class LambdaPersistencePluginDocTest {
@@ -56,7 +56,7 @@ public class LambdaPersistencePluginDocTest {
 
   class MySnapshotStore extends SnapshotStore {
     @Override
-    public Future<Option<SelectedSnapshot>> doLoadAsync(String persistenceId, SnapshotSelectionCriteria criteria) {
+    public Future<Optional<SelectedSnapshot>> doLoadAsync(String persistenceId, SnapshotSelectionCriteria criteria) {
       return null;
     }
 
@@ -66,16 +66,12 @@ public class LambdaPersistencePluginDocTest {
     }
 
     @Override
-    public void onSaved(SnapshotMetadata metadata) throws Exception {
-    }
-
-    @Override
-    public Future<Void> doDelete(SnapshotMetadata metadata) throws Exception {
+    public Future<Void> doDeleteAsync(SnapshotMetadata metadata) {
       return Futures.successful(null);
     }
 
     @Override
-    public Future<Void> doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception {
+    public Future<Void> doDeleteAsync(String persistenceId, SnapshotSelectionCriteria criteria) {
       return Futures.successful(null);
     }
   }
