@@ -34,9 +34,9 @@ public class ClusterShardingTest {
     ShardRegion.MessageExtractor messageExtractor = new ShardRegion.MessageExtractor() {
 
       @Override
-      public String entryId(Object message) {
-        if (message instanceof Counter.EntryEnvelope)
-          return String.valueOf(((Counter.EntryEnvelope) message).id);
+      public String entityId(Object message) {
+        if (message instanceof Counter.EntityEnvelope)
+          return String.valueOf(((Counter.EntityEnvelope) message).id);
         else if (message instanceof Counter.Get)
           return String.valueOf(((Counter.Get) message).counterId);
         else
@@ -44,9 +44,9 @@ public class ClusterShardingTest {
       }
 
       @Override
-      public Object entryMessage(Object message) {
-        if (message instanceof Counter.EntryEnvelope)
-          return ((Counter.EntryEnvelope) message).payload;
+      public Object entityMessage(Object message) {
+        if (message instanceof Counter.EntityEnvelope)
+          return ((Counter.EntityEnvelope) message).payload;
         else
           return message;
       }
@@ -54,8 +54,8 @@ public class ClusterShardingTest {
       @Override
       public String shardId(Object message) {
         int numberOfShards = 100;
-        if (message instanceof Counter.EntryEnvelope) {
-          long id = ((Counter.EntryEnvelope) message).id;
+        if (message instanceof Counter.EntityEnvelope) {
+          long id = ((Counter.EntityEnvelope) message).id;
           return String.valueOf(id % numberOfShards);
         } else if (message instanceof Counter.Get) {
           long id = ((Counter.Get) message).counterId;
@@ -70,15 +70,16 @@ public class ClusterShardingTest {
 
     //#counter-start
     Option<String> roleOption = Option.none();
+    ClusterShardingSettings settings = ClusterShardingSettings.create(system);
     ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter",
-      Props.create(Counter.class), Option.java2ScalaOption(roleOption), false, messageExtractor);
+      Props.create(Counter.class), settings, messageExtractor);
     //#counter-start
 
     //#counter-usage
     ActorRef counterRegion = ClusterSharding.get(system).shardRegion("Counter");
     counterRegion.tell(new Counter.Get(123), getSelf());
 
-    counterRegion.tell(new Counter.EntryEnvelope(123,
+    counterRegion.tell(new Counter.EntityEnvelope(123,
         Counter.CounterOp.INCREMENT), getSelf());
     counterRegion.tell(new Counter.Get(123), getSelf());
     //#counter-usage
@@ -99,11 +100,11 @@ public class ClusterShardingTest {
       }
     }
 
-    public static class EntryEnvelope {
+    public static class EntityEnvelope {
       final public long id;
       final public Object payload;
 
-      public EntryEnvelope(long id, Object payload) {
+      public EntityEnvelope(long id, Object payload) {
         this.id = id;
         this.payload = payload;
       }
@@ -120,7 +121,7 @@ public class ClusterShardingTest {
     int count = 0;
 
     // getSelf().path().parent().parent().name() is the type name (utf-8 URL-encoded)
-    // getSelf().path().name() is the entry identifier (utf-8 URL-encoded)
+    // getSelf().path().name() is the entity identifier (utf-8 URL-encoded)
     @Override
     public String persistenceId() {
       return getSelf().path().parent().parent().name() + "-" + getSelf().path().name();
