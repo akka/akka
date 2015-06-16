@@ -311,7 +311,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
    * for encryption on the connections.
    */
-  def cachedHostConnectionPoolTls[T](host: String, port: Int = 80,
+  def cachedHostConnectionPoolTls[T](host: String, port: Int = 443,
                                      settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
                                      httpsContext: Option[HttpsContext] = None,
                                      log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
