@@ -200,13 +200,6 @@ private[remote] class ReliableDeliverySupervisor(
   val autoResendTimer = context.system.scheduler.schedule(
     settings.SysResendTimeout, settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
 
-  // Aim for a maximum of 100 resend/s = 0.1 resend/ms
-  val maxResendRate = 100.0
-  val resendLimit =
-    math.min(
-      1000,
-      math.max((settings.SysResendTimeout.toMillis * (maxResendRate / 1000.0)).toInt, 1))
-
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
@@ -372,8 +365,9 @@ private[remote] class ReliableDeliverySupervisor(
       val sequencedSend = send.copy(seqOpt = Some(nextSeq()))
       tryBuffer(sequencedSend)
       // If we have not confirmed the remote UID we cannot transfer the system message at this point just buffer it.
-      // GotUid will kick resendAll() causing the messages to be properly written
-      if (uidConfirmed)
+      // GotUid will kick resendAll() causing the messages to be properly written.
+      // Flow control by not sending more when we already have many outstanding.
+      if (uidConfirmed && resendBuffer.nonAcked.size <= settings.SysResendLimit)
         writer ! sequencedSend
     } else writer ! send
 
@@ -381,7 +375,7 @@ private[remote] class ReliableDeliverySupervisor(
 
   private def resendAll(): Unit = {
     resendNacked()
-    resendBuffer.nonAcked.take(resendLimit) foreach { writer ! _ }
+    resendBuffer.nonAcked.take(settings.SysResendLimit) foreach { writer ! _ }
   }
 
   private def tryBuffer(s: Send): Unit =
@@ -716,7 +710,7 @@ private[remote] class EndpointWriter(
   val writing: Receive = {
     case s: Send ⇒
       if (!writeSend(s)) {
-        if (s.seqOpt.isEmpty) enqueueInBuffer(s)
+        enqueueInBuffer(s)
         scheduleBackoffTimer()
         context.become(buffering)
       }
