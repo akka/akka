@@ -111,13 +111,11 @@ private[akka] case class ActorFlowMaterializerImpl(
         }
       }
 
-      override protected def createIdentityProcessor: Processor[Any, Any] =
-        processorFor(Identity(OperationAttributes.none), OperationAttributes.none, settings)._1
-
       private def processorFor(op: StageModule,
                                effectiveAttributes: OperationAttributes,
                                effectiveSettings: ActorFlowMaterializerSettings): (Processor[Any, Any], Any) = op match {
         case DirectProcessor(processorFactory, _) ⇒ processorFactory()
+        case Identity(attr)                       ⇒ (new VirtualProcessor, ())
         case _ ⇒
           val (opprops, mat) = ActorProcessorFactory.props(ActorFlowMaterializerImpl.this, op, effectiveAttributes)
           val processor = ActorProcessorFactory[Any, Any](actorOf(
@@ -294,7 +292,7 @@ private[akka] object ActorProcessorFactory {
     // Also, otherwise the attributes will not affect the settings properly!
     val settings = materializer.effectiveSettings(att)
     op match {
-      case Identity(_)                ⇒ (ActorInterpreter.props(settings, List(fusing.Map(_identity, settings.supervisionDecider)), materializer, att), ())
+      case Identity(_)                ⇒ throw new AssertionError("Identity cannot end up in ActorProcessorFactory")
       case Fused(ops, _)              ⇒ (ActorInterpreter.props(settings, ops, materializer, att), ())
       case Map(f, _)                  ⇒ (ActorInterpreter.props(settings, List(fusing.Map(f, settings.supervisionDecider)), materializer, att), ())
       case Filter(p, _)               ⇒ (ActorInterpreter.props(settings, List(fusing.Filter(p, settings.supervisionDecider)), materializer, att), ())

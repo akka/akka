@@ -55,7 +55,7 @@ private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out
 private[akka] final class SubscriberSource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Subscriber[Out]](shape) {
 
   override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
-    val processor = new SubscriberSourceVirtualProcessor[Out]
+    val processor = new VirtualProcessor[Out]
     (processor, processor)
   }
 

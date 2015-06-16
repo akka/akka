@@ -60,9 +60,8 @@ private[akka] class PublisherSink[In](val attributes: OperationAttributes, shape
   override def toString: String = "PublisherSink"
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
-    val pub = new PublisherSinkVirtualPublisher[In]
-    val sub = new PublisherSinkVirtualSubscriber[In](pub)
-    (sub, pub)
+    val proc = new VirtualProcessor[In]
+    (proc, proc)
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] = new PublisherSink[In](attributes, shape)
