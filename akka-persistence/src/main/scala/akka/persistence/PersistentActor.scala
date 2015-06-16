@@ -167,8 +167,12 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param events events to be persisted.
    * @param handler handler for each persisted `events`
    */
+  final def persistAll[A](events: JIterable[A], handler: Procedure[A]): Unit =
+    persistAll(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  @deprecated("use persistAll instead", "2.4")
   final def persist[A](events: JIterable[A], handler: Procedure[A]): Unit =
-    persist(Util.immutableSeq(events))(event ⇒ handler(event))
+    persistAll(events, handler)
 
   /**
    * JAVA API: asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -200,8 +204,8 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
-  final def persistAsync[A](events: JIterable[A])(handler: A ⇒ Unit): Unit =
-    super[Eventsourced].persistAsync(Util.immutableSeq(events))(event ⇒ handler(event))
+  final def persistAllAsync[A](events: JIterable[A], handler: Procedure[A]): Unit =
+    super[Eventsourced].persistAllAsync(Util.immutableSeq(events))(event ⇒ handler(event))
 
   /**
    * Defer the handler execution until all pending handlers have been executed.
@@ -288,8 +292,12 @@ abstract class AbstractPersistentActor extends AbstractActor with PersistentActo
    * @param events events to be persisted.
    * @param handler handler for each persisted `events`
    */
+  final def persistAll[A](events: JIterable[A], handler: Procedure[A]): Unit =
+    persistAll(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  @deprecated("use persistAll instead", "2.4")
   final def persist[A](events: JIterable[A], handler: Procedure[A]): Unit =
-    persist(Util.immutableSeq(events))(event ⇒ handler(event))
+    persistAll(events, handler)
 
   /**
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -316,8 +324,12 @@ abstract class AbstractPersistentActor extends AbstractActor with PersistentActo
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
+  final def persistAllAsync[A](events: JIterable[A], handler: Procedure[A]): Unit =
+    persistAllAsync(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  @deprecated("use persistAllAsync instead", "2.4")
   final def persistAsync[A](events: JIterable[A], handler: Procedure[A]): Unit =
-    persistAsync(Util.immutableSeq(events))(event ⇒ handler(event))
+    persistAllAsync(events, handler)
 
   /**
    * Defer the handler execution until all pending handlers have been executed.
