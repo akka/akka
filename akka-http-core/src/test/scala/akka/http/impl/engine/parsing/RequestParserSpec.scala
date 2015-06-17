@@ -138,11 +138,11 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "with a funky `Transfer-Encoding` header" in new Test {
-        """GET / HTTP/1.1
+        """PUT / HTTP/1.1
           |Transfer-Encoding: foo, chunked, bar
           |Host: x
           |
-          |""" should parseTo(HttpRequest(GET, "/", List(`Transfer-Encoding`(TransferEncodings.Extension("foo"),
+          |""" should parseTo(HttpRequest(PUT, "/", List(`Transfer-Encoding`(TransferEncodings.Extension("foo"),
           TransferEncodings.chunked, TransferEncodings.Extension("bar")), Host("x"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
@@ -398,6 +398,19 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |Host: x
             |
             |""" should parseToError(400: StatusCode, ErrorInfo("`Content-Length` header value must not exceed 63-bit integer range"))
+        }
+
+        "with an illegal entity" in new Test {
+          """HEAD /resource/yes HTTP/1.1
+            |Content-length: 3
+            |Host: x
+            |
+            |foo""" should parseToError(422: StatusCode, ErrorInfo("HEAD requests must not have an entity"))
+          """DELETE /resource/yes HTTP/1.1
+            |Transfer-Encoding: chunked
+            |Host: x
+            |
+            |""" should parseToError(422: StatusCode, ErrorInfo("DELETE requests must not have an entity"))
         }
       }
     }

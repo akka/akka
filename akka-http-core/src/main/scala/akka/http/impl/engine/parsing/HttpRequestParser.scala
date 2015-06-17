@@ -167,6 +167,8 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
             emitRequestStart(emptyEntity(cth))
             setCompletionHandling(HttpMessageParser.CompletionOk)
             startNewMessage(input, bodyStart)
+          } else if (!method.isEntityAccepted) {
+            failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
           } else if (contentLength <= input.size - bodyStart) {
             val cl = contentLength.toInt
             emitRequestStart(strictEntity(cth, input, bodyStart, cl))
@@ -176,6 +178,9 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
             emitRequestStart(defaultEntity(cth, contentLength, expect100continueHandling))
             parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
           }
+
+        case Some(_) if !method.isEntityAccepted ⇒
+          failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
 
         case Some(te) ⇒
           val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
