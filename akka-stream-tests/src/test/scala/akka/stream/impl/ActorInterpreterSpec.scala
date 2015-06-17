@@ -4,6 +4,7 @@
 package akka.stream.impl
 
 import akka.stream.Supervision._
+import akka.stream.impl.ReactiveStreamsCompliance.SpecViolation
 import akka.stream.testkit.AkkaSpec
 import akka.stream._
 import akka.stream.scaladsl._
@@ -13,6 +14,7 @@ import akka.stream.stage.Stage
 import akka.stream.stage.PushPullStage
 import akka.stream.stage.Context
 import akka.testkit.TestLatch
+import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -132,6 +134,21 @@ class ActorInterpreterSpec extends AkkaSpec {
 
     "satisfy large demand" in largeDemand(0)
     "satisfy larger demand" in largeDemand(1)
+
+    "handle spec violations" in {
+      a[SpecViolation] should be thrownBy {
+        Await.result(
+          Source(new Publisher[String] {
+            def subscribe(s: Subscriber[_ >: String]) = {
+              s.onSubscribe(new Subscription {
+                def cancel() = ()
+                def request(n: Long) = sys.error("test error")
+              })
+            }
+          }).runFold("")(_ + _),
+          3.seconds)
+      }
+    }
 
     def largeDemand(extra: Int): Unit = {
       val N = 3 * system.settings.config.getInt("akka.stream.materializer.output-burst-limit")
