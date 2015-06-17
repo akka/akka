@@ -98,7 +98,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
         else parsePreamble(input, 0)
       } else parsePreamble(input, 0)
     } catch {
-      case NotEnoughDataException ⇒ continue((input, _) ⇒ tryParseInitialBoundary(input))
+      case NotEnoughDataException ⇒ continue(input, 0)((newInput, _) ⇒ tryParseInitialBoundary(newInput))
     }
 
   def parsePreamble(input: ByteString, offset: Int): StateResult =
@@ -260,9 +260,10 @@ private[http] object BodyPartParser {
   }
 
   sealed trait Output
-  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, Unit] ⇒ BodyPartEntity) extends Output
+  sealed trait PartStart extends Output
+  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, Unit] ⇒ BodyPartEntity) extends PartStart
   final case class EntityPart(data: ByteString) extends Output
-  final case class ParseError(info: ErrorInfo) extends Output
+  final case class ParseError(info: ErrorInfo) extends PartStart
 
   final case class Settings(
     maxHeaderNameLength: Int,
