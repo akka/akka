@@ -228,6 +228,12 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "Date" in {
       "Date: Wed, 13 Jul 2011 08:12:31 GMT" =!= Date(DateTime(2011, 7, 13, 8, 12, 31))
+      "Date: Wed, 13-Jul-2011 08:12:31 GMT" =!= Date(DateTime(2011, 7, 13, 8, 12, 31)).renderedTo(
+        "Wed, 13 Jul 2011 08:12:31 GMT")
+      "Date: Wed, 13-Jul-11 08:12:31 GMT" =!= Date(DateTime(2011, 7, 13, 8, 12, 31)).renderedTo(
+        "Wed, 13 Jul 2011 08:12:31 GMT")
+      "Date: Mon, 13-Jul-70 08:12:31 GMT" =!= Date(DateTime(1970, 7, 13, 8, 12, 31)).renderedTo(
+        "Mon, 13 Jul 1970 08:12:31 GMT")
       "Date: Fri, 23 Mar 1804 12:11:10 UTC" =!= Date(DateTime(1804, 3, 23, 12, 11, 10)).renderedTo(
         "Fri, 23 Mar 1804 12:11:10 GMT")
     }
