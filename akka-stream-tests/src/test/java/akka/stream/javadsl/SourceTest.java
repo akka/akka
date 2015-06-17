@@ -20,6 +20,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
 import scala.util.Try;
@@ -473,4 +474,51 @@ public class SourceTest extends StreamTest {
     ref.tell(2, ActorRef.noSender());
     probe.expectMsgEquals(2);
   }
+
+  @Test
+  public void mustBeAbleToUseDropWhile() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<Integer, ?> source = Source.from(Arrays.asList(0, 1, 2, 3)).dropWhile
+            (new Predicate<Integer>() {
+              public boolean test(Integer elem) {
+                return elem < 2;
+              }
+            });
+
+    final Future<BoxedUnit> future = source.runWith(Sink.foreach(new Procedure<Integer>() { // Scala Future
+      public void apply(Integer elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgEquals(2);
+    probe.expectMsgEquals(3);
+    Await.ready(future, Duration.apply(200, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  public void mustBeAbleToUseTakeWhile() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<Integer, ?> source = Source.from(Arrays.asList(0, 1, 2, 3)).takeWhile
+            (new Predicate<Integer>() {
+              public boolean test(Integer elem) {
+                return elem < 2;
+              }
+            });
+
+    final Future<BoxedUnit> future = source.runWith(Sink.foreach(new Procedure<Integer>() { // Scala Future
+      public void apply(Integer elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgEquals(0);
+    probe.expectMsgEquals(1);
+
+    FiniteDuration duration = Duration.apply(200, TimeUnit.MILLISECONDS);
+
+    probe.expectNoMsg(duration);
+    Await.ready(future, duration);
+  }
+
 }
