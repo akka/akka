@@ -75,6 +75,7 @@ private[http] object CharacterClasses {
   val DIGIT05 = CharPredicate('0' to '5')
   def DIGIT19 = CharPredicate.Digit19
   val colonSlashEOI = CharPredicate(':', '/', akka.parboiled2.EOI)
+  val `date-sep` = CharPredicate("""- """)
 
   require(`qdtext-base`.isMaskBased) // make sure we didn't introduce any non-7bit-chars by accident which
   require(`ctext-base`.isMaskBased) // would make the CharPredicate fall back to the much slower
