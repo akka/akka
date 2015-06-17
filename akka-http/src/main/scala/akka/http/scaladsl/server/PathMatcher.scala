@@ -146,6 +146,7 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
         else Unmatched
     }
 
+  /** Provoke implicit conversions to PathMatcher to be applied */
   def apply[L](magnet: PathMatcher[L]): PathMatcher[L] = magnet
 
   implicit class PathMatcher1Ops[T](matcher: PathMatcher1[T]) {

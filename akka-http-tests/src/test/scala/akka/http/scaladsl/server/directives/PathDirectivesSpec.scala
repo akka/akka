@@ -53,16 +53,16 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     val test = testFor(pathPrefix("ab[cd]+".r) { echoCaptureAndUnmatchedPath })
     "reject [/bar]" in test()
     "reject [/ab/cd]" in test()
-    "reject [/abcdef]" in test("abcd:ef")
-    "reject [/abcdd/ef]" in test("abcdd:/ef")
+    "accept [/abcdef]" in test("abcd:ef")
+    "accept [/abcdd/ef]" in test("abcdd:/ef")
   }
 
   """pathPrefix("ab(cd)".r)""" should {
     val test = testFor(pathPrefix("ab(cd)+".r) { echoCaptureAndUnmatchedPath })
     "reject [/bar]" in test()
     "reject [/ab/cd]" in test()
-    "reject [/abcdef]" in test("cd:ef")
-    "reject [/abcde/fg]" in test("cd:e/fg")
+    "accept [/abcdef]" in test("cd:ef")
+    "accept [/abcde/fg]" in test("cd:e/fg")
   }
 
   "pathPrefix(regex)" should {
@@ -132,40 +132,40 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     val test = testFor(pathPrefix(separateOnSlashes("a/b")) { echoUnmatchedPath })
     "accept [/a/b]" in test("")
     "accept [/a/b/]" in test("/")
-    "accept [/a/c]" in test()
+    "reject [/a/c]" in test()
   }
   """pathPrefix(separateOnSlashes("abc"))""" should {
     val test = testFor(pathPrefix(separateOnSlashes("abc")) { echoUnmatchedPath })
     "accept [/abc]" in test("")
     "accept [/abcdef]" in test("def")
-    "accept [/ab]" in test()
+    "reject [/ab]" in test()
   }
 
   """pathPrefixTest("a" / Segment ~ Slash)""" should {
     val test = testFor(pathPrefixTest("a" / Segment ~ Slash) { echoCaptureAndUnmatchedPath })
     "accept [/a/bc/]" in test("bc:/a/bc/")
-    "accept [/a/bc]" in test()
-    "accept [/a/]" in test()
+    "reject [/a/bc]" in test()
+    "reject [/a/]" in test()
   }
 
   """pathSuffix("edit" / Segment)""" should {
     val test = testFor(pathSuffix("edit" / Segment) { echoCaptureAndUnmatchedPath })
     "accept [/orders/123/edit]" in test("123:/orders/")
-    "accept [/orders/123/ed]" in test()
-    "accept [/edit]" in test()
+    "reject [/orders/123/ed]" in test()
+    "reject [/edit]" in test()
   }
 
   """pathSuffix("foo" / "bar" ~ "baz")""" should {
     val test = testFor(pathSuffix("foo" / "bar" ~ "baz") { echoUnmatchedPath })
     "accept [/orders/barbaz/foo]" in test("/orders/")
-    "accept [/orders/bazbar/foo]" in test()
+    "reject [/orders/bazbar/foo]" in test()
   }
 
   "pathSuffixTest(Slash)" should {
     val test = testFor(pathSuffixTest(Slash) { echoUnmatchedPath })
     "accept [/]" in test("/")
     "accept [/foo/]" in test("/foo/")
-    "accept [/foo]" in test()
+    "reject [/foo]" in test()
   }
 
   """pathPrefix("foo" | "bar")""" should {
@@ -242,6 +242,20 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     }
   }
 
+  """rawPathPrefix(Slash ~ "a" / Segment ~ Slash)""" should {
+    val test = testFor(rawPathPrefix(Slash ~ "a" / Segment ~ Slash) { echoCaptureAndUnmatchedPath })
+    "accept [/a/bc/]" in test("bc:")
+    "reject [/a/bc]" in test()
+    "reject [/ab/]" in test()
+  }
+
+  """rawPathPrefixTest(Slash ~ "a" / Segment ~ Slash)""" should {
+    val test = testFor(rawPathPrefixTest(Slash ~ "a" / Segment ~ Slash) { echoCaptureAndUnmatchedPath })
+    "accept [/a/bc/]" in test("bc:/a/bc/")
+    "reject [/a/bc]" in test()
+    "reject [/ab/]" in test()
+  }
+
   "PathMatchers" should {
     {
       val test = testFor(path(Rest.tmap { case Tuple1(s) ⇒ Tuple1(s.split('-').toList) }) { echoComplete })
@@ -270,11 +284,20 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
 
   case class testFor(route: Route) {
     def apply(expectedResponse: String = null): String ⇒ Unit = exampleString ⇒
-      "\\[([^\\]]+)\\]".r.findFirstMatchIn(exampleString) match {
-        case Some(uri) ⇒ Get(uri.group(1)) ~> route ~> check {
-          if (expectedResponse eq null) handled shouldEqual false
-          else responseAs[String] shouldEqual expectedResponse
-        }
+      """(accept|reject)\s+\[([^\]]+)\]""".r.findFirstMatchIn(exampleString) match {
+        case Some(uri) ⇒
+          uri.group(1) match {
+            case "accept" if expectedResponse eq null ⇒
+              failTest("Example '" + exampleString + "' was missing an expectedResponse")
+            case "reject" if expectedResponse ne null ⇒
+              failTest("Example '" + exampleString + "' had an expectedResponse")
+            case _ ⇒
+          }
+
+          Get(uri.group(2)) ~> route ~> check {
+            if (expectedResponse eq null) handled shouldEqual false
+            else responseAs[String] shouldEqual expectedResponse
+          }
         case None ⇒ failTest("Example '" + exampleString + "' doesn't contain a test uri")
       }
   }
