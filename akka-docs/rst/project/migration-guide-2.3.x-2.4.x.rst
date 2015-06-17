@@ -30,6 +30,16 @@ in practice. No changes were needed to the Akka source code for this update. Use
 depend on 3.8.0.Final that break with 3.10.3.Final should be able to manually downgrade the dependency
 to 3.8.0.Final and Akka will still work with that version.
 
+Added parameter validation to RootActorPath
+===========================================
+Previously ``akka.actor.RootActorPath`` allowed passing in arbitrary strings into its name parameter,
+which is meant to be the *name* of the root Actor. Subsequently, if constructed with an invalid name
+such as a full path for example (``/user/Full/Path``) some features using this path may transparently fail -
+such as using ``actorSelection`` on such invalid path.
+
+In Akka 2.4.x the ``RootActorPath`` validates the input and may throw an ``IllegalArgumentException`` if
+the passed in name string is illegal (contains ``/`` elsewhere than in the begining of the string or contains ``#``).
+
 Advanced Notice: TypedActors will go away
 =========================================
 
