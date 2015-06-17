@@ -32,6 +32,8 @@ private[stream] object Stages {
     val grouped = name("grouped")
     val take = name("take")
     val drop = name("drop")
+    val takeWhile = name("takeWhile")
+    val dropWhile = name("dropWhile")
     val scan = name("scan")
     val buffer = name("buffer")
     val conflate = name("conflate")
@@ -171,6 +173,16 @@ private[stream] object Stages {
   }
 
   final case class Drop(n: Long, attributes: OperationAttributes = drop) extends StageModule {
+    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+    override protected def newInstance: StageModule = this.copy()
+  }
+
+  final case class TakeWhile(p: Any ⇒ Boolean, attributes: OperationAttributes = takeWhile) extends StageModule {
+    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+    override protected def newInstance: StageModule = this.copy()
+  }
+
+  final case class DropWhile(p: Any ⇒ Boolean, attributes: OperationAttributes = dropWhile) extends StageModule {
     def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }

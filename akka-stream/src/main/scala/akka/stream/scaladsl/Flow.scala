@@ -458,6 +458,39 @@ trait FlowOps[+Out, +Mat] {
   def filter(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(Filter(p.asInstanceOf[Any ⇒ Boolean]))
 
   /**
+   * Terminate processing (and cancel the upstream publisher) after predicate
+   * returns false for the first time. Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * The stream will be completed without producing any elements if predicate is false for
+   * the first stream element.
+   *
+   * '''Emits when''' the predicate is true
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' predicate returned false or upstream completes
+   *
+   * '''Cancels when''' predicate returned false or downstream cancels
+   */
+  def takeWhile(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(TakeWhile(p.asInstanceOf[Any ⇒ Boolean]))
+
+  /**
+   * Discard elements at the beginning of the stream while predicate is true.
+   * All elements will be taken after predicate returns false first time.
+   *
+   * '''Emits when''' predicate returned false and for all following stream elements
+   *
+   * '''Backpressures when''' predicate returned false and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def dropWhile(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(DropWhile(p.asInstanceOf[Any ⇒ Boolean]))
+
+  /**
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
