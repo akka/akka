@@ -12,6 +12,8 @@ import akka.event.DummyClassForStringSources
 import akka.util.Helpers
 import akka.event.LoggingFilter
 import akka.event.EventStream
+import akka.dispatch.RequiresMessageQueue
+import akka.event.LoggerMessageQueueSemantics
 
 /**
  * Base trait for all classes that wants to be able use the SLF4J logging infrastructure.
@@ -53,7 +55,7 @@ object Logger {
  * The thread in which the logging was performed is captured in
  * Mapped Diagnostic Context (MDC) with attribute name "sourceThread".
  */
-class Slf4jLogger extends Actor with SLF4JLogging {
+class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[LoggerMessageQueueSemantics] {
 
   val mdcThreadAttributeName = "sourceThread"
   val mdcActorSystemAttributeName = "sourceActorSystem"

@@ -17,6 +17,7 @@ import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 import java.util.Locale
+import akka.dispatch.RequiresMessageQueue
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -824,7 +825,7 @@ object Logging {
    * <code>akka.loggers</code> is not set, it defaults to just this
    * logger.
    */
-  class DefaultLogger extends Actor with StdOutLogger {
+  class DefaultLogger extends Actor with StdOutLogger with RequiresMessageQueue[LoggerMessageQueueSemantics] {
     override def receive: Receive = {
       case InitializeLogger(_) ⇒ sender() ! LoggerInitialized
       case event: LogEvent     ⇒ print(event)

@@ -8,6 +8,8 @@ import akka.actor._
 import akka.event.LoggingAdapter
 import java.util.logging
 import scala.concurrent.{ ExecutionContext, Future }
+import akka.dispatch.RequiresMessageQueue
+import akka.event.LoggerMessageQueueSemantics
 
 /**
  * Makes the Akka `Logging` API available as the `log`
@@ -30,7 +32,7 @@ trait JavaLogging {
 /**
  * `java.util.logging` logger.
  */
-class JavaLogger extends Actor {
+class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSemantics] {
 
   def receive = {
     case event @ Error(cause, _, _, _) ⇒ log(logging.Level.SEVERE, cause, event)
