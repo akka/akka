@@ -78,7 +78,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def `day-name` = rule(
     "Sun" ~ push(0) | "Mon" ~ push(1) | "Tue" ~ push(2) | "Wed" ~ push(3) | "Thu" ~ push(4) | "Fri" ~ push(5) | "Sat" ~ push(6))
 
-  def date1 = rule { day ~ ' ' ~ month ~ ' ' ~ year }
+  def date1 = rule { day ~ `date-sep` ~ month ~ `date-sep` ~ year }
 
   def day = rule { digit2 }
 
@@ -97,7 +97,8 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   // def `rfc850-date` = rule { `day-name-l` ~ ", " ~ date2 ~ ' ' ~ `time-of-day` ~ " GMT" }
 
-  def date2 = rule { day ~ '-' ~ month ~ '-' ~ digit2 }
+  // per #17714, parse two digit year to https://tools.ietf.org/html/rfc6265#section-5.1.1
+  def date2 = rule { day ~ '-' ~ month ~ '-' ~ digit2 ~> (y ⇒ if (y <= 69) y + 2000 else y + 1900) }
 
   def `day-name-l` = rule(
     "Sunday" ~ push(0) | "Monday" ~ push(1) | "Tuesday" ~ push(2) | "Wednesday" ~ push(3) | "Thursday" ~ push(4) |
@@ -246,7 +247,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   // https://tools.ietf.org/html/rfc1034#section-3.5 relaxed by https://tools.ietf.org/html/rfc1123#section-2
   // to also allow digits at the start of a label
   def `domain-value` = rule {
-    capture(oneOrMore(oneOrMore(oneOrMore(ALPHANUM)).separatedBy('-')).separatedBy('.')) ~ OWS
+    optional('.') ~ capture(oneOrMore(oneOrMore(oneOrMore(ALPHANUM)).separatedBy('-')).separatedBy('.')) ~ OWS
   }
 
   def `path-av` = rule {
