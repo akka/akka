@@ -1,8 +1,8 @@
 .. _cluster:
 
-######################
- Cluster Specification
-######################
+#####################
+Cluster Specification
+#####################
 
 .. note:: This document describes the design concepts of the clustering.
    It is divided into two parts, where the first part describes what is
@@ -388,8 +388,8 @@ These additional terms are used in this section.
   referred to by the ordinal position given the nodes in sorted order).
 
 
-Partitioning :ref:`[*] <niy>`
-=============================
+Partitioning
+============
 
 .. note:: Actor partitioning is not implemented yet.
 
@@ -636,8 +636,8 @@ have a dependency on message ordering from any given source.
   and 3b would be required.
 
 
-Stateful Actor Replication :ref:`[*] <niy>`
-===========================================
+Stateful Actor Replication
+==========================
 
 .. note:: Stateful actor replication is not implemented yet.
 
