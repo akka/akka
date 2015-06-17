@@ -5,6 +5,7 @@ package akka.stream.impl.fusing
 
 import java.util.Arrays
 import akka.actor._
+import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.{ AbruptTerminationException, ActorFlowMaterializerSettings, OperationAttributes, ActorFlowMaterializer }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnError, OnComplete }
@@ -13,6 +14,8 @@ import akka.stream.impl.fusing.OneBoundedInterpreter.{ InitializationFailed, Ini
 import akka.stream.stage._
 import org.reactivestreams.{ Subscriber, Subscription }
 import akka.event.{ Logging, LoggingAdapter }
+
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -49,7 +52,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
 
     batchRemaining -= 1
     if (batchRemaining == 0 && !upstreamCompleted) {
-      upstream.request(requestBatchSize)
+      tryRequest(upstream, requestBatchSize, onError)
       batchRemaining = requestBatchSize
     }
 
@@ -91,7 +94,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
   def cancel(): Unit = {
     if (!upstreamCompleted) {
       upstreamCompleted = true
-      if (upstream ne null) upstream.cancel()
+      if (upstream ne null) tryCancel(upstream, onError)
       downstreamWaiting = false
       clear()
     }
@@ -112,14 +115,14 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
   private def onSubscribe(subscription: Subscription): Unit = {
     assert(subscription != null)
     if (upstreamCompleted)
-      subscription.cancel()
+      tryCancel(subscription, onError)
     else if (downstreamCanceled) {
       upstreamCompleted = true
-      subscription.cancel()
+      tryCancel(subscription, onError)
     } else {
       upstream = subscription
       // Prefetch
-      upstream.request(inputBuffer.length)
+      tryRequest(upstream, inputBuffer.length, onError)
       subreceive.become(upstreamRunning)
     }
   }
@@ -145,7 +148,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
 
     case OnComplete                ⇒ onComplete()
     case OnError(cause)            ⇒ onError(cause)
-    case OnSubscribe(subscription) ⇒ subscription.cancel() // spec rule 2.5
+    case OnSubscribe(subscription) ⇒ tryCancel(subscription, onError) // spec rule 2.5
   }
 
 }
