@@ -95,6 +95,50 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "The query parameter 'count' was malformed:\n'blub' is not a valid 32-bit signed integer value"
     }
   }
+  "repeated" in {
+    val route =
+      parameters('color, 'city.*) { (color, cities) =>
+        cities.toList match {
+          case Nil         => complete(s"The color is '$color' and there are no cities.")
+          case city :: Nil => complete(s"The color is '$color' and the city is $city.")
+          case multiple    => complete(s"The color is '$color' and the cities are ${multiple.mkString(", ")}.")
+        }
+      }
+
+    Get("/?color=blue") ~> route ~> check {
+      responseAs[String] === "The color is 'blue' and there are no cities."
+    }
+
+    Get("/?color=blue&city=Chicago") ~> Route.seal(route) ~> check {
+      responseAs[String] === "The color is 'blue' and the city is Chicago."
+    }
+
+    Get("/?color=blue&city=Chicago&city=Boston") ~> Route.seal(route) ~> check {
+      responseAs[String] === "The color is 'blue' and the cities are Chicago, Boston."
+    }
+  }
+  "mapped-repeated" in {
+    val route =
+      parameters('color, 'distance.as[Int].*) { (color, cities) =>
+        cities.toList match {
+          case Nil             => complete(s"The color is '$color' and there are no distances.")
+          case distance :: Nil => complete(s"The color is '$color' and the distance is $distance.")
+          case multiple        => complete(s"The color is '$color' and the distances are ${multiple.mkString(", ")}.")
+        }
+      }
+
+    Get("/?color=blue") ~> route ~> check {
+      responseAs[String] === "The color is 'blue' and there are no distances."
+    }
+
+    Get("/?color=blue&distance=5") ~> Route.seal(route) ~> check {
+      responseAs[String] === "The color is 'blue' and the distance is 5."
+    }
+
+    Get("/?color=blue&distance=5&distance=14") ~> Route.seal(route) ~> check {
+      responseAs[String] === "The color is 'blue' and the distances are 5, 14."
+    }
+  }
   "parameterMap" in {
     val route =
       parameterMap { params =>

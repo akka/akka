@@ -182,4 +182,27 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
       Get() ~> route ~> check { responseAs[String] shouldEqual "GET" }
     }
   }
+
+  "The 'parameter' repeated directive should" - {
+    "extract an empty Iterable when the parameter is absent" in {
+      Get("/person?age=19") ~> {
+        parameter('hobby.*) { echoComplete }
+      } ~> check { responseAs[String] === "List()" }
+    }
+    "extract all occurrences into an Iterable when parameter is present" in {
+      Get("/person?age=19&hobby=cooking&hobby=reading") ~> {
+        parameter('hobby.*) { echoComplete }
+      } ~> check { responseAs[String] === "List(cooking, reading)" }
+    }
+    "extract as Iterable[Int]" in {
+      Get("/person?age=19&number=3&number=5") ~> {
+        parameter('number.as[Int]*) { echoComplete }
+      } ~> check { responseAs[String] === "List(3, 5)" }
+    }
+    "extract as Iterable[Int] with an explicit deserializer" in {
+      Get("/person?age=19&number=3&number=A") ~> {
+        parameter('number.as(HexInt)*) { echoComplete }
+      } ~> check { responseAs[String] === "List(3, 10)" }
+    }
+  }
 }

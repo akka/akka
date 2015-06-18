@@ -25,7 +25,7 @@ Description
 
 Form fields can be either extracted as a String or can be converted to another type. The parameter name
 can be supplied either as a String or as a Symbol. Form field extraction can be modified to mark a field
-as required or optional or to filter requests where a form field has a certain value:
+as required, optional, or repeated, or to filter requests where a form field has a certain value:
 
 ``"color"``
     extract value of field "color" as ``String``
@@ -40,6 +40,13 @@ as required or optional or to filter requests where a form field has a certain v
     (see also :ref:`http-unmarshalling-scala`)
 ``"amount".as(deserializer)``
     extract value of field "amount" with an explicit ``Deserializer``
+``"distance".*``
+    extract multiple occurrences of field "distance" as ``Iterable[String]``
+``"distance".as[Int].*``
+    extract multiple occurrences of field "distance" as ``Iterable[Int]``, you need a matching implicit ``Deserializer`` in scope for that to work
+    (see also :ref:`unmarshalling`)
+``"distance".as(deserializer).*``
+    extract multiple occurrences of field "distance" with an explicit ``Deserializer``
 
 You can use :ref:`Case Class Extraction` to group several extracted values together into a case-class
 instance.

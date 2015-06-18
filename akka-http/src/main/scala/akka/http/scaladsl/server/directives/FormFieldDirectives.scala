@@ -61,23 +61,22 @@ object FormFieldDirectives extends FormFieldDirectives {
     type SFU = FromEntityUnmarshaller[StrictForm]
     type FSFFOU[T] = Unmarshaller[Option[StrictForm.Field], T]
 
+    private def extractField[A, B](f: A ⇒ Directive1[B]): FieldDefAux[A, Directive1[B]] = fieldDef(f)
+    private def handleFieldResult[T](fieldName: String, result: Future[T]): Directive1[T] = onComplete(result).flatMap {
+      case Success(x)                                  ⇒ provide(x)
+      case Failure(Unmarshaller.NoContentException)    ⇒ reject(MissingFormFieldRejection(fieldName))
+      case Failure(x: UnsupportedContentTypeException) ⇒ reject(UnsupportedRequestContentTypeRejection(x.supported))
+      case Failure(x)                                  ⇒ reject(MalformedFormFieldRejection(fieldName, x.getMessage.nullAsEmpty, Option(x.getCause)))
+    }
+
     //////////////////// "regular" formField extraction ////////////////////
 
-    private def extractField[A, B](f: A ⇒ Directive1[B]): FieldDefAux[A, Directive1[B]] = fieldDef(f)
     private def fieldOfForm[T](fieldName: String, fu: Unmarshaller[Option[StrictForm.Field], T])(implicit sfu: SFU): RequestContext ⇒ Future[T] = { ctx ⇒
       import ctx.executionContext
       sfu(ctx.request.entity).fast.flatMap(form ⇒ fu(form field fieldName))
     }
-    private def filter[T](fieldName: String, fu: FSFFOU[T])(implicit sfu: SFU): Directive1[T] = {
-      extract(fieldOfForm(fieldName, fu)).flatMap {
-        onComplete(_).flatMap {
-          case Success(x)                                  ⇒ provide(x)
-          case Failure(Unmarshaller.NoContentException)    ⇒ reject(MissingFormFieldRejection(fieldName))
-          case Failure(x: UnsupportedContentTypeException) ⇒ reject(UnsupportedRequestContentTypeRejection(x.supported))
-          case Failure(x)                                  ⇒ reject(MalformedFormFieldRejection(fieldName, x.getMessage.nullAsEmpty, Option(x.getCause)))
-        }
-      }
-    }
+    private def filter[T](fieldName: String, fu: FSFFOU[T])(implicit sfu: SFU): Directive1[T] =
+      extract(fieldOfForm(fieldName, fu)).flatMap(r ⇒ handleFieldResult(fieldName, r))
     implicit def forString(implicit sfu: SFU, fu: FSFFU[String]): FieldDefAux[String, Directive1[String]] =
       extractField[String, String] { fieldName ⇒ filter(fieldName, fu) }
     implicit def forSymbol(implicit sfu: SFU, fu: FSFFU[String]): FieldDefAux[Symbol, Directive1[String]] =
@@ -109,6 +108,20 @@ object FormFieldDirectives extends FormFieldDirectives {
       fieldDef[RequiredValueReceptacle[T], Directive0] { rvr ⇒ requiredFilter(rvr.name, fu, rvr.requiredValue) }
     implicit def forRVDR[T](implicit sfu: SFU): FieldDefAux[RequiredValueUnmarshallerReceptacle[T], Directive0] =
       fieldDef[RequiredValueUnmarshallerReceptacle[T], Directive0] { rvr ⇒ requiredFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um), rvr.requiredValue) }
+
+    //////////////////// repeated formField support ////////////////////
+
+    private def repeatedFilter[T](fieldName: String, fu: FSFFU[T])(implicit sfu: SFU): Directive1[Iterable[T]] =
+      extract { ctx ⇒
+        import ctx.executionContext
+        sfu(ctx.request.entity).fast.flatMap(form ⇒ Future.sequence(form.fields.collect { case (`fieldName`, value) ⇒ fu(value) }))
+      }.flatMap { result ⇒
+        handleFieldResult(fieldName, result)
+      }
+    implicit def forRepVR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[RepeatedValueReceptacle[T], Directive1[Iterable[T]]] =
+      extractField[RepeatedValueReceptacle[T], Iterable[T]] { rvr ⇒ repeatedFilter(rvr.name, fu) }
+    implicit def forRepVDR[T](implicit sfu: SFU): FieldDefAux[RepeatedValueUnmarshallerReceptacle[T], Directive1[Iterable[T]]] =
+      extractField[RepeatedValueUnmarshallerReceptacle[T], Iterable[T]] { rvr ⇒ repeatedFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um)) }
 
     //////////////////// tuple support ////////////////////
 
