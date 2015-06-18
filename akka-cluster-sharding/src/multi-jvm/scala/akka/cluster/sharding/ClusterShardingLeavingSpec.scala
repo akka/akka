@@ -177,7 +177,7 @@ class ClusterShardingLeavingSpec extends MultiNodeSpec(ClusterShardingLeavingSpe
 
       runOn(first) {
         watch(region)
-        expectTerminated(region, 5.seconds)
+        expectTerminated(region, 15.seconds)
       }
       enterBarrier("stopped")
 

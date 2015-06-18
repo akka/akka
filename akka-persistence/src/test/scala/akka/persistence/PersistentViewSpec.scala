@@ -42,9 +42,6 @@ object PersistentViewSpec {
       case "boom" ⇒
         throw new TestException("boom")
 
-      case RecoveryFailure(cause) ⇒
-        throw cause // restart
-
       case payload if isPersistent && shouldFailOn(payload) ⇒
         throw new TestException("boom")
 

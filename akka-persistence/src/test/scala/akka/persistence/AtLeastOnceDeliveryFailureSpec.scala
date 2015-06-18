@@ -36,8 +36,6 @@ object AtLeastOnceDeliveryFailureSpec {
   case class Done(ints: Vector[Int])
 
   case class Ack(i: Int)
-  case class ProcessingFailure(i: Int)
-  case class JournalingFailure(i: Int)
 
   case class Msg(deliveryId: Long, i: Int)
   case class Confirm(deliveryId: Long, i: Int)
@@ -76,7 +74,6 @@ object AtLeastOnceDeliveryFailureSpec {
 
     def receiveCommand: Receive = {
       case i: Int ⇒
-        val failureRate = if (recoveryRunning) replayProcessingFailureRate else liveProcessingFailureRate
         if (contains(i)) {
           log.debug(debugMessage(s"ignored duplicate ${i}"))
           sender() ! Ack(i)
@@ -84,29 +81,24 @@ object AtLeastOnceDeliveryFailureSpec {
           persist(MsgSent(i)) { evt ⇒
             updateState(evt)
             sender() ! Ack(i)
-            if (shouldFail(failureRate))
-              throw new TestException(debugMessage(s"failed at payload ${i}"))
+            if (shouldFail(liveProcessingFailureRate))
+              throw new TestException(debugMessage(s"failed at payload $i"))
             else
-              log.debug(debugMessage(s"processed payload ${i}"))
+              log.debug(debugMessage(s"processed payload $i"))
           }
 
         }
 
       case Confirm(deliveryId, i) ⇒ persist(MsgConfirmed(deliveryId, i))(updateState)
-
-      case PersistenceFailure(MsgSent(i), _, _) ⇒
-        // inform sender about journaling failure so that it can resend
-        sender() ! JournalingFailure(i)
-
-      case PersistenceFailure(MsgConfirmed(_, i), _, _) ⇒
-      // ok, will be redelivered
     }
 
     def receiveRecover: Receive = {
-      case evt: Evt ⇒ updateState(evt)
-      case RecoveryFailure(_) ⇒
-        // journal failed during recovery, throw exception to re-recover persistent actor
-        throw new TestException(debugMessage("recovery failed"))
+      case evt: Evt ⇒
+        updateState(evt)
+        if (shouldFail(replayProcessingFailureRate))
+          throw new TestException(debugMessage(s"replay failed at event $evt"))
+        else
+          log.debug(debugMessage(s"replayed event $evt"))
     }
 
     def updateState(evt: Evt): Unit = evt match {
@@ -120,6 +112,14 @@ object AtLeastOnceDeliveryFailureSpec {
 
     private def debugMessage(msg: String): String =
       s"[sender] ${msg} (mode = ${if (recoveryRunning) "replay" else "live"} snr = ${lastSequenceNr} state = ${state.sorted})"
+
+    override protected def onReplayFailure(cause: Throwable, event: Option[Any]): Unit = {
+      // mute logging
+    }
+
+    override protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit = {
+      // mute logging
+    }
   }
 
   class ChaosDestination(val probe: ActorRef) extends Actor with ChaosSupport with ActorLogging {
@@ -129,7 +129,7 @@ object AtLeastOnceDeliveryFailureSpec {
     def receive = {
       case m @ Msg(deliveryId, i) ⇒
         if (shouldFail(confirmFailureRate)) {
-          log.error(debugMessage("confirm message failed", m))
+          log.debug(debugMessage("confirm message failed", m))
         } else if (contains(i)) {
           log.debug(debugMessage("ignored duplicate", m))
           sender() ! Confirm(deliveryId, i)
@@ -155,14 +155,8 @@ object AtLeastOnceDeliveryFailureSpec {
     def receive = {
       case Start  ⇒ 1 to numMessages foreach (snd ! _)
       case Ack(i) ⇒ acks += i
-      case ProcessingFailure(i) ⇒
-        snd ! i
-        log.debug(s"resent ${i} after processing failure")
-      case JournalingFailure(i) ⇒
-        snd ! i
-        log.debug(s"resent ${i} after journaling failure")
       case Terminated(_) ⇒
-        // snd will be stopped if ReadHighestSequenceNr fails
+        // snd will be stopped if recovery or persist fails
         log.debug(s"sender stopped, starting it again")
         snd = createSender()
         1 to numMessages foreach (i ⇒ if (!acks(i)) snd ! i)
@@ -172,6 +166,8 @@ object AtLeastOnceDeliveryFailureSpec {
 
 class AtLeastOnceDeliveryFailureSpec extends AkkaSpec(AtLeastOnceDeliveryFailureSpec.config) with Cleanup with ImplicitSender {
   import AtLeastOnceDeliveryFailureSpec._
+
+  muteDeadLetters(classOf[AnyRef])(system)
 
   "AtLeastOnceDelivery" must {
     "tolerate and recover from random failures" in {

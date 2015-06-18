@@ -265,7 +265,7 @@ the ``rememberEntities`` flag to true in ``ClusterShardingSettings`` when callin
 ``ClusterSharding.start``. When configured to remember entities, whenever a ``Shard`` 
 is rebalanced onto another node or recovers after a crash it will recreate all the
 entities which were previously running in that ``Shard``. To permanently stop entities, 
-a ``Passivate`` message must be sent to the parent the ``Shard``, otherwise the
+a ``Passivate`` message must be sent to the parent of the entity actor, otherwise the
 entity will be automatically restarted after the entity restart backoff specified in 
 the configuration.
 

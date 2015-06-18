@@ -108,21 +108,21 @@ private[persistence] object JournalProtocol {
    * @param persistent replayed message.
    */
   final case class ReplayedMessage(persistent: PersistentRepr)
-    extends Response
+    extends Response with DeadLetterSuppression
 
   /**
    * Reply message to a successful [[ReplayMessages]] request. This reply is sent to the requestor
    * after all [[ReplayedMessage]] have been sent (if any).
    */
   case object ReplayMessagesSuccess
-    extends Response
+    extends Response with DeadLetterSuppression
 
   /**
    * Reply message to a failed [[ReplayMessages]] request. This reply is sent to the requestor
    * if a replay could not be successfully completed.
    */
   final case class ReplayMessagesFailure(cause: Throwable)
-    extends Response
+    extends Response with DeadLetterSuppression
 
   /**
    * Request to read the highest stored sequence number of a given persistent actor.

@@ -300,7 +300,7 @@ trait AtLeastOnceDelivery extends Eventsourced {
     super.aroundPostStop()
   }
 
-  override private[persistence] def onReplaySuccess(): Unit = {
+  override private[akka] def onReplaySuccess(): Unit = {
     redeliverOverdue()
     super.onReplaySuccess()
   }
