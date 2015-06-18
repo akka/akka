@@ -95,7 +95,7 @@ class ExamplePersistentActor extends UntypedPersistentActor {
             final String data = ((Cmd)msg).getData();
             final Evt evt1 = new Evt(data + "-" + getNumEvents());
             final Evt evt2 = new Evt(data + "-" + (getNumEvents() + 1));
-            persist(asList(evt1, evt2), new Procedure<Evt>() {
+            persistAll(asList(evt1, evt2), new Procedure<Evt>() {
                 public void apply(Evt evt) throws Exception {
                     state.update(evt);
                     if (evt.equals(evt2)) {
