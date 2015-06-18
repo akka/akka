@@ -4,20 +4,30 @@
 
 package akka.http.javadsl.server.values
 
+import java.util.AbstractMap.SimpleEntry
 import java.{ lang ⇒ jl }
 
-import akka.http.impl.server.ParameterImpl
+import java.util.{ Map ⇒ JMap, Collection ⇒ JCollection }
+
+import akka.http.scaladsl.server.directives.ParameterDirectives
+import akka.http.scaladsl.unmarshalling.Unmarshaller
+
+import scala.reflect.ClassTag
+
+import akka.japi.{ Option ⇒ JOption }
+
+import akka.http.impl.server.{ StandaloneExtractionImpl, ParameterImpl }
 import akka.http.javadsl.server.RequestVal
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 
-import scala.concurrent.ExecutionContext
-import scala.reflect.ClassTag
-
 /**
  * A RequestVal representing a query parameter of type T.
  */
-trait Parameter[T] extends RequestVal[T]
+trait Parameter[T] extends RequestVal[T] {
+  def optional: RequestVal[JOption[T]]
+  def withDefault(defaultValue: T): RequestVal[T]
+}
 
 /**
  * A collection of predefined parameters.
@@ -29,17 +39,29 @@ object Parameters {
   /**
    * A string query parameter.
    */
-  def string(name: String): Parameter[String] =
-    fromScalaParam(implicit ec ⇒ ParamMagnet(name))
+  def stringValue(name: String): Parameter[String] = ParameterImpl(name)
 
   /**
    * An integer query parameter.
    */
-  def integer(name: String): Parameter[jl.Integer] =
-    fromScalaParam[jl.Integer](implicit ec ⇒
-      ParamMagnet(name.as[Int]).asInstanceOf[ParamMagnet { type Out = Directive1[jl.Integer] }])
+  def intValue(name: String): Parameter[jl.Integer] = ParameterImpl(name.as[Int])
+  def byteValue(name: String): Parameter[jl.Byte] = ParameterImpl(name.as[Byte])
+  def shortValue(name: String): Parameter[jl.Short] = ParameterImpl(name.as[Short])
+  def longValue(name: String): Parameter[jl.Long] = ParameterImpl(name.as[Long])
+  def floatValue(name: String): Parameter[jl.Float] = ParameterImpl(name.as[Float])
+  def doubleValue(name: String): Parameter[jl.Double] = ParameterImpl(name.as[Double])
+  def booleanValue(name: String): Parameter[jl.Boolean] = ParameterImpl(name.as[Boolean])
 
-  private def fromScalaParam[T: ClassTag](underlying: ExecutionContext ⇒ ParamMagnet { type Out = Directive1[T] }): Parameter[T] =
-    new ParameterImpl[T](underlying)
+  def hexByteValue(name: String): Parameter[jl.Byte] = ParameterImpl(name.as(Unmarshaller.HexByte))
+  def hexShortValue(name: String): Parameter[jl.Short] = ParameterImpl(name.as(Unmarshaller.HexShort))
+  def hexIntValue(name: String): Parameter[jl.Integer] = ParameterImpl(name.as(Unmarshaller.HexInt))
+  def hexLongValue(name: String): Parameter[jl.Long] = ParameterImpl(name.as(Unmarshaller.HexLong))
+
+  import scala.collection.JavaConverters._
+  def asMap: RequestVal[JMap[String, String]] = StandaloneExtractionImpl(ParameterDirectives.parameterMap.map(_.asJava))
+  def asMultiMap: RequestVal[JMap[String, JCollection[String]]] =
+    StandaloneExtractionImpl(ParameterDirectives.parameterMultiMap.map(_.mapValues(_.asJavaCollection).asJava))
+  def asCollection: RequestVal[JCollection[JMap.Entry[String, String]]] =
+    StandaloneExtractionImpl(ParameterDirectives.parameterSeq.map(_.map(e ⇒ new SimpleEntry(e._1, e._2): JMap.Entry[String, String]).asJavaCollection))
 }
 

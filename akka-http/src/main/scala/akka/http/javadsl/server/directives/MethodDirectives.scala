@@ -10,36 +10,36 @@ import akka.http.impl.server.RouteStructure
 
 import scala.annotation.varargs
 
-abstract class MethodDirectives extends FileAndResourceDirectives {
+abstract class MethodDirectives extends HostDirectives {
   /** Handles the inner routes if the incoming request is a GET request, rejects the request otherwise */
   @varargs
-  def get(innerRoutes: Route*): Route = method(HttpMethods.GET, innerRoutes: _*)
+  def get(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.GET, innerRoute, moreInnerRoutes: _*)
 
   /** Handles the inner routes if the incoming request is a POST request, rejects the request otherwise */
   @varargs
-  def post(innerRoutes: Route*): Route = method(HttpMethods.POST, innerRoutes: _*)
+  def post(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.POST, innerRoute, moreInnerRoutes: _*)
 
   /** Handles the inner routes if the incoming request is a PUT request, rejects the request otherwise */
   @varargs
-  def put(innerRoutes: Route*): Route = method(HttpMethods.PUT, innerRoutes: _*)
+  def put(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.PUT, innerRoute, moreInnerRoutes: _*)
 
   /** Handles the inner routes if the incoming request is a DELETE request, rejects the request otherwise */
   @varargs
-  def delete(innerRoutes: Route*): Route = method(HttpMethods.DELETE, innerRoutes: _*)
+  def delete(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.DELETE, innerRoute, moreInnerRoutes: _*)
 
   /** Handles the inner routes if the incoming request is a HEAD request, rejects the request otherwise */
   @varargs
-  def head(innerRoutes: Route*): Route = method(HttpMethods.HEAD, innerRoutes: _*)
+  def head(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.HEAD, innerRoute, moreInnerRoutes: _*)
 
   /** Handles the inner routes if the incoming request is a OPTIONS request, rejects the request otherwise */
   @varargs
-  def options(innerRoutes: Route*): Route = method(HttpMethods.OPTIONS, innerRoutes: _*)
+  def options(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.OPTIONS, innerRoute, moreInnerRoutes: _*)
 
   /** Handles the inner routes if the incoming request is a PATCH request, rejects the request otherwise */
   @varargs
-  def patch(innerRoutes: Route*): Route = method(HttpMethods.PATCH, innerRoutes: _*)
+  def patch(innerRoute: Route, moreInnerRoutes: Route*): Route = method(HttpMethods.PATCH, innerRoute, moreInnerRoutes: _*)
 
   /** Handles the inner routes if the incoming request is a request with the given method, rejects the request otherwise */
   @varargs
-  def method(method: HttpMethod, innerRoutes: Route*): Route = RouteStructure.MethodFilter(method, innerRoutes.toVector)
+  def method(method: HttpMethod, innerRoute: Route, moreInnerRoutes: Route*): Route = RouteStructure.MethodFilter(method)(innerRoute, moreInnerRoutes.toList)
 }

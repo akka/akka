@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.testkit
 
+import akka.http.javadsl.server._
+import Directives._
 import org.junit.rules.ExternalResource
 import org.junit.{ Rule, Assert }
 import scala.concurrent.duration._
@@ -35,6 +37,11 @@ abstract class JUnitRouteTestBase extends RouteTest {
         throw new IllegalStateException("Assertion should have failed")
       }
     }
+
+  protected def completeWithValueToString[T](value: RequestVal[T]): Route =
+    handleWith(value, new Handler1[T] {
+      def handle(ctx: RequestContext, t: T): RouteResult = ctx.complete(t.toString)
+    })
 }
 abstract class JUnitRouteTest extends JUnitRouteTestBase {
   private[this] val _systemResource = new ActorSystemResource
