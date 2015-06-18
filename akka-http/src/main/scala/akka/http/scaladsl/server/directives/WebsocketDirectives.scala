@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.ws.{ UpgradeToWebsocket, Message }
 import akka.stream.scaladsl.Flow
 
 trait WebsocketDirectives {
-  import BasicDirectives._
   import RouteDirectives._
   import HeaderDirectives._
 

@@ -12,12 +12,18 @@ import akka.http.scaladsl.model._
 trait DebuggingDirectives {
   import BasicDirectives._
 
+  /**
+   * Produces a log entry for every incoming request.
+   */
   def logRequest(magnet: LoggingMagnet[HttpRequest ⇒ Unit]): Directive0 =
     extractRequestContext.flatMap { ctx ⇒
       magnet.f(ctx.log)(ctx.request)
       pass
     }
 
+  /**
+   * Produces a log entry for every [[RouteResult]].
+   */
   def logResult(magnet: LoggingMagnet[RouteResult ⇒ Unit]): Directive0 =
     extractRequestContext.flatMap { ctx ⇒
       mapRouteResult { result ⇒
@@ -26,6 +32,9 @@ trait DebuggingDirectives {
       }
     }
 
+  /**
+   * Produces a log entry for every incoming request and [[RouteResult]].
+   */
   def logRequestResult(magnet: LoggingMagnet[HttpRequest ⇒ RouteResult ⇒ Unit]): Directive0 =
     extractRequestContext.flatMap { ctx ⇒
       val logResult = magnet.f(ctx.log)(ctx.request)

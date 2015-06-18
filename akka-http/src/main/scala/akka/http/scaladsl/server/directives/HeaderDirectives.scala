@@ -40,7 +40,7 @@ trait HeaderDirectives {
   def headerValuePF[T](pf: PartialFunction[HttpHeader, T]): Directive1[T] = headerValue(pf.lift)
 
   /**
-   * Extracts the value of the HTTP request header with the given name.
+   * Extracts the value of the first HTTP request header with the given name.
    * If no header with a matching name is found the request is rejected with a [[spray.routing.MissingHeaderRejection]].
    */
   def headerValueByName(headerName: Symbol): Directive1[String] = headerValueByName(headerName.toString)
@@ -53,7 +53,7 @@ trait HeaderDirectives {
     headerValue(optionalValue(headerName.toLowerCase)) | reject(MissingHeaderRejection(headerName))
 
   /**
-   * Extracts the HTTP request header of the given type.
+   * Extracts the first HTTP request header of the given type.
    * If no header with a matching type is found the request is rejected with a [[spray.routing.MissingHeaderRejection]].
    */
   def headerValueByType[T <: HttpHeader](magnet: ClassMagnet[T]): Directive1[T] =

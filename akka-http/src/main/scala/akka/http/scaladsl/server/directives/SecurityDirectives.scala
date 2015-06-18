@@ -41,7 +41,7 @@ trait SecurityDirectives {
     optionalHeaderValueByType[Authorization]().map(_.map(_.credentials))
 
   /**
-   * A directive that wraps the inner route with Http Basic authentication support.
+   * Wraps the inner route with Http Basic authentication support using a given ``Authenticator[T]``.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
    */
@@ -49,7 +49,7 @@ trait SecurityDirectives {
     authenticateBasicAsync(realm, cred ⇒ FastFuture.successful(authenticator(cred)))
 
   /**
-   * A directive that wraps the inner route with Http Basic authentication support.
+   * Wraps the inner route with Http Basic authentication support.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
    */

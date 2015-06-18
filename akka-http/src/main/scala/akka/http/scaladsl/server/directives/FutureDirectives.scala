@@ -16,7 +16,7 @@ import akka.http.scaladsl.util.FastFuture._
 trait FutureDirectives {
 
   /**
-   * "Unwraps" a ``Future[T]`` and runs its inner route after future
+   * "Unwraps" a ``Future[T]`` and runs the inner route after future
    * completion with the future's value as an extraction of type ``Try[T]``.
    */
   def onComplete[T](future: ⇒ Future[T]): Directive1[Try[T]] =
@@ -26,7 +26,7 @@ trait FutureDirectives {
     }
 
   /**
-   * "Unwraps" a ``Future[T]`` and runs its inner route after future
+   * "Unwraps" a ``Future[T]`` and runs the inner route after future
    * completion with the future's value as an extraction of type ``T``.
    * If the future fails its failure Throwable is bubbled up to the nearest
    * ExceptionHandler.
@@ -36,7 +36,7 @@ trait FutureDirectives {
   def onSuccess(magnet: OnSuccessMagnet): Directive[magnet.Out] = magnet.directive
 
   /**
-   * "Unwraps" a ``Future[T]`` and runs its inner route when the future has failed
+   * "Unwraps" a ``Future[T]`` and runs the inner route when the future has failed
    * with the future's failure exception as an extraction of type ``Throwable``.
    * If the future succeeds the request is completed using the values marshaller
    * (This directive therefore requires a marshaller for the futures type to be

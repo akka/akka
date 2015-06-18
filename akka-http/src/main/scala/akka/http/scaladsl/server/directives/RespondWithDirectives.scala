@@ -8,7 +8,7 @@ trait RespondWithDirectives {
   import BasicDirectives._
 
   /**
-   * Overrides the given response status on all HTTP responses of its inner Route.
+   * Overrides the response status code with the given one.
    */
   def overrideStatusCode(responseStatus: StatusCode): Directive0 =
     mapResponse(_.copy(status = responseStatus))

@@ -26,25 +26,22 @@ trait FileAndResourceDirectives {
   import RangeDirectives._
 
   /**
-   * Completes GET requests with the content of the given file. The actual I/O operation is
-   * running detached in a `Future`, so it doesn't block the current thread (but potentially
-   * some other thread !). If the file cannot be found or read the request is rejected.
+   * Completes GET requests with the content of the given file.
+   * If the file cannot be found or read the request is rejected.
    */
   def getFromFile(fileName: String)(implicit resolver: ContentTypeResolver): Route =
     getFromFile(new File(fileName))
 
   /**
-   * Completes GET requests with the content of the given file. The actual I/O operation is
-   * running detached in a `Future`, so it doesn't block the current thread (but potentially
-   * some other thread !). If the file cannot be found or read the request is rejected.
+   * Completes GET requests with the content of the given file.
+   * If the file cannot be found or read the request is rejected.
    */
   def getFromFile(file: File)(implicit resolver: ContentTypeResolver): Route =
     getFromFile(file, resolver(file.getName))
 
   /**
-   * Completes GET requests with the content of the given file. The actual I/O operation is
-   * running detached in a `Future`, so it doesn't block the current thread (but potentially
-   * some other thread !). If the file cannot be found or read the request is rejected.
+   * Completes GET requests with the content of the given file.
+   * If the file cannot be found or read the request is rejected.
    */
   def getFromFile(file: File, contentType: ContentType): Route =
     get {
@@ -71,18 +68,14 @@ trait FileAndResourceDirectives {
       } else pass)
 
   /**
-   * Completes GET requests with the content of the given resource. The actual I/O operation is
-   * running detached in a `Future`, so it doesn't block the current thread (but potentially
-   * some other thread !).
+   * Completes GET requests with the content of the given class-path resource.
    * If the resource cannot be found or read the Route rejects the request.
    */
   def getFromResource(resourceName: String)(implicit resolver: ContentTypeResolver): Route =
     getFromResource(resourceName, resolver(resourceName))
 
   /**
-   * Completes GET requests with the content of the given resource. The actual I/O operation is
-   * running detached in a `Future`, so it doesn't block the current thread (but potentially
-   * some other thread !).
+   * Completes GET requests with the content of the given resource.
    * If the resource is a directory or cannot be found or read the Route rejects the request.
    */
   def getFromResource(resourceName: String, contentType: ContentType, classLoader: ClassLoader = defaultClassLoader): Route =
