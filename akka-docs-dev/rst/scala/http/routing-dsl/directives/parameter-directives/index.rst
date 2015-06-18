@@ -25,7 +25,7 @@ to use which shows properties of different parameter directives.
 directive                  level  ordering multi
 ========================== ====== ======== =====
 :ref:`-parameter-`         high   no       no
-:ref:`-parameters-`        high   no       no
+:ref:`-parameters-`        high   no       yes
 :ref:`-parameterMap-`      low    no       no
 :ref:`-parameterMultiMap-` low    no       yes
 :ref:`-parameterSeq-`      low    yes      yes
