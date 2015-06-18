@@ -47,7 +47,7 @@ compiler will only permit us to send messages of this type, other usage will
 not be accepted.
 
 The accepted message types of an Actor together with all reply types defines
-the protocol spoken by this Actor; in this case it is a simply request–reply
+the protocol spoken by this Actor; in this case it is a simple request–reply
 protocol but Actors can model arbitrarily complex protocols when needed. The
 protocol is bundled together with the behavior that implements it in a nicely
 wrapped scope—the ``HelloWorld`` object.
@@ -103,9 +103,9 @@ fundamental actions:
 .. _`Actor Model`: http://en.wikipedia.org/wiki/Actor_model
 
   1. send a finite number of messages to Actors it knows
-  
+
   2. create a finite number of new Actors
-  
+
   3. designate the behavior to be applied to the next message
 
 The Akka Typed project expresses these actions using behaviors and addresses.
@@ -318,4 +318,3 @@ that behaviors can nicely be composed and decorated, see the :class:`And`,
 :class:`Or`, :class:`Widened`, :class:`ContextAware` combinators; nothing about
 these is special or internal, new combinators can be written as external
 libraries or tailor-made for each project.
-
