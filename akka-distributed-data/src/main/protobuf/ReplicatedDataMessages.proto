@@ -1,0 +1,100 @@
+/**
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.cluster.ddata;
+
+option java_package = "akka.cluster.ddata.protobuf.msg";
+option optimize_for = SPEED;
+import "ReplicatorMessages.proto";
+
+message GSet {
+  repeated string stringElements = 1;
+  repeated sint32 intElements = 2 [packed=true];
+  repeated sint64 longElements = 3 [packed=true];
+  repeated OtherMessage otherElements = 4;
+}
+
+message ORSet {
+  required VersionVector vvector = 1;
+  repeated VersionVector dots = 2; 
+  repeated string stringElements = 3;
+  repeated sint32 intElements = 4 [packed=true];
+  repeated sint64 longElements = 5 [packed=true];
+  repeated OtherMessage otherElements = 6;
+  
+}
+
+message Flag {
+  required bool enabled = 1;
+}
+
+message LWWRegister {
+  required sint64 timestamp = 1;
+  required UniqueAddress node = 2;
+  required OtherMessage state = 3;
+}
+
+message GCounter {
+  message Entry {
+    required UniqueAddress node = 1;
+    required bytes value = 2;
+  }
+  
+  repeated Entry entries = 1; 
+}
+
+message PNCounter {
+  required GCounter increments = 1;
+  required GCounter decrements = 2;
+}
+
+message VersionVector {
+  message Entry {
+    required UniqueAddress node = 1;
+    required int64 version = 2;
+  }
+  repeated Entry entries = 1;
+}
+
+message ORMap {
+  message Entry {
+    required string key = 1;
+    required OtherMessage value = 2;
+  }
+  
+  required ORSet keys = 1;
+  repeated Entry entries = 2;  
+}
+
+message LWWMap {
+  message Entry {
+    required string key = 1;
+    required LWWRegister value = 2;
+  }
+  
+  required ORSet keys = 1;
+  repeated Entry entries = 2;  
+}
+
+message PNCounterMap {
+  message Entry {
+    required string key = 1;
+    required PNCounter value = 2;
+  }
+  
+  required ORSet keys = 1;
+  repeated Entry entries = 2;  
+}
+
+message ORMultiMap {
+  message Entry {
+    required string key = 1;
+    required ORSet value = 2;
+  }
+  
+  required ORSet keys = 1;
+  repeated Entry entries = 2;  
+}
+
+
+

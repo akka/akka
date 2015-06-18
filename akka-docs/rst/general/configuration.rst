@@ -484,3 +484,35 @@ akka-testkit
 .. literalinclude:: ../../../akka-testkit/src/main/resources/reference.conf
    :language: none
 
+.. _config-cluster-metrics:
+
+akka-cluster-metrics
+~~~~~~~~~~~~--------
+
+.. literalinclude:: ../../../akka-cluster-metrics/src/main/resources/reference.conf
+   :language: none
+
+.. _config-cluster-tools:
+
+akka-cluster-tools
+~~~~~~~~~~~~------
+
+.. literalinclude:: ../../../akka-cluster-tools/src/main/resources/reference.conf
+   :language: none
+   
+.. _config-cluster-sharding:
+
+akka-cluster-sharding
+~~~~~~~~~~~~---------
+
+.. literalinclude:: ../../../akka-cluster-sharding/src/main/resources/reference.conf
+   :language: none
+   
+.. _config-distributed-data:
+
+akka-distributed-data
+~~~~~~~~~~~~---------
+
+.. literalinclude:: ../../../akka-distributed-data/src/main/resources/reference.conf
+   :language: none
+
