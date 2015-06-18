@@ -1,9 +1,11 @@
-import akka.{ AkkaBuild, Dependencies, Formatting, MultiNode, ScaladocNoVerificationOfDiagrams }
+import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, MultiNode, ScaladocNoVerificationOfDiagrams }
 import com.typesafe.tools.mima.plugin.MimaKeys
 
 AkkaBuild.defaultSettings
 
 Formatting.formatSettings
+
+OSGi.contrib
 
 Dependencies.contrib
 
