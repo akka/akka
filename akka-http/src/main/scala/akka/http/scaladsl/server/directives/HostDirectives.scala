@@ -13,7 +13,7 @@ trait HostDirectives {
   import RouteDirectives._
 
   /**
-   * Extracts the hostname part of the Host header value in the request.
+   * Extracts the hostname part of the Host request header value.
    */
   def extractHost: Directive1[String] = HostDirectives._extractHost
 
