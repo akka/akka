@@ -14,8 +14,8 @@ message PersistentMessage {
   // repeated string confirms = 7; // Removed in 2.4
   // optional bool confirmable = 8;  // Removed in 2.4
   // optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-  // optional string confirmTarget = 10;
-  optional string sender = 11;
+  // optional string confirmTarget = 10; // Removed in 2.4
+  optional string sender = 11; // not stored in journal, needed for remote serialization 
 }
 
 message PersistentPayload {

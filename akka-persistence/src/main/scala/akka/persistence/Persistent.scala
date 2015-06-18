@@ -73,17 +73,6 @@ trait PersistentRepr extends PersistentEnvelope with Message {
   def sender: ActorRef
 
   /**
-   * INTERNAL API.
-   */
-  private[persistence] def prepareWrite(sender: ActorRef): PersistentRepr
-
-  /**
-   * INTERNAL API.
-   */
-  private[persistence] def prepareWrite()(implicit context: ActorContext): PersistentRepr =
-    prepareWrite(if (sender.isInstanceOf[PromiseActorRef]) context.system.deadLetters else sender)
-
-  /**
    * Creates a new copy of this [[PersistentRepr]].
    */
   def update(
@@ -134,9 +123,6 @@ private[persistence] final case class PersistentImpl(
 
   def withPayload(payload: Any): PersistentRepr =
     copy(payload = payload)
-
-  def prepareWrite(sender: ActorRef) =
-    copy(sender = sender)
 
   def update(
     sequenceNr: Long,
