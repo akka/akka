@@ -15,37 +15,37 @@ trait MethodDirectives {
   import MethodDirectives._
 
   /**
-   * A route filter that rejects all non-DELETE requests.
+   * Rejects all non-DELETE requests.
    */
   def delete: Directive0 = _delete
 
   /**
-   * A route filter that rejects all non-GET requests.
+   * Rejects all non-GET requests.
    */
   def get: Directive0 = _get
 
   /**
-   * A route filter that rejects all non-HEAD requests.
+   * Rejects all non-HEAD requests.
    */
   def head: Directive0 = _head
 
   /**
-   * A route filter that rejects all non-OPTIONS requests.
+   * Rejects all non-OPTIONS requests.
    */
   def options: Directive0 = _options
 
   /**
-   * A route filter that rejects all non-PATCH requests.
+   * Rejects all non-PATCH requests.
    */
   def patch: Directive0 = _patch
 
   /**
-   * A route filter that rejects all non-POST requests.
+   * Rejects all non-POST requests.
    */
   def post: Directive0 = _post
 
   /**
-   * A route filter that rejects all non-PUT requests.
+   * Rejects all non-PUT requests.
    */
   def put: Directive0 = _put
 
