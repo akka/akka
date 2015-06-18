@@ -325,6 +325,19 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     //#orset
   }
 
+  "demonstrate ORMultiMap" in {
+    def println(o: Any): Unit = ()
+    //#ormultimap
+    implicit val node = Cluster(system)
+    val m0 = ORMultiMap.empty[Int]
+    val m1 = m0 + ("a" -> Set(1, 2, 3))
+    val m2 = m1.addBinding("a", 4)
+    val m3 = m2.removeBinding("a", 2)
+    val m4 = m3.addBinding("b", 1)
+    println(m4.entries)
+    //#ormultimap
+  }
+
   "demonstrate Flag" in {
     def println(o: Any): Unit = ()
     //#flag

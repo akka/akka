@@ -86,7 +86,15 @@ message PNCounterMap {
   repeated Entry entries = 2;  
 }
 
-
+message ORMultiMap {
+  message Entry {
+    required string key = 1;
+    required ORSet value = 2;
+  }
+  
+  required ORSet keys = 1;
+  repeated Entry entries = 2;  
+}
 
 
 

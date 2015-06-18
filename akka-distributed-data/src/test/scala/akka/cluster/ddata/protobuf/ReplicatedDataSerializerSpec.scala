@@ -16,6 +16,7 @@ import akka.cluster.ddata.GSet
 import akka.cluster.ddata.LWWMap
 import akka.cluster.ddata.LWWRegister
 import akka.cluster.ddata.ORMap
+import akka.cluster.ddata.ORMultiMap
 import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.PNCounter
 import akka.cluster.ddata.PNCounterMap
@@ -152,6 +153,19 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem("ReplicatedDataSe
       checkSerialization(PNCounterMap().increment(address1, "a", 3))
       checkSerialization(PNCounterMap().increment(address1, "a", 3).decrement(address2, "a", 2).
         increment(address2, "b", 5))
+    }
+
+    "serialize ORMultiMap" in {
+      checkSerialization(ORMultiMap())
+      checkSerialization(ORMultiMap().addBinding(address1, "a", "A"))
+      checkSerialization(ORMultiMap.empty[String]
+        .addBinding(address1, "a", "A1")
+        .put(address2, "b", Set("B1", "B2", "B3"))
+        .addBinding(address2, "a", "A2"))
+
+      val m1 = ORMultiMap.empty[String].addBinding(address1, "a", "A1").addBinding(address2, "a", "A2")
+      val m2 = ORMultiMap.empty[String].put(address2, "b", Set("B1", "B2", "B3"))
+      checkSameContent(m1.merge(m2), m2.merge(m1))
     }
 
     "serialize DeletedData" in {

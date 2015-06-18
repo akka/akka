@@ -3,56 +3,38 @@
  */
 package docs.ddata;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-
-import com.typesafe.config.ConfigFactory;
-import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.Arrays;
 import java.util.Set;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import scala.PartialFunction;
+import java.math.BigInteger;
+import java.util.Optional;
+import com.typesafe.config.ConfigFactory;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import scala.PartialFunction;
+import org.junit.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import scala.concurrent.duration.FiniteDuration;
+import scala.concurrent.forkjoin.ThreadLocalRandom;
 
-import akka.actor.ActorRef;
+import akka.actor.Actor;
+import akka.actor.ActorLogging;
 import akka.actor.ActorSystem;
 import akka.cluster.Cluster;
-import akka.cluster.ddata.DistributedData;
-import akka.cluster.ddata.Flag;
-import akka.cluster.ddata.FlagKey;
-import akka.cluster.ddata.GSet;
-import akka.cluster.ddata.GSetKey;
-import akka.cluster.ddata.Key;
-import akka.cluster.ddata.LWWRegister;
-import akka.cluster.ddata.ORSet;
-import akka.cluster.ddata.ORSetKey;
-import akka.cluster.ddata.PNCounter;
-import akka.cluster.ddata.PNCounterKey;
-import akka.cluster.ddata.PNCounterMap;
-import akka.cluster.ddata.Replicator;
-import akka.cluster.ddata.Replicator.Changed;
-import akka.cluster.ddata.Replicator.Delete;
-import akka.cluster.ddata.Replicator.GetFailure;
-import akka.cluster.ddata.Replicator.GetSuccess;
-import akka.cluster.ddata.Replicator.NotFound;
-import akka.cluster.ddata.Replicator.ReadAll;
-import akka.cluster.ddata.Replicator.ReadConsistency;
-import akka.cluster.ddata.Replicator.ReadFrom;
-import akka.cluster.ddata.Replicator.ReadMajority;
-import akka.cluster.ddata.Replicator.Subscribe;
-import akka.cluster.ddata.Replicator.UpdateSuccess;
-import akka.cluster.ddata.Replicator.UpdateTimeout;
-import akka.cluster.ddata.Replicator.WriteAll;
-import akka.cluster.ddata.Replicator.WriteConsistency;
-import akka.cluster.ddata.Replicator.WriteMajority;
-import akka.cluster.ddata.Replicator.WriteTo;
+import akka.cluster.ddata.*;
 import akka.japi.pf.ReceiveBuilder;
+
+import static akka.cluster.ddata.Replicator.*;
+
+import akka.testkit.AkkaSpec;
+import akka.testkit.ImplicitSender;
 import akka.testkit.JavaTestKit;
+import akka.testkit.TestProbe;
+import akka.actor.ActorRef;
+import akka.serialization.SerializationExtension;
 
 public class DistributedDataDocTest {
   
@@ -347,6 +329,19 @@ public class DistributedDataDocTest {
     final ORSet<String> s3 = s2.remove(node, "a");
     System.out.println(s3.getElements()); // b
     //#orset
+  }
+
+  public void demonstrateORMultiMap() {
+    //#ormultimap
+    final Cluster node = Cluster.get(system);
+    final ORMultiMap<Integer> m0 = ORMultiMap.create();
+    final ORMultiMap<Integer> m1 = m0.put(node, "a", 
+        new HashSet<Integer>(Arrays.asList(1, 2, 3)));
+    final ORMultiMap<Integer> m2 = m1.addBinding(node, "a", 4);
+    final ORMultiMap<Integer> m3 = m2.removeBinding(node, "a", 2);
+    final ORMultiMap<Integer> m4 = m3.addBinding(node, "b", 1);
+    System.out.println(m4.getEntries());
+    //#ormultimap
   }
 
   public void demonstrateFlag() {

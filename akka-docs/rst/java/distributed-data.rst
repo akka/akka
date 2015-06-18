@@ -244,7 +244,7 @@ by this package, such as:
 
 * Counters: ``GCounter``, ``PNCounter``
 * Sets: ``GSet``, ``ORSet``
-* Maps: ``ORMap``, ``LWWMap``, ``PNCounterMap``
+* Maps: ``ORMap``, ``ORMultiMap``, ``LWWMap``, ``PNCounterMap``
 * Registers: ``LWWRegister``, ``Flag``
 
 Counters
@@ -307,11 +307,16 @@ It is rather inconvenient to use the ``ORMap`` directly since it does not expose
 of the values. The ``ORMap`` is intended as a low level tool for building more specific maps,
 such as the following specialized maps.
 
+``ORMultiMap`` (observed-remove multi-map) is a multi-map implementation that wraps an
+``ORMap`` with an ``ORSet`` for the map's value.
+
 ``PNCounterMap`` (positive negative counter map) is a map of named counters. It is a specialized 
 ``ORMap`` with ``PNCounter`` values.
 
 ``LWWMap`` (last writer wins map) is a specialized ``ORMap`` with ``LWWRegister`` (last writer wins register)
 values. 
+
+.. includecode:: code/docs/ddata/DistributedDataDocTest.java#ormultimap
 
 Note that ``LWWRegister`` and therefore ``LWWMap`` relies on synchronized clocks and should only be used
 when the choice of value is not important for concurrent updates occurring within the clock skew.
