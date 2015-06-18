@@ -46,6 +46,8 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   private val LWWMapKeyManifest = "i"
   private val PNCounterMapManifest = "J"
   private val PNCounterMapKeyManifest = "j"
+  private val ORMultiMapManifest = "K"
+  private val ORMultiMapKeyManifest = "k"
   private val VersionVectorManifest = "L"
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
@@ -58,6 +60,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     ORMapManifest -> ormapFromBinary,
     LWWMapManifest -> lwwmapFromBinary,
     PNCounterMapManifest -> pncountermapFromBinary,
+    ORMultiMapManifest -> multimapFromBinary,
     DeletedDataManifest -> (_ ⇒ DeletedData),
     VersionVectorManifest -> versionVectorFromBinary,
 
@@ -69,7 +72,8 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     PNCounterKeyManifest -> (bytes ⇒ PNCounterKey(keyIdFromBinary(bytes))),
     ORMapKeyManifest -> (bytes ⇒ ORMapKey(keyIdFromBinary(bytes))),
     LWWMapKeyManifest -> (bytes ⇒ LWWMapKey(keyIdFromBinary(bytes))),
-    PNCounterMapKeyManifest -> (bytes ⇒ PNCounterMapKey(keyIdFromBinary(bytes))))
+    PNCounterMapKeyManifest -> (bytes ⇒ PNCounterMapKey(keyIdFromBinary(bytes))),
+    ORMultiMapKeyManifest -> (bytes ⇒ ORMultiMapKey(keyIdFromBinary(bytes))))
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: ORSet[_]          ⇒ ORSetManifest
@@ -81,6 +85,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     case _: ORMap[_]          ⇒ ORMapManifest
     case _: LWWMap[_]         ⇒ LWWMapManifest
     case _: PNCounterMap      ⇒ PNCounterMapManifest
+    case _: ORMultiMap[_]     ⇒ ORMultiMapManifest
     case DeletedData          ⇒ DeletedDataManifest
     case _: VersionVector     ⇒ VersionVectorManifest
 
@@ -93,6 +98,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     case _: ORMapKey[_]       ⇒ ORMapKeyManifest
     case _: LWWMapKey[_]      ⇒ LWWMapKeyManifest
     case _: PNCounterMapKey   ⇒ PNCounterMapKeyManifest
+    case _: ORMultiMapKey[_]  ⇒ ORMultiMapKeyManifest
 
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
@@ -108,6 +114,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     case m: ORMap[_]       ⇒ compress(ormapToProto(m))
     case m: LWWMap[_]      ⇒ compress(lwwmapToProto(m))
     case m: PNCounterMap   ⇒ compress(pncountermapToProto(m))
+    case m: ORMultiMap[_]  ⇒ compress(multimapToProto(m))
     case DeletedData       ⇒ dm.Empty.getDefaultInstance.toByteArray
     case m: VersionVector  ⇒ versionVectorToProto(m).toByteArray
     case Key(id)           ⇒ keyIdToBinary(id)
@@ -368,6 +375,26 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
       entry.getKey -> pncounterFromProto(entry.getValue)).toMap
     new PNCounterMap(new ORMap(
       keys = orsetFromProto(pncountermap.getKeys).asInstanceOf[ORSet[String]],
+      entries))
+  }
+
+  def multimapToProto(multimap: ORMultiMap[_]): rd.ORMultiMap = {
+    val b = rd.ORMultiMap.newBuilder().setKeys(orsetToProto(multimap.underlying.keys))
+    multimap.underlying.entries.toVector.sortBy { case (key, _) ⇒ key }.foreach {
+      case (key, value) ⇒ b.addEntries(rd.ORMultiMap.Entry.newBuilder().
+        setKey(key).setValue(orsetToProto(value)))
+    }
+    b.build()
+  }
+
+  def multimapFromBinary(bytes: Array[Byte]): ORMultiMap[Any] =
+    multimapFromProto(rd.ORMultiMap.parseFrom(decompress(bytes)))
+
+  def multimapFromProto(multimap: rd.ORMultiMap): ORMultiMap[Any] = {
+    val entries = multimap.getEntriesList.asScala.map(entry ⇒
+      entry.getKey -> orsetFromProto(entry.getValue)).toMap
+    new ORMultiMap(new ORMap(
+      keys = orsetFromProto(multimap.getKeys).asInstanceOf[ORSet[String]],
       entries))
   }
 

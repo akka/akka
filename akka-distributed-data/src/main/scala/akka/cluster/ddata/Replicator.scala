@@ -568,7 +568,7 @@ object Replicator {
  * <li>Counters: [[GCounter]], [[PNCounter]]</li>
  * <li>Registers: [[LWWRegister]], [[Flag]]</li>
  * <li>Sets: [[GSet]], [[ORSet]]</li>
- * <li>Maps: [[ORMap]], [[LWWMap]], [[PNCounterMap]]</li>
+ * <li>Maps: [[ORMap]], [[ORMultiMap]], [[LWWMap]], [[PNCounterMap]]</li>
  * </ul>
  *
  * For good introduction to the CRDT subject watch the

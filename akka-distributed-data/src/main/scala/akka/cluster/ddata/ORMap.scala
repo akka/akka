@@ -87,7 +87,7 @@ final class ORMap[A <: ReplicatedData] private[akka] (
    *
    * `IllegalArgumentException` is thrown if you try to replace an existing `ORSet`
    * value, because important history can be lost when replacing the `ORSet` and
-   * undesired effects of merging will occur.
+   * undesired effects of merging will occur. Use [[ORMultiMap]] or [[#updated]] instead.
    */
   def put(node: Cluster, key: String, value: A): ORMap[A] = put(node.selfUniqueAddress, key, value)
 
@@ -99,7 +99,7 @@ final class ORMap[A <: ReplicatedData] private[akka] (
       throw new IllegalArgumentException(
         "`ORMap.put` must not be used to replace an existing `ORSet` " +
           "value, because important history can be lost when replacing the `ORSet` and " +
-          "undesired effects of merging will occur. Use `ORMap.updated` instead.")
+          "undesired effects of merging will occur. Use `ORMultiMap` or `ORMap.updated` instead.")
     else
       new ORMap(keys.add(node, key), values.updated(key, value))
 
