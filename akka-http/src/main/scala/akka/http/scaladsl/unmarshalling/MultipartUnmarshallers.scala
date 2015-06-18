@@ -6,7 +6,6 @@ package akka.http.scaladsl.unmarshalling
 
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-import scala.concurrent.ExecutionContext
 import akka.util.ByteString
 import akka.event.{ NoLogging, LoggingAdapter }
 import akka.stream.impl.fusing.IteratorInterpreter
@@ -21,9 +20,9 @@ import HttpCharsets._
 
 trait MultipartUnmarshallers {
 
-  implicit def defaultMultipartGeneralUnmarshaller(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.General] =
+  implicit def defaultMultipartGeneralUnmarshaller(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.General] =
     multipartGeneralUnmarshaller(`UTF-8`)
-  def multipartGeneralUnmarshaller(defaultCharset: HttpCharset)(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.General] =
+  def multipartGeneralUnmarshaller(defaultCharset: HttpCharset)(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.General] =
     multipartUnmarshaller[Multipart.General, Multipart.General.BodyPart, Multipart.General.BodyPart.Strict](
       mediaRange = `multipart/*`,
       defaultContentType = ContentTypes.`text/plain` withCharset defaultCharset,
@@ -32,7 +31,7 @@ trait MultipartUnmarshallers {
       createStrictBodyPart = Multipart.General.BodyPart.Strict,
       createStrict = Multipart.General.Strict)
 
-  implicit def multipartFormDataUnmarshaller(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.FormData] =
+  implicit def multipartFormDataUnmarshaller(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.FormData] =
     multipartUnmarshaller[Multipart.FormData, Multipart.FormData.BodyPart, Multipart.FormData.BodyPart.Strict](
       mediaRange = `multipart/form-data`,
       defaultContentType = ContentTypes.`application/octet-stream`,
@@ -41,9 +40,9 @@ trait MultipartUnmarshallers {
       createStrictBodyPart = (entity, headers) ⇒ Multipart.General.BodyPart.Strict(entity, headers).toFormDataBodyPart.get,
       createStrict = (_, parts) ⇒ Multipart.FormData.Strict(parts))
 
-  implicit def defaultMultipartByteRangesUnmarshaller(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.ByteRanges] =
+  implicit def defaultMultipartByteRangesUnmarshaller(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.ByteRanges] =
     multipartByteRangesUnmarshaller(`UTF-8`)
-  def multipartByteRangesUnmarshaller(defaultCharset: HttpCharset)(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.ByteRanges] =
+  def multipartByteRangesUnmarshaller(defaultCharset: HttpCharset)(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.ByteRanges] =
     multipartUnmarshaller[Multipart.ByteRanges, Multipart.ByteRanges.BodyPart, Multipart.ByteRanges.BodyPart.Strict](
       mediaRange = `multipart/byteranges`,
       defaultContentType = ContentTypes.`text/plain` withCharset defaultCharset,
@@ -57,7 +56,7 @@ trait MultipartUnmarshallers {
                                                                                                         createBodyPart: (BodyPartEntity, List[HttpHeader]) ⇒ BP,
                                                                                                         createStreamed: (MultipartMediaType, Source[BP, Any]) ⇒ T,
                                                                                                         createStrictBodyPart: (HttpEntity.Strict, List[HttpHeader]) ⇒ BPS,
-                                                                                                        createStrict: (MultipartMediaType, immutable.Seq[BPS]) ⇒ T)(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[T] =
+                                                                                                        createStrict: (MultipartMediaType, immutable.Seq[BPS]) ⇒ T)(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[T] =
     Unmarshaller { implicit ec ⇒
       entity ⇒
         if (entity.contentType.mediaType.isMultipart && mediaRange.matches(entity.contentType.mediaType)) {
