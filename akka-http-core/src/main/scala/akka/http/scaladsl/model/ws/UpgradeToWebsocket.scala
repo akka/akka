@@ -5,6 +5,8 @@
 package akka.http.scaladsl.model.ws
 
 import java.lang.Iterable
+import akka.http.impl.util.JavaMapping
+
 import scala.collection.immutable
 import akka.stream
 import akka.stream.javadsl
@@ -63,13 +65,13 @@ trait UpgradeToWebsocket extends jm.ws.UpgradeToWebsocket {
    * Java API
    */
   def handleMessagesWith(handlerFlow: stream.javadsl.Flow[jm.ws.Message, jm.ws.Message, _]): HttpResponse =
-    handleMessages(adaptJavaFlow(handlerFlow))
+    handleMessages(JavaMapping.toScala(handlerFlow))
 
   /**
    * Java API
    */
   def handleMessagesWith(handlerFlow: stream.javadsl.Flow[jm.ws.Message, jm.ws.Message, _], subprotocol: String): HttpResponse =
-    handleMessages(adaptJavaFlow(handlerFlow), subprotocol = Some(subprotocol))
+    handleMessages(JavaMapping.toScala(handlerFlow), subprotocol = Some(subprotocol))
 
   /**
    * Java API
@@ -85,8 +87,6 @@ trait UpgradeToWebsocket extends jm.ws.UpgradeToWebsocket {
                          subprotocol: String): HttpResponse =
     handleMessages(createScalaFlow(inSink, outSource), subprotocol = Some(subprotocol))
 
-  private[this] def adaptJavaFlow(handlerFlow: stream.javadsl.Flow[jm.ws.Message, jm.ws.Message, _]): Flow[Message, Message, Any] =
-    Flow[Message].map(jm.ws.Message.adapt).via(handlerFlow.asScala).map(_.asScala)
   private[this] def createScalaFlow(inSink: stream.javadsl.Sink[jm.ws.Message, _], outSource: stream.javadsl.Source[jm.ws.Message, _]): Flow[Message, Message, Any] =
-    adaptJavaFlow(Flow.wrap(inSink.asScala, outSource.asScala)((_, _) ⇒ ()).asJava)
+    JavaMapping.toScala(Flow.wrap(inSink.asScala, outSource.asScala)((_, _) ⇒ ()).asJava)
 }

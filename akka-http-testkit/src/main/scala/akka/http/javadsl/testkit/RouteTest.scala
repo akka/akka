@@ -26,8 +26,12 @@ abstract class RouteTest extends AllDirectives {
 
   protected def awaitDuration: FiniteDuration = 500.millis
 
-  def runRoute(route: Route, request: HttpRequest): TestResponse = {
-    val scalaRoute = ScalaRoute.seal(RouteImplementation(route))
+  def runRoute(route: Route, request: HttpRequest): TestResponse =
+    runScalaRoute(ScalaRoute.seal(RouteImplementation(route)), request)
+  def runRouteUnSealed(route: Route, request: HttpRequest): TestResponse =
+    runScalaRoute(RouteImplementation(route), request)
+
+  private def runScalaRoute(scalaRoute: ScalaRoute, request: HttpRequest): TestResponse = {
     val result = scalaRoute(new server.RequestContextImpl(request.asScala, NoLogging, RoutingSettings(system)))
 
     result.awaitResult(awaitDuration) match {

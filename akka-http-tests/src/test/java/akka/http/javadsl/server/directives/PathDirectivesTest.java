@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.server.directives;
 
+import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.values.PathMatcher;
 import org.junit.Test;
 
@@ -76,7 +77,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
         TestRoute route =
             testRoute(
-                path("hey", name).route(toStringEcho(name))
+                path("hey", name).route(completeWithValueToString(name))
             );
 
         route.run(HttpRequest.GET("/hey/jude"))
@@ -84,16 +85,132 @@ public class PathDirectivesTest extends JUnitRouteTest {
     }
 
     @Test
+    public void testPathEnd() {
+        TestRoute route =
+            testRoute(
+                pathPrefix("test").route(
+                    pathEnd().route(complete("end")),
+                    path("abc").route(complete("abc"))
+                )
+            );
+
+        route.run(HttpRequest.GET("/test"))
+            .assertEntity("end");
+
+        route.run(HttpRequest.GET("/test/abc"))
+            .assertEntity("abc");
+
+        route.run(HttpRequest.GET("/xyz"))
+            .assertStatusCode(404);
+    }
+    @Test
     public void testSingleSlash() {
         TestRoute route =
             testRoute(
+                pathPrefix("test").route(
                     pathSingleSlash().route(complete("Ok"))
+                )
             );
 
-        route.run(HttpRequest.GET("/"))
+        route.run(HttpRequest.GET("/test/"))
             .assertEntity("Ok");
 
+        route.run(HttpRequest.GET("/test"))
+            .assertStatusCode(404);
+    }
+
+    @Test
+    public void testPathEndOrSingleSlash() {
+        TestRoute route =
+            testRoute(
+                pathPrefix("test").route(
+                    pathEndOrSingleSlash().route(complete("Ok"))
+                )
+            );
+
+        route.run(HttpRequest.GET("/test"))
+                .assertEntity("Ok");
+
+        route.run(HttpRequest.GET("/test/"))
+                .assertEntity("Ok");
+
         route.run(HttpRequest.GET("/abc"))
+                .assertStatusCode(404);
+    }
+
+    @Test
+    public void testRawPathPrefixTest() {
+        TestRoute route =
+            testRoute(
+                rawPathPrefixTest(PathMatchers.SLASH(), "abc").route(
+                    completeWithValueToString(RequestVals.unmatchedPath())
+                )
+            );
+
+        route.run(HttpRequest.GET("/abc"))
+            .assertEntity("/abc");
+
+        route.run(HttpRequest.GET("/abc/def"))
+            .assertEntity("/abc/def");
+
+        route.run(HttpRequest.GET("/abcd/ef"))
+                .assertEntity("/abcd/ef");
+
+        route.run(HttpRequest.GET("/xyz/def"))
+            .assertStatusCode(404);
+    }
+    @Test
+    public void testPathPrefixTest() {
+        TestRoute route =
+            testRoute(
+                pathPrefixTest("abc").route(completeWithValueToString(RequestVals.unmatchedPath()))
+            );
+
+        route.run(HttpRequest.GET("/abc"))
+            .assertEntity("/abc");
+
+        route.run(HttpRequest.GET("/abc/def"))
+            .assertEntity("/abc/def");
+
+        route.run(HttpRequest.GET("/abcd/ef"))
+            .assertEntity("/abcd/ef");
+
+        route.run(HttpRequest.GET("/xyz/def"))
+            .assertStatusCode(404);
+    }
+    @Test
+    public void testPathSuffix() {
+        TestRoute route =
+            testRoute(
+                pathSuffix(PathMatchers.SLASH(), "abc").route(completeWithValueToString(RequestVals.unmatchedPath()))
+            );
+
+        route.run(HttpRequest.GET("/test/abc/"))
+            .assertEntity("/test/");
+
+        route.run(HttpRequest.GET("/abc/"))
+            .assertEntity("/");
+
+        route.run(HttpRequest.GET("/abc/def"))
+            .assertStatusCode(404);
+
+        route.run(HttpRequest.GET("/abc"))
+            .assertStatusCode(404);
+    }
+    @Test
+    public void testPathSuffixTest() {
+        TestRoute route =
+            testRoute(
+                pathSuffixTest("abc").route(completeWithValueToString(RequestVals.unmatchedPath()))
+            );
+
+        route.run(HttpRequest.GET("/test/abc"))
+            .assertEntity("/test/abc");
+
+        route.run(HttpRequest.GET("/abc"))
+            .assertEntity("/abc");
+
+        route.run(HttpRequest.GET("/abc/def"))
             .assertStatusCode(404);
     }
 
@@ -103,7 +220,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
         TestRoute route =
             testRoute(
-                path("age", age).route(toStringEcho(age))
+                path("age", age).route(completeWithValueToString(age))
             );
 
         route.run(HttpRequest.GET("/age/38"))
@@ -112,7 +229,6 @@ public class PathDirectivesTest extends JUnitRouteTest {
         route.run(HttpRequest.GET("/age/abc"))
             .assertStatusCode(404);
     }
-
     @Test
     public void testTwoVals() {
         // tests that `x` and `y` have different identities which is important for
@@ -122,7 +238,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
         TestRoute route =
             testRoute(
-                path("multiply", x, y).route(
+                path("multiply", x, "with", y).route(
                     handleWith(x, y, new Handler2<Integer, Integer>() {
                         @Override
                         public RouteResult handle(RequestContext ctx, Integer x, Integer y) {
@@ -132,7 +248,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
                 )
             );
 
-        route.run(HttpRequest.GET("/multiply/3/6"))
+        route.run(HttpRequest.GET("/multiply/3/with/6"))
             .assertEntity("3 * 6 = 18");
     }
 
@@ -142,7 +258,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
         TestRoute route =
             testRoute(
-                path("color", color).route(toStringEcho(color))
+                path("color", color).route(completeWithValueToString(color))
             );
 
         route.run(HttpRequest.GET("/color/a0c2ef"))
@@ -155,7 +271,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
         TestRoute route =
             testRoute(
-                path("bigage", bigAge).route(toStringEcho(bigAge))
+                path("bigage", bigAge).route(completeWithValueToString(bigAge))
             );
 
         route.run(HttpRequest.GET("/bigage/12345678901"))
@@ -168,7 +284,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
         TestRoute route =
             testRoute(
-                path("code", code).route(toStringEcho(code))
+                path("code", code).route(completeWithValueToString(code))
             );
 
         route.run(HttpRequest.GET("/code/a0b1c2d3e4f5"))
@@ -181,7 +297,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
         TestRoute route =
             testRoute(
-                path("pets", rest).route(toStringEcho(rest))
+                path("pets", rest).route(completeWithValueToString(rest))
             );
 
         route.run(HttpRequest.GET("/pets/afdaoisd/asda/sfasfasf/asf"))
@@ -194,7 +310,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
         TestRoute route =
             testRoute(
-                path("by-uuid", uuid).route(toStringEcho(uuid))
+                path("by-uuid", uuid).route(completeWithValueToString(uuid))
             );
 
         route.run(HttpRequest.GET("/by-uuid/6ba7b811-9dad-11d1-80b4-00c04fd430c8"))
@@ -207,19 +323,42 @@ public class PathDirectivesTest extends JUnitRouteTest {
 
         TestRoute route =
             testRoute(
-                    path("pets", segments).route(toStringEcho(segments))
+                    path("pets", segments).route(completeWithValueToString(segments))
             );
 
         route.run(HttpRequest.GET("/pets/cat/dog"))
             .assertEntity("[cat, dog]");
     }
 
-    private <T> Route toStringEcho(RequestVal<T> value) {
-        return handleWith(value, new Handler1<T>() {
-            @Override
-            public RouteResult handle(RequestContext ctx, T t) {
-                return ctx.complete(t.toString());
-            }
-        });
+    @Test
+    public void testRedirectToTrailingSlashIfMissing() {
+        TestRoute route =
+            testRoute(
+                redirectToTrailingSlashIfMissing(StatusCodes.FOUND, complete("Ok"))
+            );
+
+        route.run(HttpRequest.GET("/home"))
+            .assertStatusCode(302)
+            .assertHeaderExists("Location", "/home/");
+
+        route.run(HttpRequest.GET("/home/"))
+            .assertStatusCode(200)
+            .assertEntity("Ok");
+    }
+
+    @Test
+    public void testRedirectToNoTrailingSlashIfPresent() {
+        TestRoute route =
+            testRoute(
+                redirectToNoTrailingSlashIfPresent(StatusCodes.FOUND, complete("Ok"))
+            );
+
+        route.run(HttpRequest.GET("/home/"))
+            .assertStatusCode(302)
+            .assertHeaderExists("Location", "/home");
+
+        route.run(HttpRequest.GET("/home"))
+            .assertStatusCode(200)
+            .assertEntity("Ok");
     }
 }

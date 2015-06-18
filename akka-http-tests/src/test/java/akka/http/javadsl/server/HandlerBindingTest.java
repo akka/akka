@@ -26,8 +26,8 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandlerWithSomeExtractions() {
-        final Parameter<Integer> a = Parameters.integer("a");
-        final Parameter<Integer> b = Parameters.integer("b");
+        final Parameter<Integer> a = Parameters.intValue("a");
+        final Parameter<Integer> b = Parameters.intValue("b");
 
         Route route = handleWith(
             new Handler() {
@@ -42,7 +42,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandlerIfExtractionFails() {
-        final Parameter<Integer> a = Parameters.integer("a");
+        final Parameter<Integer> a = Parameters.intValue("a");
 
         Route route = handleWith(
             new Handler() {
@@ -58,7 +58,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandler1() {
-        final Parameter<Integer> a = Parameters.integer("a");
+        final Parameter<Integer> a = Parameters.intValue("a");
 
         Route route = handleWith(
             a,
@@ -76,8 +76,8 @@ public class HandlerBindingTest extends JUnitRouteTest {
     @Test
     public void testHandler2() {
         Route route = handleWith(
-                Parameters.integer("a"),
-                Parameters.integer("b"),
+                Parameters.intValue("a"),
+                Parameters.intValue("b"),
                 new Handler2<Integer, Integer>() {
                     @Override
                     public RouteResult handle(RequestContext ctx, Integer a, Integer b) {
@@ -92,9 +92,9 @@ public class HandlerBindingTest extends JUnitRouteTest {
     @Test
     public void testHandler3() {
         Route route = handleWith(
-                Parameters.integer("a"),
-                Parameters.integer("b"),
-                Parameters.integer("c"),
+                Parameters.intValue("a"),
+                Parameters.intValue("b"),
+                Parameters.intValue("c"),
                 new Handler3<Integer, Integer, Integer>() {
                     @Override
                     public RouteResult handle(RequestContext ctx, Integer a, Integer b, Integer c) {
@@ -109,10 +109,10 @@ public class HandlerBindingTest extends JUnitRouteTest {
     @Test
     public void testHandler4() {
         Route route = handleWith(
-                Parameters.integer("a"),
-                Parameters.integer("b"),
-                Parameters.integer("c"),
-                Parameters.integer("d"),
+                Parameters.intValue("a"),
+                Parameters.intValue("b"),
+                Parameters.intValue("c"),
+                Parameters.intValue("d"),
                 new Handler4<Integer, Integer, Integer, Integer>() {
                     @Override
                     public RouteResult handle(RequestContext ctx, Integer a, Integer b, Integer c, Integer d) {
@@ -131,7 +131,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
                 return ctx.complete("Negated: " + (- a));
             }
         }
-        Route route = handleWith(new Test(), "negate", Parameters.integer("a"));
+        Route route = handleWith(new Test(), "negate", Parameters.intValue("a"));
         runRoute(route, HttpRequest.GET("?a=23"))
             .assertStatusCode(200)
             .assertEntity("Negated: -23");
@@ -142,7 +142,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testStaticReflectiveHandler() {
-        Route route = handleWith(HandlerBindingTest.class, "squared", Parameters.integer("a"));
+        Route route = handleWith(HandlerBindingTest.class, "squared", Parameters.intValue("a"));
         runRoute(route, HttpRequest.GET("?a=23"))
             .assertStatusCode(200)
             .assertEntity("Squared: 529");

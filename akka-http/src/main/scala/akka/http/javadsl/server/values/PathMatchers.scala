@@ -9,6 +9,7 @@ import java.{ lang ⇒ jl, util ⇒ ju }
 import akka.http.impl.server.PathMatcherImpl
 import akka.http.javadsl.server.RequestVal
 import akka.http.scaladsl.server.{ PathMatcher0, PathMatcher1, PathMatchers ⇒ ScalaPathMatchers }
+import akka.japi.Option
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -21,7 +22,9 @@ import scala.reflect.ClassTag
  * Using a PathMatcher with the [[Directives.path]] or [[Directives.pathPrefix]] directives
  * "consumes" a part of the path which is recorded in [[RequestContext.unmatchedPath]].
  */
-trait PathMatcher[T] extends RequestVal[T]
+trait PathMatcher[T] extends RequestVal[T] {
+  def optional: PathMatcher[Option[T]]
+}
 
 /**
  * A collection of predefined path matchers.

@@ -7,7 +7,7 @@ package akka.http.javadsl.server
 import akka.http.javadsl.model._
 import akka.util.ByteString
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * The RequestContext represents the state of the request while it is routed through
@@ -60,6 +60,9 @@ trait RequestContext {
    * may still be able provide a response.
    */
   def notFound(): RouteResult
+
+  /** Returns the ExecutionContext of this RequestContext */
+  def executionContext(): ExecutionContext
 
   // FIXME: provide proper support for rejections, see #16438
 }

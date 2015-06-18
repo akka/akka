@@ -15,6 +15,12 @@ import akka.http.scaladsl.server._
 private[http] abstract class StandaloneExtractionImpl[T: ClassTag] extends ExtractionImpl[T] with RequestVal[T] {
   def directive: Directive1[T]
 }
+private[http] object StandaloneExtractionImpl {
+  def apply[T: ClassTag](extractionDirective: Directive1[T]): RequestVal[T] =
+    new StandaloneExtractionImpl[T] {
+      def directive: Directive1[T] = extractionDirective
+    }
+}
 
 /**
  * INTERNAL API
