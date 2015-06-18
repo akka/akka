@@ -9,11 +9,11 @@ import akka.http.impl.server.RouteStructure
 
 import scala.annotation.varargs
 
-abstract class ExecutionDirectives extends CodingDirectives {
+abstract class ExecutionDirectives extends CookieDirectives {
   /**
    * Handles exceptions in the inner routes using the specified handler.
    */
   @varargs
-  def handleExceptions(handler: ExceptionHandler, innerRoutes: Route*): Route =
-    RouteStructure.HandleExceptions(handler, innerRoutes.toVector)
+  def handleExceptions(handler: ExceptionHandler, innerRoute: Route, moreInnerRoutes: Route*): Route =
+    RouteStructure.HandleExceptions(handler)(innerRoute, moreInnerRoutes.toList)
 }

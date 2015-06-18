@@ -6,6 +6,10 @@ package akka.http.impl.util
 
 import java.net.InetAddress
 import java.{ util ⇒ ju, lang ⇒ jl }
+import akka.http.scaladsl.model.ws.Message
+import akka.stream.javadsl
+import akka.stream.scaladsl
+
 import scala.collection.immutable
 import scala.reflect.ClassTag
 import akka.japi
@@ -52,6 +56,9 @@ object JavaMapping {
     def asJava: J
   }
 
+  def toJava[J, S](s: S)(implicit mapping: JavaMapping[J, S]): J = mapping.toJava(s)
+  def toScala[J, S](j: J)(implicit mapping: JavaMapping[J, S]): S = mapping.toScala(j)
+
   object Implicits {
     import scala.language.implicitConversions
 
@@ -85,6 +92,16 @@ object JavaMapping {
     new JavaMapping[akka.japi.Option[_J], Option[_S]] {
       def toScala(javaObject: japi.Option[_J]): Option[_S] = javaObject.asScala.map(mapping.toScala(_))
       def toJava(scalaObject: Option[_S]): japi.Option[_J] = japi.Option.fromScalaOption(scalaObject.map(mapping.toJava(_)))
+    }
+
+  implicit def flowMapping[JIn, SIn, JOut, SOut, M](implicit inMapping: JavaMapping[JIn, SIn], outMapping: JavaMapping[JOut, SOut]): JavaMapping[javadsl.Flow[JIn, JOut, M], scaladsl.Flow[SIn, SOut, M]] =
+    new JavaMapping[javadsl.Flow[JIn, JOut, M], scaladsl.Flow[SIn, SOut, M]] {
+      def toScala(javaObject: javadsl.Flow[JIn, JOut, M]): S =
+        scaladsl.Flow[SIn].map(inMapping.toJava).viaMat(javaObject)(scaladsl.Keep.right).map(outMapping.toScala)
+      def toJava(scalaObject: scaladsl.Flow[SIn, SOut, M]): J =
+        javadsl.Flow.wrap {
+          scaladsl.Flow[JIn].map(inMapping.toScala).viaMat(scalaObject)(scaladsl.Keep.right).map(outMapping.toJava)
+        }
     }
 
   implicit object StringIdentity extends Identity[String]
@@ -143,6 +160,11 @@ object JavaMapping {
   implicit object LinkValue extends Inherited[jm.headers.LinkValue, sm.headers.LinkValue]
   implicit object ProductVersion extends Inherited[jm.headers.ProductVersion, sm.headers.ProductVersion]
   implicit object RangeUnit extends Inherited[jm.headers.RangeUnit, sm.headers.RangeUnit]
+
+  implicit object WsMessage extends JavaMapping[jm.ws.Message, sm.ws.Message] {
+    def toScala(javaObject: J): WsMessage.S = javaObject.asScala
+    def toJava(scalaObject: Message): WsMessage.J = jm.ws.Message.adapt(scalaObject)
+  }
 
   implicit object Uri extends JavaMapping[jm.Uri, sm.Uri] {
     def toScala(javaObject: jm.Uri): Uri.S = cast[JavaUri](javaObject).uri

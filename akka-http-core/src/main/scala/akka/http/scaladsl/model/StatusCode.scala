@@ -16,6 +16,7 @@ sealed abstract class StatusCode extends jm.StatusCode with LazyValueBytesRender
   def defaultMessage: String
   def isSuccess: Boolean
   def isFailure: Boolean
+  def isRedirection: Boolean
   def allowsEntity: Boolean
 }
 
@@ -35,16 +36,25 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   sealed protected abstract class HttpFailure extends StatusCode {
     def isSuccess = false
     def isFailure = true
+    def isRedirection: Boolean = false
+
     def allowsEntity = true
   }
 
   // format: OFF
   final case class Informational private[StatusCodes] (intValue: Int)(val reason: String,
-                                                                val defaultMessage: String) extends HttpSuccess { def allowsEntity = false }
+                                                                val defaultMessage: String) extends HttpSuccess {
+    def allowsEntity = false
+    def isRedirection: Boolean = false
+  }
   final case class Success       private[StatusCodes] (intValue: Int)(val reason: String, val defaultMessage: String,
-                                                                val allowsEntity: Boolean = true) extends HttpSuccess
+                                                                val allowsEntity: Boolean = true) extends HttpSuccess {
+    def isRedirection: Boolean = false
+  }
   final case class Redirection   private[StatusCodes] (intValue: Int)(val reason: String, val defaultMessage: String,
-                                                                val htmlTemplate: String, val allowsEntity: Boolean = true) extends HttpSuccess
+                                                                val htmlTemplate: String, val allowsEntity: Boolean = true) extends HttpSuccess {
+    def isRedirection: Boolean = true
+  }
   final case class ClientError   private[StatusCodes] (intValue: Int)(val reason: String, val defaultMessage: String) extends HttpFailure
   final case class ServerError   private[StatusCodes] (intValue: Int)(val reason: String, val defaultMessage: String) extends HttpFailure
 
@@ -54,6 +64,7 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
     val isSuccess: Boolean,
     val allowsEntity: Boolean) extends StatusCode {
     def isFailure: Boolean = !isSuccess
+    def isRedirection: Boolean = false
   }
 
   private def reg[T <: StatusCode](code: T): T = {
