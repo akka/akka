@@ -5,41 +5,37 @@
 package akka.http.scaladsl.marshalling
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.parboiled2.util.Base64
 import akka.event.{ NoLogging, LoggingAdapter }
-import akka.stream.scaladsl.FlattenStrategy
 import akka.http.impl.engine.rendering.BodyPartRenderer
 import akka.http.scaladsl.model._
 
 trait MultipartMarshallers {
-  protected val multipartBoundaryRandom: java.util.Random = ThreadLocalRandom.current()
-
-  /**
-   * Creates a new random 144-bit number and base64 encodes it (using a custom "safe" alphabet, yielding 24 characters).
-   */
-  def randomBoundary: String = {
-    val array = new Array[Byte](18)
-    multipartBoundaryRandom.nextBytes(array)
-    Base64.custom.encodeToString(array, false)
-  }
-
   implicit def multipartMarshaller[T <: Multipart](implicit log: LoggingAdapter = NoLogging): ToEntityMarshaller[T] =
     Marshaller strict { value ⇒
-      val boundary = randomBoundary
+      val boundary = randomBoundary()
       val contentType = ContentType(value.mediaType withBoundary boundary)
       Marshalling.WithOpenCharset(contentType.mediaType, { charset ⇒
-        value match {
-          case x: Multipart.Strict ⇒
-            val data = BodyPartRenderer.strict(x.strictParts, boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
-            HttpEntity(contentType, data)
-          case _ ⇒
-            val chunks = value.parts
-              .transform(() ⇒ BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
-              .flatten(FlattenStrategy.concat)
-            HttpEntity.Chunked(contentType, chunks)
-        }
+        value.toEntity(charset, boundary)(log)
       })
     }
+
+  /**
+   * The random instance that is used to create multipart boundaries. This can be overriden (e.g. in tests) to
+   * choose how a boundary is created.
+   */
+  protected def multipartBoundaryRandom: java.util.Random = ThreadLocalRandom.current()
+
+  /**
+   * The length of randomly generated multipart boundaries (before base64 encoding). Can be overridden
+   * to configure.
+   */
+  protected def multipartBoundaryLength: Int = 18
+
+  /**
+   * The method used to create boundaries in `multipartMarshaller`. Can be overridden to create custom boundaries.
+   */
+  protected def randomBoundary(): String =
+    BodyPartRenderer.randomBoundary(length = multipartBoundaryLength, random = multipartBoundaryRandom)
 }
 
 object MultipartMarshallers extends MultipartMarshallers
