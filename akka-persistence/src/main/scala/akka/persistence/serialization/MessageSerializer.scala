@@ -17,6 +17,7 @@ import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot ⇒ At
 import akka.persistence.AtLeastOnceDelivery.UnconfirmedDelivery
 import scala.collection.immutable.VectorBuilder
 import akka.persistence.fsm.PersistentFsmActor.StateChangeEvent
+import akka.actor.Actor
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.
@@ -119,7 +120,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     val builder = PersistentMessage.newBuilder
 
     if (persistent.persistenceId != Undefined) builder.setPersistenceId(persistent.persistenceId)
-    if (persistent.sender != null) builder.setSender(Serialization.serializedActorPath(persistent.sender))
+    if (persistent.sender != Actor.noSender) builder.setSender(Serialization.serializedActorPath(persistent.sender))
 
     builder.setPayload(persistentPayloadBuilder(persistent.payload.asInstanceOf[AnyRef]))
     builder.setSequenceNr(persistent.sequenceNr)
@@ -164,7 +165,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       persistentMessage.getSequenceNr,
       if (persistentMessage.hasPersistenceId) persistentMessage.getPersistenceId else Undefined,
       persistentMessage.getDeleted,
-      if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender) else null)
+      if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender) else Actor.noSender)
   }
 
   private def payload(persistentPayload: PersistentPayload): Any = {

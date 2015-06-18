@@ -148,7 +148,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
   "A message serializer" when {
     "not given a manifest" must {
       "handle custom Persistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("a"), 13, "p1", true, testActor)
+        val persistent = PersistentRepr(MyPayload("a"), 13, "p1", true)
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -160,7 +160,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 
     "given a PersistentRepr manifest" must {
       "handle custom Persistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("b"), 13, "p1", true, testActor)
+        val persistent = PersistentRepr(MyPayload("b"), 13, "p1", true)
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -172,7 +172,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 
     "given payload serializer with string manifest" must {
       "handle serialization" in {
-        val persistent = PersistentRepr(MyPayload2("a", 17), 13, "p1", true, testActor)
+        val persistent = PersistentRepr(MyPayload2("a", 17), 13, "p1", true)
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -195,7 +195,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       }
 
       "be able to deserialize data when class is removed" in {
-        val serializer = serialization.findSerializerFor(PersistentRepr("x", 13, "p1", true, testActor))
+        val serializer = serialization.findSerializerFor(PersistentRepr("x", 13, "p1", true))
 
         // It was created with:
         // val old = PersistentRepr(OldPayload('A'), 13, "p1", true, testActor)
@@ -218,6 +218,31 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
         val deserialized = serializer.fromBinary(bytes, None).asInstanceOf[PersistentRepr]
 
         deserialized.payload should be(MyPayload("OldPayload(A)"))
+      }
+    }
+
+    "given PersistentRepr serialized with Akka 2.3.11 Scala 2.10" must {
+      "be able to deserialize with latest version" in {
+        // It was created with:
+        // val old = PersistentRepr(MyPayload("a"), 13, "p1", true, 3, List("c1", "c2"), confirmable = true, DeliveredByChannel("p2", "c2", 14), testActor, testActor)
+        // import org.apache.commons.codec.binary.Hex._
+        // println(s"encoded persistent: " + String.valueOf(encodeHex(serializer.toBinary(persistent))))
+        val oldData =
+          "0a3208c3da0412022e611a28616b6b612e70657273697374656e63652e73657269616c697a" +
+            "6174696f6e2e4d795061796c6f6164100d1a027031200130033a0263313a02633240014a0c" +
+            "0a02703212026332180e20005244616b6b613a2f2f4d65737361676553657269616c697a65" +
+            "7250657273697374656e6365537065632f73797374656d2f746573744163746f7232232d34" +
+            "34373233313933375a44616b6b613a2f2f4d65737361676553657269616c697a6572506572" +
+            "73697374656e6365537065632f73797374656d2f746573744163746f7232232d3434373233" +
+            "31393337"
+
+        val bytes = decodeHex(oldData.toCharArray)
+        val expected = PersistentRepr(MyPayload(".a."), 13, "p1", true, Actor.noSender)
+        val serializer = serialization.findSerializerFor(expected)
+        val deserialized = serializer.fromBinary(bytes, None).asInstanceOf[PersistentRepr]
+        deserialized.sender should not be (null)
+        val deserializedWithoutSender = deserialized.update(sender = Actor.noSender)
+        deserializedWithoutSender should be(expected)
       }
     }
 
@@ -254,13 +279,13 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 object MessageSerializerRemotingSpec {
   class LocalActor(port: Int) extends Actor {
     def receive = {
-      case m ⇒ context.actorSelection(s"akka.tcp://remote@127.0.0.1:${port}/user/remote") tell (m, sender())
+      case m ⇒ context.actorSelection(s"akka.tcp://remote@127.0.0.1:${port}/user/remote").tell(m, Actor.noSender)
     }
   }
 
   class RemoteActor extends Actor {
     def receive = {
-      case PersistentRepr(MyPayload(data), _) ⇒ sender() ! s"p${data}"
+      case p @ PersistentRepr(MyPayload(data), _) ⇒ p.sender ! s"p${data}"
     }
   }
 
@@ -271,7 +296,7 @@ object MessageSerializerRemotingSpec {
     system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 }
 
-class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customSerializers)) with ImplicitSender with DefaultTimeout {
+class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customSerializers)) with DefaultTimeout {
   import MessageSerializerRemotingSpec._
 
   val remoteSystem = ActorSystem("remote", remote.withFallback(customSerializers))
@@ -287,7 +312,10 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
 
   "A message serializer" must {
     "custom-serialize Persistent messages during remoting" in {
-      localActor ! PersistentRepr(MyPayload("a"))
+      // this also verifies serialization of PersistentRepr.sender,
+      // because the RemoteActor will reply to the PersistentRepr.sender
+      // is kept intact
+      localActor ! PersistentRepr(MyPayload("a"), sender = testActor)
       expectMsg("p.a.")
     }
   }

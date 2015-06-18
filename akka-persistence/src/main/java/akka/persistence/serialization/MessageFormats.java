@@ -69,7 +69,7 @@ public final class MessageFormats {
      * repeated string confirms = 7; // Removed in 2.4
      * optional bool confirmable = 8;  // Removed in 2.4
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-     * optional string confirmTarget = 10;
+     * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
      */
     boolean hasSender();
@@ -81,7 +81,7 @@ public final class MessageFormats {
      * repeated string confirms = 7; // Removed in 2.4
      * optional bool confirmable = 8;  // Removed in 2.4
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-     * optional string confirmTarget = 10;
+     * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
      */
     java.lang.String getSender();
@@ -93,7 +93,7 @@ public final class MessageFormats {
      * repeated string confirms = 7; // Removed in 2.4
      * optional bool confirmable = 8;  // Removed in 2.4
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-     * optional string confirmTarget = 10;
+     * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
      */
     com.google.protobuf.ByteString
@@ -331,7 +331,7 @@ public final class MessageFormats {
      * repeated string confirms = 7; // Removed in 2.4
      * optional bool confirmable = 8;  // Removed in 2.4
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-     * optional string confirmTarget = 10;
+     * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
      */
     public boolean hasSender() {
@@ -345,7 +345,7 @@ public final class MessageFormats {
      * repeated string confirms = 7; // Removed in 2.4
      * optional bool confirmable = 8;  // Removed in 2.4
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-     * optional string confirmTarget = 10;
+     * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
      */
     public java.lang.String getSender() {
@@ -370,7 +370,7 @@ public final class MessageFormats {
      * repeated string confirms = 7; // Removed in 2.4
      * optional bool confirmable = 8;  // Removed in 2.4
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-     * optional string confirmTarget = 10;
+     * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
      */
     public com.google.protobuf.ByteString
@@ -974,7 +974,7 @@ public final class MessageFormats {
        * repeated string confirms = 7; // Removed in 2.4
        * optional bool confirmable = 8;  // Removed in 2.4
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-       * optional string confirmTarget = 10;
+       * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
        */
       public boolean hasSender() {
@@ -988,7 +988,7 @@ public final class MessageFormats {
        * repeated string confirms = 7; // Removed in 2.4
        * optional bool confirmable = 8;  // Removed in 2.4
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-       * optional string confirmTarget = 10;
+       * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
        */
       public java.lang.String getSender() {
@@ -1010,7 +1010,7 @@ public final class MessageFormats {
        * repeated string confirms = 7; // Removed in 2.4
        * optional bool confirmable = 8;  // Removed in 2.4
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-       * optional string confirmTarget = 10;
+       * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
        */
       public com.google.protobuf.ByteString
@@ -1034,7 +1034,7 @@ public final class MessageFormats {
        * repeated string confirms = 7; // Removed in 2.4
        * optional bool confirmable = 8;  // Removed in 2.4
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-       * optional string confirmTarget = 10;
+       * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
        */
       public Builder setSender(
@@ -1055,7 +1055,7 @@ public final class MessageFormats {
        * repeated string confirms = 7; // Removed in 2.4
        * optional bool confirmable = 8;  // Removed in 2.4
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-       * optional string confirmTarget = 10;
+       * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
        */
       public Builder clearSender() {
@@ -1072,7 +1072,7 @@ public final class MessageFormats {
        * repeated string confirms = 7; // Removed in 2.4
        * optional bool confirmable = 8;  // Removed in 2.4
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
-       * optional string confirmTarget = 10;
+       * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
        */
       public Builder setSenderBytes(
