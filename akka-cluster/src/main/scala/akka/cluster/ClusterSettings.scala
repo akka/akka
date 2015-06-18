@@ -67,6 +67,11 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     }
   }
 
+  val DownRemovalMargin: FiniteDuration = {
+    val key = "down-removal-margin"
+    cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s")
+  }
+
   val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")

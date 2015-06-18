@@ -41,8 +41,7 @@ object ClusterSingletonProxySpec {
       system.actorOf(ClusterSingletonManager.props(
         singletonProps = Props[Singleton],
         terminationMessage = PoisonPill,
-        settings = ClusterSingletonManagerSettings(system)
-          .withRetry(maxHandOverRetries = 5, maxTakeOverRetries = 2, retryInterval = 1.second)),
+        settings = ClusterSingletonManagerSettings(system).withRemovalMargin(5.seconds)),
         name = "singletonManager")
     }
 
