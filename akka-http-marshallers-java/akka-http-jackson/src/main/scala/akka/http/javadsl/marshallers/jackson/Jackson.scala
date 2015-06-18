@@ -13,8 +13,11 @@ import akka.http.javadsl.server.{ Unmarshaller, Marshaller }
 import akka.http.impl.server.{ UnmarshallerImpl, MarshallerImpl }
 
 object Jackson {
-  def json[T <: AnyRef]: Marshaller[T] = _jsonMarshaller.asInstanceOf[Marshaller[T]]
-  def jsonAs[T](clazz: Class[T]): Unmarshaller[T] =
+  private val objectMapper: ObjectMapper = new ObjectMapper().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+  def json[T <: AnyRef]: Marshaller[T] = jsonMarshaller(objectMapper).asInstanceOf[Marshaller[T]]
+  def json[T <: AnyRef](objectMapper: ObjectMapper): Marshaller[T] = jsonMarshaller(objectMapper).asInstanceOf[Marshaller[T]]
+  def jsonAs[T](clazz: Class[T]): Unmarshaller[T] = jsonAs(objectMapper, clazz)
+  def jsonAs[T](objectMapper: ObjectMapper, clazz: Class[T]): Unmarshaller[T] =
     UnmarshallerImpl[T] { (_ec, _flowMaterializer) ⇒
       implicit val ec = _ec
       implicit val mat = _flowMaterializer
@@ -23,16 +26,16 @@ object Jackson {
         unmarshalling.Unmarshaller.stringUnmarshaller
           .forContentTypes(`application/json`)
           .map { jsonString ⇒
-            val reader = new ObjectMapper().reader(clazz)
+            val reader = objectMapper.reader(clazz)
             clazz.cast(reader.readValue(jsonString))
           }
       }
     }(ClassTag(clazz))
 
-  private val _jsonMarshaller: Marshaller[AnyRef] =
+  private def jsonMarshaller(objectMapper: ObjectMapper): Marshaller[AnyRef] =
     MarshallerImpl[AnyRef] { implicit ec ⇒
       marshalling.Marshaller.StringMarshaller.wrap(`application/json`) { (value: AnyRef) ⇒
-        val writer = new ObjectMapper().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY).writer()
+        val writer = objectMapper.writer()
         writer.writeValueAsString(value)
       }
     }
