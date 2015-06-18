@@ -67,9 +67,6 @@ object PersistentActorFailureSpec {
 
   class Supervisor(testActor: ActorRef) extends Actor {
     override def supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
-      case e: ActorKilledException ⇒
-        testActor ! e
-        SupervisorStrategy.Stop
       case e ⇒
         testActor ! e
         SupervisorStrategy.Restart
@@ -100,12 +97,9 @@ object PersistentActorFailureSpec {
     val failingRecover: Receive = {
       case Evt(data) if data == "bad" ⇒
         throw new SimulatedException("Simulated exception from receiveRecover")
-
-      case r @ RecoveryFailure(cause) if recoveryFailureProbe.isDefined ⇒
-        recoveryFailureProbe.foreach { _ ! r }
     }
 
-    override def receiveRecover: Receive = failingRecover orElse super.receiveRecover
+    override def receiveRecover: Receive = failingRecover.orElse[Any, Unit](super.receiveRecover)
 
   }
 
@@ -150,7 +144,7 @@ class PersistentActorFailureSpec extends PersistenceSpec(PersistenceSpec.config(
   }
 
   "A persistent actor" must {
-    "throw ActorKilledException if recovery from persisted events fail" in {
+    "stop if recovery from persisted events fail" in {
       val persistentActor = namedPersistentActor[Behavior1PersistentActor]
       persistentActor ! Cmd("corrupt")
       persistentActor ! GetState
@@ -158,107 +152,36 @@ class PersistentActorFailureSpec extends PersistenceSpec(PersistenceSpec.config(
 
       // recover by creating another with same name
       system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[Behavior1PersistentActor], name)
-      expectMsgType[ActorRef]
-      expectMsgType[ActorKilledException]
+      val ref = expectMsgType[ActorRef]
+      watch(ref)
+      expectTerminated(ref)
     }
-    "throw ActorKilledException if persist fails" in {
+    "stop if persist fails" in {
       system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[Behavior1PersistentActor], name)
       val persistentActor = expectMsgType[ActorRef]
+      watch(persistentActor)
       persistentActor ! Cmd("wrong")
-      expectMsgType[ActorKilledException]
+      expectTerminated(persistentActor)
     }
-    "throw ActorKilledException if persistAsync fails" in {
+    "stop if persistAsync fails" in {
       system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[AsyncPersistPersistentActor], name)
       val persistentActor = expectMsgType[ActorRef]
       persistentActor ! Cmd("a")
+      watch(persistentActor)
       expectMsg("a") // reply before persistAsync
       expectMsg("a-1") // reply after successful persistAsync
       persistentActor ! Cmd("wrong")
       expectMsg("wrong") // reply before persistAsync
-      expectMsgType[ActorKilledException]
+      expectTerminated(persistentActor)
     }
-    "throw ActorKilledException if receiveRecover fails" in {
+    "stop if receiveRecover fails" in {
       prepareFailingRecovery()
 
       // recover by creating another with same name
       system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[FailingRecovery], name)
-      expectMsgType[ActorRef]
-      expectMsgType[ActorKilledException]
-    }
-    "include failing event in RecoveryFailure message" in {
-      prepareFailingRecovery()
-
-      // recover by creating another with same name
-      val probe = TestProbe()
-      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[FailingRecovery], name, Some(probe.ref))
-      expectMsgType[ActorRef]
-      val recoveryFailure = probe.expectMsgType[RecoveryFailure]
-      recoveryFailure.payload should ===(Some(Evt("bad")))
-      recoveryFailure.sequenceNr should ===(Some(3L))
-    }
-    "continue by handling RecoveryFailure" in {
-      prepareFailingRecovery()
-
-      // recover by creating another with same name
-      val probe = TestProbe()
-      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[FailingRecovery], name, Some(probe.ref))
-      val persistentActor = expectMsgType[ActorRef]
-      val recoveryFailure = probe.expectMsgType[RecoveryFailure]
-      // continue
-      persistentActor ! Cmd("d")
-      persistentActor ! GetState
-      // "bad" failed, and "c" was not replayed
-      expectMsg(List("a", "b", "d"))
-    }
-    "support resume after recovery failure" in {
-      prepareFailingRecovery()
-
-      // recover by creating another with same name
-      system.actorOf(Props(classOf[ResumingSupervisor], testActor)) ! Props(classOf[FailingRecovery], name)
-      val persistentActor = expectMsgType[ActorRef]
-      expectMsgType[ActorKilledException] // from supervisor
-      // resume
-      persistentActor ! Cmd("d")
-      persistentActor ! GetState
-      // "bad" failed, and "c" was not replayed
-      expectMsg(List("a", "b", "d"))
-    }
-    "support resume after persist failure" in {
-      system.actorOf(Props(classOf[ResumingSupervisor], testActor)) ! Props(classOf[Behavior1PersistentActor], name)
-      val persistentActor = expectMsgType[ActorRef]
-      persistentActor ! Cmd("a")
-      persistentActor ! Cmd("wrong")
-      persistentActor ! Cmd("b")
-      // Behavior1PersistentActor persists 2 events per Cmd,
-      // and therefore 2 exceptions from supervisor
-      expectMsgType[ActorKilledException]
-      expectMsgType[ActorKilledException]
-      persistentActor ! Cmd("c")
-      persistentActor ! GetState
-      expectMsg(List("a-1", "a-2", "b-1", "b-2", "c-1", "c-2"))
-    }
-    "support resume when persist followed by exception" in {
-      system.actorOf(Props(classOf[ResumingSupervisor], testActor)) ! Props(classOf[ThrowingActor1], name)
-      val persistentActor = expectMsgType[ActorRef]
-      persistentActor ! Cmd("a")
-      persistentActor ! Cmd("err")
-      persistentActor ! Cmd("b")
-      expectMsgType[SimulatedException] // from supervisor
-      persistentActor ! Cmd("c")
-      persistentActor ! GetState
-      expectMsg(List("a", "err", "b", "c"))
-    }
-    "support resume when persist handler throws exception" in {
-      system.actorOf(Props(classOf[ResumingSupervisor], testActor)) ! Props(classOf[ThrowingActor2], name)
-      val persistentActor = expectMsgType[ActorRef]
-      persistentActor ! Cmd("a")
-      persistentActor ! Cmd("b")
-      persistentActor ! Cmd("err")
-      persistentActor ! Cmd("c")
-      expectMsgType[SimulatedException] // from supervisor
-      persistentActor ! Cmd("d")
-      persistentActor ! GetState
-      expectMsg(List("a", "b", "c", "d"))
+      val ref = expectMsgType[ActorRef]
+      watch(ref)
+      expectTerminated(ref)
     }
 
   }

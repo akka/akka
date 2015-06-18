@@ -12,9 +12,11 @@ import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.*;
 import scala.Option;
+import scala.concurrent.duration.Duration;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 import java.io.Serializable;
+import java.util.concurrent.TimeUnit;
 
 public class LambdaPersistenceDocTest {
 
@@ -39,7 +41,7 @@ public class LambdaPersistenceDocTest {
       persistentActor.tell(Recover.create(), null);
       //#recover-explicit
     }
-    
+
   };
 
   static Object o2 = new Object() {
@@ -83,14 +85,14 @@ public class LambdaPersistenceDocTest {
       public PartialFunction<Object, BoxedUnit> receiveRecover() {
         return ReceiveBuilder.
             match(String.class, evt -> {/* ... */}).build();
-      } 
+      }
 
     }
 
     //#recovery-completed
     class MyPersistentActor5 extends AbstractPersistentActor {
 
-      @Override public String persistenceId() { 
+      @Override public String persistenceId() {
         return "my-stable-persistence-id";
       }
 
@@ -107,15 +109,32 @@ public class LambdaPersistenceDocTest {
         return ReceiveBuilder.
           match(String.class, s -> s.equals("cmd"),
             s -> persist("evt", this::handleEvent)).build();
-      }      
-      
+      }
+
       private void handleEvent(String event) {
         // update state
         // ...
       }
-      
+
     }
     //#recovery-completed
+
+    abstract class MyActor extends AbstractPersistentActor {
+      //#backoff
+      @Override
+      public void preStart() throws Exception {
+        final Props childProps = Props.create(MyPersistentActor1.class);
+        final Props props = BackoffSupervisor.props(
+          childProps,
+          "myActor",
+          Duration.create(3, TimeUnit.SECONDS),
+          Duration.create(30, TimeUnit.SECONDS),
+          0.2);
+        context().actorOf(props, "mySupervisor");
+        super.preStart();
+      }
+      //#backoff
+    }
   };
 
   static Object fullyDisabledRecoveyExample = new Object() {
@@ -129,32 +148,32 @@ public class LambdaPersistenceDocTest {
 
   static Object atLeastOnceExample = new Object() {
       //#at-least-once-example
-      
+
       class Msg implements Serializable {
         private static final long serialVersionUID = 1L;
         public final long deliveryId;
         public final String s;
-        
+
         public Msg(long deliveryId, String s) {
           this.deliveryId = deliveryId;
           this.s = s;
         }
       }
-      
+
       class Confirm implements Serializable {
         private static final long serialVersionUID = 1L;
         public final long deliveryId;
-        
+
         public Confirm(long deliveryId) {
           this.deliveryId = deliveryId;
         }
       }
-      
-  
+
+
       class MsgSent implements Serializable {
         private static final long serialVersionUID = 1L;
         public final String s;
-        
+
         public MsgSent(String s) {
           this.s = s;
         }
@@ -162,12 +181,12 @@ public class LambdaPersistenceDocTest {
       class MsgConfirmed implements Serializable {
         private static final long serialVersionUID = 1L;
         public final long deliveryId;
-        
+
         public MsgConfirmed(long deliveryId) {
           this.deliveryId = deliveryId;
         }
       }
-      
+
       class MyPersistentActor extends AbstractPersistentActorWithAtLeastOnceDelivery {
         private final ActorPath destination;
 
@@ -175,7 +194,7 @@ public class LambdaPersistenceDocTest {
             this.destination = destination;
         }
 
-        @Override public String persistenceId() { 
+        @Override public String persistenceId() {
           return "persistence-id";
         }
 
@@ -195,8 +214,8 @@ public class LambdaPersistenceDocTest {
         public PartialFunction<Object, BoxedUnit> receiveRecover() {
           return ReceiveBuilder.
               match(Object.class, evt -> updateState(evt)).build();
-        }        
-        
+        }
+
         void updateState(Object event) {
           if (event instanceof MsgSent) {
             final MsgSent evt = (MsgSent) event;
@@ -219,7 +238,7 @@ public class LambdaPersistenceDocTest {
         }
       }
       //#at-least-once-example
-   
+
   };
 
   static Object o4 = new Object() {
@@ -243,7 +262,7 @@ public class LambdaPersistenceDocTest {
       }
       //#save-snapshot
 
-      @Override public String persistenceId() { 
+      @Override public String persistenceId() {
         return "persistence-id";
       }
 
@@ -256,7 +275,7 @@ public class LambdaPersistenceDocTest {
   };
 
   static Object o5 = new Object() {
-    
+
     class MyPersistentActor extends AbstractPersistentActor {
       //#snapshot-offer
       private Object state;
@@ -271,16 +290,16 @@ public class LambdaPersistenceDocTest {
       }
       //#snapshot-offer
 
-      @Override public String persistenceId() { 
+      @Override public String persistenceId() {
         return "persistence-id";
       }
 
       @Override public PartialFunction<Object, BoxedUnit> receiveCommand() {
         return ReceiveBuilder.
           match(String.class, s -> {/* ...*/}).build();
-      }  
+      }
     }
-    
+
 
     class MyActor extends AbstractActor {
       ActorRef persistentActor;
@@ -306,7 +325,7 @@ public class LambdaPersistenceDocTest {
     //#persist-async
     class MyPersistentActor extends AbstractPersistentActor {
 
-      @Override public String persistenceId() { 
+      @Override public String persistenceId() {
         return "my-stable-persistence-id";
       }
 
@@ -356,7 +375,7 @@ public class LambdaPersistenceDocTest {
     //#defer
     class MyPersistentActor extends AbstractPersistentActor {
 
-      @Override public String persistenceId() { 
+      @Override public String persistenceId() {
         return "my-stable-persistence-id";
       }
 

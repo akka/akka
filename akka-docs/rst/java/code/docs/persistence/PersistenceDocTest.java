@@ -4,6 +4,8 @@
 
 package docs.persistence;
 
+import java.util.concurrent.TimeUnit;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorPath;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -12,8 +14,8 @@ import akka.actor.UntypedActor;
 import akka.japi.Function;
 import akka.japi.Procedure;
 import akka.persistence.*;
-import scala.Option;
 
+import scala.Option;
 import java.io.Serializable;
 
 public class PersistenceDocTest {
@@ -103,6 +105,23 @@ public class PersistenceDocTest {
             }
           }
           //#recovery-completed
+        }
+        
+        abstract class MyActor extends UntypedPersistentActor {
+          //#backoff
+          @Override
+          public void preStart() throws Exception {
+            final Props childProps = Props.create(MyPersistentActor1.class);
+            final Props props = BackoffSupervisor.props(
+              childProps,
+              "myActor",
+              Duration.create(3, TimeUnit.SECONDS),
+              Duration.create(30, TimeUnit.SECONDS),
+              0.2);
+            getContext().actorOf(props, "mySupervisor");
+            super.preStart();
+          }
+          //#backoff
         }
     };
 

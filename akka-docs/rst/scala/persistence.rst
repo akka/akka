@@ -123,9 +123,14 @@ When persisting events with ``persist`` it is guaranteed that the persistent act
 the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
 calls in context of a single command.
 
-If persistence of an event fails, the persistent actor will be stopped by throwing :class:`ActorKilledException`.
-This can be customized by handling ``PersistenceFailure`` message in ``receiveCommand`` and/or defining 
-``supervisorStrategy`` in parent actor.
+If persistence of an event fails, ``onPersistFailure`` will be invoked (logging the error by default)
+and the actor will unconditionally be stopped. The reason that it cannot resume when persist fails
+is that it is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
+state. Restarting on persistent failures will most likely fail anyway, since the journal is probably
+unavailable. It is better to stop the actor and after a back-off timeout start it again. The
+``akka.persistence.BackoffSupervisor`` actor is provided to support such restarts.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#backoff
 
 The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 and open the tutorial named `Akka Persistence Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-persistence-scala>`_.
@@ -201,9 +206,8 @@ and before any other received messages.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recovery-completed
 
-If there is a problem with recovering the state of the actor from the journal, the actor will be 
-sent a :class:`RecoveryFailure` message that it can choose to handle in ``receiveRecover``. If the
-actor doesn't handle the :class:`RecoveryFailure` message it will be stopped by throwing :class:`ActorKilledException`.
+If there is a problem with recovering the state of the actor from the journal, the error will be logged and the
+actor will be stopped. 
 
 .. _persist-async-scala:
 
