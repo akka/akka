@@ -11,6 +11,7 @@ Networking
    ../scala/cluster-client
    ../scala/cluster-sharding
    cluster-metrics
+   distributed-data
    remoting
    serialization
    io

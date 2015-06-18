@@ -1,0 +1,118 @@
+/**
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.cluster.ddata;
+
+option java_package = "akka.cluster.ddata.protobuf.msg";
+option optimize_for = SPEED;
+
+message Get {
+  required OtherMessage key = 1;
+  required sint32 consistency = 2;
+  required uint32 timeout = 3;
+  optional OtherMessage request = 4;   
+}
+
+message GetSuccess {
+  required OtherMessage key = 1;
+  required OtherMessage data = 2;
+  optional OtherMessage request = 4;
+}
+
+message NotFound {
+  required OtherMessage key = 1;
+  optional OtherMessage request = 2;
+}
+
+message GetFailure {
+  required OtherMessage key = 1;
+  optional OtherMessage request = 2;
+}
+
+message Subscribe {
+  required OtherMessage key = 1;
+  required string ref = 2;
+}
+
+message Unsubscribe {
+  required OtherMessage key = 1;
+  required string ref = 2;
+}
+
+message Changed {
+  required OtherMessage key = 1;
+  required OtherMessage data = 2;
+}
+
+message Write {
+  required string key = 1;
+  required DataEnvelope envelope = 2;
+}
+
+// message WriteAck, via Empty
+
+message Empty {
+}
+
+message Read {
+  required string key = 1;
+}
+
+message ReadResult {
+  optional DataEnvelope envelope = 1;
+}
+
+message DataEnvelope {
+  message PruningEntry {
+    required UniqueAddress removedAddress = 1;
+    required UniqueAddress ownerAddress = 2;
+    required bool performed = 3;
+    repeated Address seen = 4;
+  } 
+  
+  required OtherMessage data = 1;
+  repeated PruningEntry pruning = 2;
+}
+
+message Status {
+  message Entry {
+    required string key = 1;
+    required bytes digest = 2;
+  }
+  
+  required uint32 chunk = 1;
+  required uint32 totChunks = 2;
+  repeated Entry entries = 3;
+}
+
+message Gossip {
+  message Entry {
+    required string key = 1;
+    required DataEnvelope envelope = 2;
+  }
+  
+  required bool sendBack = 1;
+  repeated Entry entries = 2;
+}
+
+message UniqueAddress {
+  required Address address = 1;
+  required sfixed32 uid = 2;
+}
+
+message Address {
+  required string hostname = 1;
+  required uint32 port = 2;
+}
+
+message OtherMessage {
+  required bytes enclosedMessage = 1;
+  required int32 serializerId = 2;
+  optional bytes messageManifest = 4;
+}
+
+message StringGSet {
+  repeated string elements = 1;
+}
+
+

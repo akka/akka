@@ -51,7 +51,8 @@ object AkkaBuild extends Build {
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       }
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, clusterTools, clusterSharding,
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, 
+      cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, agent, persistence, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed)
   )
 
@@ -60,7 +61,8 @@ object AkkaBuild extends Build {
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM)
     // samples don't work with dbuild right now
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, clusterTools, clusterSharding,
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, 
+      cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, persistence, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed)
   ).disablePlugins(ValidatePullRequest)
 
@@ -135,6 +137,12 @@ object AkkaBuild extends Build {
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
         persistence % "compile;test->provided", clusterTools)
   ) configs (MultiJvm)
+  
+  lazy val distributedData = Project(
+    id = "akka-distributed-data",
+    base = file("akka-distributed-data"),
+    dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
+  ) configs (MultiJvm)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -184,7 +192,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test",
       remote % "compile;test->test", cluster, clusterMetrics, slf4j, agent, camel, osgi,
       persistence % "compile;provided->provided;test->test", persistenceTck,
-      typed % "compile;test->test")
+      typed % "compile;test->test", distributedData)
   )
 
   lazy val contrib = Project(
