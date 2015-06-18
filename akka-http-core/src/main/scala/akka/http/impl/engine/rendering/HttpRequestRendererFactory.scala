@@ -4,7 +4,6 @@
 
 package akka.http.impl.engine.rendering
 
-import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
@@ -14,7 +13,6 @@ import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import RenderSupport._
 import headers._
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -93,7 +91,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
           }
 
           case Nil ⇒
-            if (!hostHeaderSeen) r ~~ Host(ctx.serverAddress) ~~ CrLf
+            if (!hostHeaderSeen) r ~~ ctx.hostHeader ~~ CrLf
             if (!userAgentSeen && userAgentHeader.isDefined) r ~~ userAgentHeader.get ~~ CrLf
             if (entity.isChunked && !entity.isKnownEmpty && !transferEncodingSeen)
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
@@ -132,4 +130,4 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
 /**
  * INTERNAL API
  */
-private[http] final case class RequestRenderingContext(request: HttpRequest, serverAddress: InetSocketAddress)
+private[http] final case class RequestRenderingContext(request: HttpRequest, hostHeader: Host)

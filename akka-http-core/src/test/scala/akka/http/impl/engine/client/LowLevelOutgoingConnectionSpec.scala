@@ -30,7 +30,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest())
         expectWireData(
           """GET / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |
             |""")
@@ -56,7 +56,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source(probe))))
         expectWireData(
           """PUT / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |Content-Type: application/octet-stream
             |Content-Length: 8
@@ -92,7 +92,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest())
         expectWireData(
           """GET / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |
             |""")
@@ -136,7 +136,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendComplete()
         expectWireData(
           """GET / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |
             |""")
@@ -162,7 +162,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest())
         expectWireData(
           """GET / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |
             |""")
@@ -202,7 +202,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest())
         expectWireData(
           """GET / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |
             |""")
@@ -222,7 +222,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source(probe))))
         expectWireData(
           """PUT / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |Content-Type: application/octet-stream
             |Content-Length: 8
@@ -247,7 +247,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source(probe))))
         expectWireData(
           """PUT / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |Content-Type: application/octet-stream
             |Content-Length: 8
@@ -271,7 +271,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest())
         expectWireData(
           """GET / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |
             |""")
@@ -292,7 +292,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest())
         expectWireData(
           """GET / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |
             |""")
@@ -330,7 +330,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         requestsSub.sendNext(HttpRequest())
         expectWireData(
           """GET / HTTP/1.1
-            |Host: example.com:80
+            |Host: example.com
             |User-Agent: akka-http/test
             |
             |""")
@@ -350,7 +350,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
   class TestSetup {
     val requests = TestPublisher.manualProbe[HttpRequest]
     val responses = TestSubscriber.manualProbe[HttpResponse]
-    val remoteAddress = new InetSocketAddress("example.com", 80)
+    val remoteAddress = new InetSocketAddress("example.com", 0)
 
     def settings = ClientConnectionSettings(system)
       .copy(userAgentHeader = Some(`User-Agent`(List(ProductVersion("akka-http", "test")))))
@@ -359,7 +359,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       val netOut = TestSubscriber.manualProbe[ByteString]
       val netIn = TestPublisher.manualProbe[ByteString]
 
-      FlowGraph.closed(OutgoingConnectionBlueprint(remoteAddress, settings, NoLogging)) { implicit b ⇒
+      FlowGraph.closed(OutgoingConnectionBlueprint(Host(remoteAddress), settings, NoLogging)) { implicit b ⇒
         client ⇒
           import FlowGraph.Implicits._
           Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2

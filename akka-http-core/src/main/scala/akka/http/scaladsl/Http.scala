@@ -8,21 +8,21 @@ import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{ Collection ⇒ JCollection }
 import javax.net.ssl.{ SSLParameters, SSLContext }
-import akka.http.impl.util.StreamUtils
-import akka.japi
 import com.typesafe.config.Config
 import scala.util.Try
 import scala.util.control.NonFatal
 import scala.collection.{ JavaConverters, immutable }
 import scala.concurrent.{ ExecutionContext, Promise, Future }
+import akka.japi
 import akka.event.LoggingAdapter
-import akka.io.Inet
 import akka.stream.FlowMaterializer
 import akka.stream.io._
 import akka.stream.scaladsl._
+import akka.http.impl.util.StreamUtils
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.scaladsl.util.FastFuture
+import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model._
 import akka.http._
 import akka.actor._
@@ -185,10 +185,10 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   private def _outgoingConnection(host: String, port: Int, localAddress: Option[InetSocketAddress],
                                   settings: ClientConnectionSettings, httpsContext: Option[HttpsContext],
                                   log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
-    val remoteAddr = new InetSocketAddress(host, port)
-    val layer = clientLayer(remoteAddr, settings, log)
+    val hostHeader = if (port == (if (httpsContext.isEmpty) 80 else 443)) Host(host) else Host(host, port)
+    val layer = clientLayer(hostHeader, settings, log)
     val tlsStage = sslTlsStage(httpsContext, Client)
-    val transportFlow = Tcp().outgoingConnection(remoteAddr, localAddress,
+    val transportFlow = Tcp().outgoingConnection(new InetSocketAddress(host, port), localAddress,
       settings.socketOptions, settings.connectingTimeout, settings.idleTimeout)
 
     layer.atop(tlsStage).joinMat(transportFlow) { (_, tcpConnFuture) ⇒
@@ -214,16 +214,16 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   /**
    * Constructs a [[ClientLayer]] stage using the configured default [[ClientConnectionSettings]].
    */
-  def clientLayer(remoteAddress: InetSocketAddress /* TODO: remove after #16168 is cleared */ ): ClientLayer =
-    clientLayer(remoteAddress, ClientConnectionSettings(system))
+  def clientLayer(hostHeader: Host): ClientLayer =
+    clientLayer(hostHeader, ClientConnectionSettings(system))
 
   /**
    * Constructs a [[ClientLayer]] stage using the given [[ClientConnectionSettings]].
    */
-  def clientLayer(remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
+  def clientLayer(hostHeader: Host,
                   settings: ClientConnectionSettings,
                   log: LoggingAdapter = system.log): ClientLayer =
-    BidiFlow.wrap(OutgoingConnectionBlueprint(remoteAddress, settings, log))
+    BidiFlow.wrap(OutgoingConnectionBlueprint(hostHeader, settings, log))
 
   /**
    * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches

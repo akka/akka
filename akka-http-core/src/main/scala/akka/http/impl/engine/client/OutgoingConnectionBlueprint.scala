@@ -4,20 +4,16 @@
 
 package akka.http.impl.engine.client
 
-import akka.http.ClientConnectionSettings
-import akka.stream.io.{ SessionBytes, SslTlsInbound, SendBytes, SslTlsOutbound }
-
 import language.existentials
-import java.net.InetSocketAddress
 import scala.annotation.tailrec
-import scala.collection.immutable.Seq
 import scala.collection.mutable.ListBuffer
-import akka.stream.stage._
+import akka.stream.io.{ SessionBytes, SslTlsInbound, SendBytes, SslTlsOutbound }
 import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.OperationAttributes._
+import akka.http.ClientConnectionSettings
+import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.{ IllegalResponseException, HttpMethod, HttpRequest, HttpResponse }
 import akka.http.impl.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
 import akka.http.impl.engine.parsing._
@@ -47,7 +43,7 @@ private[http] object OutgoingConnectionBlueprint {
                                   |  Merge     |<------------------------------------------ V
                                   +------------+
   */
-  def apply(remoteAddress: InetSocketAddress,
+  def apply(hostHeader: Host,
             settings: ClientConnectionSettings,
             log: LoggingAdapter): Graph[ClientShape, Unit] = {
     import settings._
@@ -62,7 +58,7 @@ private[http] object OutgoingConnectionBlueprint {
     val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
 
     val requestRendering: Flow[HttpRequest, ByteString, Unit] = Flow[HttpRequest]
-      .map(RequestRenderingContext(_, remoteAddress))
+      .map(RequestRenderingContext(_, hostHeader))
       .via(Flow[RequestRenderingContext].transform(() ⇒ requestRendererFactory.newRenderer).named("renderer"))
       .flatten(FlattenStrategy.concat)
 
