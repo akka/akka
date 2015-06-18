@@ -4,15 +4,18 @@
 
 package akka.http.scaladsl.model
 
+import akka.event.{ NoLogging, LoggingAdapter }
+
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ FlattenStrategy, Source }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model.headers._
+import akka.http.impl.engine.rendering.BodyPartRenderer
 import FastFuture._
 
 trait Multipart {
@@ -25,12 +28,29 @@ trait Multipart {
    * The Future is failed with an TimeoutException if one part isn't read completely after the given timeout.
    */
   def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Multipart.Strict]
+
+  /**
+   * Creates an entity from this multipart object.
+   */
+  def toEntity(charset: HttpCharset = HttpCharsets.`UTF-8`,
+               boundary: String = BodyPartRenderer.randomBoundary())(implicit log: LoggingAdapter = NoLogging): MessageEntity = {
+    val chunks =
+      parts
+        .transform(() ⇒ BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
+        .flatten(FlattenStrategy.concat)
+    HttpEntity.Chunked(mediaType withBoundary boundary, chunks)
+  }
 }
 
 object Multipart {
 
   trait Strict extends Multipart {
     def strictParts: immutable.Seq[BodyPart.Strict]
+
+    override def toEntity(charset: HttpCharset, boundary: String)(implicit log: LoggingAdapter = NoLogging): HttpEntity.Strict = {
+      val data = BodyPartRenderer.strict(strictParts, boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
+      HttpEntity(mediaType withBoundary boundary, data)
+    }
   }
 
   trait BodyPart {
