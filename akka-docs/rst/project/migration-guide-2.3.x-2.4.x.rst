@@ -163,7 +163,7 @@ longer interval.
 Akka Persistence
 ================
 
-Mendatory persistenceId
+Mandatory persistenceId
 -----------------------
 
 It is now mandatory to define the ``persistenceId`` in subclasses of ``PersistentActor``, ``UntypedPersistentActor``
@@ -176,6 +176,13 @@ In case you want to preserve the old behavior of providing the actor's path as t
 implement it yourself either as a helper trait or simply by overriding ``persistenceId`` as follows::
 
     override def persistenceId = self.path.toStringWithoutAddress
+    
+Persist sequence of events
+--------------------------
+
+The ``persist`` method that takes a ``Seq`` (Scala) or ``Iterable`` (Java) of events parameter was deprecated and
+renamed to ``persistAll`` to avoid mistakes of persisting other collection types as one single event by calling
+the overloaded ``persist(event)`` method.  
 
 Secure Cookies
 ==============

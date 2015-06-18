@@ -101,7 +101,7 @@ class ExamplePersistentActor extends AbstractPersistentActor {
                 final String data = c.getData();
                 final Evt evt1 = new Evt(data + "-" + getNumEvents());
                 final Evt evt2 = new Evt(data + "-" + (getNumEvents() + 1));
-                persist(asList(evt1, evt2), (Evt evt) -> {
+                persistAll(asList(evt1, evt2), (Evt evt) -> {
                     state.update(evt);
                     if (evt.equals(evt2)) {
                         context().system().eventStream().publish(evt);

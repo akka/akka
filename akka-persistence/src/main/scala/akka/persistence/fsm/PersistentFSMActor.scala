@@ -80,7 +80,7 @@ trait PersistentFsmActor[S <: FSMState, D, E] extends PersistentActor with FSM[S
   override private[akka] def applyState(nextState: State): Unit = {
     val eventsToPersist: immutable.Seq[Any] = nextState.domainEvents.toList :+ StateChangeEvent(nextState.stateName.identifier, nextState.timeout)
     var nextData: D = stateData
-    persist[Any](eventsToPersist) {
+    persistAll[Any](eventsToPersist) {
       case domainEventTag(event) ⇒
         nextData = applyEvent(event, nextData)
       case StateChangeEvent(stateIdentifier, timeout) ⇒
