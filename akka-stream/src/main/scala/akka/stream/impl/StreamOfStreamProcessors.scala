@@ -297,7 +297,7 @@ private[akka] abstract class TwoStreamInputProcessor(_settings: ActorFlowMateria
 private[akka] object MultiStreamInputProcessor {
   case class SubstreamKey(id: Long)
 
-  class SubstreamSubscriber[T](val impl: ActorRef, key: SubstreamKey) extends Subscriber[T] {
+  class SubstreamSubscriber[T](val impl: ActorRef, key: SubstreamKey) extends AtomicReference[Subscription] with Subscriber[T] {
     override def onError(cause: Throwable): Unit = {
       ReactiveStreamsCompliance.requireNonNullException(cause)
       impl ! SubstreamOnError(key, cause)
@@ -309,7 +309,8 @@ private[akka] object MultiStreamInputProcessor {
     }
     override def onSubscribe(subscription: Subscription): Unit = {
       ReactiveStreamsCompliance.requireNonNullSubscription(subscription)
-      impl ! SubstreamStreamOnSubscribe(key, subscription)
+      if (compareAndSet(null, subscription)) impl ! SubstreamStreamOnSubscribe(key, subscription)
+      else subscription.cancel()
     }
   }
 
@@ -346,16 +347,19 @@ private[akka] trait MultiStreamInputProcessorLike extends Pump { this: Actor ⇒
   protected def inputBufferSize: Int
 
   private val substreamInputs = collection.mutable.Map.empty[SubstreamKey, SubstreamInput]
+  private val waitingForOnSubscribe = collection.mutable.Map.empty[SubstreamKey, SubstreamSubscriber[Any]]
 
   val inputSubstreamManagement: Receive = {
-    case SubstreamStreamOnSubscribe(key, subscription) ⇒ substreamInputs(key).substreamOnSubscribe(subscription)
-    case SubstreamOnNext(key, element)                 ⇒ substreamInputs(key).substreamOnNext(element)
-    case SubstreamOnComplete(key) ⇒ {
+    case SubstreamStreamOnSubscribe(key, subscription) ⇒
+      substreamInputs(key).substreamOnSubscribe(subscription)
+      waitingForOnSubscribe -= key
+    case SubstreamOnNext(key, element) ⇒
+      substreamInputs(key).substreamOnNext(element)
+    case SubstreamOnComplete(key) ⇒
       substreamInputs(key).substreamOnComplete()
       substreamInputs -= key
-    }
-    case SubstreamOnError(key, e) ⇒ substreamInputs(key).substreamOnError(e)
-
+    case SubstreamOnError(key, e) ⇒
+      substreamInputs(key).substreamOnError(e)
   }
 
   def createSubstreamInput(): SubstreamInput = {
@@ -367,7 +371,9 @@ private[akka] trait MultiStreamInputProcessorLike extends Pump { this: Actor ⇒
 
   def createAndSubscribeSubstreamInput(p: Publisher[Any]): SubstreamInput = {
     val inputs = createSubstreamInput()
-    p.subscribe(new SubstreamSubscriber(self, inputs.key))
+    val sub = new SubstreamSubscriber[Any](self, inputs.key)
+    waitingForOnSubscribe(inputs.key) = sub
+    p.subscribe(sub)
     inputs
   }
 
@@ -378,12 +384,24 @@ private[akka] trait MultiStreamInputProcessorLike extends Pump { this: Actor ⇒
   }
 
   protected def failInputs(e: Throwable): Unit = {
+    cancelWaitingForOnSubscribe()
     substreamInputs.values foreach (_.cancel())
   }
 
   protected def finishInputs(): Unit = {
+    cancelWaitingForOnSubscribe()
     substreamInputs.values foreach (_.cancel())
   }
+
+  private def cancelWaitingForOnSubscribe(): Unit =
+    waitingForOnSubscribe.valuesIterator.foreach { sub ⇒
+      sub.getAndSet(CancelledSubscription) match {
+        case null ⇒ // we were first
+        case subscription ⇒
+          // SubstreamOnSubscribe is still in flight and will not arrive
+          subscription.cancel()
+      }
+    }
 
 }
 

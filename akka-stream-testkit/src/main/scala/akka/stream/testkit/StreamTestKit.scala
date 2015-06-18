@@ -50,7 +50,7 @@ object TestPublisher {
   /**
    * Probe that implements [[org.reactivestreams.Publisher]] interface.
    */
-  def manualProbe[T]()(implicit system: ActorSystem): ManualProbe[T] = new ManualProbe()
+  def manualProbe[T](autoOnSubscribe: Boolean = true)(implicit system: ActorSystem): ManualProbe[T] = new ManualProbe(autoOnSubscribe)
 
   /**
    * Probe that implements [[org.reactivestreams.Publisher]] interface and tracks demand.
@@ -62,7 +62,7 @@ object TestPublisher {
    * This probe does not track demand. Therefore you need to expect demand before sending
    * elements downstream.
    */
-  class ManualProbe[I] private[TestPublisher] ()(implicit system: ActorSystem) extends Publisher[I] {
+  class ManualProbe[I] private[TestPublisher] (autoOnSubscribe: Boolean = true)(implicit system: ActorSystem) extends Publisher[I] {
 
     type Self <: ManualProbe[I]
 
@@ -76,7 +76,7 @@ object TestPublisher {
     def subscribe(subscriber: Subscriber[_ >: I]): Unit = {
       val subscription: PublisherProbeSubscription[I] = new PublisherProbeSubscription[I](subscriber, probe)
       probe.ref ! Subscribe(subscription)
-      subscriber.onSubscribe(subscription)
+      if (autoOnSubscribe) subscriber.onSubscribe(subscription)
     }
 
     /**
@@ -396,6 +396,8 @@ private[testkit] object StreamTestKit {
     def sendNext(element: I): Unit = subscriber.onNext(element)
     def sendComplete(): Unit = subscriber.onComplete()
     def sendError(cause: Exception): Unit = subscriber.onError(cause)
+
+    def sendOnSubscribe(): Unit = subscriber.onSubscribe(this)
   }
 
   final class ProbeSource[T](val attributes: OperationAttributes, shape: SourceShape[T])(implicit system: ActorSystem) extends SourceModule[T, TestPublisher.Probe[T]](shape) {

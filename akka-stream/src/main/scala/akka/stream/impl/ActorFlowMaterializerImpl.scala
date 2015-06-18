@@ -11,7 +11,6 @@ import akka.pattern.ask
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.GenJunctions.ZipWithModule
 import akka.stream.impl.Junctions._
-import akka.stream.impl.MultiStreamInputProcessor.SubstreamSubscriber
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.ActorInterpreter
 import akka.stream.impl.io.SslTlsCipherActor

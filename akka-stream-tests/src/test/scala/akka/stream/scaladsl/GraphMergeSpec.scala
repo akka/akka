@@ -145,8 +145,8 @@ class GraphMergeSpec extends TwoStreamsSetup {
     }
 
     "pass along early cancellation" in assertAllStagesStopped {
-      val up1 = TestPublisher.manualProbe[Int]
-      val up2 = TestPublisher.manualProbe[Int]
+      val up1 = TestPublisher.manualProbe[Int]()
+      val up2 = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[Int]()
 
       val src1 = Source.subscriber[Int]

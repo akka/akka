@@ -418,7 +418,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       downstream.cancel()
       onDownstreamFinishProbe.expectMsg("onDownstreamFinish")
 
-      val up = TestPublisher.manualProbe[Int]
+      val up = TestPublisher.manualProbe[Int]()
       up.subscribe(s)
       val upsub = up.expectSubscription()
       upsub.expectCancellation()

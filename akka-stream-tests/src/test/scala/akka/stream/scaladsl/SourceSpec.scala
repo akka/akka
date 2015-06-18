@@ -122,7 +122,7 @@ class SourceSpec extends AkkaSpec {
 
   "Composite Source" must {
     "merge from many inputs" in {
-      val probes = Seq.fill(5)(TestPublisher.manualProbe[Int])
+      val probes = Seq.fill(5)(TestPublisher.manualProbe[Int]())
       val source = Source.subscriber[Int]
       val out = TestSubscriber.manualProbe[Int]
 

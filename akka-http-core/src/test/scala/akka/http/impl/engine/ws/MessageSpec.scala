@@ -222,7 +222,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "for a strict message larger than configured maximum frame size" in pending
         "for a streamed message" in new ServerTestSetup {
           val data = ByteString("abcdefg", "ASCII")
-          val pub = TestPublisher.manualProbe[ByteString]
+          val pub = TestPublisher.manualProbe[ByteString]()
           val msg = BinaryMessage.Streamed(Source(pub))
           netOutSub.request(6)
           pushMessage(msg)
@@ -245,7 +245,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "for a streamed message with a chunk being larger than configured maximum frame size" in pending
         "and mask input on the client side" in new ClientTestSetup {
           val data = ByteString("abcdefg", "ASCII")
-          val pub = TestPublisher.manualProbe[ByteString]
+          val pub = TestPublisher.manualProbe[ByteString]()
           val msg = BinaryMessage.Streamed(Source(pub))
           netOutSub.request(7)
           pushMessage(msg)
@@ -278,7 +278,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "for a strict message larger than configured maximum frame size" in pending
         "for a streamed message" in new ServerTestSetup {
           val text = "äbcd€fg"
-          val pub = TestPublisher.manualProbe[String]
+          val pub = TestPublisher.manualProbe[String]()
           val msg = TextMessage.Streamed(Source(pub))
           netOutSub.request(6)
           pushMessage(msg)
@@ -310,7 +310,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           println(half1(0).toInt.toHexString)
           println(half2(0).toInt.toHexString)
 
-          val pub = TestPublisher.manualProbe[String]
+          val pub = TestPublisher.manualProbe[String]()
           val msg = TextMessage.Streamed(Source(pub))
           netOutSub.request(6)
 
@@ -327,7 +327,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "for a streamed message with a chunk being larger than configured maximum frame size" in pending
         "and mask input on the client side" in new ClientTestSetup {
           val text = "abcdefg"
-          val pub = TestPublisher.manualProbe[String]
+          val pub = TestPublisher.manualProbe[String]()
           val msg = TextMessage.Streamed(Source(pub))
           netOutSub.request(5)
           pushMessage(msg)
@@ -382,7 +382,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         s.request(2)
         sub.expectNext(ByteString("123", "ASCII"))
 
-        val outPub = TestPublisher.manualProbe[ByteString]
+        val outPub = TestPublisher.manualProbe[ByteString]()
         val msg = BinaryMessage.Streamed(Source(outPub))
         netOutSub.request(10)
         pushMessage(msg)
@@ -459,7 +459,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         messageIn.expectComplete()
 
         // sending another message is allowed before closing (inherently racy)
-        val pub = TestPublisher.manualProbe[ByteString]
+        val pub = TestPublisher.manualProbe[ByteString]()
         val msg = BinaryMessage.Streamed(Source(pub))
         pushMessage(msg)
         expectFrameOnNetwork(Opcode.Binary, ByteString.empty, fin = false)
@@ -504,7 +504,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
           // sending another message is allowed before closing (inherently racy)
 
-          val pub = TestPublisher.manualProbe[ByteString]
+          val pub = TestPublisher.manualProbe[ByteString]()
           val msg = BinaryMessage.Streamed(Source(pub))
           pushMessage(msg)
           expectFrameOnNetwork(Opcode.Binary, ByteString.empty, fin = false)
@@ -549,7 +549,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         messageInSub.request(10)
 
         // send half a message
-        val pub = TestPublisher.manualProbe[ByteString]
+        val pub = TestPublisher.manualProbe[ByteString]()
         val msg = BinaryMessage.Streamed(Source(pub))
         pushMessage(msg)
         expectFrameOnNetwork(Opcode.Binary, ByteString.empty, fin = false)
@@ -765,11 +765,11 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     protected def serverSide: Boolean
     protected def closeTimeout: FiniteDuration = 1.second
 
-    val netIn = TestPublisher.manualProbe[ByteString]
+    val netIn = TestPublisher.manualProbe[ByteString]()
     val netOut = TestSubscriber.manualProbe[ByteString]
 
     val messageIn = TestSubscriber.manualProbe[Message]
-    val messageOut = TestPublisher.manualProbe[Message]
+    val messageOut = TestPublisher.manualProbe[Message]()
 
     val messageHandler: Flow[Message, Message, Unit] =
       Flow.wrap {

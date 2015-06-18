@@ -348,7 +348,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
   }
 
   class TestSetup {
-    val requests = TestPublisher.manualProbe[HttpRequest]
+    val requests = TestPublisher.manualProbe[HttpRequest]()
     val responses = TestSubscriber.manualProbe[HttpResponse]
 
     def settings = ClientConnectionSettings(system)
@@ -356,7 +356,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
     val (netOut, netIn) = {
       val netOut = TestSubscriber.manualProbe[ByteString]
-      val netIn = TestPublisher.manualProbe[ByteString]
+      val netIn = TestPublisher.manualProbe[ByteString]()
 
       FlowGraph.closed(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒
         client ⇒
