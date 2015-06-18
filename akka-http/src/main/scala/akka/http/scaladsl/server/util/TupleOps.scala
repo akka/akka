@@ -42,20 +42,22 @@ object TupleOps {
     type Out
     def apply(prefix: P, suffix: S): Out
   }
+  type JoinAux[P, S, O] = Join[P, S] { type Out = O }
   object Join extends LowLevelJoinImplicits {
     // O(1) shortcut for the Join[Unit, T] case to avoid O(n) runtime in this case
-    implicit def join0P[T] =
+    implicit def join0P[T]: JoinAux[Unit, T, T] =
       new Join[Unit, T] {
         type Out = T
         def apply(prefix: Unit, suffix: T): Out = suffix
       }
     // we implement the join by folding over the suffix with the prefix as growing accumulator
     object Fold extends BinaryPolyFunc {
-      implicit def step[T, A](implicit append: AppendOne[T, A]) = at[T, A](append(_, _))
+      implicit def step[T, A](implicit append: AppendOne[T, A]): BinaryPolyFunc.Case[T, A, Fold.type] { type Out = append.Out } =
+        at[T, A](append(_, _))
     }
   }
   sealed abstract class LowLevelJoinImplicits {
-    implicit def join[P, S](implicit fold: FoldLeft[P, S, Join.Fold.type]) =
+    implicit def join[P, S](implicit fold: FoldLeft[P, S, Join.Fold.type]): JoinAux[P, S, fold.Out] =
       new Join[P, S] {
         type Out = fold.Out
         def apply(prefix: P, suffix: S): Out = fold(prefix, suffix)
