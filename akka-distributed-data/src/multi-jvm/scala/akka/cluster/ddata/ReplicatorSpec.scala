@@ -57,6 +57,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
   val KeyE2 = GCounterKey("E2")
   val KeyF = GCounterKey("F")
   val KeyG = ORSetKey[String]("G")
+  val KeyH = ORMapKey[Flag]("H")
   val KeyX = GCounterKey("X")
   val KeyY = GCounterKey("Y")
   val KeyZ = GCounterKey("Z")
@@ -295,7 +296,6 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       val c31 = expectMsgPF() { case g @ GetSuccess(KeyC, _) ⇒ g.get(KeyC) }
       c31.value should be(31)
 
-      val c32 = c31 + 1
       replicator ! Update(KeyC, GCounter(), WriteLocal)(_ + 1)
       expectMsg(UpdateSuccess(KeyC, None))
 
@@ -497,6 +497,32 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       expectMsgPF() { case g @ GetSuccess(KeyG, _) ⇒ g.get(KeyG).elements } should be(Set("a", "b"))
     }
     enterBarrier("after-8")
+  }
+
+  "check that a remote update and a local update both cause a change event to emit with the merged data" in {
+    val changedProbe = TestProbe()
+
+    runOn(second) {
+      replicator ! Subscribe(KeyH, changedProbe.ref)
+      replicator ! Update(KeyH, ORMap.empty[Flag], writeTwo)(_ + ("a" -> Flag(enabled = false)))
+      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" -> Flag(enabled = false)))
+    }
+
+    enterBarrier("update-h1")
+
+    runOn(first) {
+      replicator ! Update(KeyH, ORMap.empty[Flag], writeTwo)(_ + ("a" -> Flag(enabled = true)))
+    }
+
+    runOn(second) {
+      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" -> Flag(enabled = true)))
+
+      replicator ! Update(KeyH, ORMap.empty[Flag], writeTwo)(_ + ("b" -> Flag(enabled = true)))
+      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(
+        Map("a" -> Flag(enabled = true), "b" -> Flag(enabled = true)))
+    }
+
+    enterBarrier("after-9")
   }
 
 }
