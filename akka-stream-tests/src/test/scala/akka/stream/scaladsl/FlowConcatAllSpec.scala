@@ -71,6 +71,29 @@ class FlowConcatAllSpec extends AkkaSpec {
       subUpstream.expectCancellation()
     }
 
+    "on onError on master stream cancel the currently opening substream and signal error" in assertAllStagesStopped {
+      val publisher = TestPublisher.manualProbe[Source[Int, _]]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
+      Source(publisher).flatten(FlattenStrategy.concat).to(Sink(subscriber)).run()
+
+      val upstream = publisher.expectSubscription()
+      val downstream = subscriber.expectSubscription()
+      downstream.request(1000)
+
+      val substreamPublisher = TestPublisher.manualProbe[Int](autoOnSubscribe = false)
+      val substreamFlow = Source(substreamPublisher)
+      upstream.expectRequest()
+      upstream.sendNext(substreamFlow)
+      val subUpstream = substreamPublisher.expectSubscription()
+
+      upstream.sendError(testException)
+
+      subUpstream.sendOnSubscribe()
+
+      subscriber.expectError(testException)
+      subUpstream.expectCancellation()
+    }
+
     "on onError on open substream, cancel the master stream and signal error " in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Source[Int, _]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
@@ -107,6 +130,29 @@ class FlowConcatAllSpec extends AkkaSpec {
       val subUpstream = substreamPublisher.expectSubscription()
 
       downstream.cancel()
+
+      subUpstream.expectCancellation()
+      upstream.expectCancellation()
+    }
+
+    "on cancellation cancel the currently opening substream and the master stream" in assertAllStagesStopped {
+      val publisher = TestPublisher.manualProbe[Source[Int, _]]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
+      Source(publisher).flatten(FlattenStrategy.concat).to(Sink(subscriber)).run()
+
+      val upstream = publisher.expectSubscription()
+      val downstream = subscriber.expectSubscription()
+      downstream.request(1000)
+
+      val substreamPublisher = TestPublisher.manualProbe[Int](autoOnSubscribe = false)
+      val substreamFlow = Source(substreamPublisher)
+      upstream.expectRequest()
+      upstream.sendNext(substreamFlow)
+      val subUpstream = substreamPublisher.expectSubscription()
+
+      downstream.cancel()
+
+      subUpstream.sendOnSubscribe()
 
       subUpstream.expectCancellation()
       upstream.expectCancellation()

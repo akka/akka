@@ -570,7 +570,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "propagate failure" in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[String]
+      val publisher = TestPublisher.manualProbe[String]()
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
         o ⇒
@@ -587,7 +587,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "emit failure" in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[String]
+      val publisher = TestPublisher.manualProbe[String]()
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
         o ⇒
@@ -607,7 +607,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "emit failure for user thrown exception" in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[String]
+      val publisher = TestPublisher.manualProbe[String]()
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
         o ⇒
@@ -626,7 +626,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "emit failure for user thrown exception in onComplete" in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[String]
+      val publisher = TestPublisher.manualProbe[String]()
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
         o ⇒
@@ -670,7 +670,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "support finish from onInput" in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[String]
+      val publisher = TestPublisher.manualProbe[String]()
       val completionProbe = TestProbe()
       val p = FlowGraph.closed(out) { implicit b ⇒
         o ⇒
