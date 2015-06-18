@@ -80,8 +80,8 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
     system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[Echo], testActor),
       terminationMessage = PoisonPill,
-      settings = ClusterSingletonManagerSettings(system).withSingletonName("echo")),
-      name = "singleton")
+      settings = ClusterSingletonManagerSettings(system)),
+      name = "echo")
   }
 
   def crash(roles: RoleName*): Unit = {
@@ -94,7 +94,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
   }
 
   def echo(oldest: RoleName): ActorSelection =
-    system.actorSelection(RootActorPath(node(oldest).address) / "user" / "singleton" / "echo")
+    system.actorSelection(RootActorPath(node(oldest).address) / "user" / "echo" / "singleton")
 
   def awaitMemberUp(memberProbe: TestProbe, nodes: RoleName*): Unit = {
     runOn(nodes.filterNot(_ == nodes.head): _*) {

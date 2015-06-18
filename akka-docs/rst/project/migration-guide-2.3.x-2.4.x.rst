@@ -262,6 +262,12 @@ The buffer size of the ``ClusterSingletonProxy`` can be defined in the ``Cluster
 instead of defining ``stash-capacity`` of the mailbox. Buffering can be disabled by using a 
 buffer size of 0.
 
+The ``singletonPath`` parameter of ``ClusterSingletonProxy.props`` has changed. It is now named 
+``singletonManagerPath`` and is the logical path of the singleton manager, e.g. ``/user/singletonManager``,
+which ends with the name you defined in ``actorOf`` when creating the ``ClusterSingletonManager``.
+In 2.3.x it was the path to singleton instance, which was error-prone because one had to provide both
+the name of the singleton manager and the singleton actor.
+
 DistributedPubSub construction
 ==============================
 
