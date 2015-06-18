@@ -42,6 +42,8 @@ sealed abstract class StrictForm {
 object StrictForm {
   sealed trait Field
   object Field {
+    private[http] def fromString(value: String): Field = FromString(value)
+
     private[StrictForm] final case class FromString(value: String) extends Field
     private[StrictForm] final case class FromPart(value: Multipart.FormData.BodyPart.Strict) extends Field
 

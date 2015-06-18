@@ -46,8 +46,8 @@ public class CompleteTest extends JUnitRouteTest {
     }
     @Test
     public void completeWithFuture() {
-        Parameter<Integer> x = Parameters.integer("x");
-        Parameter<Integer> y = Parameters.integer("y");
+        Parameter<Integer> x = Parameters.intValue("x");
+        Parameter<Integer> y = Parameters.intValue("y");
 
         Handler2<Integer, Integer> slowCalc = new Handler2<Integer, Integer>() {
             @Override

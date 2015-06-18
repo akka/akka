@@ -11,8 +11,8 @@ import akka.http.javadsl.server.values.*;
 import java.io.IOException;
 
 public class SimpleServerApp8 extends HttpApp {
-    static Parameter<Integer> x = Parameters.integer("x");
-    static Parameter<Integer> y = Parameters.integer("y");
+    static Parameter<Integer> x = Parameters.intValue("x");
+    static Parameter<Integer> y = Parameters.intValue("y");
 
     static PathMatcher<Integer> xSegment = PathMatchers.integerNumber();
     static PathMatcher<Integer> ySegment = PathMatchers.integerNumber();

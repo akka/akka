@@ -14,8 +14,8 @@ import akka.http.javadsl.testkit.*;
 public class ExecutionDirectivesTest extends JUnitRouteTest {
     @Test
     public void testCatchExceptionThrownFromHandler() {
-        Parameter<Integer> a = Parameters.integer("a");
-        Parameter<Integer> b = Parameters.integer("b");
+        Parameter<Integer> a = Parameters.intValue("a");
+        Parameter<Integer> b = Parameters.intValue("b");
         Handler2<Integer, Integer> divide =
             new Handler2<Integer, Integer>() {
                 @Override

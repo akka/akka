@@ -19,4 +19,13 @@ public class SimpleServerTest extends JUnitRouteTest {
             .assertStatusCode(200)
             .assertEntity("42 + 23 = 65");
     }
+
+    @Test
+    public void testMultiplyAsync() {
+        TestResponse response = route.run(HttpRequest.GET("/multiplyAsync/42/23"));
+
+        response
+            .assertStatusCode(200)
+            .assertEntity("42 * 23 = 966");
+    }
 }

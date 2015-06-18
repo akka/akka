@@ -4,13 +4,14 @@
 
 package akka.http.javadsl.server
 
+import java.util.regex.Pattern
 import java.{ util ⇒ ju }
 import scala.concurrent.Future
 import scala.reflect.ClassTag
-import akka.http.javadsl.model.HttpMethod
+import akka.http.javadsl.model.{ RemoteAddress, HttpMethod }
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.directives.{ RouteDirectives, BasicDirectives }
+import akka.http.scaladsl.server.directives._
 import akka.http.impl.server.{ UnmarshallerImpl, ExtractingStandaloneExtractionImpl, RequestContextImpl, StandaloneExtractionImpl }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -36,6 +37,58 @@ object RequestVals {
   def requestMethod: RequestVal[HttpMethod] =
     new ExtractingStandaloneExtractionImpl[HttpMethod] {
       def extract(ctx: server.RequestContext): Future[HttpMethod] = FastFuture.successful(ctx.request.method.asJava)
+    }
+
+  /**
+   * Extracts the scheme used for this request.
+   */
+  def requestContext: RequestVal[RequestContext] =
+    new StandaloneExtractionImpl[RequestContext] {
+      def directive: Directive1[RequestContext] = BasicDirectives.extractRequestContext.map(RequestContextImpl(_): RequestContext)
+    }
+
+  /**
+   * Extracts the unmatched path of the request context.
+   */
+  def unmatchedPath: RequestVal[String] =
+    new ExtractingStandaloneExtractionImpl[String] {
+      def extract(ctx: server.RequestContext): Future[String] = FastFuture.successful(ctx.unmatchedPath.toString)
+    }
+
+  /**
+   * Extracts the scheme used for this request.
+   */
+  def scheme: RequestVal[String] =
+    new StandaloneExtractionImpl[String] {
+      def directive: Directive1[String] = SchemeDirectives.extractScheme
+    }
+
+  /**
+   * Extracts the host name this request targeted.
+   */
+  def host: RequestVal[String] =
+    new StandaloneExtractionImpl[String] {
+      def directive: Directive1[String] = HostDirectives.extractHost
+    }
+
+  /**
+   * Extracts the host name this request targeted.
+   */
+  def matchAndExtractHost(regex: Pattern): RequestVal[String] =
+    new StandaloneExtractionImpl[String] {
+      def directive: Directive1[String] = HostDirectives.host(regex.pattern().r)
+    }
+
+  /**
+   * Directive extracting the IP of the client from either the X-Forwarded-For, Remote-Address or X-Real-IP header
+   * (in that order of priority).
+   *
+   * TODO: add link to the configuration entry that would add a remote-address header
+   */
+  def clientIP(): RequestVal[RemoteAddress] =
+    new StandaloneExtractionImpl[RemoteAddress] {
+      def directive: Directive1[RemoteAddress] =
+        MiscDirectives.extractClientIP.map(x ⇒ x: RemoteAddress) // missing covariance of Directive
     }
 
   /**

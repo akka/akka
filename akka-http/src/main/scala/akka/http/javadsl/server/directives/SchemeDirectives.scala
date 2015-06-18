@@ -1,0 +1,18 @@
+/*
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package akka.http.javadsl.server.directives
+
+import akka.http.impl.server.RouteStructure.SchemeFilter
+import akka.http.javadsl.server.Route
+
+import scala.annotation.varargs
+
+abstract class SchemeDirectives extends RouteDirectives {
+  /**
+   * Rejects all requests whose Uri scheme does not match the given one.
+   */
+  @varargs
+  def scheme(scheme: String, innerRoute: Route, moreInnerRoutes: Route*): Route = SchemeFilter(scheme)(innerRoute, moreInnerRoutes.toList)
+}

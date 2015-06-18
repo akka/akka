@@ -9,7 +9,6 @@ import org.scalatest.{ FreeSpec, Inside }
 import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
 
 class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Inside {
-
   "when used with 'as[Int]' the parameter directive should" - {
     "extract a parameter value as Int" in {
       Get("/?amount=123") ~> {
@@ -203,6 +202,25 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
       Get("/person?age=19&number=3&number=A") ~> {
         parameter('number.as(HexInt)*) { echoComplete }
       } ~> check { responseAs[String] === "List(3, 10)" }
+    }
+  }
+
+  "The 'parameterSeq' directive should" - {
+    val completeAsList =
+      parameterSeq { params ⇒
+        val sorted = params.sorted
+        complete(s"${sorted.size}: [${sorted.map(e ⇒ e._1 + " -> " + e._2).mkString(", ")}]")
+      }
+
+    "extract parameters with different keys" in {
+      Get("/?a=b&e=f&c=d") ~> completeAsList ~> check {
+        responseAs[String] shouldEqual "3: [a -> b, c -> d, e -> f]"
+      }
+    }
+    "extract parameters with duplicate keys" in {
+      Get("/?a=b&e=f&c=d&a=z") ~> completeAsList ~> check {
+        responseAs[String] shouldEqual "4: [a -> b, a -> z, c -> d, e -> f]"
+      }
     }
   }
 }

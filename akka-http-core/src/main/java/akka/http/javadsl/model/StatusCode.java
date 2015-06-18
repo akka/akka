@@ -40,4 +40,9 @@ public abstract class StatusCode {
      * a non-empty entity.
      */
     public abstract boolean allowsEntity();
+
+    /**
+     * Returns if the status-code is a redirection status code.
+     */
+    public abstract boolean isRedirection();
 }

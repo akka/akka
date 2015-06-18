@@ -11,6 +11,11 @@ import akka.http.javadsl.server.values.*;
 import static akka.http.javadsl.server.Directives.*;
 
 public class HandlerBindingTest extends JUnitRouteTest {
+    Parameter<Integer> aParam = Parameters.intValue("a");
+    Parameter<Integer> bParam = Parameters.intValue("b");
+    Parameter<Integer> cParam = Parameters.intValue("c");
+    Parameter<Integer> dParam = Parameters.intValue("d");
+    
     @Test
     public void testHandlerWithoutExtractions() {
         Route route = handleWith(ctx -> ctx.complete("Ok"));
@@ -19,7 +24,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandler1() {
-        Route route = handleWith(Parameters.integer("a"), (ctx, a) -> ctx.complete("Ok " + a));
+        Route route = handleWith(aParam, (ctx, a) -> ctx.complete("Ok " + a));
         TestResponse response = runRoute(route, HttpRequest.GET("?a=23"));
         response.assertStatusCode(200);
         response.assertEntity("Ok 23");
@@ -28,8 +33,8 @@ public class HandlerBindingTest extends JUnitRouteTest {
     public void testHandler2() {
         Route route =
             handleWith(
-                Parameters.integer("a"),
-                Parameters.integer("b"),
+                aParam,
+                bParam,
                 (ctx, a, b) -> ctx.complete("Sum: " + (a + b)));
         TestResponse response = runRoute(route, HttpRequest.GET("?a=23&b=42"));
         response.assertStatusCode(200);
@@ -39,9 +44,9 @@ public class HandlerBindingTest extends JUnitRouteTest {
     public void testHandler3() {
         Route route =
             handleWith(
-                    Parameters.integer("a"),
-                    Parameters.integer("b"),
-                    Parameters.integer("c"),
+                    aParam,
+                    bParam,
+                    cParam,
                     (ctx, a, b, c) -> ctx.complete("Sum: " + (a + b + c)));
         TestResponse response = runRoute(route, HttpRequest.GET("?a=23&b=42&c=30"));
         response.assertStatusCode(200);
@@ -51,10 +56,10 @@ public class HandlerBindingTest extends JUnitRouteTest {
     public void testHandler4() {
         Route route =
             handleWith(
-                    Parameters.integer("a"),
-                    Parameters.integer("b"),
-                    Parameters.integer("c"),
-                    Parameters.integer("d"),
+                    aParam,
+                    bParam,
+                    cParam,
+                    dParam,
                     (ctx, a, b, c, d) -> ctx.complete("Sum: " + (a + b + c + d)));
         TestResponse response = runRoute(route, HttpRequest.GET("?a=23&b=42&c=30&d=45"));
         response.assertStatusCode(200);
@@ -67,10 +72,10 @@ public class HandlerBindingTest extends JUnitRouteTest {
     public void testHandler4MethodRef() {
         Route route =
                 handleWith(
-                        Parameters.integer("a"),
-                        Parameters.integer("b"),
-                        Parameters.integer("c"),
-                        Parameters.integer("d"),
+                        aParam,
+                        bParam,
+                        cParam,
+                        dParam,
                         this::sum);
         TestResponse response = runRoute(route, HttpRequest.GET("?a=23&b=42&c=30&d=45"));
         response.assertStatusCode(200);
