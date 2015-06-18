@@ -78,13 +78,13 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
     system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[Echo], testActor),
       terminationMessage = PoisonPill,
-      settings = ClusterSingletonManagerSettings(system).withSingletonName("echo")),
-      name = "singleton")
+      settings = ClusterSingletonManagerSettings(system)),
+      name = "echo")
   }
 
   lazy val echoProxy: ActorRef = {
     system.actorOf(ClusterSingletonProxy.props(
-      singletonPath = "/user/singleton/echo",
+      singletonManagerPath = "/user/echo",
       settings = ClusterSingletonProxySettings(system)),
       name = "echoProxy")
   }
