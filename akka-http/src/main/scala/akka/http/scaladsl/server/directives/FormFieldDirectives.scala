@@ -16,14 +16,14 @@ trait FormFieldDirectives extends ToNameReceptacleEnhancements {
   import FormFieldDirectives._
 
   /**
+   * Extracts an HTTP form field from the request.
    * Rejects the request if the defined form field matcher(s) don't match.
-   * Otherwise the form field value(s) are extracted and passed to the inner route.
    */
   def formField(pdm: FieldMagnet): pdm.Out = pdm()
 
   /**
+   * Extracts a number of HTTP form field from the request.
    * Rejects the request if the defined form field matcher(s) don't match.
-   * Otherwise the form field value(s) are extracted and passed to the inner route.
    */
   def formFields(pdm: FieldMagnet): pdm.Out = pdm()
 
