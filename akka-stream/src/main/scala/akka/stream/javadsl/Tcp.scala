@@ -99,13 +99,28 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
+   *
+   * @param interface The interface to listen on
+   * @param port      The port to listen on
+   * @param backlog   Controls the size of the connection backlog
+   * @param options   TCP options for the connections, see [[akka.io.Tcp]] for details
+   * @param halfClose
+   *                  Controls whether the connection is kept open even after writing has been completed to the accepted
+   *                  TCP connections.
+   *                  If set to true, the connection will implement the TCP half-close mechanism, allowing the client to
+   *                  write to the connection even after the server has finished writing. The TCP socket is only closed
+   *                  after both the client and server finished writing.
+   *                  If set to false, the connection will immediately closed once the server closes its write side,
+   *                  independently whether the client is still attempting to write. This setting is recommended
+   *                  for servers, and therefore it is the default setting.
    */
   def bind(interface: String,
            port: Int,
            backlog: Int,
            options: JIterable[SocketOption],
+           halfClose: Boolean,
            idleTimeout: Duration): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(interface, port, backlog, immutableSeq(options), idleTimeout)
+    Source.adapt(delegate.bind(interface, port, backlog, immutableSeq(options), halfClose, idleTimeout)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
@@ -120,13 +135,27 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
+   *
+   * @param remoteAddress The remote address to connect to
+   * @param localAddress  Optional local address for the connection
+   * @param options   TCP options for the connections, see [[akka.io.Tcp]] for details
+   * @param halfClose
+   *                  Controls whether the connection is kept open even after writing has been completed to the accepted
+   *                  TCP connections.
+   *                  If set to true, the connection will implement the TCP half-close mechanism, allowing the server to
+   *                  write to the connection even after the client has finished writing. The TCP socket is only closed
+   *                  after both the client and server finished writing. This setting is recommended for clients and
+   *                  therefore it is the default setting.
+   *                  If set to false, the connection will immediately closed once the client closes its write side,
+   *                  independently whether the server is still attempting to write.
    */
   def outgoingConnection(remoteAddress: InetSocketAddress,
                          localAddress: Option[InetSocketAddress],
                          options: JIterable[SocketOption],
+                         halfClose: Boolean,
                          connectTimeout: Duration,
                          idleTimeout: Duration): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    Flow.adapt(delegate.outgoingConnection(remoteAddress, localAddress, immutableSeq(options), connectTimeout, idleTimeout)
+    Flow.adapt(delegate.outgoingConnection(remoteAddress, localAddress, immutableSeq(options), halfClose, connectTimeout, idleTimeout)
       .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec)))
 
   /**

@@ -58,7 +58,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     val effectivePort = if (port >= 0) port else if (httpsContext.isEmpty) 80 else 443
     val tlsStage = sslTlsStage(httpsContext, Server)
     val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
-      Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, settings.timeouts.idleTimeout)
+      Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
     connections.map {
       case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
         val layer = serverLayer(settings, Some(remoteAddress), log)
@@ -189,7 +189,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     val layer = clientLayer(hostHeader, settings, log)
     val tlsStage = sslTlsStage(httpsContext, Client)
     val transportFlow = Tcp().outgoingConnection(new InetSocketAddress(host, port), localAddress,
-      settings.socketOptions, settings.connectingTimeout, settings.idleTimeout)
+      settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
 
     layer.atop(tlsStage).joinMat(transportFlow) { (_, tcpConnFuture) ⇒
       import system.dispatcher

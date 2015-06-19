@@ -33,6 +33,7 @@ private[akka] object StreamTcpManager {
     localAddressPromise: Promise[InetSocketAddress],
     remoteAddress: InetSocketAddress,
     localAddress: Option[InetSocketAddress],
+    halfClose: Boolean,
     options: immutable.Traversable[SocketOption],
     connectTimeout: Duration,
     idleTimeout: Duration)
@@ -47,6 +48,7 @@ private[akka] object StreamTcpManager {
     flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
     endpoint: InetSocketAddress,
     backlog: Int,
+    halfClose: Boolean,
     options: immutable.Traversable[SocketOption],
     idleTimeout: Duration)
     extends DeadLetterSuppression with NoSerializationVerificationNeeded
@@ -72,18 +74,18 @@ private[akka] class StreamTcpManager extends Actor {
   }
 
   def receive: Receive = {
-    case Connect(processorPromise, localAddressPromise, remoteAddress, localAddress, options, connectTimeout, _) ⇒
+    case Connect(processorPromise, localAddressPromise, remoteAddress, localAddress, halfClose, options, connectTimeout, _) ⇒
       val connTimeout = connectTimeout match {
         case x: FiniteDuration ⇒ Some(x)
         case _                 ⇒ None
       }
-      val processorActor = context.actorOf(TcpStreamActor.outboundProps(processorPromise, localAddressPromise,
+      val processorActor = context.actorOf(TcpStreamActor.outboundProps(processorPromise, localAddressPromise, halfClose,
         Tcp.Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
         materializerSettings = ActorFlowMaterializerSettings(context.system)), name = encName("client", remoteAddress))
       processorActor ! ExposedProcessor(ActorProcessor[ByteString, ByteString](processorActor))
 
-    case Bind(localAddressPromise, unbindPromise, flowSubscriber, endpoint, backlog, options, _) ⇒
-      val props = TcpListenStreamActor.props(localAddressPromise, unbindPromise, flowSubscriber,
+    case Bind(localAddressPromise, unbindPromise, flowSubscriber, endpoint, backlog, halfClose, options, _) ⇒
+      val props = TcpListenStreamActor.props(localAddressPromise, unbindPromise, flowSubscriber, halfClose,
         Tcp.Bind(context.system.deadLetters, endpoint, backlog, options, pullMode = true),
         ActorFlowMaterializerSettings(context.system))
         .withDispatcher(context.props.dispatcher)

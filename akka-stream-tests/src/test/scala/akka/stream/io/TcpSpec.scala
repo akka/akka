@@ -5,6 +5,7 @@ package akka.stream.io
 
 import akka.stream.scaladsl.Tcp.OutgoingConnection
 
+import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
 import akka.io.Tcp._
 
@@ -19,7 +20,7 @@ import akka.stream.testkit.Utils._
 import akka.stream.scaladsl._
 import akka.stream.testkit.TestUtils.temporaryServerAddress
 
-class TcpSpec extends AkkaSpec with TcpHelper {
+class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-enabled=auto") with TcpHelper {
   import akka.stream.io.TcpHelper._
   var demand = 0L
 
@@ -339,6 +340,44 @@ class TcpSpec extends AkkaSpec with TcpHelper {
       tcpReadProbe1.close()
 
       server.close()
+    }
+
+    "properly full-close if requested" in assertAllStagesStopped {
+      import system.dispatcher
+
+      val serverAddress = temporaryServerAddress()
+      val writeButIgnoreRead: Flow[ByteString, ByteString, Unit] =
+        Flow.wrap(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
+
+      val binding = Tcp().bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
+        conn.flow.join(writeButIgnoreRead).run()
+      })(Keep.left).run()
+
+      val result = Source(() ⇒ Iterator.continually(ByteString("client data")))
+        .via(Tcp().outgoingConnection(serverAddress.getHostName, serverAddress.getPort))
+        .runFold(ByteString.empty)(_ ++ _)
+
+      Await.result(result, 3.seconds) should ===(ByteString("Early response"))
+
+      binding.map(_.unbind())
+    }
+
+    "Echo should work even if server is in full close mode" in {
+      import system.dispatcher
+
+      val serverAddress = temporaryServerAddress()
+
+      val binding = Tcp().bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
+        conn.flow.join(Flow[ByteString]).run()
+      })(Keep.left).run()
+
+      val result = Source(immutable.Iterable.fill(10000)(ByteString(0)))
+        .via(Tcp().outgoingConnection(serverAddress, halfClose = true))
+        .runFold(0)(_ + _.size)
+
+      Await.result(result, 3.seconds) should ===(10000)
+
+      binding.map(_.unbind())
     }
 
   }
