@@ -106,15 +106,15 @@ private[stream] object ReactiveStreamsCompliance {
     }
   }
 
-  final def tryRequest(subscription: Subscription, demand: Long, onError: (Throwable) ⇒ Unit): Unit = {
+  final def tryRequest(subscription: Subscription, demand: Long): Unit = {
     try subscription.request(demand) catch {
-      case NonFatal(t) ⇒ onError(new SignalThrewException("It is illegal to throw exceptions from request(), rule 3.16", t))
+      case NonFatal(t) ⇒ throw new SignalThrewException("It is illegal to throw exceptions from request(), rule 3.16", t)
     }
   }
 
-  final def tryCancel(subscription: Subscription, onError: (Throwable) ⇒ Unit): Unit = {
+  final def tryCancel(subscription: Subscription): Unit = {
     try subscription.cancel() catch {
-      case NonFatal(t) ⇒ onError(new SignalThrewException("It is illegal to throw exceptions from cancel(), rule 3.15", t))
+      case NonFatal(t) ⇒ throw new SignalThrewException("It is illegal to throw exceptions from cancel(), rule 3.15", t)
     }
   }
 

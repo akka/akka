@@ -52,7 +52,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
 
     batchRemaining -= 1
     if (batchRemaining == 0 && !upstreamCompleted) {
-      tryRequest(upstream, requestBatchSize, onError)
+      tryRequest(upstream, requestBatchSize)
       batchRemaining = requestBatchSize
     }
 
@@ -94,7 +94,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
   def cancel(): Unit = {
     if (!upstreamCompleted) {
       upstreamCompleted = true
-      if (upstream ne null) tryCancel(upstream, onError)
+      if (upstream ne null) tryCancel(upstream)
       downstreamWaiting = false
       clear()
     }
@@ -115,21 +115,32 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
   private def onSubscribe(subscription: Subscription): Unit = {
     assert(subscription != null)
     if (upstreamCompleted)
-      tryCancel(subscription, onError)
+      tryCancel(subscription)
     else if (downstreamCanceled) {
       upstreamCompleted = true
-      tryCancel(subscription, onError)
+      tryCancel(subscription)
     } else {
       upstream = subscription
       // Prefetch
-      tryRequest(upstream, inputBuffer.length, onError)
+      tryRequest(upstream, inputBuffer.length)
       subreceive.become(upstreamRunning)
     }
   }
 
-  private def onError(e: Throwable): Unit = {
-    upstreamCompleted = true
-    enterAndFail(e)
+  // Call this when an error happens that does not come from the usual onError channel
+  // (exceptions while calling RS interfaces, abrupt termination etc)
+  def onInternalError(e: Throwable): Unit = {
+    if (!(upstreamCompleted || downstreamCanceled) && (upstream ne null)) {
+      upstream.cancel()
+    }
+    onError(e)
+  }
+
+  def onError(e: Throwable): Unit = {
+    if (!upstreamCompleted) {
+      upstreamCompleted = true
+      enterAndFail(e)
+    }
   }
 
   private def waitingForUpstream: Actor.Receive = {
@@ -148,7 +159,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
 
     case OnComplete                ⇒ onComplete()
     case OnError(cause)            ⇒ onError(cause)
-    case OnSubscribe(subscription) ⇒ tryCancel(subscription, onError) // spec rule 2.5
+    case OnSubscribe(subscription) ⇒ tryCancel(subscription) // spec rule 2.5
   }
 
 }
@@ -361,8 +372,13 @@ private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings
   }
 
   override def postStop(): Unit = {
+    // This should handle termination while interpreter is running. If the upstream have been closed already this
+    // call has no effect and therefore do the right thing: nothing.
+    try upstream.onInternalError(AbruptTerminationException(self))
+    // Will only have an effect if the above call to the interpreter failed to emit a proper failure to the downstream
+    // otherwise this will have no effect
+    finally downstream.fail(AbruptTerminationException(self))
     upstream.cancel()
-    downstream.fail(AbruptTerminationException(self))
   }
 
   override def postRestart(reason: Throwable): Unit = {

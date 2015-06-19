@@ -148,6 +148,18 @@ abstract class ActorFlowMaterializer extends FlowMaterializer {
   def effectiveSettings(opAttr: OperationAttributes): ActorFlowMaterializerSettings
 
   /**
+   * Shuts down this materializer and all the stages that have been materialized through this materializer. After
+   * having shut down, this materializer cannot be used again. Any attempt to materialize stages after having
+   * shut down will result in an IllegalStateException being thrown at materialization time.
+   */
+  def shutdown(): Unit
+
+  /**
+   * Indicates if the materializer has been shut down.
+   */
+  def isShutdown: Boolean
+
+  /**
    * INTERNAL API: this might become public later
    */
   private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef
