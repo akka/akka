@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
 import akka.actor._
 import akka.dispatch.Dispatchers
@@ -39,6 +39,13 @@ private[akka] case class ActorFlowMaterializerImpl(
   import ActorFlowMaterializerImpl._
   import akka.stream.impl.Stages._
 
+  private val haveShutDown = new AtomicBoolean(false)
+
+  override def shutdown(): Unit =
+    if (haveShutDown.compareAndSet(false, true)) supervisor ! PoisonPill
+
+  override def isShutdown: Boolean = haveShutDown.get()
+
   override def withNamePrefix(name: String): FlowMaterializer = this.copy(namePrefix = name)
 
   private[this] def nextFlowNameCount(): Long = flowNameCounter.incrementAndGet()
@@ -60,6 +67,8 @@ private[akka] case class ActorFlowMaterializerImpl(
   }
 
   override def materialize[Mat](runnableFlow: Graph[ClosedShape, Mat]): Mat = {
+    if (haveShutDown.get())
+      throw new IllegalStateException("Attempted to call materialize() after the ActorMaterializer has been shut down.")
     if (StreamLayout.Debug) runnableFlow.module.validate()
 
     val session = new MaterializerSession(runnableFlow.module) {
