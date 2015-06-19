@@ -136,7 +136,7 @@ class ActorInterpreterSpec extends AkkaSpec {
     "satisfy larger demand" in largeDemand(1)
 
     "handle spec violations" in {
-      a[SpecViolation] should be thrownBy {
+      a[AbruptTerminationException] should be thrownBy {
         Await.result(
           Source(new Publisher[String] {
             def subscribe(s: Subscriber[_ >: String]) = {
