@@ -8,7 +8,7 @@ Handles rejections produced by the inner route and handles them using the specif
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
    :snippet: handleRejections
 
 Description

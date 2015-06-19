@@ -19,7 +19,7 @@ akka-http-core
 akka-http-core-scala
 ~~~~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../../../akka-http-scala/src/main/resources/reference.conf
+.. literalinclude:: ../../../../akka-http/src/main/resources/reference.conf
    :language: none
 
 

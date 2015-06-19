@@ -8,7 +8,7 @@ Catches exceptions thrown by the inner route and handles them using the specifie
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
    :snippet: handleExceptions
 
 Description

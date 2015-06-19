@@ -9,7 +9,7 @@ Adds a given HTTP header to all responses coming back from its inner route.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala
    :snippet: respondWithHeader
 
 

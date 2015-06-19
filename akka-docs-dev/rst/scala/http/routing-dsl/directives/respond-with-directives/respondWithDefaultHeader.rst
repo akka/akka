@@ -10,7 +10,7 @@ exist yet in the response.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala
    :snippet: respondWithDefaultHeader
 
 

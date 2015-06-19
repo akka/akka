@@ -11,7 +11,7 @@ of converting an exception to its argument, an ExceptionHandler__, which is defi
 
     trait ExceptionHandler extends PartialFunction[Throwable, Route]
 
-__ @github@/akka-http-scala/src/main/scala/akka/http/scaladsl/server/ExceptionHandler.scala
+__ @github@/akka-http/src/main/scala/akka/http/scaladsl/server/ExceptionHandler.scala
 
 Since an ``ExceptionHandler`` is a partial function it can choose, which exceptions it would like to handle and
 which not. Unhandled exceptions will simply continue to bubble up in the route structure.

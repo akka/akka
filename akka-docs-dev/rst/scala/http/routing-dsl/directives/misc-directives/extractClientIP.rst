@@ -9,7 +9,7 @@ Provides the value of ``X-Forwarded-For``, ``Remote-Address``, or ``X-Real-IP`` 
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala
    :snippet: extractClientIP
 
 Description

@@ -43,7 +43,7 @@ as required, optional, or repeated, or to filter requests where a parameter has 
     extract multiple occurrences of parameter "distance" as ``Iterable[String]``
 ``"distance".as[Int].*``
     extract multiple occurrences of parameter "distance" as ``Iterable[Int]``, you need a matching ``Deserializer`` in scope for that to work
-    (see also :ref:`unmarshalling`)
+    (see also :ref:`http-unmarshalling-scala`)
 ``"distance".as(deserializer).*``
     extract multiple occurrences of parameter "distance" with an explicit ``Deserializer``
 
@@ -89,13 +89,13 @@ Deserialized parameter
    :snippet: mapped-value
 
 Repeated parameter
-+++++++++++++++++++++++++++++
+++++++++++++++++++
 
 ... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: repeated
 
 Repeated, deserialized parameter
-++++++++++++++++++++++
+++++++++++++++++++++++++++++++++
 
 ... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: mapped-repeated
