@@ -19,7 +19,6 @@ static content serving.
    path-matchers
    case-class-extraction
    testkit
-   https-support
    websocket-support
 
 
