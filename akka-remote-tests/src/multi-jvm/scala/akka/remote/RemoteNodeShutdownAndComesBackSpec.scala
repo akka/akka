@@ -111,7 +111,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         expectTerminated(subject)
 
         // Establish watch with the new system. This triggers additional system message traffic. If buffers are out
-        // of synch the remote system will be quarantined and the rest of the test will fail (or even in earlier
+        // of sync the remote system will be quarantined and the rest of the test will fail (or even in earlier
         // stages depending on circumstances).
         system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! Identify("subject")
         val subjectNew = expectMsgType[ActorIdentity].ref.get

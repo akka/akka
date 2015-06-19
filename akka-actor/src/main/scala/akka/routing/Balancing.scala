@@ -126,7 +126,7 @@ final case class BalancingPool(
   }
 
   /**
-   * Uses the supervisor strategy of the given Routerconfig
+   * Uses the supervisor strategy of the given RouterConfig
    * if this RouterConfig doesn't have one.
    */
   override def withFallback(other: RouterConfig): RouterConfig =

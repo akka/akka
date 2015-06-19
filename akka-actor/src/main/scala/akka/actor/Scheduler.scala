@@ -213,7 +213,7 @@ class LightArrayRevolverScheduler(config: Config,
     try {
       ((d + TickDuration - oneNs) / TickDuration).toLong * TickDuration
     } catch {
-      case _: IllegalArgumentException ⇒ d // rouding up Long.MaxValue.nanos overflows
+      case _: IllegalArgumentException ⇒ d // rounding up Long.MaxValue.nanos overflows
     }
 
   /**

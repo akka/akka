@@ -13,7 +13,7 @@ import akka.dispatch.MailboxType
 import scala.reflect.ClassTag
 
 /**
- * This is a specialised form of the TestActorRef with support for querying and
+ * This is a specialized form of the TestActorRef with support for querying and
  * setting the state of a FSM. Use a LoggingFSM with this class if you also
  * need to inspect event traces.
  *

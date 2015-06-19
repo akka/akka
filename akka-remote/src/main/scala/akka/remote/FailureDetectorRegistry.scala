@@ -32,7 +32,7 @@ trait FailureDetectorRegistry[A] {
 
   /**
    * Records a heartbeat for a resource. If the resource is not yet registered (i.e. this is the first heartbeat) then
-   * it is automatially registered.
+   * it is automatically registered.
    */
   def heartbeat(resource: A): Unit
 

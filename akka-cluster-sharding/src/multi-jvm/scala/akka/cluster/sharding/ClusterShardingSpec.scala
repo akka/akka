@@ -91,7 +91,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
 
     override def postStop(): Unit = {
       super.postStop()
-      // Simulate that the passivation takes some time, to verify passivation bufffering
+      // Simulate that the passivation takes some time, to verify passivation buffering
       Thread.sleep(500)
     }
     //#counter-actor

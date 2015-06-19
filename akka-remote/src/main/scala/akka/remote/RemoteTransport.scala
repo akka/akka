@@ -47,7 +47,7 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
   def addresses: immutable.Set[Address]
 
   /**
-   * The default transport address of the actorsystem
+   * The default transport address of the ActorSystem
    * @return The listen address of the default transport
    */
   def defaultAddress: Address

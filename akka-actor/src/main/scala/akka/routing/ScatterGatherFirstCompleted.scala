@@ -136,7 +136,7 @@ final case class ScatterGatherFirstCompletedPool(
   def withDispatcher(dispatcherId: String): ScatterGatherFirstCompletedPool = copy(routerDispatcher = dispatcherId)
 
   /**
-   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
+   * Uses the resizer and/or the supervisor strategy of the given RouterConfig
    * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
    */

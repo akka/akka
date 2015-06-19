@@ -53,7 +53,7 @@ class Chopstick extends Actor with FSM[ChopstickState, TakenBy] {
       goto(Available) using TakenBy(system.deadLetters)
   }
 
-  // Initialze the chopstick
+  // Initialize the chopstick
   initialize()
 }
 

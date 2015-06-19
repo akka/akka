@@ -24,7 +24,7 @@ private[persistence] object Eventsourced {
     def evt: Any
     def handler: Any ⇒ Unit
   }
-  /** forces actor to stash incoming commands untill all these invocations are handled */
+  /** forces actor to stash incoming commands until all these invocations are handled */
   private final case class StashingHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
   /** does not force the actor to stash commands; Originates from either `persistAsync` or `defer` calls */
   private final case class AsyncHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation

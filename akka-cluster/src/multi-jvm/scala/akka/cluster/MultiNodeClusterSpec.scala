@@ -343,7 +343,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    */
   def markNodeAsUnavailable(address: Address): Unit = {
     if (isFailureDetectorPuppet) {
-      // before marking it as unavailble there should be at least one heartbeat
+      // before marking it as unavailable there should be at least one heartbeat
       // to create the FailureDetectorPuppet in the FailureDetectorRegistry
       cluster.failureDetector.heartbeat(address)
       failureDetectorPuppet(address) foreach (_.markNodeAsUnavailable())

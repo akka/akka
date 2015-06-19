@@ -212,7 +212,7 @@ object FSM {
   final case class Event[D](event: Any, stateData: D) extends NoSerializationVerificationNeeded
 
   /**
-   * Case class representing the state of the [[akka.actor.FSM]] whithin the
+   * Case class representing the state of the [[akka.actor.FSM]] within the
    * `onTermination` block.
    */
   final case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D) extends NoSerializationVerificationNeeded

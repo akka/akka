@@ -16,7 +16,7 @@ import scala.reflect.ClassTag
 import util.{ Failure, Success }
 
 /**
- * Serializes akka's internal DaemonMsgCreate using protobuf
+ * Serializes Akka's internal DaemonMsgCreate using protobuf
  * for the core structure of DaemonMsgCreate, Props and Deploy.
  * Serialization of contained RouterConfig, Config, and Scope
  * is done with configured serializer for those classes, by

@@ -14,7 +14,7 @@ import org.scalatest.junit.JUnitRunner
  * Java / JUnit API for [[akka.persistence.journal.JournalSpec]].
  *
  * In case your journal plugin needs some kind of setup or teardown, override the `beforeAll` or `afterAll`
- * methods (don't forget to call `super` in your overriden methods).
+ * methods (don't forget to call `super` in your overridden methods).
  *
  * @see [[akka.persistence.journal.JournalSpec]]
  * @see [[akka.persistence.journal.JournalPerfSpec]]
