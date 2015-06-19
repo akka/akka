@@ -8,7 +8,7 @@ handleWebsocketMessages
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/WebsocketDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebsocketDirectives.scala
    :snippet: handleWebsocketMessages
 
 Description

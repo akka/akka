@@ -10,7 +10,7 @@ path has been fully matched by a higher-level :ref:`-path-` or :ref:`-pathPrefix
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
    :snippet: pathEnd
 
 

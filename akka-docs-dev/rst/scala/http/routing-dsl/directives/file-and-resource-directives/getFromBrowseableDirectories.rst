@@ -9,7 +9,7 @@ served as browsable listings.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala
    :snippet: getFromBrowseableDirectories
 
 Description

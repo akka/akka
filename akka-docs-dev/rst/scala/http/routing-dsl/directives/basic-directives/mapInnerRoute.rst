@@ -8,7 +8,7 @@ Changes the execution model of the inner route by wrapping it with arbitrary log
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
    :snippet: mapInnerRoute
 
 Description

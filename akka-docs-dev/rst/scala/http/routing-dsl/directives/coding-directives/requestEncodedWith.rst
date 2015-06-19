@@ -9,7 +9,7 @@ rejects the request with an ``UnacceptedRequestEncodingRejection(encoding)``.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
    :snippet: requestEncodedWith
 
 Description

@@ -8,7 +8,7 @@ Completes GET requests with the content of the given classpath resource director
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala
    :snippet: getFromResourceDirectory
 
 Description

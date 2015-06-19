@@ -8,7 +8,7 @@ Extracts an optional cookie with a given name from a request.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala
    :snippet: optionalCookie
 
 Description

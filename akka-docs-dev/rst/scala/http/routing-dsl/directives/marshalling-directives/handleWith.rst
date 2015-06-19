@@ -11,7 +11,7 @@ the in-scope marshaller.  ``handleWith`` can be a convenient method combining ``
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
    :snippet: handleWith
 
 Description

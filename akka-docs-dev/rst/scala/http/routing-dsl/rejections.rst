@@ -33,7 +33,7 @@ type ``Rejection``. Akka HTTP comes with a set of `predefined rejections`__, whi
 Rejections are gathered up over the course of a Route evaluation and finally converted to ``HttpResponse`` replies by
 the :ref:`-handleRejections-` directive if there was no way for the request to be completed.
 
-__ @github@/akka-http-scala/src/main/scala/akka/http/scaladsl/server/Rejection.scala
+__ @github@/akka-http/src/main/scala/akka/http/scaladsl/server/Rejection.scala
 
 
 .. _The RejectionHandler:
@@ -46,7 +46,7 @@ RejectionHandler__, which is defined like this::
 
     trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route])
 
-__ @github@/akka-http-scala/src/main/scala/akka/http/scaladsl/server/RejectionHandler.scala
+__ @github@/akka-http/src/main/scala/akka/http/scaladsl/server/RejectionHandler.scala
 
 Since a ``RejectionHandler`` returns an ``Option[Route]`` it can choose whether it would like to handle the current set
 of rejections or not. If it returns ``None`` the rejections will simply continue to flow through the route structure.

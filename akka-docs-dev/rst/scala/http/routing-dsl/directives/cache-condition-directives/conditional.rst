@@ -10,7 +10,7 @@ by http://tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/CacheConditionDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CacheConditionDirectives.scala
    :snippet: conditional
 
 
