@@ -328,9 +328,9 @@ object Source extends SourceApply {
    * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
    * not matter.
    *
-   * The stream can be completed successfully by sending the actor referende an [[akka.actor.Status.Success]]
-   * messagein which case already buffered elements will be signalled before signalling completion,
-   * or by sending a [[akka.actor.PoisonPill]] in which case completion will be signalled immediatly.
+   * The stream can be completed successfully by sending the actor reference an [[akka.actor.Status.Success]]
+   * message in which case already buffered elements will be signalled before signalling completion,
+   * or by sending a [[akka.actor.PoisonPill]] in which case completion will be signalled immediately.
    *
    * The stream can be completed with failure by sending [[akka.actor.Status.Failure]] to the
    * actor reference. In case the Actor is still draining its internal buffer (after having received
