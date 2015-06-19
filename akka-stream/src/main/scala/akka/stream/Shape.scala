@@ -9,11 +9,15 @@ import scala.collection.JavaConverters._
 /**
  * An input port of a StreamLayout.Module. This type logically belongs
  * into the impl package but must live here due to how `sealed` works.
+ * It is also used in the Java DSL for “untyped Inlets” as a work-around
+ * for otherwise unreasonable existential types.
  */
 sealed abstract class InPort
 /**
  * An output port of a StreamLayout.Module. This type logically belongs
  * into the impl package but must live here due to how `sealed` works.
+ * It is also used in the Java DSL for “untyped Outlets” as a work-around
+ * for otherwise unreasonable existential types.
  */
 sealed abstract class OutPort
 
