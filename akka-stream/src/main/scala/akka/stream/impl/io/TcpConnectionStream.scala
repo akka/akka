@@ -24,19 +24,21 @@ private[akka] object TcpStreamActor {
 
   def outboundProps(processorPromise: Promise[Processor[ByteString, ByteString]],
                     localAddressPromise: Promise[InetSocketAddress],
+                    halfClose: Boolean,
                     connectCmd: Connect,
                     materializerSettings: ActorFlowMaterializerSettings): Props =
-    Props(new OutboundTcpStreamActor(processorPromise, localAddressPromise, connectCmd,
+    Props(new OutboundTcpStreamActor(processorPromise, localAddressPromise, halfClose, connectCmd,
       materializerSettings)).withDispatcher(materializerSettings.dispatcher).withDeploy(Deploy.local)
 
-  def inboundProps(connection: ActorRef, settings: ActorFlowMaterializerSettings): Props =
-    Props(new InboundTcpStreamActor(connection, settings)).withDispatcher(settings.dispatcher).withDeploy(Deploy.local)
+  def inboundProps(connection: ActorRef, halfClose: Boolean, settings: ActorFlowMaterializerSettings): Props =
+    Props(new InboundTcpStreamActor(connection, halfClose, settings)).withDispatcher(settings.dispatcher).withDeploy(Deploy.local)
+
 }
 
 /**
  * INTERNAL API
  */
-private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerSettings) extends Actor
+private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerSettings, halfClose: Boolean) extends Actor
   with ActorLogging {
 
   import TcpStreamActor._
@@ -46,6 +48,8 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
   }
 
   val primaryOutputs: Outputs = new SimpleOutputs(self, readPump)
+
+  def fullClose: Boolean = !halfClose
 
   object tcpInputs extends DefaultInputTransferStates {
     private var closed: Boolean = false
@@ -112,10 +116,13 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
 
   object tcpOutputs extends DefaultOutputTransferStates {
     private var closed: Boolean = false
-    private var pendingDemand = true
+    private var lastWriteAcked = true
     private var connection: ActorRef = _
 
     def isClosed: Boolean = closed
+    // Full-close mode needs to wait for the last write Ack before sending Close to avoid doing a connection reset
+    def isFlushed: Boolean = closed && (halfClose || lastWriteAcked)
+
     private def initialized: Boolean = connection ne null
 
     def setConnection(c: ActorRef): Unit = {
@@ -128,7 +135,12 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
 
     def handleWrite: Receive = {
       case WriteAck ⇒
-        pendingDemand = true
+        lastWriteAcked = true
+        if (fullClose && closed) {
+          // Finish the closing after the last write has been flushed in full close mode.
+          connection ! Close
+          tryShutdown()
+        }
         writePump.pump()
 
     }
@@ -141,9 +153,16 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
     override def complete(): Unit = {
       if (!closed && initialized) {
         closed = true
-        if (tcpInputs.isClosed)
+        if (tcpInputs.isClosed && (halfClose || lastWriteAcked)) {
+          // We can immediately close if
+          // - half close mode, and read size already finished
+          // - full close mode, and last write has been acked
+          //
+          // if in full close mode, and has a non-acknowledged write, we will do the closing in handleWrite
+          // when the Ack arrives
           connection ! Close
-        else
+          tryShutdown()
+        } else
           connection ! ConfirmedClose
       }
     }
@@ -153,10 +172,10 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
     override def enqueueOutputElement(elem: Any): Unit = {
       ReactiveStreamsCompliance.requireNonNullElement(elem)
       connection ! Write(elem.asInstanceOf[ByteString], WriteAck)
-      pendingDemand = false
+      lastWriteAcked = false
     }
 
-    override def demandAvailable: Boolean = pendingDemand
+    override def demandAvailable: Boolean = lastWriteAcked
   }
 
   object writePump extends Pump {
@@ -168,6 +187,12 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
     }
 
     override protected def pumpFinished(): Unit = {
+      if (fullClose) {
+        // In full close mode we shut down the read size immediately once the write side is finished
+        tcpInputs.cancel()
+        primaryOutputs.complete()
+        readPump.pump()
+      }
       tcpOutputs.complete()
       primaryInputs.cancel()
       tryShutdown()
@@ -228,7 +253,7 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
   }
 
   def tryShutdown(): Unit =
-    if (primaryInputs.isClosed && tcpInputs.isClosed && tcpOutputs.isClosed)
+    if (primaryInputs.isClosed && tcpInputs.isClosed && tcpOutputs.isFlushed)
       context.stop(self)
 
   override def postStop(): Unit = {
@@ -245,8 +270,8 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
  * INTERNAL API
  */
 private[akka] class InboundTcpStreamActor(
-  val connection: ActorRef, _settings: ActorFlowMaterializerSettings)
-  extends TcpStreamActor(_settings) {
+  val connection: ActorRef, _halfClose: Boolean, _settings: ActorFlowMaterializerSettings)
+  extends TcpStreamActor(_settings, _halfClose) {
 
   connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
   tcpInputs.setConnection(connection)
@@ -258,8 +283,9 @@ private[akka] class InboundTcpStreamActor(
  */
 private[akka] class OutboundTcpStreamActor(processorPromise: Promise[Processor[ByteString, ByteString]],
                                            localAddressPromise: Promise[InetSocketAddress],
+                                           _halfClose: Boolean,
                                            val connectCmd: Connect, _settings: ActorFlowMaterializerSettings)
-  extends TcpStreamActor(_settings) {
+  extends TcpStreamActor(_settings, _halfClose) {
   import TcpStreamActor._
   import context.system
 
