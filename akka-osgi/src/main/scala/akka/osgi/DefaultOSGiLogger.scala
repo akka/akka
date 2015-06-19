@@ -47,8 +47,8 @@ class DefaultOSGiLogger extends DefaultLogger {
   }
 
   /**
-   * Behaviour of the Eventhanlder that is setup (has received a LogService)
-   * @param logService registrered OSGi LogService
+   * Behaviour of the Event handler that is setup (has received a LogService)
+   * @param logService registered OSGi LogService
    * @return Receive : Logs LogEvent or go back to the uninitialised state
    */
   def initialisedReceive(logService: LogService): Receive = {
@@ -65,7 +65,7 @@ class DefaultOSGiLogger extends DefaultLogger {
    * Logs a message in an OSGi LogService
    *
    * @param logService  OSGi LogService registered and used for logging
-   * @param event akka LogEvent that is log unsing the LogService
+   * @param event akka LogEvent that is logged using the LogService
    */
   def logMessage(logService: LogService, event: LogEvent) {
     event match {
@@ -79,7 +79,7 @@ class DefaultOSGiLogger extends DefaultLogger {
 }
 
 /**
- * Message sent when LogService is unregistred.
+ * Message sent when LogService is unregistered.
  * Sent from the ActorSystemActivator to a logger (as DefaultOsgiLogger).
  */
 case object UnregisteringLogService

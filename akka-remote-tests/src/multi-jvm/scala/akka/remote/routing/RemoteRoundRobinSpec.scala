@@ -134,7 +134,7 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         actor ! GetRoutees
-        // initial nrOfInstances 1 + inital resize => 2
+        // initial nrOfInstances 1 + initial resize => 2
         expectMsgType[Routees].routees.size should ===(2)
 
         val repliesFrom: Set[ActorRef] =

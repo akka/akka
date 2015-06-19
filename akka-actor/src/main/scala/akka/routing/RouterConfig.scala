@@ -54,7 +54,7 @@ trait RouterConfig extends Serializable {
    * Possibility to define an actor for controlling the routing
    * logic from external stimuli (e.g. monitoring metrics).
    * This actor will be a child of the router "head" actor.
-   * Managment messages not handled by the "head" actor are
+   * Management messages not handled by the "head" actor are
    * delegated to this controller actor.
    */
   def routingLogicController(routingLogic: RoutingLogic): Option[Props] = None

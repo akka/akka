@@ -105,7 +105,7 @@ class TestActorRef[T <: Actor](
   def watch(subject: ActorRef): ActorRef = underlying.watch(subject)
 
   /**
-   * Deregisters this actor from being a death monitor of the provided ActorRef
+   * Unregisters this actor from being a death monitor of the provided ActorRef
    * This means that this actor will not get a Terminated()-message when the provided actor
    * is permanently terminated.
    *

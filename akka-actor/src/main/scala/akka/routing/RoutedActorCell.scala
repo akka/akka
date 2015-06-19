@@ -119,7 +119,7 @@ private[akka] class RoutedActorCell(
   }
 
   /**
-   * Called when `router` is initalized but before `super.start()` to
+   * Called when `router` is initialized but before `super.start()` to
    * be able to do extra initialization in subclass.
    */
   protected def preSuperStart(): Unit = ()

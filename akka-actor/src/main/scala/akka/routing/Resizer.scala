@@ -49,7 +49,7 @@ trait Resizer {
    * returns true and no other resize is in progress.
    *
    * Return the number of routees to add or remove. Negative value will remove that number of routees.
-   * Positive value will add that number of routess. 0 will not change the routees.
+   * Positive value will add that number of routees. 0 will not change the routees.
    *
    * This method is invoked only in the context of the Router actor.
    */

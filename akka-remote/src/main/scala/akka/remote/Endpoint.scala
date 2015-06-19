@@ -697,7 +697,7 @@ private[remote] class EndpointWriter(
           val backoffNanos = backoffDeadlinelineNanoTime - System.nanoTime
           if (backoffNanos > 0) {
             LockSupport.parkNanos(backoffNanos)
-            // parkNanos allows for spurious wakeup, check again
+            // parkNanos allows for spurious wake-up, check again
             backoff()
           }
         }
@@ -785,7 +785,7 @@ private[remote] class EndpointWriter(
         case Some(r) ⇒
           r.tell(s, replyTo)
         case None ⇒
-          // initalizing, buffer and take care of it later when buffer is sent
+          // initializing, buffer and take care of it later when buffer is sent
           enqueueInBuffer(s)
       }
     case TakeOver(newHandle, replyTo) ⇒

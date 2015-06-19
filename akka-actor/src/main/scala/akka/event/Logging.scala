@@ -225,7 +225,7 @@ trait LoggingBus extends ActorEventBus {
  * }
  *
  * class MyClass extends MyType {
- *   val sys = ActorSyste("sys")
+ *   val sys = ActorSystem("sys")
  *   val log = Logging(sys, this) // will use "hallo,akka://sys" as logSource
  *   def name = "hallo"
  * }

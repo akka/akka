@@ -103,7 +103,7 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
     (s: String, r: RouteDefinition) ⇒ conversions.get(s).fold(r)(r.convertBodyTo)
   }
   /**
-   * Configured setting, determine the class used to load/retrive the instance of the Camel Context
+   * Configured setting, determine the class used to load/retrieve the instance of the Camel Context
    */
   final val ContextProvider: ContextProvider = {
     val fqcn = config.getString("akka.camel.context-provider")
