@@ -315,6 +315,12 @@ object TestSubscriber {
     def receiveWhile[T](max: Duration = Duration.Undefined, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[SubscriberEvent, T]): immutable.Seq[T] =
       probe.receiveWhile(max, idle, messages)(f.asInstanceOf[PartialFunction[AnyRef, T]])
 
+    def receiveWithin(max: FiniteDuration, messages: Int = Int.MaxValue): immutable.Seq[I] =
+      probe.receiveWhile(max, max, messages) {
+        case OnNext(i) ⇒ Some(i.asInstanceOf[I])
+        case _         ⇒ None
+      }.flatten
+
     def within[T](max: FiniteDuration)(f: ⇒ T): T = probe.within(0.seconds, max)(f)
 
     def onSubscribe(subscription: Subscription): Unit = probe.ref ! OnSubscribe(subscription)
