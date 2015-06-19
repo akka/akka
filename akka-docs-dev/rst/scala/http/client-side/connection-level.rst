@@ -64,3 +64,8 @@ Currently Akka HTTP doesn't implement client-side request timeout checking itsel
 as a more general purpose streaming infrastructure feature.
 However, akka-stream should soon provide such a feature.
 
+
+Stand-Alone HTTP Layer Usage
+----------------------------
+
+// TODO
