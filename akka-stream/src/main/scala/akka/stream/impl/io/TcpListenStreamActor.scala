@@ -24,8 +24,9 @@ private[akka] object TcpListenStreamActor {
   def props(localAddressPromise: Promise[InetSocketAddress],
             unbindPromise: Promise[() ⇒ Future[Unit]],
             flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
+            halfClose: Boolean,
             bindCmd: Tcp.Bind, materializerSettings: ActorFlowMaterializerSettings): Props = {
-    Props(new TcpListenStreamActor(localAddressPromise, unbindPromise, flowSubscriber, bindCmd, materializerSettings))
+    Props(new TcpListenStreamActor(localAddressPromise, unbindPromise, flowSubscriber, halfClose, bindCmd, materializerSettings))
       .withDeploy(Deploy.local)
   }
 }
@@ -36,6 +37,7 @@ private[akka] object TcpListenStreamActor {
 private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocketAddress],
                                          unbindPromise: Promise[() ⇒ Future[Unit]],
                                          flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
+                                         halfClose: Boolean,
                                          bindCmd: Tcp.Bind, settings: ActorFlowMaterializerSettings) extends Actor
   with Pump with ActorLogging {
   import ReactiveStreamsCompliance._
@@ -141,7 +143,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
 
   def runningPhase = TransferPhase(primaryOutputs.NeedsDemand && incomingConnections.NeedsInput) { () ⇒
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
-    val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, settings))
+    val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, halfClose, settings))
     val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
     val conn = StreamTcp.IncomingConnection(
       connected.localAddress,
