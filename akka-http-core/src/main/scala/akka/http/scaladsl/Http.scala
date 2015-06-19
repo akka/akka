@@ -569,11 +569,14 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
 import JavaConverters._
 
+//# https-context-impl
 case class HttpsContext(sslContext: SSLContext,
                         enabledCipherSuites: Option[immutable.Seq[String]] = None,
                         enabledProtocols: Option[immutable.Seq[String]] = None,
                         clientAuth: Option[ClientAuth] = None,
-                        sslParameters: Option[SSLParameters] = None) extends akka.http.javadsl.HttpsContext {
+                        sslParameters: Option[SSLParameters] = None)
+//#
+  extends akka.http.javadsl.HttpsContext {
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
   /** Java API */
