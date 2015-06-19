@@ -172,6 +172,8 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
   override def subreceive = _subreceive
   private val _subreceive = new SubReceive(waitingExposedPublisher)
 
+  def isSubscribed = subscriber ne null
+
   def enqueueOutputElement(elem: Any): Unit = {
     ReactiveStreamsCompliance.requireNonNullElement(elem)
     downstreamDemand -= 1
