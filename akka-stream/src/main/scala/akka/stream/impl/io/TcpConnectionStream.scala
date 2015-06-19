@@ -5,16 +5,16 @@ package akka.stream.impl.io
 
 import java.net.InetSocketAddress
 import akka.io.{ IO, Tcp }
+import akka.stream.impl.io.StreamTcpManager.ExposedProcessor
 import scala.concurrent.Promise
-import scala.util.control.NoStackTrace
 import akka.actor._
 import akka.util.ByteString
 import akka.io.Tcp._
-import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.StreamTcpException
-import org.reactivestreams.Processor
+import akka.stream.{ StreamSubscriptionTimeoutSettings, ActorFlowMaterializerSettings, StreamTcpException }
+import org.reactivestreams.{ Publisher, Processor }
 import akka.stream.impl._
-import akka.actor.ActorLogging
+
+import scala.util.control.NoStackTrace
 
 /**
  * INTERNAL API
@@ -33,6 +33,7 @@ private[akka] object TcpStreamActor {
   def inboundProps(connection: ActorRef, halfClose: Boolean, settings: ActorFlowMaterializerSettings): Props =
     Props(new InboundTcpStreamActor(connection, halfClose, settings)).withDispatcher(settings.dispatcher).withDeploy(Deploy.local)
 
+  case object SubscriptionTimeout extends NoSerializationVerificationNeeded
 }
 
 /**
@@ -47,7 +48,7 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
     override def inputOnError(e: Throwable): Unit = fail(e)
   }
 
-  val primaryOutputs: Outputs = new SimpleOutputs(self, readPump)
+  val primaryOutputs: SimpleOutputs = new SimpleOutputs(self, readPump)
 
   def fullClose: Boolean = !halfClose
 
@@ -216,7 +217,14 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
 
   final override def receive = new ExposedPublisherReceive(activeReceive, unhandled) {
     override def receiveExposedPublisher(ep: ExposedPublisher): Unit = {
+      import context.dispatcher
       primaryOutputs.subreceive(ep)
+      subscriptionTimer = Some(
+        context.system.scheduler.scheduleOnce(
+          settings.subscriptionTimeoutSettings.timeout,
+          self,
+          SubscriptionTimeout))
+
       context become activeReceive
     }
   }
@@ -226,7 +234,8 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
       primaryOutputs.subreceive orElse
       tcpInputs.subreceive orElse
       tcpOutputs.subreceive orElse
-      commonCloseHandling
+      commonCloseHandling orElse
+      handleSubscriptionTimeout
 
   def commonCloseHandling: Receive = {
     case Terminated(_) ⇒ fail(new StreamTcpException("The connection actor has terminated. Stopping now."))
@@ -240,8 +249,19 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
     case Aborted            ⇒ fail(new StreamTcpException("The connection has been aborted"))
   }
 
+  def handleSubscriptionTimeout: Receive = {
+    case SubscriptionTimeout ⇒
+      val millis = settings.subscriptionTimeoutSettings.timeout.toMillis
+      if (!primaryOutputs.isSubscribed) {
+        fail(new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline (${millis}) ms") with NoStackTrace)
+        context.stop(self)
+      }
+  }
+
   readPump.nextPhase(readPump.running)
   writePump.nextPhase(writePump.running)
+
+  var subscriptionTimer: Option[Cancellable] = None
 
   def fail(e: Throwable): Unit = {
     if (settings.debugLogging)
@@ -263,6 +283,7 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
     tcpOutputs.complete()
     primaryInputs.cancel()
     primaryOutputs.complete()
+    subscriptionTimer.foreach(_.cancel())
     super.postStop() // Remember, we have a Stash
   }
 }
