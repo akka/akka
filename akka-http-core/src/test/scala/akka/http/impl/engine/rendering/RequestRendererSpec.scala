@@ -312,7 +312,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     def renderTo(expected: String): Matcher[HttpRequest] =
       equal(expected.stripMarginWithNewline("\r\n")).matcher[String] compose { request ⇒
         val renderer = newRenderer
-        val byteStringSource = Await.result(Source.single(RequestRenderingContext(request, serverAddress))
+        val byteStringSource = Await.result(Source.single(RequestRenderingContext(request, Host(serverAddress)))
           .transform(() ⇒ renderer).named("renderer")
           .runWith(Sink.head), 1.second)
         val future = byteStringSource.grouped(1000).runWith(Sink.head).map(_.reduceLeft(_ ++ _).utf8String)
