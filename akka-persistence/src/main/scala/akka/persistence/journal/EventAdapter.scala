@@ -44,9 +44,10 @@ abstract class EventAdapter {
    * Convert a event from its journal model to the applications domain model.
    *
    * One event may be adapter into multiple (or none) events which should be delivered to the [[akka.persistence.PersistentActor]].
-   * Use the specialised [[EventSeq.single]] method to emit exactly one event, or [[EventSeq.empty]] in case the adapter
-   * is not handling this event. Multiple [[EventAdapter]] instances are applied in order as defined in configuration
-   * and their emitted event seqs are concatenated and delivered in order to the PersistentActor.
+   * Use the specialised [[akka.persistence.journal.EventSeq#single]] method to emit exactly one event,
+   * or [[akka.persistence.journal.EventSeq#empty]] in case the adapter is not handling this event. Multiple [[EventAdapter]] instances are
+   * applied in order as defined in configuration and their emitted event seqs are concatenated and delivered in order
+   * to the PersistentActor.
    *
    * @param event event to be adapted before delivering to the PersistentActor
    * @param manifest optionally provided manifest (type hint) in case the Adapter has stored one for this event, `""` if none

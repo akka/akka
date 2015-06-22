@@ -158,7 +158,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   private val snapshotPluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
 
   /**
-   * Returns an [[EventAdapters]] object which serves as a per-journal collection of bound event adapters.
+   * Returns an [[akka.persistence.journal.EventAdapters]] object which serves as a per-journal collection of bound event adapters.
    * If no adapters are registered for a given journal the EventAdapters object will simply return the identity
    * adapter for each class, otherwise the most specific adapter matching a given class will be returned.
    */
@@ -183,7 +183,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   /**
    * INTERNAL API
-   * Looks up [[EventAdapters]] by journal plugin's ActorRef.
+   * Looks up [[akka.persistence.journal.EventAdapters]] by journal plugin's ActorRef.
    */
   private[akka] final def adaptersFor(journalPluginActor: ActorRef): EventAdapters = {
     journalPluginExtensionId.get().values collectFirst {
