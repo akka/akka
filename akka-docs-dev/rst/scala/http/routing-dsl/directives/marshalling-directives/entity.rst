@@ -11,7 +11,7 @@ The ``entity`` method will either pass the ``value`` to the inner route or map t
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
    :snippet: entity
 
 Description

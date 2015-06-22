@@ -23,14 +23,14 @@ trait CodingDirectives {
 
   /**
    * Rejects the request with an UnacceptedResponseEncodingRejection
-   * if the given encoding is not accepted for the response.
+   * if the given response encoding is not accepted by the client.
    */
   def responseEncodingAccepted(encoding: HttpEncoding): Directive0 =
     extract(_.request.isEncodingAccepted(encoding))
       .flatMap(if (_) pass else reject(UnacceptedResponseEncodingRejection(Set(encoding))))
 
   /**
-   * Encodes the response with the encoding that is requested by the client with the `Accept-
+   * Encodes the response with the encoding that is requested by the client via the `Accept-
    * Encoding` header. The response encoding is determined by the rules specified in
    * http://tools.ietf.org/html/rfc7231#section-5.3.4.
    *
@@ -41,7 +41,7 @@ trait CodingDirectives {
     encodeResponseWith(NoCoding, Gzip, Deflate)
 
   /**
-   * Encodes the response with the encoding that is requested by the client with the `Accept-
+   * Encodes the response with the encoding that is requested by the client via the `Accept-
    * Encoding` header. The response encoding is determined by the rules specified in
    * http://tools.ietf.org/html/rfc7231#section-5.3.4.
    *

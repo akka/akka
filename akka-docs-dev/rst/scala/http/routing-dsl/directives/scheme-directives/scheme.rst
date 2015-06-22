@@ -8,7 +8,7 @@ Rejects a request if its Uri scheme does not match a given one.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala
    :snippet: scheme
 
 Description

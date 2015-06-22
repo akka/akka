@@ -8,7 +8,7 @@ extractLog
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
    :snippet: extractLog
 
 Description

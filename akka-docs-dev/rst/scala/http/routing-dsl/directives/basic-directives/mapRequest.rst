@@ -8,7 +8,7 @@ Transforms the request before it is handled by the inner route.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
    :snippet: mapRequest
 
 Description

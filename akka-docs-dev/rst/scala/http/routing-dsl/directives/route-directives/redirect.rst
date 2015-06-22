@@ -9,7 +9,7 @@ Completes the request with a redirection response to a given targer URI and of a
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
    :snippet: redirect
 
 
@@ -19,7 +19,7 @@ Description
 ``redirect`` is a convenience helper for completing the request with a redirection response.
 It is equivalent to this snippet relying on the ``complete`` directive:
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
    :snippet: red-impl
 
 

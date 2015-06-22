@@ -9,7 +9,7 @@ inner route.  You can use it to decouple marshaller resolution from request comp
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
    :snippet: completeWith[T]
 
 Description

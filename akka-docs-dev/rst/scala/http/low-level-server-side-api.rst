@@ -132,4 +132,25 @@ connection. An often times more convenient alternative is to explicitly add a ``
 connection when it has been sent out.
 
 
-// TODO: show an example of using the HTTP layer independently with a BidFlow join
+.. _serverSideHTTPS:
+
+Server-Side HTTPS Support
+-------------------------
+
+Akka HTTP supports TLS encryption on the server-side as well as on the :ref:`client-side <clientSideHTTPS>`.
+
+The central vehicle for configuring encryption is the ``HttpsContext``, which is defined as such:
+
+.. includecode2:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
+   :snippet: https-context-impl
+
+On the server-side the ``bind``, and ``bindAndHandleXXX`` methods of the `akka.http.scaladsl.Http`_ extension define an
+optional ``httpsContext`` parameter, which can receive the HTTPS configuration in the form of an ``HttpsContext``
+instance.
+If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
+
+
+Stand-Alone HTTP Layer Usage
+----------------------------
+
+// TODO

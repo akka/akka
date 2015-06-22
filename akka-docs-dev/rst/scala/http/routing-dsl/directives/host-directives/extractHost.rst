@@ -9,7 +9,7 @@ Extracts the hostname part of the Host header value in the request.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala
    :snippet: extractHost
 
 
