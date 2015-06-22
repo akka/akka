@@ -377,8 +377,10 @@ private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings
     try upstream.onInternalError(AbruptTerminationException(self))
     // Will only have an effect if the above call to the interpreter failed to emit a proper failure to the downstream
     // otherwise this will have no effect
-    finally downstream.fail(AbruptTerminationException(self))
-    upstream.cancel()
+    finally {
+      downstream.fail(AbruptTerminationException(self))
+      upstream.cancel()
+    }
   }
 
   override def postRestart(reason: Throwable): Unit = {
