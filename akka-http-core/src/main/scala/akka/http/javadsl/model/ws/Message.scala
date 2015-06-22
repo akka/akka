@@ -84,12 +84,12 @@ object TextMessage {
       def getStrictText: String = throw new IllegalStateException("Cannot get strict text for streamed message.")
       def getStreamedText: Source[String, _] = textStream
 
-      def asScala: sm.ws.TextMessage = sm.ws.TextMessage.Streamed(textStream.asScala)
+      def asScala: sm.ws.TextMessage = sm.ws.TextMessage(textStream.asScala)
     }
 
   def adapt(msg: sm.ws.TextMessage): TextMessage = msg match {
-    case sm.ws.TextMessage.Strict(text)     ⇒ create(text)
-    case sm.ws.TextMessage.Streamed(stream) ⇒ create(stream.asJava)
+    case sm.ws.TextMessage.Strict(text) ⇒ create(text)
+    case tm: sm.ws.TextMessage          ⇒ create(tm.textStream.asJava)
   }
 }
 
@@ -135,11 +135,11 @@ object BinaryMessage {
       def getStrictData: ByteString = throw new IllegalStateException("Cannot get strict data for streamed message.")
       def getStreamedData: Source[ByteString, _] = dataStream
 
-      def asScala: sm.ws.BinaryMessage = sm.ws.BinaryMessage.Streamed(dataStream.asScala)
+      def asScala: sm.ws.BinaryMessage = sm.ws.BinaryMessage(dataStream.asScala)
     }
 
   def adapt(msg: sm.ws.BinaryMessage): BinaryMessage = msg match {
-    case sm.ws.BinaryMessage.Strict(data)     ⇒ create(data)
-    case sm.ws.BinaryMessage.Streamed(stream) ⇒ create(stream.asJava)
+    case sm.ws.BinaryMessage.Strict(data) ⇒ create(data)
+    case bm: sm.ws.BinaryMessage          ⇒ create(bm.dataStream.asJava)
   }
 }

@@ -575,7 +575,7 @@ case class HttpsContext(sslContext: SSLContext,
                         enabledProtocols: Option[immutable.Seq[String]] = None,
                         clientAuth: Option[ClientAuth] = None,
                         sslParameters: Option[SSLParameters] = None)
-//#
+  //#
   extends akka.http.javadsl.HttpsContext {
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
