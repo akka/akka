@@ -229,6 +229,7 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
       commonCloseHandling
 
   def commonCloseHandling: Receive = {
+    case Terminated(_) ⇒ fail(new StreamTcpException("The connection actor has terminated. Stopping now."))
     case Closed ⇒
       tcpInputs.cancel()
       tcpOutputs.complete()
@@ -272,6 +273,7 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
 private[akka] class InboundTcpStreamActor(
   val connection: ActorRef, _halfClose: Boolean, _settings: ActorFlowMaterializerSettings)
   extends TcpStreamActor(_settings, _halfClose) {
+  context.watch(connection)
 
   connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
   tcpInputs.setConnection(connection)
@@ -302,6 +304,7 @@ private[akka] class OutboundTcpStreamActor(processorPromise: Promise[Processor[B
   def waitConnection(exposedProcessor: Processor[ByteString, ByteString]): Receive = {
     case Connected(remoteAddress, localAddress) ⇒
       val connection = sender()
+      context.watch(connection)
       connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
       tcpOutputs.setConnection(connection)
       tcpInputs.setConnection(connection)
