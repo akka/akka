@@ -415,8 +415,8 @@ class TcpSpec extends AkkaSpec with TcpHelper {
       val binding3F = bind.to(Sink(probe3)).run()
       probe3.expectSubscriptionAndError()
 
-      an[BindFailedException] shouldBe thrownBy { Await.result(binding2F, 1.second) }
-      an[BindFailedException] shouldBe thrownBy { Await.result(binding3F, 1.second) }
+      a[BindFailedException] shouldBe thrownBy { Await.result(binding2F, 1.second) }
+      a[BindFailedException] shouldBe thrownBy { Await.result(binding3F, 1.second) }
 
       // Now unbind first
       Await.result(binding1.unbind(), 1.second)
