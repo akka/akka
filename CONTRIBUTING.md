@@ -1,5 +1,7 @@
 # Contributing to Akka
 
+In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
+
 ## Infrastructure
 
 * [Akka Contributor License Agreement](http://www.typesafe.com/contribute/cla)
@@ -11,8 +13,6 @@
 These guidelines are meant to be a living document that should be changed and adapted as needed. We encourage changes that makes it easier to achieve our goals in an efficient way.
 
 These guidelines mainly applies to Typesafe’s “mature” projects - not necessarily to projects of the type ‘collection of scripts’ etc.
-
-In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
 
 ## General Workflow
 
