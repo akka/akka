@@ -9,7 +9,7 @@ Explicitly rejects the request optionally using the given rejection(s).
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
    :snippet: reject
 
 

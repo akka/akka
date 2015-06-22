@@ -8,7 +8,7 @@ Transforms the unmatchedPath field of the request context for inner routes.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
    :snippet: mapUnmatchedPath
 
 Description

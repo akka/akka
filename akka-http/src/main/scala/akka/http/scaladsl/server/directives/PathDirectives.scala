@@ -15,23 +15,22 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   import PathMatcher._
 
   /**
-   * Consumes a leading slash from the unmatched path of the [[akka.http.scaladsl.server.RequestContext]]
-   * before applying the given matcher. The matcher has to match the remaining path completely
-   * or leave only a single trailing slash.
-   * If matched the value extracted by the PathMatcher is extracted on the directive level.
+   * Applies the given [[PathMatcher]] to the remaining unmatched path after consuming a leading slash.
+   * The matcher has to match the remaining path completely.
+   * If matched the value extracted by the [[PathMatcher]] is extracted on the directive level.
    */
   def path[L](pm: PathMatcher[L]): Directive[L] = pathPrefix(pm ~ PathEnd)
 
   /**
-   * Consumes a leading slash from the unmatched path of the [[akka.http.scaladsl.server.RequestContext]]
-   * before applying the given matcher. The matcher has to match a prefix of the remaining path.
+   * Applies the given [[PathMatcher]] to a prefix of the remaining unmatched path after consuming a leading slash.
+   * The matcher has to match a prefix of the remaining path.
    * If matched the value extracted by the PathMatcher is extracted on the directive level.
    */
   def pathPrefix[L](pm: PathMatcher[L]): Directive[L] = rawPathPrefix(Slash ~ pm)
 
   /**
-   * Applies the given matcher directly to the unmatched path of the [[akka.http.scaladsl.server.RequestContext]]
-   * (i.e. without implicitly consuming a leading slash).
+   * Applies the given matcher directly to a prefix of the unmatched path of the
+   * [[RequestContext]] (i.e. without implicitly consuming a leading slash).
    * The matcher has to match a prefix of the remaining path.
    * If matched the value extracted by the PathMatcher is extracted on the directive level.
    */
@@ -44,13 +43,13 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   }
 
   /**
-   * Checks whether the unmatchedPath of the [[akka.http.scaladsl.server.RequestContext]] has a prefix matched by the
+   * Checks whether the unmatchedPath of the [[RequestContext]] has a prefix matched by the
    * given PathMatcher. In analogy to the `pathPrefix` directive a leading slash is implied.
    */
   def pathPrefixTest[L](pm: PathMatcher[L]): Directive[L] = rawPathPrefixTest(Slash ~ pm)
 
   /**
-   * Checks whether the unmatchedPath of the [[akka.http.scaladsl.server.RequestContext]] has a prefix matched by the
+   * Checks whether the unmatchedPath of the [[RequestContext]] has a prefix matched by the
    * given PathMatcher. However, as opposed to the `pathPrefix` directive the matched path is not
    * actually "consumed".
    */
@@ -63,10 +62,9 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   }
 
   /**
-   * Rejects the request if the unmatchedPath of the [[akka.http.scaladsl.server.RequestContext]] does not have a suffix
-   * matched the given PathMatcher. If matched the value extracted by the PathMatcher is extracted
-   * and the matched parts of the path are consumed.
-   * Note that, for efficiency reasons, the given PathMatcher must match the desired suffix in reversed-segment
+   * Applies the given [[PathMatcher]] to a suffix of the remaining unmatchedPath of the [[RequestContext]].
+   * If matched the value extracted by the [[PathMatcher]] is extracted and the matched parts of the path are consumed.
+   * Note that, for efficiency reasons, the given [[PathMatcher]] must match the desired suffix in reversed-segment
    * order, i.e. `pathSuffix("baz" / "bar")` would match `/foo/bar/baz`!
    */
   def pathSuffix[L](pm: PathMatcher[L]): Directive[L] = {
@@ -78,7 +76,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   }
 
   /**
-   * Checks whether the unmatchedPath of the [[akka.http.scaladsl.server.RequestContext]] has a suffix matched by the
+   * Checks whether the unmatchedPath of the [[RequestContext]] has a suffix matched by the
    * given PathMatcher. However, as opposed to the pathSuffix directive the matched path is not
    * actually "consumed".
    * Note that, for efficiency reasons, the given PathMatcher must match the desired suffix in reversed-segment
@@ -93,7 +91,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   }
 
   /**
-   * Rejects the request if the unmatchedPath of the [[akka.http.scaladsl.server.RequestContext]] is non-empty,
+   * Rejects the request if the unmatchedPath of the [[RequestContext]] is non-empty,
    * or said differently: only passes on the request to its inner route if the request path
    * has been matched completely.
    */

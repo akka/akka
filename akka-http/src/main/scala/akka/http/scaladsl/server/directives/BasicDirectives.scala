@@ -115,12 +115,12 @@ trait BasicDirectives {
     mapRequestContext(_ mapUnmatchedPath f)
 
   /**
-   * Extracts the unmatched path from the RequestContext.
+   * Extracts the yet unmatched path from the RequestContext.
    */
   def extractUnmatchedPath: Directive1[Uri.Path] = BasicDirectives._extractUnmatchedPath
 
   /**
-   * Extracts the complete request.
+   * Extracts the current [[HttpRequest]] instance.
    */
   def extractRequest: Directive1[HttpRequest] = BasicDirectives._extractRequest
 

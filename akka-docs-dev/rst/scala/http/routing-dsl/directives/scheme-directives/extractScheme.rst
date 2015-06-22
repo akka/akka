@@ -8,7 +8,7 @@ Extracts the value of the request Uri scheme.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala
    :snippet: extractScheme
 
 Description

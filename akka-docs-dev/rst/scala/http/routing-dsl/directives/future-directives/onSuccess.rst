@@ -9,7 +9,7 @@ extracts its result as a value of type ``T`` and passes it to the inner route.
 Signature
 ---------
 
-.. includecode2:: /../../akka-http-scala/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala
+.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala
    :snippet: onSuccess
 
 Description

@@ -44,7 +44,7 @@ as required, optional, or repeated, or to filter requests where a form field has
     extract multiple occurrences of field "distance" as ``Iterable[String]``
 ``"distance".as[Int].*``
     extract multiple occurrences of field "distance" as ``Iterable[Int]``, you need a matching implicit ``Deserializer`` in scope for that to work
-    (see also :ref:`unmarshalling`)
+    (see also :ref:`http-unmarshalling-scala`)
 ``"distance".as(deserializer).*``
     extract multiple occurrences of field "distance" with an explicit ``Deserializer``
 
