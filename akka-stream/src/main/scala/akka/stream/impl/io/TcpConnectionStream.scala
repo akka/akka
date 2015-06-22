@@ -10,7 +10,7 @@ import scala.concurrent.Promise
 import akka.actor._
 import akka.util.ByteString
 import akka.io.Tcp._
-import akka.stream.{ StreamSubscriptionTimeoutSettings, ActorFlowMaterializerSettings, StreamTcpException }
+import akka.stream.{ AbruptTerminationException, StreamSubscriptionTimeoutSettings, ActorFlowMaterializerSettings, StreamTcpException }
 import org.reactivestreams.{ Publisher, Processor }
 import akka.stream.impl._
 
@@ -279,10 +279,11 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
 
   override def postStop(): Unit = {
     // Close if it has not yet been done
+    val abruptTermination = AbruptTerminationException(self)
     tcpInputs.cancel()
-    tcpOutputs.complete()
+    tcpOutputs.error(abruptTermination)
     primaryInputs.cancel()
-    primaryOutputs.complete()
+    primaryOutputs.error(abruptTermination)
     subscriptionTimer.foreach(_.cancel())
     super.postStop() // Remember, we have a Stash
   }

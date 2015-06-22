@@ -3,34 +3,21 @@
  */
 package akka.stream.io
 
-import akka.actor.{ ActorSystem, Kill }
-import akka.stream.scaladsl.Tcp.OutgoingConnection
-
-import scala.collection.immutable
-import scala.concurrent.{ Future, Await }
+import akka.actor.{ActorSystem, Kill}
 import akka.io.Tcp._
-import akka.stream.{ BindFailedException, ActorFlowMaterializer, ActorFlowMaterializerSettings, StreamTcpException }
 import akka.stream.scaladsl.Tcp.IncomingConnection
-import akka.stream.scaladsl.{ Flow, _ }
+import akka.stream.scaladsl.{Flow, _}
 import akka.stream.testkit.TestUtils.temporaryServerAddress
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.util.{ Helpers, ByteString }
+import akka.stream.{ActorFlowMaterializer, BindFailedException, StreamTcpException}
+import akka.util.{ByteString, Helpers}
 
 import scala.collection.immutable
-import akka.stream.{ ActorFlowMaterializer, StreamTcpException, BindFailedException }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.util.ByteString
-import akka.stream.scaladsl.Flow
-import akka.stream.testkit._
-import akka.stream.testkit.Utils._
-import akka.stream.scaladsl._
-import akka.stream.testkit.TestUtils.temporaryServerAddress
 
-class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-enabled=auto\nakka.stream.subscription-timeout.timeout = 3s") with TcpHelper {
-  import akka.stream.io.TcpHelper._
+class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-enabled=auto\nakka.stream.materializer.subscription-timeout.timeout = 3s") with TcpHelper {
   var demand = 0L
 
   "Outgoing TCP stream" must {

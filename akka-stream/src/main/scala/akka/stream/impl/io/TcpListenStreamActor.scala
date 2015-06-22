@@ -160,6 +160,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
 
   override def postStop(): Unit = {
     unboundPromise.trySuccess(())
+    primaryOutputs.complete()
     super.postStop()
   }
 

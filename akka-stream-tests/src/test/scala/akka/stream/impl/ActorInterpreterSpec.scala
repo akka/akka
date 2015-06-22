@@ -150,6 +150,13 @@ class ActorInterpreterSpec extends AkkaSpec {
       }
     }
 
+    "handle failed stage factories" in {
+      a[RuntimeException] should be thrownBy
+        Await.result(
+          Source.empty[Int].transform(() ⇒ sys.error("test error")).runWith(Sink.head),
+          3.seconds)
+    }
+
     def largeDemand(extra: Int): Unit = {
       val N = 3 * system.settings.config.getInt("akka.stream.materializer.output-burst-limit")
       val large = new PushPullStage[Int, Int] {
