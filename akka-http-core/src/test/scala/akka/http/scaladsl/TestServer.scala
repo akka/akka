@@ -69,8 +69,8 @@ object TestServer extends App {
   def greeterWebsocketService: Flow[Message, Message, Unit] =
     Flow[Message]
       .collect {
-        case TextMessage.Strict(name)         ⇒ TextMessage.Strict(s"Hello '$name'")
-        case TextMessage.Streamed(nameStream) ⇒ TextMessage.Streamed(Source.single("Hello ") ++ nameStream mapMaterializedValue (_ ⇒ ()))
+        case TextMessage.Strict(name) ⇒ TextMessage(s"Hello '$name'")
+        case tm: TextMessage          ⇒ TextMessage(Source.single("Hello ") ++ tm.textStream)
         // ignore binary messages
       }
 }

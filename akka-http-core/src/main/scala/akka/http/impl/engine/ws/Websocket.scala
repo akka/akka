@@ -52,7 +52,7 @@ private[http] object Websocket {
           case (TextMessagePart(text, true), remaining) ⇒
             TextMessage.Strict(text)
           case (first @ TextMessagePart(text, false), remaining) ⇒
-            TextMessage.Streamed(
+            TextMessage(
               (Source.single(first) ++ remaining)
                 .collect {
                   case t: TextMessagePart if t.data.nonEmpty ⇒ t.data
@@ -60,7 +60,7 @@ private[http] object Websocket {
           case (BinaryMessagePart(data, true), remaining) ⇒
             BinaryMessage.Strict(data)
           case (first @ BinaryMessagePart(data, false), remaining) ⇒
-            BinaryMessage.Streamed(
+            BinaryMessage(
               (Source.single(first) ++ remaining)
                 .collect {
                   case t: BinaryMessagePart if t.data.nonEmpty ⇒ t.data
