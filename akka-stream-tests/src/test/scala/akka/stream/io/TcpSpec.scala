@@ -3,17 +3,18 @@
  */
 package akka.stream.io
 
+import akka.actor.{ ActorSystem, Kill }
 import akka.stream.scaladsl.Tcp.OutgoingConnection
 
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
 import akka.io.Tcp._
 
-import akka.stream.BindFailedException
+import akka.stream.{ ActorFlowMaterializer, StreamTcpException, BindFailedException }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.util.ByteString
+import akka.util.{ Helpers, ByteString }
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -380,6 +381,25 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
       binding.map(_.unbind())
     }
 
+    "handle when connection actor terminates unexpectedly" in {
+      val system2 = ActorSystem()
+      import system2.dispatcher
+      val mat2 = ActorFlowMaterializer.create(system2)
+
+      val serverAddress = temporaryServerAddress()
+      val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostName, serverAddress.getPort)(mat2)
+
+      val result = Source.lazyEmpty[ByteString].via(Tcp(system2).outgoingConnection(serverAddress)).runFold(0)(_ + _.size)(mat2)
+
+      // Getting rid of existing connection actors by using a blunt instrument
+      system2.actorSelection(akka.io.Tcp(system2).getManager.path / "selectors" / "$a" / "*") ! Kill
+
+      a[StreamTcpException] should be thrownBy
+        Await.result(result, 3.seconds)
+
+      binding.map(_.unbind()).foreach(_ ⇒ system2.shutdown())
+    }
+
   }
 
   "TCP listen stream" must {
@@ -438,6 +458,10 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
     }
 
     "bind and unbind correctly" in {
+      if (Helpers.isWindows) {
+        info("On Windows unbinding is not immediate")
+        pending
+      }
       val address = temporaryServerAddress()
       val probe1 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
       val bind = Tcp(system).bind(address.getHostName, address.getPort) // TODO getHostString in Java7
