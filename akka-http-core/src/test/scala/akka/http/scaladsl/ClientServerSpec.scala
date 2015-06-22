@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.ActorSystem
 import akka.testkit.EventFilter
-import akka.stream.{ ActorFlowMaterializer, BindFailedException }
+import akka.stream.{ StreamTcpException, ActorFlowMaterializer, BindFailedException }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.http.scaladsl.model.HttpEntity._
@@ -31,7 +31,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR
     akka.stdout-loglevel = ERROR
-    akka.log-dead-letters = OFF""")
+    akka.log-dead-letters = OFF
+    akka.io.tcp.windows-connection-abort-workaround-enabled = auto
+  """)
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
   implicit val materializer = ActorFlowMaterializer()
@@ -131,30 +133,40 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
 
     "log materialization errors in `bindAndHandle`" which {
-      "are triggered in `transform`" in {
+      val testConf2: Config =
+        ConfigFactory.parseString("akka.stream.materializer.subscription-timeout.timeout = 1 s")
+          .withFallback(testConf)
+      val system2 = ActorSystem(getClass.getSimpleName, testConf2)
+      import system2.dispatcher
+      val materializer2 = ActorFlowMaterializer.create(system2)
+
+      "are triggered in `transform`" in Utils.assertAllStagesStopped {
         val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].transform[HttpResponse](() ⇒ sys.error("BOOM"))
-        val binding = Http().bindAndHandle(flow, hostname, port)
+        val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
         val b1 = Await.result(binding, 3.seconds)
 
-        EventFilter[RuntimeException](message = "BOOM", occurrences = 1) intercept {
-          val (_, responseFuture) = Http().outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)
-          Await.result(responseFuture.failed, 1.second) shouldBe a[NoSuchElementException]
-        }
+        EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
+          val (_, responseFuture) =
+            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
+          Await.result(responseFuture.failed, 5.second) shouldBe a[StreamTcpException]
+        }(system2)
         Await.result(b1.unbind(), 1.second)
-      }
-      "are triggered in `mapMaterialized`" in {
+      }(materializer2)
+
+      "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
         val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].map(_ ⇒ HttpResponse()).mapMaterializedValue(_ ⇒ sys.error("BOOM"))
-        val binding = Http().bindAndHandle(flow, hostname, port)
-        val b1 = Await.result(binding, 3.seconds)
+        val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
+        val b1 = Await.result(binding, 1.seconds)
 
-        EventFilter[RuntimeException](message = "BOOM", occurrences = 1) intercept {
-          val (_, responseFuture) = Http().outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)
-          Await.result(responseFuture.failed, 1.second) shouldBe a[NoSuchElementException]
-        }
+        EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
+          val (_, responseFuture) =
+            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
+          Await.result(responseFuture.failed, 5.second) shouldBe a[StreamTcpException]
+        }(system2)
         Await.result(b1.unbind(), 1.second)
-      }
+      }(materializer2)
     }
 
     "properly complete a simple request/response cycle" in Utils.assertAllStagesStopped {
