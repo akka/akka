@@ -19,11 +19,11 @@ Testing a custom sink can be as simple as attaching a source that emits elements
 
 .. includecode:: code/docs/stream/StreamTestKitDocSpec.scala#strict-collection
 
-The same strategy can be applied for sources as well. In the next example we have a source that produces an infinite stream of elements. Such source can be tested by asserting that first arbitrary number of elements hold some condition. Here :code:`grouped` combinator and :code:`Sink.head` are very useful.
+The same strategy can be applied for sources as well. In the next example we have a source that produces an infinite stream of elements. Such source can be tested by asserting that first arbitrary number of elements hold some condition. Here the :code:`grouped` combinator and :code:`Sink.head` are very useful.
 
 .. includecode:: code/docs/stream/StreamTestKitDocSpec.scala#grouped-infinite
 
-When testing a flow we need to attach a source and a sink. As both stream ends are under our control, we can choose sources that tests various edge cases of the flow and sinks that eases assertions.
+When testing a flow we need to attach a source and a sink. As both stream ends are under our control, we can choose sources that tests various edge cases of the flow and sinks that ease assertions.
 
 .. includecode:: code/docs/stream/StreamTestKitDocSpec.scala#folded-stream
 

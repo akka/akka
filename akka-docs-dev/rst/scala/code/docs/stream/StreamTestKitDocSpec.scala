@@ -23,8 +23,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val sinkUnderTest = Flow[Int].map(_ * 2).toMat(Sink.fold(0)(_ + _))(Keep.right)
 
     val future = Source(1 to 4).runWith(sinkUnderTest)
-    Await.ready(future, 100.millis)
-    val Success(result) = future.value.get
+    val result = Await.result(future, 100.millis)
     assert(result == 20)
     //#strict-collection
   }
@@ -34,8 +33,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val sourceUnderTest = Source.repeat(1).map(_ * 2)
 
     val future = sourceUnderTest.grouped(10).runWith(Sink.head)
-    Await.ready(future, 100.millis)
-    val Success(result) = future.value.get
+    val result = Await.result(future, 100.millis)
     assert(result == Seq.fill(10)(2))
     //#grouped-infinite
   }
@@ -45,8 +43,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val flowUnderTest = Flow[Int].takeWhile(_ < 5)
 
     val future = Source(1 to 10).via(flowUnderTest).runWith(Sink.fold(Seq.empty[Int])(_ :+ _))
-    Await.ready(future, 100.millis)
-    val Success(result) = future.value.get
+    val result = Await.result(future, 100.millis)
     assert(result == (1 to 4))
     //#folded-stream
   }
@@ -64,14 +61,15 @@ class StreamTestKitDocSpec extends AkkaSpec {
 
   "sink actor ref" in {
     //#sink-actorref
-    val sourceUnderTest = Source(0.seconds, 200.millis, ())
+    case object Tick
+    val sourceUnderTest = Source(0.seconds, 200.millis, Tick)
 
     val probe = TestProbe()
     val cancellable = sourceUnderTest.to(Sink.actorRef(probe.ref, "completed")).run()
 
-    probe.expectMsg(1.second, ())
+    probe.expectMsg(1.second, Tick)
     probe.expectNoMsg(100.millis)
-    probe.expectMsg(200.millis, ())
+    probe.expectMsg(200.millis, Tick)
     cancellable.cancel()
     probe.expectMsg(200.millis, "completed")
     //#sink-actorref
@@ -89,8 +87,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     ref ! 3
     ref ! akka.actor.Status.Success("done")
 
-    Await.ready(future, 100.millis)
-    val Success(result) = future.value.get
+    val result = Await.result(future, 100.millis)
     assert(result == "123")
     //#source-actorref
   }

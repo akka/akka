@@ -54,8 +54,7 @@ public class StreamTestKitDocTest {
 
     final Future<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4))
       .runWith(sinkUnderTest, mat);
-    Await.ready(future, Duration.create(100, TimeUnit.MILLISECONDS));
-    final Integer result = future.value().get().get();
+    final Integer result = Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
     assert(result == 20);
     //#strict-collection
   }
@@ -69,8 +68,8 @@ public class StreamTestKitDocTest {
     final Future<List<Integer>> future = sourceUnderTest
       .grouped(10)
       .runWith(Sink.head(), mat);
-    Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
-    final List<Integer> result = future.value().get().get();
+    final List<Integer> result =
+      Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
     assertEquals(result, Collections.nCopies(10, 2));
     //#grouped-infinite
   }
@@ -83,8 +82,7 @@ public class StreamTestKitDocTest {
 
     final Future<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
       .via(flowUnderTest).runWith(Sink.fold(0, (agg, next) -> agg + next), mat);
-    Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
-    final Integer result = future.value().get().get();
+    final Integer result = Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
     assert(result == 10);
     //#folded-stream
   }
@@ -147,8 +145,7 @@ public class StreamTestKitDocTest {
     ref.tell(3, ActorRef.noSender());
     ref.tell(new akka.actor.Status.Success("done"), ActorRef.noSender());
 
-    Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
-    final String result = future.value().get().get();
+    final String result = Await.result(future, Duration.create(100, TimeUnit.MILLISECONDS));
     assertEquals(result, "123");
     //#source-actorref
   }
