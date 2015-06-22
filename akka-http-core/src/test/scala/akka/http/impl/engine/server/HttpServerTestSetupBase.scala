@@ -29,13 +29,13 @@ abstract class HttpServerTestSetupBase {
   implicit def materializer: FlowMaterializer
 
   val requests = TestSubscriber.manualProbe[HttpRequest]
-  val responses = TestPublisher.manualProbe[HttpResponse]
+  val responses = TestPublisher.manualProbe[HttpResponse]()
 
   def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
   def remoteAddress: Option[InetSocketAddress] = None
 
   val (netIn, netOut) = {
-    val netIn = TestPublisher.manualProbe[ByteString]
+    val netIn = TestPublisher.manualProbe[ByteString]()
     val netOut = TestSubscriber.manualProbe[ByteString]
 
     FlowGraph.closed(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒

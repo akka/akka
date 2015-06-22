@@ -258,8 +258,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
 
     "build with implicits and variance" in {
       FlowGraph.closed() { implicit b ⇒
-        def appleSource = b.add(Source(TestPublisher.manualProbe[Apple]))
-        def fruitSource = b.add(Source(TestPublisher.manualProbe[Fruit]))
+        def appleSource = b.add(Source(TestPublisher.manualProbe[Apple]()))
+        def fruitSource = b.add(Source(TestPublisher.manualProbe[Fruit]()))
         val outA = b add Sink(TestSubscriber.manualProbe[Fruit]())
         val outB = b add Sink(TestSubscriber.manualProbe[Fruit]())
         val merge = b add Merge[Fruit](11)

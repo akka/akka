@@ -17,7 +17,7 @@ class ActorInterpreterLifecycleSpec extends AkkaSpec with InterpreterLifecycleSp
   implicit val mat = ActorFlowMaterializer()
 
   class Setup(ops: List[Stage[_, _]] = List(fusing.Map({ x: Any ⇒ x }, stoppingDecider))) {
-    val up = TestPublisher.manualProbe[Int]
+    val up = TestPublisher.manualProbe[Int]()
     val down = TestSubscriber.manualProbe[Int]
     private val props = ActorInterpreter.props(mat.settings, ops, mat).withDispatcher("akka.test.stream-dispatcher")
     val actor = system.actorOf(props)

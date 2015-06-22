@@ -13,7 +13,8 @@
 .*.swp
 .DS_Store
 .cache
-.cache
+.cache-tests
+.cache-main
 .classpath
 .codefellow
 .ensime*
