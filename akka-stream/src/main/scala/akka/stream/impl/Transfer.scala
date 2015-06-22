@@ -161,6 +161,11 @@ private[akka] trait Pump {
     transferState = WaitingForUpstreamSubscription(waitForUpstream, andThen)
   }
 
+  final def waitForUpstreams(waitForUpstream: Int): Unit = {
+    require(waitForUpstream >= 1, s"waitForUpstream must be >= 1 (was $waitForUpstream)")
+    transferState = WaitingForUpstreamSubscription(waitForUpstream, TransferPhase(transferState)(currentAction))
+  }
+
   def gotUpstreamSubscription(): Unit = {
     transferState match {
       case WaitingForUpstreamSubscription(1, andThen) ⇒

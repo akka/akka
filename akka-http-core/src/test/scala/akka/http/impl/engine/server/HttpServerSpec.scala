@@ -406,7 +406,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |
              |""".stripMarginWithNewline("\r\n"))
-      val data = TestPublisher.manualProbe[ByteString]
+      val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responsesSub.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain`, 4, Source(data))))
@@ -429,7 +429,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |
              |""".stripMarginWithNewline("\r\n"))
-      val data = TestPublisher.manualProbe[ByteString]
+      val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responsesSub.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain`, Source(data))))
@@ -453,7 +453,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |
              |""".stripMarginWithNewline("\r\n"))
-      val data = TestPublisher.manualProbe[ChunkStreamPart]
+      val data = TestPublisher.manualProbe[ChunkStreamPart]()
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responsesSub.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain`, Source(data))))
@@ -477,7 +477,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Connection: close
              |
              |""".stripMarginWithNewline("\r\n"))
-      val data = TestPublisher.manualProbe[ByteString]
+      val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responsesSub.sendNext(HttpResponse(entity = CloseDelimited(ContentTypes.`text/plain`, Source(data))))
