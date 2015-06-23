@@ -35,26 +35,6 @@ object Framing {
       .named("delimiterFraming")
 
   /**
-   * A convenience wrapper on top of [[Framing#delimiter]] using ''String'' as the output and separator sequence types.
-   * Returns a Flow that decodes an unstructured input stream of byte chunks, decoding them to Strings using a separator
-   * String as end-of-line marker.
-   *
-   * This decoder stage treats decoded frames as simple byte sequences, converting to UTF-8 only after the frame
-   * boundary has been found. This means that this is not a fully UTF-8 compliant line parser.
-   *
-   * @param delimiter String to be used as a delimiter. Be aware that not all UTF-8 strings are safe to use as a
-   *                  delimiter when the input bytes are UTF-8 encoded.
-   * @param allowTruncation If turned on, then when the last string being decoded contains no valid delimiter this Flow
-   *                        fails the stream instead of returning a truncated string.
-   * @param maximumLineBytes
-   *                  The maximum allowed length for decoded strings in bytes (not in characters).
-   * @return
-   */
-  def lines(delimiter: String, maximumLineBytes: Int, allowTruncation: Boolean = true): Flow[ByteString, String, Unit] =
-    Framing.delimiter(ByteString(delimiter), maximumLineBytes, allowTruncation).map(_.utf8String)
-      .named("lineFraming")
-
-  /**
    * Creates a Flow that decodes an incoming stream of unstructured byte chunks into a stream of frames, assuming that
    * incoming frames have a field that encodes their length.
    *
