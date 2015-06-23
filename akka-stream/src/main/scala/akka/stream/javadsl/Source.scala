@@ -254,7 +254,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   /**
    * Transform this [[Source]] by appending the given processing stages.
    */
-  def via[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+  def viaMat[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
     new Source(delegate.viaMat(flow)(combinerToScala(combine)))
 
   /**
@@ -266,7 +266,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   /**
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def to[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
+  def toMat[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
     new RunnableFlowAdapter(delegate.toMat(sink)(combinerToScala(combine)))
 
   /**
@@ -292,8 +292,16 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * emitted by that source is emitted after the last element of this
    * source.
    */
-  def concat[Out2 >: Out, M2](second: Graph[SourceShape[Out2], M2]): Source[Out2, (Mat, M2)] =
+  def concat[Out2 >: Out, M2](second: Graph[SourceShape[Out2], M2]): javadsl.Source[Out2, (Mat, M2)] =
     Source.concat(this, second)
+
+  /**
+   * Concatenates a second source so that the first element
+   * emitted by that source is emitted after the last element of this
+   * source.
+   */
+  def concatMat[M, M2](second: Graph[SourceShape[Out @uncheckedVariance], M], combine: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+    new Source(delegate.concatMat(second)(combinerToScala(combine)))
 
   /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
