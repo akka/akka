@@ -24,7 +24,8 @@ class DslConsistencySpec extends WordSpec with Matchers {
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
-      Set("create", "apply", "ops", "appendJava", "andThen", "withAttributes") ++
+      Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
+      Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
       Set("asScala", "asJava")
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
@@ -58,7 +59,6 @@ class DslConsistencySpec extends WordSpec with Matchers {
         case (element, classes) ⇒
 
           s"provide same $element transforming operators" in {
-            pending
             val allOps =
               (for {
                 c ← classes
@@ -74,7 +74,6 @@ class DslConsistencySpec extends WordSpec with Matchers {
           }
 
           s"provide same $element materializing operators" in {
-            pending
             val materializingOps =
               (for {
                 c ← classes

@@ -36,7 +36,7 @@ import static docs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
 public class TwitterStreamQuickstartDocTest {
 
   static ActorSystem system;
-  
+
 
   @BeforeClass
   public static void setup() {
@@ -48,20 +48,20 @@ public class TwitterStreamQuickstartDocTest {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
   }
-  
+
   static abstract class Model {
     //#model
     public static class Author {
       public final String handle;
-      
+
       public Author(String handle) {
         this.handle = handle;
       }
-    
-      // ... 
-      
+
+      // ...
+
       //#model
-      
+
       @Override
       public String toString() {
         return "Author(" + handle + ")";
@@ -92,19 +92,19 @@ public class TwitterStreamQuickstartDocTest {
       //#model
     }
     //#model
-    
+
     //#model
-    
+
     public static class Hashtag {
       public final String name;
-      
+
       public Hashtag(String name) {
         this.name = name;
       }
 
       // ...
       //#model
-      
+
       @Override
       public int hashCode() {
         return name.hashCode();
@@ -112,7 +112,7 @@ public class TwitterStreamQuickstartDocTest {
 
       @Override
       public boolean equals(Object obj) {
-        if (this == obj) 
+        if (this == obj)
           return true;
         if (obj == null)
           return false;
@@ -121,7 +121,7 @@ public class TwitterStreamQuickstartDocTest {
         Hashtag other = (Hashtag) obj;
         return name.equals(other.name);
       }
-      
+
       @Override
       public String toString() {
         return "Hashtag(" + name + ")";
@@ -129,72 +129,72 @@ public class TwitterStreamQuickstartDocTest {
       //#model
     }
     //#model
-    
+
     //#model
-    
+
     public static class Tweet {
       public final Author author;
       public final long timestamp;
       public final String body;
-      
+
       public Tweet(Author author, long timestamp, String body) {
         this.author = author;
         this.timestamp = timestamp;
         this.body = body;
       }
-      
+
       public Set<Hashtag> hashtags() {
         return Arrays.asList(body.split(" ")).stream()
           .filter(a -> a.startsWith("#"))
           .map(a -> new Hashtag(a))
           .collect(Collectors.toSet());
       }
-      
+
       // ...
       //#model
-      
+
       @Override
       public String toString() {
         return "Tweet(" + author + "," + timestamp + "," + body + ")";
       }
-          
+
       //#model
     }
     //#model
-    
+
     //#model
-    
-    public static final Hashtag AKKA = new Hashtag("#akka"); 
+
+    public static final Hashtag AKKA = new Hashtag("#akka");
     //#model
-    
+
     public static final Source<Tweet, BoxedUnit> tweets = Source.from(
       Arrays.asList(new Tweet[] {
-        new Tweet(new Author("rolandkuhn"), System.currentTimeMillis(), "#akka rocks!"), 
-        new Tweet(new Author("patriknw"), System.currentTimeMillis(), "#akka !"), 
-        new Tweet(new Author("bantonsson"), System.currentTimeMillis(), "#akka !"), 
-        new Tweet(new Author("drewhk"), System.currentTimeMillis(), "#akka !"), 
-        new Tweet(new Author("ktosopl"), System.currentTimeMillis(), "#akka on the rocks!"), 
-        new Tweet(new Author("mmartynas"), System.currentTimeMillis(), "wow #akka !"), 
-        new Tweet(new Author("akkateam"), System.currentTimeMillis(), "#akka rocks!"), 
-        new Tweet(new Author("bananaman"), System.currentTimeMillis(), "#bananas rock!"), 
-        new Tweet(new Author("appleman"), System.currentTimeMillis(), "#apples rock!"), 
+        new Tweet(new Author("rolandkuhn"), System.currentTimeMillis(), "#akka rocks!"),
+        new Tweet(new Author("patriknw"), System.currentTimeMillis(), "#akka !"),
+        new Tweet(new Author("bantonsson"), System.currentTimeMillis(), "#akka !"),
+        new Tweet(new Author("drewhk"), System.currentTimeMillis(), "#akka !"),
+        new Tweet(new Author("ktosopl"), System.currentTimeMillis(), "#akka on the rocks!"),
+        new Tweet(new Author("mmartynas"), System.currentTimeMillis(), "wow #akka !"),
+        new Tweet(new Author("akkateam"), System.currentTimeMillis(), "#akka rocks!"),
+        new Tweet(new Author("bananaman"), System.currentTimeMillis(), "#bananas rock!"),
+        new Tweet(new Author("appleman"), System.currentTimeMillis(), "#apples rock!"),
         new Tweet(new Author("drama"), System.currentTimeMillis(), "we compared #apples to #oranges!")
       }));
   }
-  
+
   static abstract class Example0 {
     //#tweet-source
-    Source<Tweet, BoxedUnit> tweets; 
+    Source<Tweet, BoxedUnit> tweets;
     //#tweet-source
   }
-  
+
   static abstract class Example1 {
     //#materializer-setup
     final ActorSystem system = ActorSystem.create("reactive-tweets");
     final FlowMaterializer mat = ActorFlowMaterializer.create(system);
     //#materializer-setup
   }
-  
+
   static class Example2 {
     public void run(final FlowMaterializer mat) throws TimeoutException, InterruptedException {
       //#backpressure-by-readline
@@ -202,15 +202,15 @@ public class TwitterStreamQuickstartDocTest {
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
           .map(i -> { System.out.println("map => " + i); return i; })
           .runForeach(i -> System.console().readLine("Element = %s continue reading? [press enter]\n", i), mat);
-  
+
       Await.ready(completion, FiniteDuration.create(1, TimeUnit.MINUTES));
       //#backpressure-by-readline
     }
   }
-  
-  
+
+
   final FlowMaterializer mat = ActorFlowMaterializer.create(system);
-  
+
   @Test
   public void demonstrateFilterAndMap() {
     //#authors-filter-map
@@ -222,7 +222,7 @@ public class TwitterStreamQuickstartDocTest {
 
     new Object() {
       //#authors-collect
-      JavaPartialFunction<Tweet, Author> collectFunction = 
+      JavaPartialFunction<Tweet, Author> collectFunction =
         new JavaPartialFunction<Tweet, Author>() {
           public Author apply(Tweet t, boolean isCheck) {
             if (t.hashtags().contains(AKKA)) {
@@ -233,7 +233,7 @@ public class TwitterStreamQuickstartDocTest {
             }
           }
         };
-      
+
       final Source<Author, BoxedUnit> authors =
         tweets.collect(collectFunction);
       //#authors-collect
@@ -247,22 +247,22 @@ public class TwitterStreamQuickstartDocTest {
     authors.runForeach(a -> System.out.println(a), mat);
     //#authors-foreach-println
   }
-  
+
   @Test
   public void demonstrateMapConcat() {
     //#hashtags-mapConcat
-    final Source<Hashtag, BoxedUnit> hashtags = 
+    final Source<Hashtag, BoxedUnit> hashtags =
       tweets.mapConcat(t -> new ArrayList<Hashtag>(t.hashtags()));
     //#hashtags-mapConcat
   }
-  
+
   static abstract class HiddenDefinitions {
     //#flow-graph-broadcast
-    Sink<Author, BoxedUnit> writeAuthors; 
+    Sink<Author, BoxedUnit> writeAuthors;
     Sink<Hashtag, BoxedUnit> writeHashtags;
     //#flow-graph-broadcast
   }
-  
+
   @Test
   public void demonstrateBroadcast() {
     final Sink<Author, Future<BoxedUnit>> writeAuthors = Sink.ignore();
@@ -274,21 +274,21 @@ public class TwitterStreamQuickstartDocTest {
       final Flow<Tweet, Author, BoxedUnit> toAuthor = Flow.of(Tweet.class).map(t -> t.author);
       final Flow<Tweet, Hashtag, BoxedUnit> toTags =
           Flow.of(Tweet.class).mapConcat(t -> new ArrayList<Hashtag>(t.hashtags()));
-      
+
       b.from(tweets).via(bcast).via(toAuthor).to(writeAuthors);
                   b.from(bcast).via(toTags).to(writeHashtags);
     }).run(mat);
     //#flow-graph-broadcast
   }
-  
+
   long slowComputation(Tweet t) {
     try {
       // act as if performing some heavy computation
       Thread.sleep(500);
-    } catch (InterruptedException e) {} 
+    } catch (InterruptedException e) {}
     return 42;
   }
-  
+
   @Test
   public void demonstrateSlowProcessing() {
     //#tweets-slow-consumption-dropHead
@@ -298,15 +298,15 @@ public class TwitterStreamQuickstartDocTest {
       .runWith(Sink.ignore(), mat);
     //#tweets-slow-consumption-dropHead
   }
-  
+
   @Test
   public void demonstrateCountOnFiniteStream() {
     //#tweets-fold-count
-    final Sink<Integer, Future<Integer>> sumSink = 
+    final Sink<Integer, Future<Integer>> sumSink =
       Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
 
     final RunnableFlow<Future<Integer>> counter =
-        tweets.map(t -> 1).to(sumSink, Keep.right());
+        tweets.map(t -> 1).toMat(sumSink, Keep.right());
 
     final Future<Integer> sum = counter.run(mat);
 
@@ -316,26 +316,26 @@ public class TwitterStreamQuickstartDocTest {
       }
     }, system.dispatcher());
     //#tweets-fold-count
-    
+
     new Object() {
       //#tweets-fold-count-oneline
       final Future<Integer> sum = tweets.map(t -> 1).runWith(sumSink, mat);
       //#tweets-fold-count-oneline
     };
   }
-  
+
   @Test
   public void demonstrateMaterializeMultipleTimes() {
     final Source<Tweet, BoxedUnit> tweetsInMinuteFromNow = tweets; // not really in second, just acting as if
 
     //#tweets-runnable-flow-materialized-twice
-    final Sink<Integer, Future<Integer>> sumSink = 
+    final Sink<Integer, Future<Integer>> sumSink =
       Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
     final RunnableFlow<Future<Integer>> counterRunnableFlow =
       tweetsInMinuteFromNow
         .filter(t -> t.hashtags().contains(AKKA))
         .map(t -> 1)
-        .to(sumSink, Keep.right());
+        .toMat(sumSink, Keep.right());
 
     // materialize the stream once in the morning
     final Future<Integer> morningTweetsCount = counterRunnableFlow.run(mat);
