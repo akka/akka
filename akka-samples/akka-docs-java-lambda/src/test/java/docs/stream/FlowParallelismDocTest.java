@@ -13,6 +13,7 @@ import org.junit.Test;
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
+import akka.japi.*;
 import akka.testkit.JavaTestKit;
 
 public class FlowParallelismDocTest {
