@@ -266,7 +266,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   /**
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def toMat[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
+  def toMat[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableGraph[M2] =
     new RunnableGraphAdapter(delegate.toMat(sink)(combinerToScala(combine)))
 
   /**
