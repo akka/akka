@@ -5,9 +5,7 @@
 package akka.stream;
 
 import akka.actor.ActorSystem;
-import akka.event.Logging;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
-import akka.stream.OperationAttributes;
 
 public abstract class StreamTest {
     final protected ActorSystem system;

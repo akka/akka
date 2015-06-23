@@ -19,8 +19,8 @@ class StreamLayoutSpec extends AkkaSpec {
 
     override def carbonCopy: Module = ???
 
-    override def attributes: OperationAttributes = OperationAttributes.none
-    override def withAttributes(attributes: OperationAttributes): Module = this
+    override def attributes: Attributes = Attributes.none
+    override def withAttributes(attributes: Attributes): Module = this
   }
 
   def testStage(): Module = testAtomic(1, 1)
@@ -174,7 +174,7 @@ class StreamLayoutSpec extends AkkaSpec {
     var publishers = Vector.empty[TestPublisher]
     var subscribers = Vector.empty[TestSubscriber]
 
-    override protected def materializeAtomic(atomic: Module, effectiveAttributes: OperationAttributes): Unit = {
+    override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes): Unit = {
       for (inPort ← atomic.inPorts) {
         val subscriber = TestSubscriber(atomic, inPort)
         subscribers :+= subscriber

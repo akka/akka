@@ -9,7 +9,7 @@ import akka.stream.testkit._
 import akka.util.ByteString
 import akka.stream.{ Inlet, Outlet, Shape, Graph }
 import org.scalactic.ConversionCheckedTripleEquals
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 object GraphOpsIntegrationSpec {
   import FlowGraph.Implicits._
@@ -89,7 +89,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
     }
 
     "support wikipedia Topological_sorting 2" in {
-      import OperationAttributes.name
+      import Attributes.name
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
       val seqSink = Sink.head[Seq[Int]]
 

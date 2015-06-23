@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.ActorOperationAttributes
+import akka.stream.ActorAttributes
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
@@ -167,7 +167,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
     val exc = TE("test")
     val publisher = Source(publisherProbeProbe)
       .splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
-      .withAttributes(ActorOperationAttributes.supervisionStrategy(resumingDecider))
+      .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
       .runWith(Sink.publisher)
     val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
     publisher.subscribe(subscriber)

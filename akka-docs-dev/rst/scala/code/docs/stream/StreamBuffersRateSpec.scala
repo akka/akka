@@ -3,7 +3,7 @@ package docs.stream
 import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings, ActorFlowMaterializer }
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 class StreamBuffersRateSpec extends AkkaSpec {
   implicit val mat = ActorFlowMaterializer()
@@ -30,7 +30,7 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
     //#section-buffer
     val section = Flow[Int].map(_ * 2)
-      .withAttributes(OperationAttributes.inputBuffer(initial = 1, max = 1))
+      .withAttributes(Attributes.inputBuffer(initial = 1, max = 1))
     val flow = section.via(Flow[Int].map(_ / 2)) // the buffer size of this map is the default
     //#section-buffer
   }

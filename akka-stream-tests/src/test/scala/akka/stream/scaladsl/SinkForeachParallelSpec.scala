@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorOperationAttributes._
+import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.AkkaSpec

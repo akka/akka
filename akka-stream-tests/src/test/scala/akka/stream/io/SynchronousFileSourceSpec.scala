@@ -10,8 +10,8 @@ import java.util.Random
 import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.ActorOperationAttributes
-import akka.stream.OperationAttributes
+import akka.stream.ActorAttributes
+import akka.stream.Attributes
 import akka.stream.impl.ActorFlowMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
@@ -72,7 +72,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
   "File Source" must {
     "read contents from a file" in assertAllStagesStopped {
       val chunkSize = 512
-      val bufferAttributes = OperationAttributes.inputBuffer(1, 2)
+      val bufferAttributes = Attributes.inputBuffer(1, 2)
 
       val p = SynchronousFileSource(testFile, chunkSize)
         .withAttributes(bufferAttributes)
@@ -107,7 +107,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
     "complete only when all contents of a file have been signalled" in assertAllStagesStopped {
       val chunkSize = 256
-      val bufferAttributes = OperationAttributes.inputBuffer(4, 8)
+      val bufferAttributes = Attributes.inputBuffer(4, 8)
 
       val demandAllButOneChunks = TestText.length / chunkSize - 1
 
@@ -157,7 +157,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
         s"count lines in real file (chunkSize = $chunkSize, readAhead = $readAhead)" in {
           val s = SynchronousFileSource(manyLines, chunkSize = chunkSize)
-            .withAttributes(OperationAttributes.inputBuffer(readAhead, readAhead))
+            .withAttributes(Attributes.inputBuffer(readAhead, readAhead))
 
           val f = s.runWith(Sink.fold(0) { case (acc, l) ⇒ acc + l.utf8String.count(_ == '\n') })
 
@@ -187,7 +187,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
       try {
         val p = SynchronousFileSource(manyLines)
-          .withAttributes(ActorOperationAttributes.dispatcher("akka.actor.default-dispatcher"))
+          .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
           .runWith(TestSink.probe())(mat)
 
         mat.asInstanceOf[ActorFlowMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)

@@ -17,7 +17,7 @@ import scala.concurrent.{ Future, Promise }
  * INTERNAL API
  * Creates simple synchronous (Java 6 compatible) Source backed by the given file.
  */
-private[akka] final class SynchronousFileSource(f: File, chunkSize: Int, val attributes: OperationAttributes, shape: SourceShape[ByteString])
+private[akka] final class SynchronousFileSource(f: File, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[Long]](shape) {
   override def create(context: MaterializationContext) = {
     val mat = ActorFlowMaterializer.downcast(context.materializer)
@@ -35,7 +35,7 @@ private[akka] final class SynchronousFileSource(f: File, chunkSize: Int, val att
   override protected def newInstance(shape: SourceShape[ByteString]): SourceModule[ByteString, Future[Long]] =
     new SynchronousFileSource(f, chunkSize, attributes, shape)
 
-  override def withAttributes(attr: OperationAttributes): Module =
+  override def withAttributes(attr: Attributes): Module =
     new SynchronousFileSource(f, chunkSize, attr, amendShape(attr))
 }
 
@@ -43,7 +43,7 @@ private[akka] final class SynchronousFileSource(f: File, chunkSize: Int, val att
  * INTERNAL API
  * Source backed by the given input stream.
  */
-private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: OperationAttributes, shape: SourceShape[ByteString])
+private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[Long]](shape) {
   override def create(context: MaterializationContext) = {
     val mat = ActorFlowMaterializer.downcast(context.materializer)
@@ -69,6 +69,6 @@ private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStrea
   override protected def newInstance(shape: SourceShape[ByteString]): SourceModule[ByteString, Future[Long]] =
     new InputStreamSource(createInputStream, chunkSize, attributes, shape)
 
-  override def withAttributes(attr: OperationAttributes): Module =
+  override def withAttributes(attr: Attributes): Module =
     new InputStreamSource(createInputStream, chunkSize, attr, amendShape(attr))
 }

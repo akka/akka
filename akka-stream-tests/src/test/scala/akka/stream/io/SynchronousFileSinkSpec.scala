@@ -15,7 +15,7 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.StreamTestKit
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.ActorOperationAttributes
+import akka.stream.ActorAttributes
 import akka.util.ByteString
 import akka.util.Timeout
 
@@ -116,7 +116,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         try {
           Source(() ⇒ Iterator.continually(TestByteStrings.head))
             .to(SynchronousFileSink(f))
-            .withAttributes(ActorOperationAttributes.dispatcher("akka.actor.default-dispatcher"))
+            .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
             .run()(mat)
 
           mat.asInstanceOf[ActorFlowMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)

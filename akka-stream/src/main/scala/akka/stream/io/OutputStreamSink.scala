@@ -8,7 +8,7 @@ import java.io.OutputStream
 import akka.japi.function.Creator
 import akka.stream.impl.io.OutputStreamSink
 import akka.stream.scaladsl.Sink
-import akka.stream.{ ActorOperationAttributes, OperationAttributes, javadsl }
+import akka.stream.{ ActorAttributes, Attributes, javadsl }
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -18,7 +18,7 @@ import scala.concurrent.Future
  */
 object OutputStreamSink {
 
-  final val DefaultAttributes = OperationAttributes.name("outputStreamSink")
+  final val DefaultAttributes = Attributes.name("outputStreamSink")
 
   /**
    * Sink which writes incoming [[ByteString]]s to the given [[OutputStream]].
@@ -26,7 +26,7 @@ object OutputStreamSink {
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    *
    * This source is backed by an Actor which will use the dedicated `akka.stream.file-io-dispatcher`,
-   * unless configured otherwise by using [[ActorOperationAttributes]].
+   * unless configured otherwise by using [[ActorAttributes]].
    */
   def apply(output: () ⇒ OutputStream): Sink[ByteString, Future[Long]] =
     new Sink(new OutputStreamSink(output, DefaultAttributes, Sink.shape("OutputStreamSink")))

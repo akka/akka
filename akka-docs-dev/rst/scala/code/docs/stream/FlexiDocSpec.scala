@@ -9,7 +9,7 @@ import akka.stream.testkit.AkkaSpec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 object FlexiDocSpec {
   //#fleximerge-zip-states
@@ -34,7 +34,7 @@ class FlexiDocSpec extends AkkaSpec {
   "implement zip using readall" in {
     //#fleximerge-zip-readall
     class Zip[A, B] extends FlexiMerge[(A, B), ZipPorts[A, B]](
-      new ZipPorts, OperationAttributes.name("Zip1State")) {
+      new ZipPorts, Attributes.name("Zip1State")) {
       import FlexiMerge._
       override def createMergeLogic(p: PortT) = new MergeLogic[(A, B)] {
         override def initialState =
@@ -73,7 +73,7 @@ class FlexiDocSpec extends AkkaSpec {
   "implement zip using two states" in {
     //#fleximerge-zip-states
     class Zip[A, B] extends FlexiMerge[(A, B), ZipPorts[A, B]](
-      new ZipPorts, OperationAttributes.name("Zip2State")) {
+      new ZipPorts, Attributes.name("Zip2State")) {
       import FlexiMerge._
 
       override def createMergeLogic(p: PortT) = new MergeLogic[(A, B)] {
@@ -122,7 +122,7 @@ class FlexiDocSpec extends AkkaSpec {
         new ImportantWithBackupShape(i)
     }
     class ImportantWithBackups[A] extends FlexiMerge[A, ImportantWithBackupShape[A]](
-      new ImportantWithBackupShape, OperationAttributes.name("ImportantWithBackups")) {
+      new ImportantWithBackupShape, Attributes.name("ImportantWithBackups")) {
       import FlexiMerge._
 
       override def createMergeLogic(p: PortT) = new MergeLogic[A] {
@@ -192,7 +192,7 @@ class FlexiDocSpec extends AkkaSpec {
     //#flexi-preferring-merge
 
     class PreferringMerge extends FlexiMerge[Int, PreferringMergeShape[Int]](
-      new PreferringMergeShape, OperationAttributes.name("ImportantWithBackups")) {
+      new PreferringMergeShape, Attributes.name("ImportantWithBackups")) {
       import akka.stream.scaladsl.FlexiMerge._
 
       override def createMergeLogic(p: PortT) = new MergeLogic[Int] {
@@ -217,7 +217,7 @@ class FlexiDocSpec extends AkkaSpec {
       protected override def construct(i: Init[(A, B)]) = new UnzipShape(i)
     }
     class Unzip[A, B] extends FlexiRoute[(A, B), UnzipShape[A, B]](
-      new UnzipShape, OperationAttributes.name("Unzip")) {
+      new UnzipShape, Attributes.name("Unzip")) {
       import FlexiRoute._
 
       override def createRouteLogic(p: PortT) = new RouteLogic[(A, B)] {
@@ -246,7 +246,7 @@ class FlexiDocSpec extends AkkaSpec {
       protected override def construct(i: Init[A]) = new ImportantRouteShape(i)
     }
     class ImportantRoute[A] extends FlexiRoute[A, ImportantRouteShape[A]](
-      new ImportantRouteShape, OperationAttributes.name("ImportantRoute")) {
+      new ImportantRouteShape, Attributes.name("ImportantRoute")) {
       import FlexiRoute._
       override def createRouteLogic(p: PortT) = new RouteLogic[A] {
         import p.important
