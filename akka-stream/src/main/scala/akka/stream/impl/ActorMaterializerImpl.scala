@@ -65,12 +65,12 @@ private[akka] case class ActorMaterializerImpl(
     }
   }
 
-  override def materialize[Mat](runnableFlow: Graph[ClosedShape, Mat]): Mat = {
+  override def materialize[Mat](runnableGraph: Graph[ClosedShape, Mat]): Mat = {
     if (haveShutDown.get())
       throw new IllegalStateException("Attempted to call materialize() after the ActorMaterializer has been shut down.")
-    if (StreamLayout.Debug) runnableFlow.module.validate()
+    if (StreamLayout.Debug) runnableGraph.module.validate()
 
-    val session = new MaterializerSession(runnableFlow.module) {
+    val session = new MaterializerSession(runnableGraph.module) {
       private val flowName = createFlowName()
       private var nextId = 0
       private def stageName(attr: Attributes): String = {

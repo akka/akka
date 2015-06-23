@@ -380,13 +380,13 @@ object FlowGraph extends GraphApply {
           .connect(port, op.inPort)
     }
 
-    private[stream] def buildRunnable[Mat](): RunnableFlow[Mat] = {
+    private[stream] def buildRunnable[Mat](): RunnableGraph[Mat] = {
       if (!moduleInProgress.isRunnable) {
         throw new IllegalArgumentException(
-          "Cannot build the RunnableFlow because there are unconnected ports: " +
+          "Cannot build the RunnableGraph because there are unconnected ports: " +
             (moduleInProgress.outPorts ++ moduleInProgress.inPorts).mkString(", "))
       }
-      new RunnableFlow(moduleInProgress.wrap())
+      new RunnableGraph(moduleInProgress.wrap())
     }
 
     private[stream] def buildSource[T, Mat](outlet: Outlet[T]): Source[T, Mat] = {

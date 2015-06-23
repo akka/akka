@@ -93,9 +93,9 @@ class FlowCompileSpec extends AkkaSpec {
     }
   }
 
-  "RunnableFlow" should {
+  "RunnableGraph" should {
     Sink.head[String]
-    val closed: RunnableFlow[Publisher[String]] =
+    val closed: RunnableGraph[Publisher[String]] =
       Source(Seq(1, 2, 3)).map(_.toString).toMat(Sink.publisher[String])(Keep.right)
     "run" in {
       closed.run()

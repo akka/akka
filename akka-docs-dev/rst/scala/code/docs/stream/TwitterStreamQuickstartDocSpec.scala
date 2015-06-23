@@ -157,7 +157,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#tweets-fold-count
     val sumSink: Sink[Int, Future[Int]] = Sink.fold[Int, Int](0)(_ + _)
 
-    val counter: RunnableFlow[Future[Int]] = tweets.map(t => 1).toMat(sumSink)(Keep.right)
+    val counter: RunnableGraph[Future[Int]] = tweets.map(t => 1).toMat(sumSink)(Keep.right)
 
     val sum: Future[Int] = counter.run()
 
@@ -176,20 +176,20 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     //#tweets-runnable-flow-materialized-twice
     val sumSink = Sink.fold[Int, Int](0)(_ + _)
-    val counterRunnableFlow: RunnableFlow[Future[Int]] =
+    val counterRunnableGraph: RunnableGraph[Future[Int]] =
       tweetsInMinuteFromNow
         .filter(_.hashtags contains akka)
         .map(t => 1)
         .toMat(sumSink)(Keep.right)
 
     // materialize the stream once in the morning
-    val morningTweetsCount: Future[Int] = counterRunnableFlow.run()
+    val morningTweetsCount: Future[Int] = counterRunnableGraph.run()
     // and once in the evening, reusing the flow
-    val eveningTweetsCount: Future[Int] = counterRunnableFlow.run()
+    val eveningTweetsCount: Future[Int] = counterRunnableGraph.run()
 
     //#tweets-runnable-flow-materialized-twice
 
-    val sum: Future[Int] = counterRunnableFlow.run()
+    val sum: Future[Int] = counterRunnableGraph.run()
 
     sum.map { c => println(s"Total tweets processed: $c") }
   }

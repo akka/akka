@@ -89,7 +89,7 @@ private object PoolSlot {
 
     var exposedPublisher: akka.stream.impl.ActorPublisher[Any] = _
     var inflightRequests = immutable.Queue.empty[RequestContext]
-    val runnableFlow = Source.actorPublisher[HttpRequest](Props(new FlowInportActor(self)).withDeploy(Deploy.local))
+    val runnableGraph = Source.actorPublisher[HttpRequest](Props(new FlowInportActor(self)).withDeploy(Deploy.local))
       .via(connectionFlow)
       .toMat(Sink.actorSubscriber[HttpResponse](Props(new FlowOutportActor(self)).withDeploy(Deploy.local)))(Keep.both)
 
@@ -111,7 +111,7 @@ private object PoolSlot {
 
     val unconnected: Receive = {
       case OnNext(rc: RequestContext) ⇒
-        val (connInport, connOutport) = runnableFlow.run()
+        val (connInport, connOutport) = runnableGraph.run()
         connOutport ! Request(totalDemand)
         context.become(waitingForDemandFromConnection(connInport, connOutport, rc))
 

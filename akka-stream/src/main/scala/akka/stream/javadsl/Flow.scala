@@ -95,16 +95,16 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
     new Sink(delegate.toMat(sink)(combinerToScala(combine)))
 
   /**
-   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
+   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]]
    */
-  def join[M](flow: Graph[FlowShape[Out, In], M]): javadsl.RunnableFlow[Mat] =
-    new RunnableFlowAdapter(delegate.join(flow))
+  def join[M](flow: Graph[FlowShape[Out, In], M]): javadsl.RunnableGraph[Mat] =
+    new RunnableGraphAdapter(delegate.join(flow))
 
   /**
-   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
+   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]]
    */
   def joinMat[M, M2](flow: Graph[FlowShape[Out, In], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
-    new RunnableFlowAdapter(delegate.joinMat(flow)(combinerToScala(combine)))
+    new RunnableGraphAdapter(delegate.joinMat(flow)(combinerToScala(combine)))
 
   /**
    * Join this [[Flow]] to a [[BidiFlow]] to close off the “top” of the protocol stack:
@@ -789,28 +789,28 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
  *
  * Flow with attached input and output, can be executed.
  */
-trait RunnableFlow[+Mat] extends Graph[ClosedShape, Mat] {
+trait RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
   /**
    * Run this flow and return the materialized values of the flow.
    */
   def run(materializer: Materializer): Mat
   /**
-   * Transform only the materialized value of this RunnableFlow, leaving all other properties as they were.
+   * Transform only the materialized value of this RunnableGraph, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableFlow[Mat2]
+  def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableGraph[Mat2]
 }
 
 /** INTERNAL API */
-private[akka] class RunnableFlowAdapter[Mat](runnable: scaladsl.RunnableFlow[Mat]) extends RunnableFlow[Mat] {
+private[akka] class RunnableGraphAdapter[Mat](runnable: scaladsl.RunnableGraph[Mat]) extends RunnableGraph[Mat] {
   def shape = ClosedShape
   def module = runnable.module
-  override def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableFlow[Mat2] =
-    new RunnableFlowAdapter(runnable.mapMaterializedValue(f.apply _))
+  override def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableGraph[Mat2] =
+    new RunnableGraphAdapter(runnable.mapMaterializedValue(f.apply _))
   override def run(materializer: Materializer): Mat = runnable.run()(materializer)
 
-  override def withAttributes(attr: Attributes): RunnableFlow[Mat] =
-    new RunnableFlowAdapter(runnable.withAttributes(attr))
+  override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
+    new RunnableGraphAdapter(runnable.withAttributes(attr))
 
-  override def named(name: String): RunnableFlow[Mat] =
-    new RunnableFlowAdapter(runnable.named(name))
+  override def named(name: String): RunnableGraph[Mat] =
+    new RunnableGraphAdapter(runnable.named(name))
 }

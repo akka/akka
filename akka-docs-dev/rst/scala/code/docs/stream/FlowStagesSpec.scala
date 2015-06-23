@@ -1,7 +1,7 @@
 package docs.stream
 
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ RunnableFlow, Sink, Source, Flow, Keep }
+import akka.stream.scaladsl.{ RunnableGraph, Sink, Source, Flow, Keep }
 import akka.stream.stage.PushPullStage
 import akka.stream.testkit.AkkaSpec
 import org.scalatest.concurrent.{ ScalaFutures, Futures }
