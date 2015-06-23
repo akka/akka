@@ -23,7 +23,7 @@ which will emit an :class:`IncomingConnection` element for each new connection t
 
 Next, we simply handle *each* incoming connection using a :class:`Flow` which will be used as the processing stage
 to handle and emit ByteStrings from and to the TCP Socket. Since one :class:`ByteString` does not have to necessarily
-correspond to exactly one line of text (the client might be sending the line in chunks) we use the ``Framing.lines``
+correspond to exactly one line of text (the client might be sending the line in chunks) we use the ``Framing.delmiter``
 helper Flow to chunk the inputs up into actual lines of text. The last boolean
 argument indicates that we require an explicit line ending even for the last message before the connection is closed.
 In this example we simply add exclamation marks to each incoming text message and push it through the flow:
