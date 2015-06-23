@@ -16,7 +16,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "build with open ports" in {
     //#simple-partial-flow-graph

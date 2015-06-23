@@ -10,7 +10,7 @@ object MyRejectionHandler {
 
   //#custom-handler-example
   import akka.actor.ActorSystem
-  import akka.stream.ActorFlowMaterializer
+  import akka.stream.ActorMaterializer
   import akka.http.scaladsl.Http
   import akka.http.scaladsl.model._
   import akka.http.scaladsl.server._
@@ -34,7 +34,7 @@ object MyRejectionHandler {
 
   object MyApp extends App {
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     val route: Route =
       // ... some route structure

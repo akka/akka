@@ -6,7 +6,7 @@ package akka.stream.impl.fusing
 import akka.event.Logging
 import akka.stream.stage._
 import akka.stream.testkit.AkkaSpec
-import akka.stream.{ ActorFlowMaterializer, Attributes }
+import akka.stream.{ ActorMaterializer, Attributes }
 import akka.testkit.TestProbe
 
 trait InterpreterLifecycleSpecKit {
@@ -115,7 +115,7 @@ trait InterpreterSpecKit extends AkkaSpec with InterpreterLifecycleSpecKit {
     val interpreter = new OneBoundedInterpreter(upstream +: ops :+ downstream,
       (op, ctx, event) ⇒ sidechannel.ref ! ActorInterpreter.AsyncInput(op, ctx, event),
       Logging(system, classOf[TestSetup]),
-      ActorFlowMaterializer(),
+      ActorMaterializer(),
       Attributes.none,
       forkLimit, overflowToHeap)
     interpreter.init()

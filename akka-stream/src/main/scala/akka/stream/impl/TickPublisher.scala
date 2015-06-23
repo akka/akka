@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor._
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import org.reactivestreams.{ Subscriber, Subscription }
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
@@ -17,7 +17,7 @@ import akka.event.Logging
  */
 private[akka] object TickPublisher {
   def props(initialDelay: FiniteDuration, interval: FiniteDuration, tick: Any,
-            settings: ActorFlowMaterializerSettings, cancelled: AtomicBoolean): Props =
+            settings: ActorMaterializerSettings, cancelled: AtomicBoolean): Props =
     Props(new TickPublisher(initialDelay, interval, tick, settings, cancelled))
       .withDispatcher(settings.dispatcher)
       .withDeploy(Deploy.local)
@@ -45,7 +45,7 @@ private[akka] object TickPublisher {
  * otherwise the tick element is dropped.
  */
 private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: FiniteDuration, tick: Any,
-                                  settings: ActorFlowMaterializerSettings, cancelled: AtomicBoolean) extends Actor {
+                                  settings: ActorMaterializerSettings, cancelled: AtomicBoolean) extends Actor {
   import akka.stream.impl.TickPublisher.TickPublisherSubscription._
   import akka.stream.impl.TickPublisher._
   import ReactiveStreamsCompliance._

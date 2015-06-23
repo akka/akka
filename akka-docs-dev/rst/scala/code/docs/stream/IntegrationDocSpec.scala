@@ -6,7 +6,7 @@ package docs.stream
 import scala.concurrent.duration._
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import scala.concurrent.Future
 import akka.testkit.TestProbe
 import akka.actor.ActorRef
@@ -18,7 +18,7 @@ import akka.util.Timeout
 import akka.stream.Attributes
 import akka.stream.ActorAttributes
 import scala.concurrent.ExecutionContext
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
 import akka.stream.Supervision
 import akka.stream.scaladsl.Flow
@@ -124,7 +124,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "calling external service with mapAsync" in {
     val probe = TestProbe()
@@ -322,8 +322,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = ActorFlowMaterializer(
-      ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
+    implicit val mat = ActorMaterializer(
+      ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })
@@ -354,8 +354,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = ActorFlowMaterializer(
-      ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
+    implicit val mat = ActorMaterializer(
+      ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })

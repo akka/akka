@@ -273,7 +273,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a `Sink.publisher`.
    */
-  def runWith[M](sink: Graph[SinkShape[Out], M], materializer: FlowMaterializer): M =
+  def runWith[M](sink: Graph[SinkShape[Out], M], materializer: Materializer): M =
     delegate.runWith(sink)(materializer)
 
   /**
@@ -284,7 +284,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
    */
-  def runFold[U](zero: U, f: function.Function2[U, Out, U], materializer: FlowMaterializer): Future[U] =
+  def runFold[U](zero: U, f: function.Function2[U, Out, U], materializer: Materializer): Future[U] =
     runWith(Sink.fold(zero, f), materializer)
 
   /**
@@ -310,7 +310,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
    * the stream.
    */
-  def runForeach(f: function.Procedure[Out], materializer: FlowMaterializer): Future[Unit] =
+  def runForeach(f: function.Procedure[Out], materializer: Materializer): Future[Unit] =
     runWith(Sink.foreach(f), materializer)
 
   // COMMON OPS //

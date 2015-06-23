@@ -7,7 +7,7 @@ package akka.http.javadsl.model.ws
 import java.lang.{ Iterable ⇒ JIterable }
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.model._
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.javadsl.{ Sink, Source, Flow }
 
 /**

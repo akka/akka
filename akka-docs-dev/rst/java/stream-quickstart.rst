@@ -19,12 +19,12 @@ Here's the data model we'll be working with throughout the quickstart examples:
 
 Transforming and consuming simple streams
 -----------------------------------------
-In order to prepare our environment by creating an :class:`ActorSystem` and :class:`ActorFlowMaterializer`,
+In order to prepare our environment by creating an :class:`ActorSystem` and :class:`ActorMaterializer`,
 which will be responsible for materializing and running the streams we are about to create:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#materializer-setup
 
-The :class:`ActorFlowMaterializer` can optionally take :class:`ActorFlowMaterializerSettings` which can be used to define
+The :class:`ActorMaterializer` can optionally take :class:`ActorMaterializerSettings` which can be used to define
 materialization properties, such as default buffer sizes (see also :ref:`stream-buffers-java`), the dispatcher to
 be used by the pipeline etc. These can be overridden ``withAttributes`` on :class:`Flow`, :class:`Source`, :class:`Sink` and :class:`Graph`.
 
@@ -60,7 +60,7 @@ or by using the shorthand version (which are defined only for the most popular s
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#authors-foreach-println
 
-Materializing and running a stream always requires a :class:`FlowMaterializer` to be passed in explicitly,
+Materializing and running a stream always requires a :class:`Materializer` to be passed in explicitly,
 like this: ``.run(mat)``.
 
 Flattening sequences in streams
@@ -146,7 +146,7 @@ First, we prepare the :class:`FoldSink` which will be used to sum all ``Integer`
 Next we connect the ``tweets`` stream though a ``map`` step which converts each tweet into the number ``1``,
 finally we connect the flow ``to`` the previously prepared Sink. Notice that this step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be ``run()``, as indicated by its type: :class:`RunnableFlow`. Next we call ``run()`` which uses the implicit :class:`ActorFlowMaterializer`
+be ``run()``, as indicated by its type: :class:`RunnableFlow`. Next we call ``run()`` which uses the implicit :class:`ActorMaterializer`
 to materialize and run the flow. The value returned by calling ``run()`` on a ``RunnableFlow`` or ``FlowGraph`` is ``MaterializedMap``,
 which can be used to retrieve materialized values from the running stream.
 

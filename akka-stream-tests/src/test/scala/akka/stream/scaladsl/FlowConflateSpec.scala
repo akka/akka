@@ -6,15 +6,15 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.stream.{ OverflowStrategy, ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ OverflowStrategy, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 
 class FlowConflateSpec extends AkkaSpec {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "Conflate" must {
 

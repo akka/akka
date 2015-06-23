@@ -16,7 +16,7 @@ private[akka] object GenJunctions {
 
   sealed trait ZipWithModule {
     /** Allows hiding the boilerplate Props creation from the materializer */
-    def props(settings: ActorFlowMaterializerSettings): Props
+    def props(settings: ActorMaterializerSettings): Props
   }
 
   [2..20#
@@ -29,7 +29,7 @@ private[akka] object GenJunctions {
 
     override def carbonCopy: Module = ZipWith1Module(shape.deepCopy(), f, attributes)
 
-    override def props(settings: ActorFlowMaterializerSettings): Props =
+    override def props(settings: ActorMaterializerSettings): Props =
       Props(new Zip1With(settings, f.asInstanceOf[Function1[[#Any#], Any]])).withDeploy(Deploy.local)
   }#
   ]

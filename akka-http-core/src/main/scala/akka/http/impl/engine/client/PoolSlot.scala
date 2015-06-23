@@ -53,7 +53,7 @@ private object PoolSlot {
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
             remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
-            settings: ConnectionPoolSettings)(implicit system: ActorSystem, fm: FlowMaterializer): Graph[Ports, Any] =
+            settings: ConnectionPoolSettings)(implicit system: ActorSystem, fm: Materializer): Graph[Ports, Any] =
     FlowGraph.partial() { implicit b ⇒
       import FlowGraph.Implicits._
 
@@ -84,7 +84,7 @@ private object PoolSlot {
    * shutting down completely).
    */
   private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-                              settings: ConnectionPoolSettings)(implicit fm: FlowMaterializer)
+                              settings: ConnectionPoolSettings)(implicit fm: Materializer)
     extends ActorSubscriber with ActorPublisher[List[ProcessorOut]] with ActorLogging {
 
     var exposedPublisher: akka.stream.impl.ActorPublisher[Any] = _

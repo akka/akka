@@ -200,7 +200,7 @@ well-known sinks, such as ``runForeach(el => )`` (being an alias to ``runWith(Si
 Materialization is currently performed synchronously on the materializing thread.
 The actual stream processing is handled by actors started up during the streams materialization,
 which will be running on the thread pools they have been configured to run on - which defaults to the dispatcher set in
-:class:`MaterializationSettings` while constructing the :class:`ActorFlowMaterializer`.
+:class:`MaterializationSettings` while constructing the :class:`ActorMaterializer`.
 
 .. note::
    Reusing *instances* of linear computation stages (Source, Sink, Flow) inside FlowGraphs is legal,

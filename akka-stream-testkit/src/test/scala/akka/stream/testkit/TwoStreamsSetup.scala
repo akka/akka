@@ -1,6 +1,6 @@
 package akka.stream.testkit
 
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, Inlet, Outlet }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Inlet, Outlet }
 import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
 import scala.collection.immutable
@@ -9,10 +9,10 @@ import akka.stream.testkit.Utils._
 
 abstract class TwoStreamsSetup extends AkkaSpec {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   val TestException = new RuntimeException("test") with NoStackTrace
 

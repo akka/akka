@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl._
@@ -22,7 +22,7 @@ object ActorRefSinkSpec {
 
 class ActorRefSinkSpec extends AkkaSpec {
   import ActorRefSinkSpec._
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "A ActorRefSink" must {
 

@@ -10,7 +10,7 @@ import akka.stream.io.{ SessionBytes, SslTlsOutbound, SendBytes }
 import org.scalatest.Inside
 import akka.util.ByteString
 import akka.event.NoLogging
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpEntity._
@@ -20,7 +20,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 
 class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "The connection-level client implementation" should {
 

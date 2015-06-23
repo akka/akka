@@ -35,7 +35,7 @@ public class FlexiRouteTest {
 
   final ActorSystem system = actorSystemResource.getSystem();
 
-  final ActorFlowMaterializer materializer = ActorFlowMaterializer.create(system);
+  final ActorMaterializer materializer = ActorMaterializer.create(system);
 
   final Source<String, BoxedUnit> in = Source.from(Arrays.asList("a", "b", "c", "d", "e"));
 
