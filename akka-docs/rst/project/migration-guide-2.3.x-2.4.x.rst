@@ -170,7 +170,6 @@ Default interval for TestKit.awaitAssert changed to 100 ms
 Default check interval changed from 800 ms to 100 ms. You can define the interval explicitly if you need a
 longer interval.
 
-
 Secure Cookies
 ==============
 
@@ -385,3 +384,42 @@ the Java 8 provided ``Optional`` type is used now.
 Please remember that when creating an ``java.util.Optional`` instance from a (possibly) ``null`` value you will want to
 use the non-throwing ``Optional.fromNullable`` method, which converts a ``null`` into a ``None`` value - which is
 slightly different than its Scala counterpart (where ``Option.apply(null)`` returns ``None``).
+
+Atomic writes
+-------------
+
+``asyncWriteMessages`` and ``writeMessages`` takes a ``immutable.Seq[AtomicWrite]`` parameter instead of
+``immutable.Seq[PersistentRepr]``. 
+
+Each `AtomicWrite` message contains the single ``PersistentRepr`` that corresponds to the event that was 
+passed to the ``persist`` method of the ``PersistentActor``, or it contains several ``PersistentRepr`` 
+that corresponds to the events that were passed to the ``persistAll`` method of the ``PersistentActor``.
+All ``PersistentRepr`` of the `AtomicWrite` must be written to the data store atomically, i.e. all or 
+none must be stored.
+
+If the journal (data store) cannot support atomic writes of multiple events it should
+reject such writes with a ``Try`` ``Failure`` with an ``UnsupportedOperationException``
+describing the issue. This limitation should also be documented by the journal plugin.
+
+Rejecting writes
+----------------
+
+``asyncWriteMessages`` and ``writeMessages`` returns a ``Future[immutable.Seq[Try[Unit]]]`` or ``
+``immutable.Seq[Try[Unit]]`` respectively. 
+
+The journal can signal that it rejects individual messages (``AtomicWrite``) by the returned 
+`immutable.Seq[Try[Unit]]`. The returned ``Seq`` must have as many elements as the input 
+``messages`` ``Seq``. Each ``Try`` element signals if the corresponding ``AtomicWrite``
+is rejected or not, with an exception describing the problem. Rejecting a message means it
+was not stored, i.e. it must not be included in a later replay. Rejecting a message is
+typically done before attempting to store it, e.g. because of serialization error.
+
+Read the API documentation of these methods for more information about the semantics of
+rejections and failures.
+
+asyncReplayMessages Java API
+----------------------------
+
+The signature of `asyncReplayMessages` in the Java API changed from ``akka.japi.Procedure``
+to ``java.util.function.Consumer``.
+

@@ -25,6 +25,10 @@ message PersistentPayload {
   optional bytes payloadManifest = 3;
 }
 
+message AtomicWrite {
+  repeated PersistentMessage payload = 1;
+}
+
 message AtLeastOnceDeliverySnapshot {
   message UnconfirmedDelivery {
     required int64 deliveryId = 1;

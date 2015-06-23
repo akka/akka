@@ -4,9 +4,10 @@
 
 package akka.persistence.journal.japi;
 
+import java.util.function.Consumer;
+
 import scala.concurrent.Future;
 
-import akka.japi.Procedure;
 import akka.persistence.PersistentRepr;
 
 interface AsyncRecoveryPlugin {
@@ -34,7 +35,7 @@ interface AsyncRecoveryPlugin {
    *          called to replay a single message. Can be called from any thread.
    */
   Future<Void> doAsyncReplayMessages(String persistenceId, long fromSequenceNr, long toSequenceNr, long max,
-      Procedure<PersistentRepr> replayCallback);
+      Consumer<PersistentRepr> replayCallback);
 
   /**
    * Java API, Plugin API: asynchronously reads the highest stored sequence

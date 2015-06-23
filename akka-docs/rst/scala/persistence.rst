@@ -124,13 +124,9 @@ the ``persist`` call and the execution(s) of the associated event handler. This 
 calls in context of a single command.
 
 If persistence of an event fails, ``onPersistFailure`` will be invoked (logging the error by default)
-and the actor will unconditionally be stopped. The reason that it cannot resume when persist fails
-is that it is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
-state. Restarting on persistent failures will most likely fail anyway, since the journal is probably
-unavailable. It is better to stop the actor and after a back-off timeout start it again. The
-``akka.persistence.BackoffSupervisor`` actor is provided to support such restarts.
-
-.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#backoff
+and the actor will unconditionally be stopped. If persistence of an event is rejected before it is
+stored, e.g. due to serialization error, ``onPersistRejected`` will be invoked (logging a warning 
+by default) and the actor continues with next message.
 
 The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 and open the tutorial named `Akka Persistence Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-persistence-scala>`_.
@@ -206,8 +202,8 @@ and before any other received messages.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recovery-completed
 
-If there is a problem with recovering the state of the actor from the journal, the error will be logged and the
-actor will be stopped. 
+If there is a problem with recovering the state of the actor from the journal, ``onReplayFailure`` 
+is called (logging the error by default) and the actor will be stopped. 
 
 .. _persist-async-scala:
 
@@ -263,6 +259,40 @@ The calling side will get the responses in this (guaranteed) order:
   The callback will not be invoked if the actor is restarted (or stopped) in between the call to
   ``defer`` and the journal has processed and confirmed all preceding writes.
 
+Failures
+--------
+
+If persistence of an event fails, ``onPersistFailure`` will be invoked (logging the error by default)
+and the actor will unconditionally be stopped. 
+
+The reason that it cannot resume when persist fails is that it is unknown if the even was actually
+persisted or not, and therefore it is in an inconsistent state. Restarting on persistent failures 
+will most likely fail anyway, since the journal is probably unavailable. It is better to stop the 
+actor and after a back-off timeout start it again. The ``akka.persistence.BackoffSupervisor`` actor
+is provided to support such restarts.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#backoff
+
+If persistence of an event is rejected before it is stored, e.g. due to serialization error, 
+``onPersistRejected`` will be invoked (logging a warning by default) and the actor continues with
+next message.
+
+If there is a problem with recovering the state of the actor from the journal when the actor is
+started, ``onReplayFailure`` is called (logging the error by default) and the actor will be stopped.
+
+Atomic writes
+-------------
+
+Each event is of course stored atomically, but it is also possible to store several events atomically by
+using the ``persistAll`` or ``persistAllAsync`` method. That means that all events passed to that method
+are stored or none of them are stored if there is an error. 
+
+The recovery of a persistent actor will therefore never be done partially with only a subset of events persisted by
+`persistAll`.
+
+Some journals may not support atomic writes of several events and they will then reject the ``persistAll``
+command, i.e. ``onPersistRejected`` is called with an exception (typically ``UnsupportedOperationException``).
+
 .. _batch-writes:
 
 Batch writes
@@ -278,10 +308,6 @@ the maximum throughput dramatically.
 A new batch write is triggered by a persistent actor as soon as a batch reaches the maximum size or if the journal completed
 writing the previous batch. Batch writes are never timer-based which keeps latencies at a minimum.
 
-The batches are also used internally to ensure atomic writes of events. All events that are persisted in context
-of a single command are written as a single batch to the journal (even if ``persist`` is called multiple times per command).
-The recovery of a ``PersistentActor`` will therefore never be done partially (with only a subset of events persisted by a
-single command).
 
 Message deletion
 ----------------

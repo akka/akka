@@ -8,6 +8,7 @@ import akka.actor.Actor
 import akka.persistence.{ Persistence, PersistentEnvelope, PersistentRepr }
 
 import scala.collection.immutable
+import akka.persistence.AtomicWrite
 
 private[akka] trait WriteJournalBase {
   this: Actor ⇒
@@ -15,9 +16,11 @@ private[akka] trait WriteJournalBase {
   lazy val persistence = Persistence(context.system)
   private def eventAdapters = persistence.adaptersFor(self)
 
-  protected def preparePersistentBatch(rb: immutable.Seq[PersistentEnvelope]): immutable.Seq[PersistentRepr] =
+  protected def preparePersistentBatch(rb: immutable.Seq[PersistentEnvelope]): immutable.Seq[AtomicWrite] =
     rb.collect { // collect instead of flatMap to avoid Some allocations
-      case p: PersistentRepr ⇒ adaptToJournal(p.update(sender = Actor.noSender)) // don't store the sender
+      case a: AtomicWrite ⇒
+        // don't store sender
+        a.copy(payload = a.payload.map(p ⇒ adaptToJournal(p.update(sender = Actor.noSender))))
     }
 
   /** INTERNAL API */

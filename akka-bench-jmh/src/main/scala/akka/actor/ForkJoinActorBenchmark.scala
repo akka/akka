@@ -6,10 +6,9 @@ package akka.actor
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
-
 import scala.concurrent.duration._
-
 import java.util.concurrent.TimeUnit
+import scala.concurrent.Await
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -50,8 +49,8 @@ class ForkJoinActorBenchmark {
 
   @TearDown(Level.Trial)
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.ready(system.whenTerminated, 15.seconds)
   }
 
   @Benchmark
@@ -105,10 +104,10 @@ object ForkJoinActorBenchmark {
   class Pipe(next: Option[ActorRef]) extends Actor {
     def receive = {
       case m @ `message` =>
-        if(next.isDefined) next.get forward m
-      case s @ `stop` => 
+        if (next.isDefined) next.get forward m
+      case s @ `stop` =>
         context stop self
-        if(next.isDefined) next.get forward s
+        if (next.isDefined) next.get forward s
     }
   }
   class PingPong extends Actor {

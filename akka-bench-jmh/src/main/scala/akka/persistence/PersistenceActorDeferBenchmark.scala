@@ -3,6 +3,7 @@
  */
 package akka.persistence
 
+import scala.concurrent.duration._
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh._
 import com.typesafe.config.ConfigFactory
@@ -11,6 +12,7 @@ import akka.testkit.TestProbe
 import java.io.File
 import org.apache.commons.io.FileUtils
 import org.openjdk.jmh.annotations.Scope
+import scala.concurrent.Await
 
 /*
   # OS:   OSX 10.9.3
@@ -55,8 +57,8 @@ class PersistentActorDeferBenchmark {
 
   @TearDown
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.ready(system.whenTerminated, 15.seconds)
 
     storageLocations.foreach(FileUtils.deleteDirectory)
   }

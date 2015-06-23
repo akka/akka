@@ -39,8 +39,10 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
 
   import Key._
 
-  def writeMessages(messages: immutable.Seq[PersistentRepr]) =
-    withBatch(batch ⇒ messages.foreach(message ⇒ addToMessageBatch(message, batch)))
+  def writeMessages(messages: immutable.Seq[AtomicWrite]): immutable.Seq[Try[Unit]] =
+    withBatch(batch ⇒ messages.map { a ⇒
+      Try(a.payload.foreach(message ⇒ addToMessageBatch(message, batch)))
+    })
 
   def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean) = withBatch { batch ⇒
     val nid = numericId(persistenceId)
