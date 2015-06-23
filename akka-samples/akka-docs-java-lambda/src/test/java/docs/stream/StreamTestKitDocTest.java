@@ -50,7 +50,7 @@ public class StreamTestKitDocTest {
     //#strict-collection
     final Sink<Integer, Future<Integer>> sinkUnderTest = Flow.of(Integer.class)
       .map(i -> i * 2)
-      .to(Sink.fold(0, (agg, next) -> agg + next), Keep.right());
+      .toMat(Sink.fold(0, (agg, next) -> agg + next), Keep.right());
 
     final Future<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4))
       .runWith(sinkUnderTest, mat);
@@ -131,11 +131,11 @@ public class StreamTestKitDocTest {
     //#source-actorref
     final Sink<Integer, Future<String>> sinkUnderTest = Flow.of(Integer.class)
       .map(i -> i.toString())
-      .to(Sink.fold("", (agg, next) -> agg + next), Keep.right());
+      .toMat(Sink.fold("", (agg, next) -> agg + next), Keep.right());
 
     final Pair<ActorRef, Future<String>> refAndFuture =
       Source.<Integer>actorRef(8, OverflowStrategy.fail())
-        .to(sinkUnderTest, Keep.both())
+        .toMat(sinkUnderTest, Keep.both())
         .run(mat);
     final ActorRef ref = refAndFuture.first();
     final Future<String> future = refAndFuture.second();
@@ -171,7 +171,7 @@ public class StreamTestKitDocTest {
     final Sink<Integer, BoxedUnit> sinkUnderTest = Sink.cancelled();
 
     TestSource.<Integer>probe(system)
-      .to(sinkUnderTest, Keep.left())
+      .toMat(sinkUnderTest, Keep.left())
       .run(mat)
       .expectCancellation();
     //#test-source-probe
@@ -184,7 +184,7 @@ public class StreamTestKitDocTest {
 
     final Pair<TestPublisher.Probe<Integer>, Future<Integer>> probeAndFuture =
       TestSource.<Integer>probe(system)
-        .to(sinkUnderTest, Keep.both())
+        .toMat(sinkUnderTest, Keep.both())
         .run(mat);
     final TestPublisher.Probe<Integer> probe = probeAndFuture.first();
     final Future<Integer> future = probeAndFuture.second();
@@ -210,7 +210,7 @@ public class StreamTestKitDocTest {
     final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubAndSub =
       TestSource.<Integer>probe(system)
         .via(flowUnderTest)
-        .to(TestSink.<Integer>probe(system), Keep.both())
+        .toMat(TestSink.<Integer>probe(system), Keep.both())
         .run(mat);
     final TestPublisher.Probe<Integer> pub = pubAndSub.first();
     final TestSubscriber.Probe<Integer> sub = pubAndSub.second();

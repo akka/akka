@@ -24,7 +24,7 @@ import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
 
 public class FlowStagesDocTest {
-  
+
   static ActorSystem system;
 
   @BeforeClass
@@ -39,14 +39,14 @@ public class FlowStagesDocTest {
   }
 
   final FlowMaterializer mat = ActorFlowMaterializer.create(system);
-  
+
   static //#one-to-one
   public class Map<A, B> extends PushPullStage<A, B> {
     private final Function<A, B> f;
     public Map(Function<A, B> f) {
       this.f = f;
     }
-  
+
     @Override public SyncDirective onPush(A elem, Context<B> ctx) {
       return ctx.push(f.apply(elem));
     }
@@ -63,7 +63,7 @@ public class FlowStagesDocTest {
     public Filter(Predicate<A> p) {
       this.p = p;
     }
-  
+
     @Override public SyncDirective onPush(A elem, Context<A> ctx) {
       if (p.test(elem)) return ctx.push(elem);
       else return ctx.pull();
@@ -108,14 +108,14 @@ public class FlowStagesDocTest {
 
   }
   //#one-to-many
-  
+
   static//#pushstage
   public class Map2<A, B> extends PushStage<A, B> {
     private final Function<A, B> f;
     public Map2(Function<A, B> f) {
       this.f = f;
     }
-  
+
     @Override public SyncDirective onPush(A elem, Context<B> ctx) {
       return ctx.push(f.apply(elem));
     }
@@ -126,14 +126,14 @@ public class FlowStagesDocTest {
     public Filter2(Predicate<A> p) {
       this.p = p;
     }
-  
+
     @Override public SyncDirective onPush(A elem, Context<A> ctx) {
       if (p.test(elem)) return ctx.push(elem);
       else return ctx.pull();
     }
   }
   //#pushstage
-  
+
   static //#doubler-stateful
   public class Duplicator2<A> extends StatefulStage<A, A> {
     @Override public StageState<A, A> initial() {
@@ -148,8 +148,8 @@ public class FlowStagesDocTest {
 
   @Test
   public void demonstrateVariousPushPullStages() throws Exception {
-    final Sink<Integer, Future<List<Integer>>> sink = 
-        Flow.of(Integer.class).grouped(10).to(Sink.head(), Keep.right());
+    final Sink<Integer, Future<List<Integer>>> sink =
+        Flow.of(Integer.class).grouped(10).toMat(Sink.head(), Keep.right());
 
     //#stage-chain
     final RunnableFlow<Future<List<Integer>>> runnable =
@@ -158,11 +158,11 @@ public class FlowStagesDocTest {
         .transform(() -> new Filter<Integer>(elem -> elem % 2 == 0))
         .transform(() -> new Duplicator<Integer>())
         .transform(() -> new Map<Integer, Integer>(elem -> elem / 2))
-        .to(sink, Keep.right());
+        .toMat(sink, Keep.right());
     //#stage-chain
 
-    assertEquals(Arrays.asList(1, 1, 2, 2, 3, 3, 4, 4, 5, 5), 
+    assertEquals(Arrays.asList(1, 1, 2, 2, 3, 3, 4, 4, 5, 5),
         Await.result(runnable.run(mat), FiniteDuration.create(3, TimeUnit.SECONDS)));
   }
-  
+
 }

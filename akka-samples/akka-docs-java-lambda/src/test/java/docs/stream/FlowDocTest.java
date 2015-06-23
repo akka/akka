@@ -79,7 +79,7 @@ public class FlowDocTest {
 
         // connect the Source to the Sink, obtaining a RunnableFlow
         final RunnableFlow<Future<Integer>> runnable =
-            source.to(sink, Keep.right());
+            source.toMat(sink, Keep.right());
 
         // materialize the flow
         final Future<Integer> sum = runnable.run(mat);
@@ -112,7 +112,7 @@ public class FlowDocTest {
         final Sink<Integer, Future<Integer>> sink =
           Sink.fold(0, (aggr, next) -> aggr + next);
         final RunnableFlow<Future<Integer>> runnable =
-            Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).to(sink, Keep.right());
+            Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).toMat(sink, Keep.right());
 
         // get the materialized value of the FoldSink
         final Future<Integer> sum1 = runnable.run(mat);
@@ -236,8 +236,8 @@ public class FlowDocTest {
     RunnableFlow<Promise<BoxedUnit>> r1 = source.via(flow).to(sink);
 
     // Simple selection of materialized values by using Keep.right
-    RunnableFlow<Cancellable> r2 = source.via(flow, Keep.right()).to(sink);
-    RunnableFlow<Future<Integer>> r3 = source.via(flow).to(sink, Keep.right());
+    RunnableFlow<Cancellable> r2 = source.viaMat(flow, Keep.right()).to(sink);
+    RunnableFlow<Future<Integer>> r3 = source.via(flow).toMat(sink, Keep.right());
 
     // Using runWith will always give the materialized values of the stages added
     // by runWith() itself
@@ -247,16 +247,16 @@ public class FlowDocTest {
 
     // Using more complext combinations
     RunnableFlow<Pair<Promise<BoxedUnit>, Cancellable>> r7 =
-    source.via(flow, Keep.both()).to(sink);
+    source.viaMat(flow, Keep.both()).to(sink);
 
     RunnableFlow<Pair<Promise<BoxedUnit>, Future<Integer>>> r8 =
-    source.via(flow).to(sink, Keep.both());
+    source.via(flow).toMat(sink, Keep.both());
 
     RunnableFlow<Pair<Pair<Promise<BoxedUnit>, Cancellable>, Future<Integer>>> r9 =
-    source.via(flow, Keep.both()).to(sink, Keep.both());
+    source.viaMat(flow, Keep.both()).toMat(sink, Keep.both());
 
     RunnableFlow<Pair<Cancellable, Future<Integer>>> r10 =
-    source.via(flow, Keep.right()).to(sink, Keep.both());
+    source.viaMat(flow, Keep.right()).toMat(sink, Keep.both());
 
     // It is also possible to map over the materialized values. In r9 we had a
     // doubly nested pair, but we want to flatten it out
