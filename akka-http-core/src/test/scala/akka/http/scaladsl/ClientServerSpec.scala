@@ -149,7 +149,12 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
           val (_, responseFuture) =
             Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
-          Await.result(responseFuture.failed, 5.second) shouldBe a[StreamTcpException]
+          try Await.result(responseFuture, 5.second).status should ===(StatusCodes.InternalServerError)
+          catch {
+            case _: StreamTcpException ⇒
+            // Also fine, depends on the race between abort and 500, caused by materialization panic which
+            // tries to tear down everything, but the order is nondeterministic
+          }
         }(system2)
         Await.result(b1.unbind(), 1.second)
       }(materializer2)
@@ -163,7 +168,12 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
           val (_, responseFuture) =
             Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
-          Await.result(responseFuture.failed, 5.second) shouldBe a[StreamTcpException]
+          try Await.result(responseFuture, 5.seconds).status should ===(StatusCodes.InternalServerError)
+          catch {
+            case _: StreamTcpException ⇒
+            // Also fine, depends on the race between abort and 500, caused by materialization panic which
+            // tries to tear down everything, but the order is nondeterministic
+          }
         }(system2)
         Await.result(b1.unbind(), 1.second)
       }(materializer2)
