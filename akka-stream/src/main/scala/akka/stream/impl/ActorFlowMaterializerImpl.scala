@@ -309,6 +309,7 @@ private[akka] object ActorProcessorFactory {
       case Drop(n, _)                 ⇒ (ActorInterpreter.props(settings, List(fusing.Drop(n)), materializer, att), ())
       case Take(n, _)                 ⇒ (ActorInterpreter.props(settings, List(fusing.Take(n)), materializer, att), ())
       case Collect(pf, _)             ⇒ (ActorInterpreter.props(settings, List(fusing.Collect(settings.supervisionDecider)(pf)), materializer, att), ())
+      case Recover(pf, _)             ⇒ (ActorInterpreter.props(settings, List(fusing.Recover(pf)), materializer, att), ())
       case Scan(z, f, _)              ⇒ (ActorInterpreter.props(settings, List(fusing.Scan(z, f, settings.supervisionDecider)), materializer, att), ())
       case Expand(s, f, _)            ⇒ (ActorInterpreter.props(settings, List(fusing.Expand(s, f)), materializer, att), ())
       case Conflate(s, f, _)          ⇒ (ActorInterpreter.props(settings, List(fusing.Conflate(s, f, settings.supervisionDecider)), materializer, att), ())
