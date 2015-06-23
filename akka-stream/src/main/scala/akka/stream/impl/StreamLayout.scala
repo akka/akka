@@ -4,12 +4,13 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicBoolean, AtomicReference }
+import akka.stream.impl.MaterializerSession.MaterializationPanic
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.scaladsl.Keep
 import akka.stream._
 import org.reactivestreams.{ Processor, Subscription, Publisher, Subscriber }
 import scala.collection.mutable
-import scala.util.control.NonFatal
+import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.event.Logging.simpleName
 import scala.annotation.tailrec
 import java.util.concurrent.atomic.AtomicLong
@@ -541,6 +542,13 @@ private[stream] class MaterializedValuePublisher extends Publisher[Any] {
 }
 
 /**
+ * INERNAL API
+ */
+private[stream] object MaterializerSession {
+  class MaterializationPanic(cause: Throwable) extends RuntimeException("Materialization aborted.", cause) with NoStackTrace
+}
+
+/**
  * INTERNAL API
  */
 private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Module) {
@@ -599,12 +607,38 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
 
   }
 
+  // Cancels all intermediate Publishers and fails all intermediate Subscribers.
+  // (This is an attempt to clean up after an exception during materialization)
+  private def panic(cause: Throwable): Unit = {
+    val panicError = new MaterializationPanic(cause)
+    for (subMap ← subscribersStack; sub ← subMap.valuesIterator) {
+      sub.onSubscribe(new Subscription {
+        override def cancel(): Unit = ()
+        override def request(n: Long): Unit = sub.onError(panicError)
+      })
+    }
+
+    for (pubMap ← publishersStack; pub ← pubMap.valuesIterator) {
+      pub.subscribe(new Subscriber[Any] {
+        override def onSubscribe(s: Subscription): Unit = s.cancel()
+        override def onComplete(): Unit = ()
+        override def onError(t: Throwable): Unit = ()
+        override def onNext(t: Any): Unit = ()
+      })
+    }
+  }
+
   final def materialize(): Any = {
     require(topLevel ne EmptyModule, "An empty module cannot be materialized (EmptyModule was given)")
     require(
       topLevel.isRunnable,
       s"The top level module cannot be materialized because it has unconnected ports: ${(topLevel.inPorts ++ topLevel.outPorts).mkString(", ")}")
-    materializeModule(topLevel, topLevel.attributes)
+    try materializeModule(topLevel, topLevel.attributes)
+    catch {
+      case NonFatal(e) ⇒
+        panic(e)
+        throw e
+    }
   }
 
   protected def mergeAttributes(parent: OperationAttributes, current: OperationAttributes): OperationAttributes =
