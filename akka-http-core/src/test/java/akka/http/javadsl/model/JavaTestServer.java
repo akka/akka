@@ -12,8 +12,8 @@ import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.model.ws.Websocket;
 import akka.japi.JavaPartialFunction;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
+import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import scala.concurrent.Await;
@@ -30,7 +30,7 @@ public class JavaTestServer {
         ActorSystem system = ActorSystem.create();
 
         try {
-            final FlowMaterializer materializer = ActorFlowMaterializer.create(system);
+            final Materializer materializer = ActorMaterializer.create(system);
 
             Future<ServerBinding> serverBindingFuture =
                     Http.get(system).bindAndHandleSync(

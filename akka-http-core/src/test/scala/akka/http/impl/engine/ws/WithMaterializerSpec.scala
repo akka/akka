@@ -7,7 +7,7 @@ package akka.http.impl.engine.ws
 import com.typesafe.config.{ ConfigFactory, Config }
 import org.scalatest.{ Suite, BeforeAndAfterAll }
 import akka.actor.ActorSystem
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 
 trait WithMaterializerSpec extends BeforeAndAfterAll { _: Suite ⇒
   lazy val testConf: Config = ConfigFactory.parseString("""
@@ -15,6 +15,6 @@ trait WithMaterializerSpec extends BeforeAndAfterAll { _: Suite ⇒
   akka.loglevel = WARNING""")
   implicit lazy val system = ActorSystem(getClass.getSimpleName, testConf)
 
-  implicit lazy val materializer = ActorFlowMaterializer()
+  implicit lazy val materializer = ActorMaterializer()
   override def afterAll() = system.shutdown()
 }

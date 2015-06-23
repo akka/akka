@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import org.scalatest.Inside
 import akka.util.ByteString
 import akka.stream.scaladsl._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
@@ -24,7 +24,7 @@ import MediaTypes._
 import HttpMethods._
 
 class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside { spec ⇒
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "The server implementation" should {
 
