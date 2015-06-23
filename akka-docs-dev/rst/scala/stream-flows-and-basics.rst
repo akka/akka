@@ -45,14 +45,14 @@ Sink
 Flow
   A processing stage which has *exactly one input and output*, which connects its up- and downstreams by
   transforming the data elements flowing through it.
-RunnableFlow
+RunnableGraph
   A Flow that has both ends "attached" to a Source and Sink respectively, and is ready to be ``run()``.
 
 It is possible to attach a ``Flow`` to a ``Source`` resulting in a composite source, and it is also possible to prepend
 a ``Flow`` to a ``Sink`` to get a new sink. After a stream is properly terminated by having both a source and a sink,
-it will be represented by the ``RunnableFlow`` type, indicating that it is ready to be executed.
+it will be represented by the ``RunnableGraph`` type, indicating that it is ready to be executed.
 
-It is important to remember that even after constructing the ``RunnableFlow`` by connecting all the source, sink and
+It is important to remember that even after constructing the ``RunnableGraph`` by connecting all the source, sink and
 different processing stages, no data will flow through it until it is materialized. Materialization is the process of
 allocating all resources needed to run the computation described by a Flow (in Akka Streams this will often involve
 starting up Actors). Thanks to Flows being simply a description of the processing pipeline they are *immutable,
@@ -61,7 +61,7 @@ one actor prepare the work, and then have it be materialized at some completely 
 
 .. includecode:: code/docs/stream/FlowDocSpec.scala#materialization-in-steps
 
-After running (materializing) the ``RunnableFlow[T]`` we get back the materialized value of type T. Every stream processing
+After running (materializing) the ``RunnableGraph[T]`` we get back the materialized value of type T. Every stream processing
 stage can produce a materialized value, and it is the responsibility of the user to combine them to a new type.
 In the above example we used ``toMat`` to indicate that we want to transform the materialized value of the source and
 sink, and we used the convenience function ``Keep.right`` to say that we are only interested in the materialized value

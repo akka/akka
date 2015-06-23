@@ -77,7 +77,7 @@ public class FlowDocTest {
             Sink.fold(0, (aggr, next) -> aggr + next);
 
         // connect the Source to the Sink, obtaining a RunnableFlow
-        final RunnableFlow<Future<Integer>> runnable =
+        final RunnableGraph<Future<Integer>> runnable =
             source.toMat(sink, Keep.right());
 
         // materialize the flow
@@ -107,10 +107,10 @@ public class FlowDocTest {
     @Test
     public void materializedMapUnique() throws Exception {
         //#stream-reuse
-        // connect the Source to the Sink, obtaining a RunnableFlow
+        // connect the Source to the Sink, obtaining a RunnableGraph
         final Sink<Integer, Future<Integer>> sink =
           Sink.fold(0, (aggr, next) -> aggr + next);
-        final RunnableFlow<Future<Integer>> runnable =
+        final RunnableGraph<Future<Integer>> runnable =
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).toMat(sink, Keep.right());
 
         // get the materialized value of the FoldSink
@@ -232,11 +232,11 @@ public class FlowDocTest {
 
 
     // By default, the materialized value of the leftmost stage is preserved
-    RunnableFlow<Promise<BoxedUnit>> r1 = source.via(flow).to(sink);
+    RunnableGraph<Promise<BoxedUnit>> r1 = source.via(flow).to(sink);
 
     // Simple selection of materialized values by using Keep.right
-    RunnableFlow<Cancellable> r2 = source.viaMat(flow, Keep.right()).to(sink);
-    RunnableFlow<Future<Integer>> r3 = source.via(flow).toMat(sink, Keep.right());
+    RunnableGraph<Cancellable> r2 = source.viaMat(flow, Keep.right()).to(sink);
+    RunnableGraph<Future<Integer>> r3 = source.via(flow).toMat(sink, Keep.right());
 
     // Using runWith will always give the materialized values of the stages added
     // by runWith() itself
@@ -245,23 +245,23 @@ public class FlowDocTest {
     Pair<Promise<BoxedUnit>, Future<Integer>> r6 = flow.runWith(source, sink, mat);
 
     // Using more complext combinations
-    RunnableFlow<Pair<Promise<BoxedUnit>, Cancellable>> r7 =
+    RunnableGraph<Pair<Promise<BoxedUnit>, Cancellable>> r7 =
     source.viaMat(flow, Keep.both()).to(sink);
 
-    RunnableFlow<Pair<Promise<BoxedUnit>, Future<Integer>>> r8 =
+    RunnableGraph<Pair<Promise<BoxedUnit>, Future<Integer>>> r8 =
     source.via(flow).toMat(sink, Keep.both());
 
-    RunnableFlow<Pair<Pair<Promise<BoxedUnit>, Cancellable>, Future<Integer>>> r9 =
+    RunnableGraph<Pair<Pair<Promise<BoxedUnit>, Cancellable>, Future<Integer>>> r9 =
     source.viaMat(flow, Keep.both()).toMat(sink, Keep.both());
 
-    RunnableFlow<Pair<Cancellable, Future<Integer>>> r10 =
+    RunnableGraph<Pair<Cancellable, Future<Integer>>> r10 =
     source.viaMat(flow, Keep.right()).toMat(sink, Keep.both());
 
     // It is also possible to map over the materialized values. In r9 we had a
     // doubly nested pair, but we want to flatten it out
 
 
-    RunnableFlow<Cancellable> r11 =
+    RunnableGraph<Cancellable> r11 =
     r9.mapMaterializedValue( (nestedTuple) -> {
       Promise<BoxedUnit> p = nestedTuple.first().first();
       Cancellable c = nestedTuple.first().second();

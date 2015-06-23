@@ -6,8 +6,6 @@ package docs.stream;
 import akka.actor.ActorSystem;
 import akka.dispatch.Foreach;
 import akka.japi.JavaPartialFunction;
-import akka.stream.*;
-import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Hashtag;
@@ -305,7 +303,7 @@ public class TwitterStreamQuickstartDocTest {
     final Sink<Integer, Future<Integer>> sumSink =
       Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
 
-    final RunnableFlow<Future<Integer>> counter =
+    final RunnableGraph<Future<Integer>> counter =
         tweets.map(t -> 1).toMat(sumSink, Keep.right());
 
     final Future<Integer> sum = counter.run(mat);
@@ -331,16 +329,16 @@ public class TwitterStreamQuickstartDocTest {
     //#tweets-runnable-flow-materialized-twice
     final Sink<Integer, Future<Integer>> sumSink =
       Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
-    final RunnableFlow<Future<Integer>> counterRunnableFlow =
+    final RunnableGraph<Future<Integer>> counterRunnableGraph =
       tweetsInMinuteFromNow
         .filter(t -> t.hashtags().contains(AKKA))
         .map(t -> 1)
         .toMat(sumSink, Keep.right());
 
     // materialize the stream once in the morning
-    final Future<Integer> morningTweetsCount = counterRunnableFlow.run(mat);
+    final Future<Integer> morningTweetsCount = counterRunnableGraph.run(mat);
     // and once in the evening, reusing the blueprint
-    final Future<Integer> eveningTweetsCount = counterRunnableFlow.run(mat);
+    final Future<Integer> eveningTweetsCount = counterRunnableGraph.run(mat);
     //#tweets-runnable-flow-materialized-twice
 
   }

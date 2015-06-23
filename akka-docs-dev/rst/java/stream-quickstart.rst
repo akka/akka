@@ -146,8 +146,8 @@ First, we prepare the :class:`FoldSink` which will be used to sum all ``Integer`
 Next we connect the ``tweets`` stream though a ``map`` step which converts each tweet into the number ``1``,
 finally we connect the flow ``to`` the previously prepared Sink. Notice that this step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be ``run()``, as indicated by its type: :class:`RunnableFlow`. Next we call ``run()`` which uses the implicit :class:`ActorMaterializer`
-to materialize and run the flow. The value returned by calling ``run()`` on a ``RunnableFlow`` or ``FlowGraph`` is ``MaterializedMap``,
+be ``run()``, as indicated by its type: :class:`RunnableGraph`. Next we call ``run()`` which uses the implicit :class:`ActorMaterializer`
+to materialize and run the flow. The value returned by calling ``run()`` on a ``RunnableGraph`` or ``FlowGraph`` is ``MaterializedMap``,
 which can be used to retrieve materialized values from the running stream.
 
 In order to extract an materialized value from a running stream it is possible to call ``get(Materializable)`` on a materialized map
@@ -155,7 +155,7 @@ obtained from materializing a flow or graph. Since ``FoldSink`` implements ``Mat
 as ``Future<Integer>`` we can use it to obtain the :class:`Future` which when completed will contain the total length of our tweets stream.
 In case of the stream failing, this future would complete with a Failure.
 
-The reason we have to ``get`` the value out from the materialized map, is because a :class:`RunnableFlow` may be reused
+The reason we have to ``get`` the value out from the materialized map, is because a :class:`RunnableGraph` may be reused
 and materialized multiple times, because it is just the "blueprint" of the stream. This means that if we materialize a stream,
 for example one that consumes a live stream of tweets within a minute, the materialized values for those two materializations
 will be different, as illustrated by this example:

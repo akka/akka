@@ -147,16 +147,16 @@ finally we connect the flow using ``toMat`` the previously prepared Sink. Rememb
 materialized. When you chain these together, you can explicitly combine their materialized values: in our example we
 used the ``Keep.right`` predefined function, which tells the implementation to only care about the materialized
 type of the stage currently appended to the right. As you can notice, the materialized type of sumSink is ``Future[Int]``
-and because of using ``Keep.right``, the resulting :class:`RunnableFlow` has also a type parameter of ``Future[Int]``.
+and because of using ``Keep.right``, the resulting :class:`RunnableGraph` has also a type parameter of ``Future[Int]``.
 
 This step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be ``run()``, as indicated by its type: :class:`RunnableFlow[Future[Int]]`. Next we call ``run()`` which uses the implicit :class:`ActorMaterializer`
-to materialize and run the flow. The value returned by calling ``run()`` on a ``RunnableFlow[T]`` is of type ``T``.
+be ``run()``, as indicated by its type: :class:`RunnableGraph[Future[Int]]`. Next we call ``run()`` which uses the implicit :class:`ActorMaterializer`
+to materialize and run the flow. The value returned by calling ``run()`` on a ``RunnableGraph[T]`` is of type ``T``.
 In our case this type is ``Future[Int]`` which, when completed, will contain the total length of our tweets stream.
 In case of the stream failing, this future would complete with a Failure.
 
-A :class:`RunnableFlow` may be reused
+A :class:`RunnableGraph` may be reused
 and materialized multiple times, because it is just the "blueprint" of the stream. This means that if we materialize a stream,
 for example one that consumes a live stream of tweets within a minute, the materialized values for those two materializations
 will be different, as illustrated by this example:

@@ -19,8 +19,8 @@ class DslConsistencySpec extends WordSpec with Matchers {
   val sSinkClass = classOf[akka.stream.scaladsl.Sink[_, _]]
   val jSinkClass = classOf[akka.stream.javadsl.Sink[_, _]]
 
-  val jRunnableFlowClass = classOf[akka.stream.javadsl.RunnableFlow[_]]
-  val sRunnableFlowClass = classOf[akka.stream.scaladsl.RunnableFlow[_]]
+  val jRunnableGraphClass = classOf[akka.stream.javadsl.RunnableGraph[_]]
+  val sRunnableGraphClass = classOf[akka.stream.scaladsl.RunnableGraph[_]]
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
@@ -38,8 +38,8 @@ class DslConsistencySpec extends WordSpec with Matchers {
     jSourceClass -> Set("timerTransform"),
     jSinkClass -> Set(),
 
-    sRunnableFlowClass -> Set("builder"),
-    jRunnableFlowClass → Set("graph", "cyclesAllowed"))
+    sRunnableGraphClass -> Set("builder"),
+    jRunnableGraphClass → Set("graph", "cyclesAllowed"))
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
 
@@ -54,7 +54,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
     ("Source" -> List(sSourceClass, jSourceClass)) ::
       ("Flow" -> List(sFlowClass, jFlowClass)) ::
       ("Sink" -> List(sSinkClass, jSinkClass)) ::
-      ("RunanbleFlow" -> List(sRunnableFlowClass, jRunnableFlowClass)) ::
+      ("RunanbleFlow" -> List(sRunnableGraphClass, jRunnableGraphClass)) ::
       Nil foreach {
         case (element, classes) ⇒
 

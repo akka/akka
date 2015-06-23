@@ -146,7 +146,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#email-addresses-mapAsync
 
     //#send-emails
-    val sendEmails: RunnableFlow[Unit] =
+    val sendEmails: RunnableGraph[Unit] =
       emailAddresses
         .mapAsync(4)(address => {
           emailServer.send(
@@ -196,7 +196,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
         .mapAsyncUnordered(4)(author => addressSystem.lookupEmail(author.handle))
         .collect { case Some(emailAddress) => emailAddress }
 
-    val sendEmails: RunnableFlow[Unit] =
+    val sendEmails: RunnableGraph[Unit] =
       emailAddresses
         .mapAsyncUnordered(4)(address => {
           emailServer.send(
@@ -231,7 +231,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#blocking-mapAsync
     val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
 
-    val sendTextMessages: RunnableFlow[Unit] =
+    val sendTextMessages: RunnableGraph[Unit] =
       phoneNumbers
         .mapAsync(4)(phoneNo => {
           Future {
@@ -271,7 +271,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
         smsServer.send(TextMessage(to = phoneNo, body = "I like your tweet"))
       }
       .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"))
-    val sendTextMessages: RunnableFlow[Unit] =
+    val sendTextMessages: RunnableGraph[Unit] =
       phoneNumbers.via(send).to(Sink.ignore)
 
     sendTextMessages.run()
@@ -294,7 +294,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val akkaTweets: Source[Tweet, Unit] = tweets.filter(_.hashtags.contains(akka))
 
     implicit val timeout = Timeout(3.seconds)
-    val saveTweets: RunnableFlow[Unit] =
+    val saveTweets: RunnableGraph[Unit] =
       akkaTweets
         .mapAsync(4)(tweet => database ? Save(tweet))
         .to(Sink.ignore)

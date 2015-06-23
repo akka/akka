@@ -56,7 +56,7 @@ public class FlowGraphDocTest {
     final Flow<Integer, Integer, BoxedUnit> f4 =
         Flow.of(Integer.class).map(elem -> elem + 30);
 
-    final RunnableFlow<Future<List<String>>> result = FlowGraph.factory()
+    final RunnableGraph<Future<List<String>>> result = FlowGraph.factory()
         .closed(
             sink,
             (builder, out) -> {
@@ -104,7 +104,7 @@ public class FlowGraphDocTest {
     final Flow<Integer, Integer, BoxedUnit> sharedDoubler =
         Flow.of(Integer.class).map(elem -> elem * 2);
 
-    final RunnableFlow<Pair<Future<Integer>, Future<Integer>>> g = FlowGraph
+    final RunnableGraph<Pair<Future<Integer>, Future<Integer>>> g = FlowGraph
         .factory().closed(
             topHeadSink,    // import this sink into the graph
             bottomHeadSink, // and this as well

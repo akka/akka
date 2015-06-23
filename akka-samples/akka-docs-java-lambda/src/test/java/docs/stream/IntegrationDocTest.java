@@ -313,7 +313,7 @@ public class IntegrationDocTest {
         //#email-addresses-mapAsync
 
         //#send-emails
-        final RunnableFlow<BoxedUnit> sendEmails = emailAddresses
+        final RunnableGraph<BoxedUnit> sendEmails = emailAddresses
           .mapAsync(4, address ->
             emailServer.send(new Email(address, "Akka", "I like your tweet")))
           .to(Sink.ignore());
@@ -377,7 +377,7 @@ public class IntegrationDocTest {
             .filter(o -> o.isPresent())
             .map(o -> o.get());
 
-        final RunnableFlow<BoxedUnit> sendEmails =
+        final RunnableGraph<BoxedUnit> sendEmails =
           emailAddresses
             .mapAsyncUnordered(4, address ->
               emailServer.send(new Email(address, "Akka", "I like your tweet")))
@@ -409,7 +409,7 @@ public class IntegrationDocTest {
         //#blocking-mapAsync
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
 
-        final RunnableFlow sendTextMessages =
+        final RunnableGraph sendTextMessages =
           phoneNumbers
             .mapAsync(4, phoneNo  ->
               Futures.future(() ->
@@ -458,7 +458,7 @@ public class IntegrationDocTest {
           Flow.of(String.class)
           .map(phoneNo -> smsServer.send(new TextMessage(phoneNo, "I like your tweet")))
           .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"));
-        final RunnableFlow<?> sendTextMessages =
+        final RunnableGraph<?> sendTextMessages =
           phoneNumbers.via(send).to(Sink.ignore());
 
         sendTextMessages.run(mat);
@@ -487,7 +487,7 @@ public class IntegrationDocTest {
         //#save-tweets
         final Source<Tweet, BoxedUnit> akkaTweets = tweets.filter(t -> t.hashtags().contains(AKKA));
 
-        final RunnableFlow saveTweets =
+        final RunnableGraph saveTweets =
           akkaTweets
             .mapAsync(4, tweet -> ask(database, new Save(tweet), 300))
             .to(Sink.ignore());
