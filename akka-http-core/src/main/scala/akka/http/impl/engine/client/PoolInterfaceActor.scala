@@ -9,7 +9,7 @@ import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
 import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
@@ -45,7 +45,7 @@ private object PoolInterfaceActor {
  */
 private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
                                  shutdownCompletedPromise: Promise[Unit],
-                                 gateway: PoolGateway)(implicit fm: FlowMaterializer)
+                                 gateway: PoolGateway)(implicit fm: Materializer)
   extends ActorSubscriber with ActorPublisher[RequestContext] with ActorLogging {
   import PoolInterfaceActor._
 

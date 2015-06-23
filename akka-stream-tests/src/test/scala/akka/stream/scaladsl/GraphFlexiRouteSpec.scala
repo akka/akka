@@ -3,7 +3,7 @@ package akka.stream.scaladsl
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import FlowGraph.Implicits._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
@@ -146,7 +146,7 @@ object GraphFlexiRouteSpec {
     }
   }
 
-  class TestFixture(implicit val system: ActorSystem, implicit val materializer: ActorFlowMaterializer) {
+  class TestFixture(implicit val system: ActorSystem, implicit val materializer: ActorMaterializer) {
     val autoPublisher = TestPublisher.probe[String]()
     val s1 = TestSubscriber.manualProbe[String]
     val s2 = TestSubscriber.manualProbe[String]
@@ -170,7 +170,7 @@ object GraphFlexiRouteSpec {
 class GraphFlexiRouteSpec extends AkkaSpec {
   import GraphFlexiRouteSpec._
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   val in = Source(List("a", "b", "c", "d", "e"))
 

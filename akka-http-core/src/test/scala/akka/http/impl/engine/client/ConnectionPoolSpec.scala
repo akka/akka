@@ -17,7 +17,7 @@ import akka.http.scaladsl.{ TestUtils, Http }
 import akka.http.impl.util.{ SingletonException, StreamUtils }
 import akka.http.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.stream.io.{ SessionBytes, SendBytes, SslTlsOutbound }
-import akka.stream.{ BidiShape, ActorFlowMaterializer }
+import akka.stream.{ BidiShape, ActorMaterializer }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber, AkkaSpec }
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.headers._
@@ -28,7 +28,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     akka.loglevel = OFF
     akka.io.tcp.trace-logging = off
     akka.io.tcp.windows-connection-abort-workaround-enabled=auto""") {
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   // FIXME: Extract into proper util class to be reusable
   lazy val ConnectionResetByPeerMessage: String = {

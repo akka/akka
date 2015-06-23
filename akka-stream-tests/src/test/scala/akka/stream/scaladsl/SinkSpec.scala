@@ -4,12 +4,12 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 
 class SinkSpec extends AkkaSpec {
   import FlowGraph.Implicits._
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "A Sink" must {
 

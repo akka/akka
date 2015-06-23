@@ -9,7 +9,7 @@ import scala.concurrent.Await
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, Flow }
 import com.typesafe.config.{ ConfigFactory, Config }
 import HttpMethods._
@@ -20,7 +20,7 @@ object TestServer extends App {
     akka.log-dead-letters = off
     """)
   implicit val system = ActorSystem("ServerTest", testConf)
-  implicit val fm = ActorFlowMaterializer()
+  implicit val fm = ActorMaterializer()
 
   try {
     val binding = Http().bindAndHandleSync({

@@ -9,7 +9,7 @@ import scala.concurrent.{ ExecutionContext, Future, Await }
 import scala.concurrent.duration._
 import org.scalatest.Suite
 import org.scalatest.matchers.Matcher
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 
@@ -21,10 +21,10 @@ trait ScalatestUtils extends MarshallingTestUtils {
   def haveFailedWith(t: Throwable): Matcher[Future[_]] =
     equal(t).matcher[Throwable] compose (x ⇒ Await.result(x.failed, 1.second))
 
-  def unmarshalToValue[T: FromEntityUnmarshaller](value: T)(implicit ec: ExecutionContext, mat: FlowMaterializer): Matcher[HttpEntity] =
+  def unmarshalToValue[T: FromEntityUnmarshaller](value: T)(implicit ec: ExecutionContext, mat: Materializer): Matcher[HttpEntity] =
     equal(value).matcher[T] compose (unmarshalValue(_))
 
-  def unmarshalTo[T: FromEntityUnmarshaller](value: Try[T])(implicit ec: ExecutionContext, mat: FlowMaterializer): Matcher[HttpEntity] =
+  def unmarshalTo[T: FromEntityUnmarshaller](value: Try[T])(implicit ec: ExecutionContext, mat: Materializer): Matcher[HttpEntity] =
     equal(value).matcher[Try[T]] compose (unmarshal(_))
 }
 

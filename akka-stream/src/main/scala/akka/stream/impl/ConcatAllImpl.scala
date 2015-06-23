@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.actor.{ Deploy, Props }
 
@@ -11,14 +11,14 @@ import akka.actor.{ Deploy, Props }
  * INTERNAL API
  */
 private[akka] object ConcatAllImpl {
-  def props(materializer: ActorFlowMaterializer): Props =
+  def props(materializer: ActorMaterializer): Props =
     Props(new ConcatAllImpl(materializer)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class ConcatAllImpl(materializer: ActorFlowMaterializer)
+private[akka] class ConcatAllImpl(materializer: ActorMaterializer)
   extends MultiStreamInputProcessor(materializer.settings) {
 
   import akka.stream.impl.MultiStreamInputProcessor._

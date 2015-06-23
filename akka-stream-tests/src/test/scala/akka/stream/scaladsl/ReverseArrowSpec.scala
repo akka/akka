@@ -9,7 +9,7 @@ import org.scalactic.ConversionCheckedTripleEquals
 class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   import FlowGraph.Implicits._
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
   val source = Source(List(1, 2, 3))
   val sink = Flow[Int].grouped(10).toMat(Sink.head)(Keep.right)
 

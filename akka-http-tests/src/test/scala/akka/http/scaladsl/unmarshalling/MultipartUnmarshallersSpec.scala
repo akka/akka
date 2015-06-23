@@ -11,7 +11,7 @@ import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.http.scaladsl.testkit.ScalatestUtils
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
@@ -21,7 +21,7 @@ import MediaTypes._
 
 class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   "The MultipartUnmarshallers." - {

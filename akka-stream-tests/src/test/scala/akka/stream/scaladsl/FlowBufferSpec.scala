@@ -6,8 +6,8 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.OverflowStrategy
 import akka.stream.OverflowStrategy.Fail.BufferOverflowException
 import akka.stream.testkit._
@@ -16,10 +16,10 @@ import akka.stream.testkit.Utils._
 
 class FlowBufferSpec extends AkkaSpec {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 1, maxSize = 1)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "Buffer" must {
 

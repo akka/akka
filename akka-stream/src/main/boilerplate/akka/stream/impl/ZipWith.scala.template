@@ -5,11 +5,11 @@ package akka.stream.impl
 
 import scala.collection.immutable
 import akka.actor.Props
-import akka.stream.{ ActorFlowMaterializerSettings, Shape, Inlet, Outlet }
+import akka.stream.{ ActorMaterializerSettings, Shape, Inlet, Outlet }
 import akka.stream.impl.GenJunctions._
 
 [2..20#/** INTERNAL API */
-private[akka] final class Zip1With(_settings: ActorFlowMaterializerSettings, f: Function1[[#Any#], Any])
+private[akka] final class Zip1With(_settings: ActorMaterializerSettings, f: Function1[[#Any#], Any])
   extends FanIn(_settings, inputCount = 1) {
 
   inputBunch.markAllInputs()

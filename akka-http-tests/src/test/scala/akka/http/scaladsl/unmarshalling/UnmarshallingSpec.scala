@@ -7,12 +7,12 @@ package akka.http.scaladsl.unmarshalling
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.http.scaladsl.testkit.ScalatestUtils
 import akka.actor.ActorSystem
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model._
 
 class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   "The PredefinedFromEntityUnmarshallers." - {

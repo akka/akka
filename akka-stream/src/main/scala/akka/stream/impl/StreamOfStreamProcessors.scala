@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
 import akka.actor._
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
@@ -206,7 +206,7 @@ private[akka] trait MultiStreamOutputProcessorLike extends Pump with StreamSubsc
 /**
  * INTERNAL API
  */
-private[akka] abstract class MultiStreamOutputProcessor(_settings: ActorFlowMaterializerSettings) extends ActorProcessorImpl(_settings) with MultiStreamOutputProcessorLike {
+private[akka] abstract class MultiStreamOutputProcessor(_settings: ActorMaterializerSettings) extends ActorProcessorImpl(_settings) with MultiStreamOutputProcessorLike {
   private var _nextId = 0L
   protected def nextId(): Long = { _nextId += 1; _nextId }
 
@@ -254,7 +254,7 @@ private[akka] object TwoStreamInputProcessor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class TwoStreamInputProcessor(_settings: ActorFlowMaterializerSettings, val other: Publisher[Any])
+private[akka] abstract class TwoStreamInputProcessor(_settings: ActorMaterializerSettings, val other: Publisher[Any])
   extends ActorProcessorImpl(_settings) {
   import akka.stream.impl.TwoStreamInputProcessor._
 
@@ -408,7 +408,7 @@ private[akka] trait MultiStreamInputProcessorLike extends Pump { this: Actor ⇒
 /**
  * INTERNAL API
  */
-private[akka] abstract class MultiStreamInputProcessor(_settings: ActorFlowMaterializerSettings) extends ActorProcessorImpl(_settings) with MultiStreamInputProcessorLike {
+private[akka] abstract class MultiStreamInputProcessor(_settings: ActorMaterializerSettings) extends ActorProcessorImpl(_settings) with MultiStreamInputProcessorLike {
   private var _nextId = 0L
   protected def nextId(): Long = { _nextId += 1; _nextId }
 

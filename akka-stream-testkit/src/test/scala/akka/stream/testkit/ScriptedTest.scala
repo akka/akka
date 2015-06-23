@@ -4,7 +4,7 @@
 package akka.stream.testkit
 
 import akka.actor.ActorSystem
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.{ Sink, Source, Flow }
 import akka.stream.testkit._
 import akka.stream.testkit.StreamTestKit._
@@ -13,13 +13,13 @@ import org.scalatest.Matchers
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 
 trait ScriptedTest extends Matchers {
 
   class ScriptException(msg: String) extends RuntimeException(msg)
 
-  def toPublisher[In, Out]: (Source[Out, _], ActorFlowMaterializer) ⇒ Publisher[Out] =
+  def toPublisher[In, Out]: (Source[Out, _], ActorMaterializer) ⇒ Publisher[Out] =
     (f, m) ⇒ f.runWith(Sink.publisher)(m)
 
   object Script {
@@ -83,7 +83,7 @@ trait ScriptedTest extends Matchers {
 
   class ScriptRunner[In, Out](
     op: Flow[In, In, _] ⇒ Flow[In, Out, _],
-    settings: ActorFlowMaterializerSettings,
+    settings: ActorMaterializerSettings,
     script: Script[In, Out],
     maximumOverrun: Int,
     maximumRequest: Int,
@@ -191,7 +191,7 @@ trait ScriptedTest extends Matchers {
 
   }
 
-  def runScript[In, Out](script: Script[In, Out], settings: ActorFlowMaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
+  def runScript[In, Out](script: Script[In, Out], settings: ActorMaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
     op: Flow[In, In, _] ⇒ Flow[In, Out, _])(implicit system: ActorSystem): Unit = {
     new ScriptRunner(op, settings, script, maximumOverrun, maximumRequest, maximumBuffer).run()
   }

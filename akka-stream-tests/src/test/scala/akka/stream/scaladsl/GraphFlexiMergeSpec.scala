@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.FlexiMerge._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
@@ -185,7 +185,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
   import GraphFlexiMergeSpec._
   import FlowGraph.Implicits._
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   val in1 = Source(List("a", "b", "c", "d"))
   val in2 = Source(List("e", "f"))

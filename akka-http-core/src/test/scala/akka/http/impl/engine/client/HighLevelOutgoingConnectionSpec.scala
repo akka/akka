@@ -8,12 +8,12 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.model._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
 class HighLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") {
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "The connection-level client implementation" should {
 

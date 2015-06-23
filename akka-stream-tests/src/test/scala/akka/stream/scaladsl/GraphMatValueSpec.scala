@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 
 import scala.concurrent.Await
@@ -12,10 +12,10 @@ import scala.concurrent.duration._
 
 class GraphMatValueSpec extends AkkaSpec {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   import FlowGraph.Implicits._
 

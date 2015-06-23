@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.server._
@@ -22,7 +22,7 @@ trait RouteTestResultComponent {
   /**
    * A receptacle for the response or rejections created by a route.
    */
-  class RouteTestResult(timeout: FiniteDuration)(implicit fm: FlowMaterializer) {
+  class RouteTestResult(timeout: FiniteDuration)(implicit fm: Materializer) {
     private[this] var result: Option[Either[immutable.Seq[Rejection], HttpResponse]] = None
     private[this] val latch = new CountDownLatch(1)
 

@@ -25,7 +25,7 @@ object RequestVals {
   def entityAs[T](unmarshaller: Unmarshaller[T]): RequestVal[T] =
     new ExtractingStandaloneExtractionImpl[T]()(unmarshaller.classTag) {
       def extract(ctx: server.RequestContext): Future[T] = {
-        val u = unmarshaller.asInstanceOf[UnmarshallerImpl[T]].scalaUnmarshaller(ctx.executionContext, ctx.flowMaterializer)
+        val u = unmarshaller.asInstanceOf[UnmarshallerImpl[T]].scalaUnmarshaller(ctx.executionContext, ctx.materializer)
         u(ctx.request)(ctx.executionContext)
       }
     }

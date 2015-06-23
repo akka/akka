@@ -14,7 +14,7 @@ import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.util.ByteString
 
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.{ Flow, Sink, Source, FlowGraph }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 
@@ -26,7 +26,7 @@ import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
 
 abstract class HttpServerTestSetupBase {
   implicit def system: ActorSystem
-  implicit def materializer: FlowMaterializer
+  implicit def materializer: Materializer
 
   val requests = TestSubscriber.manualProbe[HttpRequest]
   val responses = TestPublisher.manualProbe[HttpResponse]()

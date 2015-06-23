@@ -154,7 +154,7 @@ private[http] object StreamUtils {
    * Applies a sequence of transformers on one source and returns a sequence of sources with the result. The input source
    * will only be traversed once.
    */
-  def transformMultiple(input: Source[ByteString, Any], transformers: immutable.Seq[Flow[ByteString, ByteString, Any]])(implicit materializer: FlowMaterializer): immutable.Seq[Source[ByteString, Any]] =
+  def transformMultiple(input: Source[ByteString, Any], transformers: immutable.Seq[Flow[ByteString, ByteString, Any]])(implicit materializer: Materializer): immutable.Seq[Source[ByteString, Any]] =
     transformers match {
       case Nil      ⇒ Nil
       case Seq(one) ⇒ Vector(input.via(one))
@@ -354,8 +354,8 @@ private[http] object StreamUtils {
  * INTERNAL API
  */
 private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[ByteString, Mat]) extends AnyVal {
-  def join(implicit materializer: FlowMaterializer): Future[ByteString] =
+  def join(implicit materializer: Materializer): Future[ByteString] =
     byteStringStream.runFold(ByteString.empty)(_ ++ _)
-  def utf8String(implicit materializer: FlowMaterializer, ec: ExecutionContext): Future[String] =
+  def utf8String(implicit materializer: Materializer, ec: ExecutionContext): Future[String] =
     join.map(_.utf8String)
 }

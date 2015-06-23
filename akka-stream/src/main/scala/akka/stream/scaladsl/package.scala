@@ -43,12 +43,12 @@ package akka.stream
  *
  * By default every operation is executed within its own [[akka.actor.Actor]]
  * to enable full pipelining of the chained set of computations. This behavior
- * is determined by the [[akka.stream.FlowMaterializer]] which is required
+ * is determined by the [[akka.stream.Materializer]] which is required
  * by those methods that materialize the Flow into a series of
  * [[org.reactivestreams.Processor]] instances. The returned reactive stream
  * is fully started and active.
  *
- * Use [[ImplicitFlowMaterializer]] to define an implicit [[akka.stream.FlowMaterializer]]
+ * Use [[ImplicitMaterializer]] to define an implicit [[akka.stream.Materializer]]
  * inside an [[akka.actor.Actor]].
  */
 package object scaladsl {

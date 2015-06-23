@@ -5,8 +5,8 @@ package akka.stream.scaladsl
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import org.reactivestreams.Subscription
@@ -72,10 +72,10 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
 
 abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
-  private val m = ActorFlowMaterializer(settings)
+  private val m = ActorMaterializer(settings)
   implicit final def materializer = m
 
   def testName: String

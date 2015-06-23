@@ -6,7 +6,7 @@ package akka.stream.impl.fusing
 import akka.event.LoggingAdapter
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.stage._
-import akka.stream.{ FlowMaterializer, Attributes, Supervision }
+import akka.stream.{ Materializer, Attributes, Supervision }
 
 import scala.annotation.{ switch, tailrec }
 import scala.collection.{ breakOut, immutable }
@@ -153,7 +153,7 @@ private[akka] object OneBoundedInterpreter {
 private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
                                           onAsyncInput: (AsyncStage[Any, Any, Any], AsyncContext[Any, Any], Any) ⇒ Unit,
                                           log: LoggingAdapter,
-                                          materializer: FlowMaterializer,
+                                          materializer: Materializer,
                                           attributes: Attributes = Attributes.none,
                                           val forkLimit: Int = 100,
                                           val overflowToHeap: Boolean = true,
@@ -427,7 +427,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
       null
     }
 
-    override def materializer: FlowMaterializer = OneBoundedInterpreter.this.materializer
+    override def materializer: Materializer = OneBoundedInterpreter.this.materializer
     override def attributes: Attributes = OneBoundedInterpreter.this.attributes
   }
 

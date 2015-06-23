@@ -15,7 +15,7 @@ import scala.collection.{ JavaConverters, immutable }
 import scala.concurrent.{ ExecutionContext, Promise, Future }
 import akka.japi
 import akka.event.LoggingAdapter
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.io._
 import akka.stream.scaladsl._
 import akka.http.impl.util.StreamUtils
@@ -54,7 +54,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   def bind(interface: String, port: Int = -1,
            settings: ServerSettings = ServerSettings(system),
            httpsContext: Option[HttpsContext] = None,
-           log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Source[IncomingConnection, Future[ServerBinding]] = {
+           log: LoggingAdapter = system.log)(implicit fm: Materializer): Source[IncomingConnection, Future[ServerBinding]] = {
     val effectivePort = if (port >= 0) port else if (httpsContext.isEmpty) 80 else 443
     val tlsStage = sslTlsStage(httpsContext, Server)
     val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
@@ -80,7 +80,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                     interface: String, port: Int = -1,
                     settings: ServerSettings = ServerSettings(system),
                     httpsContext: Option[HttpsContext] = None,
-                    log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] = {
+                    log: LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
     def handleOneConnection(incomingConnection: IncomingConnection): Future[Unit] =
       try
         incomingConnection.flow
@@ -111,7 +111,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                         interface: String, port: Int = -1,
                         settings: ServerSettings = ServerSettings(system),
                         httpsContext: Option[HttpsContext] = None,
-                        log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
+                        log: LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] =
     bindAndHandle(Flow[HttpRequest].map(handler), interface, port, settings, httpsContext, log)
 
   /**
@@ -127,7 +127,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                          settings: ServerSettings = ServerSettings(system),
                          httpsContext: Option[HttpsContext] = None,
                          parallelism: Int = 1,
-                         log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
+                         log: LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] =
     bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, settings, httpsContext, log)
 
   /**
@@ -148,7 +148,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]]. The returned [[BidiFlow]]
    * can only be materialized once.
    */
-  def serverLayer()(implicit mat: FlowMaterializer): ServerLayer = serverLayer(ServerSettings(system))
+  def serverLayer()(implicit mat: Materializer): ServerLayer = serverLayer(ServerSettings(system))
 
   /**
    * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
@@ -156,7 +156,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    */
   def serverLayer(settings: ServerSettings,
                   remoteAddress: Option[InetSocketAddress] = None,
-                  log: LoggingAdapter = system.log)(implicit mat: FlowMaterializer): ServerLayer =
+                  log: LoggingAdapter = system.log)(implicit mat: Materializer): ServerLayer =
     BidiFlow.wrap(HttpServerBluePrint(settings, remoteAddress, log))
 
   /**
@@ -241,7 +241,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    */
   def newHostConnectionPool[T](host: String, port: Int = 80,
                                settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
-                               log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                               log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, None, log)
     newHostConnectionPool(HostConnectionPoolSetup(host, port, cps))
   }
@@ -255,7 +255,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   def newHostConnectionPoolTls[T](host: String, port: Int = 443,
                                   settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
                                   httpsContext: Option[HttpsContext] = None,
-                                  log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                                  log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, effectiveHttpsContext(httpsContext), log)
     newHostConnectionPool(HostConnectionPoolSetup(host, port, cps))
   }
@@ -275,7 +275,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * object of type ``T`` from the application which is emitted together with the corresponding response.
    */
   def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
-    implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+    implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val gatewayFuture = FastFuture.successful(new PoolGateway(setup, Promise()))
     gatewayClientFlow(setup, gatewayFuture)
   }
@@ -299,7 +299,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    */
   def cachedHostConnectionPool[T](host: String, port: Int = 80,
                                   settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
-                                  log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                                  log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, None, log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
@@ -314,7 +314,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   def cachedHostConnectionPoolTls[T](host: String, port: Int = 443,
                                      settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
                                      httpsContext: Option[HttpsContext] = None,
-                                     log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                                     log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, effectiveHttpsContext(httpsContext), log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
@@ -338,7 +338,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * object of type ``T`` from the application which is emitted together with the corresponding response.
    */
   def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup)(
-    implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     gatewayClientFlow(setup, cachedGateway(setup))
 
   /**
@@ -357,7 +357,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    */
   def superPool[T](settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
                    httpsContext: Option[HttpsContext] = None,
-                   log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] =
+                   log: LoggingAdapter = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] =
     clientFlow[T](settings) { request ⇒ request -> cachedGateway(request, settings, httpsContext, log) }
 
   /**
@@ -372,7 +372,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   def singleRequest(request: HttpRequest,
                     settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
                     httpsContext: Option[HttpsContext] = None,
-                    log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[HttpResponse] =
+                    log: LoggingAdapter = system.log)(implicit fm: Materializer): Future[HttpResponse] =
     try {
       val gatewayFuture = cachedGateway(request, settings, httpsContext, log)
       gatewayFuture.flatMap(_(request))(fm.executionContext)
@@ -423,7 +423,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
 
   private def cachedGateway(request: HttpRequest,
                             settings: ConnectionPoolSettings, httpsContext: Option[HttpsContext],
-                            log: LoggingAdapter)(implicit fm: FlowMaterializer): Future[PoolGateway] =
+                            log: LoggingAdapter)(implicit fm: Materializer): Future[PoolGateway] =
     if (request.uri.scheme.nonEmpty && request.uri.authority.nonEmpty) {
       val httpsCtx = if (request.uri.scheme.equalsIgnoreCase("https")) effectiveHttpsContext(httpsContext) else None
       val setup = ConnectionPoolSetup(settings, httpsCtx, log)
@@ -435,7 +435,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
       throw new IllegalUriException(ErrorInfo(msg))
     }
 
-  private[http] def cachedGateway(setup: HostConnectionPoolSetup)(implicit fm: FlowMaterializer): Future[PoolGateway] = {
+  private[http] def cachedGateway(setup: HostConnectionPoolSetup)(implicit fm: Materializer): Future[PoolGateway] = {
     val gatewayPromise = Promise[PoolGateway]()
     hostPoolCache.putIfAbsent(setup, gatewayPromise.future) match {
       case null ⇒ // only one thread can get here at a time
@@ -460,12 +460,12 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
 
   private def gatewayClientFlow[T](hcps: HostConnectionPoolSetup,
                                    gatewayFuture: Future[PoolGateway])(
-                                     implicit fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+                                     implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     clientFlow[T](hcps.setup.settings)(_ -> gatewayFuture)
       .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gatewayFuture))
 
   private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, Future[PoolGateway]))(
-    implicit system: ActorSystem, fm: FlowMaterializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] = {
+    implicit system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
@@ -520,21 +520,21 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * Handles the connection with the given flow, which is materialized exactly once
      * and the respective materialization result returned.
      */
-    def handleWith[Mat](handler: Flow[HttpRequest, HttpResponse, Mat])(implicit fm: FlowMaterializer): Mat =
+    def handleWith[Mat](handler: Flow[HttpRequest, HttpResponse, Mat])(implicit fm: Materializer): Mat =
       flow.joinMat(handler)(Keep.right).run()
 
     /**
      * Handles the connection with the given handler function.
      * Returns the materialization result of the underlying flow materialization.
      */
-    def handleWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: FlowMaterializer): Unit =
+    def handleWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: Materializer): Unit =
       handleWith(Flow[HttpRequest].map(handler))
 
     /**
      * Handles the connection with the given handler function.
      * Returns the materialization result of the underlying flow materialization.
      */
-    def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: FlowMaterializer): Unit =
+    def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: Materializer): Unit =
       handleWith(Flow[HttpRequest].mapAsync(1)(handler))
   }
 

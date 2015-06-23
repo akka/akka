@@ -11,7 +11,7 @@ import akka.stream.testkit.TestUtils.temporaryServerAddress
 import scala.util.control.NonFatal
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.stream.{ ActorFlowMaterializer, BindFailedException, StreamTcpException }
+import akka.stream.{ ActorMaterializer, BindFailedException, StreamTcpException }
 import akka.util.{ ByteString, Helpers }
 
 import scala.collection.immutable
@@ -380,7 +380,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
     "handle when connection actor terminates unexpectedly" in {
       val system2 = ActorSystem()
       import system2.dispatcher
-      val mat2 = ActorFlowMaterializer.create(system2)
+      val mat2 = ActorMaterializer.create(system2)
 
       val serverAddress = temporaryServerAddress()
       val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostName, serverAddress.getPort)(mat2)

@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.OverflowStrategy
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
@@ -13,7 +13,7 @@ import akka.actor.PoisonPill
 import akka.actor.Status
 
 class ActorRefSourceSpec extends AkkaSpec {
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "A ActorRefSource" must {
 

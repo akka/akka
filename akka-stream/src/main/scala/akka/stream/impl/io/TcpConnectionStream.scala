@@ -10,7 +10,7 @@ import scala.concurrent.Promise
 import akka.actor._
 import akka.util.ByteString
 import akka.io.Tcp._
-import akka.stream.{ AbruptTerminationException, StreamSubscriptionTimeoutSettings, ActorFlowMaterializerSettings, StreamTcpException }
+import akka.stream.{ AbruptTerminationException, StreamSubscriptionTimeoutSettings, ActorMaterializerSettings, StreamTcpException }
 import org.reactivestreams.{ Publisher, Processor }
 import akka.stream.impl._
 
@@ -26,11 +26,11 @@ private[akka] object TcpStreamActor {
                     localAddressPromise: Promise[InetSocketAddress],
                     halfClose: Boolean,
                     connectCmd: Connect,
-                    materializerSettings: ActorFlowMaterializerSettings): Props =
+                    materializerSettings: ActorMaterializerSettings): Props =
     Props(new OutboundTcpStreamActor(processorPromise, localAddressPromise, halfClose, connectCmd,
       materializerSettings)).withDispatcher(materializerSettings.dispatcher).withDeploy(Deploy.local)
 
-  def inboundProps(connection: ActorRef, halfClose: Boolean, settings: ActorFlowMaterializerSettings): Props =
+  def inboundProps(connection: ActorRef, halfClose: Boolean, settings: ActorMaterializerSettings): Props =
     Props(new InboundTcpStreamActor(connection, halfClose, settings)).withDispatcher(settings.dispatcher).withDeploy(Deploy.local)
 
   case object SubscriptionTimeout extends NoSerializationVerificationNeeded
@@ -39,7 +39,7 @@ private[akka] object TcpStreamActor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerSettings, halfClose: Boolean) extends Actor
+private[akka] abstract class TcpStreamActor(val settings: ActorMaterializerSettings, halfClose: Boolean) extends Actor
   with ActorLogging {
 
   import TcpStreamActor._
@@ -293,7 +293,7 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
  * INTERNAL API
  */
 private[akka] class InboundTcpStreamActor(
-  val connection: ActorRef, _halfClose: Boolean, _settings: ActorFlowMaterializerSettings)
+  val connection: ActorRef, _halfClose: Boolean, _settings: ActorMaterializerSettings)
   extends TcpStreamActor(_settings, _halfClose) {
   context.watch(connection)
 
@@ -308,7 +308,7 @@ private[akka] class InboundTcpStreamActor(
 private[akka] class OutboundTcpStreamActor(processorPromise: Promise[Processor[ByteString, ByteString]],
                                            localAddressPromise: Promise[InetSocketAddress],
                                            _halfClose: Boolean,
-                                           val connectCmd: Connect, _settings: ActorFlowMaterializerSettings)
+                                           val connectCmd: Connect, _settings: ActorMaterializerSettings)
   extends TcpStreamActor(_settings, _halfClose) {
   import TcpStreamActor._
   import context.system

@@ -7,7 +7,7 @@ package akka.http.javadsl.testkit
 import scala.annotation.varargs
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.server.{ Route, Directives }
@@ -21,7 +21,7 @@ import akka.http.impl.util._
 
 abstract class RouteTest {
   implicit def system: ActorSystem
-  implicit def materializer: ActorFlowMaterializer
+  implicit def materializer: ActorMaterializer
   implicit def executionContext: ExecutionContext = system.dispatcher
 
   protected def awaitDuration: FiniteDuration = 500.millis

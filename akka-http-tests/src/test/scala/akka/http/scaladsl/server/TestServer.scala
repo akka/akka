@@ -8,7 +8,7 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.server.directives.UserCredentials
 import com.typesafe.config.{ ConfigFactory, Config }
 import akka.actor.ActorSystem
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.http.scaladsl.Http
 
 object TestServer extends App {
@@ -17,7 +17,7 @@ object TestServer extends App {
     akka.log-dead-letters = off""")
   implicit val system = ActorSystem("ServerTest", testConf)
   import system.dispatcher
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   import ScalaXmlSupport._
   import Directives._

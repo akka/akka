@@ -8,7 +8,7 @@ import org.junit.rules.ExternalResource
 import org.junit.{ Rule, Assert }
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpResponse
 
 /**
@@ -17,7 +17,7 @@ import akka.http.scaladsl.model.HttpResponse
 abstract class JUnitRouteTestBase extends RouteTest {
   protected def systemResource: ActorSystemResource
   implicit def system: ActorSystem = systemResource.system
-  implicit def materializer: ActorFlowMaterializer = systemResource.materializer
+  implicit def materializer: ActorMaterializer = systemResource.materializer
 
   protected def createTestResponse(response: HttpResponse): TestResponse =
     new TestResponse(response, awaitDuration)(system.dispatcher, materializer) {
@@ -44,18 +44,18 @@ abstract class JUnitRouteTest extends JUnitRouteTestBase {
 
 class ActorSystemResource extends ExternalResource {
   protected def createSystem(): ActorSystem = ActorSystem()
-  protected def createFlowMaterializer(system: ActorSystem): ActorFlowMaterializer = ActorFlowMaterializer()(system)
+  protected def createMaterializer(system: ActorSystem): ActorMaterializer = ActorMaterializer()(system)
 
   implicit def system: ActorSystem = _system
-  implicit def materializer: ActorFlowMaterializer = _materializer
+  implicit def materializer: ActorMaterializer = _materializer
 
   private[this] var _system: ActorSystem = null
-  private[this] var _materializer: ActorFlowMaterializer = null
+  private[this] var _materializer: ActorMaterializer = null
 
   override def before(): Unit = {
     require((_system eq null) && (_materializer eq null))
     _system = createSystem()
-    _materializer = createFlowMaterializer(_system)
+    _materializer = createMaterializer(_system)
   }
   override def after(): Unit = {
     _system.shutdown()

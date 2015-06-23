@@ -7,14 +7,14 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Success, Failure }
 import scala.util.control.NoStackTrace
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.impl.PublisherSource
 import akka.stream.impl.ReactiveStreamsCompliance
 
 class SourceSpec extends AkkaSpec {
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "Single Source" must {
     "produce element" in {

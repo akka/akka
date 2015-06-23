@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.actor._
-import akka.stream.{ AbruptTerminationException, ActorFlowMaterializerSettings, InPort, Shape }
+import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, InPort, Shape }
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
 import akka.stream.scaladsl.FlexiMerge.MergeLogic
 import org.reactivestreams.{ Subscription, Subscriber }
@@ -219,7 +219,7 @@ private[akka] object FanIn {
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, val inputCount: Int) extends Actor with ActorLogging with Pump {
+private[akka] abstract class FanIn(val settings: ActorMaterializerSettings, val inputCount: Int) extends Actor with ActorLogging with Pump {
   import FanIn._
 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
@@ -261,14 +261,14 @@ private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, 
  * INTERNAL API
  */
 private[akka] object FairMerge {
-  def props(settings: ActorFlowMaterializerSettings, inputPorts: Int): Props =
+  def props(settings: ActorMaterializerSettings, inputPorts: Int): Props =
     Props(new FairMerge(settings, inputPorts)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] final class FairMerge(_settings: ActorFlowMaterializerSettings, _inputPorts: Int) extends FanIn(_settings, _inputPorts) {
+private[akka] final class FairMerge(_settings: ActorMaterializerSettings, _inputPorts: Int) extends FanIn(_settings, _inputPorts) {
   inputBunch.markAllInputs()
 
   initialPhase(inputCount, TransferPhase(inputBunch.AnyOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
@@ -284,14 +284,14 @@ private[akka] final class FairMerge(_settings: ActorFlowMaterializerSettings, _i
 private[akka] object UnfairMerge {
   val DefaultPreferred = 0
 
-  def props(settings: ActorFlowMaterializerSettings, inputPorts: Int): Props =
+  def props(settings: ActorMaterializerSettings, inputPorts: Int): Props =
     Props(new UnfairMerge(settings, inputPorts, DefaultPreferred)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] final class UnfairMerge(_settings: ActorFlowMaterializerSettings,
+private[akka] final class UnfairMerge(_settings: ActorMaterializerSettings,
                                       _inputPorts: Int,
                                       val preferred: Int) extends FanIn(_settings, _inputPorts) {
   inputBunch.markAllInputs()
@@ -306,7 +306,7 @@ private[akka] final class UnfairMerge(_settings: ActorFlowMaterializerSettings,
  * INTERNAL API
  */
 private[akka] object FlexiMerge {
-  def props[T, S <: Shape](settings: ActorFlowMaterializerSettings, ports: S, mergeLogic: MergeLogic[T]): Props =
+  def props[T, S <: Shape](settings: ActorMaterializerSettings, ports: S, mergeLogic: MergeLogic[T]): Props =
     Props(new FlexiMergeImpl(settings, ports, mergeLogic)).withDeploy(Deploy.local)
 }
 
@@ -314,13 +314,13 @@ private[akka] object FlexiMerge {
  * INTERNAL API
  */
 private[akka] object Concat {
-  def props(settings: ActorFlowMaterializerSettings): Props = Props(new Concat(settings)).withDeploy(Deploy.local)
+  def props(settings: ActorMaterializerSettings): Props = Props(new Concat(settings)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] final class Concat(_settings: ActorFlowMaterializerSettings) extends FanIn(_settings, inputCount = 2) {
+private[akka] final class Concat(_settings: ActorMaterializerSettings) extends FanIn(_settings, inputCount = 2) {
   val First = 0
   val Second = 1
 

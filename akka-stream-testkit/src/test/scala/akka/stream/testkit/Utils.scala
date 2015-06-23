@@ -2,7 +2,7 @@ package akka.stream.testkit
 
 import akka.actor.ActorRef
 import akka.actor.ActorRefWithCell
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.impl._
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
@@ -17,9 +17,9 @@ object Utils {
 
   case class TE(message: String) extends RuntimeException(message) with NoStackTrace
 
-  def assertAllStagesStopped[T](block: ⇒ T)(implicit materializer: FlowMaterializer): T =
+  def assertAllStagesStopped[T](block: ⇒ T)(implicit materializer: Materializer): T =
     materializer match {
-      case impl: ActorFlowMaterializerImpl ⇒
+      case impl: ActorMaterializerImpl ⇒
         val probe = TestProbe()(impl.system)
         probe.send(impl.supervisor, StreamSupervisor.StopChildren)
         probe.expectMsg(StreamSupervisor.StoppedChildren)

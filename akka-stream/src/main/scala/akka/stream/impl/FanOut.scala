@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.stream.scaladsl.FlexiRoute.RouteLogic
-import akka.stream.{ AbruptTerminationException, Shape, ActorFlowMaterializerSettings }
+import akka.stream.{ AbruptTerminationException, Shape, ActorMaterializerSettings }
 
 import scala.collection.immutable
 import akka.actor._
@@ -248,7 +248,7 @@ private[akka] object FanOut {
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanOut(val settings: ActorFlowMaterializerSettings, val outputCount: Int) extends Actor with ActorLogging with Pump {
+private[akka] abstract class FanOut(val settings: ActorMaterializerSettings, val outputCount: Int) extends Actor with ActorLogging with Pump {
   import FanOut._
 
   protected val outputBunch = new OutputBunch(outputCount, self, this)
@@ -289,14 +289,14 @@ private[akka] abstract class FanOut(val settings: ActorFlowMaterializerSettings,
  * INTERNAL API
  */
 private[akka] object Broadcast {
-  def props(settings: ActorFlowMaterializerSettings, outputPorts: Int): Props =
+  def props(settings: ActorMaterializerSettings, outputPorts: Int): Props =
     Props(new Broadcast(settings, outputPorts)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Broadcast(_settings: ActorFlowMaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
+private[akka] class Broadcast(_settings: ActorMaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
   outputBunch.markAllOutputs()
 
   initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
@@ -309,14 +309,14 @@ private[akka] class Broadcast(_settings: ActorFlowMaterializerSettings, _outputP
  * INTERNAL API
  */
 private[akka] object Balance {
-  def props(settings: ActorFlowMaterializerSettings, outputPorts: Int, waitForAllDownstreams: Boolean): Props =
+  def props(settings: ActorMaterializerSettings, outputPorts: Int, waitForAllDownstreams: Boolean): Props =
     Props(new Balance(settings, outputPorts, waitForAllDownstreams)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Balance(_settings: ActorFlowMaterializerSettings, _outputPorts: Int, waitForAllDownstreams: Boolean) extends FanOut(_settings, _outputPorts) {
+private[akka] class Balance(_settings: ActorMaterializerSettings, _outputPorts: Int, waitForAllDownstreams: Boolean) extends FanOut(_settings, _outputPorts) {
   outputBunch.markAllOutputs()
 
   val runningPhase = TransferPhase(primaryInputs.NeedsInput && outputBunch.AnyOfMarkedOutputs) { () ⇒
@@ -336,14 +336,14 @@ private[akka] class Balance(_settings: ActorFlowMaterializerSettings, _outputPor
  * INTERNAL API
  */
 private[akka] object Unzip {
-  def props(settings: ActorFlowMaterializerSettings): Props =
+  def props(settings: ActorMaterializerSettings): Props =
     Props(new Unzip(settings)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Unzip(_settings: ActorFlowMaterializerSettings) extends FanOut(_settings, outputCount = 2) {
+private[akka] class Unzip(_settings: ActorMaterializerSettings) extends FanOut(_settings, outputCount = 2) {
   outputBunch.markAllOutputs()
 
   initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
@@ -368,6 +368,6 @@ private[akka] class Unzip(_settings: ActorFlowMaterializerSettings) extends FanO
  * INTERNAL API
  */
 private[akka] object FlexiRoute {
-  def props[T, S <: Shape](settings: ActorFlowMaterializerSettings, ports: S, routeLogic: RouteLogic[T]): Props =
+  def props[T, S <: Shape](settings: ActorMaterializerSettings, ports: S, routeLogic: RouteLogic[T]): Props =
     Props(new FlexiRouteImpl(settings, ports, routeLogic)).withDeploy(Deploy.local)
 }

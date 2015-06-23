@@ -7,7 +7,7 @@ import akka.http.HostConnectionPoolSetup
 import akka.actor.{ Deploy, Props, ActorSystem, ActorRef }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 
 private object PoolGateway {
 
@@ -34,7 +34,7 @@ private object PoolGateway {
  */
 private[http] class PoolGateway(hcps: HostConnectionPoolSetup,
                                 _shutdownStartedPromise: Promise[Unit])( // constructor arg only
-                                  implicit system: ActorSystem, fm: FlowMaterializer) {
+                                  implicit system: ActorSystem, fm: Materializer) {
   import PoolGateway._
   import fm.executionContext
 

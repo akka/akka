@@ -11,7 +11,7 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
 import javax.net.ssl._
 import akka.actor._
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
 import akka.stream.impl._
@@ -29,7 +29,7 @@ import akka.event.LoggingReceive
  */
 private[akka] object SslTlsCipherActor {
 
-  def props(settings: ActorFlowMaterializerSettings,
+  def props(settings: ActorMaterializerSettings,
             sslContext: SSLContext,
             firstSession: NegotiateNewSession,
             tracing: Boolean,
@@ -47,7 +47,7 @@ private[akka] object SslTlsCipherActor {
 /**
  * INTERNAL API.
  */
-private[akka] class SslTlsCipherActor(settings: ActorFlowMaterializerSettings, sslContext: SSLContext,
+private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslContext: SSLContext,
                                       firstSession: NegotiateNewSession, tracing: Boolean,
                                       role: Role, closing: Closing)
   extends Actor with ActorLogging with Pump {

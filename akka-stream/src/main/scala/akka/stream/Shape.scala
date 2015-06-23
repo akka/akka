@@ -122,7 +122,7 @@ abstract class AbstractShape extends Shape {
 
 /**
  * This [[Shape]] is used for graphs that have neither open inputs nor open
- * outputs. Only such a [[Graph]] can be materialized by a [[FlowMaterializer]].
+ * outputs. Only such a [[Graph]] can be materialized by a [[Materializer]].
  */
 sealed abstract class ClosedShape extends Shape
 object ClosedShape extends ClosedShape {

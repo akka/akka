@@ -6,7 +6,7 @@ package akka.stream.impl
 import akka.actor.{ Deploy, Props }
 import akka.stream.impl.SplitDecision.SplitDecision
 import akka.stream.scaladsl.Source
-import akka.stream.{ ActorFlowMaterializerSettings, Supervision }
+import akka.stream.{ ActorMaterializerSettings, Supervision }
 
 import scala.util.control.NonFatal
 
@@ -34,14 +34,14 @@ private[akka] object SplitDecision {
  * INTERNAL API
  */
 private[akka] object SplitWhereProcessorImpl {
-  def props(settings: ActorFlowMaterializerSettings, splitPredicate: Any ⇒ SplitDecision): Props =
+  def props(settings: ActorMaterializerSettings, splitPredicate: Any ⇒ SplitDecision): Props =
     Props(new SplitWhereProcessorImpl(settings, in ⇒ splitPredicate(in))).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class SplitWhereProcessorImpl(_settings: ActorFlowMaterializerSettings, val splitPredicate: Any ⇒ SplitDecision)
+private[akka] class SplitWhereProcessorImpl(_settings: ActorMaterializerSettings, val splitPredicate: Any ⇒ SplitDecision)
   extends MultiStreamOutputProcessor(_settings) {
 
   import MultiStreamOutputProcessor._

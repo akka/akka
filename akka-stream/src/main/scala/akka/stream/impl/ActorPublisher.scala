@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import org.reactivestreams.{ Publisher, Subscriber }
 import org.reactivestreams.Subscription
 

@@ -15,7 +15,7 @@ import akka.stream.impl.io.TcpListenStreamActor
 /**
  * INTERNAL API
  * This mailbox is only used in tests to verify that stream actors are using
- * the dispatcher defined in ActorFlowMaterializerSettings.
+ * the dispatcher defined in ActorMaterializerSettings.
  */
 private[akka] final case class StreamTestDefaultMailbox() extends MailboxType with ProducesMessageQueue[UnboundedMailbox.MessageQueue] {
 
@@ -33,7 +33,7 @@ private[akka] final case class StreamTestDefaultMailbox() extends MailboxType wi
             s"$r with actor class [${actorClass.getName}] must not run on default dispatcher in tests. " +
               "Did you forget to define `props.withDispatcher` when creating the actor? " +
               "Or did you forget to configure the `akka.stream.materializer` setting accordingly or force the " +
-              """dispatcher using `ActorFlowMaterializerSettings(sys).withDispatcher("akka.test.stream-dispatcher")` in the test?""")
+              """dispatcher using `ActorMaterializerSettings(sys).withDispatcher("akka.test.stream-dispatcher")` in the test?""")
         } catch {
           // this logging should not be needed when issue #15947 has been fixed
           case e: AssertionError ⇒

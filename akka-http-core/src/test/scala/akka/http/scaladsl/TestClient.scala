@@ -7,7 +7,7 @@ package akka.http.scaladsl
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.util.{ Failure, Success }
 import akka.actor.{ UnhandledMessage, ActorSystem }
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
@@ -18,7 +18,7 @@ object TestClient extends App {
     akka.log-dead-letters = off
     akka.io.tcp.trace-logging = off""")
   implicit val system = ActorSystem("ServerTest", testConf)
-  implicit val fm = ActorFlowMaterializer()
+  implicit val fm = ActorMaterializer()
   import system.dispatcher
 
   installEventStreamLoggerFor[UnhandledMessage]

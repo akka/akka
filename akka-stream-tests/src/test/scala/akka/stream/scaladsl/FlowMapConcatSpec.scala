@@ -4,14 +4,14 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 
 class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
   "A MapConcat" must {
@@ -28,9 +28,9 @@ class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
     }
 
     "map and concat grouping with slow downstream" in {
-      val settings = ActorFlowMaterializerSettings(system)
+      val settings = ActorMaterializerSettings(system)
         .withInputBuffer(initialSize = 2, maxSize = 2)
-      implicit val materializer = ActorFlowMaterializer(settings)
+      implicit val materializer = ActorMaterializer(settings)
       assertAllStagesStopped {
         val s = TestSubscriber.manualProbe[Int]
         val input = (1 to 20).grouped(5).toList

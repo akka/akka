@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 
 class ActorInterpreterLifecycleSpec extends AkkaSpec with InterpreterLifecycleSpecKit {
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   class Setup(ops: List[Stage[_, _]] = List(fusing.Map({ x: Any ⇒ x }, stoppingDecider))) {
     val up = TestPublisher.manualProbe[Int]()

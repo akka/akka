@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.TimerTransformer
 
 import akka.stream.testkit._
@@ -14,7 +14,7 @@ import akka.stream.testkit.Utils._
 
 class FlowTimerTransformerSpec extends AkkaSpec {
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A Flow with TimerTransformer operations" must {
     "produce scheduled ticks as expected" in assertAllStagesStopped {

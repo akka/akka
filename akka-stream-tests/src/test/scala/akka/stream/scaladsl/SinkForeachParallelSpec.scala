@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit.Utils._
@@ -16,7 +16,7 @@ import scala.util.control.NoStackTrace
 
 class SinkForeachParallelSpec extends AkkaSpec {
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "A ForeachParallel" must {
     "produce elements in the order they are ready" in assertAllStagesStopped {

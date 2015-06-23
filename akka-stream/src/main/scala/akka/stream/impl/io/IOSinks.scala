@@ -7,7 +7,7 @@ import java.io.{ File, OutputStream }
 
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.{ ActorFlowMaterializer, MaterializationContext, Attributes, SinkShape }
+import akka.stream.{ ActorMaterializer, MaterializationContext, Attributes, SinkShape }
 import akka.util.ByteString
 
 import scala.concurrent.{ Future, Promise }
@@ -21,7 +21,7 @@ private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attr
   extends SinkModule[ByteString, Future[Long]](shape) {
 
   override def create(context: MaterializationContext) = {
-    val mat = ActorFlowMaterializer.downcast(context.materializer)
+    val mat = ActorMaterializer.downcast(context.materializer)
     val settings = mat.effectiveSettings(context.effectiveAttributes)
 
     val bytesWrittenPromise = Promise[Long]()
@@ -48,7 +48,7 @@ private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, va
   extends SinkModule[ByteString, Future[Long]](shape) {
 
   override def create(context: MaterializationContext) = {
-    val mat = ActorFlowMaterializer.downcast(context.materializer)
+    val mat = ActorMaterializer.downcast(context.materializer)
     val settings = mat.effectiveSettings(context.effectiveAttributes)
     val bytesWrittenPromise = Promise[Long]()
 

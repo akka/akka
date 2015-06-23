@@ -6,7 +6,7 @@ package akka.stream.io
 import java.nio.ByteOrder
 
 import akka.stream.io.Framing.FramingException
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.scaladsl._
 import akka.stream.stage.{ TerminationDirective, SyncDirective, Context, PushPullStage }
 import akka.stream.testkit.AkkaSpec
@@ -20,8 +20,8 @@ import scala.util.Random
 
 class FramingSpec extends AkkaSpec {
 
-  val settings = ActorFlowMaterializerSettings(system)
-  implicit val materializer = ActorFlowMaterializer(settings)
+  val settings = ActorMaterializerSettings(system)
+  implicit val materializer = ActorMaterializer(settings)
 
   class Rechunker extends PushPullStage[ByteString, ByteString] {
     private var rechunkBuffer = ByteString.empty

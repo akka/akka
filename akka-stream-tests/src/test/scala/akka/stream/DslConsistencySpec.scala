@@ -41,7 +41,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
     sRunnableFlowClass -> Set("builder"),
     jRunnableFlowClass → Set("graph", "cyclesAllowed"))
 
-  def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorFlowMaterializer])
+  def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
 
   def assertHasMethod(c: Class[_], name: String): Unit = {
     // include class name to get better error message

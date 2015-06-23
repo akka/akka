@@ -13,7 +13,7 @@ import scala.util.Random
 
 import akka.actor.ActorSystem
 import akka.pattern.{ after ⇒ later }
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.stream.scaladsl.FlowGraph.Implicits._
 import akka.stream.stage._
@@ -106,7 +106,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
   import TlsSpec._
 
   import system.dispatcher
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   import FlowGraph.Implicits._
 

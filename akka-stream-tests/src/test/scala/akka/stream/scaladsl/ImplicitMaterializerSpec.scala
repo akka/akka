@@ -4,34 +4,34 @@
 package akka.stream.scaladsl
 
 import akka.actor.{ Actor, Props }
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.testkit._
 import akka.pattern.pipe
 
-object ImplicitFlowMaterializerSpec {
-  class SomeActor(input: List[String]) extends Actor with ImplicitFlowMaterializer {
+object ImplicitMaterializerSpec {
+  class SomeActor(input: List[String]) extends Actor with ImplicitMaterializer {
 
-    override def flowMaterializerSettings = ActorFlowMaterializerSettings(context.system)
+    override def materializerSettings = ActorMaterializerSettings(context.system)
       .withInputBuffer(initialSize = 2, maxSize = 16)
 
     val flow = Source(input).map(_.toUpperCase())
 
     def receive = {
       case "run" ⇒
-        // run takes an implicit ActorFlowMaterializer parameter, which is provided by ImplicitFlowMaterializer
+        // run takes an implicit ActorMaterializer parameter, which is provided by ImplicitMaterializer
         import context.dispatcher
         flow.runFold("")(_ + _) pipeTo sender()
     }
   }
 }
 
-class ImplicitFlowMaterializerSpec extends AkkaSpec with ImplicitSender {
-  import ImplicitFlowMaterializerSpec._
+class ImplicitMaterializerSpec extends AkkaSpec with ImplicitSender {
+  import ImplicitMaterializerSpec._
 
-  "An ImplicitFlowMaterializer" must {
+  "An ImplicitMaterializer" must {
 
-    "provide implicit ActorFlowMaterializer" in {
+    "provide implicit ActorMaterializer" in {
       val actor = system.actorOf(Props(classOf[SomeActor], List("a", "b", "c")).withDispatcher("akka.test.stream-dispatcher"))
       actor ! "run"
       expectMsg("ABC")

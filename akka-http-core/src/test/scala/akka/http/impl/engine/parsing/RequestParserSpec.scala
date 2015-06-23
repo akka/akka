@@ -17,7 +17,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ FlattenStrategy, _ }
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -38,7 +38,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   import system.dispatcher
 
   val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, entityAccepted = true)
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "The request parsing logic should" - {
     "properly parse a request" - {

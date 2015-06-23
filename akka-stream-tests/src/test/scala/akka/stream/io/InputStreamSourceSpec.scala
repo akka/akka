@@ -8,14 +8,14 @@ import java.io.InputStream
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
 class InputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) with ScalaFutures {
 
-  val settings = ActorFlowMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorFlowMaterializer(settings)
+  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
+  implicit val materializer = ActorMaterializer(settings)
 
   "InputStreamSource" must {
     "read bytes from InputStream" in assertAllStagesStopped {

@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebsocket }
 import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpProtocol, HttpHeader }
 import akka.parboiled2.util.Base64
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 
 import scala.collection.immutable.Seq

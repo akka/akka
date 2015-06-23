@@ -35,7 +35,7 @@ public class FlexiMergeTest {
 
   final ActorSystem system = actorSystemResource.getSystem();
 
-  final ActorFlowMaterializer materializer = ActorFlowMaterializer.create(system);
+  final ActorMaterializer materializer = ActorMaterializer.create(system);
 
   final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c", "d"));
   final Source<String, BoxedUnit> in2 = Source.from(Arrays.asList("e", "f"));

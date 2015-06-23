@@ -7,7 +7,7 @@ package akka.http.javadsl.server;
 import akka.http.scaladsl.coding.Deflate$;
 import akka.http.scaladsl.coding.Gzip$;
 import akka.http.scaladsl.coding.NoCoding$;
-import akka.stream.FlowMaterializer;
+import akka.stream.Materializer;
 import akka.util.ByteString;
 import scala.concurrent.Future;
 
@@ -26,7 +26,7 @@ public enum Coder {
     public ByteString encode(ByteString input) {
         return underlying.encode(input);
     }
-    public Future<ByteString> decode(ByteString input, FlowMaterializer mat) {
+    public Future<ByteString> decode(ByteString input, Materializer mat) {
         return underlying.decode(input, mat);
     }
     public akka.http.scaladsl.coding.Coder _underlyingScalaCoder() {

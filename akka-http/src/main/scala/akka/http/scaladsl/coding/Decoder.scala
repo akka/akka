@@ -5,7 +5,7 @@
 package akka.http.scaladsl.coding
 
 import akka.http.scaladsl.model._
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.stage.Stage
 import akka.util.ByteString
 import headers.HttpEncoding
@@ -27,7 +27,7 @@ trait Decoder {
   def withMaxBytesPerChunk(maxBytesPerChunk: Int): Decoder
 
   def decoderFlow: Flow[ByteString, ByteString, Unit]
-  def decode(input: ByteString)(implicit mat: FlowMaterializer): Future[ByteString] =
+  def decode(input: ByteString)(implicit mat: Materializer): Future[ByteString] =
     Source.single(input).via(decoderFlow).runWith(Sink.head)
 }
 object Decoder {

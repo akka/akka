@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import scala.util.control.NoStackTrace
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import scala.concurrent.Await
@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 class FlowForeachSpec extends AkkaSpec {
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
   import system.dispatcher
 
   "A Foreach" must {

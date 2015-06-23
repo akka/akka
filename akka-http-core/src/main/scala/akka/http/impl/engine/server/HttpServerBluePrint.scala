@@ -34,7 +34,7 @@ private[http] object HttpServerBluePrint {
 
   type ServerShape = BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest]
 
-  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[ServerShape, Unit] = {
+  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Graph[ServerShape, Unit] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -291,7 +291,7 @@ private[http] object HttpServerBluePrint {
 
   trait WebsocketSetup {
     def websocketFlow: Flow[ByteString, ByteString, Any]
-    def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: FlowMaterializer): Unit
+    def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: Materializer): Unit
   }
   def websocketSetup: WebsocketSetup = {
     val sinkCell = new StreamUtils.OneTimeWriteCell[Publisher[FrameEvent]]
@@ -309,7 +309,7 @@ private[http] object HttpServerBluePrint {
     new WebsocketSetup {
       def websocketFlow: Flow[ByteString, ByteString, Any] = flow
 
-      def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: FlowMaterializer): Unit =
+      def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: Materializer): Unit =
         Source(sinkCell.value)
           .via(handlerFlow)
           .to(Sink(sourceCell.value))

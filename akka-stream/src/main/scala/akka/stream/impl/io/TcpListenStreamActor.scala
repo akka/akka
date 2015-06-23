@@ -8,7 +8,7 @@ import scala.concurrent.{ Future, Promise }
 import akka.actor._
 import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
-import akka.stream.{ FlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ Materializer, ActorMaterializerSettings }
 import akka.stream.impl._
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.{ Tcp ⇒ StreamTcp }
@@ -25,7 +25,7 @@ private[akka] object TcpListenStreamActor {
             unbindPromise: Promise[() ⇒ Future[Unit]],
             flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
             halfClose: Boolean,
-            bindCmd: Tcp.Bind, materializerSettings: ActorFlowMaterializerSettings): Props = {
+            bindCmd: Tcp.Bind, materializerSettings: ActorMaterializerSettings): Props = {
     Props(new TcpListenStreamActor(localAddressPromise, unbindPromise, flowSubscriber, halfClose, bindCmd, materializerSettings))
       .withDeploy(Deploy.local)
   }
@@ -38,7 +38,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
                                          unbindPromise: Promise[() ⇒ Future[Unit]],
                                          flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
                                          halfClose: Boolean,
-                                         bindCmd: Tcp.Bind, settings: ActorFlowMaterializerSettings) extends Actor
+                                         bindCmd: Tcp.Bind, settings: ActorMaterializerSettings) extends Actor
   with Pump with ActorLogging {
   import ReactiveStreamsCompliance._
   import context.system

@@ -6,15 +6,15 @@ package akka.stream.io
 import java.io.File
 
 import akka.actor.ActorSystem
-import akka.stream.impl.ActorFlowMaterializerImpl
+import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.scaladsl.Source
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.StreamTestKit
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.ActorAttributes
 import akka.util.ByteString
 import akka.util.Timeout
@@ -25,8 +25,8 @@ import scala.concurrent.duration._
 
 class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
-  val settings = ActorFlowMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorFlowMaterializer(settings)
+  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
+  implicit val materializer = ActorMaterializer(settings)
 
   val TestLines = {
     val b = ListBuffer[String]()
@@ -94,13 +94,13 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "use dedicated file-io-dispatcher by default" in assertAllStagesStopped {
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-        val mat = ActorFlowMaterializer()(sys)
+        val mat = ActorMaterializer()(sys)
         implicit val timeout = Timeout(3.seconds)
 
         try {
           Source(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(SynchronousFileSink(f))(mat)
 
-          mat.asInstanceOf[ActorFlowMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
           assertDispatcher(ref, "akka.stream.default-file-io-dispatcher")
         } finally shutdown(sys)
@@ -110,7 +110,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "allow overriding the dispatcher using OperationAttributes" in assertAllStagesStopped {
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-        val mat = ActorFlowMaterializer()(sys)
+        val mat = ActorMaterializer()(sys)
         implicit val timeout = Timeout(3.seconds)
 
         try {
@@ -119,7 +119,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
             .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
             .run()(mat)
 
-          mat.asInstanceOf[ActorFlowMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
           assertDispatcher(ref, "akka.actor.default-dispatcher")
         } finally shutdown(sys)

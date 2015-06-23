@@ -11,7 +11,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
 import akka.util.ByteString
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl._
 import akka.stream.io.SynchronousFileSource
 import akka.{ japi, stream }
@@ -53,7 +53,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
    * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
    */
-  def toStrict(timeout: FiniteDuration)(implicit fm: FlowMaterializer): Future[HttpEntity.Strict] = {
+  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] = {
     def transformer() =
       new TimerTransformer[ByteString, HttpEntity.Strict] {
         var bytes = ByteString.newBuilder
@@ -174,7 +174,7 @@ object HttpEntity {
 
     def dataBytes: Source[ByteString, Unit] = Source(data :: Nil)
 
-    override def toStrict(timeout: FiniteDuration)(implicit fm: FlowMaterializer) =
+    override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer) =
       FastFuture.successful(this)
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): MessageEntity =

@@ -11,7 +11,7 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import headers._
 
@@ -42,7 +42,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
 
   override def afterAll() = system.shutdown()
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "External HTTP libraries" should {
 
