@@ -38,6 +38,12 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   import system.dispatcher
   implicit val materializer = ActorFlowMaterializer()
 
+  val testConf2: Config =
+    ConfigFactory.parseString("akka.stream.materializer.subscription-timeout.timeout = 1 s")
+      .withFallback(testConf)
+  val system2 = ActorSystem(getClass.getSimpleName, testConf2)
+  val materializer2 = ActorFlowMaterializer.create(system2)
+
   "The low-level HTTP infrastructure" should {
 
     "properly bind a server" in {
@@ -133,12 +139,6 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
 
     "log materialization errors in `bindAndHandle`" which {
-      val testConf2: Config =
-        ConfigFactory.parseString("akka.stream.materializer.subscription-timeout.timeout = 1 s")
-          .withFallback(testConf)
-      val system2 = ActorSystem(getClass.getSimpleName, testConf2)
-      import system2.dispatcher
-      val materializer2 = ActorFlowMaterializer.create(system2)
 
       "are triggered in `transform`" in Utils.assertAllStagesStopped {
         val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
@@ -276,7 +276,10 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  override def afterAll() = system.shutdown()
+  override def afterAll() = {
+    system.shutdown()
+    system2.shutdown()
+  }
 
   class TestSetup {
     val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
