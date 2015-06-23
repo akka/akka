@@ -79,7 +79,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    */
-  def via[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
+  def viaMat[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
     new Flow(delegate.viaMat(flow)(combinerToScala(combine)))
 
   /**
@@ -91,7 +91,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def to[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.Sink[In, M2] =
+  def toMat[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.Sink[In, M2] =
     new Sink(delegate.toMat(sink)(combinerToScala(combine)))
 
   /**
@@ -103,7 +103,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
    */
-  def join[M, M2](flow: Graph[FlowShape[Out, In], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
+  def joinMat[M, M2](flow: Graph[FlowShape[Out, In], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
     new RunnableFlowAdapter(delegate.joinMat(flow)(combinerToScala(combine)))
 
   /**
@@ -142,7 +142,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * The `combine` function is used to compose the materialized values of this flow and that
    * [[BidiFlow]] into the materialized value of the resulting [[Flow]].
    */
-  def join[I2, O2, Mat2, M](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2], combine: function.Function2[Mat, Mat2, M]): Flow[I2, O2, M] =
+  def joinMat[I2, O2, Mat2, M](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2], combine: function.Function2[Mat, Mat2, M]): Flow[I2, O2, M] =
     new Flow(delegate.joinMat(bidi)(combinerToScala(combine)))
 
   /**
@@ -680,11 +680,27 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
     new Flow(delegate.flatten(strategy))
 
   /**
-   * Returns a new `Flow` that concatenates a secondary `Source` to this flow so that,
-   * the first element emitted by the given ("second") source is emitted after the last element of this Flow.
+   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced. Note that the Source is materialized
+   * together with this Flow and just kept from producing elements by asserting
+   * back-pressure until its time comes.
+   *
+   * The resulting Flow’s materialized value is a Pair containing both materialized
+   * values (of this Flow and that Source).
    */
-  def concat[M](second: Graph[SourceShape[Out @uncheckedVariance], M]): javadsl.Flow[In, Out, Mat @uncheckedVariance Pair M] =
-    new Flow(delegate.concat(second).mapMaterializedValue(p ⇒ Pair(p._1, p._2)))
+  def concat[M](source: Graph[SourceShape[Out @uncheckedVariance], M]): javadsl.Flow[In, Out, Mat @uncheckedVariance Pair M] =
+    new Flow(delegate.concat(source).mapMaterializedValue(p ⇒ Pair(p._1, p._2)))
+
+  /**
+   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced. Note that the Source is materialized
+   * together with this Flow and just kept from producing elements by asserting
+   * back-pressure until its time comes.
+   */
+  def concatMat[M, M2](source: Graph[SourceShape[Out @uncheckedVariance], M], combine: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
+    new Flow(delegate.concatMat(source)(combinerToScala(combine)))
 
   override def withAttributes(attr: OperationAttributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))
