@@ -63,8 +63,8 @@ class ScheduleBenchmark {
 
   @TearDown
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.ready(system.whenTerminated, 15.seconds)
   }
 
   def op(idx: Int) = if (idx == winner) promise.trySuccess(idx) else idx

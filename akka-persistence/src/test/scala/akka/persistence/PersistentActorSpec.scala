@@ -41,6 +41,12 @@ object PersistentActorSpec {
       case Cmd(data) ⇒
         persistAll(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
     }
+
+    override protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit =
+      event match {
+        case Evt(data) ⇒ sender() ! s"Rejected: $data"
+        case _         ⇒ super.onPersistRejected(cause, event, seqNr)
+      }
   }
 
   class Behavior2PersistentActor(name: String) extends ExamplePersistentActor(name) {

@@ -9,6 +9,7 @@ import akka.actor._
 import akka.pattern.ask
 import akka.persistence._
 import akka.util._
+import scala.util.Try
 
 import scala.collection.immutable
 import scala.concurrent._
@@ -39,8 +40,8 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
 
   implicit def timeout: Timeout
 
-  def asyncWriteMessages(messages: immutable.Seq[PersistentRepr]): Future[Unit] =
-    (store ? WriteMessages(messages)).mapTo[Unit]
+  def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
+    (store ? WriteMessages(messages)).mapTo[immutable.Seq[Try[Unit]]]
 
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
     (store ? DeleteMessagesTo(persistenceId, toSequenceNr, permanent)).mapTo[Unit]
@@ -68,7 +69,7 @@ private[persistence] object AsyncWriteProxy {
  */
 private[persistence] object AsyncWriteTarget {
   @SerialVersionUID(1L)
-  final case class WriteMessages(messages: immutable.Seq[PersistentRepr])
+  final case class WriteMessages(messages: immutable.Seq[AtomicWrite])
 
   @SerialVersionUID(1L)
   final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean)

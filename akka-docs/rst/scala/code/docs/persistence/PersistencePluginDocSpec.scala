@@ -4,6 +4,7 @@
 
 package docs.persistence
 
+import scala.collection.immutable
 import akka.actor.Actor.Receive
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
@@ -11,6 +12,7 @@ import com.typesafe.config._
 import org.scalatest.WordSpec
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
+import scala.util.Try
 import scala.concurrent.duration._
 
 //#plugin-imports
@@ -125,7 +127,7 @@ trait SharedLeveldbPluginDocSpec {
 }
 
 class MyJournal extends AsyncWriteJournal {
-  def asyncWriteMessages(messages: Seq[PersistentRepr]): Future[Unit] = ???
+  def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = ???
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long,
                             permanent: Boolean): Future[Unit] = ???
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long,

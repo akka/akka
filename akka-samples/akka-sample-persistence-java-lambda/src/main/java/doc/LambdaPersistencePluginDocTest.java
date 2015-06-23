@@ -16,7 +16,7 @@ import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
 import akka.japi.pf.ReceiveBuilder;
 import scala.concurrent.Future;
-import akka.japi.Procedure;
+import java.util.function.Consumer;
 import java.util.Optional;
 
 
@@ -78,7 +78,7 @@ public class LambdaPersistencePluginDocTest {
 
   class MyAsyncJournal extends AsyncWriteJournal {
     @Override
-    public Future<Void> doAsyncWriteMessages(Iterable<PersistentRepr> messages) {
+    public Future<Iterable<Optional<Exception>>> doAsyncWriteMessages(Iterable<AtomicWrite> messages) {
       return null;
     }
 
@@ -91,7 +91,7 @@ public class LambdaPersistencePluginDocTest {
     public Future<Void> doAsyncReplayMessages(String persistenceId, long fromSequenceNr,
                                               long toSequenceNr,
                                               long max,
-                                              Procedure<PersistentRepr> replayCallback) {
+                                              Consumer<PersistentRepr> replayCallback) {
       return null;
     }
 

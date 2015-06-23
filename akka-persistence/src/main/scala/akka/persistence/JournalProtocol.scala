@@ -71,6 +71,17 @@ private[persistence] object JournalProtocol {
     extends Response
 
   /**
+   * Reply message to a rejected [[WriteMessages]] request. The write of this message was rejected before
+   * it was stored, e.g. because it could not be serialized. For each contained [[PersistentRepr]] message
+   * in the request, a separate reply is sent to the requestor.
+   *
+   * @param message message rejected to be written.
+   * @param cause failure cause.
+   */
+  final case class WriteMessageRejected(message: PersistentRepr, cause: Throwable, actorInstanceId: Int)
+    extends Response
+
+  /**
    * Reply message to a failed [[WriteMessages]] request. For each contained [[PersistentRepr]] message
    * in the request, a separate reply is sent to the requestor.
    *

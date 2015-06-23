@@ -4,6 +4,7 @@
 
 package akka.persistence
 
+import scala.collection.immutable
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ List ⇒ JList }
 
@@ -16,18 +17,30 @@ import akka.persistence.serialization.Message
  *
  * Marks messages which can be resequenced by the [[akka.persistence.journal.AsyncWriteJournal]].
  *
- * In essence it is either an [[NonPersistentRepr]] or [[PersistentRepr]].
+ * In essence it is either an [[NonPersistentRepr]] or [[AtomicWrite]].
  */
 private[persistence] sealed trait PersistentEnvelope {
   def payload: Any
   def sender: ActorRef
+  def size: Int
 }
 
 /**
  * INTERNAL API
  * Message which can be resequenced by the Journal, but will not be persisted.
  */
-private[persistence] final case class NonPersistentRepr(payload: Any, sender: ActorRef) extends PersistentEnvelope
+private[persistence] final case class NonPersistentRepr(payload: Any, sender: ActorRef) extends PersistentEnvelope {
+  override def size: Int = 1
+}
+
+object AtomicWrite {
+  def apply(event: PersistentRepr): AtomicWrite = apply(List(event))
+}
+
+final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends PersistentEnvelope with Message {
+  override def sender: ActorRef = ActorRef.noSender
+  override def size: Int = payload.size
+}
 
 /**
  * Plugin API: representation of a persistent message in the journal plugin API.
@@ -36,7 +49,7 @@ private[persistence] final case class NonPersistentRepr(payload: Any, sender: Ac
  * @see [[akka.persistence.journal.AsyncWriteJournal]]
  * @see [[akka.persistence.journal.AsyncRecovery]]
  */
-trait PersistentRepr extends PersistentEnvelope with Message {
+trait PersistentRepr extends Message {
 
   /**
    * This persistent message's payload.

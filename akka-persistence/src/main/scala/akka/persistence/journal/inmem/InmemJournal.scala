@@ -7,11 +7,12 @@ package akka.persistence.journal.inmem
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.language.postfixOps
-
 import akka.actor._
 import akka.persistence._
+import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.journal.{ WriteJournalBase, AsyncWriteProxy, AsyncWriteTarget }
 import akka.util.Timeout
+import scala.util.Try
 
 /**
  * INTERNAL API.
@@ -36,17 +37,17 @@ private[persistence] trait InmemMessages {
   // persistenceId -> persistent message
   var messages = Map.empty[String, Vector[PersistentRepr]]
 
-  def add(p: PersistentRepr) = messages = messages + (messages.get(p.persistenceId) match {
+  def add(p: PersistentRepr): Unit = messages = messages + (messages.get(p.persistenceId) match {
     case Some(ms) ⇒ p.persistenceId -> (ms :+ p)
     case None     ⇒ p.persistenceId -> Vector(p)
   })
 
-  def update(pid: String, snr: Long)(f: PersistentRepr ⇒ PersistentRepr) = messages = messages.get(pid) match {
+  def update(pid: String, snr: Long)(f: PersistentRepr ⇒ PersistentRepr): Unit = messages = messages.get(pid) match {
     case Some(ms) ⇒ messages + (pid -> ms.map(sp ⇒ if (sp.sequenceNr == snr) f(sp) else sp))
     case None     ⇒ messages
   }
 
-  def delete(pid: String, snr: Long) = messages = messages.get(pid) match {
+  def delete(pid: String, snr: Long): Unit = messages = messages.get(pid) match {
     case Some(ms) ⇒ messages + (pid -> ms.filterNot(_.sequenceNr == snr))
     case None     ⇒ messages
   }
@@ -76,7 +77,11 @@ private[persistence] class InmemStore extends Actor with InmemMessages with Writ
 
   def receive = {
     case WriteMessages(msgs) ⇒
-      sender() ! msgs.foreach(add)
+      val results: immutable.Seq[Try[Unit]] =
+        for (a ← msgs) yield {
+          Try(a.payload.foreach(add))
+        }
+      sender() ! results
     case DeleteMessagesTo(pid, tsnr, false) ⇒
       sender() ! (1L to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) })
     case DeleteMessagesTo(pid, tsnr, true) ⇒
