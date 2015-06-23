@@ -75,7 +75,8 @@ public class StreamTcpDocTest {
         System.out.println("New connection from: " + connection.remoteAddress());
 
         final Flow<ByteString, ByteString, BoxedUnit> echo = Flow.of(ByteString.class)
-          .via(Framing.lines("\n", 256, false))
+          .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
+          .map(bytes -> bytes.utf8String())
           .map(s -> s + "!!!\n")
           .map(s -> ByteString.fromString(s));
 
@@ -113,7 +114,8 @@ public class StreamTcpDocTest {
           Source.single(ByteString.fromString(welcomeMsg));
       final Flow<ByteString, ByteString, BoxedUnit> echoFlow =
           Flow.of(ByteString.class)
-            .via(Framing.lines("\n", 256, false))
+            .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
+            .map(bytes -> bytes.utf8String())
             //#welcome-banner-chat-server
             .map(command -> {
               serverProbe.ref().tell(command, null);
@@ -164,7 +166,8 @@ public class StreamTcpDocTest {
       };
   
       final Flow<ByteString, ByteString, BoxedUnit> repl = Flow.of(ByteString.class)
-        .via(Framing.lines("\n", 256, false))
+        .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
+        .map(bytes -> bytes.utf8String())
         .map(text -> {System.out.println("Server: " + text); return "next";})
         .map(elem -> readLine("> "))
         .transform(() -> replParser);
