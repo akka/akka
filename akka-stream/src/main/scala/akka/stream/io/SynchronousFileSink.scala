@@ -6,7 +6,7 @@ package akka.stream.io
 import java.io.File
 
 import akka.stream.impl.io.SynchronousFileSink
-import akka.stream.{ OperationAttributes, javadsl, ActorOperationAttributes }
+import akka.stream.{ Attributes, javadsl, ActorAttributes }
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 
@@ -17,7 +17,7 @@ import scala.concurrent.Future
  */
 object SynchronousFileSink {
 
-  final val DefaultAttributes = OperationAttributes.name("synchronousFileSink")
+  final val DefaultAttributes = Attributes.name("synchronousFileSink")
 
   /**
    * Synchronous (Java 6 compatible) Sink that writes incoming [[ByteString]] elements to the given file.
@@ -25,7 +25,7 @@ object SynchronousFileSink {
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    *
    * This source is backed by an Actor which will use the dedicated `akka.stream.file-io-dispatcher`,
-   * unless configured otherwise by using [[ActorOperationAttributes]].
+   * unless configured otherwise by using [[ActorAttributes]].
    */
   def apply(f: File, append: Boolean = false): Sink[ByteString, Future[Long]] =
     new Sink(new SynchronousFileSink(f, append, DefaultAttributes, Sink.shape("SynchronousFileSink")))
@@ -39,7 +39,7 @@ object SynchronousFileSink {
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    *
    * This source is backed by an Actor which will use the dedicated `akka.stream.file-io-dispatcher`,
-   * unless configured otherwise by using [[ActorOperationAttributes]].
+   * unless configured otherwise by using [[ActorAttributes]].
    */
   def create(f: File): javadsl.Sink[ByteString, Future[java.lang.Long]] =
     apply(f, append = false).asJava.asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
@@ -52,7 +52,7 @@ object SynchronousFileSink {
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    *
    * This source is backed by an Actor which will use the dedicated `akka.stream.file-io-dispatcher`,
-   * unless configured otherwise by using [[ActorOperationAttributes]].
+   * unless configured otherwise by using [[ActorAttributes]].
    */
   def appendTo(f: File): javadsl.Sink[ByteString, Future[java.lang.Long]] =
     apply(f, append = true).asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]

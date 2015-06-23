@@ -702,7 +702,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   def concatMat[M, M2](source: Graph[SourceShape[Out @uncheckedVariance], M], combine: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
     new Flow(delegate.concatMat(source)(combinerToScala(combine)))
 
-  override def withAttributes(attr: OperationAttributes): javadsl.Flow[In, Out, Mat] =
+  override def withAttributes(attr: Attributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))
 
   override def named(name: String): javadsl.Flow[In, Out, Mat] =
@@ -712,7 +712,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[OperationAttributes.LogLevels]] atrribute on the given Flow:
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow:
    *
    * The `extract` function will be applied to each element before logging, so it is possible to log only those fields
    * of a complex object flowing through this element.
@@ -734,7 +734,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[OperationAttributes.LogLevels]] atrribute on the given Flow:
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow:
    *
    * The `extract` function will be applied to each element before logging, so it is possible to log only those fields
    * of a complex object flowing through this element.
@@ -756,7 +756,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[OperationAttributes.LogLevels]] atrribute on the given Flow:
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow:
    *
    * Uses the given [[LoggingAdapter]] for logging.
    *
@@ -775,7 +775,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[OperationAttributes.LogLevels]] atrribute on the given Flow.
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow.
    *
    * Uses an internally created [[LoggingAdapter]] which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
    */
@@ -808,7 +808,7 @@ private[akka] class RunnableFlowAdapter[Mat](runnable: scaladsl.RunnableFlow[Mat
     new RunnableFlowAdapter(runnable.mapMaterializedValue(f.apply _))
   override def run(materializer: FlowMaterializer): Mat = runnable.run()(materializer)
 
-  override def withAttributes(attr: OperationAttributes): RunnableFlow[Mat] =
+  override def withAttributes(attr: Attributes): RunnableFlow[Mat] =
     new RunnableFlowAdapter(runnable.withAttributes(attr))
 
   override def named(name: String): RunnableFlow[Mat] =

@@ -4,7 +4,7 @@
 package akka.stream.actor
 
 import akka.actor.{ ActorRef, PoisonPill, Props }
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, ActorOperationAttributes }
+import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, ActorAttributes }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -428,7 +428,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       implicit val materializer = ActorFlowMaterializer()
       val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false))
-        .withAttributes(ActorOperationAttributes.dispatcher("my-dispatcher1"))
+        .withAttributes(ActorAttributes.dispatcher("my-dispatcher1"))
         .to(Sink(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
@@ -438,7 +438,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       implicit val materializer = ActorFlowMaterializer()
       val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false).withDispatcher("my-dispatcher1"))
-        .withAttributes(ActorOperationAttributes.dispatcher("my-dispatcher2"))
+        .withAttributes(ActorAttributes.dispatcher("my-dispatcher2"))
         .to(Sink(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")

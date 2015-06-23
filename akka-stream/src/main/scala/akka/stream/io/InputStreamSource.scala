@@ -9,7 +9,7 @@ import akka.japi.function.Creator
 import akka.stream.impl.io.InputStreamSource
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Source._
-import akka.stream.{ OperationAttributes, javadsl }
+import akka.stream.{ Attributes, javadsl }
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -17,7 +17,7 @@ import scala.concurrent.Future
 object InputStreamSource {
 
   final val DefaultChunkSize = 8192
-  final val DefaultAttributes = OperationAttributes.name("inputStreamSource")
+  final val DefaultAttributes = Attributes.name("inputStreamSource")
 
   /**
    * Creates a Source that will pull data out of the given input stream.

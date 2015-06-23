@@ -12,10 +12,10 @@ import akka.stream.ActorFlowMaterializer
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
-  import OperationAttributes._
+  import Attributes._
   import FlowGraph.Implicits._
 
   implicit val mat = ActorFlowMaterializer()

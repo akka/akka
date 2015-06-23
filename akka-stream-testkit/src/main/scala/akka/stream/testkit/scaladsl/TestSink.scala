@@ -4,7 +4,7 @@
 package akka.stream.testkit.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.OperationAttributes.none
+import akka.stream.Attributes.none
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit._

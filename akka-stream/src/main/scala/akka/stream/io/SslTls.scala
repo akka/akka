@@ -65,7 +65,7 @@ object SslTls {
    */
   def apply(sslContext: SSLContext, firstSession: NegotiateNewSession,
             role: Role, closing: Closing = IgnoreComplete): ScalaFlow =
-    new scaladsl.BidiFlow(TlsModule(OperationAttributes.none, sslContext, firstSession, role, closing))
+    new scaladsl.BidiFlow(TlsModule(Attributes.none, sslContext, firstSession, role, closing))
 
   /**
    * Java API: create a StreamTls [[akka.stream.javadsl.BidiFlow]] in client mode. The
@@ -100,12 +100,12 @@ object SslTls {
    */
   private[akka] case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOut: Outlet[SslTlsInbound],
                                      cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
-                                     shape: Shape, attributes: OperationAttributes,
+                                     shape: Shape, attributes: Attributes,
                                      sslContext: SSLContext, firstSession: NegotiateNewSession,
                                      role: Role, closing: Closing) extends Module {
     override def subModules: Set[Module] = Set.empty
 
-    override def withAttributes(att: OperationAttributes): Module = copy(attributes = att)
+    override def withAttributes(att: Attributes): Module = copy(attributes = att)
     override def carbonCopy: Module = {
       val mod = TlsModule(attributes, sslContext, firstSession, role, closing)
       if (plainIn == shape.inlets(0)) mod
@@ -122,7 +122,7 @@ object SslTls {
    * INTERNAL API.
    */
   private[akka] object TlsModule {
-    def apply(attributes: OperationAttributes, sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, closing: Closing): TlsModule = {
+    def apply(attributes: Attributes, sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, closing: Closing): TlsModule = {
       val name = attributes.nameOrDefault(s"StreamTls($role)")
       val cipherIn = new Inlet[ByteString](s"$name.cipherIn")
       val cipherOut = new Outlet[ByteString](s"$name.cipherOut")

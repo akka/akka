@@ -228,7 +228,7 @@ private object PoolSlot {
 
   // FIXME: remove when #17038 is cleared
   private class SlotEventSplit extends FlexiRoute[ProcessorOut, FanOutShape2[ProcessorOut, ResponseContext, RawSlotEvent]](
-    new FanOutShape2("PoolSlot.SlotEventSplit"), OperationAttributes.name("PoolSlot.SlotEventSplit")) {
+    new FanOutShape2("PoolSlot.SlotEventSplit"), Attributes.name("PoolSlot.SlotEventSplit")) {
     import FlexiRoute._
 
     def createRouteLogic(s: FanOutShape2[ProcessorOut, ResponseContext, RawSlotEvent]): RouteLogic[ProcessorOut] =

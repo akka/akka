@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.impl.StreamLayout
-import akka.stream.{ Outlet, Shape, OutPort, Graph, OperationAttributes }
+import akka.stream.{ Outlet, Shape, OutPort, Graph, Attributes }
 import scala.collection.immutable
 import akka.stream.impl.Junctions.FlexiRouteModule
 import akka.stream.impl.Stages.DefaultAttributes
@@ -202,7 +202,7 @@ object FlexiRoute {
  * @param ports ports that this junction exposes
  * @param attributes optional attributes for this junction
  */
-abstract class FlexiRoute[In, S <: Shape](val shape: S, attributes: OperationAttributes) extends Graph[S, Unit] {
+abstract class FlexiRoute[In, S <: Shape](val shape: S, attributes: Attributes) extends Graph[S, Unit] {
   import akka.stream.scaladsl.FlexiRoute._
 
   /**
@@ -252,9 +252,9 @@ abstract class FlexiRoute[In, S <: Shape](val shape: S, attributes: OperationAtt
     case None    ⇒ super.toString
   }
 
-  override def withAttributes(attr: OperationAttributes): Graph[S, Unit] =
+  override def withAttributes(attr: Attributes): Graph[S, Unit] =
     throw new UnsupportedOperationException(
       "withAttributes not supported by default by FlexiRoute, subclass may override and implement it")
 
-  override def named(name: String): Graph[S, Unit] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Graph[S, Unit] = withAttributes(Attributes.name(name))
 }

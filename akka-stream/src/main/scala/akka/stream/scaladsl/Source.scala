@@ -32,7 +32,7 @@ import scala.concurrent.Promise
 import org.reactivestreams.Subscriber
 import akka.stream.stage.SyncDirective
 import akka.stream.OverflowStrategy
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -153,10 +153,10 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    */
   def ++[Out2 >: Out, M](second: Graph[SourceShape[Out2], M]): Source[Out2, (Mat, M)] = concat(second)
 
-  override def withAttributes(attr: OperationAttributes): Repr[Out, Mat] =
+  override def withAttributes(attr: Attributes): Repr[Out, Mat] =
     new Source(module.withAttributes(attr).wrap())
 
-  override def named(name: String): Repr[Out, Mat] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Repr[Out, Mat] = withAttributes(Attributes.name(name))
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)

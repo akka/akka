@@ -22,7 +22,7 @@ trait Graph[+S <: Shape, +M] {
    */
   private[stream] def module: StreamLayout.Module
 
-  def withAttributes(attr: OperationAttributes): Graph[S, M]
+  def withAttributes(attr: Attributes): Graph[S, M]
 
-  def named(name: String): Graph[S, M] = withAttributes(OperationAttributes.name(name))
+  def named(name: String): Graph[S, M] = withAttributes(Attributes.name(name))
 }

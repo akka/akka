@@ -165,7 +165,7 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Sink[In, Mat2] =
     new Sink(delegate.mapMaterializedValue(f.apply _))
 
-  override def withAttributes(attr: OperationAttributes): javadsl.Sink[In, Mat] =
+  override def withAttributes(attr: Attributes): javadsl.Sink[In, Mat] =
     new Sink(delegate.withAttributes(attr))
 
   override def named(name: String): javadsl.Sink[In, Mat] =

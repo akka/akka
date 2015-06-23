@@ -19,7 +19,7 @@ import scala.concurrent.duration._
 
 object GraphFlexiMergeSpec {
 
-  class Fair[T] extends FlexiMerge[T, UniformFanInShape[T, T]](new UniformFanInShape(2), OperationAttributes.name("FairMerge")) {
+  class Fair[T] extends FlexiMerge[T, UniformFanInShape[T, T]](new UniformFanInShape(2), Attributes.name("FairMerge")) {
     def createMergeLogic(p: PortT): MergeLogic[T] = new MergeLogic[T] {
       override def initialState = State[T](ReadAny(p.in(0), p.in(1))) { (ctx, input, element) ⇒
         ctx.emit(element)
@@ -28,7 +28,7 @@ object GraphFlexiMergeSpec {
     }
   }
 
-  class StrictRoundRobin[T] extends FlexiMerge[T, UniformFanInShape[T, T]](new UniformFanInShape(2), OperationAttributes.name("RoundRobinMerge")) {
+  class StrictRoundRobin[T] extends FlexiMerge[T, UniformFanInShape[T, T]](new UniformFanInShape(2), Attributes.name("RoundRobinMerge")) {
     def createMergeLogic(p: PortT): MergeLogic[T] = new MergeLogic[T] {
       val emitOtherOnClose = CompletionHandling(
         onUpstreamFinish = { (ctx, input) ⇒
@@ -64,7 +64,7 @@ object GraphFlexiMergeSpec {
   }
 
   class StartStopTest(lifecycleProbe: ActorRef)
-    extends FlexiMerge[String, FanInShape2[String, String, String]](new FanInShape2("StartStopTest"), OperationAttributes.name("StartStopTest")) {
+    extends FlexiMerge[String, FanInShape2[String, String, String]](new FanInShape2("StartStopTest"), Attributes.name("StartStopTest")) {
 
     def createMergeLogic(p: PortT) = new MergeLogic[String] {
 
@@ -82,7 +82,7 @@ object GraphFlexiMergeSpec {
     }
   }
 
-  class MyZip[A, B] extends FlexiMerge[(A, B), FanInShape2[A, B, (A, B)]](new FanInShape2("MyZip"), OperationAttributes.name("MyZip")) {
+  class MyZip[A, B] extends FlexiMerge[(A, B), FanInShape2[A, B, (A, B)]](new FanInShape2("MyZip"), Attributes.name("MyZip")) {
     def createMergeLogic(p: PortT): MergeLogic[(A, B)] = new MergeLogic[(A, B)] {
       var lastInA: A = _
 
@@ -103,7 +103,7 @@ object GraphFlexiMergeSpec {
   }
 
   class TripleCancellingZip[A, B, C](var cancelAfter: Int = Int.MaxValue, defVal: Option[A] = None)
-    extends FlexiMerge[(A, B, C), FanInShape3[A, B, C, (A, B, C)]](new FanInShape3("TripleCancellingZip"), OperationAttributes.name("TripleCancellingZip")) {
+    extends FlexiMerge[(A, B, C), FanInShape3[A, B, C, (A, B, C)]](new FanInShape3("TripleCancellingZip"), Attributes.name("TripleCancellingZip")) {
     def createMergeLogic(p: PortT) = new MergeLogic[(A, B, C)] {
       override def initialState = State(ReadAll(p.in0, p.in1, p.in2)) {
         case (ctx, input, inputs) ⇒
@@ -123,7 +123,7 @@ object GraphFlexiMergeSpec {
     }
   }
 
-  object PreferringMerge extends FlexiMerge[Int, UniformFanInShape[Int, Int]](new UniformFanInShape(3), OperationAttributes.name("PreferringMerge")) {
+  object PreferringMerge extends FlexiMerge[Int, UniformFanInShape[Int, Int]](new UniformFanInShape(3), Attributes.name("PreferringMerge")) {
     def createMergeLogic(p: PortT) = new MergeLogic[Int] {
       override def initialState = State(Read(p.in(0))) {
         (ctx, input, element) ⇒
@@ -139,7 +139,7 @@ object GraphFlexiMergeSpec {
   }
 
   class TestMerge(completionProbe: ActorRef)
-    extends FlexiMerge[String, UniformFanInShape[String, String]](new UniformFanInShape(3), OperationAttributes.name("TestMerge")) {
+    extends FlexiMerge[String, UniformFanInShape[String, String]](new UniformFanInShape(3), Attributes.name("TestMerge")) {
 
     def createMergeLogic(p: PortT) = new MergeLogic[String] {
       var throwFromOnComplete = false
@@ -697,7 +697,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
         protected override def construct(i: Init[T]) = new MShape(i)
       }
       class MyMerge[T] extends FlexiMerge[T, MShape[T]](
-        new MShape, OperationAttributes.name("cmerge")) {
+        new MShape, Attributes.name("cmerge")) {
         import akka.stream.scaladsl.FlexiMerge._
         override def createMergeLogic(p: PortT) = new MergeLogic[T] {
           override def initialState =

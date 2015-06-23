@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream.impl.StreamLayout
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.{ Graph, OperationAttributes, Shape }
+import akka.stream.{ Graph, Attributes, Shape }
 
 trait GraphApply {
 
@@ -108,10 +108,10 @@ private[stream] object GraphApply {
   class GraphImpl[S <: Shape, Mat](override val shape: S, private[stream] override val module: StreamLayout.Module)
     extends Graph[S, Mat] {
 
-    override def withAttributes(attr: OperationAttributes): Graph[S, Mat] =
+    override def withAttributes(attr: Attributes): Graph[S, Mat] =
       new GraphImpl(shape, module.withAttributes(attr).wrap())
 
-    override def named(name: String): Graph[S, Mat] = withAttributes(OperationAttributes.name(name))
+    override def named(name: String): Graph[S, Mat] = withAttributes(Attributes.name(name))
   }
 
 }

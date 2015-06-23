@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.scaladsl.FlexiRoute.RouteLogic
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 import akka.stream.{ Inlet, Outlet, Shape, InPort, OutPort }
 import akka.stream.scaladsl.FlexiMerge.MergeLogic
 import akka.stream.UniformFanInShape
@@ -19,7 +19,7 @@ import akka.event.Logging.simpleName
  */
 private[stream] object Junctions {
 
-  import OperationAttributes._
+  import Attributes._
 
   sealed trait JunctionModule extends Module {
     override def subModules: Set[Module] = Set.empty
@@ -35,27 +35,27 @@ private[stream] object Junctions {
 
   final case class MergeModule[T](
     shape: UniformFanInShape[T, T],
-    override val attributes: OperationAttributes = name("merge")) extends FanInModule {
+    override val attributes: Attributes = name("merge")) extends FanInModule {
 
-    override def withAttributes(attr: OperationAttributes): Module = copy(attributes = attr)
+    override def withAttributes(attr: Attributes): Module = copy(attributes = attr)
 
     override def carbonCopy: Module = MergeModule(shape.deepCopy(), attributes)
   }
 
   final case class BroadcastModule[T](
     shape: UniformFanOutShape[T, T],
-    override val attributes: OperationAttributes = name("broadcast")) extends FanOutModule {
+    override val attributes: Attributes = name("broadcast")) extends FanOutModule {
 
-    override def withAttributes(attr: OperationAttributes): Module = copy(attributes = attr)
+    override def withAttributes(attr: Attributes): Module = copy(attributes = attr)
 
     override def carbonCopy: Module = BroadcastModule(shape.deepCopy(), attributes)
   }
 
   final case class MergePreferredModule[T](
     shape: MergePreferred.MergePreferredShape[T],
-    override val attributes: OperationAttributes = name("preferred")) extends FanInModule {
+    override val attributes: Attributes = name("preferred")) extends FanInModule {
 
-    override def withAttributes(attr: OperationAttributes): Module = copy(attributes = attr)
+    override def withAttributes(attr: Attributes): Module = copy(attributes = attr)
 
     override def carbonCopy: Module = MergePreferredModule(shape.deepCopy(), attributes)
   }
@@ -63,11 +63,11 @@ private[stream] object Junctions {
   final case class FlexiMergeModule[T, S <: Shape](
     shape: S,
     flexi: S ⇒ MergeLogic[T],
-    override val attributes: OperationAttributes) extends FanInModule {
+    override val attributes: Attributes) extends FanInModule {
 
     require(shape.outlets.size == 1, "FlexiMerge can have only one output port")
 
-    override def withAttributes(attributes: OperationAttributes): Module = copy(attributes = attributes)
+    override def withAttributes(attributes: Attributes): Module = copy(attributes = attributes)
 
     override def carbonCopy: Module = FlexiMergeModule(shape.deepCopy().asInstanceOf[S], flexi, attributes)
   }
@@ -75,11 +75,11 @@ private[stream] object Junctions {
   final case class FlexiRouteModule[T, S <: Shape](
     shape: S,
     flexi: S ⇒ RouteLogic[T],
-    override val attributes: OperationAttributes) extends FanOutModule {
+    override val attributes: Attributes) extends FanOutModule {
 
     require(shape.inlets.size == 1, "FlexiRoute can have only one input port")
 
-    override def withAttributes(attributes: OperationAttributes): Module = copy(attributes = attributes)
+    override def withAttributes(attributes: Attributes): Module = copy(attributes = attributes)
 
     override def carbonCopy: Module = FlexiRouteModule(shape.deepCopy().asInstanceOf[S], flexi, attributes)
   }
@@ -87,27 +87,27 @@ private[stream] object Junctions {
   final case class BalanceModule[T](
     shape: UniformFanOutShape[T, T],
     waitForAllDownstreams: Boolean,
-    override val attributes: OperationAttributes = name("broadcast")) extends FanOutModule {
+    override val attributes: Attributes = name("broadcast")) extends FanOutModule {
 
-    override def withAttributes(attr: OperationAttributes): Module = copy(attributes = attr)
+    override def withAttributes(attr: Attributes): Module = copy(attributes = attr)
 
     override def carbonCopy: Module = BalanceModule(shape.deepCopy(), waitForAllDownstreams, attributes)
   }
 
   final case class UnzipModule[A, B](
     shape: FanOutShape2[(A, B), A, B],
-    override val attributes: OperationAttributes = name("unzip")) extends FanOutModule {
+    override val attributes: Attributes = name("unzip")) extends FanOutModule {
 
-    override def withAttributes(attr: OperationAttributes): Module = copy(attributes = attr)
+    override def withAttributes(attr: Attributes): Module = copy(attributes = attr)
 
     override def carbonCopy: Module = UnzipModule(shape.deepCopy(), attributes)
   }
 
   final case class ConcatModule[T](
     shape: UniformFanInShape[T, T],
-    override val attributes: OperationAttributes = name("concat")) extends FanInModule {
+    override val attributes: Attributes = name("concat")) extends FanInModule {
 
-    override def withAttributes(attr: OperationAttributes): Module = copy(attributes = attr)
+    override def withAttributes(attr: Attributes): Module = copy(attributes = attr)
 
     override def carbonCopy: Module = ConcatModule(shape.deepCopy(), attributes)
   }

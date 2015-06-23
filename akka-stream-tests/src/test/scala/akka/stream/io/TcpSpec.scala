@@ -3,16 +3,16 @@
  */
 package akka.stream.io
 
-import akka.actor.{ActorSystem, Kill}
+import akka.actor.{ ActorSystem, Kill }
 import akka.io.Tcp._
 import akka.stream.scaladsl.Tcp.IncomingConnection
-import akka.stream.scaladsl.{Flow, _}
+import akka.stream.scaladsl.{ Flow, _ }
 import akka.stream.testkit.TestUtils.temporaryServerAddress
 import scala.util.control.NonFatal
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.stream.{ActorFlowMaterializer, BindFailedException, StreamTcpException}
-import akka.util.{ByteString, Helpers}
+import akka.stream.{ ActorFlowMaterializer, BindFailedException, StreamTcpException }
+import akka.util.{ ByteString, Helpers }
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -393,7 +393,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
       a[StreamTcpException] should be thrownBy
         Await.result(result, 3.seconds)
 
-      binding.map(_.unbind()).recover {case NonFatal(_) => ()} foreach(_ ⇒ system2.shutdown())
+      binding.map(_.unbind()).recover { case NonFatal(_) ⇒ () } foreach (_ ⇒ system2.shutdown())
     }
 
   }
@@ -523,8 +523,6 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
     }
 
   }
-
-
 
   def validateServerClientCommunication(testData: ByteString,
                                         serverConnection: ServerConnection,

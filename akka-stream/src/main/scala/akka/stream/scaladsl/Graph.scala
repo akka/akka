@@ -9,7 +9,7 @@ import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.impl._
 import akka.stream.impl.StreamLayout._
 import akka.stream._
-import OperationAttributes.name
+import Attributes.name
 import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
@@ -22,7 +22,7 @@ object Merge {
    */
   def apply[T](inputPorts: Int): Merge[T] = {
     val shape = new UniformFanInShape[T, T](inputPorts)
-    new Merge(inputPorts, shape, new MergeModule(shape, OperationAttributes.name("Merge")))
+    new Merge(inputPorts, shape, new MergeModule(shape, Attributes.name("Merge")))
   }
 
 }
@@ -44,10 +44,10 @@ class Merge[T] private (inputPorts: Int,
                         private[stream] override val module: StreamLayout.Module)
   extends Graph[UniformFanInShape[T, T], Unit] {
 
-  override def withAttributes(attr: OperationAttributes): Merge[T] =
+  override def withAttributes(attr: Attributes): Merge[T] =
     new Merge(inputPorts, shape, module.withAttributes(attr).wrap())
 
-  override def named(name: String): Merge[T] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Merge[T] = withAttributes(Attributes.name(name))
 }
 
 object MergePreferred {
@@ -67,7 +67,7 @@ object MergePreferred {
    */
   def apply[T](secondaryPorts: Int): MergePreferred[T] = {
     val shape = new MergePreferredShape[T](secondaryPorts, "MergePreferred")
-    new MergePreferred(secondaryPorts, shape, new MergePreferredModule(shape, OperationAttributes.name("MergePreferred")))
+    new MergePreferred(secondaryPorts, shape, new MergePreferredModule(shape, Attributes.name("MergePreferred")))
   }
 }
 
@@ -93,10 +93,10 @@ class MergePreferred[T] private (secondaryPorts: Int,
                                  private[stream] override val module: StreamLayout.Module)
   extends Graph[MergePreferred.MergePreferredShape[T], Unit] {
 
-  override def withAttributes(attr: OperationAttributes): MergePreferred[T] =
+  override def withAttributes(attr: Attributes): MergePreferred[T] =
     new MergePreferred(secondaryPorts, shape, module.withAttributes(attr).wrap())
 
-  override def named(name: String): MergePreferred[T] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): MergePreferred[T] = withAttributes(Attributes.name(name))
 }
 
 object Broadcast {
@@ -107,7 +107,7 @@ object Broadcast {
    */
   def apply[T](outputPorts: Int): Broadcast[T] = {
     val shape = new UniformFanOutShape[T, T](outputPorts)
-    new Broadcast(outputPorts, shape, new BroadcastModule(shape, OperationAttributes.name("Broadcast")))
+    new Broadcast(outputPorts, shape, new BroadcastModule(shape, Attributes.name("Broadcast")))
   }
 }
 
@@ -128,10 +128,10 @@ class Broadcast[T] private (outputPorts: Int,
                             private[stream] override val module: StreamLayout.Module)
   extends Graph[UniformFanOutShape[T, T], Unit] {
 
-  override def withAttributes(attr: OperationAttributes): Broadcast[T] =
+  override def withAttributes(attr: Attributes): Broadcast[T] =
     new Broadcast(outputPorts, shape, module.withAttributes(attr).wrap())
 
-  override def named(name: String): Broadcast[T] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Broadcast[T] = withAttributes(Attributes.name(name))
 }
 
 object Balance {
@@ -146,7 +146,7 @@ object Balance {
   def apply[T](outputPorts: Int, waitForAllDownstreams: Boolean = false): Balance[T] = {
     val shape = new UniformFanOutShape[T, T](outputPorts)
     new Balance(outputPorts, waitForAllDownstreams, shape,
-      new BalanceModule(shape, waitForAllDownstreams, OperationAttributes.name("Balance")))
+      new BalanceModule(shape, waitForAllDownstreams, Attributes.name("Balance")))
   }
 }
 
@@ -171,10 +171,10 @@ class Balance[T] private (outputPorts: Int,
                           private[stream] override val module: StreamLayout.Module)
   extends Graph[UniformFanOutShape[T, T], Unit] {
 
-  override def withAttributes(attr: OperationAttributes): Balance[T] =
+  override def withAttributes(attr: Attributes): Balance[T] =
     new Balance(outputPorts, waitForAllDownstreams, shape, module.withAttributes(attr).wrap())
 
-  override def named(name: String): Balance[T] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Balance[T] = withAttributes(Attributes.name(name))
 }
 
 object Zip {
@@ -183,7 +183,7 @@ object Zip {
    */
   def apply[A, B](): Zip[A, B] = {
     val shape = new FanInShape2[A, B, (A, B)]("Zip")
-    new Zip(shape, new ZipWith2Module[A, B, (A, B)](shape, Keep.both, OperationAttributes.name("Zip")))
+    new Zip(shape, new ZipWith2Module[A, B, (A, B)](shape, Keep.both, Attributes.name("Zip")))
   }
 }
 
@@ -204,10 +204,10 @@ class Zip[A, B] private (override val shape: FanInShape2[A, B, (A, B)],
                          private[stream] override val module: StreamLayout.Module)
   extends Graph[FanInShape2[A, B, (A, B)], Unit] {
 
-  override def withAttributes(attr: OperationAttributes): Zip[A, B] =
+  override def withAttributes(attr: Attributes): Zip[A, B] =
     new Zip(shape, module.withAttributes(attr).wrap())
 
-  override def named(name: String): Zip[A, B] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Zip[A, B] = withAttributes(Attributes.name(name))
 }
 
 /**
@@ -242,7 +242,7 @@ object Unzip {
    */
   def apply[A, B](): Unzip[A, B] = {
     val shape = new FanOutShape2[(A, B), A, B]("Unzip")
-    new Unzip(shape, new UnzipModule(shape, OperationAttributes.name("Unzip")))
+    new Unzip(shape, new UnzipModule(shape, Attributes.name("Unzip")))
   }
 }
 
@@ -253,10 +253,10 @@ class Unzip[A, B] private (override val shape: FanOutShape2[(A, B), A, B],
                            private[stream] override val module: StreamLayout.Module)
   extends Graph[FanOutShape2[(A, B), A, B], Unit] {
 
-  override def withAttributes(attr: OperationAttributes): Unzip[A, B] =
+  override def withAttributes(attr: Attributes): Unzip[A, B] =
     new Unzip(shape, module.withAttributes(attr).wrap())
 
-  override def named(name: String): Unzip[A, B] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Unzip[A, B] = withAttributes(Attributes.name(name))
 }
 
 object Concat {
@@ -265,7 +265,7 @@ object Concat {
    */
   def apply[T](): Concat[T] = {
     val shape = new UniformFanInShape[T, T](2)
-    new Concat(shape, new ConcatModule(shape, OperationAttributes.name("Concat")))
+    new Concat(shape, new ConcatModule(shape, Attributes.name("Concat")))
   }
 }
 
@@ -288,10 +288,10 @@ class Concat[T] private (override val shape: UniformFanInShape[T, T],
                          private[stream] override val module: StreamLayout.Module)
   extends Graph[UniformFanInShape[T, T], Unit] {
 
-  override def withAttributes(attr: OperationAttributes): Concat[T] =
+  override def withAttributes(attr: Attributes): Concat[T] =
     new Concat(shape, module.withAttributes(attr).wrap())
 
-  override def named(name: String): Concat[T] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Concat[T] = withAttributes(Attributes.name(name))
 }
 
 object FlowGraph extends GraphApply {
@@ -553,7 +553,7 @@ object FlowGraph extends GraphApply {
     class PortOps[Out, Mat](val outlet: Outlet[Out], b: Builder[_]) extends FlowOps[Out, Mat] with CombinerBase[Out] {
       override type Repr[+O, +M] = PortOps[O, M] @uncheckedVariance
 
-      override def withAttributes(attr: OperationAttributes): Repr[Out, Mat] =
+      override def withAttributes(attr: Attributes): Repr[Out, Mat] =
         throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
 
       override private[scaladsl] def andThen[U](op: StageModule): Repr[U, Mat] = {

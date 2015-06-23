@@ -8,7 +8,7 @@ import java.security.SecureRandom
 
 import scala.concurrent.duration._
 
-import akka.stream.{ OperationAttributes, FanOutShape2, FanInShape3, Inlet }
+import akka.stream.{ Attributes, FanOutShape2, FanInShape3, Inlet }
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import FlexiRoute.{ DemandFrom, DemandFromAny, RouteLogic }
@@ -107,7 +107,7 @@ private[http] object Websocket {
      * Distributes output from the FrameHandler into bypass and userFlow.
      */
     object BypassRouter
-      extends FlexiRoute[Either[BypassEvent, MessagePart], FanOutShape2[Either[BypassEvent, MessagePart], BypassEvent, MessagePart]](new FanOutShape2("bypassRouter"), OperationAttributes.name("bypassRouter")) {
+      extends FlexiRoute[Either[BypassEvent, MessagePart], FanOutShape2[Either[BypassEvent, MessagePart], BypassEvent, MessagePart]](new FanOutShape2("bypassRouter"), Attributes.name("bypassRouter")) {
       def createRouteLogic(s: FanOutShape2[Either[BypassEvent, MessagePart], BypassEvent, MessagePart]): RouteLogic[Either[BypassEvent, MessagePart]] =
         new RouteLogic[Either[BypassEvent, MessagePart]] {
           def initialState: State[_] = State(DemandFromAny(s)) { (ctx, out, ev) ⇒
@@ -135,7 +135,7 @@ private[http] object Websocket {
     /**
      * Merges bypass, user flow and tick source for consumption in the FrameOutHandler.
      */
-    object BypassMerge extends FlexiMerge[AnyRef, FanInShape3[BypassEvent, AnyRef, Tick.type, AnyRef]](new FanInShape3("bypassMerge"), OperationAttributes.name("bypassMerge")) {
+    object BypassMerge extends FlexiMerge[AnyRef, FanInShape3[BypassEvent, AnyRef, Tick.type, AnyRef]](new FanInShape3("bypassMerge"), Attributes.name("bypassMerge")) {
       def createMergeLogic(s: FanInShape3[BypassEvent, AnyRef, Tick.type, AnyRef]): MergeLogic[AnyRef] =
         new MergeLogic[AnyRef] {
           def initialState: State[_] = Idle

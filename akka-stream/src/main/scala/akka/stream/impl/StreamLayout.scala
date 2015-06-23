@@ -132,7 +132,7 @@ private[akka] object StreamLayout {
          * materialized value computation of its submodules.
          */
         Atomic(this),
-        OperationAttributes.none)
+        Attributes.none)
     }
 
     def subModules: Set[Module]
@@ -144,8 +144,8 @@ private[akka] object StreamLayout {
     def materializedValueComputation: MaterializedValueNode = Atomic(this)
     def carbonCopy: Module
 
-    def attributes: OperationAttributes
-    def withAttributes(attributes: OperationAttributes): Module
+    def attributes: Attributes
+    def withAttributes(attributes: Attributes): Module
 
     final override def hashCode(): Int = super.hashCode()
     final override def equals(obj: scala.Any): Boolean = super.equals(obj)
@@ -234,9 +234,9 @@ private[akka] object StreamLayout {
 
     override def subModules: Set[Module] = Set.empty
 
-    override def withAttributes(attributes: OperationAttributes): Module =
+    override def withAttributes(attributes: Attributes): Module =
       throw new UnsupportedOperationException("EmptyModule cannot carry attributes")
-    override def attributes = OperationAttributes.none
+    override def attributes = Attributes.none
 
     override def carbonCopy: Module = this
 
@@ -245,10 +245,10 @@ private[akka] object StreamLayout {
     override def materializedValueComputation: MaterializedValueNode = Ignore
   }
 
-  final case class CopiedModule(shape: Shape, attributes: OperationAttributes, copyOf: Module) extends Module {
+  final case class CopiedModule(shape: Shape, attributes: Attributes, copyOf: Module) extends Module {
     override val subModules: Set[Module] = Set(copyOf)
 
-    override def withAttributes(attr: OperationAttributes): Module = this.copy(attributes = attr)
+    override def withAttributes(attr: Attributes): Module = this.copy(attributes = attr)
 
     override def carbonCopy: Module = this.copy(shape = shape.deepCopy())
 
@@ -270,7 +270,7 @@ private[akka] object StreamLayout {
     override val downstreams: Map[OutPort, InPort],
     override val upstreams: Map[InPort, OutPort],
     override val materializedValueComputation: MaterializedValueNode,
-    attributes: OperationAttributes) extends Module {
+    attributes: Attributes) extends Module {
 
     override def replaceShape(s: Shape): Module = {
       shape.requireSamePortsAs(s)
@@ -279,7 +279,7 @@ private[akka] object StreamLayout {
 
     override def carbonCopy: Module = CopiedModule(shape.deepCopy(), attributes, copyOf = this)
 
-    override def withAttributes(attributes: OperationAttributes): Module = copy(attributes = attributes)
+    override def withAttributes(attributes: Attributes): Module = copy(attributes = attributes)
 
     override def toString =
       s"""
@@ -404,17 +404,17 @@ private[stream] final class VirtualProcessor[T] extends Processor[T, T] {
  */
 private[stream] final case class MaterializedValueSource[M](
   shape: SourceShape[M] = SourceShape[M](new Outlet[M]("Materialized.out")),
-  attributes: OperationAttributes = OperationAttributes.name("Materialized")) extends StreamLayout.Module {
+  attributes: Attributes = Attributes.name("Materialized")) extends StreamLayout.Module {
 
   override def subModules: Set[Module] = Set.empty
-  override def withAttributes(attr: OperationAttributes): Module = this.copy(shape = amendShape(attr), attributes = attr)
+  override def withAttributes(attr: Attributes): Module = this.copy(shape = amendShape(attr), attributes = attr)
   override def carbonCopy: Module = this.copy(shape = SourceShape(new Outlet[M]("Materialized.out")))
 
   override def replaceShape(s: Shape): Module =
     if (s == shape) this
     else throw new UnsupportedOperationException("cannot replace the shape of MaterializedValueSource")
 
-  def amendShape(attr: OperationAttributes): SourceShape[M] = {
+  def amendShape(attr: Attributes): SourceShape[M] = {
     attr.nameOption match {
       case None ⇒ shape
       case s: Some[String] if s == attributes.nameOption ⇒ shape
@@ -641,10 +641,10 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     }
   }
 
-  protected def mergeAttributes(parent: OperationAttributes, current: OperationAttributes): OperationAttributes =
+  protected def mergeAttributes(parent: Attributes, current: Attributes): Attributes =
     parent and current
 
-  protected def materializeModule(module: Module, effectiveAttributes: OperationAttributes): Any = {
+  protected def materializeModule(module: Module, effectiveAttributes: Attributes): Any = {
     val materializedValues = collection.mutable.HashMap.empty[Module, Any]
     var materializedValuePublishers: List[MaterializedValuePublisher] = Nil
 
@@ -672,11 +672,11 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     mat
   }
 
-  protected def materializeComposite(composite: Module, effectiveAttributes: OperationAttributes): Any = {
+  protected def materializeComposite(composite: Module, effectiveAttributes: Attributes): Any = {
     materializeModule(composite, effectiveAttributes)
   }
 
-  protected def materializeAtomic(atomic: Module, effectiveAttributes: OperationAttributes): Any
+  protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes): Any
 
   private def resolveMaterialized(matNode: MaterializedValueNode, materializedValues: collection.Map[Module, Any]): Any = matNode match {
     case Atomic(m)          ⇒ materializedValues(m)

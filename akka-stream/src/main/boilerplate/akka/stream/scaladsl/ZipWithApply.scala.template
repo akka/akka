@@ -17,7 +17,7 @@ trait ZipWithApply {
    */
   def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): ZipWith1[[#A1#], O] = {
     val shape = new FanInShape1[[#A1#], O]("ZipWith1")
-    new ZipWith1(shape, new ZipWith1Module(shape, zipper, OperationAttributes.name("ZipWith1")))
+    new ZipWith1(shape, new ZipWith1Module(shape, zipper, Attributes.name("ZipWith1")))
     }
     #
 
@@ -30,10 +30,10 @@ class ZipWith1[[#A1#], O] private[stream] (override val shape: FanInShape1[[#A1#
                          private[stream] override val module: StreamLayout.Module)
   extends Graph[FanInShape1[[#A1#], O], Unit] {
 
-  override def withAttributes(attr: OperationAttributes): ZipWith1[[#A1#], O] =
+  override def withAttributes(attr: Attributes): ZipWith1[[#A1#], O] =
     new ZipWith1(shape, module.withAttributes(attr).wrap())
 
-  override def named(name: String): ZipWith1[[#A1#], O] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): ZipWith1[[#A1#], O] = withAttributes(Attributes.name(name))
 }
 #
 ]

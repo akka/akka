@@ -4,10 +4,10 @@
 package akka.stream.scaladsl
 
 import akka.event.{ DummyClassForStringSources, Logging }
-import akka.stream.OperationAttributes.LogLevels
+import akka.stream.Attributes.LogLevels
 import akka.stream.testkit.{ AkkaSpec, ScriptedTest }
 import akka.stream.javadsl
-import akka.stream.{ ActorFlowMaterializer, FlowMaterializer, OperationAttributes }
+import akka.stream.{ ActorFlowMaterializer, FlowMaterializer, Attributes }
 import akka.testkit.TestProbe
 
 import scala.util.control.NoStackTrace
@@ -40,7 +40,7 @@ class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
       }
 
       "allow disabling element logging" in {
-        val disableElementLogging = OperationAttributes.logLevels(
+        val disableElementLogging = Attributes.logLevels(
           onElement = LogLevels.Off,
           onFinish = Logging.DebugLevel,
           onFailure = Logging.DebugLevel)
@@ -118,14 +118,14 @@ class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
       }
 
       "allow configuring log levels via OperationAttributes" in {
-        val logAttrs = OperationAttributes.logLevels(
+        val logAttrs = Attributes.logLevels(
           onElement = Logging.WarningLevel,
           onFinish = Logging.InfoLevel,
           onFailure = Logging.DebugLevel)
 
         Source.single(42)
           .log("flow-6")
-          .withAttributes(OperationAttributes.logLevels(
+          .withAttributes(Attributes.logLevels(
             onElement = Logging.WarningLevel,
             onFinish = Logging.InfoLevel,
             onFailure = Logging.DebugLevel))

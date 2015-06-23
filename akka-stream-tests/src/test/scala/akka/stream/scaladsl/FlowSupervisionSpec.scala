@@ -12,10 +12,10 @@ import scala.util.control.NoStackTrace
 import scala.concurrent.Await
 import akka.stream.Supervision
 import akka.stream.impl.ReactiveStreamsCompliance
-import akka.stream.ActorOperationAttributes
+import akka.stream.ActorAttributes
 
 class FlowSupervisionSpec extends AkkaSpec {
-  import ActorOperationAttributes.supervisionStrategy
+  import ActorAttributes.supervisionStrategy
 
   implicit val materializer = ActorFlowMaterializer()(system)
 

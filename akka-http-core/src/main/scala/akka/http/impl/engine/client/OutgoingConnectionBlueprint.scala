@@ -109,7 +109,7 @@ private[http] object OutgoingConnectionBlueprint {
   // a simple merge stage that simply forwards its first input and ignores its second input
   // (the terminationBackchannelInput), but applies a special completion handling
   class TerminationMerge
-    extends FlexiMerge[HttpRequest, FanInShape2[HttpRequest, HttpResponse, HttpRequest]](new FanInShape2("TerminationMerge"), OperationAttributes.name("TerminationMerge")) {
+    extends FlexiMerge[HttpRequest, FanInShape2[HttpRequest, HttpResponse, HttpRequest]](new FanInShape2("TerminationMerge"), Attributes.name("TerminationMerge")) {
     import FlexiMerge._
 
     def createMergeLogic(p: PortT) = new MergeLogic[HttpRequest] {
@@ -142,7 +142,7 @@ private[http] object OutgoingConnectionBlueprint {
    * 3. Go back to 1.
    */
   class ResponseParsingMerge(rootParser: HttpResponseParser)
-    extends FlexiMerge[List[ResponseOutput], FanInShape2[ByteString, HttpMethod, List[ResponseOutput]]](new FanInShape2("ResponseParsingMerge"), OperationAttributes.name("ResponsePersingMerge")) {
+    extends FlexiMerge[List[ResponseOutput], FanInShape2[ByteString, HttpMethod, List[ResponseOutput]]](new FanInShape2("ResponseParsingMerge"), Attributes.name("ResponsePersingMerge")) {
     import FlexiMerge._
 
     def createMergeLogic(p: PortT) = new MergeLogic[List[ResponseOutput]] {

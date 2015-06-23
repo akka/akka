@@ -6,7 +6,7 @@ package akka.stream.io
 import java.io.File
 import akka.stream.impl.io.SynchronousFileSource
 import akka.stream.scaladsl.Source
-import akka.stream.{ ActorOperationAttributes, OperationAttributes, javadsl }
+import akka.stream.{ ActorAttributes, Attributes, javadsl }
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -14,7 +14,7 @@ import scala.concurrent.Future
 object SynchronousFileSource {
 
   final val DefaultChunkSize = 8192
-  final val DefaultAttributes = OperationAttributes.name("synchronousFileSource")
+  final val DefaultAttributes = Attributes.name("synchronousFileSource")
 
   /**
    * Creates a synchronous (Java 6 compatible) Source from a Files contents.
@@ -22,7 +22,7 @@ object SynchronousFileSource {
    *
    * This source is backed by an Actor which will use the dedicated thread-pool base dispatcher.
    * You can configure the default dispatcher for this Source by changing the `akka.stream.file-io-dispatcher` or
-   * set it for a given Source by using [[ActorOperationAttributes]].
+   * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
@@ -36,7 +36,7 @@ object SynchronousFileSource {
    *
    * This source is backed by an Actor which will use the dedicated thread-pool base dispatcher.
    * You can configure the default dispatcher for this Source by changing the `akka.stream.file-io-dispatcher` or
-   * set it for a given Source by using [[ActorOperationAttributes]].
+   * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
@@ -49,7 +49,7 @@ object SynchronousFileSource {
    *
    * This source is backed by an Actor which will use the dedicated thread-pool base dispatcher.
    * You can configure the default dispatcher for this Source by changing the `akka.stream.file-io-dispatcher` or
-   * set it for a given Source by using [[ActorOperationAttributes]].
+   * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */

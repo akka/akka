@@ -11,7 +11,7 @@ import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
-import akka.stream.ActorOperationAttributes
+import akka.stream.ActorAttributes
 import akka.stream.Supervision
 
 class FlowScanSpec extends AkkaSpec {
@@ -47,7 +47,7 @@ class FlowScanSpec extends AkkaSpec {
     }
 
     "fail properly" in {
-      import ActorOperationAttributes._
+      import ActorAttributes._
       val scan = Flow[Int].scan(0) { (old, current) ⇒
         require(current > 0)
         old + current
