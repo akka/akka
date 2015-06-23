@@ -28,10 +28,10 @@ private[http] object MessageToFrameRenderer {
 
     Flow[Message]
       .map {
-        case BinaryMessage.Strict(data)   ⇒ strictFrames(Opcode.Binary, data)
-        case BinaryMessage.Streamed(data) ⇒ streamedFrames(Opcode.Binary, data)
-        case TextMessage.Strict(text)     ⇒ strictFrames(Opcode.Text, ByteString(text, "UTF-8"))
-        case TextMessage.Streamed(text)   ⇒ streamedFrames(Opcode.Text, text.transform(() ⇒ new Utf8Encoder))
+        case BinaryMessage.Strict(data) ⇒ strictFrames(Opcode.Binary, data)
+        case bm: BinaryMessage          ⇒ streamedFrames(Opcode.Binary, bm.dataStream)
+        case TextMessage.Strict(text)   ⇒ strictFrames(Opcode.Text, ByteString(text, "UTF-8"))
+        case tm: TextMessage            ⇒ streamedFrames(Opcode.Text, tm.textStream.transform(() ⇒ new Utf8Encoder))
       }.flatten(FlattenStrategy.Concat())
   }
 }
