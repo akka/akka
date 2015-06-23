@@ -8,7 +8,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Inside, Matchers, WordSpec }
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.actor.ActorSystem
@@ -21,7 +21,7 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
   akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
   override def afterAll() = system.shutdown()
 
   "Multipart.General" should {

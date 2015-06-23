@@ -8,7 +8,7 @@ import java.io.{FileInputStream, File}
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import akka.stream.{Attributes, ActorFlowMaterializer}
+import akka.stream.{Attributes, ActorMaterializer}
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
@@ -26,7 +26,7 @@ import scala.concurrent.{Promise, Await, Future}
 class FileSourcesBenchmark {
 
   implicit val system = ActorSystem("file-sources-benchmark")
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   val file: File = {
     val line = ByteString("x" * 2048 + "\n")

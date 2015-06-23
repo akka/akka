@@ -35,7 +35,7 @@ public class FlexiMergeDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
 
   static//#fleximerge-zip-readall
   public class Zip<A, B> extends FlexiMerge<FlexiMerge.ReadAllInputs, Pair<A, B>, FanInShape2<A, B, Pair<A, B>>> {

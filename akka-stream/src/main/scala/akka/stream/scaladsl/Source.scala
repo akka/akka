@@ -24,7 +24,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.language.higherKinds
 import scala.concurrent.{ ExecutionContext, Future }
-import akka.stream.{ FlowMaterializer, Graph }
+import akka.stream.{ Materializer, Graph }
 import akka.stream.impl._
 import akka.actor.Cancellable
 import akka.actor.ActorRef
@@ -107,7 +107,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl.Sink#publisher]].
    */
-  def runWith[Mat2](sink: Graph[SinkShape[Out], Mat2])(implicit materializer: FlowMaterializer): Mat2 = toMat(sink)(Keep.right).run()
+  def runWith[Mat2](sink: Graph[SinkShape[Out], Mat2])(implicit materializer: Materializer): Mat2 = toMat(sink)(Keep.right).run()
 
   /**
    * Shortcut for running this `Source` with a fold function.
@@ -117,7 +117,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure signaled in the stream.
    */
-  def runFold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: FlowMaterializer): Future[U] =
+  def runFold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: Materializer): Future[U] =
     runWith(Sink.fold(zero)(f))
 
   /**
@@ -127,7 +127,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
    * the stream.
    */
-  def runForeach(f: Out ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit] = runWith(Sink.foreach(f))
+  def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Unit] = runWith(Sink.foreach(f))
 
   /**
    * Concatenates a second source so that the first element

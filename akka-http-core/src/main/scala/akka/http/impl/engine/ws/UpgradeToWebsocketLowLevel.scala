@@ -6,7 +6,7 @@ package akka.http.impl.engine.ws
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebsocket }
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 
 /**

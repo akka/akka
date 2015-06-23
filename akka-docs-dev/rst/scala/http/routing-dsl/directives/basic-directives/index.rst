@@ -18,7 +18,7 @@ a single value or a tuple of values.
 
   * :ref:`-extract-`
   * :ref:`-extractExecutionContext-`
-  * :ref:`-extractFlowMaterializer-`
+  * :ref:`-extractMaterializer-`
   * :ref:`-extractLog-`
   * :ref:`-extractRequest-`
   * :ref:`-extractRequestContext-`
@@ -40,7 +40,7 @@ Transforming the Request(Context)
   * :ref:`-mapSettings-`
   * :ref:`-mapUnmatchedPath-`
   * :ref:`-withExecutionContext-`
-  * :ref:`-withFlowMaterializer-`
+  * :ref:`-withMaterializer-`
   * :ref:`-withLog-`
   * :ref:`-withSettings-`
 
@@ -94,7 +94,7 @@ Alphabetically
    cancelRejections
    extract
    extractExecutionContext
-   extractFlowMaterializer
+   extractMaterializer
    extractLog
    extractRequest
    extractRequestContext
@@ -122,6 +122,6 @@ Alphabetically
    textract
    tprovide
    withExecutionContext
-   withFlowMaterializer
+   withMaterializer
    withLog
    withSettings

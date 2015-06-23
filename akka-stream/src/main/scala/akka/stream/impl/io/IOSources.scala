@@ -20,7 +20,7 @@ import scala.concurrent.{ Future, Promise }
 private[akka] final class SynchronousFileSource(f: File, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[Long]](shape) {
   override def create(context: MaterializationContext) = {
-    val mat = ActorFlowMaterializer.downcast(context.materializer)
+    val mat = ActorMaterializer.downcast(context.materializer)
     val settings = mat.effectiveSettings(context.effectiveAttributes)
 
     val bytesReadPromise = Promise[Long]()
@@ -46,7 +46,7 @@ private[akka] final class SynchronousFileSource(f: File, chunkSize: Int, val att
 private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[Long]](shape) {
   override def create(context: MaterializationContext) = {
-    val mat = ActorFlowMaterializer.downcast(context.materializer)
+    val mat = ActorMaterializer.downcast(context.materializer)
     val settings = mat.effectiveSettings(context.effectiveAttributes)
     val bytesReadPromise = Promise[Long]()
 

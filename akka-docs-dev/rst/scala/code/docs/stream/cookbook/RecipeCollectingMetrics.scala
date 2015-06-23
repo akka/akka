@@ -1,6 +1,6 @@
 package docs.stream.cookbook
 
-import akka.stream.{ ActorFlowMaterializerSettings, ActorFlowMaterializer }
+import akka.stream.{ ActorMaterializerSettings, ActorMaterializer }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 
@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 class RecipeCollectingMetrics extends RecipeSpec {
   import HoldOps._
-  implicit val m2 = ActorFlowMaterializer(ActorFlowMaterializerSettings(system).withInputBuffer(1, 1))
+  implicit val m2 = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
 
   "Recipe for periodically collecting metrics" must {
 

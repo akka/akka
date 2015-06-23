@@ -68,7 +68,7 @@ public class IntegrationDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
 
   class AddressSystem {
     //#email-address-lookup
@@ -529,8 +529,8 @@ public class IntegrationDocTest {
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
         final SometimesSlowService service = new SometimesSlowService(blockingEc);
 
-        final ActorFlowMaterializer mat = ActorFlowMaterializer.create(
-          ActorFlowMaterializerSettings.create(system).withInputBuffer(4, 4), system);
+        final ActorMaterializer mat = ActorMaterializer.create(
+          ActorMaterializerSettings.create(system).withInputBuffer(4, 4), system);
 
         Source.from(Arrays.asList("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
           .map(elem -> { System.out.println("before: " + elem); return elem; })
@@ -574,8 +574,8 @@ public class IntegrationDocTest {
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
         final SometimesSlowService service = new SometimesSlowService(blockingEc);
 
-        final ActorFlowMaterializer mat = ActorFlowMaterializer.create(
-          ActorFlowMaterializerSettings.create(system).withInputBuffer(4, 4), system);
+        final ActorMaterializer mat = ActorMaterializer.create(
+          ActorMaterializerSettings.create(system).withInputBuffer(4, 4), system);
 
         Source.from(Arrays.asList("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
           .map(elem -> { System.out.println("before: " + elem); return elem; })

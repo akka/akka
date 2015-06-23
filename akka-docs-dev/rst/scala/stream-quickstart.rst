@@ -19,12 +19,12 @@ Here's the data model we'll be working with throughout the quickstart examples:
 
 Transforming and consuming simple streams
 -----------------------------------------
-In order to prepare our environment by creating an :class:`ActorSystem` and :class:`ActorFlowMaterializer`,
+In order to prepare our environment by creating an :class:`ActorSystem` and :class:`ActorMaterializer`,
 which will be responsible for materializing and running the streams we are about to create:
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#materializer-setup
 
-The :class:`ActorFlowMaterializer` can optionally take :class:`ActorFlowMaterializerSettings` which can be used to define
+The :class:`ActorMaterializer` can optionally take :class:`ActorMaterializerSettings` which can be used to define
 materialization properties, such as default buffer sizes (see also :ref:`stream-buffers-scala`), the dispatcher to
 be used by the pipeline etc. These can be overridden ``withAttributes`` on :class:`Flow`, :class:`Source`, :class:`Sink` and :class:`Graph`.
 
@@ -55,7 +55,7 @@ or by using the shorthand version (which are defined only for the most popular s
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#authors-foreach-println
 
-Materializing and running a stream always requires a :class:`FlowMaterializer` to be in implicit scope (or passed in explicitly,
+Materializing and running a stream always requires a :class:`Materializer` to be in implicit scope (or passed in explicitly,
 like this: ``.run(materializer)``).
 
 Flattening sequences in streams
@@ -151,7 +151,7 @@ and because of using ``Keep.right``, the resulting :class:`RunnableFlow` has als
 
 This step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be ``run()``, as indicated by its type: :class:`RunnableFlow[Future[Int]]`. Next we call ``run()`` which uses the implicit :class:`ActorFlowMaterializer`
+be ``run()``, as indicated by its type: :class:`RunnableFlow[Future[Int]]`. Next we call ``run()`` which uses the implicit :class:`ActorMaterializer`
 to materialize and run the flow. The value returned by calling ``run()`` on a ``RunnableFlow[T]`` is of type ``T``.
 In our case this type is ``Future[Int]`` which, when completed, will contain the total length of our tweets stream.
 In case of the stream failing, this future would complete with a Failure.

@@ -3,8 +3,8 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.ActorAttributes
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit.AkkaSpec
@@ -17,10 +17,10 @@ import scala.concurrent.duration._
 
 class FlowSplitAfterSpec extends AkkaSpec {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   case class StreamPuppet(p: Publisher[Int]) {
     val probe = TestSubscriber.manualProbe[Int]()

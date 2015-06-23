@@ -11,7 +11,7 @@ class WebsocketExampleSpec extends WordSpec with Matchers {
     pending // compile-time only test
     //#websocket-example-using-core
     import akka.actor.ActorSystem
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.{ Source, Flow }
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.ws.UpgradeToWebsocket
@@ -20,7 +20,7 @@ class WebsocketExampleSpec extends WordSpec with Matchers {
     import akka.http.scaladsl.model.HttpMethods._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     // The Greeter WebSocket Service expects a "name" per message and
     // returns a greeting message for that name
@@ -57,14 +57,14 @@ class WebsocketExampleSpec extends WordSpec with Matchers {
     pending // compile-time only test
     //#websocket-example-using-routing
     import akka.actor.ActorSystem
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.{ Source, Flow }
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.ws.{ TextMessage, Message }
     import akka.http.scaladsl.server.Directives
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     import Directives._
 

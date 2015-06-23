@@ -7,13 +7,13 @@ import java.io.{ File, FileInputStream }
 
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 
 class FlowCollectSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
 
   "A Collect" must {
 

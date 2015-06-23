@@ -3,8 +3,8 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.util.ByteString
 import akka.stream.{ Inlet, Outlet, Shape, Graph }
@@ -49,10 +49,10 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
   import akka.stream.scaladsl.GraphOpsIntegrationSpec._
   import FlowGraph.Implicits._
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "FlowGraphs" must {
 

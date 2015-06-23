@@ -13,8 +13,8 @@ import akka.routing.ActorRefRoutee;
 import akka.routing.RoundRobinRoutingLogic;
 import akka.routing.Routee;
 import akka.routing.Router;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
+import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import akka.stream.actor.AbstractActorSubscriber;
 import akka.stream.actor.ActorSubscriberMessage;
 import akka.stream.actor.MaxInFlightRequestStrategy;
@@ -46,7 +46,7 @@ public class ActorSubscriberDocTest {
     system = null;
   }
   
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
   
     //#worker-pool
     public static class WorkerPoolProtocol {

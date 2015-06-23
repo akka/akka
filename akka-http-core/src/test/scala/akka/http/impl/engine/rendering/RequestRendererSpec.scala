@@ -16,7 +16,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.stream.scaladsl._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import HttpEntity._
 import HttpMethods._
 
@@ -27,7 +27,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "The request preparation logic should" - {
     "properly render an unchunked" - {

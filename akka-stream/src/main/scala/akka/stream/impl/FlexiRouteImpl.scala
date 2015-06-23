@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import akka.stream.{ scaladsl, ActorFlowMaterializerSettings }
+import akka.stream.{ scaladsl, ActorMaterializerSettings }
 import akka.stream.impl.FanOut.OutputBunch
 import akka.stream.{ Shape, OutPort, Outlet }
 
@@ -12,7 +12,7 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[akka] class FlexiRouteImpl[T, S <: Shape](_settings: ActorFlowMaterializerSettings,
+private[akka] class FlexiRouteImpl[T, S <: Shape](_settings: ActorMaterializerSettings,
                                                   shape: S,
                                                   val routeLogic: scaladsl.FlexiRoute.RouteLogic[T])
   extends FanOut(_settings, shape.outlets.size) {

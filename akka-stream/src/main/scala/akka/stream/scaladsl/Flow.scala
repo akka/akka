@@ -279,7 +279,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a of a [[Source#subscriber]] and
    * and `Publisher` of a [[Sink#publisher]].
    */
-  def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(implicit materializer: FlowMaterializer): (Mat1, Mat2) = {
+  def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(implicit materializer: Materializer): (Mat1, Mat2) = {
     Source.wrap(source).via(this).toMat(sink)(Keep.both).run()
   }
 
@@ -331,7 +331,7 @@ case class RunnableFlow[+Mat](private[stream] val module: StreamLayout.Module) e
   /**
    * Run this flow and return the materialized instance from the flow.
    */
-  def run()(implicit materializer: FlowMaterializer): Mat = materializer.materialize(this)
+  def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
   override def withAttributes(attr: Attributes): RunnableFlow[Mat] =
     new RunnableFlow(module.withAttributes(attr).wrap)

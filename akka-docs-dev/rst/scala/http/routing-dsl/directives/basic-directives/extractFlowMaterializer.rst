@@ -1,6 +1,6 @@
-.. _-extractFlowMaterializer-:
+.. _-extractMaterializer-:
 
-extractFlowMaterializer
+extractMaterializer
 =======================
 
 ...
@@ -9,7 +9,7 @@ Signature
 ---------
 
 .. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
-   :snippet: extractFlowMaterializer
+   :snippet: extractMaterializer
 
 Description
 -----------
@@ -20,4 +20,4 @@ Example
 -------
 
 ... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0extractFlowMaterializer
+   :snippet: 0extractMaterializer

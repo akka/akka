@@ -191,12 +191,12 @@ public class TwitterStreamQuickstartDocTest {
   static abstract class Example1 {
     //#materializer-setup
     final ActorSystem system = ActorSystem.create("reactive-tweets");
-    final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+    final Materializer mat = ActorMaterializer.create(system);
     //#materializer-setup
   }
 
   static class Example2 {
-    public void run(final FlowMaterializer mat) throws TimeoutException, InterruptedException {
+    public void run(final Materializer mat) throws TimeoutException, InterruptedException {
       //#backpressure-by-readline
       final Future<?> completion =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
@@ -207,10 +207,10 @@ public class TwitterStreamQuickstartDocTest {
       //#backpressure-by-readline
     }
   }
-
-
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
-
+  
+  
+  final Materializer mat = ActorMaterializer.create(system);
+  
   @Test
   public void demonstrateFilterAndMap() {
     //#authors-filter-map

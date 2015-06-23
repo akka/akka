@@ -15,30 +15,30 @@ import akka.japi.function
 
 import scala.util.control.NoStackTrace
 
-object ActorFlowMaterializer {
+object ActorMaterializer {
 
   /**
-   * Scala API: Creates a ActorFlowMaterializer which will execute every step of a transformation
+   * Scala API: Creates a ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
    *
-   * The materializer's [[akka.stream.ActorFlowMaterializerSettings]] will be obtained from the
+   * The materializer's [[akka.stream.ActorMaterializerSettings]] will be obtained from the
    * configuration of the `context`'s underlying [[akka.actor.ActorSystem]].
    *
    * The `namePrefix` is used as the first part of the names of the actors running
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(materializerSettings: Option[ActorFlowMaterializerSettings] = None, namePrefix: Option[String] = None, optimizations: Optimizations = Optimizations.none)(implicit context: ActorRefFactory): ActorFlowMaterializer = {
+  def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None, optimizations: Optimizations = Optimizations.none)(implicit context: ActorRefFactory): ActorMaterializer = {
     val system = actorSystemOf(context)
 
-    val settings = materializerSettings getOrElse ActorFlowMaterializerSettings(system)
+    val settings = materializerSettings getOrElse ActorMaterializerSettings(system)
     apply(settings, namePrefix.getOrElse("flow"), optimizations)(context)
   }
 
   /**
-   * Scala API: Creates a ActorFlowMaterializer which will execute every step of a transformation
+   * Scala API: Creates a ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
@@ -48,10 +48,10 @@ object ActorFlowMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(materializerSettings: ActorFlowMaterializerSettings, namePrefix: String, optimizations: Optimizations)(implicit context: ActorRefFactory): ActorFlowMaterializer = {
+  def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String, optimizations: Optimizations)(implicit context: ActorRefFactory): ActorMaterializer = {
     val system = actorSystemOf(context)
 
-    new ActorFlowMaterializerImpl(
+    new ActorMaterializerImpl(
       system,
       materializerSettings,
       system.dispatchers,
@@ -62,7 +62,7 @@ object ActorFlowMaterializer {
   }
 
   /**
-   * Scala API: Creates a ActorFlowMaterializer which will execute every step of a transformation
+   * Scala API: Creates a ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
@@ -72,11 +72,11 @@ object ActorFlowMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(materializerSettings: ActorFlowMaterializerSettings)(implicit context: ActorRefFactory): ActorFlowMaterializer =
+  def apply(materializerSettings: ActorMaterializerSettings)(implicit context: ActorRefFactory): ActorMaterializer =
     apply(Some(materializerSettings), None)
 
   /**
-   * Java API: Creates a ActorFlowMaterializer which will execute every step of a transformation
+   * Java API: Creates a ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
@@ -85,20 +85,20 @@ object ActorFlowMaterializer {
    * Defaults the actor name prefix used to name actors running the processing steps to `"flow"`.
    * The actor names are built up of `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def create(context: ActorRefFactory): ActorFlowMaterializer =
+  def create(context: ActorRefFactory): ActorMaterializer =
     apply()(context)
 
   /**
-   * Java API: Creates a ActorFlowMaterializer which will execute every step of a transformation
+   * Java API: Creates a ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
    */
-  def create(settings: ActorFlowMaterializerSettings, context: ActorRefFactory): ActorFlowMaterializer =
+  def create(settings: ActorMaterializerSettings, context: ActorRefFactory): ActorMaterializer =
     apply(Option(settings), None)(context)
 
   /**
-   * Java API: Creates a ActorFlowMaterializer which will execute every step of a transformation
+   * Java API: Creates a ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
@@ -108,7 +108,7 @@ object ActorFlowMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def create(settings: ActorFlowMaterializerSettings, context: ActorRefFactory, namePrefix: String): ActorFlowMaterializer =
+  def create(settings: ActorMaterializerSettings, context: ActorRefFactory, namePrefix: String): ActorMaterializer =
     apply(Option(settings), Option(namePrefix))(context)
 
   private def actorSystemOf(context: ActorRefFactory): ActorSystem = {
@@ -125,27 +125,27 @@ object ActorFlowMaterializer {
   /**
    * INTERNAL API
    */
-  private[akka] def downcast(materializer: FlowMaterializer): ActorFlowMaterializer =
+  private[akka] def downcast(materializer: Materializer): ActorMaterializer =
     materializer match {
-      case m: ActorFlowMaterializer ⇒ m
-      case _ ⇒ throw new IllegalArgumentException(s"required [${classOf[ActorFlowMaterializer].getName}] " +
+      case m: ActorMaterializer ⇒ m
+      case _ ⇒ throw new IllegalArgumentException(s"required [${classOf[ActorMaterializer].getName}] " +
         s"but got [${materializer.getClass.getName}]")
     }
 
 }
 
 /**
- * A ActorFlowMaterializer takes the list of transformations comprising a
+ * A ActorMaterializer takes the list of transformations comprising a
  * [[akka.stream.scaladsl.Flow]] and materializes them in the form of
  * [[org.reactivestreams.Processor]] instances. How transformation
  * steps are split up into asynchronous regions is implementation
  * dependent.
  */
-abstract class ActorFlowMaterializer extends FlowMaterializer {
+abstract class ActorMaterializer extends Materializer {
 
-  def settings: ActorFlowMaterializerSettings
+  def settings: ActorMaterializerSettings
 
-  def effectiveSettings(opAttr: Attributes): ActorFlowMaterializerSettings
+  def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings
 
   /**
    * Shuts down this materializer and all the stages that have been materialized through this materializer. After
@@ -188,7 +188,7 @@ class MaterializationException(msg: String, cause: Throwable = null) extends Run
 final case class AbruptTerminationException(actor: ActorRef)
   extends RuntimeException(s"Processor actor [$actor] terminated abruptly") with NoStackTrace
 
-object ActorFlowMaterializerSettings {
+object ActorMaterializerSettings {
 
   def apply(
     initialInputBufferSize: Int,
@@ -199,27 +199,27 @@ object ActorFlowMaterializerSettings {
     debugLogging: Boolean,
     outputBurstLimit: Int,
     optimizations: Optimizations) =
-    new ActorFlowMaterializerSettings(
+    new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, optimizations)
 
   /**
-   * Create [[ActorFlowMaterializerSettings]].
+   * Create [[ActorMaterializerSettings]].
    *
-   * You can refine the configuration based settings using [[ActorFlowMaterializerSettings#withInputBuffer]],
-   * [[ActorFlowMaterializerSettings#withDispatcher]]
+   * You can refine the configuration based settings using [[ActorMaterializerSettings#withInputBuffer]],
+   * [[ActorMaterializerSettings#withDispatcher]]
    */
-  def apply(system: ActorSystem): ActorFlowMaterializerSettings =
+  def apply(system: ActorSystem): ActorMaterializerSettings =
     apply(system.settings.config.getConfig("akka.stream.materializer"))
 
   /**
-   * Create [[ActorFlowMaterializerSettings]].
+   * Create [[ActorMaterializerSettings]].
    *
-   * You can refine the configuration based settings using [[ActorFlowMaterializerSettings#withInputBuffer]],
-   * [[ActorFlowMaterializerSettings#withDispatcher]]
+   * You can refine the configuration based settings using [[ActorMaterializerSettings#withInputBuffer]],
+   * [[ActorMaterializerSettings#withDispatcher]]
    */
-  def apply(config: Config): ActorFlowMaterializerSettings =
-    ActorFlowMaterializerSettings(
+  def apply(config: Config): ActorMaterializerSettings =
+    ActorMaterializerSettings(
       initialInputBufferSize = config.getInt("initial-input-buffer-size"),
       maxInputBufferSize = config.getInt("max-input-buffer-size"),
       dispatcher = config.getString("dispatcher"),
@@ -232,19 +232,19 @@ object ActorFlowMaterializerSettings {
   /**
    * Java API
    *
-   * You can refine the configuration based settings using [[ActorFlowMaterializerSettings#withInputBuffer]],
-   * [[ActorFlowMaterializerSettings#withDispatcher]]
+   * You can refine the configuration based settings using [[ActorMaterializerSettings#withInputBuffer]],
+   * [[ActorMaterializerSettings#withDispatcher]]
    */
-  def create(system: ActorSystem): ActorFlowMaterializerSettings =
+  def create(system: ActorSystem): ActorMaterializerSettings =
     apply(system)
 
   /**
    * Java API
    *
-   * You can refine the configuration based settings using [[ActorFlowMaterializerSettings#withInputBuffer]],
-   * [[ActorFlowMaterializerSettings#withDispatcher]]
+   * You can refine the configuration based settings using [[ActorMaterializerSettings#withInputBuffer]],
+   * [[ActorMaterializerSettings#withDispatcher]]
    */
-  def create(config: Config): ActorFlowMaterializerSettings =
+  def create(config: Config): ActorMaterializerSettings =
     apply(config)
 }
 
@@ -254,7 +254,7 @@ object ActorFlowMaterializerSettings {
  *
  * This will likely be replaced in the future by auto-tuning these values at runtime.
  */
-final class ActorFlowMaterializerSettings(
+final class ActorMaterializerSettings(
   val initialInputBufferSize: Int,
   val maxInputBufferSize: Int,
   val dispatcher: String,
@@ -278,14 +278,14 @@ final class ActorFlowMaterializerSettings(
     debugLogging: Boolean = this.debugLogging,
     outputBurstLimit: Int = this.outputBurstLimit,
     optimizations: Optimizations = this.optimizations) =
-    new ActorFlowMaterializerSettings(
+    new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, optimizations)
 
-  def withInputBuffer(initialSize: Int, maxSize: Int): ActorFlowMaterializerSettings =
+  def withInputBuffer(initialSize: Int, maxSize: Int): ActorMaterializerSettings =
     copy(initialInputBufferSize = initialSize, maxInputBufferSize = maxSize)
 
-  def withDispatcher(dispatcher: String): ActorFlowMaterializerSettings =
+  def withDispatcher(dispatcher: String): ActorMaterializerSettings =
     copy(dispatcher = dispatcher)
 
   /**
@@ -293,7 +293,7 @@ final class ActorFlowMaterializerSettings(
    * overridden for specific flows of the stream operations with
    * [[akka.stream.Attributes#supervisionStrategy]].
    */
-  def withSupervisionStrategy(decider: Supervision.Decider): ActorFlowMaterializerSettings =
+  def withSupervisionStrategy(decider: Supervision.Decider): ActorMaterializerSettings =
     copy(supervisionDecider = decider)
 
   /**
@@ -301,7 +301,7 @@ final class ActorFlowMaterializerSettings(
    * overridden for specific flows of the stream operations with
    * [[akka.stream.Attributes#supervisionStrategy]].
    */
-  def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): ActorFlowMaterializerSettings = {
+  def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): ActorMaterializerSettings = {
     import Supervision._
     copy(supervisionDecider = decider match {
       case `resumingDecider`   ⇒ resumingDecider
@@ -311,10 +311,10 @@ final class ActorFlowMaterializerSettings(
     })
   }
 
-  def withDebugLogging(enable: Boolean): ActorFlowMaterializerSettings =
+  def withDebugLogging(enable: Boolean): ActorMaterializerSettings =
     copy(debugLogging = enable)
 
-  def withOptimizations(optimizations: Optimizations): ActorFlowMaterializerSettings =
+  def withOptimizations(optimizations: Optimizations): ActorMaterializerSettings =
     copy(optimizations = optimizations)
 
   private def requirePowerOfTwo(n: Integer, name: String): Unit = {

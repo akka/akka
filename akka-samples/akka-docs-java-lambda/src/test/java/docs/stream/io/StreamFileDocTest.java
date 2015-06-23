@@ -39,7 +39,7 @@ public class StreamFileDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
 
   {
     //#file-source

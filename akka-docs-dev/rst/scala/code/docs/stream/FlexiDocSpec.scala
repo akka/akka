@@ -29,7 +29,7 @@ class FlexiDocSpec extends AkkaSpec {
   import FlexiDocSpec._
 
   implicit val ec = system.dispatcher
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "implement zip using readall" in {
     //#fleximerge-zip-readall

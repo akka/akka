@@ -302,7 +302,7 @@ object FlowGraph {
      */
     def materializedValue: Outlet[Mat] = delegate.materializedValue
 
-    def run(mat: FlowMaterializer): Unit = delegate.buildRunnable().run()(mat)
+    def run(mat: Materializer): Unit = delegate.buildRunnable().run()(mat)
 
     def from[T](out: Outlet[T]): ForwardOps[T] = new ForwardOps(out)
     def from[T, M](src: Graph[SourceShape[T], M]): ForwardOps[T] = new ForwardOps(delegate.add(src).outlet)

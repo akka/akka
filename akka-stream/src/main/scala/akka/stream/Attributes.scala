@@ -13,7 +13,7 @@ import akka.japi.function
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
  * or [[akka.stream.scaladsl.FlowGraph]] / [[akka.stream.javadsl.FlowGraph]] materialization.
  *
- * Note that more attributes for the [[ActorFlowMaterializer]] are defined in [[ActorAttributes]].
+ * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
  */
 final case class Attributes private (attributeList: immutable.Seq[Attributes.Attribute] = Nil) {
 
@@ -108,7 +108,7 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
 }
 
 /**
- * Note that more attributes for the [[ActorFlowMaterializer]] are defined in [[ActorAttributes]].
+ * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
  */
 object Attributes {
 
@@ -169,7 +169,7 @@ object Attributes {
 }
 
 /**
- * Attributes for the [[ActorFlowMaterializer]].
+ * Attributes for the [[ActorMaterializer]].
  * Note that more attributes defined in [[Attributes]].
  */
 object ActorAttributes {

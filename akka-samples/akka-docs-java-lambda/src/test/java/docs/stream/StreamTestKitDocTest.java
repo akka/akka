@@ -43,7 +43,7 @@ public class StreamTestKitDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
 
   @Test
   public void strictCollection() throws Exception {

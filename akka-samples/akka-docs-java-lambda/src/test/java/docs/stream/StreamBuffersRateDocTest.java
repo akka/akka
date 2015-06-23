@@ -35,7 +35,7 @@ public class StreamBuffersRateDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
 
   @Test
   public void demonstratePipelining() {
@@ -52,8 +52,8 @@ public class StreamBuffersRateDocTest {
   @SuppressWarnings("unused")
   public void demonstrateBufferSizes() {
     //#materializer-buffer
-    final FlowMaterializer materializer = ActorFlowMaterializer.create(
-      ActorFlowMaterializerSettings.create(system)
+    final Materializer materializer = ActorMaterializer.create(
+      ActorMaterializerSettings.create(system)
         .withInputBuffer(64, 64), system);
     //#materializer-buffer
 

@@ -16,9 +16,9 @@ import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.ActorFlowMaterializerSettings;
-import akka.stream.FlowMaterializer;
+import akka.stream.ActorMaterializer;
+import akka.stream.ActorMaterializerSettings;
+import akka.stream.Materializer;
 import akka.stream.Supervision;
 import akka.stream.javadsl.Flow;
 import akka.stream.ActorAttributes;
@@ -45,7 +45,7 @@ public class FlowErrorDocTest {
   @Test(expected = ArithmeticException.class)
   public void demonstrateFailStream() throws Exception {
     //#stop
-    final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+    final Materializer mat = ActorMaterializer.create(system);
     final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
       .map(elem -> 100 / elem);
     final Sink<Integer, Future<Integer>> fold =
@@ -67,8 +67,8 @@ public class FlowErrorDocTest {
       else
         return Supervision.stop();
     };
-    final FlowMaterializer mat = ActorFlowMaterializer.create(
-      ActorFlowMaterializerSettings.create(system).withSupervisionStrategy(decider),
+    final Materializer mat = ActorMaterializer.create(
+      ActorMaterializerSettings.create(system).withSupervisionStrategy(decider),
       system);
     final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
       .map(elem -> 100 / elem);
@@ -85,7 +85,7 @@ public class FlowErrorDocTest {
   @Test
   public void demonstrateResumeSectionStream() throws Exception {
     //#resume-section
-    final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+    final Materializer mat = ActorMaterializer.create(system);
     final Function<Throwable, Supervision.Directive> decider = exc -> {
       if (exc instanceof ArithmeticException)
         return Supervision.resume();
@@ -110,7 +110,7 @@ public class FlowErrorDocTest {
   @Test
   public void demonstrateRestartSectionStream() throws Exception {
     //#restart-section
-    final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+    final Materializer mat = ActorMaterializer.create(system);
     final Function<Throwable, Supervision.Directive> decider = exc -> {
       if (exc instanceof IllegalArgumentException)
         return Supervision.restart();

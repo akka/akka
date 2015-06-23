@@ -13,7 +13,6 @@ import org.junit.Test;
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.japi.*;
 import akka.testkit.JavaTestKit;
 
 public class FlowParallelismDocTest {
@@ -31,7 +30,7 @@ public class FlowParallelismDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
 
   static class ScoopOfBatter {}
   static class HalfCookedPancake {}

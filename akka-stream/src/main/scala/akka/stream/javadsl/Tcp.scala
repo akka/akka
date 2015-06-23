@@ -13,7 +13,7 @@ import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl
 import akka.util.ByteString
 import akka.japi.Util.immutableSeq
@@ -59,7 +59,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      *
      * Convenience shortcut for: `flow.join(handler).run()`.
      */
-    def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat], materializer: FlowMaterializer): Mat =
+    def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat], materializer: Materializer): Mat =
       delegate.handleWith(handler.asScala)(materializer)
 
     /**

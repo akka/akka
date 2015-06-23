@@ -7,16 +7,16 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 
 class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A GroupedWithin" must {
 
