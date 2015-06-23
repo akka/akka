@@ -145,7 +145,7 @@ abstract class ActorFlowMaterializer extends FlowMaterializer {
 
   def settings: ActorFlowMaterializerSettings
 
-  def effectiveSettings(opAttr: OperationAttributes): ActorFlowMaterializerSettings
+  def effectiveSettings(opAttr: Attributes): ActorFlowMaterializerSettings
 
   /**
    * Shuts down this materializer and all the stages that have been materialized through this materializer. After
@@ -291,7 +291,7 @@ final class ActorFlowMaterializerSettings(
   /**
    * Scala API: Decides how exceptions from application code are to be handled, unless
    * overridden for specific flows of the stream operations with
-   * [[akka.stream.OperationAttributes#supervisionStrategy]].
+   * [[akka.stream.Attributes#supervisionStrategy]].
    */
   def withSupervisionStrategy(decider: Supervision.Decider): ActorFlowMaterializerSettings =
     copy(supervisionDecider = decider)
@@ -299,7 +299,7 @@ final class ActorFlowMaterializerSettings(
   /**
    * Java API: Decides how exceptions from application code are to be handled, unless
    * overridden for specific flows of the stream operations with
-   * [[akka.stream.OperationAttributes#supervisionStrategy]].
+   * [[akka.stream.Attributes#supervisionStrategy]].
    */
   def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): ActorFlowMaterializerSettings = {
     import Supervision._

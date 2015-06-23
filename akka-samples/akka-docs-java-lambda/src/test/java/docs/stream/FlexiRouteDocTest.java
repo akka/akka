@@ -4,7 +4,7 @@
 package docs.stream;
 
 import akka.stream.*;
-import akka.stream.OperationAttributes;
+import akka.stream.Attributes;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,7 +36,7 @@ public class FlexiRouteDocTest {
   static//#flexiroute-unzip
   public class Unzip<A, B> extends FlexiRoute<Pair<A, B>, FanOutShape2<Pair<A, B>, A, B>> {
     public Unzip() {
-      super(new FanOutShape2<Pair<A, B>, A, B>("Unzip"), OperationAttributes.name("Unzip"));
+      super(new FanOutShape2<Pair<A, B>, A, B>("Unzip"), Attributes.name("Unzip"));
     }
     @Override
     public RouteLogic<Pair<A, B>> createRouteLogic(final FanOutShape2<Pair<A, B>, A, B> s) {
@@ -68,7 +68,7 @@ public class FlexiRouteDocTest {
   public class ImportantRoute<T> extends FlexiRoute<T, FanOutShape3<T, T, T, T>> {
 
     public ImportantRoute() {
-      super(new FanOutShape3<T, T, T, T>("ImportantRoute"), OperationAttributes.name("ImportantRoute"));
+      super(new FanOutShape3<T, T, T, T>("ImportantRoute"), Attributes.name("ImportantRoute"));
     }
 
     @Override

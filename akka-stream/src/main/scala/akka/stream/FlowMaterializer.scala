@@ -52,5 +52,5 @@ private[akka] object NoFlowMaterializer extends FlowMaterializer {
  */
 private[akka] case class MaterializationContext(
   materializer: FlowMaterializer,
-  effectiveAttributes: OperationAttributes,
+  effectiveAttributes: Attributes,
   stageName: String)

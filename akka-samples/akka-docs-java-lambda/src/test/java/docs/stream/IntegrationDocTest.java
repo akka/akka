@@ -20,7 +20,6 @@ import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.collection.immutable.Seq;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.runtime.BoxedUnit;
@@ -345,8 +344,8 @@ public class IntegrationDocTest {
           .map(t -> t.author);
 
         //#email-addresses-mapAsync-supervision
-        final OperationAttributes resumeAttrib =
-          ActorOperationAttributes.withSupervisionStrategy(Supervision.getResumingDecider());
+        final Attributes resumeAttrib =
+          ActorAttributes.withSupervisionStrategy(Supervision.getResumingDecider());
         final Flow<Author, String, BoxedUnit> lookupEmail =
             Flow.of(Author.class)
             .mapAsync(4, author -> addressSystem.lookupEmail(author.handle))
@@ -458,7 +457,7 @@ public class IntegrationDocTest {
         final Flow<String, Boolean, BoxedUnit> send =
           Flow.of(String.class)
           .map(phoneNo -> smsServer.send(new TextMessage(phoneNo, "I like your tweet")))
-          .withAttributes(ActorOperationAttributes.dispatcher("blocking-dispatcher"));
+          .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"));
         final RunnableFlow<?> sendTextMessages =
           phoneNumbers.via(send).to(Sink.ignore());
 

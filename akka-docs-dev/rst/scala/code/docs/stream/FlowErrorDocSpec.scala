@@ -9,8 +9,8 @@ import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.Supervision
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
-import akka.stream.OperationAttributes
-import akka.stream.ActorOperationAttributes
+import akka.stream.Attributes
+import akka.stream.ActorAttributes
 import scala.concurrent.duration._
 
 class FlowErrorDocSpec extends AkkaSpec {
@@ -55,7 +55,7 @@ class FlowErrorDocSpec extends AkkaSpec {
     }
     val flow = Flow[Int]
       .filter(100 / _ < 50).map(elem => 100 / (5 - elem))
-      .withAttributes(ActorOperationAttributes.supervisionStrategy(decider))
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
     val source = Source(0 to 5).via(flow)
 
     val result = source.runWith(Sink.fold(0)(_ + _))
@@ -78,7 +78,7 @@ class FlowErrorDocSpec extends AkkaSpec {
         if (elem < 0) throw new IllegalArgumentException("negative not allowed")
         else acc + elem
       }
-      .withAttributes(ActorOperationAttributes.supervisionStrategy(decider))
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
     val source = Source(List(1, 3, -1, 5, 7)).via(flow)
     val result = source.grouped(1000).runWith(Sink.head)
     // the negative element cause the scan stage to be restarted,

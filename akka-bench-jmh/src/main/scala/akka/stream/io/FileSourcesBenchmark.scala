@@ -8,7 +8,7 @@ import java.io.{FileInputStream, File}
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import akka.stream.{OperationAttributes, ActorFlowMaterializer}
+import akka.stream.{Attributes, ActorFlowMaterializer}
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
@@ -76,7 +76,7 @@ class FileSourcesBenchmark {
 
   @Benchmark
   def fileChannel_noReadAhead() = {
-    val h = fileChannelSource.withAttributes(OperationAttributes.inputBuffer(1, 1)).to(Sink.ignore).run()
+    val h = fileChannelSource.withAttributes(Attributes.inputBuffer(1, 1)).to(Sink.ignore).run()
 
     Await.result(h, 30.seconds)
   }

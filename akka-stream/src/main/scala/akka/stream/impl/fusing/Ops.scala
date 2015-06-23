@@ -5,7 +5,7 @@ package akka.stream.impl.fusing
 
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
-import akka.stream.OperationAttributes.LogLevels
+import akka.stream.Attributes.LogLevels
 import akka.stream.impl.{ FixedSizeBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }

@@ -14,7 +14,7 @@ import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
-import akka.stream.ActorOperationAttributes.supervisionStrategy
+import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
 import scala.util.Try

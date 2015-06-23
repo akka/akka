@@ -8,7 +8,7 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NoStackTrace
-import akka.stream.{ OperationAttributes, ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ Attributes, ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import org.reactivestreams.Subscriber
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._

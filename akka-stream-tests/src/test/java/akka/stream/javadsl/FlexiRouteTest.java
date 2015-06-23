@@ -139,7 +139,7 @@ public class FlexiRouteTest {
    */
   static public class Fair<T> extends FlexiRoute<T, UniformFanOutShape<T, T>> {
     public Fair() {
-      super(new UniformFanOutShape<T, T>(2), OperationAttributes.name("Fair"));
+      super(new UniformFanOutShape<T, T>(2), Attributes.name("Fair"));
     }
     @Override
     public RouteLogic<T> createRouteLogic(final UniformFanOutShape<T, T> s) {
@@ -175,7 +175,7 @@ public class FlexiRouteTest {
    */
   static public class StrictRoundRobin<T> extends FlexiRoute<T, UniformFanOutShape<T, T>> {
     public StrictRoundRobin() {
-      super(new UniformFanOutShape<T, T>(2), OperationAttributes.name("StrictRoundRobin"));
+      super(new UniformFanOutShape<T, T>(2), Attributes.name("StrictRoundRobin"));
     }
     @Override
     public RouteLogic<T> createRouteLogic(final UniformFanOutShape<T, T> s) {
@@ -207,7 +207,7 @@ public class FlexiRouteTest {
 
   static public class Unzip<A, B> extends FlexiRoute<Pair<A, B>, FanOutShape2<Pair<A, B>, A, B>> {
     public Unzip() {
-      super(new FanOutShape2<Pair<A, B>, A, B>("Unzip"), OperationAttributes.name("Unzip"));
+      super(new FanOutShape2<Pair<A, B>, A, B>("Unzip"), Attributes.name("Unzip"));
     }
     @Override
     public RouteLogic<Pair<A, B>> createRouteLogic(final FanOutShape2<Pair<A, B>, A, B> s) {

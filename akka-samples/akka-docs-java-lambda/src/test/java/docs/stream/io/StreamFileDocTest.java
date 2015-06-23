@@ -7,21 +7,13 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorOperationAttributes;
-import akka.stream.OperationAttributes;
+import akka.stream.ActorAttributes;
 import akka.stream.io.SynchronousFileSink;
 import akka.stream.io.SynchronousFileSource;
 import akka.stream.javadsl.Sink;
 import docs.stream.cookbook.RecipeParseLines;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,10 +21,7 @@ import scala.concurrent.Future;
 import scala.runtime.BoxedUnit;
 
 import akka.stream.*;
-import akka.stream.javadsl.*;
-import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
-import akka.testkit.TestProbe;
 import akka.util.ByteString;
 
 public class StreamFileDocTest {
@@ -85,7 +74,7 @@ public class StreamFileDocTest {
       Sink<ByteString, Future<Long>> byteStringFutureSink =
       //#custom-dispatcher-code
       SynchronousFileSink.create(file)
-        .withAttributes(ActorOperationAttributes.dispatcher("custom-file-io-dispatcher"));
+        .withAttributes(ActorAttributes.dispatcher("custom-file-io-dispatcher"));
       //#custom-dispatcher-code
     } finally {
       file.delete();

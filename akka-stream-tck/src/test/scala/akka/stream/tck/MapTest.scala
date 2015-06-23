@@ -6,7 +6,7 @@ package akka.stream.tck
 import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Flow
 import org.reactivestreams.Processor
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 class MapTest extends AkkaIdentityProcessorVerification[Int] {
 

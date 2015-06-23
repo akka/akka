@@ -61,7 +61,7 @@ public class StreamBuffersRateDocTest {
     final Flow<Integer, Integer, BoxedUnit> flow1 =
       Flow.of(Integer.class)
       .map(elem -> elem * 2) // the buffer size of this map is 1
-      .withAttributes(OperationAttributes.inputBuffer(1, 1));
+      .withAttributes(Attributes.inputBuffer(1, 1));
     final Flow<Integer, Integer, BoxedUnit> flow2 =
       flow1.via(
         Flow.of(Integer.class)

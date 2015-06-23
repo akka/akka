@@ -5,8 +5,6 @@ package docs.stream;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import akka.stream.*;
@@ -20,7 +18,6 @@ import scala.concurrent.duration.FiniteDuration;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.javadsl.FlexiMerge.ReadAllInputs;
 import akka.testkit.JavaTestKit;
 
 public class FlexiMergeDocTest {
@@ -43,7 +40,7 @@ public class FlexiMergeDocTest {
   static//#fleximerge-zip-readall
   public class Zip<A, B> extends FlexiMerge<FlexiMerge.ReadAllInputs, Pair<A, B>, FanInShape2<A, B, Pair<A, B>>> {
     public Zip() {
-      super(new FanInShape2<A, B, Pair<A, B>>("Zip"), OperationAttributes.name("Zip"));
+      super(new FanInShape2<A, B, Pair<A, B>>("Zip"), Attributes.name("Zip"));
     }
 
     @Override
@@ -81,7 +78,7 @@ public class FlexiMergeDocTest {
   static//#fleximerge-zip-states
   public class Zip2<A, B> extends FlexiMerge<A, Pair<A, B>, FanInShape2<A, B, Pair<A, B>>> {
     public Zip2() {
-      super(new FanInShape2<A, B, Pair<A, B>>("Zip2"), OperationAttributes.name("Zip2"));
+      super(new FanInShape2<A, B, Pair<A, B>>("Zip2"), Attributes.name("Zip2"));
     }
 
     @Override
@@ -127,7 +124,7 @@ public class FlexiMergeDocTest {
     public ImportantWithBackups() {
       super(
               new FanInShape3<T, T, T, T>("ImportantWithBackup"),
-              OperationAttributes.name("ImportantWithBackup")
+              Attributes.name("ImportantWithBackup")
       );
     }
 
@@ -197,7 +194,7 @@ public class FlexiMergeDocTest {
     public PreferringMerge() {
       super(
               new FanInShape3<Integer, Integer, Integer, Integer>("PreferringMerge"),
-              OperationAttributes.name("PreferringMerge")
+              Attributes.name("PreferringMerge")
       );
     }
 
@@ -225,7 +222,7 @@ public class FlexiMergeDocTest {
     public FlexiReadConditions() {
       super(
               new FanInShape3<Integer, Integer, Integer, Integer>("ReadConditions"),
-              OperationAttributes.name("ReadConditions")
+              Attributes.name("ReadConditions")
       );
     }
 

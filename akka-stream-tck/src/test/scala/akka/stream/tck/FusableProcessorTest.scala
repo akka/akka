@@ -7,7 +7,7 @@ import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.impl.Stages.Identity
 import akka.stream.scaladsl.Flow
 import org.reactivestreams.Processor
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 

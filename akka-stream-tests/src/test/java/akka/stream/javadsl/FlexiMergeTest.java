@@ -147,7 +147,7 @@ public class FlexiMergeTest {
    */
   static public class Fair<T> extends FlexiMerge<T, T, UniformFanInShape<T, T>> {
     public Fair() {
-      super(new UniformFanInShape<T, T>(2), OperationAttributes.name("Fair"));
+      super(new UniformFanInShape<T, T>(2), Attributes.name("Fair"));
     }
     @Override
     public MergeLogic<T, T> createMergeLogic(final UniformFanInShape<T, T> s) {
@@ -173,7 +173,7 @@ public class FlexiMergeTest {
    */
   static public class StrictRoundRobin<T> extends FlexiMerge<T, T, UniformFanInShape<T, T>> {
     public StrictRoundRobin() {
-      super(new UniformFanInShape<T, T>(2), OperationAttributes.name("StrictRoundRobin"));
+      super(new UniformFanInShape<T, T>(2), Attributes.name("StrictRoundRobin"));
     }
     @Override
     public MergeLogic<T, T> createMergeLogic(final UniformFanInShape<T, T> s) {
@@ -240,7 +240,7 @@ public class FlexiMergeTest {
   
   static public class Zip<A, B> extends FlexiMerge<A, Pair<A, B>, FanInShape2<A, B, Pair<A, B>>> {
     public Zip() {
-      super(new FanInShape2<A, B, Pair<A, B>>("Zip"), OperationAttributes.name("Zip"));
+      super(new FanInShape2<A, B, Pair<A, B>>("Zip"), Attributes.name("Zip"));
     }
     @Override
     public MergeLogic<A, Pair<A, B>> createMergeLogic(final FanInShape2<A, B, Pair<A, B>> s) {
@@ -328,7 +328,7 @@ public class FlexiMergeTest {
 
   static public class TripleZip<A, B, C> extends FlexiMerge<FlexiMerge.ReadAllInputs, Triple<A, B, C>, FanInShape3<A, B, C, Triple<A, B, C>>> {
     public TripleZip() {
-      super(new FanInShape3<A, B, C, Triple<A, B, C>>("TripleZip"), OperationAttributes.name("TripleZip"));
+      super(new FanInShape3<A, B, C, Triple<A, B, C>>("TripleZip"), Attributes.name("TripleZip"));
     }
     @Override
     public MergeLogic<ReadAllInputs, Triple<A, B, C>> createMergeLogic(final FanInShape3<A, B, C, Triple<A, B, C>> s) {

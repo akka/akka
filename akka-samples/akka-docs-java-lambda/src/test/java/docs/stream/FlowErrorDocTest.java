@@ -21,7 +21,7 @@ import akka.stream.ActorFlowMaterializerSettings;
 import akka.stream.FlowMaterializer;
 import akka.stream.Supervision;
 import akka.stream.javadsl.Flow;
-import akka.stream.ActorOperationAttributes;
+import akka.stream.ActorAttributes;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.japi.function.Function;
@@ -94,7 +94,7 @@ public class FlowErrorDocTest {
     };
     final Flow<Integer, Integer, BoxedUnit> flow =
         Flow.of(Integer.class).filter(elem -> 100 / elem < 50).map(elem -> 100 / (5 - elem))
-        .withAttributes(ActorOperationAttributes.withSupervisionStrategy(decider));
+        .withAttributes(ActorAttributes.withSupervisionStrategy(decider));
     final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
       .via(flow); 
     final Sink<Integer, Future<Integer>> fold =
@@ -122,7 +122,7 @@ public class FlowErrorDocTest {
         if (elem < 0) throw new IllegalArgumentException("negative not allowed");
         else return acc + elem;
       })
-      .withAttributes(ActorOperationAttributes.withSupervisionStrategy(decider));
+      .withAttributes(ActorAttributes.withSupervisionStrategy(decider));
     final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(1, 3, -1, 5, 7))
       .via(flow);
     final Future<List<Integer>> result = source.grouped(1000)

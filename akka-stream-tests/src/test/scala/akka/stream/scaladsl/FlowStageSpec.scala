@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.actor.PoisonPill
-import akka.stream.{ OperationAttributes, OverflowStrategy, ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ Attributes, OverflowStrategy, ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.stage._
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._

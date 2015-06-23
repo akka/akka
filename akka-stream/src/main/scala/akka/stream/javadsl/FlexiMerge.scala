@@ -328,7 +328,7 @@ object FlexiMerge {
  *
  * @param attributes optional attributes for this vertex
  */
-abstract class FlexiMerge[T, Out, S <: Shape](val shape: S, val attributes: OperationAttributes) extends Graph[S, Unit] {
+abstract class FlexiMerge[T, Out, S <: Shape](val shape: S, val attributes: Attributes) extends Graph[S, Unit] {
   import FlexiMerge._
 
   /**
@@ -345,9 +345,9 @@ abstract class FlexiMerge[T, Out, S <: Shape](val shape: S, val attributes: Oper
     case None    ⇒ super.toString
   }
 
-  override def withAttributes(attr: OperationAttributes): Graph[S, Unit] =
+  override def withAttributes(attr: Attributes): Graph[S, Unit] =
     throw new UnsupportedOperationException(
       "withAttributes not supported by default by FlexiMerge, subclass may override and implement it")
 
-  override def named(name: String): Graph[S, Unit] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Graph[S, Unit] = withAttributes(Attributes.name(name))
 }

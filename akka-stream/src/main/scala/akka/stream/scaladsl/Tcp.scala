@@ -78,7 +78,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     val options: immutable.Traversable[SocketOption],
     val halfClose: Boolean,
     val idleTimeout: Duration = Duration.Inf,
-    val attributes: OperationAttributes,
+    val attributes: Attributes,
     _shape: SourceShape[IncomingConnection]) extends SourceModule[IncomingConnection, Future[ServerBinding]](_shape) {
 
     override def create(context: MaterializationContext): (Publisher[IncomingConnection], Future[ServerBinding]) = {
@@ -112,7 +112,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
     override protected def newInstance(s: SourceShape[IncomingConnection]): SourceModule[IncomingConnection, Future[ServerBinding]] =
       new BindSource(endpoint, backlog, options, halfClose, idleTimeout, attributes, shape)
-    override def withAttributes(attr: OperationAttributes): Module =
+    override def withAttributes(attr: Attributes): Module =
       new BindSource(endpoint, backlog, options, halfClose, idleTimeout, attr, shape)
   }
 
@@ -140,7 +140,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
            halfClose: Boolean = false,
            idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
     new Source(new BindSource(new InetSocketAddress(interface, port), backlog, options, halfClose, idleTimeout,
-      OperationAttributes.none, SourceShape(new Outlet("BindSource.out"))))
+      Attributes.none, SourceShape(new Outlet("BindSource.out"))))
   }
 
   /**

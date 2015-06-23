@@ -9,7 +9,7 @@ import akka.event.LoggingAdapter
 import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream._
-import akka.stream.OperationAttributes._
+import akka.stream.Attributes._
 import akka.util.Collections.EmptyImmutableSeq
 import org.reactivestreams.Processor
 import scala.annotation.implicitNotFound
@@ -267,12 +267,12 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
-  override def withAttributes(attr: OperationAttributes): Repr[Out, Mat] = {
+  override def withAttributes(attr: Attributes): Repr[Out, Mat] = {
     if (this.module eq EmptyModule) this
     else new Flow(module.withAttributes(attr).wrap())
   }
 
-  override def named(name: String): Repr[Out, Mat] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Repr[Out, Mat] = withAttributes(Attributes.name(name))
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
@@ -333,10 +333,10 @@ case class RunnableFlow[+Mat](private[stream] val module: StreamLayout.Module) e
    */
   def run()(implicit materializer: FlowMaterializer): Mat = materializer.materialize(this)
 
-  override def withAttributes(attr: OperationAttributes): RunnableFlow[Mat] =
+  override def withAttributes(attr: Attributes): RunnableFlow[Mat] =
     new RunnableFlow(module.withAttributes(attr).wrap)
 
-  override def named(name: String): RunnableFlow[Mat] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): RunnableFlow[Mat] = withAttributes(Attributes.name(name))
 
 }
 
@@ -943,7 +943,7 @@ trait FlowOps[+Out, +Mat] {
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[OperationAttributes.LogLevels]] atrribute on the given Flow:
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow:
    *
    * Uses implicit [[LoggingAdapter]] if available, otherwise uses an internally created one,
    * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
@@ -959,7 +959,7 @@ trait FlowOps[+Out, +Mat] {
   def log(name: String, extract: Out ⇒ Any = _identity)(implicit log: LoggingAdapter = null): Repr[Out, Mat] =
     andThen(Stages.Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
 
-  def withAttributes(attr: OperationAttributes): Repr[Out, Mat]
+  def withAttributes(attr: Attributes): Repr[Out, Mat]
 
   /** INTERNAL API */
   private[scaladsl] def andThen[U](op: StageModule): Repr[U, Mat]
