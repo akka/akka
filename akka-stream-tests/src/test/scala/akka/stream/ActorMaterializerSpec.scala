@@ -1,9 +1,10 @@
 package akka.stream
 
+import akka.actor.Props
 import akka.stream.impl.{ StreamSupervisor, ActorFlowMaterializerImpl }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.AkkaSpec
-import akka.testkit.{ ImplicitSender, TestProbe }
+import akka.testkit.{ TestActor, ImplicitSender, TestProbe }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -47,6 +48,14 @@ class ActorMaterializerSpec extends AkkaSpec with ImplicitSender {
 
       m.supervisor ! StreamSupervisor.GetChildren
       expectNoMsg(1.second)
+    }
+
+    "handle properly broken Props" in {
+      val m = ActorFlowMaterializer.create(system)
+      an[IllegalArgumentException] should be thrownBy
+        Await.result(
+          Source.actorPublisher(Props(classOf[TestActor], "wrong", "arguments")).runWith(Sink.head)(m),
+          3.seconds)
     }
 
   }
