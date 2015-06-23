@@ -5,6 +5,8 @@
 package akka.http.impl.engine.rendering
 
 import java.nio.charset.Charset
+import akka.parboiled2.util.Base64
+
 import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model._
@@ -15,6 +17,8 @@ import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.ByteString
 import HttpEntity._
+
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
 /**
  * INTERNAL API
@@ -109,5 +113,14 @@ private[http] object BodyPartRenderer {
       suppressionWarning(log, x, "illegal RawHeader")
 
     case x ⇒ r ~~ x ~~ CrLf
+  }
+
+  /**
+   * Creates a new random number of the given length and base64 encodes it (using a custom "safe" alphabet).
+   */
+  def randomBoundary(length: Int = 18, random: java.util.Random = ThreadLocalRandom.current()): String = {
+    val array = new Array[Byte](length)
+    random.nextBytes(array)
+    Base64.custom.encodeToString(array, false)
   }
 }
