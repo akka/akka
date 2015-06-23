@@ -42,7 +42,7 @@ object TestServer extends App {
         path("crash") {
           complete(sys.error("BOOM!"))
         }
-    }
+    } ~ pathPrefix("inner")(getFromResourceDirectory("someDir"))
   }, interface = "localhost", port = 8080)
 
   println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
