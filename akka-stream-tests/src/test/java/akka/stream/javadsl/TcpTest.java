@@ -31,14 +31,14 @@ public class TcpTest extends StreamTest {
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("TcpTest",
     AkkaSpec.testConf());
-  
+
   final Sink<IncomingConnection, Future<BoxedUnit>> echoHandler =
       Sink.foreach(new Procedure<IncomingConnection>() {
         public void apply(IncomingConnection conn) {
           conn.handleWith(Flow.<ByteString>empty(), materializer);
         }
       });
-  
+
   final List<ByteString> testInput = new ArrayList<ByteString>();
   {
     for (char c = 'a'; c <= 'z'; c++) {
@@ -51,34 +51,34 @@ public class TcpTest extends StreamTest {
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
     final Source<IncomingConnection, Future<ServerBinding>> binding = Tcp.get(system)
         .bind(serverAddress.getHostName(), serverAddress.getPort()); // TODO getHostString in Java7
-    
+
     final Future<ServerBinding> future = binding.to(echoHandler).run(materializer);
     final ServerBinding b = Await.result(future, FiniteDuration.create(5, TimeUnit.SECONDS));
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
-    
+
     final Future<ByteString> resultFuture = Source
         .from(testInput)
         // TODO getHostString in Java7
-        .via(Tcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort())) 
+        .via(Tcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort()))
         .runFold(ByteString.empty(),
             new Function2<ByteString, ByteString, ByteString>() {
               public ByteString apply(ByteString acc, ByteString elem) {
                 return acc.concat(elem);
               }
             }, materializer);
-    
+
     final byte[] result = Await.result(resultFuture, FiniteDuration.create(5, TimeUnit.SECONDS)).toArray();
     for (int i = 0; i < testInput.size(); i ++) {
-      assertEquals(testInput.get(i).head(), result[i]);  
+      assertEquals(testInput.get(i).head(), result[i]);
     }
   }
-  
+
   @Test
   public void mustReportServerBindFailure() throws Exception {
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
     final Source<IncomingConnection, Future<ServerBinding>> binding = Tcp.get(system)
         .bind(serverAddress.getHostName(), serverAddress.getPort()); // TODO getHostString in Java7
-    
+
     final Future<ServerBinding> future = binding.to(echoHandler).run(materializer);
     final ServerBinding b = Await.result(future, FiniteDuration.create(5, TimeUnit.SECONDS));
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
@@ -90,7 +90,7 @@ public class TcpTest extends StreamTest {
       // expected
     }
   }
-  
+
   @Test
   public void mustReportClientConnectFailure() throws Exception {
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress(
@@ -99,7 +99,7 @@ public class TcpTest extends StreamTest {
       Await.result(
           Source.from(testInput)
               // TODO getHostString in Java7
-              .via(Tcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort()), 
+              .viaMat(Tcp.get(system).outgoingConnection(serverAddress.getHostName(), serverAddress.getPort()),
                   Keep.<BoxedUnit, Future<OutgoingConnection>> right())
               .to(Sink.<ByteString> ignore())
               .run(materializer),

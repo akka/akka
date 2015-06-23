@@ -257,7 +257,7 @@ public class BidiFlowTest extends StreamTest {
           }
         });
     final Pair<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> result =
-        left.join(bidiMat, Keep.<Future<Integer>, Future<Integer>> both()).join(right, Keep.<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> both()).run(materializer);
+        left.joinMat(bidiMat, Keep.<Future<Integer>, Future<Integer>> both()).joinMat(right, Keep.<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> both()).run(materializer);
     final Future<Integer> l = result.first().first();
     final Future<Integer> m = result.first().second();
     final Future<List<Long>> r = result.second();
