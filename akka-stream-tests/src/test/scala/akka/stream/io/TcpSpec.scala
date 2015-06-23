@@ -3,26 +3,21 @@
  */
 package akka.stream.io
 
-import akka.actor.{ ActorSystem, Kill }
-import akka.stream.scaladsl.Tcp.OutgoingConnection
+import akka.actor.{ActorSystem, Kill}
+import akka.io.Tcp._
+import akka.stream.scaladsl.Tcp.IncomingConnection
+import akka.stream.scaladsl.{Flow, _}
+import akka.stream.testkit.TestUtils.temporaryServerAddress
+import akka.stream.testkit.Utils._
+import akka.stream.testkit._
+import akka.stream.{ActorFlowMaterializer, BindFailedException, StreamTcpException}
+import akka.util.{ByteString, Helpers}
 
 import scala.collection.immutable
-import scala.concurrent.{ Future, Await }
-import akka.io.Tcp._
-
-import akka.stream.{ ActorFlowMaterializer, StreamTcpException, BindFailedException }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.util.{ Helpers, ByteString }
-import akka.stream.scaladsl.Flow
-import akka.stream.testkit._
-import akka.stream.testkit.Utils._
-import akka.stream.scaladsl._
-import akka.stream.testkit.TestUtils.temporaryServerAddress
 
-class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-enabled=auto") with TcpHelper {
-  import akka.stream.io.TcpHelper._
+class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-enabled=auto\nakka.stream.materializer.subscription-timeout.timeout = 3s") with TcpHelper {
   var demand = 0L
 
   "Outgoing TCP stream" must {
@@ -492,6 +487,38 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
 
       // clean up
       Await.result(binding4.unbind(), 1.second)
+    }
+
+    "not shut down connections after the connection stream cancelled" in assertAllStagesStopped {
+      val address = temporaryServerAddress()
+      Tcp().bind(address.getHostName, address.getPort).take(1).runForeach(_.flow.join(Flow[ByteString]).run())
+
+      val total = Source(immutable.Iterable.fill(1000)(ByteString(0)))
+        .via(Tcp().outgoingConnection(address))
+        .runFold(0)(_ + _.size)
+
+      Await.result(total, 3.seconds) should ===(1000)
+    }
+
+    "shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
+      val address = temporaryServerAddress()
+      val takeTwoAndDropSecond = Flow[IncomingConnection].grouped(2).take(1).map(_.head)
+      Tcp().bind(address.getHostName, address.getPort)
+        .via(takeTwoAndDropSecond)
+        .runForeach(_.flow.join(Flow[ByteString]).run())
+
+      val folder = Source(immutable.Iterable.fill(1000)(ByteString(0)))
+        .via(Tcp().outgoingConnection(address))
+        .toMat(Sink.fold(0)(_ + _.size))(Keep.right)
+
+      val total = folder.run()
+      val rejected = folder.run()
+
+      Await.result(total, 3.seconds) should ===(1000)
+
+      a[StreamTcpException] should be thrownBy {
+        Await.result(rejected, 5.seconds) should ===(1000)
+      }
     }
 
   }

@@ -65,7 +65,8 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
       finished = true
       incomingConnections.cancel()
       primaryOutputs.complete()
-      context.stop(self)
+      // Stop only after all already accepted connections have been shut down
+      if (context.children.isEmpty) context.stop(self)
     }
   }
 
@@ -123,6 +124,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
       if (!closed && listener != null) listener ! Unbind
       closed = true
       pendingConnection = null
+      pump()
     }
     override def dequeueInputElement(): Any = {
       val elem = pendingConnection
@@ -139,11 +141,15 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
     }
   }
 
-  def activeReceive: Actor.Receive = primaryOutputs.subreceive orElse incomingConnections.subreceive
+  def activeReceive: Actor.Receive = primaryOutputs.subreceive orElse incomingConnections.subreceive orElse {
+    case Terminated(_) ⇒
+      // If the Source is cancelled, and this was our last child, stop ourselves
+      if (incomingConnections.isClosed && context.children.isEmpty) context.stop(self)
+  }
 
   def runningPhase = TransferPhase(primaryOutputs.NeedsDemand && incomingConnections.NeedsInput) { () ⇒
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
-    val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, halfClose, settings))
+    val tcpStreamActor = context.watch(context.actorOf(TcpStreamActor.inboundProps(connection, halfClose, settings)))
     val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
     val conn = StreamTcp.IncomingConnection(
       connected.localAddress,
@@ -154,6 +160,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
 
   override def postStop(): Unit = {
     unboundPromise.trySuccess(())
+    primaryOutputs.complete()
     super.postStop()
   }
 
