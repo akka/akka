@@ -10,7 +10,7 @@ import akka.japi.function
 trait GraphCreate {
 
   import language.implicitConversions
-  private implicit def r[M](run: scaladsl.RunnableFlow[M]): RunnableFlow[M] = new RunnableFlowAdapter(run)
+  private implicit def r[M](run: scaladsl.RunnableGraph[M]): RunnableGraph[M] = new RunnableGraphAdapter(run)
 
   /**
    * Creates a new fully connected graph by passing a [[FlowGraph.Builder]] to the given create function.
@@ -18,7 +18,7 @@ trait GraphCreate {
    * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
    */
   @throws(classOf[IllegalArgumentException])
-  def closed(block: function.Procedure[FlowGraph.Builder[Unit]]): RunnableFlow[Unit] =
+  def closed(block: function.Procedure[FlowGraph.Builder[Unit]]): RunnableGraph[Unit] =
     scaladsl.FlowGraph.closed() { b ⇒ block.apply(b.asJava) }
 
   /**
@@ -37,7 +37,7 @@ trait GraphCreate {
    */
   @throws(classOf[IllegalArgumentException])
   def closed[S1 <: Shape, M](g1: Graph[S1, M],
-      block: function.Procedure2[FlowGraph.Builder[M], S1]): RunnableFlow[M] =
+      block: function.Procedure2[FlowGraph.Builder[M], S1]): RunnableGraph[M] =
     scaladsl.FlowGraph.closed(g1) { b ⇒ s => block.apply(b.asJava, s) }
 
   /**
@@ -58,7 +58,7 @@ trait GraphCreate {
    */
   @throws(classOf[IllegalArgumentException])
   def closed[S1 <: Shape, S2 <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: function.Function2[M1, M2, M],
-      block: function.Procedure3[FlowGraph.Builder[M], S1, S2]): RunnableFlow[M] =
+      block: function.Procedure3[FlowGraph.Builder[M], S1, S2]): RunnableGraph[M] =
     scaladsl.FlowGraph.closed(g1, g2)(combineMat.apply _) { b => (s1, s2) => block.apply(b.asJava, s1, s2) }
 
   /**
@@ -79,7 +79,7 @@ trait GraphCreate {
    */
   @throws(classOf[IllegalArgumentException])
   def closed1[[#S1 <: Shape#], [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: function.Function1[[#M1#], M],
-      block: function.Procedure2[FlowGraph.Builder[M], [#S1#]]): RunnableFlow[M] =
+      block: function.Procedure2[FlowGraph.Builder[M], [#S1#]]): RunnableGraph[M] =
     scaladsl.FlowGraph.closed([#g1#])(combineMat.apply _) { b => ([#s1#]) => block.apply(b.asJava, [#s1#]) }
 
   /**

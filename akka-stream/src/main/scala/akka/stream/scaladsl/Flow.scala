@@ -134,7 +134,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     new Flow(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /**
-   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]].
+   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]].
    * {{{
    * +------+        +-------+
    * |      | ~Out~> |       |
@@ -146,10 +146,10 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * value of the current flow (ignoring the other Flow’s value), use
    * [[Flow#joinMat[Mat2* joinMat]] if a different strategy is needed.
    */
-  def join[Mat2](flow: Graph[FlowShape[Out, In], Mat2]): RunnableFlow[Mat] = joinMat(flow)(Keep.left)
+  def join[Mat2](flow: Graph[FlowShape[Out, In], Mat2]): RunnableGraph[Mat] = joinMat(flow)(Keep.left)
 
   /**
-   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
+   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]]
    * {{{
    * +------+        +-------+
    * |      | ~Out~> |       |
@@ -160,9 +160,9 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * The `combine` function is used to compose the materialized values of this flow and that
    * Flow into the materialized value of the resulting Flow.
    */
-  def joinMat[Mat2, Mat3](flow: Graph[FlowShape[Out, In], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableFlow[Mat3] = {
+  def joinMat[Mat2, Mat3](flow: Graph[FlowShape[Out, In], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableGraph[Mat3] = {
     val flowCopy = flow.module.carbonCopy
-    RunnableFlow(
+    RunnableGraph(
       module
         .grow(flowCopy, combine)
         .connect(shape.outlet, flowCopy.shape.inlets.head)
@@ -318,14 +318,14 @@ object Flow extends FlowApply {
 /**
  * Flow with attached input and output, can be executed.
  */
-case class RunnableFlow[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
+case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
   assert(module.isRunnable)
   def shape = ClosedShape
 
   /**
-   * Transform only the materialized value of this RunnableFlow, leaving all other properties as they were.
+   * Transform only the materialized value of this RunnableGraph, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): RunnableFlow[Mat2] =
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): RunnableGraph[Mat2] =
     copy(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /**
@@ -333,10 +333,10 @@ case class RunnableFlow[+Mat](private[stream] val module: StreamLayout.Module) e
    */
   def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
-  override def withAttributes(attr: Attributes): RunnableFlow[Mat] =
-    new RunnableFlow(module.withAttributes(attr).wrap)
+  override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
+    new RunnableGraph(module.withAttributes(attr).wrap)
 
-  override def named(name: String): RunnableFlow[Mat] = withAttributes(Attributes.name(name))
+  override def named(name: String): RunnableGraph[Mat] = withAttributes(Attributes.name(name))
 
 }
 

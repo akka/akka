@@ -21,8 +21,8 @@ package akka.stream
  * [[org.reactivestreams.Subscriber]]. A flow with an attached output and open input
  * is also a [[Sink]].
  *
- * If a flow has both an attached input and an attached output it becomes a [[RunnableFlow]].
- * In order to execute this pipeline the flow must be materialized by calling [[RunnableFlow#run]] on it.
+ * If a flow has both an attached input and an attached output it becomes a [[RunnableGraph]].
+ * In order to execute this pipeline the flow must be materialized by calling [[RunnableGraph#run]] on it.
  *
  * You can create your `Source`, `Flow` and `Sink` in any order and then wire them together before
  * they are materialized by connecting them using [[Flow#via]] and [[Flow#to]], or connecting them into a

@@ -14,7 +14,7 @@ trait GraphApply {
    *
    * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
    */
-  def closed()(buildBlock: (FlowGraph.Builder[Unit]) ⇒ Unit): RunnableFlow[Unit] = {
+  def closed()(buildBlock: (FlowGraph.Builder[Unit]) ⇒ Unit): RunnableGraph[Unit] = {
     val builder = new FlowGraph.Builder
     buildBlock(builder)
     builder.buildRunnable()
@@ -39,7 +39,7 @@ trait GraphApply {
    *
    * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
    */
-  def closed[Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ Unit): RunnableFlow[Mat] = {
+  def closed[Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ Unit): RunnableGraph[Mat] = {
     val builder = new FlowGraph.Builder
     val p1 = builder.add(g1)
     buildBlock(builder)(p1)
@@ -68,7 +68,7 @@ trait GraphApply {
    *
    * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
    */
-  def closed[Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ Unit): RunnableFlow[Mat] = {
+  def closed[Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ Unit): RunnableGraph[Mat] = {
     val builder = new FlowGraph.Builder
     val curried = combineMat.curried
     val s##1 = builder.add(g##1, (m##1: M##1) ⇒ curried(m##1))
