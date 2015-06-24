@@ -78,7 +78,7 @@ private[http] object OutgoingConnectionBlueprint {
 
     FlowGraph.partial() { implicit b ⇒
       import FlowGraph.Implicits._
-      val methodBypassFanout = b.add(Broadcast[HttpRequest](2))
+      val methodBypassFanout = b.add(Broadcast[HttpRequest](2, eagerCancel = true))
       val responseParsingMerge = b.add(new ResponseParsingMerge(rootParser))
 
       val terminationFanout = b.add(Broadcast[HttpResponse](2))

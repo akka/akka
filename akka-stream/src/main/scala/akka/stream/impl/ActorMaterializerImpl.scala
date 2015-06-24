@@ -173,8 +173,8 @@ private[akka] case class ActorMaterializerImpl(
                 val flexi = r.flexi(r.shape)
                 (FlexiRoute.props(effectiveSettings, r.shape, flexi), r.shape.inlets.head: InPort, r.shape.outlets)
 
-              case BroadcastModule(shape, _) ⇒
-                (Broadcast.props(effectiveSettings, shape.outArray.size), shape.in, shape.outArray.toSeq)
+              case BroadcastModule(shape, eagerCancel, _) ⇒
+                (Broadcast.props(effectiveSettings, eagerCancel, shape.outArray.size), shape.in, shape.outArray.toSeq)
 
               case BalanceModule(shape, waitForDownstreams, _) ⇒
                 (Balance.props(effectiveSettings, shape.outArray.size, waitForDownstreams), shape.in, shape.outArray.toSeq)

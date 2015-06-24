@@ -289,14 +289,15 @@ private[akka] abstract class FanOut(val settings: ActorMaterializerSettings, val
  * INTERNAL API
  */
 private[akka] object Broadcast {
-  def props(settings: ActorMaterializerSettings, outputPorts: Int): Props =
-    Props(new Broadcast(settings, outputPorts)).withDeploy(Deploy.local)
+  def props(settings: ActorMaterializerSettings, eagerCancel: Boolean, outputPorts: Int): Props =
+    Props(new Broadcast(settings, outputPorts, eagerCancel)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Broadcast(_settings: ActorMaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
+private[akka] class Broadcast(_settings: ActorMaterializerSettings, _outputPorts: Int, eagerCancel: Boolean) extends FanOut(_settings, _outputPorts) {
+  outputBunch.unmarkCancelledOutputs(!eagerCancel)
   outputBunch.markAllOutputs()
 
   initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒

@@ -44,11 +44,12 @@ private[stream] object Junctions {
 
   final case class BroadcastModule[T](
     shape: UniformFanOutShape[T, T],
+    eagerCancel: Boolean,
     override val attributes: Attributes = name("broadcast")) extends FanOutModule {
 
     override def withAttributes(attr: Attributes): Module = copy(attributes = attr)
 
-    override def carbonCopy: Module = BroadcastModule(shape.deepCopy(), attributes)
+    override def carbonCopy: Module = BroadcastModule(shape.deepCopy(), eagerCancel, attributes)
   }
 
   final case class MergePreferredModule[T](

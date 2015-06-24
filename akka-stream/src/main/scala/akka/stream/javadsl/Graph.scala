@@ -92,14 +92,25 @@ object MergePreferred {
  *
  * '''Completes when''' upstream completes
  *
- * '''Cancels when''' all downstreams cancel
+ * '''Cancels when'''
+ *   If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
  */
 object Broadcast {
   /**
    * Create a new `Broadcast` vertex with the specified input type.
+   *
+   * @param outputCount number of output ports
+   * @param eagerCancel if true, broadcast cancels upstream if any of its downstreams cancel.
    */
-  def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] =
+  def create[T](outputCount: Int, eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], Unit] =
     scaladsl.Broadcast(outputCount)
+
+  /**
+   * Create a new `Broadcast` vertex with the specified input type.
+   *
+   * @param outputCount number of output ports
+   */
+  def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount, eagerCancel = false)
 
   /**
    * Create a new `Broadcast` vertex with the specified input type.
