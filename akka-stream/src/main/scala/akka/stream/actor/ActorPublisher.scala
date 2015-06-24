@@ -52,7 +52,7 @@ object ActorPublisherMessage {
    * subscription.
    */
   final case object Cancel extends Cancel with NoSerializationVerificationNeeded
-  sealed class Cancel extends ActorPublisherMessage
+  sealed abstract class Cancel extends ActorPublisherMessage
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor in order to signal the exceeding of an subscription timeout.
