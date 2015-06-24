@@ -104,10 +104,11 @@ object Broadcast {
    * Create a new `Broadcast` with the specified number of output ports.
    *
    * @param outputPorts number of output ports
+   * @param eagerCancel if true, broadcast cancels upstream if any of its downstreams cancel.
    */
-  def apply[T](outputPorts: Int): Broadcast[T] = {
+  def apply[T](outputPorts: Int, eagerCancel: Boolean = false): Broadcast[T] = {
     val shape = new UniformFanOutShape[T, T](outputPorts)
-    new Broadcast(outputPorts, shape, new BroadcastModule(shape, Attributes.name("Broadcast")))
+    new Broadcast(outputPorts, shape, new BroadcastModule(shape, eagerCancel, Attributes.name("Broadcast")))
   }
 }
 
@@ -121,7 +122,9 @@ object Broadcast {
  *
  * '''Completes when''' upstream completes
  *
- * '''Cancels when''' all downstreams cancel
+ * '''Cancels when'''
+ *   If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
+ *
  */
 class Broadcast[T] private (outputPorts: Int,
                             override val shape: UniformFanOutShape[T, T],
