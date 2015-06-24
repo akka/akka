@@ -53,6 +53,10 @@ object ActorPublisherMessage {
    */
   final case object Cancel extends Cancel with NoSerializationVerificationNeeded
   sealed abstract class Cancel extends ActorPublisherMessage
+  /**
+   * Java API: get the singleton instance of the `Cancel` message
+   */
+  def cancelInstance = Cancel
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor in order to signal the exceeding of an subscription timeout.
@@ -60,12 +64,10 @@ object ActorPublisherMessage {
    */
   final case object SubscriptionTimeoutExceeded extends SubscriptionTimeoutExceeded with NoSerializationVerificationNeeded
   sealed abstract class SubscriptionTimeoutExceeded extends ActorPublisherMessage
-
   /**
-   * Java API: get the singleton instance of the `Cancel` message
+   * Java API: get the singleton instance of the `SubscriptionTimeoutExceeded` message
    */
-  def cancelInstance = Cancel
-
+  def subscriptionTimeoutExceededInstance = SubscriptionTimeoutExceeded
 }
 
 /**
