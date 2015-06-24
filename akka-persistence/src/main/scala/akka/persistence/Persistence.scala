@@ -102,6 +102,19 @@ trait PersistenceIdentity {
 }
 //#persistence-identity
 
+trait PersistenceRecovery {
+  //#persistence-recovery
+  /**
+   * Called when the persistent actor is started for the first time.
+   * The returned [[Recovery]] object defines how the Actor will recover its persistent state before
+   * handling the first incoming message.
+   *
+   * To skip recovery completely return `Recovery.none`.
+   */
+  def recovery: Recovery = Recovery()
+  //#persistence-recovery
+}
+
 /**
  * Persistence extension provider.
  */

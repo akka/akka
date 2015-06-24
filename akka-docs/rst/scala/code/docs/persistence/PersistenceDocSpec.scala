@@ -6,7 +6,6 @@ package docs.persistence
 
 import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
 import akka.persistence._
-import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -27,27 +26,18 @@ object PersistenceDocSpec {
       //#auto-update
     """
 
-  object Recovery {
+  object RecoverySample {
     trait MyPersistentActor1 extends PersistentActor {
-      //#recover-on-start-disabled
-      override def preStart() = ()
-      //#recover-on-start-disabled
-      //#recover-on-restart-disabled
-      override def preRestart(reason: Throwable, message: Option[Any]) = ()
-      //#recover-on-restart-disabled
+      //#recovery-disabled
+      override def recovery = Recovery.none
+      //#recovery-disabled
     }
 
     trait MyPersistentActor2 extends PersistentActor {
-      //#recover-on-start-custom
-      override def preStart() {
-        self ! Recover(toSequenceNr = 457L)
-      }
-      //#recover-on-start-custom
+      //#recovery-custom
+      override def recovery = Recovery(toSequenceNr = 457L)
+      //#recovery-custom
     }
-
-    //#recover-explicit
-    persistentActor ! Recover()
-    //#recover-explicit
 
     class MyPersistentActor4 extends PersistentActor {
       override def persistenceId = "my-stable-persistence-id"
@@ -65,14 +55,6 @@ object PersistenceDocSpec {
         case msg => //...
       }
       //#recovery-completed
-    }
-  }
-
-  object NoRecovery {
-    trait MyPersistentActor1 extends PersistentActor {
-      //#recover-fully-disabled
-      override def preStart() = self ! Recover(toSequenceNr = 0L)
-      //#recover-fully-disabled
     }
   }
 
@@ -197,10 +179,8 @@ object PersistenceDocSpec {
       override def receiveCommand: Receive = ???
     }
 
-    import akka.actor.Props
-
     //#snapshot-criteria
-    persistentActor ! Recover(fromSnapshot = SnapshotSelectionCriteria(
+    persistentActor ! Recovery(fromSnapshot = SnapshotSelectionCriteria(
       maxSequenceNr = 457L,
       maxTimestamp = System.currentTimeMillis))
     //#snapshot-criteria
@@ -330,7 +310,6 @@ object PersistenceDocSpec {
 
     //#nested-persist-persist-caller
 
-
     class MyPersistAsyncActor extends PersistentActor {
       override def persistenceId = "my-stable-persistence-id"
 
@@ -351,7 +330,7 @@ object PersistenceDocSpec {
             persistAsync(c + "-inner-2") { inner ⇒ sender() ! inner }
           }
       }
-    //#nested-persistAsync-persistAsync
+      //#nested-persistAsync-persistAsync
     }
 
     //#nested-persistAsync-persistAsync-caller

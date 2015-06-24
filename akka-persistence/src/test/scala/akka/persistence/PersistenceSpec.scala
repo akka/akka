@@ -85,7 +85,7 @@ abstract class NamedPersistentActor(name: String) extends PersistentActor {
 }
 
 trait TurnOffRecoverOnStart { this: Eventsourced ⇒
-  override def preStart(): Unit = ()
+  override def recovery = Recovery.none
 }
 
 class TestException(msg: String) extends Exception(msg) with NoStackTrace
