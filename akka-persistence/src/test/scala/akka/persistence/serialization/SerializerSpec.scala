@@ -4,20 +4,17 @@
 
 package akka.persistence.serialization
 
-import scala.collection.immutable
-import com.typesafe.config._
 import akka.actor._
+import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot, UnconfirmedDelivery }
 import akka.persistence._
 import akka.serialization._
 import akka.testkit._
-import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
-import akka.persistence.AtLeastOnceDelivery.UnconfirmedDelivery
 import akka.util.ByteString.UTF_8
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import com.typesafe.config._
 import org.apache.commons.codec.binary.Hex.decodeHex
 
-import SerializerSpecConfigs._
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 object SerializerSpecConfigs {
   val customSerializers = ConfigFactory.parseString(
@@ -66,7 +63,7 @@ object SerializerSpecConfigs {
 
 }
 
-import SerializerSpecConfigs._
+import akka.persistence.serialization.SerializerSpecConfigs._
 
 class SnapshotSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
   val serialization = SerializationExtension(system)
@@ -148,7 +145,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
   "A message serializer" when {
     "not given a manifest" must {
       "handle custom Persistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("a"), 13, "p1", true)
+        val persistent = PersistentRepr(MyPayload("a"), 13, "p1", "", true)
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -160,7 +157,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 
     "given a PersistentRepr manifest" must {
       "handle custom Persistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("b"), 13, "p1", true)
+        val persistent = PersistentRepr(MyPayload("b"), 13, "p1", "", true)
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -172,7 +169,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 
     "given payload serializer with string manifest" must {
       "handle serialization" in {
-        val persistent = PersistentRepr(MyPayload2("a", 17), 13, "p1", true)
+        val persistent = PersistentRepr(MyPayload2("a", 17), 13, "p1", "", true)
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -195,7 +192,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       }
 
       "be able to deserialize data when class is removed" in {
-        val serializer = serialization.findSerializerFor(PersistentRepr("x", 13, "p1", true))
+        val serializer = serialization.findSerializerFor(PersistentRepr("x", 13, "p1", "", true))
 
         // It was created with:
         // val old = PersistentRepr(OldPayload('A'), 13, "p1", true, testActor)
@@ -237,7 +234,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
             "31393337"
 
         val bytes = decodeHex(oldData.toCharArray)
-        val expected = PersistentRepr(MyPayload(".a."), 13, "p1", true, Actor.noSender)
+        val expected = PersistentRepr(MyPayload(".a."), 13, "p1", "", true, Actor.noSender)
         val serializer = serialization.findSerializerFor(expected)
         val deserialized = serializer.fromBinary(bytes, None).asInstanceOf[PersistentRepr]
         deserialized.sender should not be (null)

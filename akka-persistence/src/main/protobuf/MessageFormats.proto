@@ -16,6 +16,7 @@ message PersistentMessage {
   // optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
   // optional string confirmTarget = 10; // Removed in 2.4
   optional string sender = 11; // not stored in journal, needed for remote serialization 
+  optional string manifest = 12;
 }
 
 message PersistentPayload {

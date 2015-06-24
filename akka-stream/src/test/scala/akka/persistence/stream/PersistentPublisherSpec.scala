@@ -24,7 +24,7 @@ object PersistentPublisherSpec {
   }
 }
 
-class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "ViewProducerSpec", serialization = "off")) with PersistenceSpec {
+class PersistentPublisherSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "ViewProducerSpec", serialization = "off")) {
   import PersistentPublisherSpec._
 
   val numMessages = 10

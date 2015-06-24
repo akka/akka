@@ -4,24 +4,19 @@
 
 package akka.persistence
 
-import akka.actor._
+import akka.actor.{ OneForOneStrategy, _ }
 import akka.persistence.journal.AsyncWriteProxy
+import akka.persistence.journal.AsyncWriteTarget.{ ReplayFailure, ReplayMessages, ReplaySuccess, WriteMessages }
 import akka.persistence.journal.inmem.InmemStore
-import akka.testkit.{ ImplicitSender, AkkaSpec }
+import akka.testkit.{ ImplicitSender, TestProbe }
 import akka.util.Timeout
-import com.typesafe.config.Config
+
 import scala.concurrent.duration._
-import akka.persistence.journal.AsyncWriteTarget.{ ReplayFailure, ReplaySuccess, ReplayMessages, WriteMessages }
 import scala.language.postfixOps
-import scala.Some
-import akka.actor.OneForOneStrategy
 import scala.util.control.NoStackTrace
-import akka.testkit.TestProbe
 
 object PersistentActorFailureSpec {
-  import PersistentActorSpec.Cmd
-  import PersistentActorSpec.Evt
-  import PersistentActorSpec.ExamplePersistentActor
+  import PersistentActorSpec.{ Cmd, Evt, ExamplePersistentActor }
 
   class SimulatedException(msg: String) extends RuntimeException(msg) with NoStackTrace
 

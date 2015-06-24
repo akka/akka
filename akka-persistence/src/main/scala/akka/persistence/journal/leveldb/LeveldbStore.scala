@@ -7,20 +7,19 @@ package akka.persistence.journal.leveldb
 
 import java.io.File
 
-import scala.collection.immutable
-import scala.util._
-
-import org.iq80.leveldb._
-
 import akka.actor._
 import akka.persistence._
-import akka.persistence.journal.AsyncWriteTarget
+import akka.persistence.journal.{ WriteJournalBase, AsyncWriteTarget }
 import akka.serialization.SerializationExtension
+import org.iq80.leveldb._
+
+import scala.collection.immutable
+import scala.util._
 
 /**
  * INTERNAL API.
  */
-private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with LeveldbRecovery {
+private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with LeveldbIdMapping with LeveldbRecovery {
   val configPath: String
 
   val config = context.system.settings.config.getConfig(configPath)
@@ -112,11 +111,11 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
   import AsyncWriteTarget._
 
   def receive = {
-    case WriteMessages(msgs)                        ⇒ sender() ! writeMessages(msgs)
+    case WriteMessages(msgs)                        ⇒ sender() ! writeMessages(preparePersistentBatch(msgs))
     case DeleteMessagesTo(pid, tsnr, permanent)     ⇒ sender() ! deleteMessagesTo(pid, tsnr, permanent)
     case ReadHighestSequenceNr(pid, fromSequenceNr) ⇒ sender() ! readHighestSequenceNr(numericId(pid))
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
-      Try(replayMessages(numericId(pid), fromSnr, toSnr, max)(sender() ! _)) match {
+      Try(replayMessages(numericId(pid), fromSnr, toSnr, max)(p ⇒ adaptFromJournal(p).foreach { sender() ! _ })) match {
         case Success(max)   ⇒ sender() ! ReplaySuccess
         case Failure(cause) ⇒ sender() ! ReplayFailure(cause)
       }
