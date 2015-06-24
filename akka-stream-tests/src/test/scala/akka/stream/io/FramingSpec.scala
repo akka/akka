@@ -61,6 +61,11 @@ class FramingSpec extends AkkaSpec {
     val delimiterBytes = List("\n", "\r\n", "FOO").map(ByteString(_))
     val baseTestSequences = List("", "foo", "hello world").map(ByteString(_))
 
+    // Helper to simplify testing
+    def simpleLines(delimiter: String, maximumBytes: Int, allowTruncation: Boolean = true) =
+      Framing.delimiter(ByteString(delimiter), maximumBytes, allowTruncation).map(_.utf8String)
+        .named("lineFraming")
+
     def completeTestSequences(delimiter: ByteString): immutable.Iterable[ByteString] =
       for (prefix ← 0 until delimiter.size; s ← baseTestSequences)
         yield delimiter.take(prefix) ++ s
@@ -81,19 +86,19 @@ class FramingSpec extends AkkaSpec {
     "Respect maximum line settings" in {
       // The buffer will contain more than 1 bytes, but the individual frames are less
       Await.result(
-        Source.single(ByteString("a\nb\nc\nd\n")).via(Framing.lines("\n", 1)).grouped(100).runWith(Sink.head),
+        Source.single(ByteString("a\nb\nc\nd\n")).via(simpleLines("\n", 1)).grouped(100).runWith(Sink.head),
         3.seconds) should ===(List("a", "b", "c", "d"))
 
       an[FramingException] should be thrownBy {
         Await.result(
-          Source.single(ByteString("ab\n")).via(Framing.lines("\n", 1)).grouped(100).runWith(Sink.head),
+          Source.single(ByteString("ab\n")).via(simpleLines("\n", 1)).grouped(100).runWith(Sink.head),
           3.seconds)
       }
     }
 
     "work with empty streams" in {
       Await.result(
-        Source.empty.via(Framing.lines("\n", 256)).runFold(Vector.empty[String])(_ :+ _),
+        Source.empty.via(simpleLines("\n", 256)).runFold(Vector.empty[String])(_ :+ _),
         3.seconds) should ===(Vector.empty)
     }
 
@@ -101,7 +106,7 @@ class FramingSpec extends AkkaSpec {
       an[FramingException] should be thrownBy {
         Await.result(
           Source.single(ByteString("I have no end"))
-            .via(Framing.lines("\n", 256, allowTruncation = false))
+            .via(simpleLines("\n", 256, allowTruncation = false))
             .grouped(1000)
             .runWith(Sink.head),
           3.seconds)
@@ -111,7 +116,7 @@ class FramingSpec extends AkkaSpec {
     "allow truncated frames if configured so" in {
       Await.result(
         Source.single(ByteString("I have no end"))
-          .via(Framing.lines("\n", 256, allowTruncation = true))
+          .via(simpleLines("\n", 256, allowTruncation = true))
           .grouped(1000)
           .runWith(Sink.head),
         3.seconds) should ===(List("I have no end"))
