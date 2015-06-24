@@ -4,15 +4,16 @@
 
 package akka.http.javadsl.server;
 
+import org.junit.Test;
+
+import java.util.concurrent.Callable;
 import akka.dispatch.Futures;
+import akka.http.javadsl.testkit.*;
+
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.MediaTypes;
-import org.junit.Test;
-import akka.http.javadsl.testkit.*;
-import java.util.concurrent.Callable;
-
-import static akka.http.javadsl.server.Directives.*;
+import akka.http.javadsl.server.values.*;
 
 public class CompleteTest extends JUnitRouteTest {
     @Test
@@ -45,8 +46,8 @@ public class CompleteTest extends JUnitRouteTest {
     }
     @Test
     public void completeWithFuture() {
-        Parameter<Integer> x = Parameters.integer("x");
-        Parameter<Integer> y = Parameters.integer("y");
+        Parameter<Integer> x = Parameters.intValue("x");
+        Parameter<Integer> y = Parameters.intValue("y");
 
         Handler2<Integer, Integer> slowCalc = new Handler2<Integer, Integer>() {
             @Override

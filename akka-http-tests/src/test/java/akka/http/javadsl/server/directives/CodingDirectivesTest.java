@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.javadsl.server;
-
-import static akka.http.javadsl.server.Directives.*;
+package akka.http.javadsl.server.directives;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.model.headers.ContentEncoding;
 import akka.http.javadsl.model.headers.HttpEncodings;
+import akka.http.javadsl.server.Coder;
 import akka.stream.ActorMaterializer;
+import akka.http.javadsl.server.*;
 import akka.util.ByteString;
 import org.junit.*;
 import scala.concurrent.Await;
@@ -87,7 +87,53 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     }
 
     @Test
-    public void testAutomaticDecoding() {}
+    public void testAutomaticDecoding() {
+        TestRoute route =
+            testRoute(
+                decodeRequest(
+                    completeWithValueToString(RequestVals.entityAs(Unmarshallers.String()))
+                )
+            );
+
+        HttpRequest deflateRequest =
+            HttpRequest.POST("/")
+                .addHeader(ContentEncoding.create(HttpEncodings.DEFLATE))
+                .withEntity(Coder.Deflate.encode(ByteString.fromString("abcdef")));
+        route.run(deflateRequest)
+            .assertStatusCode(200)
+            .assertEntity("abcdef");
+
+        HttpRequest gzipRequest =
+                HttpRequest.POST("/")
+                        .addHeader(ContentEncoding.create(HttpEncodings.GZIP))
+                        .withEntity(Coder.Gzip.encode(ByteString.fromString("hijklmnopq")));
+        route.run(gzipRequest)
+                .assertStatusCode(200)
+                .assertEntity("hijklmnopq");
+    }
     @Test
-    public void testGzipDecoding() {}
+    public void testGzipDecoding() {
+        TestRoute route =
+            testRoute(
+                decodeRequestWith(Coder.Gzip,
+                    completeWithValueToString(RequestVals.entityAs(Unmarshallers.String()))
+                )
+            );
+
+        HttpRequest gzipRequest =
+                HttpRequest.POST("/")
+                        .addHeader(ContentEncoding.create(HttpEncodings.GZIP))
+                        .withEntity(Coder.Gzip.encode(ByteString.fromString("hijklmnopq")));
+        route.run(gzipRequest)
+                .assertStatusCode(200)
+                .assertEntity("hijklmnopq");
+
+        HttpRequest deflateRequest =
+                HttpRequest.POST("/")
+                        .addHeader(ContentEncoding.create(HttpEncodings.DEFLATE))
+                        .withEntity(Coder.Deflate.encode(ByteString.fromString("abcdef")));
+        route.run(deflateRequest)
+                .assertStatusCode(400)
+                .assertEntity("The request's Content-Encoding is not supported. Expected:\ngzip");
+    }
 }
