@@ -41,7 +41,7 @@ public class PersistenceDocTest {
 
             private void recover() {
                 //#recover-explicit
-                persistentActor.tell(Recover.create(), getSelf());
+                persistentActor.tell(Recover.create(), self());
                 //#recover-explicit
             }
         }
@@ -64,7 +64,7 @@ public class PersistenceDocTest {
             //#recover-on-start-custom
             @Override
             public void preStart() {
-                getSelf().tell(Recover.create(457L), getSelf());
+                self().tell(Recover.create(457L), self());
             }
             //#recover-on-start-custom
         }
@@ -129,7 +129,7 @@ public class PersistenceDocTest {
         abstract class MyPersistentActor1 extends UntypedPersistentActor {
             //#recover-fully-disabled
             @Override
-            public void preStart() { getSelf().tell(Recover.create(0L), getSelf()); }
+            public void preStart() { self().tell(Recover.create(0L), self()); }
             //#recover-fully-disabled
         }
     };
@@ -227,7 +227,7 @@ public class PersistenceDocTest {
           if (message instanceof Msg) {
             Msg msg = (Msg) message;
             // ...
-            getSender().tell(new Confirm(msg.deliveryId), getSelf());
+            getSender().tell(new Confirm(msg.deliveryId), self());
           } else {
             unhandled(message);
           }
@@ -324,7 +324,7 @@ public class PersistenceDocTest {
 
             @Override
             public void onReceiveCommand(Object msg) {
-                sender().tell(msg, getSelf());
+                sender().tell(msg, self());
 
                 persistAsync(String.format("evt-%s-1", msg), new Procedure<String>(){
                     @Override
@@ -376,7 +376,7 @@ public class PersistenceDocTest {
                 final Procedure<String> replyToSender = new Procedure<String>() {
                     @Override
                     public void apply(String event) throws Exception {
-                        sender().tell(event, getSelf());
+                        sender().tell(event, self());
                     }
                 };
 
@@ -408,6 +408,140 @@ public class PersistenceDocTest {
     };
 
     static Object o11 = new Object() {
+
+        class MyPersistentActor extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() {
+                return "my-stable-persistence-id";
+            }
+
+            @Override
+            public void onReceiveRecover(Object msg) {
+                // handle recovery here
+            }
+
+            //#nested-persist-persist
+            @Override
+            public void onReceiveCommand(Object msg) {
+                final Procedure<String> replyToSender = new Procedure<String>() {
+                    @Override
+                    public void apply(String event) throws Exception {
+                        sender().tell(event, self());
+                    }
+                };
+
+                final Procedure<String> outer1Callback = new Procedure<String>() {
+                    @Override
+                    public void apply(String event) throws Exception {
+                        sender().tell(event, self());
+                        persist(String.format("%s-inner-1", msg), replyToSender);
+                    }
+                };
+                final Procedure<String> outer2Callback = new Procedure<String>() {
+                    @Override
+                    public void apply(String event) throws Exception {
+                        sender().tell(event, self());
+                        persist(String.format("%s-inner-2", msg), replyToSender);
+                    }
+                };
+
+                persist(String.format("%s-outer-1", msg), outer1Callback);
+                persist(String.format("%s-outer-2", msg), outer2Callback);
+            }
+            //#nested-persist-persist
+
+            void usage(ActorRef persistentActor) {
+                //#nested-persist-persist-caller
+                persistentActor.tell("a", self());
+                persistentActor.tell("b", self());
+
+                // order of received messages:
+                // a
+                // a-outer-1
+                // a-outer-2
+                // a-inner-1
+                // a-inner-2
+                // and only then process "b"
+                // b
+                // b-outer-1
+                // b-outer-2
+                // b-inner-1
+                // b-inner-2
+
+                //#nested-persist-persist-caller
+            }
+        }
+
+
+        class MyPersistAsyncActor extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() {
+                return "my-stable-persistence-id";
+            }
+
+            @Override
+            public void onReceiveRecover(Object msg) {
+                // handle recovery here
+            }
+
+        //#nested-persistAsync-persistAsync
+            @Override
+            public void onReceiveCommand(Object msg) {
+                final Procedure<String> replyToSender = new Procedure<String>() {
+                    @Override
+                    public void apply(String event) throws Exception {
+                        sender().tell(event, self());
+                    }
+                };
+
+                final Procedure<String> outer1Callback = new Procedure<String>() {
+                    @Override
+                    public void apply(String event) throws Exception {
+                        sender().tell(event, self());
+                        persistAsync(String.format("%s-inner-1", msg), replyToSender);
+                    }
+                };
+                final Procedure<String> outer2Callback = new Procedure<String>() {
+                    @Override
+                    public void apply(String event) throws Exception {
+                        sender().tell(event, self());
+                        persistAsync(String.format("%s-inner-1", msg), replyToSender);
+                    }
+                };
+
+                persistAsync(String.format("%s-outer-1", msg), outer1Callback);
+                persistAsync(String.format("%s-outer-2", msg), outer2Callback);
+            }
+            //#nested-persistAsync-persistAsync
+
+
+            void usage(ActorRef persistentActor) {
+                //#nested-persistAsync-persistAsync-caller
+                persistentActor.tell("a", ActorRef.noSender());
+                persistentActor.tell("b", ActorRef.noSender());
+
+                // order of received messages:
+                // a
+                // b
+                // a-outer-1
+                // a-outer-2
+                // b-outer-1
+                // b-outer-2
+                // a-inner-1
+                // a-inner-2
+                // b-inner-1
+                // b-inner-2
+
+                // which can be seen as the following causal relationship:
+                // a -> a-outer-1 -> a-outer-2 -> a-inner-1 -> a-inner-2
+                // b -> b-outer-1 -> b-outer-2 -> b-inner-1 -> b-inner-2
+
+                //#nested-persistAsync-persistAsync-caller
+            }
+        }
+    };
+
+    static Object o12 = new Object() {
         //#view
         class MyView extends UntypedPersistentView {
             @Override
