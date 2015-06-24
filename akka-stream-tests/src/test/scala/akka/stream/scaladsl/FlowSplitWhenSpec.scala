@@ -114,6 +114,72 @@ class FlowSplitWhenSpec extends AkkaSpec {
         masterSubscriber.expectComplete()
       }
     }
+
+    "support cancelling both master and substream" in assertAllStagesStopped {
+      val inputs = TestPublisher.probe[Int]()
+
+      val substream = TestSubscriber.probe[Int]()
+      val masterStream = TestSubscriber.probe[Any]()
+
+      Source(inputs)
+        .splitWhen(_ == 2)
+        .map(_.runWith(Sink(substream)))
+        .runWith(Sink(masterStream))
+
+      masterStream.request(1)
+      inputs.sendNext(1)
+
+      substream.cancel()
+
+      masterStream.expectNext(())
+      masterStream.expectNoMsg(1.second)
+      masterStream.cancel()
+      inputs.expectCancellation()
+
+      val inputs2 = TestPublisher.probe[Int]()
+      Source(inputs2)
+        .splitWhen(_ == 2)
+        .map(_.runWith(Sink.cancelled))
+        .runWith(Sink.cancelled)
+
+      inputs2.expectCancellation()
+
+      val inputs3 = TestPublisher.probe[Int]()
+
+      val substream3 = TestSubscriber.probe[Int]()
+      val masterStream3 = TestSubscriber.probe[Source[Int, Any]]()
+
+      Source(inputs3)
+        .splitWhen(_ == 2)
+        .runWith(Sink(masterStream3))
+
+      masterStream3.request(1)
+      inputs3.sendNext(1)
+
+      val src = masterStream3.expectNext()
+      src.runWith(Sink.cancelled)
+
+      masterStream3.request(1)
+      inputs3.sendNext(2)
+      val src2 = masterStream3.expectNext()
+      val substream4 = TestSubscriber.probe[Int]()
+      src2.runWith(Sink(substream4))
+
+      substream4.requestNext(2)
+      substream4.expectNoMsg(1.second)
+      masterStream3.expectNoMsg(1.second)
+      inputs3.expectRequest()
+      inputs3.expectRequest()
+      inputs3.expectNoMsg(1.second)
+
+      substream4.cancel()
+      inputs3.expectNoMsg(1.second)
+      masterStream3.expectNoMsg(1.second)
+
+      masterStream3.cancel()
+      inputs3.expectCancellation()
+
+    }
   }
 
   "support cancelling the master stream" in assertAllStagesStopped {
