@@ -49,6 +49,7 @@ abstract class LeaderDowningAllOtherNodesSpec
     "remove all shutdown nodes" taggedAs LongRunningTest in {
       val others = roles.drop(1)
       val shutdownAddresses = others.map(address).toSet
+      enterBarrier("before-all-other-shutdown")
       runOn(first) {
         for (node ← others)
           testConductor.exit(node, 0).await
