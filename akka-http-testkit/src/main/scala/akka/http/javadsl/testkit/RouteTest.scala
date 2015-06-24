@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server
 import akka.http.javadsl.model.HttpRequest
-import akka.http.javadsl.server.{ Route, Directives }
+import akka.http.javadsl.server.{ AllDirectives, Route, Directives }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.impl.server.RouteImplementation
 import akka.http.scaladsl.model.HttpResponse
@@ -19,15 +19,19 @@ import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.impl.util._
 
-abstract class RouteTest {
+abstract class RouteTest extends AllDirectives {
   implicit def system: ActorSystem
   implicit def materializer: ActorMaterializer
   implicit def executionContext: ExecutionContext = system.dispatcher
 
   protected def awaitDuration: FiniteDuration = 500.millis
 
-  def runRoute(route: Route, request: HttpRequest): TestResponse = {
-    val scalaRoute = ScalaRoute.seal(RouteImplementation(route))
+  def runRoute(route: Route, request: HttpRequest): TestResponse =
+    runScalaRoute(ScalaRoute.seal(RouteImplementation(route)), request)
+  def runRouteUnSealed(route: Route, request: HttpRequest): TestResponse =
+    runScalaRoute(RouteImplementation(route), request)
+
+  private def runScalaRoute(scalaRoute: ScalaRoute, request: HttpRequest): TestResponse = {
     val result = scalaRoute(new server.RequestContextImpl(request.asScala, NoLogging, RoutingSettings(system)))
 
     result.awaitResult(awaitDuration) match {

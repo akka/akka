@@ -38,7 +38,7 @@ trait CodingDirectives {
    * identity, gzip or deflate then no encoding is used.
    */
   def encodeResponse: Directive0 =
-    encodeResponseWith(NoCoding, Gzip, Deflate)
+    _encodeResponse(DefaultEncodeResponseEncoders)
 
   /**
    * Encodes the response with the encoding that is requested by the client via the `Accept-
@@ -109,6 +109,8 @@ trait CodingDirectives {
 
 object CodingDirectives extends CodingDirectives {
   val DefaultCoders: immutable.Seq[Coder] = immutable.Seq(Gzip, Deflate, NoCoding)
+
+  private[http] val DefaultEncodeResponseEncoders = immutable.Seq(NoCoding, Gzip, Deflate)
 
   def theseOrDefault[T >: Coder](these: Seq[T]): Seq[T] = if (these.isEmpty) DefaultCoders else these
 

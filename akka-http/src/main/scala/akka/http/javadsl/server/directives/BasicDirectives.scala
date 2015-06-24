@@ -4,19 +4,23 @@
 
 package akka.http.javadsl.server.directives
 
-import java.lang.reflect.Method
 import scala.annotation.varargs
+import java.lang.reflect.{ ParameterizedType, Method }
+
+import akka.http.javadsl.model.{ StatusCode, HttpResponse }
 import akka.http.javadsl.server._
 import akka.http.impl.server.RouteStructure._
 import akka.http.impl.server._
+
+import scala.concurrent.Future
 
 abstract class BasicDirectives {
   /**
    * Tries the given routes in sequence until the first one matches.
    */
   @varargs
-  def route(route: Route, others: Route*): Route =
-    RouteAlternatives(route +: others.toVector)
+  def route(innerRoute: Route, moreInnerRoutes: Route*): Route =
+    RouteAlternatives()(innerRoute, moreInnerRoutes.toList)
 
   /**
    * A route that completes the request with a static text
@@ -24,6 +28,22 @@ abstract class BasicDirectives {
   def complete(text: String): Route =
     new OpaqueRoute() {
       def handle(ctx: RequestContext): RouteResult = ctx.complete(text)
+    }
+
+  /**
+   * A route that completes the request with a static text
+   */
+  def complete(response: HttpResponse): Route =
+    new OpaqueRoute() {
+      def handle(ctx: RequestContext): RouteResult = ctx.complete(response)
+    }
+
+  /**
+   * A route that completes the request with a status code.
+   */
+  def completeWithStatus(code: StatusCode): Route =
+    new OpaqueRoute() {
+      def handle(ctx: RequestContext): RouteResult = ctx.completeWithStatus(code)
     }
 
   /**
@@ -46,7 +66,7 @@ abstract class BasicDirectives {
    */
   @varargs
   def extractHere(extractions: RequestVal[_]*): Directive =
-    Directives.custom(Extract(extractions.map(_.asInstanceOf[StandaloneExtractionImpl[_ <: AnyRef]]), _))
+    Directives.custom(Extract(extractions.map(_.asInstanceOf[StandaloneExtractionImpl[_ <: AnyRef]])))
 
   /**
    * A route that handles the request with the given opaque handler. Specify a set of extractions
@@ -150,22 +170,35 @@ abstract class BasicDirectives {
         res
       }
       def returnTypeMatches(method: Method): Boolean =
-        method.getReturnType == classOf[RouteResult]
+        method.getReturnType == classOf[RouteResult] || returnsFuture(method)
+
+      def returnsFuture(method: Method): Boolean =
+        method.getReturnType == classOf[Future[_]] &&
+          method.getGenericReturnType.isInstanceOf[ParameterizedType] &&
+          method.getGenericReturnType.asInstanceOf[ParameterizedType].getActualTypeArguments()(0) == classOf[RouteResult]
+
+      /** Makes sure both RouteResult and Future[RouteResult] are acceptable result types. */
+      def adaptResult(method: Method): (RequestContext, AnyRef) ⇒ RouteResult =
+        if (returnsFuture(method)) (ctx, v) ⇒ ctx.completeWith(v.asInstanceOf[Future[RouteResult]])
+        else (_, v) ⇒ v.asInstanceOf[RouteResult]
+
+      val IdentityAdaptor: (RequestContext, Seq[Any]) ⇒ Seq[Any] = (_, ps) ⇒ ps
+      def methodInvocator(method: Method, adaptParams: (RequestContext, Seq[Any]) ⇒ Seq[Any]): (RequestContext, Seq[Any]) ⇒ RouteResult = {
+        val resultAdaptor = adaptResult(method)
+        if (!method.isAccessible) method.setAccessible(true)
+        if (adaptParams == IdentityAdaptor)
+          (ctx, params) ⇒ resultAdaptor(ctx, method.invoke(instance, params.toArray.asInstanceOf[Array[AnyRef]]: _*))
+        else
+          (ctx, params) ⇒ resultAdaptor(ctx, method.invoke(instance, adaptParams(ctx, params).toArray.asInstanceOf[Array[AnyRef]]: _*))
+      }
 
       object ParameterTypes {
         def unapply(method: Method): Option[List[Class[_]]] = Some(method.getParameterTypes.toList)
       }
 
       methods.filter(returnTypeMatches).collectFirst {
-        case method @ ParameterTypes(RequestContextClass :: rest) if paramsMatch(rest) ⇒ {
-          if (!method.isAccessible) method.setAccessible(true) // FIXME: test what happens if this fails
-          (ctx: RequestContext, params: Seq[Any]) ⇒ method.invoke(instance, (ctx +: params).toArray.asInstanceOf[Array[AnyRef]]: _*).asInstanceOf[RouteResult]
-        }
-
-        case method @ ParameterTypes(rest) if paramsMatch(rest) ⇒ {
-          if (!method.isAccessible) method.setAccessible(true)
-          (ctx: RequestContext, params: Seq[Any]) ⇒ method.invoke(instance, params.toArray.asInstanceOf[Array[AnyRef]]: _*).asInstanceOf[RouteResult]
-        }
+        case method @ ParameterTypes(RequestContextClass :: rest) if paramsMatch(rest) ⇒ methodInvocator(method, _ +: _)
+        case method @ ParameterTypes(rest) if paramsMatch(rest)                        ⇒ methodInvocator(method, IdentityAdaptor)
       }.getOrElse(throw new RuntimeException("No suitable method found"))
     }
     def lookupMethod() = {

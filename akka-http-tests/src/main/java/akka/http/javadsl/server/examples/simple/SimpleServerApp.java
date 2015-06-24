@@ -5,13 +5,20 @@
 package akka.http.javadsl.server.examples.simple;
 
 import akka.actor.ActorSystem;
+import akka.dispatch.Futures;
 import akka.http.javadsl.server.*;
+import akka.http.javadsl.server.values.Parameter;
+import akka.http.javadsl.server.values.Parameters;
+import akka.http.javadsl.server.values.PathMatcher;
+import akka.http.javadsl.server.values.PathMatchers;
+import scala.concurrent.Future;
 
 import java.io.IOException;
+import java.util.concurrent.Callable;
 
 public class SimpleServerApp extends HttpApp {
-    static Parameter<Integer> x = Parameters.integer("x");
-    static Parameter<Integer> y = Parameters.integer("y");
+    static Parameter<Integer> x = Parameters.intValue("x");
+    static Parameter<Integer> y = Parameters.intValue("y");
 
     static PathMatcher<Integer> xSegment = PathMatchers.integerNumber();
     static PathMatcher<Integer> ySegment = PathMatchers.integerNumber();
@@ -19,6 +26,13 @@ public class SimpleServerApp extends HttpApp {
     public static RouteResult multiply(RequestContext ctx, int x, int y) {
         int result = x * y;
         return ctx.complete(String.format("%d * %d = %d", x, y, result));
+    }
+    public static Future<RouteResult> multiplyAsync(final RequestContext ctx, final int x, final int y) {
+        return Futures.future(new Callable<RouteResult>() {
+            public RouteResult call() throws Exception {
+                return multiply(ctx, x, y);
+            }
+        }, ctx.executionContext());
     }
 
     @Override
@@ -55,6 +69,10 @@ public class SimpleServerApp extends HttpApp {
                 path("multiply", xSegment, ySegment).route(
                     // bind handler by reflection
                     handleWith(SimpleServerApp.class, "multiply", xSegment, ySegment)
+                ),
+                path("multiplyAsync", xSegment, ySegment).route(
+                    // bind async handler by reflection
+                    handleWith(SimpleServerApp.class, "multiplyAsync", xSegment, ySegment)
                 )
             );
     }
