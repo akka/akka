@@ -121,7 +121,7 @@ private[akka] class SplitWhereProcessorImpl(_settings: ActorMaterializerSettings
   }
 
   // Ignore elements for a cancelled substream until a new substream needs to be opened
-  val ignoreUntilNewSubstream = TransferPhase(primaryInputs.NeedsInput) { () ⇒
+  val ignoreUntilNewSubstream = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
     val elem = primaryInputs.dequeueInputElement()
     decideSplit(elem) match {
       case Continue | Drop ⇒ // ignore elem
