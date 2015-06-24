@@ -96,8 +96,7 @@ Parsing lines from a stream of ByteStrings
 characters (or, alternatively, containing binary frames delimited by a special delimiter byte sequence) which
 needs to be parsed.
 
-The :class:`Framing` helper object contains a convenience method to parse messages from a stream of ``ByteStrings``
-and in particular it has basic support for parsing text lines:
+The :class:`Framing` helper object contains a convenience method to parse messages from a stream of ``ByteStrings``:
 
 .. includecode:: code/docs/stream/cookbook/RecipeParseLines.scala#parse-lines
 
