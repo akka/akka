@@ -62,9 +62,8 @@ object SharedLeveldbJournalSpec {
       case m                             ⇒ p forward m
     }
 
-    override def preStart(): Unit = {
+    override def preStart(): Unit =
       context.actorSelection(storePath) ! Identify(1)
-    }
   }
 
 }

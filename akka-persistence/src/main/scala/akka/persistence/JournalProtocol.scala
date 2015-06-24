@@ -4,9 +4,9 @@
 
 package akka.persistence
 
-import scala.collection.immutable
-
 import akka.actor._
+
+import scala.collection.immutable
 
 /**
  * INTERNAL API.

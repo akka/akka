@@ -8,14 +8,14 @@ package akka.persistence.journal
 import scala.collection.immutable
 import scala.util._
 
-import akka.actor.Actor
+import akka.actor.{ ActorLogging, Actor }
 import akka.pattern.pipe
 import akka.persistence._
 
 /**
  * Abstract journal, optimized for synchronous writes.
  */
-trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
+trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery with ActorLogging {
   import JournalProtocol._
   import context.dispatcher
 
@@ -39,22 +39,28 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           }
           throw e
       }
+
     case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor, replayDeleted) ⇒
       asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) { p ⇒
-        if (!p.deleted || replayDeleted) persistentActor.tell(ReplayedMessage(p), p.sender)
+        if (!p.deleted || replayDeleted)
+          adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
+            persistentActor.tell(ReplayedMessage(adaptedPersistentRepr), adaptedPersistentRepr.sender)
+          }
       } map {
         case _ ⇒ ReplayMessagesSuccess
       } recover {
         case e ⇒ ReplayMessagesFailure(e)
-      } pipeTo (persistentActor) onSuccess {
+      } pipeTo persistentActor onSuccess {
         case _ if publish ⇒ context.system.eventStream.publish(r)
       }
+
     case ReadHighestSequenceNr(fromSequenceNr, persistenceId, persistentActor) ⇒
       asyncReadHighestSequenceNr(persistenceId, fromSequenceNr).map {
         highest ⇒ ReadHighestSequenceNrSuccess(highest)
       } recover {
         case e ⇒ ReadHighestSequenceNrFailure(e)
-      } pipeTo (persistentActor)
+      } pipeTo persistentActor
+
     case d @ DeleteMessagesTo(persistenceId, toSequenceNr, permanent) ⇒
       Try(deleteMessagesTo(persistenceId, toSequenceNr, permanent)) match {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)

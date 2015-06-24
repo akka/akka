@@ -10,8 +10,7 @@ import scala.language.postfixOps
 
 import akka.actor._
 import akka.persistence._
-import akka.persistence.journal.AsyncWriteProxy
-import akka.persistence.journal.AsyncWriteTarget
+import akka.persistence.journal.{ WriteJournalBase, AsyncWriteProxy, AsyncWriteTarget }
 import akka.util.Timeout
 
 /**
@@ -72,7 +71,7 @@ private[persistence] trait InmemMessages {
 /**
  * INTERNAL API.
  */
-private[persistence] class InmemStore extends Actor with InmemMessages {
+private[persistence] class InmemStore extends Actor with InmemMessages with WriteJournalBase {
   import AsyncWriteTarget._
 
   def receive = {
@@ -83,7 +82,7 @@ private[persistence] class InmemStore extends Actor with InmemMessages {
     case DeleteMessagesTo(pid, tsnr, true) ⇒
       sender() ! (1L to tsnr foreach { snr ⇒ delete(pid, snr) })
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
-      read(pid, fromSnr, toSnr, max).foreach(sender() ! _)
+      read(pid, fromSnr, toSnr, max).foreach { sender() ! _ }
       sender() ! ReplaySuccess
     case ReadHighestSequenceNr(persistenceId, _) ⇒
       sender() ! highestSequenceNr(persistenceId)

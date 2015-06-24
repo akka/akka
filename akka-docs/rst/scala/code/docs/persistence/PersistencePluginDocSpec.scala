@@ -92,6 +92,9 @@ object SharedLeveldbPluginDocSpec {
       //#shared-store-config
       akka.persistence.journal.leveldb-shared.store.dir = "target/shared"
       //#shared-store-config
+      //#event-adapter-config
+      akka.persistence.journal.leveldb-shared.adapter = "com.example.MyAdapter"
+      //#event-adapter-config
     """
 
   //#shared-store-usage

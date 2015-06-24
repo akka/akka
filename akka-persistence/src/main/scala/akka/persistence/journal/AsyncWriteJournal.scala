@@ -5,20 +5,20 @@
 
 package akka.persistence.journal
 
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.util._
-
 import akka.actor._
 import akka.pattern.pipe
 import akka.persistence._
+
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.util._
 
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.
  */
 trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
-  import JournalProtocol._
   import AsyncWriteJournal._
+  import JournalProtocol._
   import context.dispatcher
 
   private val extension = Persistence(context.system)
@@ -47,12 +47,15 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       // Send replayed messages and replay result to persistentActor directly. No need
       // to resequence replayed messages relative to written and looped messages.
       asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) { p ⇒
-        if (!p.deleted || replayDeleted) persistentActor.tell(ReplayedMessage(p), Actor.noSender)
+        if (!p.deleted || replayDeleted)
+          adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
+            persistentActor.tell(ReplayedMessage(adaptedPersistentRepr), Actor.noSender)
+          }
       } map {
         case _ ⇒ ReplayMessagesSuccess
       } recover {
         case e ⇒ ReplayMessagesFailure(e)
-      } pipeTo (persistentActor) onSuccess {
+      } pipeTo persistentActor onSuccess {
         case _ if publish ⇒ context.system.eventStream.publish(r)
       }
     case ReadHighestSequenceNr(fromSequenceNr, persistenceId, persistentActor) ⇒
@@ -62,7 +65,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         highest ⇒ ReadHighestSequenceNrSuccess(highest)
       } recover {
         case e ⇒ ReadHighestSequenceNrFailure(e)
-      } pipeTo (persistentActor)
+      } pipeTo persistentActor
     case d @ DeleteMessagesTo(persistenceId, toSequenceNr, permanent) ⇒
       asyncDeleteMessagesTo(persistenceId, toSequenceNr, permanent) onComplete {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
@@ -85,6 +88,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    */
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit]
   //#journal-plugin-api
+
 }
 
 /**
