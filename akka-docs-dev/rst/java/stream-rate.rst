@@ -62,7 +62,7 @@ to a level that throughput requirements of the application require. Default buff
 
     akka.stream.materializer.max-input-buffer-size = 16
 
-Alternatively they can be set by passing a :class:`ActorFlowMaterializerSettings` to the materializer:
+Alternatively they can be set by passing a :class:`ActorMaterializerSettings` to the materializer:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#materializer-buffer
 

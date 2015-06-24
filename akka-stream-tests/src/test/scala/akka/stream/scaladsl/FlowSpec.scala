@@ -11,7 +11,7 @@ import akka.stream.stage.Stage
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor._
-import akka.stream.{ AbruptTerminationException, OperationAttributes, ActorFlowMaterializerSettings, ActorFlowMaterializer }
+import akka.stream.{ AbruptTerminationException, Attributes, ActorMaterializerSettings, ActorMaterializer }
 import akka.stream.impl._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -32,19 +32,19 @@ object FlowSpec {
 class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
   import FlowSpec._
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val mat = ActorFlowMaterializer(settings)
+  implicit val mat = ActorMaterializer(settings)
 
   val identity: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ in.map(e ⇒ e)
   val identity2: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ identity(in)
 
   class BrokenActorInterpreter(
-    _settings: ActorFlowMaterializerSettings,
+    _settings: ActorMaterializerSettings,
     _ops: Seq[Stage[_, _]],
     brokenMessage: Any)
-    extends ActorInterpreter(_settings, _ops, mat, OperationAttributes.none) {
+    extends ActorInterpreter(_settings, _ops, mat, Attributes.none) {
 
     import akka.stream.actor.ActorSubscriberMessage._
 
@@ -66,10 +66,10 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     (processor, ())
   }
 
-  val toPublisher: (Source[Any, _], ActorFlowMaterializer) ⇒ Publisher[Any] =
+  val toPublisher: (Source[Any, _], ActorMaterializer) ⇒ Publisher[Any] =
     (f, m) ⇒ f.runWith(Sink.publisher)(m)
 
-  def toFanoutPublisher[In, Out](initialBufferSize: Int, maximumBufferSize: Int): (Source[Out, _], ActorFlowMaterializer) ⇒ Publisher[Out] =
+  def toFanoutPublisher[In, Out](initialBufferSize: Int, maximumBufferSize: Int): (Source[Out, _], ActorMaterializer) ⇒ Publisher[Out] =
     (f, m) ⇒ f.runWith(Sink.fanoutPublisher(initialBufferSize, maximumBufferSize))(m)
 
   def materializeIntoSubscriberAndPublisher[In, Out](flow: Flow[In, Out, _]): (Subscriber[In], Publisher[Out]) = {

@@ -42,7 +42,7 @@ Directive                                   Description
 :ref:`-extractCredentials-`                 Extracts the potentially present ``HttpCredentials`` provided with the
                                             request's ``Authorization`` header
 :ref:`-extractExecutionContext-`            Extracts the ``ExecutionContext`` from the ``RequestContext``
-:ref:`-extractFlowMaterializer-`            Extracts the ``FlowMaterializer`` from the ``RequestContext``
+:ref:`-extractMaterializer-`                Extracts the ``Materializer`` from the ``RequestContext``
 :ref:`-extractHost-`                        Extracts the hostname part of the Host request header value
 :ref:`-extractLog-`                         Extracts the ``LoggingAdapter`` from the ``RequestContext``
 :ref:`-extractMethod-`                      Extracts the request method
@@ -191,7 +191,7 @@ Directive                                   Description
 :ref:`-tprovide-`                           Injects a given tuple of values into a directive
 :ref:`-validate-`                           Checks a given condition before running its inner route
 :ref:`-withExecutionContext-`               Runs its inner route with the given alternative ``ExecutionContext``
-:ref:`-withFlowMaterializer-`               Runs its inner route with the given alternative ``FlowMaterializer``
+:ref:`-withMaterializer-`                   Runs its inner route with the given alternative ``Materializer``
 :ref:`-withLog-`                            Runs its inner route with the given alternative ``LoggingAdapter``
 :ref:`-withRangeSupport-`                   Adds ``Accept-Ranges: bytes`` to responses to GET requests, produces partial
                                             responses if the initial request contained a valid ``Range`` header

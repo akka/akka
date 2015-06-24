@@ -1,6 +1,6 @@
-.. _-withFlowMaterializer-:
+.. _-withMaterializer-:
 
-withFlowMaterializer
+withMaterializer
 ====================
 
 ...
@@ -9,7 +9,7 @@ Signature
 ---------
 
 .. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala
-   :snippet: withFlowMaterializer
+   :snippet: withMaterializer
 
 Description
 -----------
@@ -20,4 +20,4 @@ Example
 -------
 
 ... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0withFlowMaterializer
+   :snippet: 0withMaterializer

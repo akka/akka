@@ -7,7 +7,7 @@ import akka.actor._
 import akka.io.Tcp.{ ResumeReading, Register, ConnectionClosed, Closed }
 import akka.io.{ IO, Tcp }
 import akka.stream.testkit._
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.testkit.{ TestKitBase, TestProbe }
 import akka.util.ByteString
 import java.net.InetSocketAddress
@@ -116,10 +116,10 @@ object TcpHelper {
 trait TcpHelper { this: TestKitBase ⇒
   import akka.stream.io.TcpHelper._
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 4, maxSize = 4)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   class Server(val address: InetSocketAddress = temporaryServerAddress()) {
     val serverProbe = TestProbe()

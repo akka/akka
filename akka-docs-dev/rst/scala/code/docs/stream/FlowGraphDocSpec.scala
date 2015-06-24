@@ -10,13 +10,13 @@ import akka.stream.testkit.AkkaSpec
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 class FlowGraphDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "build simple graph" in {
     //format: OFF

@@ -20,7 +20,6 @@ import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.collection.immutable.Seq;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.runtime.BoxedUnit;
@@ -69,7 +68,7 @@ public class IntegrationDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
 
   class AddressSystem {
     //#email-address-lookup
@@ -314,7 +313,7 @@ public class IntegrationDocTest {
         //#email-addresses-mapAsync
 
         //#send-emails
-        final RunnableFlow<BoxedUnit> sendEmails = emailAddresses
+        final RunnableGraph<BoxedUnit> sendEmails = emailAddresses
           .mapAsync(4, address ->
             emailServer.send(new Email(address, "Akka", "I like your tweet")))
           .to(Sink.ignore());
@@ -345,8 +344,8 @@ public class IntegrationDocTest {
           .map(t -> t.author);
 
         //#email-addresses-mapAsync-supervision
-        final OperationAttributes resumeAttrib =
-          ActorOperationAttributes.withSupervisionStrategy(Supervision.getResumingDecider());
+        final Attributes resumeAttrib =
+          ActorAttributes.withSupervisionStrategy(Supervision.getResumingDecider());
         final Flow<Author, String, BoxedUnit> lookupEmail =
             Flow.of(Author.class)
             .mapAsync(4, author -> addressSystem.lookupEmail(author.handle))
@@ -378,7 +377,7 @@ public class IntegrationDocTest {
             .filter(o -> o.isPresent())
             .map(o -> o.get());
 
-        final RunnableFlow<BoxedUnit> sendEmails =
+        final RunnableGraph<BoxedUnit> sendEmails =
           emailAddresses
             .mapAsyncUnordered(4, address ->
               emailServer.send(new Email(address, "Akka", "I like your tweet")))
@@ -410,7 +409,7 @@ public class IntegrationDocTest {
         //#blocking-mapAsync
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
 
-        final RunnableFlow sendTextMessages =
+        final RunnableGraph sendTextMessages =
           phoneNumbers
             .mapAsync(4, phoneNo  ->
               Futures.future(() ->
@@ -458,8 +457,8 @@ public class IntegrationDocTest {
         final Flow<String, Boolean, BoxedUnit> send =
           Flow.of(String.class)
           .map(phoneNo -> smsServer.send(new TextMessage(phoneNo, "I like your tweet")))
-          .withAttributes(ActorOperationAttributes.dispatcher("blocking-dispatcher"));
-        final RunnableFlow<?> sendTextMessages =
+          .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"));
+        final RunnableGraph<?> sendTextMessages =
           phoneNumbers.via(send).to(Sink.ignore());
 
         sendTextMessages.run(mat);
@@ -488,7 +487,7 @@ public class IntegrationDocTest {
         //#save-tweets
         final Source<Tweet, BoxedUnit> akkaTweets = tweets.filter(t -> t.hashtags().contains(AKKA));
 
-        final RunnableFlow saveTweets =
+        final RunnableGraph saveTweets =
           akkaTweets
             .mapAsync(4, tweet -> ask(database, new Save(tweet), 300))
             .to(Sink.ignore());
@@ -530,8 +529,8 @@ public class IntegrationDocTest {
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
         final SometimesSlowService service = new SometimesSlowService(blockingEc);
 
-        final ActorFlowMaterializer mat = ActorFlowMaterializer.create(
-          ActorFlowMaterializerSettings.create(system).withInputBuffer(4, 4), system);
+        final ActorMaterializer mat = ActorMaterializer.create(
+          ActorMaterializerSettings.create(system).withInputBuffer(4, 4), system);
 
         Source.from(Arrays.asList("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
           .map(elem -> { System.out.println("before: " + elem); return elem; })
@@ -575,8 +574,8 @@ public class IntegrationDocTest {
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
         final SometimesSlowService service = new SometimesSlowService(blockingEc);
 
-        final ActorFlowMaterializer mat = ActorFlowMaterializer.create(
-          ActorFlowMaterializerSettings.create(system).withInputBuffer(4, 4), system);
+        final ActorMaterializer mat = ActorMaterializer.create(
+          ActorMaterializerSettings.create(system).withInputBuffer(4, 4), system);
 
         Source.from(Arrays.asList("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
           .map(elem -> { System.out.println("before: " + elem); return elem; })

@@ -7,8 +7,8 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
+import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import akka.stream.actor.AbstractActorPublisher;
 import akka.stream.actor.ActorPublisherMessage;
 import akka.stream.javadsl.Sink;
@@ -37,7 +37,7 @@ public class ActorPublisherDocTest {
     system = null;
   }
   
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
   
     //#job-manager
     public static class JobManagerProtocol {

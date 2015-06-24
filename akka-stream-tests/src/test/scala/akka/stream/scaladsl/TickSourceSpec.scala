@@ -7,14 +7,14 @@ import akka.actor.Cancellable
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 
 class TickSourceSpec extends AkkaSpec {
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A Flow based on tick publisher" must {
     "produce ticks" in assertAllStagesStopped {

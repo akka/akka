@@ -7,19 +7,19 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 import scala.collection.immutable
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
-import akka.stream.ActorOperationAttributes
+import akka.stream.ActorAttributes
 import akka.stream.Supervision
 
 class FlowScanSpec extends AkkaSpec {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorFlowMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "A Scan" must {
 
@@ -47,7 +47,7 @@ class FlowScanSpec extends AkkaSpec {
     }
 
     "fail properly" in {
-      import ActorOperationAttributes._
+      import ActorAttributes._
       val scan = Flow[Int].scan(0) { (old, current) ⇒
         require(current > 0)
         old + current

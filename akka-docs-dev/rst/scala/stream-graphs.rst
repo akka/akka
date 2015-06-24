@@ -96,8 +96,8 @@ all of its different phases in different places and in the end connect them all 
 
 This can be achieved using ``FlowGraph.partial`` instead of
 ``FlowGraph.closed``, which will return a ``Graph`` instead of a
-``RunnableFlow``.  The reason of representing it as a different type is that a
-:class:`RunnableFlow` requires all ports to be connected, and if they are not
+``RunnableGraph``.  The reason of representing it as a different type is that a
+:class:`RunnableGraph` requires all ports to be connected, and if they are not
 it will throw an exception at construction time, which helps to avoid simple
 wiring errors while working with graphs. A partial flow graph however allows
 you to return the set of yet to be connected ports from the code block that

@@ -34,7 +34,7 @@ private[http] object HttpServerBluePrint {
 
   type ServerShape = BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest]
 
-  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[ServerShape, Unit] = {
+  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Graph[ServerShape, Unit] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -158,7 +158,7 @@ private[http] object HttpServerBluePrint {
   }
 
   class BypassMerge(settings: ServerSettings, log: LoggingAdapter)
-    extends FlexiMerge[ResponseRenderingContext, FanInShape3[RequestOutput, OneHundredContinue.type, HttpResponse, ResponseRenderingContext]](new FanInShape3("BypassMerge"), OperationAttributes.name("BypassMerge")) {
+    extends FlexiMerge[ResponseRenderingContext, FanInShape3[RequestOutput, OneHundredContinue.type, HttpResponse, ResponseRenderingContext]](new FanInShape3("BypassMerge"), Attributes.name("BypassMerge")) {
     import FlexiMerge._
 
     def createMergeLogic(p: PortT) = new MergeLogic[ResponseRenderingContext] {
@@ -291,7 +291,7 @@ private[http] object HttpServerBluePrint {
 
   trait WebsocketSetup {
     def websocketFlow: Flow[ByteString, ByteString, Any]
-    def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: FlowMaterializer): Unit
+    def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: Materializer): Unit
   }
   def websocketSetup: WebsocketSetup = {
     val sinkCell = new StreamUtils.OneTimeWriteCell[Publisher[FrameEvent]]
@@ -309,7 +309,7 @@ private[http] object HttpServerBluePrint {
     new WebsocketSetup {
       def websocketFlow: Flow[ByteString, ByteString, Any] = flow
 
-      def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: FlowMaterializer): Unit =
+      def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: Materializer): Unit =
         Source(sinkCell.value)
           .via(handlerFlow)
           .to(Sink(sourceCell.value))
@@ -317,7 +317,7 @@ private[http] object HttpServerBluePrint {
     }
   }
   class WebsocketSwitchRouter
-    extends FlexiRoute[AnyRef, FanOutShape2[AnyRef, ByteString, ByteString]](new FanOutShape2("websocketSplit"), OperationAttributes.name("websocketSplit")) {
+    extends FlexiRoute[AnyRef, FanOutShape2[AnyRef, ByteString, ByteString]](new FanOutShape2("websocketSplit"), Attributes.name("websocketSplit")) {
 
     override def createRouteLogic(shape: FanOutShape2[AnyRef, ByteString, ByteString]): RouteLogic[AnyRef] =
       new RouteLogic[AnyRef] {
@@ -342,7 +342,7 @@ private[http] object HttpServerBluePrint {
         }
       }
   }
-  class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit) extends FlexiMerge[ByteString, FanInShape2[ResponseRenderingOutput, ByteString, ByteString]](new FanInShape2("websocketMerge"), OperationAttributes.name("websocketMerge")) {
+  class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit) extends FlexiMerge[ByteString, FanInShape2[ResponseRenderingOutput, ByteString, ByteString]](new FanInShape2("websocketMerge"), Attributes.name("websocketMerge")) {
     def createMergeLogic(s: FanInShape2[ResponseRenderingOutput, ByteString, ByteString]): MergeLogic[ByteString] =
       new MergeLogic[ByteString] {
         var websocketHandlerWasInstalled: Boolean = false
@@ -376,7 +376,7 @@ private[http] object HttpServerBluePrint {
       }
   }
   /** A merge for two streams that just forwards all elements and closes the connection when the first input closes. */
-  class CloseIfFirstClosesMerge2[T](name: String) extends FlexiMerge[T, FanInShape2[T, T, T]](new FanInShape2(name), OperationAttributes.name(name)) {
+  class CloseIfFirstClosesMerge2[T](name: String) extends FlexiMerge[T, FanInShape2[T, T, T]](new FanInShape2(name), Attributes.name(name)) {
     def createMergeLogic(s: FanInShape2[T, T, T]): MergeLogic[T] =
       new MergeLogic[T] {
         def initialState: State[T] = State[T](ReadAny(s.in0, s.in1)) {

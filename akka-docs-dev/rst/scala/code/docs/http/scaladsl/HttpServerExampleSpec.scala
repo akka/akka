@@ -11,12 +11,12 @@ import akka.actor.ActorSystem
 class HttpServerExampleSpec extends WordSpec with Matchers {
 
   "binding-example" in {
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
     import akka.http.scaladsl.Http
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
       Http().bind(interface = "localhost", port = 8080)
@@ -28,14 +28,14 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
   }
 
   "full-server-example" in {
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.Sink
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.HttpMethods._
     import akka.http.scaladsl.model._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     val serverSource = Http().bind(interface = "localhost", port = 8080)
 
@@ -65,13 +65,13 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
   }
 
   "low-level-server-example" in {
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.HttpMethods._
     import akka.http.scaladsl.model._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     val requestHandler: HttpRequest => HttpResponse = {
       case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
@@ -94,13 +94,13 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
   // format: OFF
 
   "high-level-server-example" in {
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     val route =
       get {
@@ -123,14 +123,14 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
   }
 
   "minimal-routing-example" in {
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 
     object Main extends App {
       implicit val system = ActorSystem("my-system")
-      implicit val materializer = ActorFlowMaterializer()
+      implicit val materializer = ActorMaterializer()
 
       val route =
         path("hello") {

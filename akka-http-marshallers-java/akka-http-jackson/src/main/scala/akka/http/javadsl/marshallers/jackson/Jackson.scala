@@ -18,9 +18,9 @@ object Jackson {
   def json[T <: AnyRef](objectMapper: ObjectMapper): Marshaller[T] = jsonMarshaller(objectMapper).asInstanceOf[Marshaller[T]]
   def jsonAs[T](clazz: Class[T]): Unmarshaller[T] = jsonAs(objectMapper, clazz)
   def jsonAs[T](objectMapper: ObjectMapper, clazz: Class[T]): Unmarshaller[T] =
-    UnmarshallerImpl[T] { (_ec, _flowMaterializer) ⇒
+    UnmarshallerImpl[T] { (_ec, _materializer) ⇒
       implicit val ec = _ec
-      implicit val mat = _flowMaterializer
+      implicit val mat = _materializer
 
       unmarshalling.Unmarshaller.messageUnmarshallerFromEntityUnmarshaller { // isn't implicitly inferred for unknown reasons
         unmarshalling.Unmarshaller.stringUnmarshaller

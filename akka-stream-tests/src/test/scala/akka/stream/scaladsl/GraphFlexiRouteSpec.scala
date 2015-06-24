@@ -3,7 +3,7 @@ package akka.stream.scaladsl
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import FlowGraph.Implicits._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
@@ -19,7 +19,7 @@ object GraphFlexiRouteSpec {
    * they are have requested elements. Or in other words, if all outputs have demand available at the same
    * time then in finite steps all elements are enqueued to them.
    */
-  class Fair[T] extends FlexiRoute[T, UniformFanOutShape[T, T]](new UniformFanOutShape(2), OperationAttributes.name("FairBalance")) {
+  class Fair[T] extends FlexiRoute[T, UniformFanOutShape[T, T]](new UniformFanOutShape(2), Attributes.name("FairBalance")) {
     import FlexiRoute._
 
     override def createRouteLogic(p: PortT): RouteLogic[T] = new RouteLogic[T] {
@@ -42,7 +42,7 @@ object GraphFlexiRouteSpec {
    * It never skips an output while cycling but waits on it instead (closed outputs are skipped though).
    * The fair route above is a non-strict round-robin (skips currently unavailable outputs).
    */
-  class StrictRoundRobin[T] extends FlexiRoute[T, UniformFanOutShape[T, T]](new UniformFanOutShape(2), OperationAttributes.name("RoundRobinBalance")) {
+  class StrictRoundRobin[T] extends FlexiRoute[T, UniformFanOutShape[T, T]](new UniformFanOutShape(2), Attributes.name("RoundRobinBalance")) {
     import FlexiRoute._
 
     override def createRouteLogic(p: PortT) = new RouteLogic[T] {
@@ -61,7 +61,7 @@ object GraphFlexiRouteSpec {
     }
   }
 
-  class Unzip[A, B] extends FlexiRoute[(A, B), FanOutShape2[(A, B), A, B]](new FanOutShape2("Unzip"), OperationAttributes.name("Unzip")) {
+  class Unzip[A, B] extends FlexiRoute[(A, B), FanOutShape2[(A, B), A, B]](new FanOutShape2("Unzip"), Attributes.name("Unzip")) {
     import FlexiRoute._
 
     override def createRouteLogic(p: PortT) = new RouteLogic[(A, B)] {
@@ -78,7 +78,7 @@ object GraphFlexiRouteSpec {
   }
 
   class StartStopTestRoute(lifecycleProbe: ActorRef)
-    extends FlexiRoute[String, FanOutShape2[String, String, String]](new FanOutShape2("StartStopTest"), OperationAttributes.name("StartStopTest")) {
+    extends FlexiRoute[String, FanOutShape2[String, String, String]](new FanOutShape2("StartStopTest"), Attributes.name("StartStopTest")) {
     import FlexiRoute._
 
     def createRouteLogic(p: PortT) = new RouteLogic[String] {
@@ -100,7 +100,7 @@ object GraphFlexiRouteSpec {
   }
 
   class TestRoute(completionProbe: ActorRef)
-    extends FlexiRoute[String, FanOutShape2[String, String, String]](new FanOutShape2("TestRoute"), OperationAttributes.name("TestRoute")) {
+    extends FlexiRoute[String, FanOutShape2[String, String, String]](new FanOutShape2("TestRoute"), Attributes.name("TestRoute")) {
     import FlexiRoute._
 
     var throwFromOnComplete = false
@@ -146,7 +146,7 @@ object GraphFlexiRouteSpec {
     }
   }
 
-  class TestFixture(implicit val system: ActorSystem, implicit val materializer: ActorFlowMaterializer) {
+  class TestFixture(implicit val system: ActorSystem, implicit val materializer: ActorMaterializer) {
     val autoPublisher = TestPublisher.probe[String]()
     val s1 = TestSubscriber.manualProbe[String]
     val s2 = TestSubscriber.manualProbe[String]
@@ -170,7 +170,7 @@ object GraphFlexiRouteSpec {
 class GraphFlexiRouteSpec extends AkkaSpec {
   import GraphFlexiRouteSpec._
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   val in = Source(List("a", "b", "c", "d", "e"))
 

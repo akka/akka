@@ -5,28 +5,21 @@ package docs.stream.io;
 
 import static org.junit.Assert.assertEquals;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 
 import akka.stream.io.Framing;
 import docs.stream.cookbook.RecipeParseLines;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
 import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
 import util.SocketUtils;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.*;
-import akka.stream.javadsl.FlexiMerge.ReadAllInputs;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.Tcp.*;
 import akka.stream.stage.*;
@@ -49,7 +42,7 @@ public class StreamTcpDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
 
   private final ConcurrentLinkedQueue<String> input = new ConcurrentLinkedQueue<String>();
   {

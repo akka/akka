@@ -38,7 +38,7 @@ public class StreamPartialFlowGraphDocTest {
     system = null;
   }
   
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
   
   @Test
   public void demonstrateBuildWithOpenPorts() throws Exception {
@@ -59,7 +59,7 @@ public class StreamPartialFlowGraphDocTest {
 
     final Sink<Integer, Future<Integer>> resultSink = Sink.<Integer>head();
 
-    final RunnableFlow<Future<Integer>> g = FlowGraph.factory()
+    final RunnableGraph<Future<Integer>> g = FlowGraph.factory()
         .closed(resultSink, (builder, sink) -> {
           // import the partial flow graph explicitly
           final UniformFanInShape<Integer, Integer> pm = builder.graph(pickMaxOfThree);

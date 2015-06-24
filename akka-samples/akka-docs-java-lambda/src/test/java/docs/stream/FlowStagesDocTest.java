@@ -38,8 +38,8 @@ public class FlowStagesDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
-
+  final Materializer mat = ActorMaterializer.create(system);
+  
   static //#one-to-one
   public class Map<A, B> extends PushPullStage<A, B> {
     private final Function<A, B> f;
@@ -152,7 +152,7 @@ public class FlowStagesDocTest {
         Flow.of(Integer.class).grouped(10).toMat(Sink.head(), Keep.right());
 
     //#stage-chain
-    final RunnableFlow<Future<List<Integer>>> runnable =
+    final RunnableGraph<Future<List<Integer>>> runnable =
       Source
         .from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
         .transform(() -> new Filter<Integer>(elem -> elem % 2 == 0))

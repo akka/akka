@@ -6,7 +6,7 @@ package akka.http.javadsl
 
 import java.net.InetSocketAddress
 import scala.concurrent.Future
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.javadsl.Flow
 import akka.http.javadsl.model._
 import akka.http.scaladsl.{ model ⇒ sm }
@@ -36,20 +36,20 @@ class IncomingConnection private[http] (delegate: akka.http.scaladsl.Http.Incomi
    * Handles the connection with the given flow, which is materialized exactly once
    * and the respective materialization result returned.
    */
-  def handleWith[Mat](handler: Flow[HttpRequest, HttpResponse, Mat], materializer: FlowMaterializer): Mat =
+  def handleWith[Mat](handler: Flow[HttpRequest, HttpResponse, Mat], materializer: Materializer): Mat =
     delegate.handleWith(handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, Mat]].asScala)(materializer)
 
   /**
    * Handles the connection with the given handler function.
    * Returns the materialization result of the underlying flow materialization.
    */
-  def handleWithSyncHandler(handler: Function[HttpRequest, HttpResponse], materializer: FlowMaterializer): Unit =
+  def handleWithSyncHandler(handler: Function[HttpRequest, HttpResponse], materializer: Materializer): Unit =
     delegate.handleWithSyncHandler(handler.apply(_).asInstanceOf[sm.HttpResponse])(materializer)
 
   /**
    * Handles the connection with the given handler function.
    * Returns the materialization result of the underlying flow materialization.
    */
-  def handleWithAsyncHandler(handler: Function[HttpRequest, Future[HttpResponse]], materializer: FlowMaterializer): Unit =
+  def handleWithAsyncHandler(handler: Function[HttpRequest, Future[HttpResponse]], materializer: Materializer): Unit =
     delegate.handleWithAsyncHandler(handler.apply(_).asInstanceOf[Future[sm.HttpResponse]])(materializer)
 }

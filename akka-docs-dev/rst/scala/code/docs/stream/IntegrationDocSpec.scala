@@ -6,7 +6,7 @@ package docs.stream
 import scala.concurrent.duration._
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import scala.concurrent.Future
 import akka.testkit.TestProbe
 import akka.actor.ActorRef
@@ -15,10 +15,10 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.stream.OperationAttributes
-import akka.stream.ActorOperationAttributes
+import akka.stream.Attributes
+import akka.stream.ActorAttributes
 import scala.concurrent.ExecutionContext
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
 import akka.stream.Supervision
 import akka.stream.scaladsl.Flow
@@ -124,7 +124,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "calling external service with mapAsync" in {
     val probe = TestProbe()
@@ -146,7 +146,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#email-addresses-mapAsync
 
     //#send-emails
-    val sendEmails: RunnableFlow[Unit] =
+    val sendEmails: RunnableGraph[Unit] =
       emailAddresses
         .mapAsync(4)(address => {
           emailServer.send(
@@ -172,7 +172,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
     //#email-addresses-mapAsync-supervision
-    import ActorOperationAttributes.supervisionStrategy
+    import ActorAttributes.supervisionStrategy
     import Supervision.resumingDecider
 
     val emailAddresses: Source[String, Unit] =
@@ -196,7 +196,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
         .mapAsyncUnordered(4)(author => addressSystem.lookupEmail(author.handle))
         .collect { case Some(emailAddress) => emailAddress }
 
-    val sendEmails: RunnableFlow[Unit] =
+    val sendEmails: RunnableGraph[Unit] =
       emailAddresses
         .mapAsyncUnordered(4)(address => {
           emailServer.send(
@@ -231,7 +231,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#blocking-mapAsync
     val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
 
-    val sendTextMessages: RunnableFlow[Unit] =
+    val sendTextMessages: RunnableGraph[Unit] =
       phoneNumbers
         .mapAsync(4)(phoneNo => {
           Future {
@@ -270,8 +270,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       .map { phoneNo =>
         smsServer.send(TextMessage(to = phoneNo, body = "I like your tweet"))
       }
-      .withAttributes(ActorOperationAttributes.dispatcher("blocking-dispatcher"))
-    val sendTextMessages: RunnableFlow[Unit] =
+      .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"))
+    val sendTextMessages: RunnableGraph[Unit] =
       phoneNumbers.via(send).to(Sink.ignore)
 
     sendTextMessages.run()
@@ -294,7 +294,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val akkaTweets: Source[Tweet, Unit] = tweets.filter(_.hashtags.contains(akka))
 
     implicit val timeout = Timeout(3.seconds)
-    val saveTweets: RunnableFlow[Unit] =
+    val saveTweets: RunnableGraph[Unit] =
       akkaTweets
         .mapAsync(4)(tweet => database ? Save(tweet))
         .to(Sink.ignore)
@@ -322,8 +322,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = ActorFlowMaterializer(
-      ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
+    implicit val mat = ActorMaterializer(
+      ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })
@@ -354,8 +354,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = ActorFlowMaterializer(
-      ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
+    implicit val mat = ActorMaterializer(
+      ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })

@@ -5,11 +5,7 @@
 package docs.actor;
 
 import akka.actor.*;
-import akka.event.LoggingAdapter;
-import akka.event.Logging;
 import akka.japi.pf.ReceiveBuilder;
-import akka.stream.scaladsl.FlexiMerge;
-import akka.stream.OperationAttributes;
 import akka.testkit.ErrorFilter;
 import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;

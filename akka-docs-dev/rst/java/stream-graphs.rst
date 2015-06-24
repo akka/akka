@@ -60,7 +60,7 @@ or ending a :class:`Flow`.
 
 By looking at the snippets above, it should be apparent that the ``builder`` object is *mutable*.
 The reason for this design choice is to enable simpler creation of complex graphs, which may even contain cycles.
-Once the FlowGraph has been constructed though, the :class:`RunnableFlow` instance *is immutable, thread-safe, and freely shareable*.
+Once the FlowGraph has been constructed though, the :class:`RunnableGraph` instance *is immutable, thread-safe, and freely shareable*.
 The same is true of all flow pieces—sources, sinks, and flows—once they are constructed.
 This means that you can safely re-use one given Flow in multiple places in a processing graph.
 
@@ -88,8 +88,8 @@ all of its different phases in different places and in the end connect them all 
 
 This can be achieved using ``FlowGraph.factory().partial()`` instead of
 ``FlowGraph.factory().closed()``, which will return a ``Graph`` instead of a
-``RunnableFlow``.  The reason of representing it as a different type is that a
-:class:`RunnableFlow` requires all ports to be connected, and if they are not
+``RunnableGraph``.  The reason of representing it as a different type is that a
+:class:`RunnableGraph` requires all ports to be connected, and if they are not
 it will throw an exception at construction time, which helps to avoid simple
 wiring errors while working with graphs. A partial flow graph however allows
 you to return the set of yet to be connected ports from the code block that

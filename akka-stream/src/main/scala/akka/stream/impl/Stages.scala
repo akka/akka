@@ -6,8 +6,8 @@ package akka.stream.impl
 import akka.event.{ LoggingAdapter, Logging }
 import akka.stream.impl.SplitDecision.SplitDecision
 import akka.stream.{ OverflowStrategy, TimerTransformer }
-import akka.stream.OperationAttributes
-import akka.stream.OperationAttributes._
+import akka.stream.Attributes
+import akka.stream.Attributes._
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
 import StreamLayout._
@@ -91,32 +91,32 @@ private[stream] object Stages {
 
   sealed trait StageModule extends FlowModule[Any, Any, Any] {
 
-    def attributes: OperationAttributes
-    def withAttributes(attributes: OperationAttributes): StageModule
+    def attributes: Attributes
+    def withAttributes(attributes: Attributes): StageModule
 
     protected def newInstance: StageModule
     override def carbonCopy: Module = newInstance
   }
 
-  final case class TimerTransform(mkStage: () ⇒ TimerTransformer[Any, Any], attributes: OperationAttributes = timerTransform) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class TimerTransform(mkStage: () ⇒ TimerTransformer[Any, Any], attributes: Attributes = timerTransform) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class StageFactory(mkStage: () ⇒ Stage[_, _], attributes: OperationAttributes = stageFactory) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class StageFactory(mkStage: () ⇒ Stage[_, _], attributes: Attributes = stageFactory) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
   final case class MaterializingStageFactory(
     mkStageAndMaterialized: () ⇒ (Stage[_, _], Any),
-    attributes: OperationAttributes = stageFactory) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+    attributes: Attributes = stageFactory) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Identity(attributes: OperationAttributes = OperationAttributes.name("identity")) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Identity(attributes: Attributes = Attributes.name("identity")) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
@@ -125,114 +125,114 @@ private[stream] object Stages {
       Fused(ops, name(ops.iterator.map(x ⇒ Logging.simpleName(x).toLowerCase).mkString("+")))
   }
 
-  final case class Fused(ops: immutable.Seq[Stage[_, _]], attributes: OperationAttributes = fused) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Fused(ops: immutable.Seq[Stage[_, _]], attributes: Attributes = fused) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Map(f: Any ⇒ Any, attributes: OperationAttributes = map) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Map(f: Any ⇒ Any, attributes: Attributes = map) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Log(name: String, extract: Any ⇒ Any, loggingAdapter: Option[LoggingAdapter], attributes: OperationAttributes = map) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Log(name: String, extract: Any ⇒ Any, loggingAdapter: Option[LoggingAdapter], attributes: Attributes = map) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Filter(p: Any ⇒ Boolean, attributes: OperationAttributes = filter) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Filter(p: Any ⇒ Boolean, attributes: Attributes = filter) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Collect(pf: PartialFunction[Any, Any], attributes: OperationAttributes = collect) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Collect(pf: PartialFunction[Any, Any], attributes: Attributes = collect) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class MapAsync(parallelism: Int, f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsync) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class MapAsync(parallelism: Int, f: Any ⇒ Future[Any], attributes: Attributes = mapAsync) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class MapAsyncUnordered(parallelism: Int, f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsyncUnordered) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class MapAsyncUnordered(parallelism: Int, f: Any ⇒ Future[Any], attributes: Attributes = mapAsyncUnordered) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Grouped(n: Int, attributes: OperationAttributes = grouped) extends StageModule {
+  final case class Grouped(n: Int, attributes: Attributes = grouped) extends StageModule {
     require(n > 0, "n must be greater than 0")
 
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Take(n: Long, attributes: OperationAttributes = take) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Take(n: Long, attributes: Attributes = take) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Drop(n: Long, attributes: OperationAttributes = drop) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Drop(n: Long, attributes: Attributes = drop) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class TakeWhile(p: Any ⇒ Boolean, attributes: OperationAttributes = takeWhile) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class TakeWhile(p: Any ⇒ Boolean, attributes: Attributes = takeWhile) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class DropWhile(p: Any ⇒ Boolean, attributes: OperationAttributes = dropWhile) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class DropWhile(p: Any ⇒ Boolean, attributes: Attributes = dropWhile) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Scan(zero: Any, f: (Any, Any) ⇒ Any, attributes: OperationAttributes = scan) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Scan(zero: Any, f: (Any, Any) ⇒ Any, attributes: Attributes = scan) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Buffer(size: Int, overflowStrategy: OverflowStrategy, attributes: OperationAttributes = buffer) extends StageModule {
+  final case class Buffer(size: Int, overflowStrategy: OverflowStrategy, attributes: Attributes = buffer) extends StageModule {
     require(size > 0, s"Buffer size must be larger than zero but was [$size]")
 
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
-  final case class Conflate(seed: Any ⇒ Any, aggregate: (Any, Any) ⇒ Any, attributes: OperationAttributes = conflate) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Conflate(seed: Any ⇒ Any, aggregate: (Any, Any) ⇒ Any, attributes: Attributes = conflate) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
-  final case class Expand(seed: Any ⇒ Any, extrapolate: Any ⇒ (Any, Any), attributes: OperationAttributes = expand) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Expand(seed: Any ⇒ Any, extrapolate: Any ⇒ (Any, Any), attributes: Attributes = expand) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
-  final case class MapConcat(f: Any ⇒ immutable.Iterable[Any], attributes: OperationAttributes = mapConcat) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
-    override protected def newInstance: StageModule = this.copy()
-  }
-
-  final case class GroupBy(f: Any ⇒ Any, attributes: OperationAttributes = groupBy) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class MapConcat(f: Any ⇒ immutable.Iterable[Any], attributes: Attributes = mapConcat) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class PrefixAndTail(n: Int, attributes: OperationAttributes = prefixAndTail) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class GroupBy(f: Any ⇒ Any, attributes: Attributes = groupBy) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class Split(p: Any ⇒ SplitDecision, attributes: OperationAttributes = split) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class PrefixAndTail(n: Int, attributes: Attributes = prefixAndTail) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class ConcatAll(attributes: OperationAttributes = concatAll) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class Split(p: Any ⇒ SplitDecision, attributes: Attributes = split) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  final case class DirectProcessor(p: () ⇒ (Processor[Any, Any], Any), attributes: OperationAttributes = processor) extends StageModule {
-    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
+  final case class ConcatAll(attributes: Attributes = concatAll) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+    override protected def newInstance: StageModule = this.copy()
+  }
+
+  final case class DirectProcessor(p: () ⇒ (Processor[Any, Any], Any), attributes: Attributes = processor) extends StageModule {
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 

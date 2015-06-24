@@ -26,16 +26,16 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
 /**
  * INTERNAL API
  */
-private[akka] case class ActorFlowMaterializerImpl(
+private[akka] case class ActorMaterializerImpl(
   val system: ActorSystem,
-  override val settings: ActorFlowMaterializerSettings,
+  override val settings: ActorMaterializerSettings,
   dispatchers: Dispatchers,
   val supervisor: ActorRef,
   flowNameCounter: AtomicLong,
   namePrefix: String,
   optimizations: Optimizations)
-  extends ActorFlowMaterializer {
-  import ActorFlowMaterializerImpl._
+  extends ActorMaterializer {
+  import ActorMaterializerImpl._
   import akka.stream.impl.Stages._
 
   private val haveShutDown = new AtomicBoolean(false)
@@ -45,16 +45,16 @@ private[akka] case class ActorFlowMaterializerImpl(
 
   override def isShutdown: Boolean = haveShutDown.get()
 
-  override def withNamePrefix(name: String): FlowMaterializer = this.copy(namePrefix = name)
+  override def withNamePrefix(name: String): Materializer = this.copy(namePrefix = name)
 
   private[this] def nextFlowNameCount(): Long = flowNameCounter.incrementAndGet()
 
   private[this] def createFlowName(): String = s"$namePrefix-${nextFlowNameCount()}"
 
-  override def effectiveSettings(opAttr: OperationAttributes): ActorFlowMaterializerSettings = {
-    import OperationAttributes._
-    import ActorOperationAttributes._
-    opAttr.attributes.foldLeft(settings) { (s, attr) ⇒
+  override def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings = {
+    import Attributes._
+    import ActorAttributes._
+    opAttr.attributeList.foldLeft(settings) { (s, attr) ⇒
       attr match {
         case InputBuffer(initial, max)    ⇒ s.withInputBuffer(initial, max)
         case Dispatcher(dispatcher)       ⇒ s.withDispatcher(dispatcher)
@@ -65,23 +65,23 @@ private[akka] case class ActorFlowMaterializerImpl(
     }
   }
 
-  override def materialize[Mat](runnableFlow: Graph[ClosedShape, Mat]): Mat = {
+  override def materialize[Mat](runnableGraph: Graph[ClosedShape, Mat]): Mat = {
     if (haveShutDown.get())
       throw new IllegalStateException("Attempted to call materialize() after the ActorMaterializer has been shut down.")
-    if (StreamLayout.Debug) runnableFlow.module.validate()
+    if (StreamLayout.Debug) runnableGraph.module.validate()
 
-    val session = new MaterializerSession(runnableFlow.module) {
+    val session = new MaterializerSession(runnableGraph.module) {
       private val flowName = createFlowName()
       private var nextId = 0
-      private def stageName(attr: OperationAttributes): String = {
+      private def stageName(attr: Attributes): String = {
         val name = s"$flowName-$nextId-${attr.nameOrDefault()}"
         nextId += 1
         name
       }
 
-      override protected def materializeAtomic(atomic: Module, effectiveAttributes: OperationAttributes): Any = {
+      override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes): Any = {
 
-        def newMaterializationContext() = new MaterializationContext(ActorFlowMaterializerImpl.this,
+        def newMaterializationContext() = new MaterializationContext(ActorMaterializerImpl.this,
           effectiveAttributes, stageName(effectiveAttributes))
         atomic match {
           case sink: SinkModule[_, _] ⇒
@@ -120,12 +120,12 @@ private[akka] case class ActorFlowMaterializerImpl(
       }
 
       private def processorFor(op: StageModule,
-                               effectiveAttributes: OperationAttributes,
-                               effectiveSettings: ActorFlowMaterializerSettings): (Processor[Any, Any], Any) = op match {
+                               effectiveAttributes: Attributes,
+                               effectiveSettings: ActorMaterializerSettings): (Processor[Any, Any], Any) = op match {
         case DirectProcessor(processorFactory, _) ⇒ processorFactory()
         case Identity(attr)                       ⇒ (new VirtualProcessor, ())
         case _ ⇒
-          val (opprops, mat) = ActorProcessorFactory.props(ActorFlowMaterializerImpl.this, op, effectiveAttributes)
+          val (opprops, mat) = ActorProcessorFactory.props(ActorMaterializerImpl.this, op, effectiveAttributes)
           val processor = ActorProcessorFactory[Any, Any](actorOf(
             opprops,
             stageName(effectiveAttributes),
@@ -134,8 +134,8 @@ private[akka] case class ActorFlowMaterializerImpl(
       }
 
       private def materializeJunction(op: JunctionModule,
-                                      effectiveAttributes: OperationAttributes,
-                                      effectiveSettings: ActorFlowMaterializerSettings): Unit = {
+                                      effectiveAttributes: Attributes,
+                                      effectiveSettings: ActorMaterializerSettings): Unit = {
         op match {
           case fanin: FanInModule ⇒
             val (props, inputs, output) = fanin match {
@@ -255,7 +255,7 @@ private[akka] class FlowNameCounter extends Extension {
  * INTERNAL API
  */
 private[akka] object StreamSupervisor {
-  def props(settings: ActorFlowMaterializerSettings): Props = Props(new StreamSupervisor(settings)).withDeploy(Deploy.local)
+  def props(settings: ActorMaterializerSettings): Props = Props(new StreamSupervisor(settings)).withDeploy(Deploy.local)
 
   final case class Materialize(props: Props, name: String) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
@@ -269,7 +269,7 @@ private[akka] object StreamSupervisor {
   final case object StoppedChildren
 }
 
-private[akka] class StreamSupervisor(settings: ActorFlowMaterializerSettings) extends Actor {
+private[akka] class StreamSupervisor(settings: ActorMaterializerSettings) extends Actor {
   import akka.stream.impl.StreamSupervisor._
 
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
@@ -290,11 +290,11 @@ private[akka] class StreamSupervisor(settings: ActorFlowMaterializerSettings) ex
  */
 private[akka] object ActorProcessorFactory {
   import akka.stream.impl.Stages._
-  import ActorFlowMaterializerImpl._
+  import ActorMaterializerImpl._
 
   private val _identity = (x: Any) ⇒ x
 
-  def props(materializer: ActorFlowMaterializer, op: StageModule, parentAttributes: OperationAttributes): (Props, Any) = {
+  def props(materializer: ActorMaterializer, op: StageModule, parentAttributes: Attributes): (Props, Any) = {
     val att = parentAttributes and op.attributes
     // USE THIS TO AVOID CLOSING OVER THE MATERIALIZER BELOW
     // Also, otherwise the attributes will not affect the settings properly!

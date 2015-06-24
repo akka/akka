@@ -5,19 +5,19 @@ package akka.stream.scaladsl
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import scala.util.control.NoStackTrace
 import scala.concurrent.Await
 import akka.stream.Supervision
 import akka.stream.impl.ReactiveStreamsCompliance
-import akka.stream.ActorOperationAttributes
+import akka.stream.ActorAttributes
 
 class FlowSupervisionSpec extends AkkaSpec {
-  import ActorOperationAttributes.supervisionStrategy
+  import ActorAttributes.supervisionStrategy
 
-  implicit val materializer = ActorFlowMaterializer()(system)
+  implicit val materializer = ActorMaterializer()(system)
 
   val exc = new RuntimeException("simulated exc") with NoStackTrace
 

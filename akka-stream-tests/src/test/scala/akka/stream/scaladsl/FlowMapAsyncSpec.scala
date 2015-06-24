@@ -8,13 +8,13 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NoStackTrace
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
-import akka.stream.ActorOperationAttributes.supervisionStrategy
+import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
 import scala.util.Try
@@ -62,7 +62,7 @@ object FlowMapAsyncSpec {
 class FlowMapAsyncSpec extends AkkaSpec {
   import FlowMapAsyncSpec._
 
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A Flow with mapAsync" must {
 

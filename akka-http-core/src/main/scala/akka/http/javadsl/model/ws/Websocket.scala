@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.model.ws
 
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.stream.javadsl.Flow
 import akka.http.javadsl.model._
 import akka.http.impl.util.JavaMapping.Implicits._

@@ -12,7 +12,7 @@ import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
 import scala.reflect.{ classTag, ClassTag }
 import akka.parboiled2.CharUtils
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.util.ByteString
 import akka.http.impl.model.JavaUri
 import akka.http.impl.util._
@@ -60,7 +60,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withEntity(entity: MessageEntity): Self
 
   /** Returns a sharable and serializable copy of this message with a strict entity. */
-  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Self] =
+  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: Materializer): Future[Self] =
     entity.toStrict(timeout).fast.map(this.withEntity)
 
   /** Returns a copy of this message with the entity and headers set to the given ones. */

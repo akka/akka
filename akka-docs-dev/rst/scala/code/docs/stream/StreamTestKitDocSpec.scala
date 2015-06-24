@@ -16,7 +16,7 @@ import akka.pattern
 
 class StreamTestKitDocSpec extends AkkaSpec {
 
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "strict collection" in {
     //#strict-collection

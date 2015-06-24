@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import scala.util.control.NonFatal
 import akka.actor.{ Deploy, Props }
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializerSettings
 import akka.stream.Supervision
 import akka.stream.scaladsl.Source
 
@@ -13,7 +13,7 @@ import akka.stream.scaladsl.Source
  * INTERNAL API
  */
 private[akka] object GroupByProcessorImpl {
-  def props(settings: ActorFlowMaterializerSettings, keyFor: Any ⇒ Any): Props =
+  def props(settings: ActorMaterializerSettings, keyFor: Any ⇒ Any): Props =
     Props(new GroupByProcessorImpl(settings, keyFor)).withDeploy(Deploy.local)
 
   private case object Drop
@@ -22,7 +22,7 @@ private[akka] object GroupByProcessorImpl {
 /**
  * INTERNAL API
  */
-private[akka] class GroupByProcessorImpl(settings: ActorFlowMaterializerSettings, val keyFor: Any ⇒ Any)
+private[akka] class GroupByProcessorImpl(settings: ActorMaterializerSettings, val keyFor: Any ⇒ Any)
   extends MultiStreamOutputProcessor(settings) {
 
   import MultiStreamOutputProcessor._

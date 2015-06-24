@@ -5,17 +5,15 @@
 package akka.stream;
 
 import akka.actor.ActorSystem;
-import akka.event.Logging;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
-import akka.stream.OperationAttributes;
 
 public abstract class StreamTest {
     final protected ActorSystem system;
-    final protected ActorFlowMaterializer materializer;
+    final protected ActorMaterializer materializer;
 
     protected StreamTest(AkkaJUnitActorSystemResource actorSystemResource) {
         system = actorSystemResource.getSystem();
-        ActorFlowMaterializerSettings settings = ActorFlowMaterializerSettings.create(system);
-        materializer = ActorFlowMaterializer.create(settings, system);
+        ActorMaterializerSettings settings = ActorMaterializerSettings.create(system);
+        materializer = ActorMaterializer.create(settings, system);
     }
 }

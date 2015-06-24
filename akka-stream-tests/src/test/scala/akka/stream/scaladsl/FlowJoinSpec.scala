@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
@@ -11,10 +11,10 @@ import scala.concurrent.duration._
 
 class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INFO")) {
 
-  val settings = ActorFlowMaterializerSettings(system)
+  val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val mat = ActorFlowMaterializer(settings)
+  implicit val mat = ActorMaterializer(settings)
 
   "A Flow using join" must {
     "allow for cycles" in {

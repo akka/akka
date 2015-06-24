@@ -53,7 +53,7 @@ private object PoolSlot {
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
             remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
-            settings: ConnectionPoolSettings)(implicit system: ActorSystem, fm: FlowMaterializer): Graph[Ports, Any] =
+            settings: ConnectionPoolSettings)(implicit system: ActorSystem, fm: Materializer): Graph[Ports, Any] =
     FlowGraph.partial() { implicit b ⇒
       import FlowGraph.Implicits._
 
@@ -84,12 +84,12 @@ private object PoolSlot {
    * shutting down completely).
    */
   private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
-                              settings: ConnectionPoolSettings)(implicit fm: FlowMaterializer)
+                              settings: ConnectionPoolSettings)(implicit fm: Materializer)
     extends ActorSubscriber with ActorPublisher[List[ProcessorOut]] with ActorLogging {
 
     var exposedPublisher: akka.stream.impl.ActorPublisher[Any] = _
     var inflightRequests = immutable.Queue.empty[RequestContext]
-    val runnableFlow = Source.actorPublisher[HttpRequest](Props(new FlowInportActor(self)).withDeploy(Deploy.local))
+    val runnableGraph = Source.actorPublisher[HttpRequest](Props(new FlowInportActor(self)).withDeploy(Deploy.local))
       .via(connectionFlow)
       .toMat(Sink.actorSubscriber[HttpResponse](Props(new FlowOutportActor(self)).withDeploy(Deploy.local)))(Keep.both)
 
@@ -111,7 +111,7 @@ private object PoolSlot {
 
     val unconnected: Receive = {
       case OnNext(rc: RequestContext) ⇒
-        val (connInport, connOutport) = runnableFlow.run()
+        val (connInport, connOutport) = runnableGraph.run()
         connOutport ! Request(totalDemand)
         context.become(waitingForDemandFromConnection(connInport, connOutport, rc))
 
@@ -228,7 +228,7 @@ private object PoolSlot {
 
   // FIXME: remove when #17038 is cleared
   private class SlotEventSplit extends FlexiRoute[ProcessorOut, FanOutShape2[ProcessorOut, ResponseContext, RawSlotEvent]](
-    new FanOutShape2("PoolSlot.SlotEventSplit"), OperationAttributes.name("PoolSlot.SlotEventSplit")) {
+    new FanOutShape2("PoolSlot.SlotEventSplit"), Attributes.name("PoolSlot.SlotEventSplit")) {
     import FlexiRoute._
 
     def createRouteLogic(s: FanOutShape2[ProcessorOut, ResponseContext, RawSlotEvent]): RouteLogic[ProcessorOut] =

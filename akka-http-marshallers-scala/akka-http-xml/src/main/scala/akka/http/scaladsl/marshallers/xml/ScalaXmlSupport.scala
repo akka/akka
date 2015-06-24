@@ -8,7 +8,7 @@ import java.io.{ ByteArrayInputStream, InputStreamReader }
 import javax.xml.parsers.{ SAXParserFactory, SAXParser }
 import scala.collection.immutable
 import scala.xml.{ XML, NodeSeq }
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model._
@@ -21,10 +21,10 @@ trait ScalaXmlSupport {
   def nodeSeqMarshaller(contentType: ContentType): ToEntityMarshaller[NodeSeq] =
     Marshaller.StringMarshaller.wrap(contentType)(_.toString())
 
-  implicit def defaultNodeSeqUnmarshaller(implicit fm: FlowMaterializer): FromEntityUnmarshaller[NodeSeq] =
+  implicit def defaultNodeSeqUnmarshaller(implicit fm: Materializer): FromEntityUnmarshaller[NodeSeq] =
     nodeSeqUnmarshaller(ScalaXmlSupport.nodeSeqContentTypeRanges: _*)
 
-  def nodeSeqUnmarshaller(ranges: ContentTypeRange*)(implicit fm: FlowMaterializer): FromEntityUnmarshaller[NodeSeq] =
+  def nodeSeqUnmarshaller(ranges: ContentTypeRange*)(implicit fm: Materializer): FromEntityUnmarshaller[NodeSeq] =
     Unmarshaller.byteArrayUnmarshaller.forContentTypes(ranges: _*).mapWithCharset { (bytes, charset) ⇒
       if (bytes.length > 0) {
         val reader = new InputStreamReader(new ByteArrayInputStream(bytes), charset.nioCharset)

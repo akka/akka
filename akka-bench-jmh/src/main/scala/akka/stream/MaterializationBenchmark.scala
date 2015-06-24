@@ -76,12 +76,12 @@ class MaterializationBenchmark {
   import MaterializationBenchmark._
 
   implicit val system = ActorSystem("MaterializationBenchmark")
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
-  var flowWithMap: RunnableFlow[Unit] = _
-  var graphWithJunctions: RunnableFlow[Unit] = _
-  var graphWithNestedImports: RunnableFlow[Unit] = _
-  var graphWithImportedFlow: RunnableFlow[Unit] = _
+  var flowWithMap: RunnableGraph[Unit] = _
+  var graphWithJunctions: RunnableGraph[Unit] = _
+  var graphWithNestedImports: RunnableGraph[Unit] = _
+  var graphWithImportedFlow: RunnableGraph[Unit] = _
 
   @Param(Array("1", "10", "100", "1000"))
   val complexity = 0

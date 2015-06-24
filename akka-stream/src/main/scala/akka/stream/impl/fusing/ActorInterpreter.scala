@@ -6,7 +6,7 @@ package akka.stream.impl.fusing
 import java.util.Arrays
 import akka.actor._
 import akka.stream.impl.ReactiveStreamsCompliance._
-import akka.stream.{ AbruptTerminationException, ActorFlowMaterializerSettings, OperationAttributes, ActorFlowMaterializer }
+import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, Attributes, ActorMaterializer }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnError, OnComplete }
 import akka.stream.impl._
@@ -321,7 +321,7 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef,
  * INTERNAL API
  */
 private[akka] object ActorInterpreter {
-  def props(settings: ActorFlowMaterializerSettings, ops: Seq[Stage[_, _]], materializer: ActorFlowMaterializer, attributes: OperationAttributes = OperationAttributes.none): Props =
+  def props(settings: ActorMaterializerSettings, ops: Seq[Stage[_, _]], materializer: ActorMaterializer, attributes: Attributes = Attributes.none): Props =
     Props(new ActorInterpreter(settings, ops, materializer, attributes)).withDeploy(Deploy.local)
 
   case class AsyncInput(op: AsyncStage[Any, Any, Any], ctx: AsyncContext[Any, Any], event: Any) extends DeadLetterSuppression with NoSerializationVerificationNeeded
@@ -330,7 +330,7 @@ private[akka] object ActorInterpreter {
 /**
  * INTERNAL API
  */
-private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings, val ops: Seq[Stage[_, _]], val materializer: ActorFlowMaterializer, val attributes: OperationAttributes)
+private[akka] class ActorInterpreter(val settings: ActorMaterializerSettings, val ops: Seq[Stage[_, _]], val materializer: ActorMaterializer, val attributes: Attributes)
   extends Actor with ActorLogging {
   import ActorInterpreter._
 

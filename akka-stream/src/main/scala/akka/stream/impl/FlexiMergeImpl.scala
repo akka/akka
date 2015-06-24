@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import akka.stream.scaladsl.FlexiMerge.{ Read, ReadAll, ReadAny, ReadPreferred }
 import akka.stream.{ Shape, InPort }
-import akka.stream.{ ActorFlowMaterializerSettings, scaladsl }
+import akka.stream.{ ActorMaterializerSettings, scaladsl }
 
 import scala.collection.breakOut
 import scala.collection.immutable
@@ -15,7 +15,7 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[akka] class FlexiMergeImpl[T, S <: Shape](
-  _settings: ActorFlowMaterializerSettings,
+  _settings: ActorMaterializerSettings,
   shape: S,
   val mergeLogic: scaladsl.FlexiMerge.MergeLogic[T]) extends FanIn(_settings, shape.inlets.size) {
 

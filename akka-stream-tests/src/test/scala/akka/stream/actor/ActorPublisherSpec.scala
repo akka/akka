@@ -4,7 +4,7 @@
 package akka.stream.actor
 
 import akka.actor.{ ActorRef, PoisonPill, Props }
-import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, ActorOperationAttributes }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ActorAttributes }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -312,7 +312,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     }
 
     "work together with Flow and ActorSubscriber" in {
-      implicit val materializer = ActorFlowMaterializer()
+      implicit val materializer = ActorMaterializer()
       assertAllStagesStopped {
         val probe = TestProbe()
 
@@ -340,7 +340,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     }
 
     "work in a FlowGraph" in {
-      implicit val materializer = ActorFlowMaterializer()
+      implicit val materializer = ActorMaterializer()
       val probe1 = TestProbe()
       val probe2 = TestProbe()
 
@@ -378,7 +378,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     }
 
     "be able to define a subscription-timeout, after which it should shut down" in {
-      implicit val materializer = ActorFlowMaterializer()
+      implicit val materializer = ActorMaterializer()
       Utils.assertAllStagesStopped {
         val timeout = 150.millis
         val a = system.actorOf(timeoutingProps(testActor, timeout))
@@ -400,7 +400,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     }
 
     "be able to define a subscription-timeout, which is cancelled by the first incoming Subscriber" in {
-      implicit val materializer = ActorFlowMaterializer()
+      implicit val materializer = ActorMaterializer()
       val timeout = 500.millis
       val sub = TestSubscriber.manualProbe[Int]()
 
@@ -416,8 +416,8 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     }
 
     "use dispatcher from materializer settings" in {
-      implicit val materializer = ActorFlowMaterializer(
-        ActorFlowMaterializerSettings(system).withDispatcher("my-dispatcher1"))
+      implicit val materializer = ActorMaterializer(
+        ActorMaterializerSettings(system).withDispatcher("my-dispatcher1"))
       val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false)).to(Sink(s)).run()
       ref ! ThreadName
@@ -425,20 +425,20 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
     }
 
     "use dispatcher from operation attributes" in {
-      implicit val materializer = ActorFlowMaterializer()
+      implicit val materializer = ActorMaterializer()
       val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false))
-        .withAttributes(ActorOperationAttributes.dispatcher("my-dispatcher1"))
+        .withAttributes(ActorAttributes.dispatcher("my-dispatcher1"))
         .to(Sink(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
     }
 
     "use dispatcher from props" in {
-      implicit val materializer = ActorFlowMaterializer()
+      implicit val materializer = ActorMaterializer()
       val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false).withDispatcher("my-dispatcher1"))
-        .withAttributes(ActorOperationAttributes.dispatcher("my-dispatcher2"))
+        .withAttributes(ActorAttributes.dispatcher("my-dispatcher2"))
         .to(Sink(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")

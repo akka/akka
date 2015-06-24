@@ -31,7 +31,7 @@ public class FlowParallelismDocTest {
     system = null;
   }
 
-  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
+  final Materializer mat = ActorMaterializer.create(system);
 
   static class ScoopOfBatter {}
   static class HalfCookedPancake {}

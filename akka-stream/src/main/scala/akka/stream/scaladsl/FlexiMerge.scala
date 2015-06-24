@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.scaladsl.FlexiMerge.MergeLogic
-import akka.stream.{ Inlet, Shape, InPort, Graph, OperationAttributes }
+import akka.stream.{ Inlet, Shape, InPort, Graph, Attributes }
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import akka.stream.impl.StreamLayout
@@ -235,7 +235,7 @@ object FlexiMerge {
  * @param ports ports that this junction exposes
  * @param attributes optional attributes for this junction
  */
-abstract class FlexiMerge[Out, S <: Shape](val shape: S, attributes: OperationAttributes) extends Graph[S, Unit] {
+abstract class FlexiMerge[Out, S <: Shape](val shape: S, attributes: Attributes) extends Graph[S, Unit] {
   /**
    * INTERNAL API
    */
@@ -251,9 +251,9 @@ abstract class FlexiMerge[Out, S <: Shape](val shape: S, attributes: OperationAt
     case None    ⇒ super.toString
   }
 
-  override def withAttributes(attr: OperationAttributes): Graph[S, Unit] =
+  override def withAttributes(attr: Attributes): Graph[S, Unit] =
     throw new UnsupportedOperationException(
       "withAttributes not supported by default by FlexiMerge, subclass may override and implement it")
 
-  override def named(name: String): Graph[S, Unit] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Graph[S, Unit] = withAttributes(Attributes.name(name))
 }

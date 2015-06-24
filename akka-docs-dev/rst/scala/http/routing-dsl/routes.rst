@@ -37,7 +37,7 @@ RequestContext
 --------------
 
 The request context wraps an ``HttpRequest`` instance to enrich it with additional information that are typically
-required by the routing logic, like an ``ExecutionContext``, ``FlowMaterializer``, ``LoggingAdapter`` and the configured
+required by the routing logic, like an ``ExecutionContext``, ``Materializer``, ``LoggingAdapter`` and the configured
 ``RoutingSettings``. It also contains the ``unmatchedPath``, a value that describes how much of the request URI has not
 yet been matched by a :ref:`Path Directive <PathDirectives>`.
 
