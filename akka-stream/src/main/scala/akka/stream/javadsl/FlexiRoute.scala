@@ -290,7 +290,7 @@ object FlexiRoute {
  *
  * @param attributes optional attributes for this vertex
  */
-abstract class FlexiRoute[In, S <: Shape](val shape: S, val attributes: OperationAttributes) extends Graph[S, Unit] {
+abstract class FlexiRoute[In, S <: Shape](val shape: S, val attributes: Attributes) extends Graph[S, Unit] {
   import FlexiRoute._
 
   /**
@@ -311,10 +311,10 @@ abstract class FlexiRoute[In, S <: Shape](val shape: S, val attributes: Operatio
     case None    ⇒ super.toString
   }
 
-  override def withAttributes(attr: OperationAttributes): Graph[S, Unit] =
+  override def withAttributes(attr: Attributes): Graph[S, Unit] =
     throw new UnsupportedOperationException(
       "withAttributes not supported by default by FlexiRoute, subclass may override and implement it")
 
-  override def named(name: String): Graph[S, Unit] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Graph[S, Unit] = withAttributes(Attributes.name(name))
 
 }

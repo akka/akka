@@ -6,13 +6,13 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 
-import akka.stream.{ OverflowStrategy, ActorFlowMaterializer }
+import akka.stream.{ OverflowStrategy, ActorMaterializer }
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 import scala.concurrent.duration._
 
 class FlowFoldSpec extends AkkaSpec {
-  implicit val mat = ActorFlowMaterializer()
+  implicit val mat = ActorMaterializer()
 
   "A Fold" must {
 

@@ -7,7 +7,7 @@ package akka.http.scaladsl.coding
 import scala.concurrent.duration._
 import org.scalatest.{ Suite, BeforeAndAfterAll, Matchers }
 import akka.actor.ActorSystem
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import akka.util.ByteString
 
 trait CodecSpecSupport extends Matchers with BeforeAndAfterAll { self: Suite ⇒
@@ -68,7 +68,7 @@ voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita ka
 est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy e""".replace("\r\n", "\n")
 
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   override def afterAll() = {
     system.shutdown()

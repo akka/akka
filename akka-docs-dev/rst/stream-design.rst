@@ -102,7 +102,7 @@ It is commonly necessary to parameterize a flow so that it can be materialized f
 
 It might be tempting to allow different pieces of a flow topology to access the materialization results of other pieces in order to customize their behavior, but that would violate composability and reusability as argued above. Therefore the arguments and results of materialization need to be segregated:
 
-  * The FlowMaterializer is configured with a (type-safe) mapping from keys to values, which is exposed to the processing stages during their materialization.
+  * The Materializer is configured with a (type-safe) mapping from keys to values, which is exposed to the processing stages during their materialization.
   * The values in this mapping may act as channels, for example by using a Promise/Future pair to communicate a value; another possibility for such information-passing is of course to explicitly model it as a stream of configuration data elements within the graph itself.
   * The materialized values obtained from the processing stages are combined as prescribed by the user, but can of course be dependent on the values in the argument mapping.
 

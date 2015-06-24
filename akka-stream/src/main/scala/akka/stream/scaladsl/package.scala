@@ -21,8 +21,8 @@ package akka.stream
  * [[org.reactivestreams.Subscriber]]. A flow with an attached output and open input
  * is also a [[Sink]].
  *
- * If a flow has both an attached input and an attached output it becomes a [[RunnableFlow]].
- * In order to execute this pipeline the flow must be materialized by calling [[RunnableFlow#run]] on it.
+ * If a flow has both an attached input and an attached output it becomes a [[RunnableGraph]].
+ * In order to execute this pipeline the flow must be materialized by calling [[RunnableGraph#run]] on it.
  *
  * You can create your `Source`, `Flow` and `Sink` in any order and then wire them together before
  * they are materialized by connecting them using [[Flow#via]] and [[Flow#to]], or connecting them into a
@@ -43,12 +43,12 @@ package akka.stream
  *
  * By default every operation is executed within its own [[akka.actor.Actor]]
  * to enable full pipelining of the chained set of computations. This behavior
- * is determined by the [[akka.stream.FlowMaterializer]] which is required
+ * is determined by the [[akka.stream.Materializer]] which is required
  * by those methods that materialize the Flow into a series of
  * [[org.reactivestreams.Processor]] instances. The returned reactive stream
  * is fully started and active.
  *
- * Use [[ImplicitFlowMaterializer]] to define an implicit [[akka.stream.FlowMaterializer]]
+ * Use [[ImplicitMaterializer]] to define an implicit [[akka.stream.Materializer]]
  * inside an [[akka.actor.Actor]].
  */
 package object scaladsl {

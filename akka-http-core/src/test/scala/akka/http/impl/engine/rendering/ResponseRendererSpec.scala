@@ -16,7 +16,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.util.ByteString
 import akka.stream.scaladsl._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorMaterializer
 import HttpEntity._
 
 class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
@@ -27,7 +27,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   import system.dispatcher
 
   val ServerOnTheMove = StatusCodes.custom(330, "Server on the move")
-  implicit val materializer = ActorFlowMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "The response preparation logic should properly render" - {
     "a response with no body," - {

@@ -9,7 +9,7 @@ import akka.event.LoggingAdapter
 import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream._
-import akka.stream.OperationAttributes._
+import akka.stream.Attributes._
 import akka.util.Collections.EmptyImmutableSeq
 import org.reactivestreams.Processor
 import scala.annotation.implicitNotFound
@@ -134,7 +134,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     new Flow(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /**
-   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]].
+   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]].
    * {{{
    * +------+        +-------+
    * |      | ~Out~> |       |
@@ -146,10 +146,10 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * value of the current flow (ignoring the other Flow’s value), use
    * [[Flow#joinMat[Mat2* joinMat]] if a different strategy is needed.
    */
-  def join[Mat2](flow: Graph[FlowShape[Out, In], Mat2]): RunnableFlow[Mat] = joinMat(flow)(Keep.left)
+  def join[Mat2](flow: Graph[FlowShape[Out, In], Mat2]): RunnableGraph[Mat] = joinMat(flow)(Keep.left)
 
   /**
-   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
+   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]]
    * {{{
    * +------+        +-------+
    * |      | ~Out~> |       |
@@ -160,9 +160,9 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * The `combine` function is used to compose the materialized values of this flow and that
    * Flow into the materialized value of the resulting Flow.
    */
-  def joinMat[Mat2, Mat3](flow: Graph[FlowShape[Out, In], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableFlow[Mat3] = {
+  def joinMat[Mat2, Mat3](flow: Graph[FlowShape[Out, In], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableGraph[Mat3] = {
     val flowCopy = flow.module.carbonCopy
-    RunnableFlow(
+    RunnableGraph(
       module
         .grow(flowCopy, combine)
         .connect(shape.outlet, flowCopy.shape.inlets.head)
@@ -267,19 +267,19 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
-  override def withAttributes(attr: OperationAttributes): Repr[Out, Mat] = {
+  override def withAttributes(attr: Attributes): Repr[Out, Mat] = {
     if (this.module eq EmptyModule) this
     else new Flow(module.withAttributes(attr).wrap())
   }
 
-  override def named(name: String): Repr[Out, Mat] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Repr[Out, Mat] = withAttributes(Attributes.name(name))
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
    * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a of a [[Source#subscriber]] and
    * and `Publisher` of a [[Sink#publisher]].
    */
-  def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(implicit materializer: FlowMaterializer): (Mat1, Mat2) = {
+  def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(implicit materializer: Materializer): (Mat1, Mat2) = {
     Source.wrap(source).via(this).toMat(sink)(Keep.both).run()
   }
 
@@ -318,25 +318,25 @@ object Flow extends FlowApply {
 /**
  * Flow with attached input and output, can be executed.
  */
-case class RunnableFlow[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
+case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
   assert(module.isRunnable)
   def shape = ClosedShape
 
   /**
-   * Transform only the materialized value of this RunnableFlow, leaving all other properties as they were.
+   * Transform only the materialized value of this RunnableGraph, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): RunnableFlow[Mat2] =
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): RunnableGraph[Mat2] =
     copy(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /**
    * Run this flow and return the materialized instance from the flow.
    */
-  def run()(implicit materializer: FlowMaterializer): Mat = materializer.materialize(this)
+  def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
-  override def withAttributes(attr: OperationAttributes): RunnableFlow[Mat] =
-    new RunnableFlow(module.withAttributes(attr).wrap)
+  override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
+    new RunnableGraph(module.withAttributes(attr).wrap)
 
-  override def named(name: String): RunnableFlow[Mat] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): RunnableGraph[Mat] = withAttributes(Attributes.name(name))
 
 }
 
@@ -943,7 +943,7 @@ trait FlowOps[+Out, +Mat] {
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[OperationAttributes.LogLevels]] atrribute on the given Flow:
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow:
    *
    * Uses implicit [[LoggingAdapter]] if available, otherwise uses an internally created one,
    * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
@@ -959,7 +959,7 @@ trait FlowOps[+Out, +Mat] {
   def log(name: String, extract: Out ⇒ Any = _identity)(implicit log: LoggingAdapter = null): Repr[Out, Mat] =
     andThen(Stages.Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
 
-  def withAttributes(attr: OperationAttributes): Repr[Out, Mat]
+  def withAttributes(attr: Attributes): Repr[Out, Mat]
 
   /** INTERNAL API */
   private[scaladsl] def andThen[U](op: StageModule): Repr[U, Mat]

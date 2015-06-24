@@ -24,7 +24,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.language.higherKinds
 import scala.concurrent.{ ExecutionContext, Future }
-import akka.stream.{ FlowMaterializer, Graph }
+import akka.stream.{ Materializer, Graph }
 import akka.stream.impl._
 import akka.actor.Cancellable
 import akka.actor.ActorRef
@@ -32,7 +32,7 @@ import scala.concurrent.Promise
 import org.reactivestreams.Subscriber
 import akka.stream.stage.SyncDirective
 import akka.stream.OverflowStrategy
-import akka.stream.OperationAttributes
+import akka.stream.Attributes
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -70,15 +70,15 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * Connect this [[akka.stream.scaladsl.Source]] to a [[akka.stream.scaladsl.Sink]],
    * concatenating the processing steps of both.
    */
-  def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): RunnableFlow[Mat] = toMat(sink)(Keep.left)
+  def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): RunnableGraph[Mat] = toMat(sink)(Keep.left)
 
   /**
    * Connect this [[akka.stream.scaladsl.Source]] to a [[akka.stream.scaladsl.Sink]],
    * concatenating the processing steps of both.
    */
-  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableFlow[Mat3] = {
+  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableGraph[Mat3] = {
     val sinkCopy = sink.module.carbonCopy
-    RunnableFlow(module.growConnect(sinkCopy, shape.outlet, sinkCopy.shape.inlets.head, combine))
+    RunnableGraph(module.growConnect(sinkCopy, shape.outlet, sinkCopy.shape.inlets.head, combine))
   }
 
   /**
@@ -107,7 +107,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl.Sink#publisher]].
    */
-  def runWith[Mat2](sink: Graph[SinkShape[Out], Mat2])(implicit materializer: FlowMaterializer): Mat2 = toMat(sink)(Keep.right).run()
+  def runWith[Mat2](sink: Graph[SinkShape[Out], Mat2])(implicit materializer: Materializer): Mat2 = toMat(sink)(Keep.right).run()
 
   /**
    * Shortcut for running this `Source` with a fold function.
@@ -117,7 +117,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure signaled in the stream.
    */
-  def runFold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: FlowMaterializer): Future[U] =
+  def runFold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: Materializer): Future[U] =
     runWith(Sink.fold(zero)(f))
 
   /**
@@ -127,7 +127,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
    * the stream.
    */
-  def runForeach(f: Out ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit] = runWith(Sink.foreach(f))
+  def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Unit] = runWith(Sink.foreach(f))
 
   /**
    * Concatenates a second source so that the first element
@@ -153,10 +153,10 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    */
   def ++[Out2 >: Out, M](second: Graph[SourceShape[Out2], M]): Source[Out2, (Mat, M)] = concat(second)
 
-  override def withAttributes(attr: OperationAttributes): Repr[Out, Mat] =
+  override def withAttributes(attr: Attributes): Repr[Out, Mat] =
     new Source(module.withAttributes(attr).wrap())
 
-  override def named(name: String): Repr[Out, Mat] = withAttributes(OperationAttributes.name(name))
+  override def named(name: String): Repr[Out, Mat] = withAttributes(Attributes.name(name))
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)

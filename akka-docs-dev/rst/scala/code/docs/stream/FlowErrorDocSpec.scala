@@ -4,20 +4,20 @@
 package docs.stream
 
 import scala.concurrent.Await
-import akka.stream.ActorFlowMaterializer
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.Supervision
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
-import akka.stream.OperationAttributes
-import akka.stream.ActorOperationAttributes
+import akka.stream.Attributes
+import akka.stream.ActorAttributes
 import scala.concurrent.duration._
 
 class FlowErrorDocSpec extends AkkaSpec {
 
   "demonstrate fail stream" in {
     //#stop
-    implicit val mat = ActorFlowMaterializer()
+    implicit val mat = ActorMaterializer()
     val source = Source(0 to 5).map(100 / _)
     val result = source.runWith(Sink.fold(0)(_ + _))
     // division by zero will fail the stream and the
@@ -35,8 +35,8 @@ class FlowErrorDocSpec extends AkkaSpec {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
     }
-    implicit val mat = ActorFlowMaterializer(
-      ActorFlowMaterializerSettings(system).withSupervisionStrategy(decider))
+    implicit val mat = ActorMaterializer(
+      ActorMaterializerSettings(system).withSupervisionStrategy(decider))
     val source = Source(0 to 5).map(100 / _)
     val result = source.runWith(Sink.fold(0)(_ + _))
     // the element causing division by zero will be dropped
@@ -48,14 +48,14 @@ class FlowErrorDocSpec extends AkkaSpec {
 
   "demonstrate resume section" in {
     //#resume-section
-    implicit val mat = ActorFlowMaterializer()
+    implicit val mat = ActorMaterializer()
     val decider: Supervision.Decider = {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
     }
     val flow = Flow[Int]
       .filter(100 / _ < 50).map(elem => 100 / (5 - elem))
-      .withAttributes(ActorOperationAttributes.supervisionStrategy(decider))
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
     val source = Source(0 to 5).via(flow)
 
     val result = source.runWith(Sink.fold(0)(_ + _))
@@ -68,7 +68,7 @@ class FlowErrorDocSpec extends AkkaSpec {
 
   "demonstrate restart section" in {
     //#restart-section
-    implicit val mat = ActorFlowMaterializer()
+    implicit val mat = ActorMaterializer()
     val decider: Supervision.Decider = {
       case _: IllegalArgumentException => Supervision.Restart
       case _                           => Supervision.Stop
@@ -78,7 +78,7 @@ class FlowErrorDocSpec extends AkkaSpec {
         if (elem < 0) throw new IllegalArgumentException("negative not allowed")
         else acc + elem
       }
-      .withAttributes(ActorOperationAttributes.supervisionStrategy(decider))
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
     val source = Source(List(1, 3, -1, 5, 7)).via(flow)
     val result = source.grouped(1000).runWith(Sink.head)
     // the negative element cause the scan stage to be restarted,

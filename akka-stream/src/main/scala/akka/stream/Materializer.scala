@@ -6,7 +6,7 @@ package akka.stream
 import scala.concurrent.ExecutionContextExecutor
 import akka.japi
 
-abstract class FlowMaterializer {
+abstract class Materializer {
 
   /**
    * The `namePrefix` shall be used for deriving the names of processing
@@ -14,7 +14,7 @@ abstract class FlowMaterializer {
    * logging and failure reporting both during materialization and while the
    * stream is running.
    */
-  def withNamePrefix(name: String): FlowMaterializer
+  def withNamePrefix(name: String): Materializer
 
   /**
    * This method interprets the given Flow description and creates the running
@@ -36,13 +36,13 @@ abstract class FlowMaterializer {
 /**
  * INTERNAL API
  */
-private[akka] object NoFlowMaterializer extends FlowMaterializer {
-  override def withNamePrefix(name: String): FlowMaterializer =
-    throw new UnsupportedOperationException("NoFlowMaterializer cannot be named")
+private[akka] object NoMaterializer extends Materializer {
+  override def withNamePrefix(name: String): Materializer =
+    throw new UnsupportedOperationException("NoMaterializer cannot be named")
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
-    throw new UnsupportedOperationException("NoFlowMaterializer cannot materialize")
+    throw new UnsupportedOperationException("NoMaterializer cannot materialize")
   override def executionContext: ExecutionContextExecutor =
-    throw new UnsupportedOperationException("NoFlowMaterializer does not provide an ExecutionContext")
+    throw new UnsupportedOperationException("NoMaterializer does not provide an ExecutionContext")
 }
 
 /**
@@ -51,6 +51,6 @@ private[akka] object NoFlowMaterializer extends FlowMaterializer {
  * Context parameter to the `create` methods of sources and sinks.
  */
 private[akka] case class MaterializationContext(
-  materializer: FlowMaterializer,
-  effectiveAttributes: OperationAttributes,
+  materializer: Materializer,
+  effectiveAttributes: Attributes,
   stageName: String)

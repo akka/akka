@@ -406,22 +406,22 @@ private[testkit] object StreamTestKit {
     def sendOnSubscribe(): Unit = subscriber.onSubscribe(this)
   }
 
-  final class ProbeSource[T](val attributes: OperationAttributes, shape: SourceShape[T])(implicit system: ActorSystem) extends SourceModule[T, TestPublisher.Probe[T]](shape) {
+  final class ProbeSource[T](val attributes: Attributes, shape: SourceShape[T])(implicit system: ActorSystem) extends SourceModule[T, TestPublisher.Probe[T]](shape) {
     override def create(context: MaterializationContext) = {
       val probe = TestPublisher.probe[T]()
       (probe, probe)
     }
     override protected def newInstance(shape: SourceShape[T]): SourceModule[T, TestPublisher.Probe[T]] = new ProbeSource[T](attributes, shape)
-    override def withAttributes(attr: OperationAttributes): Module = new ProbeSource[T](attr, amendShape(attr))
+    override def withAttributes(attr: Attributes): Module = new ProbeSource[T](attr, amendShape(attr))
   }
 
-  final class ProbeSink[T](val attributes: OperationAttributes, shape: SinkShape[T])(implicit system: ActorSystem) extends SinkModule[T, TestSubscriber.Probe[T]](shape) {
+  final class ProbeSink[T](val attributes: Attributes, shape: SinkShape[T])(implicit system: ActorSystem) extends SinkModule[T, TestSubscriber.Probe[T]](shape) {
     override def create(context: MaterializationContext) = {
       val probe = TestSubscriber.probe[T]()
       (probe, probe)
     }
     override protected def newInstance(shape: SinkShape[T]): SinkModule[T, TestSubscriber.Probe[T]] = new ProbeSink[T](attributes, shape)
-    override def withAttributes(attr: OperationAttributes): Module = new ProbeSink[T](attr, amendShape(attr))
+    override def withAttributes(attr: Attributes): Module = new ProbeSink[T](attr, amendShape(attr))
   }
 
 }

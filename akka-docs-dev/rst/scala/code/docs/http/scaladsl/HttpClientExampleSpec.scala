@@ -13,13 +13,13 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
     pending // compile-time only test
     //#outgoing-connection-example
     import scala.concurrent.Future
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.Http
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection("akka.io")
@@ -35,13 +35,13 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
     //#host-level-example
     import scala.concurrent.Future
     import scala.util.Try
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.Http
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     // construct a pool client flow with context type `Int`
     val poolClientFlow = Http().cachedHostConnectionPool[Int]("akka.io")
@@ -56,12 +56,12 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
     pending // compile-time only test
     //#single-request-example
     import scala.concurrent.Future
-    import akka.stream.ActorFlowMaterializer
+    import akka.stream.ActorMaterializer
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.Http
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorFlowMaterializer()
+    implicit val materializer = ActorMaterializer()
 
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(HttpRequest(uri = "http://akka.io"))

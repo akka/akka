@@ -45,14 +45,14 @@ Sink
 Flow
   A processing stage which has *exactly one input and output*, which connects its up- and downstreams by
   transforming the data elements flowing through it.
-RunnableFlow
+RunnableGraph
   A Flow that has both ends "attached" to a Source and Sink respectively, and is ready to be ``run()``.
 
 It is possible to attach a ``Flow`` to a ``Source`` resulting in a composite source, and it is also possible to prepend
 a ``Flow`` to a ``Sink`` to get a new sink. After a stream is properly terminated by having both a source and a sink,
-it will be represented by the ``RunnableFlow`` type, indicating that it is ready to be executed.
+it will be represented by the ``RunnableGraph`` type, indicating that it is ready to be executed.
 
-It is important to remember that even after constructing the ``RunnableFlow`` by connecting all the source, sink and
+It is important to remember that even after constructing the ``RunnableGraph`` by connecting all the source, sink and
 different processing stages, no data will flow through it until it is materialized. Materialization is the process of
 allocating all resources needed to run the computation described by a Flow (in Akka Streams this will often involve
 starting up Actors). Thanks to Flows being simply a description of the processing pipeline they are *immutable,
@@ -61,7 +61,7 @@ one actor prepare the work, and then have it be materialized at some completely 
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#materialization-in-steps
 
-After running (materializing) the ``RunnableFlow`` we get a special container object, the ``MaterializedMap``. Both
+After running (materializing) the ``RunnableGraph`` we get a special container object, the ``MaterializedMap``. Both
 sources and sinks are able to put specific objects into this map. Whether they put something in or not is implementation
 dependent. For example a ``FoldSink`` will make a ``Future`` available in this map which will represent the result
 of the folding process over the stream.  In general, a stream can expose multiple materialized values,
@@ -196,7 +196,7 @@ well-known sinks, such as ``runForeach(el -> )`` (being an alias to ``runWith(Si
 Materialization is currently performed synchronously on the materializing thread.
 The actual stream processing is handled by actors started up during the streams materialization,
 which will be running on the thread pools they have been configured to run on - which defaults to the dispatcher set in
-:class:`MaterializationSettings` while constructing the :class:`ActorFlowMaterializer`.
+:class:`MaterializationSettings` while constructing the :class:`ActorMaterializer`.
 
 .. note::
    Reusing *instances* of linear computation stages (Source, Sink, Flow) inside FlowGraphs is legal,

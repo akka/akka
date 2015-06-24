@@ -22,7 +22,7 @@ import akka.stream.stage._
  * INTERNAL API
  */
 private[http] object StreamUtils {
-  import OperationAttributes.none
+  import Attributes.none
 
   /**
    * Creates a transformer that will call `f` for each incoming ByteString and output its result. After the complete
@@ -154,7 +154,7 @@ private[http] object StreamUtils {
    * Applies a sequence of transformers on one source and returns a sequence of sources with the result. The input source
    * will only be traversed once.
    */
-  def transformMultiple(input: Source[ByteString, Any], transformers: immutable.Seq[Flow[ByteString, ByteString, Any]])(implicit materializer: FlowMaterializer): immutable.Seq[Source[ByteString, Any]] =
+  def transformMultiple(input: Source[ByteString, Any], transformers: immutable.Seq[Flow[ByteString, ByteString, Any]])(implicit materializer: Materializer): immutable.Seq[Source[ByteString, Any]] =
     transformers match {
       case Nil      ⇒ Nil
       case Seq(one) ⇒ Vector(input.via(one))
@@ -202,7 +202,7 @@ private[http] object StreamUtils {
         } else ByteString.empty
     }
 
-    Source(() ⇒ iterator).withAttributes(ActorOperationAttributes.dispatcher(fileIODispatcher))
+    Source(() ⇒ iterator).withAttributes(ActorAttributes.dispatcher(fileIODispatcher))
   }
 
   /**
@@ -223,7 +223,7 @@ private[http] object StreamUtils {
     new Source[Out, Subscriber[Out]](new OneTimeSubscriberSource(none, SourceShape(new Outlet(name)), cell))
 
   /** A copy of PublisherSink that allows access to the publisher through the cell but can only materialized once */
-  private class OneTimePublisherSink[In](attributes: OperationAttributes, shape: SinkShape[In], cell: OneTimeWriteCell[Publisher[In]])
+  private class OneTimePublisherSink[In](attributes: Attributes, shape: SinkShape[In], cell: OneTimeWriteCell[Publisher[In]])
     extends PublisherSink[In](attributes, shape) {
     override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
       val results = super.create(context)
@@ -233,11 +233,11 @@ private[http] object StreamUtils {
     override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
       new OneTimePublisherSink[In](attributes, shape, cell)
 
-    override def withAttributes(attr: OperationAttributes): Module =
+    override def withAttributes(attr: Attributes): Module =
       new OneTimePublisherSink[In](attr, amendShape(attr), cell)
   }
   /** A copy of SubscriberSource that allows access to the subscriber through the cell but can only materialized once */
-  private class OneTimeSubscriberSource[Out](val attributes: OperationAttributes, shape: SourceShape[Out], cell: OneTimeWriteCell[Subscriber[Out]])
+  private class OneTimeSubscriberSource[Out](val attributes: Attributes, shape: SourceShape[Out], cell: OneTimeWriteCell[Subscriber[Out]])
     extends SourceModule[Out, Subscriber[Out]](shape) {
 
     override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
@@ -258,7 +258,7 @@ private[http] object StreamUtils {
 
     override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] =
       new OneTimeSubscriberSource[Out](attributes, shape, cell)
-    override def withAttributes(attr: OperationAttributes): Module =
+    override def withAttributes(attr: Attributes): Module =
       new OneTimeSubscriberSource[Out](attr, amendShape(attr), cell)
   }
 
@@ -279,7 +279,7 @@ private[http] object StreamUtils {
   }
 
   /** A merge for two streams that just forwards all elements and closes the connection eagerly. */
-  class EagerCloseMerge2[T](name: String) extends FlexiMerge[T, FanInShape2[T, T, T]](new FanInShape2(name), OperationAttributes.name(name)) {
+  class EagerCloseMerge2[T](name: String) extends FlexiMerge[T, FanInShape2[T, T, T]](new FanInShape2(name), Attributes.name(name)) {
     def createMergeLogic(s: FanInShape2[T, T, T]): MergeLogic[T] =
       new MergeLogic[T] {
         def initialState: State[T] = State[T](ReadAny(s.in0, s.in1)) {
@@ -354,8 +354,8 @@ private[http] object StreamUtils {
  * INTERNAL API
  */
 private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[ByteString, Mat]) extends AnyVal {
-  def join(implicit materializer: FlowMaterializer): Future[ByteString] =
+  def join(implicit materializer: Materializer): Future[ByteString] =
     byteStringStream.runFold(ByteString.empty)(_ ++ _)
-  def utf8String(implicit materializer: FlowMaterializer, ec: ExecutionContext): Future[String] =
+  def utf8String(implicit materializer: Materializer, ec: ExecutionContext): Future[String] =
     join.map(_.utf8String)
 }
