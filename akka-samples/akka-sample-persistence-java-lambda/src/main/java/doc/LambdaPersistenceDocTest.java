@@ -9,6 +9,7 @@ import akka.actor.ActorPath;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.japi.Procedure;
 import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.*;
 import scala.Option;
@@ -34,11 +35,9 @@ public class LambdaPersistenceDocTest {
 
   static Object o1 = new Object() {
 
-    private void recover() {
-      ActorRef persistentActor =null;
-
+    private void recover(ActorRef persistentActor) {
       //#recover-explicit
-      persistentActor.tell(Recover.create(), null);
+      persistentActor.tell(Recover.create(), ActorRef.noSender());
       //#recover-explicit
     }
 
@@ -425,8 +424,118 @@ public class LambdaPersistenceDocTest {
     }
   };
 
-
   static Object o11 = new Object() {
+
+    class MyPersistentActor extends AbstractPersistentActor {
+      @Override
+      public String persistenceId() {
+        return "my-stable-persistence-id";
+      }
+
+      @Override public PartialFunction<Object, BoxedUnit> receiveCommand() {
+        return ReceiveBuilder.matchAny(event -> {}).build();
+      }
+
+      //#nested-persist-persist
+      @Override public PartialFunction<Object, BoxedUnit> receiveRecover() {
+        final Procedure<String> replyToSender = event -> sender().tell(event, self());
+
+        return ReceiveBuilder
+          .match(String.class, msg -> {
+            persist(String.format("%s-outer-1", msg), event -> {
+              sender().tell(event, self());
+              persist(String.format("%s-inner-1", event), replyToSender);
+            });
+
+            persist(String.format("%s-outer-2", msg), event -> {
+              sender().tell(event, self());
+              persist(String.format("%s-inner-2", event), replyToSender);
+            });
+          })
+          .build();
+      }
+      //#nested-persist-persist
+
+      void usage(ActorRef persistentActor) {
+        //#nested-persist-persist-caller
+        persistentActor.tell("a", ActorRef.noSender());
+        persistentActor.tell("b", ActorRef.noSender());
+
+        // order of received messages:
+        // a
+        // a-outer-1
+        // a-outer-2
+        // a-inner-1
+        // a-inner-2
+        // and only then process "b"
+        // b
+        // b-outer-1
+        // b-outer-2
+        // b-inner-1
+        // b-inner-2
+
+        //#nested-persist-persist-caller
+      }
+    }
+
+
+    class MyPersistAsyncActor extends AbstractPersistentActor {
+      @Override
+      public String persistenceId() {
+        return "my-stable-persistence-id";
+      }
+
+      @Override public PartialFunction<Object, BoxedUnit> receiveCommand() {
+        return ReceiveBuilder.matchAny(event -> {}).build();
+      }
+
+      //#nested-persistAsync-persistAsync
+      @Override public PartialFunction<Object, BoxedUnit> receiveRecover() {
+          final Procedure<String> replyToSender = event -> sender().tell(event, self());
+
+        return ReceiveBuilder
+          .match(String.class, msg -> {
+            persistAsync(String.format("%s-outer-1", msg ), event -> {
+              sender().tell(event, self());
+              persistAsync(String.format("%s-inner-1", event), replyToSender);
+            });
+
+            persistAsync(String.format("%s-outer-2", msg ), event -> {
+              sender().tell(event, self());
+              persistAsync(String.format("%s-inner-1", event), replyToSender);
+            });
+          })
+          .build();
+      }
+      //#nested-persistAsync-persistAsync
+
+      void usage(ActorRef persistentActor) {
+        //#nested-persistAsync-persistAsync-caller
+        persistentActor.tell("a", self());
+        persistentActor.tell("b", self());
+
+        // order of received messages:
+        // a
+        // b
+        // a-outer-1
+        // a-outer-2
+        // b-outer-1
+        // b-outer-2
+        // a-inner-1
+        // a-inner-2
+        // b-inner-1
+        // b-inner-2
+
+        // which can be seen as the following causal relationship:
+        // a -> a-outer-1 -> a-outer-2 -> a-inner-1 -> a-inner-2
+        // b -> b-outer-1 -> b-outer-2 -> b-inner-1 -> b-inner-2
+
+        //#nested-persistAsync-persistAsync-caller
+      }
+    }
+  };
+
+  static Object o12 = new Object() {
     //#view
     class MyView extends AbstractPersistentView {
       @Override public String persistenceId() { return "some-persistence-id"; }

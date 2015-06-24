@@ -522,6 +522,44 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     }
   }
 
+  private def flushBatch() {
+    def addToBatch(p: PersistentEnvelope): Unit = p match {
+      case a: AtomicWrite ⇒
+        journalBatch :+= a.copy(payload =
+          a.payload.map(_.update(persistenceId = persistenceId, sequenceNr = nextSequenceNr(), writerUuid = writerUuid)))
+      case r: PersistentEnvelope ⇒
+        journalBatch :+= r
+    }
+
+    def maxBatchSizeReached: Boolean =
+      journalBatch.size >= maxMessageBatchSize
+
+    // When using only `persistAsync` and `defer` max throughput is increased by using
+    // batching, but when using `persist` we want to use one atomic WriteMessages
+    // for the emitted events.
+    // Flush previously collected events, if any, separately from the `persist` batch
+    if (pendingStashingPersistInvocations > 0 && journalBatch.nonEmpty)
+      flushJournalBatch()
+
+    eventBatch.reverse.foreach { p ⇒
+      addToBatch(p)
+      if (!writeInProgress || maxBatchSizeReached) flushJournalBatch()
+    }
+
+    eventBatch = Nil
+  }
+
+  private def peekApplyHandler(payload: Any): Unit = {
+    val batchSizeBeforeApply = eventBatch.size
+    try pendingInvocations.peek().handler(payload)
+    finally {
+      val batchSizeAfterApply = eventBatch.size
+
+      if (batchSizeAfterApply > batchSizeBeforeApply)
+        flushBatch()
+    }
+  }
+
   /**
    * Common receive handler for processingCommands and persistingEvents
    */
@@ -533,7 +571,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         if (id == instanceId) {
           updateLastSequenceNr(p)
           try {
-            pendingInvocations.peek().handler(p.payload)
+            peekApplyHandler(p.payload)
             onWriteMessageComplete(err = false)
           } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
         }
@@ -596,22 +634,6 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         internalStash.unstashAll()
       else
         internalStash.unstash()
-    }
-
-    private def flushBatch() {
-      // When using only `persistAsync` and `defer` max throughput is increased by using
-      // batching, but when using `persist` we want to use one atomic WriteMessages
-      // for the emitted events.
-      // Flush previously collected events, if any, separately from the `persist` batch
-      if (pendingStashingPersistInvocations > 0 && journalBatch.nonEmpty)
-        flushJournalBatch()
-
-      eventBatch.reverse.foreach { p ⇒
-        addToBatch(p)
-        if (!writeInProgress || maxBatchSizeReached) flushJournalBatch()
-      }
-
-      eventBatch = Nil
     }
 
     private def addToBatch(p: PersistentEnvelope): Unit = p match {

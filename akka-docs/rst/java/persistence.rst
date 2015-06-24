@@ -273,6 +273,41 @@ of the command for which this ``defer`` handler was called.
   The callback will not be invoked if the actor is restarted (or stopped) in between the call to
   ``defer`` and the journal has processed and confirmed all preceding writes.
 
+.. _nested-persist-calls-java:
+
+Nested persist calls
+--------------------
+It is possible to call ``persist`` and ``persistAsync`` inside their respective callback blocks and they will properly
+retain both the thread safety (including the right value of ``sender()``) as well as stashing guarantees.
+
+In general it is encouraged to create command handlers which do not need to resort to nested event persisting,
+however there are situations where it may be useful. It is important to understand the ordering of callback execution in
+those situations, as well as their implication on the stashing behaviour (that ``persist()`` enforces). In the following
+example two persist calls are issued, and each of them issues another persist inside its callback:
+
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#nested-persist-persist
+
+When sending two commands to this ``PersistentActor``, the persist handlers will be executed in the following order:
+
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#nested-persist-persist-caller
+
+First the "outer layer" of persist calls is issued and their callbacks applied, after these have successfully completed
+the inner callbacks will be invoked (once the events they are persisting have been confirmed to be persisted by the journal).
+And only after all these handlers have been successfully invoked, the next command will delivered to the persistent Actor.
+In other words, the stashing of incoming commands that is guaranteed by initially calling ``persist()`` on the outer layer
+is extended until all nested ``persist`` callbacks have been handled.
+
+It is also possible to nest ``persistAsync`` calls, using the same pattern:
+
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#nested-persistAsync-persistAsync
+
+In this case no stashing is happening, yet the events are still persisted and callbacks executed in the expected order:
+
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#nested-persistAsync-persistAsync-caller
+
+While it is possible to nest mixed ``persist`` and ``persistAsync`` with keeping their respective semantics
+it is not a recommended practice as it may lead to overly complex nesting.
+
 Failures
 --------
 
