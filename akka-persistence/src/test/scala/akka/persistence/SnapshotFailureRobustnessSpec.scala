@@ -69,7 +69,6 @@ object SnapshotFailureRobustnessSpec {
       case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
       case other                ⇒ probe ! other
     }
-    override def preStart() = ()
   }
 
   class FailingLocalSnapshotStore extends LocalSnapshotStore {
@@ -117,7 +116,6 @@ class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.conf
       system.eventStream.subscribe(testActor, classOf[Logging.Error])
       try {
         val lPersistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
-        lPersistentActor ! Recover()
         expectMsgPF() {
           case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) ⇒
             state should ===("blahonga")

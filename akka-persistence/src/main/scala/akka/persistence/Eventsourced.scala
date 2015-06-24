@@ -37,7 +37,7 @@ private[persistence] object Eventsourced {
  * Scala API and implementation details of [[PersistentActor]], [[AbstractPersistentActor]] and
  * [[UntypedPersistentActor]].
  */
-private[persistence] trait Eventsourced extends Snapshotter with Stash with StashFactory with PersistenceIdentity {
+private[persistence] trait Eventsourced extends Snapshotter with Stash with StashFactory with PersistenceIdentity with PersistenceRecovery {
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
   import Eventsourced._
@@ -56,7 +56,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   private var sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
 
-  private var currentState: State = recoveryPending
+  // safely null because we initialize it with a proper `recoveryStarted` state in aroundPreStart before any real action happens
+  private var currentState: State = null
 
   // Used instead of iterating `pendingInvocations` in order to check if safe to revert to processing commands
   private var pendingStashingPersistInvocations: Long = 0
@@ -159,15 +160,10 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       toSequenceNr, persistenceId, cause.getMessage)
   }
 
-  /**
-   * User-overridable callback. Called when a persistent actor is started or restarted.
-   * Default implementation sends a `Recover()` to `self`. Note that if you override
-   * `preStart` (or `preRestart`) and not call `super.preStart` you must send
-   * a `Recover()` message to `self` to activate the persistent actor.
-   */
-  @throws(classOf[Exception])
-  override def preStart(): Unit =
-    self ! Recover()
+  private def startRecovery(recovery: Recovery): Unit = {
+    changeState(recoveryStarted(recovery.replayMax))
+    loadSnapshot(snapshotterId, recovery.fromSnapshot, recovery.toSequenceNr)
+  }
 
   /** INTERNAL API. */
   override protected[akka] def aroundReceive(receive: Receive, message: Any): Unit =
@@ -177,6 +173,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   override protected[akka] def aroundPreStart(): Unit = {
     // Fail fast on missing plugins.
     val j = journal; val s = snapshotStore
+    startRecovery(recovery)
     super.aroundPreStart()
   }
 
@@ -201,6 +198,12 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
           super.aroundPreRestart(reason, None)
       }
     }
+  }
+
+  /** INTERNAL API. */
+  override protected[akka] def aroundPostRestart(reason: Throwable): Unit = {
+    startRecovery(recovery)
+    super.aroundPostRestart(reason)
   }
 
   /** INTERNAL API. */
@@ -252,7 +255,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * If there is a problem with recovering the state of the actor from the journal, the error
    * will be logged and the actor will be stopped.
    *
-   * @see [[Recover]]
+   * @see [[Recovery]]
    */
   def receiveRecover: Receive
 
@@ -420,22 +423,6 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   }
 
   /**
-   * Initial state, waits for `Recover` request, and then submits a `LoadSnapshot` request to the snapshot
-   * store and changes to `recoveryStarted` state. All incoming messages except `Recover` are stashed.
-   */
-  private def recoveryPending = new State {
-    override def toString: String = "recovery pending"
-    override def recoveryRunning: Boolean = true
-
-    override def stateReceive(receive: Receive, message: Any): Unit = message match {
-      case Recover(fromSnap, toSnr, replayMax) ⇒
-        changeState(recoveryStarted(replayMax))
-        loadSnapshot(snapshotterId, fromSnap, toSnr)
-      case _ ⇒ internalStash.stash()
-    }
-  }
-
-  /**
    * Processes a loaded snapshot, if any. A loaded snapshot is offered with a `SnapshotOffer`
    * message to the actor's `receiveRecover`. Then initiates a message replay, either starting
    * from the loaded snapshot or from scratch, and switches to `replayStarted` state.
@@ -458,11 +445,10 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       }
     }
 
-    override def toString: String = s"recovery started (replayMax = [${replayMax}])"
+    override def toString: String = s"recovery started (replayMax = [$replayMax])"
     override def recoveryRunning: Boolean = true
 
     override def stateReceive(receive: Receive, message: Any) = message match {
-      case r: Recover ⇒ // ignore
       case LoadSnapshotResult(sso, toSnr) ⇒
         sso.foreach {
           case SelectedSnapshot(metadata, snapshot) ⇒
@@ -491,7 +477,6 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     override def recoveryRunning: Boolean = true
 
     override def stateReceive(receive: Receive, message: Any) = message match {
-      case r: Recover ⇒ // ignore
       case ReplayedMessage(p) ⇒
         try {
           updateLastSequenceNr(p)
@@ -653,17 +638,6 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       else
         internalStash.unstash()
     }
-
-    private def addToBatch(p: PersistentEnvelope): Unit = p match {
-      case a: AtomicWrite ⇒
-        journalBatch :+= a.copy(payload =
-          a.payload.map(_.update(persistenceId = persistenceId, sequenceNr = nextSequenceNr(), writerUuid = writerUuid)))
-      case r: PersistentEnvelope ⇒
-        journalBatch :+= r
-    }
-
-    private def maxBatchSizeReached: Boolean =
-      journalBatch.size >= maxMessageBatchSize
 
   }
 

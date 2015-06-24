@@ -87,7 +87,7 @@ class SnapshotSerializationSpec extends PersistenceSpec(PersistenceSpec.config("
       sPersistentActor ! "blahonga"
       expectMsg(0)
       val lPersistentActor = system.actorOf(Props(classOf[TestPersistentActor], name, testActor))
-      lPersistentActor ! Recover()
+      lPersistentActor ! Recovery()
       expectMsgPF() {
         case (SnapshotMetadata(`persistenceId`, 0, timestamp), state) ⇒
           state should ===(new MySnapshot("blahonga"))
