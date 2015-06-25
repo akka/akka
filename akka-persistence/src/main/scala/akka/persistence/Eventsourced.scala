@@ -12,6 +12,7 @@ import akka.actor.StashFactory
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.actor.ActorRef
+import java.util.UUID
 
 /**
  * INTERNAL API
@@ -47,6 +48,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   private[persistence] lazy val snapshotStore = extension.snapshotStoreFor(snapshotPluginId)
 
   private val instanceId: Int = Eventsourced.instanceIdCounter.getAndIncrement()
+  private val writerUuid = UUID.randomUUID.toString
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
   private val maxMessageBatchSize = extension.settings.journal.maxMessageBatchSize
@@ -615,7 +617,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     private def addToBatch(p: PersistentEnvelope): Unit = p match {
       case a: AtomicWrite ⇒
         journalBatch :+= a.copy(payload =
-          a.payload.map(_.update(persistenceId = persistenceId, sequenceNr = nextSequenceNr())))
+          a.payload.map(_.update(persistenceId = persistenceId, sequenceNr = nextSequenceNr(), writerUuid = writerUuid)))
       case r: PersistentEnvelope ⇒
         journalBatch :+= r
     }
