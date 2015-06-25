@@ -83,20 +83,23 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config) {
       val sub = TestProbe()
 
       subscribe[DeleteSnapshot](sub.ref)
-      snapshotStore ! cmd
+      snapshotStore.tell(cmd, senderProbe.ref)
       sub.expectMsg(cmd)
+      senderProbe.expectMsg(DeleteSnapshotSuccess(md))
 
       snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr, md.timestamp), Long.MaxValue), senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(1), s"s-2")), Long.MaxValue))
     }
     "delete all snapshots matching upper sequence number and timestamp bounds" in {
       val md = metadata(2)
-      val cmd = DeleteSnapshots(pid, SnapshotSelectionCriteria(md.sequenceNr, md.timestamp))
+      val criteria = SnapshotSelectionCriteria(md.sequenceNr, md.timestamp)
+      val cmd = DeleteSnapshots(pid, criteria)
       val sub = TestProbe()
 
       subscribe[DeleteSnapshots](sub.ref)
-      snapshotStore ! cmd
+      snapshotStore.tell(cmd, senderProbe.ref)
       sub.expectMsg(cmd)
+      senderProbe.expectMsg(DeleteSnapshotsSuccess(criteria))
 
       snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr, md.timestamp), Long.MaxValue), senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
