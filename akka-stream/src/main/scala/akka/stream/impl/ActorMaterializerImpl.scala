@@ -31,14 +31,13 @@ private[akka] case class ActorMaterializerImpl(
   override val settings: ActorMaterializerSettings,
   dispatchers: Dispatchers,
   val supervisor: ActorRef,
+  val haveShutDown: AtomicBoolean,
   flowNameCounter: AtomicLong,
   namePrefix: String,
   optimizations: Optimizations)
   extends ActorMaterializer {
   import ActorMaterializerImpl._
   import akka.stream.impl.Stages._
-
-  private val haveShutDown = new AtomicBoolean(false)
 
   override def shutdown(): Unit =
     if (haveShutDown.compareAndSet(false, true)) supervisor ! PoisonPill
@@ -255,7 +254,8 @@ private[akka] class FlowNameCounter extends Extension {
  * INTERNAL API
  */
 private[akka] object StreamSupervisor {
-  def props(settings: ActorMaterializerSettings): Props = Props(new StreamSupervisor(settings)).withDeploy(Deploy.local)
+  def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
+    Props(new StreamSupervisor(settings, haveShutDown)).withDeploy(Deploy.local)
 
   final case class Materialize(props: Props, name: String) extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
@@ -269,7 +269,7 @@ private[akka] object StreamSupervisor {
   final case object StoppedChildren
 }
 
-private[akka] class StreamSupervisor(settings: ActorMaterializerSettings) extends Actor {
+private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
 
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
@@ -283,6 +283,8 @@ private[akka] class StreamSupervisor(settings: ActorMaterializerSettings) extend
       context.children.foreach(context.stop)
       sender() ! StoppedChildren
   }
+
+  override def postStop(): Unit = haveShutDown.set(true)
 }
 
 /**
