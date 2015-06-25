@@ -6,15 +6,16 @@
 package akka.persistence.journal.leveldb
 
 import java.io.File
-
 import akka.actor._
 import akka.persistence._
 import akka.persistence.journal.{ WriteJournalBase, AsyncWriteTarget }
 import akka.serialization.SerializationExtension
 import org.iq80.leveldb._
-
 import scala.collection.immutable
 import scala.util._
+import scala.concurrent.Future
+import scala.util.control.NonFatal
+import akka.persistence.journal.AsyncWriteJournal
 
 /**
  * INTERNAL API.
@@ -39,25 +40,32 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
 
   import Key._
 
-  def writeMessages(messages: immutable.Seq[AtomicWrite]): immutable.Seq[Try[Unit]] =
-    withBatch(batch ⇒ messages.map { a ⇒
-      Try(a.payload.foreach(message ⇒ addToMessageBatch(message, batch)))
+  def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
+    Future.fromTry(Try {
+      withBatch(batch ⇒ messages.map { a ⇒
+        Try(a.payload.foreach(message ⇒ addToMessageBatch(message, batch)))
+      })
     })
 
-  def deleteMessagesTo(persistenceId: String, toSequenceNr: Long) = withBatch { batch ⇒
-    val nid = numericId(persistenceId)
+  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
+    try Future.successful {
+      withBatch { batch ⇒
+        val nid = numericId(persistenceId)
 
-    // seek to first existing message
-    val fromSequenceNr = withIterator { iter ⇒
-      val startKey = Key(nid, 1L, 0)
-      iter.seek(keyToBytes(startKey))
-      if (iter.hasNext) keyFromBytes(iter.peekNext().getKey).sequenceNr else Long.MaxValue
-    }
+        // seek to first existing message
+        val fromSequenceNr = withIterator { iter ⇒
+          val startKey = Key(nid, 1L, 0)
+          iter.seek(keyToBytes(startKey))
+          if (iter.hasNext) keyFromBytes(iter.peekNext().getKey).sequenceNr else Long.MaxValue
+        }
 
-    fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
-      batch.delete(keyToBytes(Key(nid, sequenceNr, 0)))
+        fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
+          batch.delete(keyToBytes(Key(nid, sequenceNr, 0)))
+        }
+      }
+    } catch {
+      case NonFatal(e) ⇒ Future.failed(e)
     }
-  }
 
   def leveldbSnapshot(): ReadOptions = leveldbReadOptions.snapshot(leveldb.getSnapshot)
 
@@ -103,22 +111,3 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
   }
 }
 
-/**
- * A LevelDB store that can be shared by multiple actor systems. The shared store must be
- * set for each actor system that uses the store via `SharedLeveldbJournal.setStore`. The
- * shared LevelDB store is for testing only.
- */
-class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.leveldb-shared.store" } with LeveldbStore {
-  import AsyncWriteTarget._
-
-  def receive = {
-    case WriteMessages(msgs)                        ⇒ sender() ! writeMessages(preparePersistentBatch(msgs))
-    case DeleteMessagesTo(pid, tsnr)                ⇒ sender() ! deleteMessagesTo(pid, tsnr)
-    case ReadHighestSequenceNr(pid, fromSequenceNr) ⇒ sender() ! readHighestSequenceNr(numericId(pid))
-    case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
-      Try(replayMessages(numericId(pid), fromSnr, toSnr, max)(p ⇒ adaptFromJournal(p).foreach { sender() ! _ })) match {
-        case Success(max)   ⇒ sender() ! ReplaySuccess
-        case Failure(cause) ⇒ sender() ! ReplayFailure(cause)
-      }
-  }
-}

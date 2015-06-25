@@ -34,8 +34,8 @@ interface AsyncRecoveryPlugin {
    * @param replayCallback
    *          called to replay a single message. Can be called from any thread.
    */
-  Future<Void> doAsyncReplayMessages(String persistenceId, long fromSequenceNr, long toSequenceNr, long max,
-      Consumer<PersistentRepr> replayCallback);
+  Future<Void> doAsyncReplayMessages(String persistenceId, long fromSequenceNr, 
+      long toSequenceNr, long max, Consumer<PersistentRepr> replayCallback);
 
   /**
    * Java API, Plugin API: asynchronously reads the highest stored sequence

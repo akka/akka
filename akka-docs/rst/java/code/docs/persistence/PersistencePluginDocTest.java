@@ -84,10 +84,20 @@ public class PersistencePluginDocTest {
     }
 
     class MyAsyncJournal extends AsyncWriteJournal {
+        //#sync-journal-plugin-api
         @Override
-        public Future<Iterable<Optional<Exception>>> doAsyncWriteMessages(Iterable<AtomicWrite> messages) {
-            return null;
+        public Future<Iterable<Optional<Exception>>> doAsyncWriteMessages(
+            Iterable<AtomicWrite> messages) {
+          try {
+            Iterable<Optional<Exception>> result = new ArrayList<Optional<Exception>>();
+            // blocking call here... 
+            // result.add(..)
+            return Futures.successful(result);
+          } catch (Exception e) {
+            return Futures.failed(e);
+          }
         }
+        //#sync-journal-plugin-api
 
         @Override
         public Future<Void> doAsyncDeleteMessagesTo(String persistenceId, long toSequenceNr) {
