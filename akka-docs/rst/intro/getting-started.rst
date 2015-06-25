@@ -153,7 +153,7 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
     scalaVersion := "@scalaVersion@"
 
     libraryDependencies +=
-      "com.typesafe.akka" %% "akka-actor" % "@version@" @crossString@
+      "com.typesafe.akka" % "akka-actor" % "@version@" @crossString@
 
 **Note**: the libraryDependencies setting above is specific to SBT v0.12.x and higher.  If you are using an older version of SBT, the libraryDependencies should look like this:
 
