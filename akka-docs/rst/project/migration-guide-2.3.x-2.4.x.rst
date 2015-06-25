@@ -317,6 +317,12 @@ The ``persist`` method that takes a ``Seq`` (Scala) or ``Iterable`` (Java) of ev
 renamed to ``persistAll`` to avoid mistakes of persisting other collection types as one single event by calling
 the overloaded ``persist(event)`` method.
 
+non-permanent deletion
+----------------------
+
+The ``permanent`` flag in ``deleteMessages`` was removed. non-permanent deletes are not supported
+any more.
+
 Persistence Plugin APIs
 =======================
 
@@ -422,4 +428,10 @@ asyncReplayMessages Java API
 
 The signature of `asyncReplayMessages` in the Java API changed from ``akka.japi.Procedure``
 to ``java.util.function.Consumer``.
+
+asyncDeleteMessagesTo
+---------------------
+
+The ``permanent`` deletion flag was removed. Support for non-permanent deletions was
+removed.
 

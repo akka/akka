@@ -82,7 +82,9 @@ trait PersistentRepr extends Message {
   def withManifest(manifest: String): PersistentRepr
 
   /**
-   * `true` if this message is marked as deleted.
+   * Not used in new records stored with Akka v2.4, but
+   * old records from v2.3 may have this as `true` if
+   * it was a non-permanent delete.
    */
   def deleted: Boolean
 

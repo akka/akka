@@ -47,7 +47,7 @@ private[persistence] trait LeveldbRecovery extends AsyncRecovery { this: Leveldb
           val msg = persistentFromBytes(nextEntry.getValue)
           val del = deletion(iter, nextKey)
           if (ctr < max) {
-            replayCallback(msg.update(deleted = del))
+            if (!del) replayCallback(msg)
             go(iter, nextKey, ctr + 1L, replayCallback)
           }
         }

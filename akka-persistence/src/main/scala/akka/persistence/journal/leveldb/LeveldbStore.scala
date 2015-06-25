@@ -44,7 +44,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
       Try(a.payload.foreach(message ⇒ addToMessageBatch(message, batch)))
     })
 
-  def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean) = withBatch { batch ⇒
+  def deleteMessagesTo(persistenceId: String, toSequenceNr: Long) = withBatch { batch ⇒
     val nid = numericId(persistenceId)
 
     // seek to first existing message
@@ -55,8 +55,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
     }
 
     fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
-      if (permanent) batch.delete(keyToBytes(Key(nid, sequenceNr, 0))) // TODO: delete deletion markers, if any.
-      else batch.put(keyToBytes(deletionKey(nid, sequenceNr)), Array.emptyByteArray)
+      batch.delete(keyToBytes(Key(nid, sequenceNr, 0)))
     }
   }
 
@@ -114,7 +113,7 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
 
   def receive = {
     case WriteMessages(msgs)                        ⇒ sender() ! writeMessages(preparePersistentBatch(msgs))
-    case DeleteMessagesTo(pid, tsnr, permanent)     ⇒ sender() ! deleteMessagesTo(pid, tsnr, permanent)
+    case DeleteMessagesTo(pid, tsnr)                ⇒ sender() ! deleteMessagesTo(pid, tsnr)
     case ReadHighestSequenceNr(pid, fromSequenceNr) ⇒ sender() ! readHighestSequenceNr(numericId(pid))
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
       Try(replayMessages(numericId(pid), fromSnr, toSnr, max)(p ⇒ adaptFromJournal(p).foreach { sender() ! _ })) match {

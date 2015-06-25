@@ -58,11 +58,10 @@ interface SyncWritePlugin {
 
   /**
    * Java API, Plugin API: synchronously deletes all persistent messages up to
-   * `toSequenceNr`. If `permanent` is set to `false`, the persistent messages
-   * are marked as deleted, otherwise they are permanently deleted.
+   * `toSequenceNr`.
    *
    * @see AsyncRecoveryPlugin
    */
-  void doDeleteMessagesTo(String persistenceId, long toSequenceNr, boolean permanent);
+  void doDeleteMessagesTo(String persistenceId, long toSequenceNr);
   //#sync-write-plugin-api
 }

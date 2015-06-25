@@ -92,11 +92,11 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           }
       }
 
-    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor, replayDeleted) ⇒
+    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor) ⇒
       // Send replayed messages and replay result to persistentActor directly. No need
       // to resequence replayed messages relative to written and looped messages.
       asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) { p ⇒
-        if (!p.deleted || replayDeleted)
+        if (!p.deleted) // old records from 2.3 may still have the deleted flag
           adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
             persistentActor.tell(ReplayedMessage(adaptedPersistentRepr), Actor.noSender)
           }
@@ -117,8 +117,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         case e ⇒ ReadHighestSequenceNrFailure(e)
       } pipeTo persistentActor
 
-    case d @ DeleteMessagesTo(persistenceId, toSequenceNr, permanent) ⇒
-      asyncDeleteMessagesTo(persistenceId, toSequenceNr, permanent) onComplete {
+    case d @ DeleteMessagesTo(persistenceId, toSequenceNr) ⇒
+      asyncDeleteMessagesTo(persistenceId, toSequenceNr) onComplete {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
         case Failure(e) ⇒
       }
@@ -165,10 +165,9 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
 
   /**
    * Plugin API: asynchronously deletes all persistent messages up to `toSequenceNr`
-   * (inclusive). If `permanent` is set to `false`, the persistent messages are marked
-   * as deleted, otherwise they are permanently deleted.
+   * (inclusive).
    */
-  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit]
+  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit]
 
   /**
    * Plugin API

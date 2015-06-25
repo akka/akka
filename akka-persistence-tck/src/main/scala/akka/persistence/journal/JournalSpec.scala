@@ -130,7 +130,7 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
       receiverProbe.expectMsg(ReplayMessagesSuccess)
     }
     "not replay permanently deleted messages (range deletion)" in {
-      val cmd = DeleteMessagesTo(pid, 3, true)
+      val cmd = DeleteMessagesTo(pid, 3)
       val sub = TestProbe()
 
       subscribe[DeleteMessagesTo](sub.ref)
@@ -139,20 +139,6 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
 
       journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       List(4, 5) foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-    }
-    "replay logically deleted messages with deleted field set to true (range deletion)" in {
-      val cmd = DeleteMessagesTo(pid, 3, false)
-      val sub = TestProbe()
-
-      subscribe[DeleteMessagesTo](sub.ref)
-      journal ! cmd
-      sub.expectMsg(cmd)
-
-      journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref, replayDeleted = true)
-      (1 to 5).foreach {
-        case i @ (1 | 2 | 3) ⇒ receiverProbe.expectMsg(replayedMessage(i, deleted = true))
-        case i @ (4 | 5)     ⇒ receiverProbe.expectMsg(replayedMessage(i))
-      }
     }
 
     "return a highest stored sequence number > 0 if the persistent actor has already written messages and the message log is non-empty" in {
