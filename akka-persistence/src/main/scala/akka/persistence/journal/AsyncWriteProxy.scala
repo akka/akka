@@ -4,16 +4,16 @@
 
 package akka.persistence.journal
 
-import scala.collection.immutable
-import scala.concurrent._
-import scala.concurrent.duration.Duration
-import scala.language.postfixOps
-
 import akka.AkkaException
 import akka.actor._
 import akka.pattern.ask
 import akka.persistence._
 import akka.util._
+
+import scala.collection.immutable
+import scala.concurrent._
+import scala.concurrent.duration.Duration
+import scala.language.postfixOps
 
 /**
  * INTERNAL API.
@@ -24,17 +24,18 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
   import AsyncWriteProxy._
   import AsyncWriteTarget._
 
-  private val initialized = super.receive
+  private var isInitialized = false
   private var store: ActorRef = _
 
-  override def receive = {
-    case SetStore(ref) ⇒
-      store = ref
-      unstashAll()
-      context.become(initialized)
-    case x ⇒
-      stash()
-  }
+  override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit =
+    if (isInitialized) super.aroundReceive(receive, msg)
+    else msg match {
+      case SetStore(ref) ⇒
+        store = ref
+        unstashAll()
+        isInitialized = true
+      case _ ⇒ stash()
+    }
 
   implicit def timeout: Timeout
 

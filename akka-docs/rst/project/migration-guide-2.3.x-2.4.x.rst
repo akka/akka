@@ -170,29 +170,6 @@ Default interval for TestKit.awaitAssert changed to 100 ms
 Default check interval changed from 800 ms to 100 ms. You can define the interval explicitly if you need a
 longer interval.
 
-Akka Persistence
-================
-
-Mandatory persistenceId
------------------------
-
-It is now mandatory to define the ``persistenceId`` in subclasses of ``PersistentActor``, ``UntypedPersistentActor``
-and ``AbstractPersistentId``.
-
-The rationale behind this change being stricter de-coupling of your Actor hierarchy and the logical
-"which persistent entity this actor represents".
-
-In case you want to preserve the old behavior of providing the actor's path as the default ``persistenceId``, you can easily
-implement it yourself either as a helper trait or simply by overriding ``persistenceId`` as follows::
-
-    override def persistenceId = self.path.toStringWithoutAddress
-    
-Persist sequence of events
---------------------------
-
-The ``persist`` method that takes a ``Seq`` (Scala) or ``Iterable`` (Java) of events parameter was deprecated and
-renamed to ``persistAll`` to avoid mistakes of persisting other collection types as one single event by calling
-the overloaded ``persist(event)`` method.  
 
 Secure Cookies
 ==============
@@ -315,3 +292,96 @@ actor external actor of how to allocate shards or rebalance shards.
 
 For the synchronous case you can return the result via ``scala.concurrent.Future.successful`` in Scala or 
 ``akka.dispatch.Futures.successful`` in Java.
+
+Akka Persistence
+================
+
+Mendatory persistenceId
+-----------------------
+
+It is now mandatory to define the ``persistenceId`` in subclasses of ``PersistentActor``, ``UntypedPersistentActor``
+and ``AbstractPersistentId``.
+
+The rationale behind this change being stricter de-coupling of your Actor hierarchy and the logical
+"which persistent entity this actor represents".
+
+In case you want to preserve the old behavior of providing the actor's path as the default ``persistenceId``, you can easily
+implement it yourself either as a helper trait or simply by overriding ``persistenceId`` as follows::
+
+    override def persistenceId = self.path.toStringWithoutAddress
+
+
+Persist sequence of events
+--------------------------
+
+The ``persist`` method that takes a ``Seq`` (Scala) or ``Iterable`` (Java) of events parameter was deprecated and
+renamed to ``persistAll`` to avoid mistakes of persisting other collection types as one single event by calling
+the overloaded ``persist(event)`` method.
+
+Persistence Plugin APIs
+=======================
+
+SnapshotStore: Snapshots can now be deleted asynchronously (and report failures)
+--------------------------------------------------------------------------------
+Previously the ``SnapshotStore`` plugin SPI did not allow for asynchronous deletion of snapshots,
+and failures of deleting a snapshot may have been even silently ignored.
+
+Now ``SnapshotStore`` must return a ``Future`` representing the deletion of the snapshot.
+If this future completes successfully the ``PersistentActor`` which initiated the snapshotting will
+be notified via an ``DeleteSnapshotSuccess`` message. If the deletion fails for some reason a ``DeleteSnapshotFailure``
+will be sent to the actor instead.
+
+For ``criteria`` based deletion of snapshots (``def deleteSnapshots(criteria: SnapshotSelectionCriteria)``) equivalent
+``DeleteSnapshotsSuccess`` and ``DeleteSnapshotsFailure`` messages are sent, which contain the specified criteria,
+instead of ``SnapshotMetadata`` as is the case with the single snapshot deletion messages.
+
+SnapshotStore: Removed 'saved' callback
+---------------------------------------
+Snapshot Stores previously were required to implement a ``def saved(meta: SnapshotMetadata): Unit`` method which
+would be called upon successful completion of a ``saveAsync`` (``doSaveAsync`` in Java API) snapshot write.
+
+Currently all journals and snapshot stores perform asynchronous writes and deletes, thus all could potentially benefit
+from such callback methods. The only gain these callback give over composing an ``onComplete`` over ``Future`` returned
+by the journal or snapshot store is that it is executed in the Actors context, thus it can safely (without additional
+synchronization modify its internal state - for example a "pending writes" counter).
+
+However, this feature was not used by many plugins, and expanding the API to accomodate all callbacks would have grown
+the API a lot. Instead, Akka Persistence 2.4.x introduces an additional (optionally overrideable)
+``receivePluginInternal:Actor.Receive`` method in the plugin API, which can be used for handling those as well as any custom messages
+that are sent to the plugin Actor (imagine use cases like "wake up and continue reading" or custom protocols which your
+specialised journal can implement).
+
+Implementations using the previous feature should adjust their code as follows::
+
+    // previously
+    class MySnapshots extends SnapshotStore {
+      // old API:
+      // def saved(meta: SnapshotMetadata): Unit = doThings()
+
+      // new API:
+      def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
+         // completion or failure of the returned future triggers internal messages in receivePluginInternal
+         val f: Future[Unit] = ???
+
+         // custom messages can be piped to self in order to be received in receivePluginInternal
+         f.map(MyCustomMessage(_)) pipeTo self
+
+         f
+      }
+
+      def receivePluginInternal = {
+        case SaveSnapshotSuccess(metadata) => doThings()
+        case MyCustomMessage(data)         => doOtherThings()
+      }
+
+      // ...
+    }
+
+SnapshotStore: Java 8 Optional used in Java plugin APIs
+-------------------------------------------------------
+In places where previously ``akka.japi.Option`` was used in Java APIs, including the return type of ``doLoadAsync``,
+the Java 8 provided ``Optional`` type is used now.
+
+Please remember that when creating an ``java.util.Optional`` instance from a (possibly) ``null`` value you will want to
+use the non-throwing ``Optional.fromNullable`` method, which converts a ``null`` into a ``None`` value - which is
+slightly different than its Scala counterpart (where ``Option.apply(null)`` returns ``None``).

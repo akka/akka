@@ -31,9 +31,9 @@ object SnapshotSpec {
 
   class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name) {
     override def receiveRecover: Receive = {
-      case payload: String      ⇒ probe ! s"${payload}-${lastSequenceNr}"
-      case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
-      case other                ⇒ probe ! other
+      case payload: String              ⇒ probe ! s"${payload}-${lastSequenceNr}"
+      case offer @ SnapshotOffer(md, s) ⇒ probe ! offer
+      case other                        ⇒ probe ! other
     }
 
     override def receiveCommand = {
@@ -42,8 +42,8 @@ object SnapshotSpec {
         persist(payload) { _ ⇒
           probe ! s"${payload}-${lastSequenceNr}"
         }
-      case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
-      case other                ⇒ probe ! other
+      case offer @ SnapshotOffer(md, s) ⇒ probe ! offer
+      case other                        ⇒ probe ! other
     }
     override def preStart() = ()
   }
@@ -54,7 +54,7 @@ object SnapshotSpec {
   class DeleteSnapshotTestPersistentActor(name: String, probe: ActorRef) extends LoadSnapshotTestPersistentActor(name, probe) {
     override def receiveCommand = receiveDelete orElse super.receiveCommand
     def receiveDelete: Receive = {
-      case Delete1(metadata) ⇒ deleteSnapshot(metadata.sequenceNr, metadata.timestamp)
+      case Delete1(metadata) ⇒ deleteSnapshot(metadata.sequenceNr)
       case DeleteN(criteria) ⇒ deleteSnapshots(criteria)
     }
   }
@@ -88,7 +88,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       persistentActor ! Recover()
 
       expectMsgPF() {
-        case (SnapshotMetadata(`persistenceId`, 4, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) ⇒
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp should be > (0L)
       }
@@ -103,7 +103,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       persistentActor ! Recover(toSequenceNr = 3)
 
       expectMsgPF() {
-        case (SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
           state should ===(List("a-1", "b-2").reverse)
           timestamp should be > (0L)
       }
@@ -118,7 +118,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       persistentActor ! "done"
 
       expectMsgPF() {
-        case (SnapshotMetadata(`persistenceId`, 4, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) ⇒
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp should be > (0L)
       }
@@ -132,7 +132,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       persistentActor ! Recover(fromSnapshot = SnapshotSelectionCriteria(maxSequenceNr = 2))
 
       expectMsgPF() {
-        case (SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
           state should ===(List("a-1", "b-2").reverse)
           timestamp should be > (0L)
       }
@@ -149,7 +149,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       persistentActor ! Recover(fromSnapshot = SnapshotSelectionCriteria(maxSequenceNr = 2), toSequenceNr = 3)
 
       expectMsgPF() {
-        case (SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
           state should ===(List("a-1", "b-2").reverse)
           timestamp should be > (0L)
       }
@@ -166,7 +166,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       expectMsg("c-3")
       expectMsg(RecoveryCompleted)
     }
-    "support single message deletions" in {
+    "support single snapshot deletions" in {
       val deleteProbe = TestProbe()
 
       val persistentActor1 = system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, testActor))
@@ -179,7 +179,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       persistentActor1 ! "done"
 
       val metadata = expectMsgPF() {
-        case (md @ SnapshotMetadata(`persistenceId`, 4, _), state) ⇒
+        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 4, _), state) ⇒
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           md
       }
@@ -188,13 +188,14 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
 
       persistentActor1 ! Delete1(metadata)
       deleteProbe.expectMsgType[DeleteSnapshot]
+      expectMsgPF() { case m @ DeleteSnapshotSuccess(SnapshotMetadata(`persistenceId`, 4, _)) ⇒ }
 
       // recover persistentActor from 2nd snapshot (3rd was deleted) plus replayed messages
       val persistentActor2 = system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, testActor))
 
       persistentActor2 ! Recover(toSequenceNr = 4)
-      expectMsgPF() {
-        case (md @ SnapshotMetadata(`persistenceId`, 2, _), state) ⇒
+      expectMsgPF(hint = "" + SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, 0), null)) {
+        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 2, _), state) ⇒
           state should ===(List("a-1", "b-2").reverse)
           md
       }
@@ -202,7 +203,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       expectMsg("d-4")
       expectMsg(RecoveryCompleted)
     }
-    "support bulk message deletions" in {
+    "support bulk snapshot deletions" in {
       val deleteProbe = TestProbe()
 
       val persistentActor1 = system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, testActor))
@@ -212,13 +213,15 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
 
       // recover persistentActor and the delete first three (= all) snapshots
       persistentActor1 ! Recover(toSequenceNr = 4)
-      persistentActor1 ! DeleteN(SnapshotSelectionCriteria(maxSequenceNr = 4))
+      val criteria = SnapshotSelectionCriteria(maxSequenceNr = 4)
+      persistentActor1 ! DeleteN(criteria)
       expectMsgPF() {
-        case (md @ SnapshotMetadata(`persistenceId`, 4, _), state) ⇒
+        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 4, _), state) ⇒
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
       }
       expectMsg(RecoveryCompleted)
       deleteProbe.expectMsgType[DeleteSnapshots]
+      expectMsgPF() { case DeleteSnapshotsSuccess(`criteria`) ⇒ }
 
       // recover persistentActor from replayed messages (all snapshots deleted)
       val persistentActor2 = system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, testActor))

@@ -8,7 +8,6 @@ Migration Guide Akka Persistence (experimental) 2.3.3 to 2.3.4 (and 2.4.x)
 is provided for Persistence while under the *experimental* flag. The goal of this phase is to gather user feedback
 before we freeze the APIs in a major release.
 
-
 defer renamed to deferAsync
 ===========================
 The ``defer`` method in ``PersistentActor`` was renamed to ``deferAsync`` as it matches the semantics
