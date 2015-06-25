@@ -69,9 +69,9 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery wi
           throw e
       }
 
-    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor, replayDeleted) ⇒
+    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor) ⇒
       asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) { p ⇒
-        if (!p.deleted || replayDeleted)
+        if (!p.deleted) // old records from 2.3 may still have the deleted flag
           adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
             persistentActor.tell(ReplayedMessage(adaptedPersistentRepr), adaptedPersistentRepr.sender)
           }
@@ -90,8 +90,8 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery wi
         case e ⇒ ReadHighestSequenceNrFailure(e)
       } pipeTo persistentActor
 
-    case d @ DeleteMessagesTo(persistenceId, toSequenceNr, permanent) ⇒
-      Try(deleteMessagesTo(persistenceId, toSequenceNr, permanent)) match {
+    case d @ DeleteMessagesTo(persistenceId, toSequenceNr) ⇒
+      Try(deleteMessagesTo(persistenceId, toSequenceNr)) match {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
         case Failure(e) ⇒
       }
@@ -137,9 +137,8 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery wi
 
   /**
    * Plugin API: synchronously deletes all persistent messages up to `toSequenceNr`
-   * (inclusive). If `permanent` is set to `false`, the persistent messages are marked
-   * as deleted, otherwise they are permanently deleted.
+   * (inclusive).
    */
-  def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Unit
+  def deleteMessagesTo(persistenceId: String, toSequenceNr: Long): Unit
   //#journal-plugin-api
 }

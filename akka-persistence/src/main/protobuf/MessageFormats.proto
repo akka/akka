@@ -9,7 +9,7 @@ message PersistentMessage {
   optional PersistentPayload payload = 1;
   optional int64 sequenceNr = 2;
   optional string persistenceId = 3;
-  optional bool deleted = 4;
+  optional bool deleted = 4; // not used in new records from 2.4
   // optional int32 redeliveries = 6; // Removed in 2.4
   // repeated string confirms = 7; // Removed in 2.4
   // optional bool confirmable = 8;  // Removed in 2.4
