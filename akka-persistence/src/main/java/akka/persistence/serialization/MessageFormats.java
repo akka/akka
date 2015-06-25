@@ -113,6 +113,21 @@ public final class MessageFormats {
      */
     com.google.protobuf.ByteString
         getManifestBytes();
+
+    // optional string writerUuid = 13;
+    /**
+     * <code>optional string writerUuid = 13;</code>
+     */
+    boolean hasWriterUuid();
+    /**
+     * <code>optional string writerUuid = 13;</code>
+     */
+    java.lang.String getWriterUuid();
+    /**
+     * <code>optional string writerUuid = 13;</code>
+     */
+    com.google.protobuf.ByteString
+        getWriterUuidBytes();
   }
   /**
    * Protobuf type {@code PersistentMessage}
@@ -201,6 +216,11 @@ public final class MessageFormats {
             case 98: {
               bitField0_ |= 0x00000020;
               manifest_ = input.readBytes();
+              break;
+            }
+            case 106: {
+              bitField0_ |= 0x00000040;
+              writerUuid_ = input.readBytes();
               break;
             }
           }
@@ -450,6 +470,49 @@ public final class MessageFormats {
       }
     }
 
+    // optional string writerUuid = 13;
+    public static final int WRITERUUID_FIELD_NUMBER = 13;
+    private java.lang.Object writerUuid_;
+    /**
+     * <code>optional string writerUuid = 13;</code>
+     */
+    public boolean hasWriterUuid() {
+      return ((bitField0_ & 0x00000040) == 0x00000040);
+    }
+    /**
+     * <code>optional string writerUuid = 13;</code>
+     */
+    public java.lang.String getWriterUuid() {
+      java.lang.Object ref = writerUuid_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          writerUuid_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string writerUuid = 13;</code>
+     */
+    public com.google.protobuf.ByteString
+        getWriterUuidBytes() {
+      java.lang.Object ref = writerUuid_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        writerUuid_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private void initFields() {
       payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
       sequenceNr_ = 0L;
@@ -457,6 +520,7 @@ public final class MessageFormats {
       deleted_ = false;
       sender_ = "";
       manifest_ = "";
+      writerUuid_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -494,6 +558,9 @@ public final class MessageFormats {
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         output.writeBytes(12, getManifestBytes());
       }
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
+        output.writeBytes(13, getWriterUuidBytes());
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -526,6 +593,10 @@ public final class MessageFormats {
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(12, getManifestBytes());
+      }
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(13, getWriterUuidBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -660,6 +731,8 @@ public final class MessageFormats {
         bitField0_ = (bitField0_ & ~0x00000010);
         manifest_ = "";
         bitField0_ = (bitField0_ & ~0x00000020);
+        writerUuid_ = "";
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
 
@@ -716,6 +789,10 @@ public final class MessageFormats {
           to_bitField0_ |= 0x00000020;
         }
         result.manifest_ = manifest_;
+        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+          to_bitField0_ |= 0x00000040;
+        }
+        result.writerUuid_ = writerUuid_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -754,6 +831,11 @@ public final class MessageFormats {
         if (other.hasManifest()) {
           bitField0_ |= 0x00000020;
           manifest_ = other.manifest_;
+          onChanged();
+        }
+        if (other.hasWriterUuid()) {
+          bitField0_ |= 0x00000040;
+          writerUuid_ = other.writerUuid_;
           onChanged();
         }
         this.mergeUnknownFields(other.getUnknownFields());
@@ -1238,6 +1320,80 @@ public final class MessageFormats {
   }
   bitField0_ |= 0x00000020;
         manifest_ = value;
+        onChanged();
+        return this;
+      }
+
+      // optional string writerUuid = 13;
+      private java.lang.Object writerUuid_ = "";
+      /**
+       * <code>optional string writerUuid = 13;</code>
+       */
+      public boolean hasWriterUuid() {
+        return ((bitField0_ & 0x00000040) == 0x00000040);
+      }
+      /**
+       * <code>optional string writerUuid = 13;</code>
+       */
+      public java.lang.String getWriterUuid() {
+        java.lang.Object ref = writerUuid_;
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
+          writerUuid_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string writerUuid = 13;</code>
+       */
+      public com.google.protobuf.ByteString
+          getWriterUuidBytes() {
+        java.lang.Object ref = writerUuid_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          writerUuid_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string writerUuid = 13;</code>
+       */
+      public Builder setWriterUuid(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
+        writerUuid_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string writerUuid = 13;</code>
+       */
+      public Builder clearWriterUuid() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        writerUuid_ = getDefaultInstance().getWriterUuid();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string writerUuid = 13;</code>
+       */
+      public Builder setWriterUuidBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
+        writerUuid_ = value;
         onChanged();
         return this;
       }
@@ -4747,23 +4903,24 @@ public final class MessageFormats {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\024MessageFormats.proto\"\226\001\n\021PersistentMes" +
+      "\n\024MessageFormats.proto\"\252\001\n\021PersistentMes" +
       "sage\022#\n\007payload\030\001 \001(\0132\022.PersistentPayloa" +
       "d\022\022\n\nsequenceNr\030\002 \001(\003\022\025\n\rpersistenceId\030\003" +
       " \001(\t\022\017\n\007deleted\030\004 \001(\010\022\016\n\006sender\030\013 \001(\t\022\020\n" +
-      "\010manifest\030\014 \001(\t\"S\n\021PersistentPayload\022\024\n\014" +
-      "serializerId\030\001 \002(\005\022\017\n\007payload\030\002 \002(\014\022\027\n\017p" +
-      "ayloadManifest\030\003 \001(\014\"2\n\013AtomicWrite\022#\n\007p" +
-      "ayload\030\001 \003(\0132\022.PersistentMessage\"\356\001\n\033AtL" +
-      "eastOnceDeliverySnapshot\022\031\n\021currentDeliv" +
-      "eryId\030\001 \002(\003\022O\n\025unconfirmedDeliveries\030\002 \003",
-      "(\01320.AtLeastOnceDeliverySnapshot.Unconfi" +
-      "rmedDelivery\032c\n\023UnconfirmedDelivery\022\022\n\nd" +
-      "eliveryId\030\001 \002(\003\022\023\n\013destination\030\002 \002(\t\022#\n\007" +
-      "payload\030\003 \002(\0132\022.PersistentPayload\"F\n\032Per" +
-      "sistentStateChangeEvent\022\027\n\017stateIdentifi" +
-      "er\030\001 \002(\t\022\017\n\007timeout\030\002 \001(\tB\"\n\036akka.persis" +
-      "tence.serializationH\001"
+      "\010manifest\030\014 \001(\t\022\022\n\nwriterUuid\030\r \001(\t\"S\n\021P" +
+      "ersistentPayload\022\024\n\014serializerId\030\001 \002(\005\022\017" +
+      "\n\007payload\030\002 \002(\014\022\027\n\017payloadManifest\030\003 \001(\014" +
+      "\"2\n\013AtomicWrite\022#\n\007payload\030\001 \003(\0132\022.Persi" +
+      "stentMessage\"\356\001\n\033AtLeastOnceDeliverySnap" +
+      "shot\022\031\n\021currentDeliveryId\030\001 \002(\003\022O\n\025uncon",
+      "firmedDeliveries\030\002 \003(\01320.AtLeastOnceDeli" +
+      "verySnapshot.UnconfirmedDelivery\032c\n\023Unco" +
+      "nfirmedDelivery\022\022\n\ndeliveryId\030\001 \002(\003\022\023\n\013d" +
+      "estination\030\002 \002(\t\022#\n\007payload\030\003 \002(\0132\022.Pers" +
+      "istentPayload\"F\n\032PersistentStateChangeEv" +
+      "ent\022\027\n\017stateIdentifier\030\001 \002(\t\022\017\n\007timeout\030" +
+      "\002 \001(\tB\"\n\036akka.persistence.serializationH" +
+      "\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -4775,7 +4932,7 @@ public final class MessageFormats {
           internal_static_PersistentMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PersistentMessage_descriptor,
-              new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", "Manifest", });
+              new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", "Manifest", "WriterUuid", });
           internal_static_PersistentPayload_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_PersistentPayload_fieldAccessorTable = new

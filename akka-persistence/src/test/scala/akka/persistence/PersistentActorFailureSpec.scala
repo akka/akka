@@ -9,7 +9,7 @@ import akka.actor.{ OneForOneStrategy, _ }
 import akka.persistence.journal.AsyncWriteProxy
 import akka.persistence.journal.AsyncWriteTarget.{ ReplayFailure, ReplayMessages, ReplaySuccess, WriteMessages }
 import akka.persistence.journal.inmem.InmemStore
-import akka.testkit.{ ImplicitSender, TestProbe }
+import akka.testkit.{ ImplicitSender, TestProbe, TestEvent, EventFilter }
 import akka.util.Timeout
 
 import scala.concurrent.duration._
@@ -146,6 +146,9 @@ class PersistentActorFailureSpec extends PersistenceSpec(PersistenceSpec.config(
 
   import PersistentActorFailureSpec._
   import PersistentActorSpec._
+
+  system.eventStream.publish(TestEvent.Mute(
+    EventFilter[akka.pattern.AskTimeoutException]()))
 
   def prepareFailingRecovery(): Unit = {
     val persistentActor = namedPersistentActor[FailingRecovery]
