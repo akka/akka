@@ -17,6 +17,7 @@ message PersistentMessage {
   // optional string confirmTarget = 10; // Removed in 2.4
   optional string sender = 11; // not stored in journal, needed for remote serialization 
   optional string manifest = 12;
+  optional string writerUuid = 13;
 }
 
 message PersistentPayload {
