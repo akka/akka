@@ -46,10 +46,9 @@ class ChaosJournal extends SyncWriteJournal {
         SyncWriteJournal.successUnit
       }
 
-  def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Unit = {
+  def deleteMessagesTo(persistenceId: String, toSequenceNr: Long): Unit = {
     (1L to toSequenceNr).foreach { snr ⇒
-      if (permanent) update(persistenceId, snr)(_.update(deleted = true))
-      else del(persistenceId, snr)
+      del(persistenceId, snr)
     }
   }
 

@@ -378,21 +378,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    *
    * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
    */
-  def deleteMessages(toSequenceNr: Long): Unit = {
-    deleteMessages(toSequenceNr, permanent = true)
-  }
-
-  /**
-   * Deletes all persistent messages with sequence numbers less than or equal `toSequenceNr`. If `permanent`
-   * is set to `false`, the persistent messages are marked as deleted in the journal, otherwise
-   * they permanently deleted from the journal.
-   *
-   * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
-   * @param permanent if `false`, the message is marked as deleted, otherwise it is permanently deleted.
-   */
-  def deleteMessages(toSequenceNr: Long, permanent: Boolean): Unit = {
-    journal ! DeleteMessagesTo(persistenceId, toSequenceNr, permanent)
-  }
+  def deleteMessages(toSequenceNr: Long): Unit =
+    deleteMessages(toSequenceNr)
 
   /**
    * Returns `true` if this persistent actor is currently recovering.

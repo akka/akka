@@ -283,9 +283,9 @@ abstract class PersistentViewSpec(config: Config) extends PersistenceSpec(config
       viewProbe.expectMsg("replicated-c-3")
       viewProbe.expectMsg("replicated-d-4")
 
-      replayProbe.expectMsgPF() { case ReplayMessages(1L, _, 2L, _, _, _) ⇒ }
-      replayProbe.expectMsgPF() { case ReplayMessages(3L, _, 2L, _, _, _) ⇒ }
-      replayProbe.expectMsgPF() { case ReplayMessages(5L, _, 2L, _, _, _) ⇒ }
+      replayProbe.expectMsgPF() { case ReplayMessages(1L, _, 2L, _, _) ⇒ }
+      replayProbe.expectMsgPF() { case ReplayMessages(3L, _, 2L, _, _) ⇒ }
+      replayProbe.expectMsgPF() { case ReplayMessages(5L, _, 2L, _, _) ⇒ }
     }
     "support context.become" in {
       view = system.actorOf(Props(classOf[BecomingPersistentView], name, viewProbe.ref))

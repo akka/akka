@@ -28,6 +28,6 @@ abstract class AsyncWriteJournal extends AsyncRecovery with SAsyncWriteJournal w
       }(collection.breakOut)
     }
 
-  final def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean) =
-    doAsyncDeleteMessagesTo(persistenceId, toSequenceNr, permanent).map(Unit.unbox)
+  final def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long) =
+    doAsyncDeleteMessagesTo(persistenceId, toSequenceNr).map(Unit.unbox)
 }
