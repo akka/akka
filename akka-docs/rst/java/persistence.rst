@@ -597,21 +597,22 @@ Plugin development requires the following imports:
 
 .. includecode:: code/docs/persistence/PersistencePluginDocTest.java#plugin-imports
 
+.. _journal-plugin-api-java:
+
 Journal plugin API
 ------------------
 
-A journal plugin either extends ``SyncWriteJournal`` or ``AsyncWriteJournal``.  ``SyncWriteJournal`` is an
-actor that should be extended when the storage backend API only supports synchronous, blocking writes. In this
-case, the methods to be implemented are:
+A journal plugin extends ``AsyncWriteJournal``.
 
-.. includecode:: ../../../akka-persistence/src/main/java/akka/persistence/journal/japi/SyncWritePlugin.java#sync-write-plugin-api
-
-``AsyncWriteJournal`` is an actor that should be extended if the storage backend API supports asynchronous,
-non-blocking writes. In this case, the methods to be implemented are:
+``AsyncWriteJournal`` is an actor and the methods to be implemented are:
 
 .. includecode:: ../../../akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncWritePlugin.java#async-write-plugin-api
 
-Message replays and sequence number recovery are always asynchronous, therefore, any journal plugin must implement:
+If the storage backend API only supports synchronous, blocking writes, the methods should be implemented as:
+
+.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#sync-journal-plugin-api
+
+A journal plugin must also implement the methods defined in ``AsyncRecovery`` for replays and sequence number recovery:
 
 .. includecode:: ../../../akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncRecoveryPlugin.java#async-replay-plugin-api
 

@@ -321,10 +321,22 @@ non-permanent deletion
 ----------------------
 
 The ``permanent`` flag in ``deleteMessages`` was removed. non-permanent deletes are not supported
-any more.
+any more. Events that were deleted with ``permanent=false`` with older version will
+still not be replayed in this version.
 
 Persistence Plugin APIs
 =======================
+
+SyncWriteJournal removed
+------------------------
+
+``SyncWriteJournal`` removed in favor of using ``AsyncWriteJournal``. 
+
+If the storage backend API only supports synchronous, blocking writes, 
+the methods can still be implemented in terms of the asynchronous API.
+Example of how to do that is in included in the 
+See :ref:`Journal plugin API for Scala <journal-plugin-api>`
+or :ref:`Journal plugin API for Java <journal-plugin-api-java>`.
 
 SnapshotStore: Snapshots can now be deleted asynchronously (and report failures)
 --------------------------------------------------------------------------------
@@ -394,7 +406,7 @@ slightly different than its Scala counterpart (where ``Option.apply(null)`` retu
 Atomic writes
 -------------
 
-``asyncWriteMessages`` and ``writeMessages`` takes a ``immutable.Seq[AtomicWrite]`` parameter instead of
+``asyncWriteMessages`` takes a ``immutable.Seq[AtomicWrite]`` parameter instead of
 ``immutable.Seq[PersistentRepr]``. 
 
 Each `AtomicWrite` message contains the single ``PersistentRepr`` that corresponds to the event that was 
@@ -410,8 +422,7 @@ describing the issue. This limitation should also be documented by the journal p
 Rejecting writes
 ----------------
 
-``asyncWriteMessages`` and ``writeMessages`` returns a ``Future[immutable.Seq[Try[Unit]]]`` or ``
-``immutable.Seq[Try[Unit]]`` respectively. 
+``asyncWriteMessages`` returns a ``Future[immutable.Seq[Try[Unit]]]``. 
 
 The journal can signal that it rejects individual messages (``AtomicWrite``) by the returned 
 `immutable.Seq[Try[Unit]]`. The returned ``Seq`` must have as many elements as the input 
@@ -420,8 +431,8 @@ is rejected or not, with an exception describing the problem. Rejecting a messag
 was not stored, i.e. it must not be included in a later replay. Rejecting a message is
 typically done before attempting to store it, e.g. because of serialization error.
 
-Read the API documentation of these methods for more information about the semantics of
-rejections and failures.
+Read the :ref:`API documentation <journal-plugin-api>` of this method for more
+information about the semantics of rejections and failures.
 
 asyncReplayMessages Java API
 ----------------------------
@@ -433,5 +444,6 @@ asyncDeleteMessagesTo
 ---------------------
 
 The ``permanent`` deletion flag was removed. Support for non-permanent deletions was
-removed.
+removed. Events that were deleted with ``permanent=false`` with older version will
+still not be replayed in this version.
 

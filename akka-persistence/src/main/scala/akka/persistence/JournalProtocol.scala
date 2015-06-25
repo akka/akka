@@ -42,7 +42,7 @@ private[persistence] object JournalProtocol {
    * @param persistentActor write requestor.
    */
   final case class WriteMessages(messages: immutable.Seq[PersistentEnvelope], persistentActor: ActorRef, actorInstanceId: Int)
-    extends Request
+    extends Request with NoSerializationVerificationNeeded
 
   /**
    * Reply message to a successful [[WriteMessages]] request. This reply is sent to the requestor
@@ -78,7 +78,7 @@ private[persistence] object JournalProtocol {
    * @param cause failure cause.
    */
   final case class WriteMessageRejected(message: PersistentRepr, cause: Throwable, actorInstanceId: Int)
-    extends Response
+    extends Response with NoSerializationVerificationNeeded
 
   /**
    * Reply message to a failed [[WriteMessages]] request. For each contained [[PersistentRepr]] message
@@ -88,7 +88,7 @@ private[persistence] object JournalProtocol {
    * @param cause failure cause.
    */
   final case class WriteMessageFailure(message: PersistentRepr, cause: Throwable, actorInstanceId: Int)
-    extends Response
+    extends Response with NoSerializationVerificationNeeded
 
   /**
    * Reply message to a [[WriteMessages]] with a non-persistent message.
@@ -96,7 +96,7 @@ private[persistence] object JournalProtocol {
    * @param message looped message.
    */
   final case class LoopMessageSuccess(message: Any, actorInstanceId: Int)
-    extends Response
+    extends Response with NoSerializationVerificationNeeded
 
   /**
    * Request to replay messages to `persistentActor`.
@@ -117,7 +117,7 @@ private[persistence] object JournalProtocol {
    * @param persistent replayed message.
    */
   final case class ReplayedMessage(persistent: PersistentRepr)
-    extends Response with DeadLetterSuppression
+    extends Response with DeadLetterSuppression with NoSerializationVerificationNeeded
 
   /**
    * Reply message to a successful [[ReplayMessages]] request. This reply is sent to the requestor

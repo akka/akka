@@ -15,6 +15,7 @@ import akka.actor.*;
 import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
 import akka.japi.pf.ReceiveBuilder;
+import java.util.ArrayList;
 import scala.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.Optional;
@@ -77,10 +78,20 @@ public class LambdaPersistencePluginDocTest {
   }
 
   class MyAsyncJournal extends AsyncWriteJournal {
+    //#sync-journal-plugin-api
     @Override
-    public Future<Iterable<Optional<Exception>>> doAsyncWriteMessages(Iterable<AtomicWrite> messages) {
-      return null;
+    public Future<Iterable<Optional<Exception>>> doAsyncWriteMessages(
+        Iterable<AtomicWrite> messages) {
+      try {
+        Iterable<Optional<Exception>> result = new ArrayList<Optional<Exception>>();
+        // blocking call here...
+        // result.add(..)
+        return Futures.successful(result);
+      } catch (Exception e) {
+        return Futures.failed(e);
+      }
     }
+    //#sync-journal-plugin-api
 
     @Override
     public Future<Void> doAsyncDeleteMessagesTo(String persistenceId, long toSequenceNr) {
