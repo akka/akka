@@ -72,6 +72,13 @@ trait PersistentRepr extends Message {
   def sequenceNr: Long
 
   /**
+   * Unique identifier of the writing persistent actor.
+   * Used to detect anomalies with overlapping writes from multiple
+   * persistent actors, which can result in inconsistent replays.
+   */
+  def writerUuid: String
+
+  /**
    * Creates a new persistent message with the specified `payload`.
    */
   def withPayload(payload: Any): PersistentRepr
@@ -100,7 +107,8 @@ trait PersistentRepr extends Message {
     sequenceNr: Long = sequenceNr,
     persistenceId: String = persistenceId,
     deleted: Boolean = deleted,
-    sender: ActorRef = sender): PersistentRepr
+    sender: ActorRef = sender,
+    writerUuid: String = writerUuid): PersistentRepr
 }
 
 object PersistentRepr {
@@ -118,8 +126,9 @@ object PersistentRepr {
     persistenceId: String = PersistentRepr.Undefined,
     manifest: String = PersistentRepr.Undefined,
     deleted: Boolean = false,
-    sender: ActorRef = null): PersistentRepr =
-    PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender)
+    sender: ActorRef = null,
+    writerUuid: String = PersistentRepr.Undefined): PersistentRepr =
+    PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender, writerUuid)
 
   /**
    * Java API, Plugin API.
@@ -142,7 +151,8 @@ private[persistence] final case class PersistentImpl(
   override val persistenceId: String,
   override val manifest: String,
   override val deleted: Boolean,
-  override val sender: ActorRef) extends PersistentRepr {
+  override val sender: ActorRef,
+  override val writerUuid: String) extends PersistentRepr {
 
   def withPayload(payload: Any): PersistentRepr =
     copy(payload = payload)
@@ -151,8 +161,13 @@ private[persistence] final case class PersistentImpl(
     if (this.manifest == manifest) this
     else copy(manifest = manifest)
 
-  def update(sequenceNr: Long, persistenceId: String, deleted: Boolean, sender: ActorRef) =
-    copy(sequenceNr = sequenceNr, persistenceId = persistenceId, deleted = deleted, sender = sender)
+  def update(sequenceNr: Long, persistenceId: String, deleted: Boolean, sender: ActorRef, writerUuid: String) =
+    copy(
+      sequenceNr = sequenceNr,
+      persistenceId = persistenceId,
+      deleted = deleted,
+      sender = sender,
+      writerUuid = writerUuid)
 
 }
 
