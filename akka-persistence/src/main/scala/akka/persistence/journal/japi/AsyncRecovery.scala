@@ -4,10 +4,10 @@
 
 package akka.persistence.journal.japi
 
+import java.util.function.Consumer
 import scala.concurrent.Future
 
 import akka.actor.Actor
-import akka.japi.Procedure
 import akka.persistence.journal.{ AsyncRecovery ⇒ SAsyncReplay }
 import akka.persistence.PersistentRepr
 
@@ -18,8 +18,8 @@ abstract class AsyncRecovery extends SAsyncReplay with AsyncRecoveryPlugin { thi
   import context.dispatcher
 
   final def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) ⇒ Unit) =
-    doAsyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max, new Procedure[PersistentRepr] {
-      def apply(p: PersistentRepr) = replayCallback(p)
+    doAsyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max, new Consumer[PersistentRepr] {
+      def accept(p: PersistentRepr) = replayCallback(p)
     }).map(Unit.unbox)
 
   final def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =

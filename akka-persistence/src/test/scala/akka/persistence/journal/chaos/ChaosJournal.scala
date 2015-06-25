@@ -7,10 +7,10 @@ package akka.persistence.journal.chaos
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.forkjoin.ThreadLocalRandom
-
 import akka.persistence._
 import akka.persistence.journal.SyncWriteJournal
 import akka.persistence.journal.inmem.InmemMessages
+import scala.util.Try
 
 class WriteFailedException(ps: Seq[PersistentRepr])
   extends TestException(s"write failed for payloads = [${ps.map(_.payload)}]")
@@ -38,9 +38,13 @@ class ChaosJournal extends SyncWriteJournal {
 
   def random = ThreadLocalRandom.current
 
-  def writeMessages(messages: immutable.Seq[PersistentRepr]): Unit =
-    if (shouldFail(writeFailureRate)) throw new WriteFailedException(messages)
-    else messages.foreach(add)
+  def writeMessages(messages: immutable.Seq[AtomicWrite]): immutable.Seq[Try[Unit]] =
+    if (shouldFail(writeFailureRate)) throw new WriteFailedException(messages.flatMap(_.payload))
+    else
+      for (a ← messages) yield {
+        a.payload.foreach(add)
+        SyncWriteJournal.successUnit
+      }
 
   def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Unit = {
     (1L to toSequenceNr).foreach { snr ⇒

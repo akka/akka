@@ -11,7 +11,7 @@ import org.openjdk.jmh.annotations.Fork
 import org.openjdk.jmh.annotations.Measurement
 import org.openjdk.jmh.annotations.Mode
 import org.openjdk.jmh.annotations.OutputTimeUnit
-import org.openjdk.jmh.annotations.Scope
+import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.Warmup
 
@@ -24,7 +24,7 @@ import org.openjdk.jmh.annotations.Warmup
 [info] a.a.ActorPathValidationBenchmark.oldActor_1         thrpt        20        1.585        0.090   ops/us
  */
 @Fork(2)
-@State(Scope.Benchmark)
+@State(JmhScope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @Warmup(iterations = 5)
 @Measurement(iterations = 10)
@@ -36,8 +36,7 @@ class ActorPathValidationBenchmark {
 
   final val ElementRegex = """(?:[-\w:@&=+,.!~*'_;]|%\p{XDigit}{2})(?:[-\w:@&=+,.!~*'$_;]|%\p{XDigit}{2})*""".r
 
-
-//  @Benchmark // blows up with stack overflow, we know
+  //  @Benchmark // blows up with stack overflow, we know
   def old7000: Option[List[String]] = ElementRegex.unapplySeq(s)
 
   @Benchmark
