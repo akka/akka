@@ -30,10 +30,9 @@ private[persistence] object JournalProtocol {
 
   /**
    * Request to delete all persistent messages with sequence numbers up to `toSequenceNr`
-   * (inclusive). If `permanent` is set to `false`, the persistent messages are marked
-   * as deleted in the journal, otherwise they are permanently deleted from the journal.
+   * (inclusive).
    */
-  final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean)
+  final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long)
     extends Request
 
   /**
@@ -107,10 +106,9 @@ private[persistence] object JournalProtocol {
    * @param max maximum number of messages to be replayed.
    * @param persistenceId requesting persistent actor id.
    * @param persistentActor requesting persistent actor.
-   * @param replayDeleted `true` if messages marked as deleted shall be replayed.
    */
-  final case class ReplayMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long, persistenceId: String, persistentActor: ActorRef, replayDeleted: Boolean = false)
-    extends Request
+  final case class ReplayMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long,
+                                  persistenceId: String, persistentActor: ActorRef) extends Request
 
   /**
    * Reply message to a [[ReplayMessages]] request. A separate reply is sent to the requestor for each

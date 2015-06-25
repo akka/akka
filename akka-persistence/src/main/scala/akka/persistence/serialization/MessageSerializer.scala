@@ -133,7 +133,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
     builder.setPayload(persistentPayloadBuilder(persistent.payload.asInstanceOf[AnyRef]))
     builder.setSequenceNr(persistent.sequenceNr)
-    builder.setDeleted(persistent.deleted)
+    // deleted is not used in new records from 2.4
     builder
   }
 
@@ -174,7 +174,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       persistentMessage.getSequenceNr,
       if (persistentMessage.hasPersistenceId) persistentMessage.getPersistenceId else Undefined,
       if (persistentMessage.hasManifest) persistentMessage.getManifest else Undefined,
-      persistentMessage.getDeleted,
+      if (persistentMessage.hasDeleted) persistentMessage.getDeleted else false,
       if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender) else Actor.noSender)
   }
 

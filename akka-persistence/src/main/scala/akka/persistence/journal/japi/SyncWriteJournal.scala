@@ -26,6 +26,6 @@ abstract class SyncWriteJournal extends AsyncRecovery with SSyncWriteJournal wit
       else successUnit
     }(collection.breakOut)
 
-  final def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Unit =
-    doDeleteMessagesTo(persistenceId, toSequenceNr, permanent)
+  final def deleteMessagesTo(persistenceId: String, toSequenceNr: Long): Unit =
+    doDeleteMessagesTo(persistenceId, toSequenceNr)
 }

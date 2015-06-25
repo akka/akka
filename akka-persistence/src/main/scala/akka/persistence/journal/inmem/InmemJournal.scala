@@ -82,9 +82,7 @@ private[persistence] class InmemStore extends Actor with InmemMessages with Writ
           Try(a.payload.foreach(add))
         }
       sender() ! results
-    case DeleteMessagesTo(pid, tsnr, false) ⇒
-      sender() ! (1L to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) })
-    case DeleteMessagesTo(pid, tsnr, true) ⇒
+    case DeleteMessagesTo(pid, tsnr) ⇒
       sender() ! (1L to tsnr foreach { snr ⇒ delete(pid, snr) })
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
       read(pid, fromSnr, toSnr, max).foreach { sender() ! _ }

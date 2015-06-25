@@ -145,7 +145,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
   "A message serializer" when {
     "not given a manifest" must {
       "handle custom Persistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("a"), 13, "p1", "", true)
+        val persistent = PersistentRepr(MyPayload("a"), 13, "p1", "")
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -157,7 +157,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 
     "given a PersistentRepr manifest" must {
       "handle custom Persistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("b"), 13, "p1", "", true)
+        val persistent = PersistentRepr(MyPayload("b"), 13, "p1", "")
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -169,7 +169,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 
     "given payload serializer with string manifest" must {
       "handle serialization" in {
-        val persistent = PersistentRepr(MyPayload2("a", 17), 13, "p1", "", true)
+        val persistent = PersistentRepr(MyPayload2("a", 17), 13, "p1", "")
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -192,7 +192,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       }
 
       "be able to deserialize data when class is removed" in {
-        val serializer = serialization.findSerializerFor(PersistentRepr("x", 13, "p1", "", true))
+        val serializer = serialization.findSerializerFor(PersistentRepr("x", 13, "p1", ""))
 
         // It was created with:
         // val old = PersistentRepr(OldPayload('A'), 13, "p1", true, testActor)

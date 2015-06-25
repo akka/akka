@@ -90,7 +90,7 @@ public class PersistencePluginDocTest {
         }
 
         @Override
-        public Future<Void> doAsyncDeleteMessagesTo(String persistenceId, long toSequenceNr, boolean permanent) {
+        public Future<Void> doAsyncDeleteMessagesTo(String persistenceId, long toSequenceNr) {
             return null;
         }
 

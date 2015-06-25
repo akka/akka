@@ -43,8 +43,8 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
   def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
     (store ? WriteMessages(messages)).mapTo[immutable.Seq[Try[Unit]]]
 
-  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
-    (store ? DeleteMessagesTo(persistenceId, toSequenceNr, permanent)).mapTo[Unit]
+  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
+    (store ? DeleteMessagesTo(persistenceId, toSequenceNr)).mapTo[Unit]
 
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit] = {
     val replayCompletionPromise = Promise[Unit]()
@@ -72,7 +72,7 @@ private[persistence] object AsyncWriteTarget {
   final case class WriteMessages(messages: immutable.Seq[AtomicWrite])
 
   @SerialVersionUID(1L)
-  final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean)
+  final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long)
 
   @SerialVersionUID(1L)
   final case class ReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
