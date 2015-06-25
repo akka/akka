@@ -395,9 +395,11 @@ saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay a
 Snapshot deletion
 -----------------
 
-A persistent actor can delete individual snapshots by calling the ``deleteSnapshot`` method with the sequence number and the
-timestamp of a snapshot as argument. To bulk-delete snapshots matching ``SnapshotSelectionCriteria``, persistent actors should
-use the ``deleteSnapshots`` method.
+A persistent actor can delete individual snapshots by calling the ``deleteSnapshot`` method with the sequence number of
+when the snapshot was taken.
+
+To bulk-delete a range of snapshots matching ``SnapshotSelectionCriteria``,
+persistent actors should use the ``deleteSnapshots`` method.
 
 .. _at-least-once-delivery:
 

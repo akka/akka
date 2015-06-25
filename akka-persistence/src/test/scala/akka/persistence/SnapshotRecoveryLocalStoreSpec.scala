@@ -1,7 +1,7 @@
 package akka.persistence
 
-import akka.actor.{ Props, Actor, ActorRef }
-import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
+import akka.actor.{ ActorLogging, ActorRef, Props }
+import akka.testkit.ImplicitSender
 
 object SnapshotRecoveryLocalStoreSpec {
   val persistenceId = "europe"
@@ -21,13 +21,14 @@ object SnapshotRecoveryLocalStoreSpec {
     }
   }
 
-  class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name) {
+  class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name)
+    with ActorLogging {
+
     def receiveCommand = {
       case _ ⇒
     }
     def receiveRecover = {
-      case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
-      case other                ⇒ probe ! other
+      case other ⇒ probe ! other
     }
     override def preStart() = ()
   }
@@ -45,7 +46,6 @@ class SnapshotRecoveryLocalStoreSpec extends PersistenceSpec(PersistenceSpec.con
     persistentActor1 ! TakeSnapshot
     persistentActor2 ! TakeSnapshot
     expectMsgAllOf(0L, 0L)
-
   }
 
   "A persistent actor which is persisted at the same time as another actor whose persistenceId is an extension of the first " must {
@@ -54,11 +54,7 @@ class SnapshotRecoveryLocalStoreSpec extends PersistenceSpec(PersistenceSpec.con
       val recoveringActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], persistenceId, testActor))
 
       recoveringActor ! Recover()
-
-      expectMsgPF() {
-        case (SnapshotMetadata(pid, seqNo, timestamp), state) ⇒
-          pid should ===(persistenceId)
-      }
+      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, seqNo, timestamp), state) ⇒ }
       expectMsg(RecoveryCompleted)
     }
 

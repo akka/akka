@@ -7,7 +7,10 @@ package docs.persistence;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
 import akka.actor.*;
+import akka.dispatch.Futures;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.iq80.leveldb.util.FileUtils;
@@ -62,7 +65,7 @@ public class PersistencePluginDocTest {
 
     class MySnapshotStore extends SnapshotStore {
         @Override
-        public Future<Option<SelectedSnapshot>> doLoadAsync(String persistenceId, SnapshotSelectionCriteria criteria) {
+        public Future<Optional<SelectedSnapshot>> doLoadAsync(String persistenceId, SnapshotSelectionCriteria criteria) {
             return null;
         }
 
@@ -72,15 +75,13 @@ public class PersistencePluginDocTest {
         }
 
         @Override
-        public void onSaved(SnapshotMetadata metadata) throws Exception {
+        public Future<Void> doDeleteAsync(SnapshotMetadata metadata) {
+            return Futures.successful(null);
         }
 
         @Override
-        public void doDelete(SnapshotMetadata metadata) throws Exception {
-        }
-
-        @Override
-        public void doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception {
+        public Future<Void> doDeleteAsync(String persistenceId, SnapshotSelectionCriteria criteria) {
+            return Futures.successful(null);
         }
     }
 

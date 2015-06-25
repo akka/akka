@@ -10,7 +10,7 @@ package akka.persistence
  *
  * @param persistenceId id of persistent actor from which the snapshot was taken.
  * @param sequenceNr sequence number at which the snapshot was taken.
- * @param timestamp time at which the snapshot was saved.
+ * @param timestamp time at which the snapshot was saved, defaults to 0 when unknown.
  */
 @SerialVersionUID(1L) //
 //#snapshot-metadata
@@ -27,6 +27,24 @@ final case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
   extends SnapshotProtocol.Response
 
 /**
+ * Sent to a [[PersistentActor]] after successful deletion of a snapshot.
+ *
+ * @param metadata snapshot metadata.
+ */
+@SerialVersionUID(1L)
+final case class DeleteSnapshotSuccess(metadata: SnapshotMetadata)
+  extends SnapshotProtocol.Response
+
+/**
+ * Sent to a [[PersistentActor]] after successful deletion of specified range of snapshots.
+ *
+ * @param criteria snapshot selection criteria.
+ */
+@SerialVersionUID(1L)
+final case class DeleteSnapshotsSuccess(criteria: SnapshotSelectionCriteria)
+  extends SnapshotProtocol.Response
+
+/**
  * Sent to a [[PersistentActor]] after failed saving of a snapshot.
  *
  * @param metadata snapshot metadata.
@@ -34,6 +52,26 @@ final case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
  */
 @SerialVersionUID(1L)
 final case class SaveSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable)
+  extends SnapshotProtocol.Response
+
+/**
+ * Sent to a [[PersistentActor]] after failed deletion of a snapshot.
+ *
+ * @param metadata snapshot metadata.
+ * @param cause failure cause.
+ */
+@SerialVersionUID(1L)
+final case class DeleteSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable)
+  extends SnapshotProtocol.Response
+
+/**
+ * Sent to a [[PersistentActor]] after failed deletion of a range of snapshots.
+ *
+ * @param criteria snapshot selection criteria.
+ * @param cause failure cause.
+ */
+@SerialVersionUID(1L)
+final case class DeleteSnapshotsFailure(criteria: SnapshotSelectionCriteria, cause: Throwable)
   extends SnapshotProtocol.Response
 
 /**

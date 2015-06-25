@@ -27,7 +27,9 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   private val resequencer = context.actorOf(Props[Resequencer]())
   private var resequencerCounter = 1L
 
-  def receive = {
+  final def receive = receiveWriteJournal orElse receivePluginInternal
+
+  final val receiveWriteJournal: Actor.Receive = {
     case WriteMessages(messages, persistentActor, actorInstanceId) ⇒
       val cctr = resequencerCounter
       def resequence(f: PersistentRepr ⇒ Any) = messages.zipWithIndex.foreach {
@@ -43,6 +45,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           resequence(WriteMessageFailure(_, e, actorInstanceId))
       }
       resequencerCounter += messages.length + 1
+
     case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor, replayDeleted) ⇒
       // Send replayed messages and replay result to persistentActor directly. No need
       // to resequence replayed messages relative to written and looped messages.
@@ -58,6 +61,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       } pipeTo persistentActor onSuccess {
         case _ if publish ⇒ context.system.eventStream.publish(r)
       }
+
     case ReadHighestSequenceNr(fromSequenceNr, persistenceId, persistentActor) ⇒
       // Send read highest sequence number to persistentActor directly. No need
       // to resequence the result relative to written and looped messages.
@@ -66,6 +70,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       } recover {
         case e ⇒ ReadHighestSequenceNrFailure(e)
       } pipeTo persistentActor
+
     case d @ DeleteMessagesTo(persistenceId, toSequenceNr, permanent) ⇒
       asyncDeleteMessagesTo(persistenceId, toSequenceNr, permanent) onComplete {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
@@ -87,6 +92,14 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * as deleted, otherwise they are permanently deleted.
    */
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit]
+
+  /**
+   * Plugin API
+   *
+   * Allows plugin implementers to use `f pipeTo self` and
+   * handle additional messages for implementing advanced features
+   */
+  def receivePluginInternal: Actor.Receive = Actor.emptyBehavior
   //#journal-plugin-api
 
 }
