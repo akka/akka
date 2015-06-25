@@ -283,6 +283,10 @@ object MessageSerializerRemotingSpec {
   class RemoteActor extends Actor {
     def receive = {
       case p @ PersistentRepr(MyPayload(data), _) ⇒ p.sender ! s"p${data}"
+      case a: AtomicWrite ⇒
+        a.payload.foreach {
+          case p @ PersistentRepr(MyPayload(data), _) ⇒ p.sender ! s"p${data}"
+        }
     }
   }
 
@@ -308,12 +312,20 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
   }
 
   "A message serializer" must {
-    "custom-serialize Persistent messages during remoting" in {
+    "custom-serialize PersistentRepr messages during remoting" in {
       // this also verifies serialization of PersistentRepr.sender,
       // because the RemoteActor will reply to the PersistentRepr.sender
       // is kept intact
       localActor ! PersistentRepr(MyPayload("a"), sender = testActor)
       expectMsg("p.a.")
+    }
+
+    "custom-serialize AtomicWrite messages during remoting" in {
+      val p1 = PersistentRepr(MyPayload("a"), sender = testActor)
+      val p2 = PersistentRepr(MyPayload("b"), sender = testActor)
+      localActor ! AtomicWrite(List(p1, p2))
+      expectMsg("p.a.")
+      expectMsg("p.b.")
     }
   }
 }

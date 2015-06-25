@@ -3,15 +3,15 @@
  */
 package akka.persistence
 
-
+import scala.concurrent.duration._
 import org.openjdk.jmh.annotations._
 import akka.actor._
 import akka.testkit.TestProbe
 import java.io.File
 import org.apache.commons.io.FileUtils
 import org.openjdk.jmh.annotations.Scope
-
 import scala.concurrent.duration._
+import scala.concurrent.Await
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -52,8 +52,8 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
 
   @TearDown
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.ready(system.whenTerminated, 15.seconds)
 
     storageLocations.foreach(FileUtils.deleteDirectory)
   }
@@ -63,7 +63,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   def persistentActor_persistAsync_with_AtLeastOnceDelivery() {
     for (i <- 1 to dataCount)
       persistAsyncPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
-    probe.expectMsg(20 seconds, Evt(dataCount))
+    probe.expectMsg(20.seconds, Evt(dataCount))
   }
 
   @Benchmark
@@ -71,7 +71,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   def persistentActor_persist_with_AtLeastOnceDelivery() {
     for (i <- 1 to dataCount)
       persistPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
-    probe.expectMsg(2 minutes, Evt(dataCount))
+    probe.expectMsg(2.minutes, Evt(dataCount))
   }
 
   @Benchmark
@@ -79,7 +79,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   def persistentActor_noPersist_with_AtLeastOnceDelivery() {
     for (i <- 1 to dataCount)
       noPersistPersistentActorWithAtLeastOnceDelivery.tell(i, probe.ref)
-    probe.expectMsg(20 seconds, Evt(dataCount))
+    probe.expectMsg(20.seconds, Evt(dataCount))
   }
 }
 
@@ -94,7 +94,7 @@ class NoPersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int, val upS
       deliver(downStream, deliveryId =>
         Msg(deliveryId, n))
       if (n == respondAfter)
-      //switch to wait all message confirmed
+        //switch to wait all message confirmed
         context.become(waitConfirm)
     case Confirm(deliveryId) =>
       confirmDelivery(deliveryId)
@@ -128,9 +128,9 @@ class PersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int, val upStr
         deliver(downStream, deliveryId =>
           Msg(deliveryId, n))
         if (n == respondAfter)
-        //switch to wait all message confirmed
+          //switch to wait all message confirmed
           context.become(waitConfirm)
-    }
+      }
     case Confirm(deliveryId) =>
       confirmDelivery(deliveryId)
     case _ => // do nothing
@@ -163,7 +163,7 @@ class PersistAsyncPersistentActorWithAtLeastOnceDelivery(respondAfter: Int, val 
         deliver(downStream, deliveryId =>
           Msg(deliveryId, n))
         if (n == respondAfter)
-        //switch to wait all message confirmed
+          //switch to wait all message confirmed
           context.become(waitConfirm)
       }
     case Confirm(deliveryId) =>

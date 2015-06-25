@@ -8,7 +8,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
+import java.util.function.Consumer;
 import akka.actor.*;
 import akka.dispatch.Futures;
 import com.typesafe.config.Config;
@@ -19,8 +19,6 @@ import akka.persistence.japi.snapshot.JavaSnapshotStoreSpec;
 import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
 import scala.concurrent.Future;
-import akka.japi.Option;
-import akka.japi.Procedure;
 
 //#plugin-imports
 import akka.persistence.*;
@@ -87,7 +85,7 @@ public class PersistencePluginDocTest {
 
     class MyAsyncJournal extends AsyncWriteJournal {
         @Override
-        public Future<Void> doAsyncWriteMessages(Iterable<PersistentRepr> messages) {
+        public Future<Iterable<Optional<Exception>>> doAsyncWriteMessages(Iterable<AtomicWrite> messages) {
             return null;
         }
 
@@ -98,7 +96,7 @@ public class PersistencePluginDocTest {
 
         @Override
         public Future<Void> doAsyncReplayMessages(String persistenceId, long fromSequenceNr, 
-            long toSequenceNr, long max, Procedure<PersistentRepr> replayCallback) {
+            long toSequenceNr, long max, Consumer<PersistentRepr> replayCallback) {
             return null;
         }
 

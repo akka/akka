@@ -5,10 +5,11 @@ package akka.persistence
 
 import java.io.File
 import java.util.concurrent.TimeUnit
-
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import akka.actor._
 import akka.persistence.journal.AsyncWriteTarget._
-import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
+import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.testkit.TestProbe
 import org.apache.commons.io.FileUtils
 import org.openjdk.jmh.annotations._
@@ -38,10 +39,10 @@ class LevelDbBatchingBenchmark {
   var probe: TestProbe = _
   var store: ActorRef = _
 
-  val batch_1 = List.fill(1) { PersistentRepr("data", 12, "pa") }
-  val batch_10 = List.fill(10) { PersistentRepr("data", 12, "pa") }
-  val batch_100 = List.fill(100) { PersistentRepr("data", 12, "pa") }
-  val batch_200 = List.fill(200) { PersistentRepr("data", 12, "pa") }
+  val batch_1 = List.fill(1) { AtomicWrite(PersistentRepr("data", 12, "pa")) }
+  val batch_10 = List.fill(10) { AtomicWrite(PersistentRepr("data", 12, "pa")) }
+  val batch_100 = List.fill(100) { AtomicWrite(PersistentRepr("data", 12, "pa")) }
+  val batch_200 = List.fill(200) { AtomicWrite(PersistentRepr("data", 12, "pa")) }
 
   @Setup(Level.Trial)
   def setup() {
@@ -49,7 +50,7 @@ class LevelDbBatchingBenchmark {
     deleteStorage(sys)
     SharedLeveldbJournal.setStore(store, sys)
 
-    probe =  TestProbe()(sys)
+    probe = TestProbe()(sys)
     store = sys.actorOf(Props[SharedLeveldbStore], "store")
   }
 
@@ -58,8 +59,8 @@ class LevelDbBatchingBenchmark {
     store ! PoisonPill
     Thread.sleep(500)
 
-    sys.shutdown()
-    sys.awaitTermination()
+    sys.terminate()
+    Await.ready(sys.whenTerminated, 10.seconds)
   }
 
   @Benchmark

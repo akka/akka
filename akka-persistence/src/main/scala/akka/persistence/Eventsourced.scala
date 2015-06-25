@@ -133,6 +133,19 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   }
 
   /**
+   * Called when the journal rejected `persist` of an event. The event was not
+   * stored. By default this method logs the problem as a warning, and the actor continues.
+   * The callback handler that was passed to the `persist` method will not be invoked.
+   *
+   * @param cause failure cause
+   * @param event the event that was to be persisted
+   */
+  protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
+    log.warning("Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
+      event.getClass.getName, seqNr, persistenceId, cause.getMessage)
+  }
+
+  /**
    * User-overridable callback. Called when a persistent actor is started or restarted.
    * Default implementation sends a `Recover()` to `self`. Note that if you override
    * `preStart` (or `preRestart`) and not call `super.preStart` you must send
@@ -264,7 +277,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   final def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
     pendingStashingPersistInvocations += 1
     pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-    eventBatch = PersistentRepr(event) :: eventBatch
+    eventBatch = AtomicWrite(PersistentRepr(event, sender = sender())) :: eventBatch
   }
 
   /**
@@ -275,8 +288,13 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
-  final def persistAll[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
-    events.foreach(persist(_)(handler)) // TODO the atomic part should be handled by issue #15377
+  final def persistAll[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
+    events.foreach { event ⇒
+      pendingStashingPersistInvocations += 1
+      pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+    }
+    eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
+  }
 
   @deprecated("use persistAll instead", "2.4")
   final def persist[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
@@ -307,7 +325,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    */
   final def persistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
     pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-    eventBatch = PersistentRepr(event) :: eventBatch
+    eventBatch = AtomicWrite(PersistentRepr(event, sender = sender())) :: eventBatch
   }
 
   /**
@@ -318,8 +336,12 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
-  final def persistAllAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
-    events.foreach(persistAsync(_)(handler))
+  final def persistAllAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
+    events.foreach { event ⇒
+      pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+    }
+    eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
+  }
 
   @deprecated("use persistAllAsync instead", "2.4")
   final def persistAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
@@ -526,6 +548,14 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
             onWriteMessageComplete(err = false)
           } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
         }
+      case WriteMessageRejected(p, cause, id) ⇒
+        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+        // while message is in flight, in that case the handler has already been discarded
+        if (id == instanceId) {
+          updateLastSequenceNr(p)
+          onWriteMessageComplete(err = false)
+          onPersistRejected(cause, p.payload, p.sequenceNr)
+        }
       case WriteMessageFailure(p, cause, id) ⇒
         // instanceId mismatch can happen for persistAsync and defer in case of actor restart
         // while message is in flight, in that case the handler has already been discarded
@@ -542,9 +572,11 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
             onWriteMessageComplete(err = false)
           } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
         }
-      case WriteMessagesSuccessful | WriteMessagesFailed(_) ⇒
-        // FIXME PN: WriteMessagesFailed?
+      case WriteMessagesSuccessful ⇒
         if (journalBatch.isEmpty) writeInProgress = false else flushJournalBatch()
+
+      case WriteMessagesFailed(_) ⇒
+        () // it will be stopped by the first WriteMessageFailure message
     }
 
     def onWriteMessageComplete(err: Boolean): Unit =
@@ -594,8 +626,9 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     }
 
     private def addToBatch(p: PersistentEnvelope): Unit = p match {
-      case p: PersistentRepr ⇒
-        journalBatch :+= p.update(persistenceId = persistenceId, sequenceNr = nextSequenceNr(), sender = sender())
+      case a: AtomicWrite ⇒
+        journalBatch :+= a.copy(payload =
+          a.payload.map(_.update(persistenceId = persistenceId, sequenceNr = nextSequenceNr())))
       case r: PersistentEnvelope ⇒
         journalBatch :+= r
     }

@@ -42,20 +42,40 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
     writeMessages(1, 5, pid, senderProbe.ref)
   }
 
+  /**
+   * Implementation may override and return false if it does not
+   * support atomic writes of several events, as emitted by `persistAll`.
+   */
+  def supportsAtomicPersistAllOfSeveralEvents: Boolean = true
+
   def journal: ActorRef =
     extension.journalFor(null)
 
   def replayedMessage(snr: Long, deleted: Boolean = false, confirms: Seq[String] = Nil): ReplayedMessage =
     ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, "", deleted, Actor.noSender))
 
-  def writeMessages(from: Int, to: Int, pid: String, sender: ActorRef): Unit = {
-    val msgs = from to to map { i ⇒ PersistentRepr(payload = s"a-${i}", sequenceNr = i, persistenceId = pid, sender = sender) }
+  def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef): Unit = {
+    val msgs =
+      if (supportsAtomicPersistAllOfSeveralEvents)
+        (fromSnr to toSnr).map { i ⇒
+          AtomicWrite(PersistentRepr(payload = s"a-$i", sequenceNr = i, persistenceId = pid, sender = sender))
+        }
+      else
+        (fromSnr to toSnr - 1).map { i ⇒
+          if (i == toSnr - 1)
+            AtomicWrite(List(
+              PersistentRepr(payload = s"a-$i", sequenceNr = i, persistenceId = pid, sender = sender),
+              PersistentRepr(payload = s"a-${i + 1}", sequenceNr = i + 1, persistenceId = pid, sender = sender)))
+          else
+            AtomicWrite(PersistentRepr(payload = s"a-${i}", sequenceNr = i, persistenceId = pid, sender = sender))
+        }
+
     val probe = TestProbe()
 
     journal ! WriteMessages(msgs, probe.ref, actorInstanceId)
 
     probe.expectMsg(WriteMessagesSuccessful)
-    from to to foreach { i ⇒
+    fromSnr to toSnr foreach { i ⇒
       probe.expectMsgPF() { case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`), _) ⇒ payload should be(s"a-${i}") }
     }
   }
@@ -129,11 +149,9 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
       sub.expectMsg(cmd)
 
       journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref, replayDeleted = true)
-      1 to 5 foreach { i ⇒
-        i match {
-          case 1 | 2 | 3 ⇒ receiverProbe.expectMsg(replayedMessage(i, deleted = true))
-          case 4 | 5     ⇒ receiverProbe.expectMsg(replayedMessage(i))
-        }
+      (1 to 5).foreach {
+        case i @ (1 | 2 | 3) ⇒ receiverProbe.expectMsg(replayedMessage(i, deleted = true))
+        case i @ (4 | 5)     ⇒ receiverProbe.expectMsg(replayedMessage(i))
       }
     }
 
@@ -147,6 +165,32 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
     "return a highest stored sequence number == 0 if the persistent actor has not yet written messages" in {
       journal ! ReadHighestSequenceNr(0L, "non-existing-pid", receiverProbe.ref)
       receiverProbe.expectMsg(ReadHighestSequenceNrSuccess(0))
+    }
+
+    "reject non-serializable events" in {
+      // there is no chance that a journal could create a data representation for type of event
+      val notSerializableEvent = new Object { override def toString = "not serializable" }
+      val msgs = (6 to 8).map { i ⇒
+        val event = if (i == 7) notSerializableEvent else s"b-$i"
+        AtomicWrite(PersistentRepr(payload = event, sequenceNr = i, persistenceId = pid, sender = Actor.noSender))
+      }
+
+      val probe = TestProbe()
+      journal ! WriteMessages(msgs, probe.ref, actorInstanceId)
+
+      probe.expectMsg(WriteMessagesSuccessful)
+      val Pid = pid
+      probe.expectMsgPF() {
+        case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender), _) ⇒ payload should be(s"b-6")
+      }
+      probe.expectMsgPF() {
+        case WriteMessageRejected(PersistentImpl(payload, 7L, Pid, _, _, Actor.noSender), _, _) ⇒
+          payload should be(notSerializableEvent)
+      }
+      probe.expectMsgPF() {
+        case WriteMessageSuccess(PersistentImpl(payload, 8L, Pid, _, _, Actor.noSender), _) ⇒ payload should be(s"b-8")
+      }
+
     }
   }
 }
