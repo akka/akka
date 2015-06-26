@@ -26,14 +26,14 @@ Running the above example, one of the possible outputs looks like this:
 
 Note that the order is *not* ``A:1, B:1, C:1, A:2, B:2, C:2,`` which would correspond to a synchronous execution model
 where an element completely flows through the processing pipeline before the next element enters the flow. The next
-element is processed by a stage as soon as it emitted the previous one.
+element is processed by a stage as soon as it is emitted the previous one.
 
 While pipelining in general increases throughput, in practice there is a cost of passing an element through the
 asynchronous (and therefore thread crossing) boundary which is significant. To amortize this cost Akka Streams uses
 a *windowed*, *batching* backpressure strategy internally. It is windowed because as opposed to a `Stop-And-Wait`_
 protocol multiple elements might be "in-flight" concurrently with requests for elements. It is also batching because
 a new element is not immediately requested once an element has been drained from the window-buffer but multiple elements
-are requested after multiple elements has been drained. This batching strategy reduces the communication cost of
+are requested after multiple elements have been drained. This batching strategy reduces the communication cost of
 propagating the backpressure signal through the asynchronous boundary.
 
 While this internal protocol is mostly invisible to the user (apart form its throughput increasing effects) there are
@@ -56,7 +56,7 @@ Internal buffers and their effect
 As we have explained, for performance reasons Akka Streams introduces a buffer for every processing stage. The purpose
 of these buffers is solely optimization, in fact the size of 1 would be the most natural choice if there would be no
 need for throughput improvements. Therefore it is recommended to keep these buffer sizes small, and increase them only
-to a level that throughput requirements of the application require. Default buffer sizes can be set through configuration:
+to a level suitable for the throughput requirements of the application. Default buffer sizes can be set through configuration:
 
 ::
 
@@ -66,7 +66,7 @@ Alternatively they can be set by passing a :class:`ActorMaterializerSettings` to
 
 .. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#materializer-buffer
 
-If buffer size needs to be set for segments of a :class:`Flow` only, it is possible by defining a separate
+If the buffer size needs to be set for segments of a :class:`Flow` only, it is possible by defining a separate
 :class:`Flow` with these attributes:
 
 .. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#section-buffer
