@@ -291,6 +291,9 @@ next message.
 If there is a problem with recovering the state of the actor from the journal when the actor is
 started, ``onReplayFailure`` is called (logging the error by default) and the actor will be stopped.
 
+If the ``deleteMessages`` fails ``onDeleteMessagesFailure`` will be called (logging a warning by default) 
+and the actor continues with next message.
+
 Atomic writes
 -------------
 
@@ -322,6 +325,9 @@ Message deletion
 
 To delete all messages (journaled by a single persistent actor) up to a specified sequence number,
 persistent actors may call the ``deleteMessages`` method.
+
+If the delete fails ``onDeleteMessagesFailure`` will be called (logging a warning by default) 
+and the actor continues with next message.
 
 .. _persistent-views-java-lambda:
 
