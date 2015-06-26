@@ -214,6 +214,14 @@ object Source {
     new Source(scaladsl.Source.concat(first, second))
 
   /**
+   * Concatenates two sources so that the first element
+   * emitted by the second source is emitted after the last element of the first
+   * source.
+   */
+  def concatMat[T, M1, M2, M3](first: Graph[SourceShape[T], M1], second: Graph[SourceShape[T], M2], combine: function.Function2[M1, M2, M3]): Source[T, M3] =
+    new Source(scaladsl.Source.concatMat(first, second)(combinerToScala(combine)))
+
+  /**
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
