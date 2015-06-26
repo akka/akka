@@ -3,21 +3,21 @@
  */
 package akka.event
 
-import language.existentials
-import akka.actor._
-import akka.{ ConfigurationException, AkkaException }
-import akka.actor.ActorSystem.Settings
-import akka.util.ReentrantGuard
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.Locale
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
+
+import akka.actor.ActorSystem.Settings
+import akka.actor._
+import akka.dispatch.RequiresMessageQueue
+import akka.util.ReentrantGuard
+import akka.{ AkkaException, ConfigurationException }
+
 import scala.annotation.implicitNotFound
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.Await
-import scala.util.control.NoStackTrace
-import scala.util.control.NonFatal
-import java.util.Locale
-import akka.dispatch.RequiresMessageQueue
+import scala.language.existentials
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -1132,9 +1132,11 @@ class DefaultLoggingFilter(logLevel: () ⇒ Logging.LogLevel) extends LoggingFil
  */
 trait DiagnosticLoggingAdapter extends LoggingAdapter {
 
-  import Logging._
-  import scala.collection.JavaConverters._
   import java.{ util ⇒ ju }
+
+  import Logging._
+
+  import scala.collection.JavaConverters._
 
   private var _mdc = emptyMDC
 
