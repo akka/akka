@@ -38,7 +38,7 @@ interface AsyncWritePlugin {
    * returned `Future` must be completed with failure. The `Future` must only be
    * completed with success when all messages in the batch have been confirmed
    * to be stored successfully, i.e. they will be readable, and visible, in a
-   * subsequent replay. If there are uncertainty about if the messages were
+   * subsequent replay. If there is uncertainty about if the messages were
    * stored or not the `Future` must be completed with failure.
    *
    * Data store connection problems must be signaled by completing the `Future`
@@ -55,6 +55,9 @@ interface AsyncWritePlugin {
    * serialization error.
    *
    * Data store connection problems must not be signaled as rejections.
+   *
+   * Note that it is possible to reduce number of allocations by caching some
+   * result `Iterable` for the happy path, i.e. when no messages are rejected.
    */
   Future<Iterable<Optional<Exception>>> doAsyncWriteMessages(Iterable<AtomicWrite> messages);
 

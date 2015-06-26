@@ -7,10 +7,10 @@ package akka.persistence
 import scala.collection.immutable
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ List ⇒ JList }
-
 import akka.actor.{ ActorContext, ActorRef }
 import akka.pattern.PromiseActorRef
 import akka.persistence.serialization.Message
+import akka.actor.NoSerializationVerificationNeeded
 
 /**
  * INTERNAL API
@@ -45,7 +45,6 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
 /**
  * Plugin API: representation of a persistent message in the journal plugin API.
  *
- * @see [[akka.persistence.journal.SyncWriteJournal]]
  * @see [[akka.persistence.journal.AsyncWriteJournal]]
  * @see [[akka.persistence.journal.AsyncRecovery]]
  */
@@ -152,7 +151,7 @@ private[persistence] final case class PersistentImpl(
   override val manifest: String,
   override val deleted: Boolean,
   override val sender: ActorRef,
-  override val writerUuid: String) extends PersistentRepr {
+  override val writerUuid: String) extends PersistentRepr with NoSerializationVerificationNeeded {
 
   def withPayload(payload: Any): PersistentRepr =
     copy(payload = payload)
