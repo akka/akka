@@ -14,6 +14,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.util.Try
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 //#plugin-imports
 import akka.persistence._
@@ -127,7 +128,14 @@ trait SharedLeveldbPluginDocSpec {
 }
 
 class MyJournal extends AsyncWriteJournal {
-  def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = ???
+  //#sync-journal-plugin-api
+  def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
+    Future.fromTry(Try {
+      // blocking call here
+      ???
+    })
+  //#sync-journal-plugin-api
+
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = ???
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long,
                           toSequenceNr: Long, max: Long)(
