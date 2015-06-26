@@ -139,7 +139,7 @@ object AkkaBuild extends Build {
   ) configs (MultiJvm)
   
   lazy val distributedData = Project(
-    id = "akka-distributed-data",
+    id = "akka-distributed-data-experimental",
     base = file("akka-distributed-data"),
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
   ) configs (MultiJvm)
