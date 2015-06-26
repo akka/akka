@@ -24,6 +24,7 @@ import scala.language.postfixOps
 private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash with ActorLogging {
   import AsyncWriteProxy._
   import AsyncWriteTarget._
+  import context.dispatcher
 
   private var isInitialized = false
   private var store: ActorRef = _
@@ -54,7 +55,9 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
   }
 
   def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
-    (store ? ReadHighestSequenceNr(persistenceId, fromSequenceNr)).mapTo[Long]
+    (store ? ReplayMessages(persistenceId, fromSequenceNr = 0L, toSequenceNr = 0L, max = 0L)).map {
+      case ReplaySuccess(highest) ⇒ highest
+    }
 }
 
 /**
@@ -78,13 +81,11 @@ private[persistence] object AsyncWriteTarget {
   final case class ReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
 
   @SerialVersionUID(1L)
-  case object ReplaySuccess
+  case class ReplaySuccess(highestSequenceNr: Long)
 
   @SerialVersionUID(1L)
   final case class ReplayFailure(cause: Throwable)
 
-  @SerialVersionUID(1L)
-  final case class ReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long)
 }
 
 /**
@@ -100,7 +101,7 @@ private class ReplayMediator(replayCallback: PersistentRepr ⇒ Unit, replayComp
 
   def receive = {
     case p: PersistentRepr ⇒ replayCallback(p)
-    case ReplaySuccess ⇒
+    case _: ReplaySuccess ⇒
       replayCompletionPromise.success(())
       context.stop(self)
     case ReplayFailure(cause) ⇒
