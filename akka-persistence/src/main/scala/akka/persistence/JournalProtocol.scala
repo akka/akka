@@ -25,14 +25,14 @@ private[persistence] object JournalProtocol {
   /**
    * Reply message to a failed [[DeleteMessagesTo]] request.
    */
-  final case class DeleteMessagesFailure(cause: Throwable)
+  final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
     extends Response
 
   /**
    * Request to delete all persistent messages with sequence numbers up to `toSequenceNr`
    * (inclusive).
    */
-  final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long)
+  final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, persistentActor: ActorRef)
     extends Request
 
   /**

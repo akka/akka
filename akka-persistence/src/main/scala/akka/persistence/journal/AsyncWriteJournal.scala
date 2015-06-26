@@ -117,10 +117,10 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         case e ⇒ ReadHighestSequenceNrFailure(e)
       } pipeTo persistentActor
 
-    case d @ DeleteMessagesTo(persistenceId, toSequenceNr) ⇒
+    case d @ DeleteMessagesTo(persistenceId, toSequenceNr, persistentActor) ⇒
       asyncDeleteMessagesTo(persistenceId, toSequenceNr) onComplete {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
-        case Failure(e) ⇒
+        case Failure(e) ⇒ persistentActor ! DeleteMessagesFailure(e, toSequenceNr)
       }
   }
 

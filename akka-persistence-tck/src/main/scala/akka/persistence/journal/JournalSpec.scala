@@ -1,5 +1,6 @@
 package akka.persistence.journal
 
+import scala.concurrent.duration._
 import scala.collection.immutable.Seq
 
 import akka.actor._
@@ -137,7 +138,8 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
       receiverProbe.expectMsg(ReplayMessagesSuccess)
     }
     "not replay permanently deleted messages (range deletion)" in {
-      val cmd = DeleteMessagesTo(pid, 3)
+      val receiverProbe2 = TestProbe()
+      val cmd = DeleteMessagesTo(pid, 3, receiverProbe2.ref)
       val sub = TestProbe()
 
       subscribe[DeleteMessagesTo](sub.ref)
@@ -146,6 +148,8 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
 
       journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       List(4, 5) foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
+
+      receiverProbe2.expectNoMsg(200.millis)
     }
 
     "return a highest stored sequence number > 0 if the persistent actor has already written messages and the message log is non-empty" in {
