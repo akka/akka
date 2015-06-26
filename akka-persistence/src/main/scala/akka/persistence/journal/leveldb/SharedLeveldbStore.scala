@@ -23,6 +23,8 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
 
   def receive = {
     case WriteMessages(messages) ⇒
+      // TODO it would be nice to DRY this with AsyncWriteJournal, but this is using
+      //      AsyncWriteProxy message protocol
       val prepared = Try(preparePersistentBatch(messages))
       val writeResult = (prepared match {
         case Success(prep) ⇒
@@ -43,13 +45,24 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
     case DeleteMessagesTo(pid, tsnr) ⇒
       asyncDeleteMessagesTo(pid, tsnr).pipeTo(sender())
 
-    case ReadHighestSequenceNr(pid, fromSequenceNr) ⇒
-      asyncReadHighestSequenceNr(pid, fromSequenceNr).pipeTo(sender())
-
-    case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
-      Try(replayMessages(numericId(pid), fromSnr, toSnr, max)(p ⇒ adaptFromJournal(p).foreach { sender() ! _ })) match {
-        case Success(max)   ⇒ sender() ! ReplaySuccess
-        case Failure(cause) ⇒ sender() ! ReplayFailure(cause)
-      }
+    case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) ⇒
+      // TODO it would be nice to DRY this with AsyncWriteJournal, but this is using
+      //      AsyncWriteProxy message protocol
+      val replyTo = sender()
+      asyncReadHighestSequenceNr(persistenceId, fromSequenceNr).flatMap { highSeqNr ⇒
+        if (highSeqNr == 0L || max == 0L)
+          Future.successful(highSeqNr)
+        else {
+          val toSeqNr = math.min(toSequenceNr, highSeqNr)
+          asyncReplayMessages(persistenceId, fromSequenceNr, toSeqNr, max) { p ⇒
+            if (!p.deleted) // old records from 2.3 may still have the deleted flag
+              adaptFromJournal(p).foreach(replyTo ! _)
+          }.map(_ ⇒ highSeqNr)
+        }
+      }.map {
+        highSeqNr ⇒ ReplaySuccess(highSeqNr)
+      }.recover {
+        case e ⇒ ReplayFailure(e)
+      }.pipeTo(replyTo)
   }
 }

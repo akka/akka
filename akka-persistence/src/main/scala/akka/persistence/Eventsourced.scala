@@ -215,8 +215,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
 
   override def unhandled(message: Any): Unit = {
     message match {
-      case RecoveryCompleted | ReadHighestSequenceNrSuccess | ReadHighestSequenceNrFailure ⇒ // mute
-      case m ⇒ super.unhandled(m)
+      case RecoveryCompleted ⇒ // mute
+      case m                 ⇒ super.unhandled(m)
     }
   }
 
@@ -466,8 +466,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * Processes replayed messages, if any. The actor's `receiveRecover` is invoked with the replayed
    * events.
    *
-   * If replay succeeds it switches to `initializing` state and requests the highest stored sequence
-   * number from the journal. Otherwise the actor is stopped.
+   * If replay succeeds it got highest stored sequence number response from the journal and then switches
+   * to `processingCommands` state. Otherwise the actor is stopped.
    * If replay succeeds the `onReplaySuccess` callback method is called, otherwise `onReplayFailure`.
    *
    * All incoming messages are stashed.
@@ -485,37 +485,15 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
           case NonFatal(t) ⇒
             try onReplayFailure(t, Some(p.payload)) finally context.stop(self)
         }
-      case ReplayMessagesSuccess ⇒
+      case ReplayMessagesSuccess(highestSeqNr) ⇒
         onReplaySuccess() // callback for subclass implementation
-        changeState(initializing(recoveryBehavior))
-        journal ! ReadHighestSequenceNr(lastSequenceNr, persistenceId, self)
-      case ReplayMessagesFailure(cause) ⇒
-        try onReplayFailure(cause, event = None) finally context.stop(self)
-      case other ⇒
-        internalStash.stash()
-    }
-  }
-
-  /**
-   * Processes the highest stored sequence number response from the journal and then switches
-   * to `processingCommands` state.
-   * All incoming messages are stashed.
-   */
-  private def initializing(recoveryBehavior: Receive) = new State {
-    override def toString: String = "initializing"
-    override def recoveryRunning: Boolean = true
-
-    override def stateReceive(receive: Receive, message: Any) = message match {
-      case ReadHighestSequenceNrSuccess(highest) ⇒
         changeState(processingCommands)
-        sequenceNr = highest
-        setLastSequenceNr(highest)
+        sequenceNr = highestSeqNr
+        setLastSequenceNr(highestSeqNr)
         internalStash.unstashAll()
         Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
-      case ReadHighestSequenceNrFailure(cause) ⇒
-        log.error(cause, "PersistentActor could not retrieve highest sequence number and must " +
-          "therefore be stopped. (persisten id = [{}]).", persistenceId)
-        context.stop(self)
+      case ReplayMessagesFailure(cause) ⇒
+        try onReplayFailure(cause, event = None) finally context.stop(self)
       case other ⇒
         internalStash.stash()
     }

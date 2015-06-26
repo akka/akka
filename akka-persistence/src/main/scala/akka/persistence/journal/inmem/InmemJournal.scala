@@ -85,9 +85,9 @@ private[persistence] class InmemStore extends Actor with InmemMessages with Writ
     case DeleteMessagesTo(pid, tsnr) ⇒
       sender() ! (1L to tsnr foreach { snr ⇒ delete(pid, snr) })
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
-      read(pid, fromSnr, toSnr, max).foreach { sender() ! _ }
-      sender() ! ReplaySuccess
-    case ReadHighestSequenceNr(persistenceId, _) ⇒
-      sender() ! highestSequenceNr(persistenceId)
+      val highest = highestSequenceNr(pid)
+      if (highest != 0L && max != 0L)
+        read(pid, fromSnr, math.min(toSnr, highest), max).foreach { sender() ! _ }
+      sender() ! ReplaySuccess(highest)
   }
 }

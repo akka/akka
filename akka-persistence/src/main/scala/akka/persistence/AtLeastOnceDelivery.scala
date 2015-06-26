@@ -3,8 +3,6 @@
  */
 package akka.persistence
 
-import akka.persistence.JournalProtocol.ReplayMessagesSuccess
-
 import scala.annotation.tailrec
 import scala.collection.breakOut
 import scala.collection.immutable

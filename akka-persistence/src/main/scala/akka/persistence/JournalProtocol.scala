@@ -122,8 +122,13 @@ private[persistence] object JournalProtocol {
   /**
    * Reply message to a successful [[ReplayMessages]] request. This reply is sent to the requestor
    * after all [[ReplayedMessage]] have been sent (if any).
+   *
+   * It includes the highest stored sequence number of a given persistent actor. Note that the
+   * replay might have been limited to a lower sequence number.
+   *
+   * @param highestSequenceNr highest stored sequence number.
    */
-  case object ReplayMessagesSuccess
+  case class ReplayMessagesSuccess(highestSequenceNr: Long)
     extends Response with DeadLetterSuppression
 
   /**
@@ -133,29 +138,4 @@ private[persistence] object JournalProtocol {
   final case class ReplayMessagesFailure(cause: Throwable)
     extends Response with DeadLetterSuppression
 
-  /**
-   * Request to read the highest stored sequence number of a given persistent actor.
-   *
-   * @param fromSequenceNr optional hint where to start searching for the maximum sequence number.
-   * @param persistenceId requesting persistent actor id.
-   * @param persistentActor requesting persistent actor.
-   */
-  final case class ReadHighestSequenceNr(fromSequenceNr: Long = 1L, persistenceId: String, persistentActor: ActorRef)
-    extends Request
-
-  /**
-   * Reply message to a successful [[ReadHighestSequenceNr]] request.
-   *
-   * @param highestSequenceNr read highest sequence number.
-   */
-  final case class ReadHighestSequenceNrSuccess(highestSequenceNr: Long)
-    extends Response
-
-  /**
-   * Reply message to a failed [[ReadHighestSequenceNr]] request.
-   *
-   * @param cause failure cause.
-   */
-  final case class ReadHighestSequenceNrFailure(cause: Throwable)
-    extends Response
 }
