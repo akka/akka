@@ -148,6 +148,18 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   }
 
   /**
+   * Called when ``deleteMessages`` failed. By default this method logs the problem
+   * as a warning, and the actor continues.
+   *
+   * @param cause failure cause
+   * @param toSequenceNr the sequence number parameter of the ``deleteMessages`` call
+   */
+  protected def onDeleteMessagesFailure(cause: Throwable, toSequenceNr: Long): Unit = {
+    log.warning("Failed to deleteMessages toSequenceNr [{}] for persistenceId [{}] due to [{}].",
+      toSequenceNr, persistenceId, cause.getMessage)
+  }
+
+  /**
    * User-overridable callback. Called when a persistent actor is started or restarted.
    * Default implementation sends a `Recover()` to `self`. Note that if you override
    * `preStart` (or `preRestart`) and not call `super.preStart` you must send
@@ -378,10 +390,12 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   /**
    * Permanently deletes all persistent messages with sequence numbers less than or equal `toSequenceNr`.
    *
+   * If the delete fails [[#onDeleteMessagesFailure]] will be called.
+   *
    * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
    */
   def deleteMessages(toSequenceNr: Long): Unit =
-    deleteMessages(toSequenceNr)
+    journal ! DeleteMessagesTo(persistenceId, toSequenceNr, self)
 
   /**
    * Returns `true` if this persistent actor is currently recovering.
@@ -566,6 +580,10 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
 
       case WriteMessagesFailed(_) ⇒
         () // it will be stopped by the first WriteMessageFailure message
+
+      case DeleteMessagesFailure(e, toSequenceNr) ⇒
+        onDeleteMessagesFailure(e, toSequenceNr)
+
     }
 
     def onWriteMessageComplete(err: Boolean): Unit =

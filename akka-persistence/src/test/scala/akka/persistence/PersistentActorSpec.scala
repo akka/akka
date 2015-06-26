@@ -20,6 +20,7 @@ object PersistentActorSpec {
   final case class Cmd(data: Any)
   final case class Evt(data: Any)
   final case class LatchCmd(latch: TestLatch, data: Any) extends NoSerializationVerificationNeeded
+  final case class Delete(toSequenceNr: Long)
 
   abstract class ExamplePersistentActor(name: String) extends NamedPersistentActor(name) with PersistentActor {
     var events: List[Any] = Nil
@@ -29,8 +30,9 @@ object PersistentActorSpec {
     }
 
     val commonBehavior: Receive = {
-      case "boom"   ⇒ throw new TestException("boom")
-      case GetState ⇒ sender() ! events.reverse
+      case "boom"               ⇒ throw new TestException("boom")
+      case Delete(toSequenceNr) ⇒ deleteMessages(toSequenceNr)
+      case GetState             ⇒ sender() ! events.reverse
     }
 
     def receiveRecover = updateState
@@ -890,6 +892,17 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg("postStop")
 
       expectNoMsg(100.millis)
+    }
+
+    "be able to delete events" in {
+      val persistentActor = namedPersistentActor[Behavior1PersistentActor]
+      persistentActor ! Cmd("b")
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "b-1", "b-2"))
+      persistentActor ! Delete(2L) // delete "a-1" and "a-2"
+      persistentActor ! "boom" // restart, recover
+      persistentActor ! GetState
+      expectMsg(List("b-1", "b-2"))
     }
 
   }

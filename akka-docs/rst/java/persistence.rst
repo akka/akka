@@ -326,6 +326,12 @@ Message deletion
 To delete all messages (journaled by a single persistent actor) up to a specified sequence number,
 persistent actors may call the ``deleteMessages`` method.
 
+If the delete fails ``onDeleteMessagesFailure`` will be called (logging a warning by default) 
+and the actor continues with next message.
+
+If the ``deleteMessages`` fails ``onDeleteMessagesFailure`` will be called (logging a warning by default) 
+and the actor continues with next message.
+
 .. _persistent-views-java:
 
 Persistent Views
