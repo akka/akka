@@ -5,6 +5,7 @@
 package akka.actor
 
 import java.io.Closeable
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -17,7 +18,7 @@ import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, Duration }
-import scala.concurrent.{ Await, Awaitable, CanAwait, Future, ExecutionContext, ExecutionContextExecutor }
+import scala.concurrent._
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NonFatal, ControlThrowable }
 
@@ -783,44 +784,36 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     printNode(lookupRoot, "")
   }
 
-  final class TerminationCallbacks extends Runnable with Awaitable[Unit] {
-    private val lock = new ReentrantGuard
-    private var callbacks: List[Runnable] = _ //non-volatile since guarded by the lock
-    lock withGuard { callbacks = Nil }
+  final class TerminationCallbacks extends AtomicReference[List[Runnable]](Nil) with Runnable with Awaitable[Unit] {
+    private val done = Promise[Unit]()
 
-    private val latch = new CountDownLatch(1)
-
-    final def add(callback: Runnable): Unit = {
-      latch.getCount match {
-        case 0 ⇒ throw new RejectedExecutionException("Must be called prior to system shutdown.")
-        case _ ⇒ lock withGuard {
-          if (latch.getCount == 0) throw new RejectedExecutionException("Must be called prior to system shutdown.")
-          else callbacks ::= callback
-        }
+    final def add(callback: Runnable): Unit =
+      get match {
+        case null ⇒ throw new RejectedExecutionException("Must be called prior to system shutdown.")
+        case some ⇒
+          if (compareAndSet(some, callback :: some)) ()
+          else add(callback)
       }
-    }
 
-    final def run(): Unit = lock withGuard {
-      @tailrec def runNext(c: List[Runnable]): List[Runnable] = c match {
-        case Nil ⇒ Nil
-        case callback :: rest ⇒
-          try callback.run() catch { case NonFatal(e) ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
-          runNext(rest)
+    final def run(): Unit =
+      Option(getAndSet(null)) foreach {
+        some ⇒
+          @tailrec def runNext(c: List[Runnable]): Unit = c match {
+            case Nil ⇒ ()
+            case callback :: rest ⇒
+              try callback.run() catch { case NonFatal(e) ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
+              runNext(rest)
+          }
+          try runNext(some) finally done.trySuccess(())
       }
-      try { callbacks = runNext(callbacks) } finally latch.countDown()
-    }
 
     final def ready(atMost: Duration)(implicit permit: CanAwait): this.type = {
-      if (atMost.isFinite()) {
-        if (!latch.await(atMost.length, atMost.unit))
-          throw new TimeoutException("Await termination timed out after [%s]" format (atMost.toString))
-      } else latch.await()
-
+      Await.ready(done.future, atMost)
       this
     }
 
     final def result(atMost: Duration)(implicit permit: CanAwait): Unit = ready(atMost)
 
-    final def isTerminated: Boolean = latch.getCount == 0
+    final def isTerminated: Boolean = done.isCompleted
   }
 }
