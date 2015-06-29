@@ -35,6 +35,7 @@ import scala.util.control.NonFatal
  * test procedures for actor systems, hence also the possibility to expect
  * failures (see [[StepWise.Steps#expectFailure]]).
  */
+@deprecated("to be replaced by process DSL", "2.4-M2")
 object StepWise {
   import Behavior._
   import ScalaDSL._
