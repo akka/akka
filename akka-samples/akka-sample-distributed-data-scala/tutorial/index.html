@@ -1,0 +1,285 @@
+<!-- <html> -->
+<head>
+<title>Akka Distributed Data Samples with Scala</title>
+</head>
+
+<body>
+
+<div>
+<p>
+This tutorial contains 5 samples illustrating how to use  
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html" target="_blank">Akka Distributed Data</a>.
+</p>
+<ul>
+<li>Low Latency Voting Service</li>
+<li>Highly Available Shopping Cart</li>
+<li>Distributed Service Registry</li>
+<li>Replicated Cache</li>
+<li>Replicated Metrics</li>
+</ul>
+
+<p>
+<b>Akka Distributed Data</b> is useful when you need to share data between nodes in an
+Akka Cluster. The data is accessed with an actor providing a key-value store like API.
+The keys are unique identifiers with type information of the data values. The values 
+are <i>Conflict Free Replicated Data Types</i> (CRDTs).
+</p>
+
+<p>
+All data entries are spread to all nodes, or nodes with a certain role, in the cluster
+via direct replication and gossip based dissemination. You have fine grained control
+of the consistency level for reads and writes.
+</p>
+
+<p>
+The nature CRDTs makes it possible to perform updates from any node without coordination.
+Concurrent updates from different nodes will automatically be resolved by the monotonic
+merge function, which all data types must provide. The state changes always converge.
+Several useful data types for counters, sets, maps and registers are provided and
+you can also implement your own custom data types.
+</p>
+
+<p>
+It is eventually consistent and geared toward providing high read and write availability
+(partition tolerance), with low latency. Note that in an eventually consistent system a read may return an 
+out-of-date value.
+</p>
+
+</div>
+
+<div>
+
+<h2>Low Latency Voting Service</h2>
+
+<p>
+Distributed Data is great for low latency services, since you can update or get data from the local replica
+without immediate communication with other nodes.
+</p>
+
+<p>
+Open <a href="#code/src/main/scala/sample/distributeddata/VotingService.scala" class="shortcut">VotingService.scala</a>.
+</p>
+
+<p>
+<code>VotingService</code> is an actor for low latency counting of votes on several cluster nodes and aggregation
+of the grand total number of votes. The actor is started on each cluster node. First it expects an 
+<code>Open</code> message on one or several nodes. After that the counting can begin. The open
+signal is immediately replicated to all nodes with a boolean
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Flags_and_Registers" target="_blank">Flag</a>.
+Note <code>WriteAll</code>.  
+</p>
+
+<pre><code>
+replicator ! Update(OpenedKey, Flag(), WriteAll(5.seconds))(_.switchOn)
+</code></pre>
+
+<p>
+The actor is subscribing to changes of the <code>OpenedKey</code> and other instances of this actor, 
+also on other nodes, will be notified when the flag is changed.
+</p>
+
+<pre><code>
+replicator ! Subscribe(OpenedKey, self)
+</code></pre>
+
+<pre><code>
+case c @ Changed(OpenedKey) if c.get(OpenedKey).enabled
+</code></pre>
+
+<p>
+The counters are kept in a 
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Counters" target="_blank">PNCounterMap</a>
+and updated with:
+</p>
+
+<pre><code>
+val update = Update(CountersKey, PNCounterMap(), WriteLocal, request = Some(v)) {
+  _.increment(participant, 1)
+}
+replicator ! update
+</code></pre>
+
+<p>
+Incrementing the counter is very fast, since it only involves communication with the local 
+<code>Replicator</code> actor. Note <code>WriteLocal</code>. Those updates are also spread
+to other nodes, but that is performed in the background.
+</p>
+
+<p>
+The total number of votes is retrieved with:
+</p>
+
+<pre><code>
+case GetVotes ⇒
+  replicator ! Get(CountersKey, ReadAll(3.seconds), Some(GetVotesReq(sender())))
+
+case g @ GetSuccess(CountersKey, Some(GetVotesReq(replyTo))) ⇒
+  val data = g.get(CountersKey)
+  replyTo ! Votes(data.entries, open)
+</code></pre>
+
+<p>
+The multi-node test for the <code>VotingService</code> can be found in
+<a href="#code/src/multi-jvm/scala/sample/distributeddata/VotingServiceSpec.scala" class="shortcut">VotingServiceSpec.scala</a>.
+</p>
+
+<p>
+Read the 
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Using_the_Replicator" target="_blank">Using the Replicator</a>
+documentation for more details of how to use <code>Get</code>, <code>Update</code>, and <code>Subscribe</code>.
+
+</div>
+
+<div>
+<h2>Highly Available Shopping Cart</h2>
+
+<p>
+Distributed Data is great for highly available services, since it is possible to perform 
+updates to the local node (or currently available nodes) during a network partition.
+</p> 
+	
+<p>
+Open <a href="#code/src/main/scala/sample/distributeddata/ShoppingCart.scala" class="shortcut">ShoppingCart.scala</a>.
+</p>
+
+<p>
+<code>ShoppingCart</code> is an actor that holds the selected items to buy for a user.
+The actor instance for a specific user may be started where ever needed in the cluster, i.e. several 
+instances may be started on different nodes and used at the same time.
+</p>
+
+<p>
+Each product in the cart is represented by a <code>LineItem</code> and all items in the cart
+is collected in a <a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Maps" target="_blank">LWWMap</a>.
+</p>
+
+<p>
+The actor handles the commands <code>GetCart</code>, <code>AddItem</code> and <code>RemoveItem</code>.
+To get the latest updates in case the same shopping cart is used from several nodes it is using
+consistency level of <code>ReadMajority</code> and <code>WriteMajority</code>, but that is only
+done to reduce the risk of seeing old data. If such reads and writes cannot be completed due to a 
+network partition it falls back to reading/writing from the local replica (see <code>GetFailure</code>).
+Local reads and writes will always be successful and when the network partition heals the updated
+shopping carts will be be disseminated by the 
+<a href="https://en.wikipedia.org/wiki/Gossip_protocol" target="_blank">gossip protocol</a>
+and the <code>LWWMap</code> CRDTs are merged, i.e. it is a highly available shopping cart.
+</p>
+
+<p>
+The multi-node test for the <code>ShoppingCart</code> can be found in
+<a href="#code/src/multi-jvm/scala/sample/distributeddata/ShoppingCartSpec.scala" class="shortcut">ShoppingCartSpec.scala</a>.
+</p>
+
+<p>
+Read the 
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Consistency" target="_blank">Consistency</a>
+section in the documentation to understand the consistency considerations.
+</p>
+
+</div>
+
+<div>
+<h2>Distributed Service Registry</h2>
+
+<p>
+Have you ever had the need to lookup actors by name in an Akka Cluster?
+This example illustrates how you could implement such a registry. It is probably not
+feature complete, but should be a good starting point.
+</p>
+
+<p>
+Open <a href="#code/src/main/scala/sample/distributeddata/ServiceRegistry.scala" class="shortcut">ServiceRegistry.scala</a>.
+</p>
+
+<p>
+<code>ServiceRegistry</code> is an actor that is started on each node in the cluster.
+It supports two basic commands:  
+</p>
+<ul>
+<li><code>Register</code> to bind an <code>ActorRef</code> to a name, 
+  several actors can be bound to the same name</li>
+<li><code>Lookup</code> get currently bound services of a given name</li>
+</ul>
+
+<p>
+For each named service it is using an
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Sets" target="_blank">ORSet</a>.
+Here we are using top level <code>ORSet</code> entries. An alternative would have been to use a 
+<code>ORMultiMap</code> holding all services. That would have a disadvantage if we have many services.
+When a data entry is changed the full state of that entry is replicated to other nodes, i.e. when you 
+update a map the whole map is replicated. 
+</p>
+
+<p>
+The <code>ServiceRegistry</code> is subscribing to changes of a <code>GSet</code> where we add
+the names of all services. It is also subscribing to all such service keys to get notifications when 
+actors are added or removed to a named service.
+</p>
+
+<p>
+The multi-node test for the <code>ServiceRegistry</code> can be found in
+<a href="#code/src/multi-jvm/scala/sample/distributeddata/ServiceRegistrySpec.scala" class="shortcut">ServiceRegistrySpec.scala</a>.
+</p>
+
+</div>
+
+<div>
+<h2>Replicated Cache</h2>
+
+<p>
+This example illustrates a simple key-value cache.
+</p>
+
+<p>
+Open <a href="#code/src/main/scala/sample/distributeddata/ReplicatedCache.scala" class="shortcut">ReplicatedCache.scala</a>.
+</p>
+
+<p>
+<code>ReplicatedCache</code> is an actor that is started on each node in the cluster.
+It supports three commands: <code>PutInCache</code>, <code>GetFromCache</code> and <code>Evict</code>.
+</p>
+
+<p>
+It is splitting up the key space in 100 top level keys, each with a <code>LWWMap</code>.
+When a data entry is changed the full state of that entry is replicated to other nodes, i.e. when you 
+update a map the whole map is replicated. Therefore, instead of using one ORMap with 1000 elements it 
+is more efficient to split that up in 100 top level ORMap entries with 10 elements each. Top level 
+entries are replicated individually, which has the trade-off that different entries may not be 
+replicated at the same time and you may see inconsistencies between related entries. 
+Separate top level entries cannot be updated atomically together.
+</p>
+
+<p>
+The multi-node test for the <code>ReplicatedCache</code> can be found in
+<a href="#code/src/multi-jvm/scala/sample/distributeddata/ReplicatedCacheSpec.scala" class="shortcut">ReplicatedCacheSpec.scala</a>.
+</p>
+
+</div>
+
+<div>
+<h2>Replicated Metrics</h2>
+
+<p>
+This example illustrates to spread metrics data to all nodes in an Akka cluster.
+</p>
+
+<p>
+Open <a href="#code/src/main/scala/sample/distributeddata/ReplicatedMetrics.scala" class="shortcut">ReplicatedMetrics.scala</a>.
+</p>
+
+<p>
+<code>ReplicatedMetrics</code> is an actor that is started on each node in the cluster.
+Periodically it collects some metrics, in this case used and max heap size.
+Each metrics type is stored in a <code>LWWMap</code> where the key in the map is the address of 
+the node. The values are disseminated to other nodes with the gossip protocol.
+</p>
+
+<p>
+The multi-node test for the <code>ReplicatedCache</code> can be found in
+<a href="#code/src/multi-jvm/scala/sample/distributeddata/ReplicatedMetricsSpec.scala" class="shortcut">ReplicatedMetricsSpec.scala</a>.
+</p>
+
+</div>
+
+</body>
+</html>

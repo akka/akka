@@ -23,6 +23,8 @@
 .manager
 .multi-jvm
 .project
+.sbtserver
+.sbtserver.lock
 .scala_dependencies
 .scalastyle
 .settings

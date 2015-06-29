@@ -178,11 +178,11 @@ Here is an example of using ``writeMajority`` and ``readMajority``:
 
 **FIXME convert this example to Java**
 
-.. includecode:: ../../../akka-distributed-data/src/multi-jvm/scala/sample/distributeddata/ReplicatedShoppingCartSpec.scala#read-write-majority
+.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#read-write-majority
 
-.. includecode:: ../../../akka-distributed-data/src/multi-jvm/scala/sample/distributeddata/ReplicatedShoppingCartSpec.scala#get-cart
+.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#get-cart
 
-.. includecode:: ../../../akka-distributed-data/src/multi-jvm/scala/sample/distributeddata/ReplicatedShoppingCartSpec.scala#add-item
+.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#add-item
 
 In some rare cases, when performing an ``Update`` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a ``Get`` with ``ReadMajority`` and then continue with
@@ -196,7 +196,7 @@ The following example illustrates how to do that:
 
 **FIXME convert this example to Java**
 
-.. includecode:: ../../../akka-distributed-data/src/multi-jvm/scala/sample/distributeddata/ReplicatedShoppingCartSpec.scala#remove-item 
+.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#remove-item 
 
 .. warning::
 
@@ -333,7 +333,7 @@ use a timestamp value based on something else, for example an increasing version
 from a database record that is used for optimistic concurrency control.
  
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e.
-when you update an map the whole map is replicated. Therefore, instead of using one ``ORMap``
+when you update a map the whole map is replicated. Therefore, instead of using one ``ORMap``
 with 1000 elements it is more efficient to split that up in 10 top level ``ORMap`` entries 
 with 100 elements each. Top level entries are replicated individually, which has the 
 trade-off that different entries may not be replicated at the same time and you may see
@@ -454,13 +454,16 @@ cluster. Data types that need pruning have to implement the ``RemovedNodePruning
 Samples
 =======
 
-**FIXME convert these sampes to Java and activator template**
+**FIXME convert these sampes to Java**
 
-* `Replicated Cache <@github@/akka-distributed-data/src/multi-jvm/scala/sample/distributeddata/ReplicatedCacheSpec.scala>`_
-* `Replicated Metrics <@github@/akka-distributed-data/src/multi-jvm/scala/sample/distributeddata/ReplicatedMetricsSpec.scala>`_
-* `Replicated Service Registry <@github@/akka-distributed-data/src/multi-jvm/scala/sample/distributeddata/ReplicatedServiceRegistrySpec.scala>`_
-* `VotingService <@github@/akka-distributed-data/src/multi-jvm/scala/sample/distributeddata/VotingContestSpec.scala>`_
-* `ShoppingCart <@github@/akka-distributed-data/src/multi-jvm/scala/sample/distributeddata/ReplicatedShoppingCartSpec.scala>`_ 
+Several interesting samples are included and described in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
+tutorial named `Akka Distributed Data Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-distributed-data-scala>`_.
+
+* Low Latency Voting Service
+* Highly Available Shopping Cart
+* Distributed Service Registry
+* Replicated Cache
+* Replicated Metrics 
 
 Limitations
 ===========

@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.cluster.ddata.sample
+package akka.cluster.ddata
 
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -10,12 +10,19 @@ import akka.actor.ActorLogging
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.ddata.DistributedData
-import akka.cluster.ddata.ORSet
+import akka.cluster.ddata.Replicator.Changed
+import akka.cluster.ddata.Replicator.GetKeyIds
+import akka.cluster.ddata.Replicator.GetKeyIdsResult
+import akka.cluster.ddata.Replicator.Subscribe
+import akka.cluster.ddata.Replicator.Update
+import akka.cluster.ddata.Replicator.UpdateResponse
+import akka.cluster.ddata.Replicator.WriteLocal
 import com.typesafe.config.ConfigFactory
-import akka.cluster.ddata.Replicator
-import akka.cluster.ddata.ORSetKey
 
+/**
+ * This "sample" simulates lots of data entries, and can be used for
+ * optimizing replication (e.g. catch-up when adding more nodes).
+ */
 object LotsOfDataBot {
 
   def main(args: Array[String]): Unit = {
