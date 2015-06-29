@@ -58,6 +58,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
   val KeyF = GCounterKey("F")
   val KeyG = ORSetKey[String]("G")
   val KeyH = ORMapKey[Flag]("H")
+  val KeyI = GSetKey[String]("I")
   val KeyX = GCounterKey("X")
   val KeyY = GCounterKey("Y")
   val KeyZ = GCounterKey("Z")
@@ -523,6 +524,30 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     }
 
     enterBarrier("after-9")
+  }
+
+  "avoid duplicate change events for same data" in {
+    val changedProbe = TestProbe()
+    replicator ! Subscribe(KeyI, changedProbe.ref)
+    enterBarrier("subscribed-I")
+
+    runOn(second) {
+      replicator ! Update(KeyI, GSet.empty[String], writeTwo)(a ⇒ a.add("a"))
+    }
+
+    within(5.seconds) { // gossip to third
+      changedProbe.expectMsgPF() { case c @ Changed(KeyI) ⇒ c.get(KeyI).elements } should be(Set("a"))
+    }
+
+    enterBarrier("update-I")
+
+    runOn(first) {
+      replicator ! Update(KeyI, GSet.empty[String], writeTwo)(_ + "a")
+    }
+
+    changedProbe.expectNoMsg(1.second)
+
+    enterBarrier("after-10")
   }
 
 }

@@ -928,10 +928,16 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   def setData(key: String, envelope: DataEnvelope): Unit = {
-    // notify subscribers, later
-    changed += key
+    val dig =
+      if (subscribers.contains(key) && !changed.contains(key)) {
+        val oldDigest = getDigest(key)
+        val dig = digest(envelope)
+        if (dig != oldDigest)
+          changed += key // notify subscribers, later
+        dig
+      } else if (envelope.data == DeletedData) DeletedDigest
+      else LazyDigest
 
-    val dig = if (envelope.data == DeletedData) DeletedDigest else LazyDigest
     dataEntries = dataEntries.updated(key, (envelope, dig))
   }
 
@@ -946,10 +952,12 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
   }
 
-  def digest(envelope: DataEnvelope): Digest = {
-    val bytes = serializer.toBinary(envelope)
-    ByteString.fromArray(MessageDigest.getInstance("SHA-1").digest(bytes))
-  }
+  def digest(envelope: DataEnvelope): Digest =
+    if (envelope.data == DeletedData) DeletedDigest
+    else {
+      val bytes = serializer.toBinary(envelope)
+      ByteString.fromArray(MessageDigest.getInstance("SHA-1").digest(bytes))
+    }
 
   def getData(key: String): Option[DataEnvelope] = dataEntries.get(key).map { case (envelope, _) ⇒ envelope }
 
@@ -1016,7 +1024,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def receiveStatus(otherDigests: Map[String, Digest], chunk: Int, totChunks: Int): Unit = {
     if (log.isDebugEnabled)
       log.debug("Received gossip status from [{}], chunk [{}] of [{}] containing [{}]", sender().path.address,
-        chunk, totChunks, otherDigests.keys.mkString(", "))
+        (chunk + 1), totChunks, otherDigests.keys.mkString(", "))
 
     def isOtherDifferent(key: String, otherDigest: Digest): Boolean = {
       val d = getDigest(key)
