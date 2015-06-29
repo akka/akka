@@ -161,11 +161,6 @@ final case class Terminated(ref: ActorRef[Nothing]) extends Signal
  */
 object Failed {
 
-  /**
-   * Failure responses are in some cases communicated by using the companion
-   * objects of the wrapper behaviors, see the [[StepWise]] behavior for an
-   * example.
-   */
   sealed trait Decision
 
   @SerialVersionUID(1L)
