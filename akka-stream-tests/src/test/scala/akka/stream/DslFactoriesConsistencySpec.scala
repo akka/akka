@@ -22,6 +22,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       ("apply" → "from") ::
       ("apply" -> "fromGraph") ::
       ("apply" -> "fromIterator") ::
+      ("apply" -> "fromFunctions") ::
       Nil
 
   // format: OFF
@@ -48,6 +49,11 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
 
   val sFlow = classOf[scaladsl.Flow[_, _, _]]
   val jFlow = classOf[javadsl.Flow[_, _, _]]
+
+  val sRunnableGraph = classOf[scaladsl.RunnableGraph[_]]
+  val jRunnableGraph = classOf[javadsl.RunnableGraph[_]]
+
+  val graph = classOf[Graph[_, _]]
 
   "Java DSL" must provide {
     "Source" which {
@@ -77,6 +83,24 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
         runSpec(getSMethods(sClass), getJMethods(jClass) ++ getJMethods(jFactory).map(adaptCreate))
       }
     }
+    "FlowGraph" which {
+      "allows creating the same FlowGraphs as scala DSL" in {
+        val sClass = akka.stream.scaladsl.FlowGraph.getClass
+        val jClass = akka.stream.javadsl.FlowGraph.getClass
+        val jFactory = classOf[akka.stream.javadsl.GraphCreate]
+
+        runSpec(getSMethods(sClass), getJMethods(jClass) ++ getJMethods(jFactory).map(adaptCreate))
+      }
+    }
+    "BidiFlow" which {
+      "allows creating the same BidiFlows as scala DSL" in {
+        val sClass = akka.stream.scaladsl.BidiFlow.getClass
+        val jClass = akka.stream.javadsl.BidiFlow.getClass
+        val jFactory = classOf[akka.stream.javadsl.BidiFlowCreate]
+
+        runSpec(getSMethods(sClass), getJMethods(jClass) ++ getJMethods(jFactory).map(adaptCreate))
+      }
+    }
   }
 
   // here be dragons...
@@ -97,6 +121,9 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       Ignore(_ == akka.stream.scaladsl.Source.getClass, _ == "apply", _ == 24, _ ⇒ true),
       Ignore(_ == akka.stream.scaladsl.Flow.getClass, _ == "apply", _ == 24, _ ⇒ true),
       Ignore(_ == akka.stream.scaladsl.Sink.getClass, _ == "apply", _ == 24, _ ⇒ true),
+      Ignore(_ == akka.stream.scaladsl.BidiFlow.getClass, _ == "apply", _ == 24, _ ⇒ true),
+      Ignore(_ == akka.stream.scaladsl.FlowGraph.getClass, _ == "closed", _ == 24, _ ⇒ true),
+      Ignore(_ == akka.stream.scaladsl.FlowGraph.getClass, _ == "partial", _ == 24, _ ⇒ true),
       // all generated methods like scaladsl.Sink$.akka$stream$scaladsl$Sink$$newOnCompleteStage$1
       Ignore(_ ⇒ true, _.contains("$"), _ ⇒ true, _ ⇒ true))
 
@@ -108,9 +135,12 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
 
   private val adaptCreate: PartialFunction[Method, Method] = {
     case m if m.parameterTypes.size > 1 ⇒
-      // rename createN => create
+      // rename
+      //   createN => create
+      //   closedN => closed
+      //   partialN => partial
       // and adapt java side non curried functions to scala side like
-      m.copy(name = "create", parameterTypes = m.parameterTypes.dropRight(1) :+ classOf[akka.japi.function.Function[_, _]])
+      m.copy(name = m.name.filter(Character.isLetter), parameterTypes = m.parameterTypes.dropRight(1) :+ classOf[akka.japi.function.Function[_, _]])
     case m ⇒ m
   }
 
@@ -196,7 +226,9 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
   def returnTypeMatch(s: Class[_], j: Class[_]): Boolean =
     (sSource.isAssignableFrom(s) && jSource.isAssignableFrom(j)) ||
       (sSink.isAssignableFrom(s) && jSink.isAssignableFrom(j)) ||
-      (sFlow.isAssignableFrom(s) && jFlow.isAssignableFrom(j))
+      (sFlow.isAssignableFrom(s) && jFlow.isAssignableFrom(j)) ||
+      (sRunnableGraph.isAssignableFrom(s) && jRunnableGraph.isAssignableFrom(j)) ||
+      (graph.isAssignableFrom(s) && graph.isAssignableFrom(j))
 
   def typeMatch(scalaParams: List[Class[_]], javaParams: List[Class[_]]): Boolean =
     (scalaParams.toList, javaParams.toList) match {
