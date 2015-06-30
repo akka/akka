@@ -13,6 +13,7 @@ import akka.stream.Attributes._
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage, SyncDirective }
 import org.reactivestreams.{ Publisher, Subscriber }
 
+import scala.annotation.tailrec
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
@@ -105,6 +106,26 @@ object Sink extends SinkApply {
    */
   def foreach[T](f: T ⇒ Unit): Sink[T, Future[Unit]] =
     Flow[T].map(f).toMat(Sink.ignore)(Keep.right).named("foreachSink")
+
+  /**
+   * Combine several sinks with fun-out strategy like `Broadcast` or `Balance` and returns `Sink`.
+   */
+  def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(strategy: Int ⇒ Graph[UniformFanOutShape[T, U], Unit]): Sink[T, Unit] =
+
+    Sink.wrap(FlowGraph.partial() { implicit b ⇒
+      import FlowGraph.Implicits._
+      val d = b.add(strategy(rest.size + 2))
+      d.out(0) ~> first
+      d.out(1) ~> second
+
+      @tailrec def combineRest(idx: Int, i: Iterator[Sink[U, _]]): SinkShape[T] =
+        if (i.hasNext) {
+          d.out(idx) ~> i.next()
+          combineRest(idx + 1, i)
+        } else new SinkShape(d.in)
+
+      combineRest(2, rest.iterator)
+    })
 
   /**
    * A `Sink` that will invoke the given function to each of the elements
