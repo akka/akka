@@ -7,6 +7,7 @@ import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
+import akka.actor.ActorPath
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.cluster.Cluster
@@ -87,7 +88,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
   def roleName(addr: Address): Option[RoleName] = remainingServerRoleNames.find(node(_).address == addr)
 
   def initialContacts = (remainingServerRoleNames - first - fourth).map { r ⇒
-    node(r) / "user" / "receptionist"
+    node(r) / "system" / "receptionist"
   }
 
   "A ClusterClient" must {
@@ -162,8 +163,10 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       lazy val docOnly = { //not used, only demo
         //#initialContacts
         val initialContacts = Set(
-          system.actorSelection("akka.tcp://OtherSys@host1:2552/user/receptionist"),
-          system.actorSelection("akka.tcp://OtherSys@host2:2552/user/receptionist"))
+          ActorPath.fromString("akka.tcp://OtherSys@host1:2552/system/receptionist"),
+          ActorPath.fromString("akka.tcp://OtherSys@host2:2552/system/receptionist"))
+        val settings = ClusterClientSettings(system)
+          .withInitialContacts(initialContacts)
         //#initialContacts
       }
 

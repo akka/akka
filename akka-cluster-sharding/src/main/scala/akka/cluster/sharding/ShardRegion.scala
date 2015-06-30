@@ -524,7 +524,7 @@ class ShardRegion(
             settings,
             extractEntityId,
             extractShardId,
-            handOffStopMessage),
+            handOffStopMessage).withDispatcher(context.props.dispatcher),
           name))
         shards = shards.updated(id, shard)
         shardsByRef = shardsByRef.updated(shard, id)

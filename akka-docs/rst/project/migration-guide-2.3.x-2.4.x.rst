@@ -282,6 +282,11 @@ The parameters of the ``Props`` factory methods in the ``ClusterReceptionist`` c
 has been moved to settings object ``ClusterReceptionistSettings``. This can be created from
 system configuration properties and also amended with API as needed.
 
+The ``ClusterReceptionist`` actor that is started by the ``ClusterReceptionistExtension``
+is now started as a ``system`` actor instead of a ``user`` actor, i.e. the default path for
+the ``ClusterClient`` initial contacts has changed to
+``"akka.tcp://system@hostname:port/system/receptionist"``.  
+
 Asynchronous ShardAllocationStrategy
 ====================================
 

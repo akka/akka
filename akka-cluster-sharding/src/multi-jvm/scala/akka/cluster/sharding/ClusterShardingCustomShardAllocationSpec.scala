@@ -185,12 +185,12 @@ class ClusterShardingCustomShardAllocationSpec extends MultiNodeSpec(ClusterShar
         lastSender.path should be(region.path / "2" / "2")
       }
       runOn(second) {
-        lastSender.path should be(node(first) / "user" / "sharding" / "Entity" / "2" / "2")
+        lastSender.path should be(node(first) / "system" / "sharding" / "Entity" / "2" / "2")
       }
       enterBarrier("second-started")
 
       runOn(first) {
-        system.actorSelection(node(second) / "user" / "sharding" / "Entity") ! Identify(None)
+        system.actorSelection(node(second) / "system" / "sharding" / "Entity") ! Identify(None)
         val secondRegion = expectMsgType[ActorIdentity].ref.get
         allocator ! UseRegion(secondRegion)
         expectMsg(UseRegionAck)
@@ -203,7 +203,7 @@ class ClusterShardingCustomShardAllocationSpec extends MultiNodeSpec(ClusterShar
         lastSender.path should be(region.path / "3" / "3")
       }
       runOn(first) {
-        lastSender.path should be(node(second) / "user" / "sharding" / "Entity" / "3" / "3")
+        lastSender.path should be(node(second) / "system" / "sharding" / "Entity" / "3" / "3")
       }
 
       enterBarrier("after-2")
@@ -218,7 +218,7 @@ class ClusterShardingCustomShardAllocationSpec extends MultiNodeSpec(ClusterShar
           val p = TestProbe()
           region.tell(2, p.ref)
           p.expectMsg(2.second, 2)
-          p.lastSender.path should be(node(second) / "user" / "sharding" / "Entity" / "2" / "2")
+          p.lastSender.path should be(node(second) / "system" / "sharding" / "Entity" / "2" / "2")
         }
 
         region ! 1
