@@ -1,8 +1,7 @@
 /**
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-
-package doc;
+package docs.persistence;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorPath;
@@ -33,22 +32,14 @@ public class LambdaPersistenceDocTest {
     //#recovery-status
   }
 
-  static Object o1 = new Object() {
-
-    private void recover(ActorRef persistentActor) {
-      //#recover-explicit
-      persistentActor.tell(Recover.create(), ActorRef.noSender());
-      //#recover-explicit
-    }
-
-  };
-
   static Object o2 = new Object() {
     abstract class MyPersistentActor1 extends AbstractPersistentActor {
-      //#recover-on-start-disabled
+      //#recovery-disabled
       @Override
-      public void preStart() {}
-      //#recover-on-start-disabled
+      public Recovery recovery() {
+        return Recovery.none();
+      }
+      //#recovery-disabled
 
       //#recover-on-restart-disabled
       @Override
@@ -57,12 +48,12 @@ public class LambdaPersistenceDocTest {
     }
 
     abstract class MyPersistentActor2 extends AbstractPersistentActor {
-      //#recover-on-start-custom
+      //#recovery-custom
       @Override
-      public void preStart() {
-        self().tell(Recover.create(457L), null);
+      public Recovery recovery() {
+        return Recovery.create(457L);
       }
-      //#recover-on-start-custom
+      //#recovery-custom
     }
 
     class MyPersistentActor4 extends AbstractPersistentActor implements PersistentActorMethods {
@@ -134,15 +125,6 @@ public class LambdaPersistenceDocTest {
       }
       //#backoff
     }
-  };
-
-  static Object fullyDisabledRecoveyExample = new Object() {
-      abstract class MyPersistentActor1 extends UntypedPersistentActor {
-          //#recover-fully-disabled
-          @Override
-          public void preStart() { getSelf().tell(Recover.create(0L), getSelf()); }
-          //#recover-fully-disabled
-      }
   };
 
   static Object atLeastOnceExample = new Object() {
@@ -312,7 +294,7 @@ public class LambdaPersistenceDocTest {
 
       private void recover() {
         //#snapshot-criteria
-        persistentActor.tell(Recover.create(
+        persistentActor.tell(Recovery.create(
           SnapshotSelectionCriteria
             .create(457L, System.currentTimeMillis())), null);
         //#snapshot-criteria

@@ -300,6 +300,7 @@ object PersistentFSMActorSpec {
       case Event(Buy, _) ⇒
         goto(Paid) applying OrderExecuted andThen {
           case NonEmptyShoppingCart(items) ⇒ reportActor ! PurchaseWasMade(items)
+          case EmptyShoppingCart           ⇒ // do nothing...
         }
       case Event(Leave, _) ⇒
         stop applying OrderDiscarded andThen {

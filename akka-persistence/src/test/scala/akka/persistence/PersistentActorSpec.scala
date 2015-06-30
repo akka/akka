@@ -7,15 +7,13 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch, TestProbe }
+import akka.testkit.{ ImplicitSender, TestLatch, TestProbe }
 import com.typesafe.config.Config
-import org.scalatest.matchers.{ MatchResult, Matcher }
 
 import scala.collection.immutable.Seq
-import scala.collection.immutable
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.{ Try, Random }
+import scala.util.Random
 import scala.util.control.NoStackTrace
 
 object PersistentActorSpec {
@@ -24,7 +22,7 @@ object PersistentActorSpec {
   final case class LatchCmd(latch: TestLatch, data: Any) extends NoSerializationVerificationNeeded
   final case class Delete(toSequenceNr: Long)
 
-  abstract class ExamplePersistentActor(name: String) extends NamedPersistentActor(name) with PersistentActor {
+  abstract class ExamplePersistentActor(name: String) extends NamedPersistentActor(name) {
     var events: List[Any] = Nil
 
     val updateState: Receive = {
@@ -680,7 +678,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       persistentActor ! GetState
       expectMsg(List("a-1", "a-2", "b-10", "b-11", "b-12", "c-10", "c-11", "c-12"))
     }
-    "recover on command failure" in {
+    "recover on command failure xoxo" in {
       val persistentActor = namedPersistentActor[Behavior3PersistentActor]
       persistentActor ! Cmd("b")
       persistentActor ! "boom"
@@ -1089,7 +1087,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg("a")
       receiveN(4) should equal(List("a-outer-async-1", "a-outer-async-2", "a-inner-1", "a-inner-2"))
     }
-    "make sure persist retains promised semantics when nested in persistAsync callback xoxo" in {
+    "make sure persist retains promised semantics when nested in persistAsync callback" in {
       val persistentActor = system.actorOf(Props(classOf[NestedPersistInAsyncEnforcesStashing], name, testActor))
       persistentActor ! "a"
 

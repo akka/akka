@@ -87,7 +87,7 @@ final case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
  * @param maxSequenceNr upper bound for a selected snapshot's sequence number. Default is no upper bound.
  * @param maxTimestamp upper bound for a selected snapshot's timestamp. Default is no upper bound.
  *
- * @see [[Recover]]
+ * @see [[Recovery]]
  */
 @SerialVersionUID(1L)
 final case class SnapshotSelectionCriteria(maxSequenceNr: Long = Long.MaxValue, maxTimestamp: Long = Long.MaxValue) {

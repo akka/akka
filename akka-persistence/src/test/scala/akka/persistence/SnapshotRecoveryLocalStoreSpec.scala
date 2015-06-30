@@ -22,6 +22,7 @@ object SnapshotRecoveryLocalStoreSpec {
   }
 
   class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name)
+    with TurnOffRecoverOnStart
     with ActorLogging {
 
     def receiveCommand = {
@@ -30,7 +31,6 @@ object SnapshotRecoveryLocalStoreSpec {
     def receiveRecover = {
       case other ⇒ probe ! other
     }
-    override def preStart() = ()
   }
 }
 
@@ -53,7 +53,7 @@ class SnapshotRecoveryLocalStoreSpec extends PersistenceSpec(PersistenceSpec.con
 
       val recoveringActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], persistenceId, testActor))
 
-      recoveringActor ! Recover()
+      recoveringActor ! Recovery()
       expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, seqNo, timestamp), state) ⇒ }
       expectMsg(RecoveryCompleted)
     }

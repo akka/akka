@@ -4,18 +4,18 @@
 
 package akka.persistence
 
-import akka.testkit.{ ImplicitSender, EventFilter, TestEvent, AkkaSpec }
-import java.io.{ IOException, File }
-import akka.actor.{ ActorInitializationException, Props, ActorRef }
+import java.io.{ File, IOException }
+
+import akka.actor.{ ActorInitializationException, ActorRef, Props }
+import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender }
 
 object SnapshotDirectoryFailureSpec {
   val inUseSnapshotPath = "target/inUseSnapshotPath"
 
-  class TestPersistentActor(name: String, probe: ActorRef) extends PersistentActor {
+  class TestPersistentActor(name: String, probe: ActorRef) extends PersistentActor
+    with TurnOffRecoverOnStart {
 
     override def persistenceId: String = name
-
-    override def preStart(): Unit = ()
 
     override def receiveRecover: Receive = {
       case SnapshotOffer(md, s) ⇒ probe ! ((md, s))

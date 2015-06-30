@@ -161,7 +161,7 @@ Identifiers
 A persistent actor must have an identifier that doesn't change across different actor incarnations.
 The identifier must be defined with the ``persistenceId`` method.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persistence-id-override
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#persistence-id-override
 
 .. _recovery-java-lambda:
 
@@ -175,46 +175,29 @@ only be received by a persistent actor after recovery completes.
 Recovery customization
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Automated recovery on start can be disabled by overriding ``preStart`` with an empty implementation.
+Applications may also customise how recovery is performed by returning a customised ``Recovery`` object
+in the ``recovery`` method of a ``AbstractPersistentActor``, for example setting an upper bound to the replay,
+which allows the actor to be replayed to a certain point "in the past" instead to its most up to date state:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-on-start-disabled
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#recovery-custom
 
-In this case, a persistent actor must be recovered explicitly by sending it a ``Recover`` message.
+Recovery can be disabled by returning ``Recovery.none`` in the ``recovery`` method of a ``PersistentActor``:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-explicit
-
-.. warning::
-
-  If ``preStart`` is overridden by an empty implementation, incoming commands will not be processed by the
-  ``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
-
-In order to completely skip recovery, you can signal it with ``Recover.create(0L)``
-
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-fully-disabled
-
-If not overridden, ``preStart`` sends a ``Recover`` message to ``self()``. Applications may also override
-``preStart`` to define further ``Recover`` parameters such as an upper sequence number bound, for example.
-
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-on-start-custom
-
-Upper sequence number bounds can be used to recover a persistent actor to past state instead of current state. Automated
-recovery on restart can be disabled by overriding ``preRestart`` with an empty implementation.
-
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-on-restart-disabled
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#recovery-disabled
 
 Recovery status
 ^^^^^^^^^^^^^^^
 
 A persistent actor can query its own recovery status via the methods
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recovery-status
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#recovery-status
 
 Sometimes there is a need for performing additional initialization when the
 recovery has completed, before processing any other message sent to the persistent actor.
 The persistent actor will receive a special :class:`RecoveryCompleted` message right after recovery
 and before any other received messages.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recovery-completed
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#recovery-completed
 
 If there is a problem with recovering the state of the actor from the journal, ``onReplayFailure`` 
 is called (logging the error by default) and the actor will be stopped. 
@@ -236,7 +219,7 @@ stash incoming Commands while the Journal is still working on persisting and/or 
 In the below example, the event callbacks may be called "at any time", even after the next Command has been processed.
 The ordering between events is still guaranteed ("evt-b-1" will be sent after "evt-a-2", which will be sent after "evt-a-1" etc.).
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persist-async
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#persist-async
 
 .. note::
   In order to implement the pattern known as "*command sourcing*" simply call ``persistAsync`` on all incoming messages right away,
@@ -259,12 +242,12 @@ use it for *read* operations, and actions which do not have corresponding events
 Using this method is very similar to the persist family of methods, yet it does **not** persist the passed in event.
 It will be kept in memory and used when invoking the handler.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#defer
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#defer
 
 Notice that the ``sender()`` is **safe** to access in the handler callback, and will be pointing to the original sender
 of the command for which this ``defer`` handler was called.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#defer-caller
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#defer-caller
 
 .. warning::
   The callback will not be invoked if the actor is restarted (or stopped) in between the call to
@@ -282,11 +265,11 @@ however there are situations where it may be useful. It is important to understa
 those situations, as well as their implication on the stashing behaviour (that ``persist()`` enforces). In the following
 example two persist calls are issued, and each of them issues another persist inside its callback:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#nested-persist-persist
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#nested-persist-persist
 
 When sending two commands to this ``PersistentActor``, the persist handlers will be executed in the following order:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#nested-persist-persist-caller
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#nested-persist-persist-caller
 
 First the "outer layer" of persist calls is issued and their callbacks applied, after these have successfully completed
 the inner callbacks will be invoked (once the events they are persisting have been confirmed to be persisted by the journal).
@@ -296,11 +279,11 @@ is extended until all nested ``persist`` callbacks have been handled.
 
 It is also possible to nest ``persistAsync`` calls, using the same pattern:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#nested-persistAsync-persistAsync
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#nested-persistAsync-persistAsync
 
 In this case no stashing is happening, yet the events are still persisted and callbacks executed in the expected order:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#nested-persistAsync-persistAsync-caller
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#nested-persistAsync-persistAsync-caller
 
 While it is possible to nest mixed ``persist`` and ``persistAsync`` with keeping their respective semantics
 it is not a recommended practice as it may lead to overly complex nesting.
@@ -317,7 +300,7 @@ will most likely fail anyway, since the journal is probably unavailable. It is b
 actor and after a back-off timeout start it again. The ``akka.persistence.BackoffSupervisor`` actor
 is provided to support such restarts.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#backoff
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#backoff
 
 If persistence of an event is rejected before it is stored, e.g. due to serialization error, 
 ``onPersistRejected`` will be invoked (logging a warning by default) and the actor continues with
@@ -372,7 +355,7 @@ Views
 Persistent views can be implemented by extending the ``AbstractView`` abstract class, implement the ``persistenceId`` method
 and setting the “initial behavior” in the constructor by calling the :meth:`receive` method.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#view
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#view
 
 The ``persistenceId`` identifies the persistent actor from which the view receives journaled messages. It is not necessary
 the referenced persistent actor is actually running. Views read messages from a persistent actor's journal directly. When a
@@ -394,7 +377,7 @@ The default update interval of all persistent views of an actor system is config
 interval for a specific view class or view instance. Applications may also trigger additional updates at
 any time by sending a view an ``Update`` message.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#view-update
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#view-update
 
 If the ``await`` parameter is set to ``true``, messages that follow the ``Update`` request are processed when the
 incremental message replay, triggered by that update request, completed. If set to ``false`` (default), messages
@@ -439,12 +422,12 @@ in context of persistent actors but this is also applicable to persistent views.
 Persistent actor can save snapshots of internal state by calling the  ``saveSnapshot`` method. If saving of a snapshot
 succeeds, the persistent actor receives a ``SaveSnapshotSuccess`` message, otherwise a ``SaveSnapshotFailure`` message
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#save-snapshot
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#save-snapshot
 
 During recovery, the persistent actor is offered a previously saved snapshot via a ``SnapshotOffer`` message from
 which it can initialize internal state.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#snapshot-offer
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#snapshot-offer
 
 The replayed messages that follow the ``SnapshotOffer`` message, if any, are younger than the offered snapshot.
 They finally recover the persistent actor to its current (i.e. latest) state.
@@ -452,7 +435,7 @@ They finally recover the persistent actor to its current (i.e. latest) state.
 In general, a persistent actor is only offered a snapshot if that persistent actor has previously saved one or more snapshots
 and at least one of these snapshots matches the ``SnapshotSelectionCriteria`` that can be specified for recovery.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#snapshot-criteria
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#snapshot-criteria
 
 If not specified, they default to ``SnapshotSelectionCriteria.latest()`` which selects the latest (= youngest) snapshot.
 To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.none()``. A recovery where no
@@ -509,7 +492,7 @@ between ``deliver`` and ``confirmDelivery`` is possible. The ``deliveryId`` must
 of the message, destination actor will send the same``deliveryId`` wrapped in a confirmation message back to the sender. 
 The sender will then use it to call ``confirmDelivery`` method to complete delivery routine.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#at-least-once-example
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#at-least-once-example
 
 The ``deliveryId`` generated by the persistence module is a strictly monotonically increasing sequence number 
 without gaps. The same sequence is used for all destinations of the actor, i.e. when sending to multiple 
@@ -631,7 +614,7 @@ For an example of snapshot store plugin which writes snapshots as individual fil
 Applications can provide their own plugins by implementing a plugin API and activate them by configuration. 
 Plugin development requires the following imports:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistencePluginDocTest.java#plugin-imports
+.. includecode:: code/docs/persistence/LambdaPersistencePluginDocTest.java#plugin-imports
 
 Journal plugin API
 ------------------
@@ -644,7 +627,7 @@ A journal plugin extends ``AsyncWriteJournal``.
 
 If the storage backend API only supports synchronous, blocking writes, the methods should be implemented as:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistencePluginDocTest.java#sync-journal-plugin-api
+.. includecode:: code/docs/persistence/LambdaPersistencePluginDocTest.java#sync-journal-plugin-api
 
 A journal plugin must also implement the methods defined in ``AsyncRecovery`` for replays and sequence number recovery:
 
@@ -719,7 +702,7 @@ plugin.
 This plugin must be initialized by injecting the (remote) ``SharedLeveldbStore`` actor reference. Injection is
 done by calling the ``SharedLeveldbJournal.setStore`` method with the actor reference as argument.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistencePluginDocTest.java#shared-store-usage
+.. includecode:: code/docs/persistence/PersistencePluginDocTest.java#shared-store-usage
 
 Internal journal commands (sent by persistent actors) are buffered until injection completes. Injection is idempotent
 i.e. only the first injection is used.
