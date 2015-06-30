@@ -82,9 +82,8 @@ object ClusterShardingSpec extends MultiNodeConfig {
 
     context.setReceiveTimeout(120.seconds)
 
-    // self.path.parent.parent.name is the type name (utf-8 URL-encoded)
     // self.path.name is the entity identifier (utf-8 URL-encoded)
-    override def persistenceId: String = self.path.parent.parent.name + "-" + self.path.name
+    override def persistenceId: String = "Counter-" + self.path.name
 
     var count = 0
     //#counter-actor
@@ -124,6 +123,15 @@ object ClusterShardingSpec extends MultiNodeConfig {
     case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
     case Get(id)               ⇒ (id % numberOfShards).toString
   }
+
+  def qualifiedCounterProps(typeName: String): Props =
+    Props(new QualifiedCounter(typeName))
+
+  class QualifiedCounter(typeName: String) extends Counter {
+    override def persistenceId: String = typeName + "-" + self.path.name
+  }
+
+  class AnotherCounter extends QualifiedCounter("AnotherCounter")
 
 }
 
@@ -225,7 +233,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       .withRememberEntities(rememberEntities)
     system.actorOf(ShardRegion.props(
       typeName = typeName,
-      entityProps = Props[Counter],
+      entityProps = qualifiedCounterProps(typeName),
       settings = settings,
       coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
       extractEntityId = extractEntityId,
@@ -524,7 +532,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       //#counter-start
       ClusterSharding(system).start(
         typeName = "AnotherCounter",
-        entityProps = Props[Counter],
+        entityProps = Props[AnotherCounter],
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)

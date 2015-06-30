@@ -316,7 +316,7 @@ Distributes actors across several nodes in the cluster and supports interaction
 with the actors using their logical identifier, but without having to care about
 their physical location in the cluster.
 
-See :ref:`cluster-sharding` in the contrib module. 
+See :ref:`cluster_sharding_scala` 
 
 Distributed Publish Subscribe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -335,6 +335,14 @@ somewhere in the cluster. The client does not have to know on which node the des
 actor is running.
 
 See :ref:`cluster-client` in the contrib module.
+
+Distributed Data
+^^^^^^^^^^^^^^^^
+
+*Akka Distributed Data* is useful when you need to share data between nodes in an
+Akka Cluster. The data is accessed with an actor providing a key-value store like API.
+
+See :ref:`distributed_data_scala`.
 
 Failure Detector
 ^^^^^^^^^^^^^^^^

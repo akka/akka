@@ -9,7 +9,7 @@ Networking
    ../scala/cluster-singleton
    ../scala/distributed-pub-sub
    ../scala/cluster-client
-   ../scala/cluster-sharding
+   cluster-sharding
    cluster-metrics
    distributed-data
    remoting
