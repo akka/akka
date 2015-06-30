@@ -329,6 +329,30 @@ The ``permanent`` flag in ``deleteMessages`` was removed. non-permanent deletes 
 any more. Events that were deleted with ``permanent=false`` with older version will
 still not be replayed in this version.
 
+Recover message is gone, replaced by Recovery config
+----------------------------------------------------
+Previously the way to cause recover in PersistentActors was sending them a ``Recover()`` message.
+Most of the time it was the actor itself sending such message to ``self`` in its ``preStart`` method,
+however it was possible to send this message from an external source to any ``PersistentActor`` or ``PresistentView``
+to make it start recovering.
+
+This style of starting recovery does not fit well with usual Actor best practices: an Actor should be independent
+and know about its internal state, and also about its recovery or lack thereof. In order to guide users towards
+more independent Actors, the ``Recovery()`` object is now not used as a message, but as configuration option
+used by the Actor when it starts. In order to migrate previous code which customised its recovery mode use this example
+as reference::
+
+    // previously
+    class OldCookieMonster extends PersistentActor {
+      def preStart() = self ! Recover(toSequenceNr = 42L)
+      // ...
+    }
+    // now:
+    class NewCookieMonster extends PersistentActor {
+      override def recovery = Recovery(toSequenceNr = 42L)
+      // ...
+    }
+
 Persistence Plugin APIs
 =======================
 

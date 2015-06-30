@@ -14,8 +14,7 @@ object PersistentViewSpec {
 
   private class TestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name) {
     def receiveCommand = {
-      case msg ⇒
-        persist(msg) { m ⇒ probe ! s"${m}-${lastSequenceNr}" }
+      case msg ⇒ persist(msg) { m ⇒ probe ! s"${m}-${lastSequenceNr}" }
     }
 
     override def receiveRecover: Receive = {

@@ -177,32 +177,15 @@ They are cached and received by a persistent actor after recovery phase complete
 Recovery customization
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Automated recovery on start can be disabled by overriding ``preStart`` with an empty or custom implementation.
+Applications may also customise how recovery is performed by returning a customised ``Recovery`` object
+in the ``recovery`` method of a ``UntypedPersistentActor``, for example setting an upper bound to the replay,
+which allows the actor to be replayed to a certain point "in the past" instead to its most up to date state:
 
-.. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-on-start-disabled
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#recovery-custom
 
-In this case, a persistent actor must be recovered explicitly by sending it a ``Recover`` message.
+Recovery can be disabled by returning ``Recovery.none()`` in the ``recovery`` method of a ``PersistentActor``:
 
-.. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-explicit
-
-.. warning::
-
-  If ``preStart`` is overridden by an empty implementation, incoming commands will not be processed by the
-  ``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
-
-In order to completely skip recovery, you can signal it with ``Recover.create(0L)``
-
-.. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-fully-disabled
-
-If not overridden, ``preStart`` sends a ``Recover`` message to ``getSelf()``. Applications may also override
-``preStart`` to define further ``Recover`` parameters such as an upper sequence number bound, for example.
-
-.. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-on-start-custom
-
-Upper sequence number bounds can be used to recover a persistent actor to past state instead of current state. Automated
-recovery on restart can be disabled by overriding ``preRestart`` with an empty implementation.
-
-.. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-on-restart-disabled
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#recovery-disabled
 
 Recovery status
 ^^^^^^^^^^^^^^^

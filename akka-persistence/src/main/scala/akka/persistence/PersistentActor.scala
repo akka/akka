@@ -22,10 +22,13 @@ case object RecoveryCompleted extends RecoveryCompleted {
 }
 
 /**
- * Instructs a persistent actor to recover itself. Recovery will start from a snapshot if the persistent actor has
- * previously saved one or more snapshots and at least one of these snapshots matches the specified
- * `fromSnapshot` criteria. Otherwise, recovery will start from scratch by replaying all journaled
- * messages.
+ * Recovery mode configuration object to be returned in [[PersistentActor#recovery]].
+ *
+ * By default recovers from latest snapshot replays through to the last available event (last sequenceId).
+ *
+ * Recovery will start from a snapshot if the persistent actor has previously saved one or more snapshots
+ * and at least one of these snapshots matches the specified `fromSnapshot` criteria.
+ * Otherwise, recovery will start from scratch by replaying all stored events.
  *
  * If recovery starts from a snapshot, the persistent actor is offered that snapshot with a [[SnapshotOffer]]
  * message, followed by replayed messages, if any, that are younger than the snapshot, up to the
@@ -37,47 +40,52 @@ case object RecoveryCompleted extends RecoveryCompleted {
  * @param replayMax maximum number of messages to replay. Default is no limit.
  */
 @SerialVersionUID(1L)
-final case class Recover(fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest, toSequenceNr: Long = Long.MaxValue, replayMax: Long = Long.MaxValue)
+final case class Recovery(
+  fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest,
+  toSequenceNr: Long = Long.MaxValue,
+  replayMax: Long = Long.MaxValue)
 
-object Recover {
+object Recovery {
+
   /**
-   * Java API.
-   *
-   * @see [[Recover]]
+   * Java API
+   * @see [[Recovery]]
    */
-  def create() = Recover()
+  def create() = Recovery()
 
   /**
-   * Java API.
-   *
-   * @see [[Recover]]
+   * Java API
+   * @see [[Recovery]]
    */
   def create(toSequenceNr: Long) =
-    Recover(toSequenceNr = toSequenceNr)
+    Recovery(toSequenceNr = toSequenceNr)
 
   /**
-   * Java API.
-   *
-   * @see [[Recover]]
+   * Java API
+   * @see [[Recovery]]
    */
   def create(fromSnapshot: SnapshotSelectionCriteria) =
-    Recover(fromSnapshot = fromSnapshot)
+    Recovery(fromSnapshot = fromSnapshot)
 
   /**
-   * Java API.
-   *
-   * @see [[Recover]]
+   * Java API
+   * @see [[Recovery]]
    */
   def create(fromSnapshot: SnapshotSelectionCriteria, toSequenceNr: Long) =
-    Recover(fromSnapshot, toSequenceNr)
+    Recovery(fromSnapshot, toSequenceNr)
 
   /**
-   * Java API.
-   *
-   * @see [[Recover]]
+   * Java API
+   * @see [[Recovery]]
    */
   def create(fromSnapshot: SnapshotSelectionCriteria, toSequenceNr: Long, replayMax: Long) =
-    Recover(fromSnapshot, toSequenceNr, replayMax)
+    Recovery(fromSnapshot, toSequenceNr, replayMax)
+
+  /**
+   * Convenience method for skipping recovery in [[PersistentActor]].
+   * @see [[Recovery]]
+   */
+  val none: Recovery = Recovery(toSequenceNr = 0L)
 }
 
 /**
@@ -214,7 +222,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * If there is a problem with recovering the state of the actor from the journal, the error
    * will be logged and the actor will be stopped.
    *
-   * @see [[Recover]]
+   * @see [[Recovery]]
    */
   @throws(classOf[Exception])
   def onReceiveRecover(msg: Any): Unit

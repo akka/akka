@@ -103,13 +103,11 @@ final class BackoffSupervisor(
   private var child: Option[ActorRef] = None
   private var restartCount = 0
 
-  override def preStart(): Unit = {
+  override def preStart(): Unit =
     startChild()
-    super.preStart()
-  }
 
   def startChild(): Unit =
-    if (child == None) {
+    if (child.isEmpty) {
       child = Some(context.watch(context.actorOf(childProps, childName)))
     }
 

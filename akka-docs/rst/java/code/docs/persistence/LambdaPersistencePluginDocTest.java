@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package doc;
+package docs.persistence;
 
 //#plugin-imports
 import akka.dispatch.Futures;

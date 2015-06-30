@@ -32,41 +32,23 @@ public class PersistenceDocTest {
         //#recovery-status
     }
 
-    static Object o1 = new Object() {
-        class MyActor extends UntypedActor {
-            ActorRef persistentActor;
-
-            public void onReceive(Object message) throws Exception {
-            }
-
-            private void recover() {
-                //#recover-explicit
-                persistentActor.tell(Recover.create(), self());
-                //#recover-explicit
-            }
-        }
-    };
-
     static Object o2 = new Object() {
         abstract class MyPersistentActor1 extends UntypedPersistentActor {
-            //#recover-on-start-disabled
+            //#recovery-disabled
             @Override
-            public void preStart() {}
-            //#recover-on-start-disabled
-
-            //#recover-on-restart-disabled
-            @Override
-            public void preRestart(Throwable reason, Option<Object> message) {}
-            //#recover-on-restart-disabled
+            public Recovery recovery() {
+                return Recovery.none();
+            }
+            //#recovery-disabled
         }
 
         abstract class MyPersistentActor2 extends UntypedPersistentActor {
-            //#recover-on-start-custom
+            //#recovery-custom
             @Override
-            public void preStart() {
-                self().tell(Recover.create(457L), self());
+            public Recovery recovery() {
+                return Recovery.create(457L);
             }
-            //#recover-on-start-custom
+            //#recovery-custom
         }
 
         class MyPersistentActor4 extends UntypedPersistentActor implements PersistentActorMethods {
@@ -125,15 +107,6 @@ public class PersistenceDocTest {
         }
     };
 
-    static Object fullyDisabledRecoveryExample = new Object() {
-        abstract class MyPersistentActor1 extends UntypedPersistentActor {
-            //#recover-fully-disabled
-            @Override
-            public void preStart() { self().tell(Recover.create(0L), self()); }
-            //#recover-fully-disabled
-        }
-    };
-    
     static Object atLeastOnceExample = new Object() {
       //#at-least-once-example
       
@@ -227,7 +200,7 @@ public class PersistenceDocTest {
           if (message instanceof Msg) {
             Msg msg = (Msg) message;
             // ...
-            getSender().tell(new Confirm(msg.deliveryId), self());
+            getSender().tell(new Confirm(msg.deliveryId), getSelf());
           } else {
             unhandled(message);
           }
@@ -304,7 +277,7 @@ public class PersistenceDocTest {
 
             private void recover() {
                 //#snapshot-criteria
-                persistentActor.tell(Recover.create(SnapshotSelectionCriteria.create(457L, 
+                persistentActor.tell(Recovery.create(SnapshotSelectionCriteria.create(457L,
                     System.currentTimeMillis())), null);
                 //#snapshot-criteria
             }
@@ -541,7 +514,7 @@ public class PersistenceDocTest {
         }
     };
 
-    static Object o12 = new Object() {
+    static Object o13 = new Object() {
         //#view
         class MyView extends UntypedPersistentView {
             @Override
