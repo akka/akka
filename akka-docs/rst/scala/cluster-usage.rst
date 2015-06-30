@@ -334,7 +334,7 @@ Communication from an actor system that is not part of the cluster to actors run
 somewhere in the cluster. The client does not have to know on which node the destination
 actor is running.
 
-See :ref:`cluster-client` in the contrib module.
+See :ref:`cluster-client-scala`.
 
 Distributed Data
 ^^^^^^^^^^^^^^^^

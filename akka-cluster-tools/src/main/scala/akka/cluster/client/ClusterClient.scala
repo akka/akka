@@ -107,9 +107,20 @@ final class ClusterClientSettings(
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
 
+  /**
+   * Scala API
+   */
   def withInitialContacts(initialContacts: Set[ActorPath]): ClusterClientSettings = {
     require(initialContacts.nonEmpty, "initialContacts must be defined")
     copy(initialContacts = initialContacts)
+  }
+
+  /**
+   * Java API
+   */
+  def withInitialContacts(initialContacts: java.util.Set[ActorPath]): ClusterClientSettings = {
+    import scala.collection.JavaConverters._
+    withInitialContacts(initialContacts.asScala.toSet)
   }
 
   def withEstablishingGetContactsInterval(establishingGetContactsInterval: FiniteDuration): ClusterClientSettings =

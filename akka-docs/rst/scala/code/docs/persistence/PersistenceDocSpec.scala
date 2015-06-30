@@ -330,7 +330,6 @@ object PersistenceDocSpec {
 
     //#nested-persist-persist-caller
 
-
     class MyPersistAsyncActor extends PersistentActor {
       override def persistenceId = "my-stable-persistence-id"
 
@@ -351,7 +350,7 @@ object PersistenceDocSpec {
             persistAsync(c + "-inner-2") { inner ⇒ sender() ! inner }
           }
       }
-    //#nested-persistAsync-persistAsync
+      //#nested-persistAsync-persistAsync
     }
 
     //#nested-persistAsync-persistAsync-caller
