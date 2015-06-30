@@ -12,8 +12,7 @@ import scala.concurrent.Promise
 class HeadSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
   import HeadSink._
 
-  override def createSubscriber(): Subscriber[Int] =
-    new HeadSinkSubscriber[Int](Promise[Int]())
+  override def createSubscriber(): Subscriber[Int] = new HeadSinkSubscriber[Int]
 
   override def createElement(element: Int): Int = element
 }

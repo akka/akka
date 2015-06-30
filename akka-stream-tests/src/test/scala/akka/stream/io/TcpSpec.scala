@@ -346,17 +346,17 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
       val writeButIgnoreRead: Flow[ByteString, ByteString, Unit] =
         Flow.wrap(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
-      val binding = Tcp().bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
-        conn.flow.join(writeButIgnoreRead).run()
-      })(Keep.left).run()
+      val binding = Tcp()
+        .bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false)
+        .toMat(Sink.foreach(_.flow.join(writeButIgnoreRead).run()))(Keep.left).run()
 
-      val result = Source(() ⇒ Iterator.continually(ByteString("client data")))
+      val result = Source.repeat(ByteString("client data"))
         .via(Tcp().outgoingConnection(serverAddress.getHostName, serverAddress.getPort))
         .runFold(ByteString.empty)(_ ++ _)
 
-      Await.result(result, 3.seconds) should ===(ByteString("Early response"))
-
-      binding.map(_.unbind())
+      val r: ByteString = Await.result(result, 3.seconds)
+      r should ===(ByteString("Early response"))
+      binding.foreach(_.unbind())
     }
 
     "Echo should work even if server is in full close mode" in {
@@ -374,7 +374,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
 
       Await.result(result, 3.seconds) should ===(10000)
 
-      binding.map(_.unbind())
+      binding.foreach(_.unbind())
     }
 
     "handle when connection actor terminates unexpectedly" in {
@@ -510,7 +510,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
 
       val folder = Source(immutable.Iterable.fill(1000)(ByteString(0)))
         .via(Tcp().outgoingConnection(address))
-        .toMat(Sink.fold(0)(_ + _.size))(Keep.right)
+        .fold(0)(_ + _.size).toMat(Sink.head)(Keep.right)
 
       val total = folder.run()
       val rejected = folder.run()
@@ -521,7 +521,6 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
         Await.result(rejected, 5.seconds) should ===(1000)
       }
     }
-
   }
 
   def validateServerClientCommunication(testData: ByteString,

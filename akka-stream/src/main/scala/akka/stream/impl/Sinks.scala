@@ -98,26 +98,33 @@ private[akka] final class FanoutPublisherSink[In](
  * INTERNAL API
  */
 private[akka] object HeadSink {
-  class HeadSinkSubscriber[In](p: Promise[In]) extends Subscriber[In] {
-    private val sub = new AtomicReference[Subscription]
+  final class HeadSinkSubscriber[In] extends Subscriber[In] {
+    private[this] var subscription: Subscription = null
+    private[this] val promise: Promise[In] = Promise[In]()
+    def future: Future[In] = promise.future
     override def onSubscribe(s: Subscription): Unit = {
       ReactiveStreamsCompliance.requireNonNullSubscription(s)
-      if (!sub.compareAndSet(null, s)) s.cancel()
-      else s.request(1)
+      if (subscription ne null) s.cancel()
+      else {
+        subscription = s
+        s.request(1)
+      }
     }
 
     override def onNext(elem: In): Unit = {
       ReactiveStreamsCompliance.requireNonNullElement(elem)
-      p.trySuccess(elem)
-      sub.get.cancel()
+      promise.trySuccess(elem)
+      subscription.cancel()
+      subscription = null
     }
 
     override def onError(t: Throwable): Unit = {
       ReactiveStreamsCompliance.requireNonNullException(t)
-      p.tryFailure(t)
+      promise.tryFailure(t)
     }
 
-    override def onComplete(): Unit = p.tryFailure(new NoSuchElementException("empty stream"))
+    override def onComplete(): Unit =
+      promise.tryFailure(new NoSuchElementException("empty stream"))
   }
 
 }
@@ -130,17 +137,13 @@ private[akka] object HeadSink {
  * the Future into the corresponding failed state) or the end-of-stream
  * (failing the Future with a NoSuchElementException).
  */
-private[akka] class HeadSink[In](val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Future[In]](shape) {
-
+private[akka] final class HeadSink[In](val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Future[In]](shape) {
   override def create(context: MaterializationContext) = {
-    val p = Promise[In]()
-    val sub = new HeadSink.HeadSinkSubscriber[In](p)
-    (sub, p.future)
+    val sub = new HeadSink.HeadSinkSubscriber[In]
+    (sub, sub.future)
   }
-
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Future[In]] = new HeadSink[In](attributes, shape)
   override def withAttributes(attr: Attributes): Module = new HeadSink[In](attr, amendShape(attr))
-
   override def toString: String = "HeadSink"
 }
 
@@ -159,6 +162,7 @@ private[akka] final class BlackholeSink(val attributes: Attributes, shape: SinkS
 
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Future[Unit]] = new BlackholeSink(attributes, shape)
   override def withAttributes(attr: Attributes): Module = new BlackholeSink(attr, amendShape(attr))
+  override def toString: String = "BlackholeSink"
 }
 
 /**
@@ -171,6 +175,7 @@ private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val att
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Unit] = new SubscriberSink[In](subscriber, attributes, shape)
   override def withAttributes(attr: Attributes): Module = new SubscriberSink[In](subscriber, attr, amendShape(attr))
+  override def toString: String = "SubscriberSink"
 }
 
 /**
@@ -178,19 +183,10 @@ private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val att
  * A sink that immediately cancels its upstream upon materialization.
  */
 private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, Unit](shape) {
-
-  override def create(context: MaterializationContext): (Subscriber[Any], Unit) = {
-    val subscriber = new Subscriber[Any] {
-      override def onError(t: Throwable): Unit = ()
-      override def onSubscribe(s: Subscription): Unit = s.cancel()
-      override def onComplete(): Unit = ()
-      override def onNext(t: Any): Unit = ()
-    }
-    (subscriber, ())
-  }
-
+  override def create(context: MaterializationContext): (Subscriber[Any], Unit) = (new CancellingSubscriber[Any], ())
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Unit] = new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): Module = new CancelSink(attr, amendShape(attr))
+  override def toString: String = "CancelSink"
 }
 
 /**
@@ -207,6 +203,7 @@ private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: 
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] = new ActorSubscriberSink[In](props, attributes, shape)
   override def withAttributes(attr: Attributes): Module = new ActorSubscriberSink[In](props, attr, amendShape(attr))
+  override def toString: String = "ActorSubscriberSink"
 }
 
 /**
@@ -228,5 +225,6 @@ private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any
     new ActorRefSink[In](ref, onCompleteMessage, attributes, shape)
   override def withAttributes(attr: Attributes): Module =
     new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
+  override def toString: String = "ActorRefSink"
 }
 
