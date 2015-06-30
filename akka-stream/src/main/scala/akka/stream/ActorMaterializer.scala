@@ -5,6 +5,7 @@ package akka.stream
 
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.stream.impl._
@@ -49,13 +50,15 @@ object ActorMaterializer {
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
   def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String, optimizations: Optimizations)(implicit context: ActorRefFactory): ActorMaterializer = {
+    val haveShutDown = new AtomicBoolean(false)
     val system = actorSystemOf(context)
 
     new ActorMaterializerImpl(
       system,
       materializerSettings,
       system.dispatchers,
-      context.actorOf(StreamSupervisor.props(materializerSettings).withDispatcher(materializerSettings.dispatcher)),
+      context.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher)),
+      haveShutDown,
       FlowNameCounter(system).counter,
       namePrefix,
       optimizations)

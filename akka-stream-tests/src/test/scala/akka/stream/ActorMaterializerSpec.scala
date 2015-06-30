@@ -1,6 +1,6 @@
 package akka.stream
 
-import akka.actor.Props
+import akka.actor.{ ActorSystem, Props }
 import akka.stream.impl.{ StreamSupervisor, ActorMaterializerImpl }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.AkkaSpec
@@ -56,6 +56,14 @@ class ActorMaterializerSpec extends AkkaSpec with ImplicitSender {
         Await.result(
           Source.actorPublisher(Props(classOf[TestActor], "wrong", "arguments")).runWith(Sink.head)(m),
           3.seconds)
+    }
+
+    "report correctly if it has been shut down from the side" in {
+      val sys = ActorSystem()
+      val m = ActorMaterializer.create(sys)
+      sys.shutdown()
+      sys.awaitTermination()
+      m.isShutdown should ===(true)
     }
 
   }
