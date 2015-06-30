@@ -307,7 +307,7 @@ you have exactly one actor of a certain type running somewhere in the cluster.
 
 This can be implemented by subscribing to member events, but there are several corner 
 cases to consider. Therefore, this specific use case is made easily accessible by the 
-:ref:`cluster-singleton` in the contrib module.
+:ref:`cluster-singleton-scala`.
 
 Cluster Sharding
 ^^^^^^^^^^^^^^^^
@@ -537,7 +537,7 @@ Router Example with Pool of Remote Deployed Routees
 ---------------------------------------------------
 
 Let's take a look at how to use a cluster aware router on single master node that creates
-and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton` 
+and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton-scala` 
 in the contrib module. The ``ClusterSingletonManager`` is started on each node.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/stats/StatsSampleOneMaster.scala#create-singleton-manager
