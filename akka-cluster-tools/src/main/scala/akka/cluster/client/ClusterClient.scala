@@ -36,6 +36,7 @@ import akka.routing.MurmurHash
 import com.typesafe.config.Config
 import akka.actor.DeadLetterSuppression
 import akka.remote.DeadlineFailureDetector
+import akka.dispatch.Dispatchers
 
 object ClusterClientSettings {
   /**
@@ -77,6 +78,9 @@ object ClusterClientSettings {
 /**
  * @param initialContacts Actor paths of the `ClusterReceptionist` actors on
  *   the servers (cluster nodes) that the client will try to contact initially.
+ *   It is mandatory to specify at least one initial contact. The path of the
+ *   default receptionist is
+ *   "akka.tcp://system@hostname:port/system/receptionist"
  * @param establishingGetContactsInterval Interval at which the client retries
  *   to establish contact with one of ClusterReceptionist on the servers (cluster nodes)
  * @param refreshContactsInterval Interval at which the client will ask the
@@ -391,9 +395,14 @@ final class ClusterClientReceptionist(system: ExtendedActorSystem) extends Exten
       system.deadLetters
     else {
       val name = config.getString("name")
+      val dispatcher = config.getString("use-dispatcher") match {
+        case "" ⇒ Dispatchers.DefaultDispatcherId
+        case id ⇒ id
+      }
       // important to use val mediator here to activate it outside of ClusterReceptionist constructor
       val mediator = pubSubMediator
-      system.actorOf(ClusterReceptionist.props(mediator, ClusterReceptionistSettings(config)), name)
+      system.systemActorOf(ClusterReceptionist.props(mediator, ClusterReceptionistSettings(config))
+        .withDispatcher(dispatcher), name)
     }
   }
 }
