@@ -152,6 +152,19 @@ For defining a ``Flow[T]`` we need to expose both an inlet and an outlet:
 
 .. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#flow-from-partial-flow-graph
 
+Combining Sources and Sinks with simplified API
+-----------------------------------------------
+
+There is simplified API you can use to combine sources and sinks with junctions like: ``Broadcast[T]``, ``Balance[T]``,
+``Merge[In]`` and ``Concat[A]`` without the need for using the Graph DSL. The combine method takes care of constructing
+the necessary graph underneath. In following example we combine two sources into one (fan-in):
+
+.. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#source-combine
+
+The same can be done for a ``Sink[T]`` but in this case it will be fan-out:
+
+.. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#sink-combine
+
 Building reusable Graph components
 ----------------------------------
 

@@ -5,7 +5,7 @@ package docs.stream;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Iterator;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
@@ -16,7 +16,7 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
-import akka.actor.ActorSystem;
+import akka.actor.*;
 import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -134,5 +134,40 @@ public class StreamPartialFlowGraphDocTest {
     //#flow-from-partial-flow-graph
 
     assertEquals(new Pair<>(1, "1"), Await.result(matSink, Duration.create(3, TimeUnit.SECONDS)));
+  }
+
+
+  @Test
+  public void demonstrateBuildSourceWithCombine() throws Exception {
+    //#source-combine
+    Source<Integer, BoxedUnit> source1 = Source.single(1);
+    Source<Integer, BoxedUnit> source2 = Source.single(2);
+
+    final Source<Integer, BoxedUnit> sources = Source.combine(source1, source2, new ArrayList<>(),
+            i -> Merge.<Integer>create(i));
+    //#source-combine
+    final Future<Integer> result=
+    //#source-combine
+    sources.runWith(Sink.<Integer, Integer>fold(0, (a,b) -> a + b), mat);
+    //#source-combine
+
+    assertEquals(Integer.valueOf(3), Await.result(result, Duration.create(3, TimeUnit.SECONDS)));
+  }
+
+  @Test
+  public void demonstrateBuildSinkWithCombine() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    ActorRef actorRef =  probe.getRef();
+
+    //#sink-combine
+    Sink<Integer, BoxedUnit> sendRmotely = Sink.actorRef(actorRef, "Done");
+    Sink<Integer, Future<BoxedUnit>> localProcessing = Sink.<Integer>foreach(a -> { /*do something useful*/ } );
+    Sink<Integer, BoxedUnit> sinks = Sink.combine(sendRmotely,localProcessing, new ArrayList<>(), a -> Broadcast.create(a));
+
+    Source.<Integer>from(Arrays.asList(new Integer[]{0, 1, 2})).runWith(sinks, mat);
+    //#sink-combine
+    probe.expectMsgEquals(0);
+    probe.expectMsgEquals(1);
+    probe.expectMsgEquals(2);
   }
 }

@@ -153,6 +153,51 @@ class SourceSpec extends AkkaSpec {
       gotten.toSet should ===(Set(0, 1, 2, 3, 4))
       out.expectComplete()
     }
+
+    "combine from many inputs with simplified API" in {
+      val probes = Seq.fill(3)(TestPublisher.manualProbe[Int]())
+      val source = for (i ← 0 to 2) yield Source(probes(i))
+      val out = TestSubscriber.manualProbe[Int]
+
+      Source.combine(source(0), source(1), source(2))(Merge(_)).to(Sink(out)).run()
+
+      val sub = out.expectSubscription()
+      sub.request(3)
+
+      for (i ← 0 to 2) {
+        val s = probes(i).expectSubscription()
+        s.expectRequest()
+        s.sendNext(i)
+        s.sendComplete()
+      }
+
+      val gotten = for (_ ← 0 to 2) yield out.expectNext()
+      gotten.toSet should ===(Set(0, 1, 2))
+      out.expectComplete()
+    }
+
+    "combine from two inputs with simplified API" in {
+      val probes = Seq.fill(2)(TestPublisher.manualProbe[Int]())
+      val source = Source(probes(0)) :: Source(probes(1)) :: Nil
+      val out = TestSubscriber.manualProbe[Int]
+
+      Source.combine(source(0), source(1))(Merge(_)).to(Sink(out)).run()
+
+      val sub = out.expectSubscription()
+      sub.request(3)
+
+      for (i ← 0 to 1) {
+        val s = probes(i).expectSubscription()
+        s.expectRequest()
+        s.sendNext(i)
+        s.sendComplete()
+      }
+
+      val gotten = for (_ ← 0 to 1) yield out.expectNext()
+      gotten.toSet should ===(Set(0, 1))
+      out.expectComplete()
+    }
+
   }
 
   "Repeat Source" must {

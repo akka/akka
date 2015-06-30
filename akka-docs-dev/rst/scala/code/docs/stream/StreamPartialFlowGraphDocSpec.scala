@@ -3,13 +3,12 @@
  */
 package docs.stream
 
-import akka.stream.scaladsl._
+import akka.actor.ActorRef
 import akka.stream._
+import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.Future
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 class StreamPartialFlowGraphDocSpec extends AkkaSpec {
@@ -99,5 +98,31 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
     // format: ON
 
     Await.result(matSink, 300.millis) should equal(1 -> "1")
+  }
+
+  "combine sources with simplified API" in {
+    //#source-combine
+    val sourceOne = Source(List(1))
+    val sourceTwo = Source(List(2))
+    val merged = Source.combine(sourceOne, sourceTwo)(Merge(_))
+
+    val mergedResult: Future[Int] = merged.runWith(Sink.fold(0)(_ + _))
+    //#source-combine
+    Await.result(mergedResult, 300.millis) should equal(3)
+  }
+
+  "combine sinks with simplified API" in {
+    val actorRef: ActorRef = testActor
+    //#sink-combine
+    val sendRmotely = Sink.actorRef(actorRef, "Done")
+    val localProcessing = Sink.foreach[Int](_ => /* do something usefull */ ())
+
+    val sink = Sink.combine(sendRmotely, localProcessing)(Broadcast(_))
+
+    Source(List(0, 1, 2)).runWith(sink)
+    //#sink-combine
+    expectMsg(0)
+    expectMsg(1)
+    expectMsg(2)
   }
 }

@@ -8,6 +8,14 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import akka.actor.ActorRef;
+import akka.japi.function.Function;
+import akka.japi.function.Procedure;
+import akka.stream.Graph;
+import akka.stream.UniformFanInShape;
+import akka.stream.UniformFanOutShape;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -18,6 +26,7 @@ import akka.stream.StreamTest;
 import akka.japi.function.Function2;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
+import scala.runtime.BoxedUnit;
 
 public class SinkTest extends StreamTest {
   public SinkTest() {
@@ -63,6 +72,33 @@ public class SinkTest extends StreamTest {
     probe.expectMsgEquals(2);
     probe.expectMsgEquals(3);
     probe.expectMsgEquals("done");
+  }
+
+  @Test
+  public void mustBeAbleToCombine() throws Exception {
+    final JavaTestKit probe1 = new JavaTestKit(system);
+    final JavaTestKit probe2 = new JavaTestKit(system);
+
+    final Sink<Integer, ?> sink1 = Sink.actorRef(probe1.getRef(), "done1");
+    final Sink<Integer, ?> sink2 = Sink.actorRef(probe2.getRef(), "done2");
+
+    final Sink<Integer, ?> sink = Sink.combine(sink1, sink2, new ArrayList(),
+            new Function<Integer, Graph<UniformFanOutShape<Integer, Integer>, BoxedUnit>>() {
+              public Graph<UniformFanOutShape<Integer, Integer>, BoxedUnit> apply(Integer elem) {
+                return Broadcast.create(elem);
+              }
+            }
+    );
+
+    Source.from(Arrays.asList(0, 1)).runWith(sink, materializer);
+
+    probe1.expectMsgEquals(0);
+    probe2.expectMsgEquals(0);
+    probe1.expectMsgEquals(1);
+    probe2.expectMsgEquals(1);
+
+    probe1.expectMsgEquals("done1");
+    probe2.expectMsgEquals("done2");
   }
 
 }

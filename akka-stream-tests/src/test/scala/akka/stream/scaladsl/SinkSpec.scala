@@ -3,10 +3,12 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
 import akka.stream.ActorMaterializer
+import akka.stream.testkit.TestPublisher.ManualProbe
+import akka.stream.testkit._
 
 class SinkSpec extends AkkaSpec {
+
   import FlowGraph.Implicits._
 
   implicit val mat = ActorMaterializer()
@@ -86,6 +88,42 @@ class SinkSpec extends AkkaSpec {
         s.request(3)
         p.expectNext(i)
         p.expectComplete()
+      }
+    }
+
+    "combine to many outputs with simplified API" in {
+      val probes = Seq.fill(3)(TestSubscriber.manualProbe[Int]())
+      val sink = Sink.combine(Sink(probes(0)), Sink(probes(1)), Sink(probes(2)))(Broadcast(_))
+
+      Source(List(0, 1, 2)).runWith(sink)
+
+      val subscriptions = probes.map(_.expectSubscription())
+
+      subscriptions.foreach { s ⇒ s.request(1) }
+      probes.foreach { p ⇒ p.expectNext(0) }
+
+      subscriptions.foreach { s ⇒ s.request(2) }
+      probes.foreach { p ⇒
+        p.expectNextN(List(1, 2))
+        p.expectComplete
+      }
+    }
+
+    "combine to two sinks with simplified API" in {
+      val probes = Seq.fill(2)(TestSubscriber.manualProbe[Int]())
+      val sink = Sink.combine(Sink(probes(0)), Sink(probes(1)))(Broadcast(_))
+
+      Source(List(0, 1, 2)).runWith(sink)
+
+      val subscriptions = probes.map(_.expectSubscription())
+
+      subscriptions.foreach { s ⇒ s.request(1) }
+      probes.foreach { p ⇒ p.expectNext(0) }
+
+      subscriptions.foreach { s ⇒ s.request(2) }
+      probes.foreach { p ⇒
+        p.expectNextN(List(1, 2))
+        p.expectComplete
       }
     }
 

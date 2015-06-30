@@ -143,6 +143,19 @@ For defining a ``Flow<T>`` we need to expose both an undefined source and sink:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamPartialFlowGraphDocTest.java#flow-from-partial-flow-graph
 
+Combining Sources and Sinks with simplified API
+-----------------------------------------------
+
+There is simplified API you can use to combine sources and sinks with junctions like: ``Broadcast<T>``, ``Balance<T>``,
+``Merge<In>`` and ``Concat<A>`` without the need for using the Graph DSL. The combine method takes care of constructing
+the necessary graph underneath. In following example we combine two sources into one (fan-in):
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamPartialFlowGraphDocTest.java#source-combine
+
+The same can be done for a ``Sink`` but in this case it will be fan-out:
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamPartialFlowGraphDocTest.java#sink-combine
+
 .. _bidi-flow-java:
 
 Bidirectional Flows
