@@ -137,6 +137,16 @@ object Sink {
       case s: Sink[T, M] ⇒ s
       case other         ⇒ new Sink(scaladsl.Sink.wrap(other))
     }
+
+  /**
+   * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
+   */
+  def combine[T, U](output1: Sink[U, _], output2: Sink[U, _], rest: java.util.List[Sink[U, _]], strategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], Unit]]): Sink[T, Unit] = {
+    import scala.collection.JavaConverters._
+    val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
+    new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num ⇒ strategy.apply(num)))
+  }
+
 }
 
 /**
