@@ -7,7 +7,7 @@ Networking
    ../common/cluster
    cluster-usage
    cluster-singleton
-   ../scala/distributed-pub-sub
+   distributed-pub-sub
    ../scala/cluster-client
    cluster-sharding
    cluster-metrics

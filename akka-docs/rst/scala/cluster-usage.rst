@@ -325,7 +325,7 @@ Publish-subscribe messaging between actors in the cluster, and point-to-point me
 using the logical path of the actors, i.e. the sender does not have to know on which
 node the destination actor is running.
 
-See :ref:`distributed-pub-sub` in the contrib module.
+See :ref:`distributed-pub-sub-scala`.
 
 Cluster Client
 ^^^^^^^^^^^^^^
