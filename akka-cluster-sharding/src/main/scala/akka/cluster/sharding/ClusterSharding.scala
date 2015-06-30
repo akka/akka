@@ -23,6 +23,7 @@ import akka.cluster.singleton.ClusterSingletonManager
 import akka.persistence.BackoffSupervisor
 import akka.util.ByteString
 import akka.pattern.ask
+import akka.dispatch.Dispatchers
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -160,7 +161,11 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   private val regions: ConcurrentHashMap[String, ActorRef] = new ConcurrentHashMap
   private lazy val guardian = {
     val guardianName: String = system.settings.config.getString("akka.cluster.sharding.guardian-name")
-    system.actorOf(Props[ClusterShardingGuardian], guardianName)
+    val dispatcher = system.settings.config.getString("akka.cluster.sharding.use-dispatcher") match {
+      case "" ⇒ Dispatchers.DefaultDispatcherId
+      case id ⇒ id
+    }
+    system.systemActorOf(Props[ClusterShardingGuardian].withDispatcher(dispatcher), guardianName)
   }
 
   private[akka] def requireClusterRole(role: Option[String]): Unit =
@@ -437,7 +442,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
           context.actorOf(ClusterSingletonManager.props(
             singletonProps,
             terminationMessage = PoisonPill,
-            singletonSettings),
+            singletonSettings).withDispatcher(context.props.dispatcher),
             name = cName)
         }
 
@@ -448,7 +453,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
           coordinatorPath = cPath,
           extractEntityId = extractEntityId,
           extractShardId = extractShardId,
-          handOffStopMessage = handOffStopMessage),
+          handOffStopMessage = handOffStopMessage).withDispatcher(context.props.dispatcher),
           name = encName)
       }
       sender() ! Started(shardRegion)
@@ -463,7 +468,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
           settings = settings,
           coordinatorPath = cPath,
           extractEntityId = extractEntityId,
-          extractShardId = extractShardId),
+          extractShardId = extractShardId).withDispatcher(context.props.dispatcher),
           name = encName)
       }
       sender() ! Started(shardRegion)
