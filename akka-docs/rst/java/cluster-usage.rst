@@ -313,7 +313,7 @@ you have exactly one actor of a certain type running somewhere in the cluster.
 
 This can be implemented by subscribing to member events, but there are several corner 
 cases to consider. Therefore, this specific use case is made easily accessible by the 
-:ref:`cluster-singleton` in the contrib module.
+:ref:`cluster-singleton-java`.
 
 Cluster Sharding
 ^^^^^^^^^^^^^^^^
@@ -542,7 +542,7 @@ Router Example with Pool of Remote Deployed Routees
 ---------------------------------------------------
 
 Let's take a look at how to use a cluster aware router on single master node that creates
-and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton` 
+and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton-java` 
 in the contrib module. The ``ClusterSingletonManager`` is started on each node.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsSampleOneMasterMain.java#create-singleton-manager

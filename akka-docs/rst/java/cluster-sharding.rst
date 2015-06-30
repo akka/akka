@@ -13,7 +13,7 @@ but this feature is not limited to actors with persistent state.
 
 Cluster sharding is typically used when you have many stateful actors that together consume
 more resources (e.g. memory) than fit on one machine. If you only have a few stateful actors
-it might be easier to run them on a :ref:`cluster-singleton` node.
+it might be easier to run them on a :ref:`cluster-singleton-java` node.
 
 In this context sharding means that actors with an identifier, so called entities,
 can be automatically distributed across multiple nodes in the cluster. Each entity
