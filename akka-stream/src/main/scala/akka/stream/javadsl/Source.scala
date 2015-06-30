@@ -390,6 +390,15 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     new Source(delegate.scan(zero)(f.apply))
 
   /**
+   * Similar to `scan` but only emits the current value once, when completing.
+   * Its current value which starts at `zero` and then
+   * applies the current and next value to the given function `f`,
+   * yielding the next current value.
+   */
+  def fold[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Source[T, Mat] =
+    new Source(delegate.fold(zero)(f.apply))
+
+  /**
    * Chunk up this stream into groups of elements received within a time window,
    * or limited by the given number of elements, whatever happens first.
    * Empty groups will not be emitted if no elements are received from upstream.

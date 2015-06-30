@@ -9,12 +9,8 @@ import akka.stream._
 import akka.stream.impl.Stages.{ MapAsyncUnordered, DefaultAttributes }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
-import akka.stream.stage.Context
-import akka.stream.stage.PushStage
-import akka.stream.stage.SyncDirective
-import akka.stream.{ SinkShape, Inlet, Outlet, Graph, Attributes }
 import akka.stream.Attributes._
-import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage }
+import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage, SyncDirective }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.concurrent.{ ExecutionContext, Future, Promise }
@@ -107,37 +103,8 @@ object Sink extends SinkApply {
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
    * the stream..
    */
-  def foreach[T](f: T ⇒ Unit): Sink[T, Future[Unit]] = {
-
-    def newForeachStage(): (PushStage[T, Unit], Future[Unit]) = {
-      val promise = Promise[Unit]()
-
-      val stage = new PushStage[T, Unit] {
-        override def onPush(elem: T, ctx: Context[Unit]): SyncDirective = {
-          f(elem)
-          ctx.pull()
-        }
-        override def onUpstreamFailure(cause: Throwable, ctx: Context[Unit]): TerminationDirective = {
-          promise.failure(cause)
-          ctx.fail(cause)
-        }
-        override def onUpstreamFinish(ctx: Context[Unit]): TerminationDirective = {
-          promise.success(())
-          ctx.finish()
-        }
-
-        override def decide(cause: Throwable): Supervision.Directive = {
-          // supervision will be implemented by #16916
-          promise.tryFailure(cause)
-          super.decide(cause)
-        }
-      }
-
-      (stage, promise.future)
-    }
-
-    Flow[T].transformMaterializing(newForeachStage).to(Sink.ignore).named("foreachSink")
-  }
+  def foreach[T](f: T ⇒ Unit): Sink[T, Future[Unit]] =
+    Flow[T].map(f).toMat(Sink.ignore)(Keep.right).named("foreachSink")
 
   /**
    * A `Sink` that will invoke the given function to each of the elements
@@ -153,9 +120,7 @@ object Sink extends SinkApply {
    * @see [[#mapAsyncUnordered]]
    */
   def foreachParallel[T](parallelism: Int)(f: T ⇒ Unit)(implicit ec: ExecutionContext): Sink[T, Future[Unit]] =
-    Flow[T].andThen(
-      MapAsyncUnordered(parallelism,
-        { out: T ⇒ Future(f(out)) }.asInstanceOf[Any ⇒ Future[Unit]])).toMat(Sink.ignore)(Keep.right)
+    Flow[T].mapAsyncUnordered(parallelism)(t ⇒ Future(f(t))).toMat(Sink.ignore)(Keep.right)
 
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
@@ -164,41 +129,8 @@ object Sink extends SinkApply {
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure signaled in the stream.
    */
-  def fold[U, T](zero: U)(f: (U, T) ⇒ U): Sink[T, Future[U]] = {
-
-    def newFoldStage(): (PushStage[T, U], Future[U]) = {
-      val promise = Promise[U]()
-
-      val stage = new PushStage[T, U] {
-        private var aggregator = zero
-
-        override def onPush(elem: T, ctx: Context[U]): SyncDirective = {
-          aggregator = f(aggregator, elem)
-          ctx.pull()
-        }
-
-        override def onUpstreamFailure(cause: Throwable, ctx: Context[U]): TerminationDirective = {
-          promise.failure(cause)
-          ctx.fail(cause)
-        }
-
-        override def onUpstreamFinish(ctx: Context[U]): TerminationDirective = {
-          promise.success(aggregator)
-          ctx.finish()
-        }
-
-        override def decide(cause: Throwable): Supervision.Directive = {
-          // supervision will be implemented by #16916
-          promise.tryFailure(cause)
-          super.decide(cause)
-        }
-      }
-
-      (stage, promise.future)
-    }
-
-    Flow[T].transformMaterializing(newFoldStage).to(Sink.ignore).named("foldSink")
-  }
+  def fold[U, T](zero: U)(f: (U, T) ⇒ U): Sink[T, Future[U]] =
+    Flow[T].fold(zero)(f).toMat(Sink.head)(Keep.right).named("foldSink")
 
   /**
    * A `Sink` that when the flow is completed, either through a failure or normal

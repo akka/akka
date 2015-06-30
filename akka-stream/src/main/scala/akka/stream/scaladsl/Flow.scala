@@ -96,9 +96,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * value of the current flow (ignoring the given Sink’s value), use
    * [[Flow#toMat[Mat2* toMat]] if a different strategy is needed.
    */
-  def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Sink[In, Mat] = {
-    toMat(sink)(Keep.left)
-  }
+  def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Sink[In, Mat] = toMat(sink)(Keep.left)
 
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
@@ -540,6 +538,25 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T, Mat] = andThen(Scan(zero, f.asInstanceOf[(Any, Any) ⇒ Any]))
+
+  /**
+   * Similar to `scan` but only emits its result when the upstream completes,
+   * after which it also completes. Applies the given function towards its current and next value,
+   * yielding the next current value.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T, Mat] = andThen(Fold(zero, f.asInstanceOf[(Any, Any) ⇒ Any]))
 
   /**
    * Chunk up this stream into groups of elements received within a time window,

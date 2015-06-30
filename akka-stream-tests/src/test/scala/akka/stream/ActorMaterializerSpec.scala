@@ -22,13 +22,15 @@ class ActorMaterializerSpec extends AkkaSpec with ImplicitSender {
     }
 
     "properly shut down actors associated with it" in {
+      pending // FIXME disabled due to https://github.com/akka/akka/issues/17849
+
       val m = ActorMaterializer.create(system)
 
       val f = Source.lazyEmpty[Int].runFold(0)(_ + _)(m)
+
       m.shutdown()
 
-      an[AbruptTerminationException] should be thrownBy
-        Await.result(f, 3.seconds)
+      an[AbruptTerminationException] should be thrownBy Await.result(f, 3.seconds)
     }
 
     "refuse materialization after shutdown" in {
@@ -65,7 +67,6 @@ class ActorMaterializerSpec extends AkkaSpec with ImplicitSender {
       sys.awaitTermination()
       m.isShutdown should ===(true)
     }
-
   }
 
 }
