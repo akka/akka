@@ -55,58 +55,48 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
 
   val graph = classOf[Graph[_, _]]
 
+  case class TestCase(name: String, sClass: Option[Class[_]], jClass: Option[Class[_]], jFactory: Option[Class[_]])
+  object TestCase {
+    def apply(name: String, sClass: Class[_], jClass: Class[_], jFactory: Class[_]): TestCase =
+      TestCase(name, Some(sClass), Some(jClass), Some(jFactory))
+
+    def apply(name: String, sClass: Class[_], jClass: Class[_]): TestCase =
+      TestCase(name, Some(sClass), Some(jClass), None)
+  }
+
+  val testCases = Seq(
+    TestCase("Source", scaladsl.Source.getClass, javadsl.Source.getClass, classOf[javadsl.SourceCreate]),
+    TestCase("Flow", scaladsl.Flow.getClass, javadsl.Flow.getClass, classOf[javadsl.FlowCreate]),
+    TestCase("Sink", scaladsl.Sink.getClass, javadsl.Sink.getClass, classOf[javadsl.SinkCreate]),
+    TestCase("FlowGraph", scaladsl.FlowGraph.getClass, javadsl.FlowGraph.getClass, classOf[javadsl.GraphCreate]),
+    TestCase("BidiFlow", scaladsl.BidiFlow.getClass, javadsl.BidiFlow.getClass, classOf[javadsl.BidiFlowCreate]),
+    TestCase("ZipWith", Some(scaladsl.ZipWith.getClass), None, Some(javadsl.ZipWith.getClass)),
+    TestCase("Merge", scaladsl.Merge.getClass, javadsl.Merge.getClass),
+    TestCase("MergePreferred", scaladsl.MergePreferred.getClass, javadsl.MergePreferred.getClass),
+    TestCase("Broadcast", scaladsl.Broadcast.getClass, javadsl.Broadcast.getClass),
+    TestCase("Balance", scaladsl.Balance.getClass, javadsl.Balance.getClass),
+    TestCase("Zip", scaladsl.Zip.getClass, javadsl.Zip.getClass),
+    TestCase("UnZip", scaladsl.Unzip.getClass, javadsl.Unzip.getClass),
+    TestCase("Concat", scaladsl.Concat.getClass, javadsl.Concat.getClass))
+
   "Java DSL" must provide {
-    "Source" which {
-      "allows creating the same Sources as Scala DSL" in {
-        val sClass = akka.stream.scaladsl.Source.getClass
-        val jClass = akka.stream.javadsl.Source.getClass
-        val jFactory = classOf[akka.stream.javadsl.SourceCreate]
-
-        runSpec(getSMethods(sClass), getJMethods(jClass) ++ getJMethods(jFactory).map(adaptCreate))
-      }
-    }
-    "Flow" which {
-      "allows creating the same Sources as Scala DSL" in {
-        val sClass = akka.stream.scaladsl.Flow.getClass
-        val jClass = akka.stream.javadsl.Flow.getClass
-        val jFactory = classOf[akka.stream.javadsl.FlowCreate]
-
-        runSpec(getSMethods(sClass), getJMethods(jClass) ++ getJMethods(jFactory).map(adaptCreate))
-      }
-    }
-    "Sink" which {
-      "allows creating the same Sources as Scala DSL" in {
-        val sClass = akka.stream.scaladsl.Sink.getClass
-        val jClass = akka.stream.javadsl.Sink.getClass
-        val jFactory = classOf[akka.stream.javadsl.SinkCreate]
-
-        runSpec(getSMethods(sClass), getJMethods(jClass) ++ getJMethods(jFactory).map(adaptCreate))
-      }
-    }
-    "FlowGraph" which {
-      "allows creating the same FlowGraphs as scala DSL" in {
-        val sClass = akka.stream.scaladsl.FlowGraph.getClass
-        val jClass = akka.stream.javadsl.FlowGraph.getClass
-        val jFactory = classOf[akka.stream.javadsl.GraphCreate]
-
-        runSpec(getSMethods(sClass), getJMethods(jClass) ++ getJMethods(jFactory).map(adaptCreate))
-      }
-    }
-    "BidiFlow" which {
-      "allows creating the same BidiFlows as scala DSL" in {
-        val sClass = akka.stream.scaladsl.BidiFlow.getClass
-        val jClass = akka.stream.javadsl.BidiFlow.getClass
-        val jFactory = classOf[akka.stream.javadsl.BidiFlowCreate]
-
-        runSpec(getSMethods(sClass), getJMethods(jClass) ++ getJMethods(jFactory).map(adaptCreate))
-      }
+    testCases foreach {
+      case TestCase(name, Some(sClass), jClass, jFactoryOption) ⇒
+        name which {
+          s"allows creating the same ${name}s as Scala DSL" in {
+            runSpec(
+              getSMethods(sClass),
+              jClass.toList.flatMap(getJMethods) ++
+                jFactoryOption.toList.flatMap(f ⇒ getJMethods(f).map(unspecializeName andThen curryLikeJava)))
+          }
+        }
     }
   }
 
   // here be dragons...
 
-  private def getJMethods(jClass: Class[_]): Array[Method] = jClass.getDeclaredMethods.filterNot(javaIgnore contains _.getName).map(toMethod).filterNot(ignore)
-  private def getSMethods(sClass: Class[_]): Array[Method] = sClass.getMethods.filterNot(scalaIgnore contains _.getName).map(toMethod).filterNot(ignore)
+  private def getJMethods(jClass: Class[_]): List[Method] = jClass.getDeclaredMethods.filterNot(javaIgnore contains _.getName).map(toMethod).filterNot(ignore).toList
+  private def getSMethods(sClass: Class[_]): List[Method] = sClass.getMethods.filterNot(scalaIgnore contains _.getName).map(toMethod).filterNot(ignore).toList
 
   private def toMethod(m: java.lang.reflect.Method): Method =
     Method(m.getName, List(m.getParameterTypes: _*), m.getReturnType, m.getDeclaringClass)
@@ -133,18 +123,26 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     }
   }
 
-  private val adaptCreate: PartialFunction[Method, Method] = {
+  /**
+   * Rename
+   *   createN => create
+   *   closedN => closed
+   *   partialN => partial
+   */
+  private val unspecializeName: PartialFunction[Method, Method] = {
+    case m ⇒ m.copy(name = m.name.filter(Character.isLetter))
+  }
+
+  /**
+   * Adapt java side non curried functions to scala side like
+   */
+  private val curryLikeJava: PartialFunction[Method, Method] = {
     case m if m.parameterTypes.size > 1 ⇒
-      // rename
-      //   createN => create
-      //   closedN => closed
-      //   partialN => partial
-      // and adapt java side non curried functions to scala side like
       m.copy(name = m.name.filter(Character.isLetter), parameterTypes = m.parameterTypes.dropRight(1) :+ classOf[akka.japi.function.Function[_, _]])
     case m ⇒ m
   }
 
-  def runSpec(sMethods: Array[Method], jMethods: Array[Method]) {
+  def runSpec(sMethods: List[Method], jMethods: List[Method]) {
     var warnings = 0
 
     val results = for {
