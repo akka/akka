@@ -172,6 +172,11 @@ By default, a persistent actor is automatically recovered on start and on restar
 New messages sent to a persistent actor during recovery do not interfere with replayed messages. New messages will
 only be received by a persistent actor after recovery completes.
 
+.. note::
+  Accessing the ``sender()`` for replayed messages will always result in a ``deadLetters`` reference,
+  as the original sender is presumed to be long gone. If you indeed have to notify an actor during
+  recovery in the future, store its ``ActorPath`` explicitly in your persisted events.
+
 Recovery customization
 ^^^^^^^^^^^^^^^^^^^^^^
 
