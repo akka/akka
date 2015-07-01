@@ -567,7 +567,7 @@ private[akka] class ActorCell(
   protected def create(failure: Option[ActorInitializationException]): Unit = {
     def clearOutActorIfNonNull(): Unit = {
       if (actor != null) {
-        clearActorFields(actor)
+        clearActorFields(actor, recreate = false)
         actor = null // ensure that we know that we failed during creation
       }
     }
@@ -640,8 +640,8 @@ private[akka] class ActorCell(
       throw new IllegalArgumentException("ActorCell has no props field")
   }
 
-  final protected def clearActorFields(actorInstance: Actor): Unit = {
-    setActorFields(actorInstance, context = null, self = system.deadLetters)
+  final protected def clearActorFields(actorInstance: Actor, recreate: Boolean): Unit = {
+    setActorFields(actorInstance, context = null, self = if (recreate) self else system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
   }
