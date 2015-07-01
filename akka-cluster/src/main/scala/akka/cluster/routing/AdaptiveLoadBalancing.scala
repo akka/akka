@@ -395,7 +395,7 @@ object MetricsSelector {
 @deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 trait MetricsSelector extends Serializable {
   /**
-   * The weights per address, based on the the nodeMetrics.
+   * The weights per address, based on the nodeMetrics.
    */
   def weights(nodeMetrics: Set[NodeMetrics]): Map[Address, Int]
 }

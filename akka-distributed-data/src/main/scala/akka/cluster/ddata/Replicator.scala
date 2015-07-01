@@ -588,7 +588,7 @@ object Replicator {
  * == Update ==
  *
  * To modify and replicate a [[ReplicatedData]] value you send a [[Replicator.Update]] message
- * to the the local `Replicator`.
+ * to the local `Replicator`.
  * The current data value for the `key` of the `Update` is passed as parameter to the `modify`
  * function of the `Update`. The function is supposed to return the new value of the data, which
  * will then be replicated according to the given consistency level.

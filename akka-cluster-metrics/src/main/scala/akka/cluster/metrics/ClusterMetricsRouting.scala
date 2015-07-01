@@ -395,7 +395,7 @@ object MetricsSelector {
 @SerialVersionUID(1L)
 trait MetricsSelector extends Serializable {
   /**
-   * The weights per address, based on the the nodeMetrics.
+   * The weights per address, based on the nodeMetrics.
    */
   def weights(nodeMetrics: Set[NodeMetrics]): Map[Address, Int]
 }

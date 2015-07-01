@@ -74,7 +74,7 @@ object LWWRegister {
  * It is described in the paper
  * <a href="http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf">A comprehensive study of Convergent and Commutative Replicated Data Types</a>.
  *
- * Merge takes the the register with highest timestamp. Note that this
+ * Merge takes the register with highest timestamp. Note that this
  * relies on synchronized clocks. `LWWRegister` should only be used when the choice of
  * value is not important for concurrent updates occurring within the clock skew.
  *
