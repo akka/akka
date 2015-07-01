@@ -1007,7 +1007,10 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.resendLimit"),
       
       // toString is available on any object, mima is confused due to a generated toString appearing #17722
-      ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Pair.toString")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Pair.toString"),
+      
+      // #17805
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.clearActorFields")
     )
   }
 
