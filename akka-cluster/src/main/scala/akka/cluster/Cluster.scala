@@ -164,7 +164,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         log.error(e, "Failed to startup Cluster. You can try to increase 'akka.actor.creation-timeout'.")
         shutdown()
         // don't re-throw, that would cause the extension to be re-recreated
-        // from shutdown() or other places, which may result in 
+        // from shutdown() or other places, which may result in
         // InvalidActorNameException: actor name [cluster] is not unique
         system.deadLetters
     }
@@ -362,7 +362,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       logInfo("Shutting down...")
 
       system.stop(clusterDaemons)
-      readView.close()
+
+      // readView might be null if init fails before it is created
+      if (readView != null)
+        readView.close()
 
       closeScheduler()
 
