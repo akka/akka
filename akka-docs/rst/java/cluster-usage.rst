@@ -454,7 +454,8 @@ That is not done by the router. The configuration for a group looks like this:
   The routee actors should be started as early as possible when starting the actor system, because
   the router will try to use them as soon as the member status is changed to 'Up'.
 
-The relative actor paths defined in ``routees.paths`` are used as for selecting the actors to which the messages will be forwarded to by the router.
+The actor paths without address information that are defined in ``routees.paths`` are used for selecting the 
+actors to which the messages will be forwarded to by the router.
 Messages will be forwarded to the routees using :ref:`ActorSelection <actorSelection-java>`, so the same delivery semantics should be expected.
 It is possible to limit the lookup of routees to member nodes tagged with a certain role by specifying ``use-role``.
 
