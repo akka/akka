@@ -3,10 +3,8 @@
  */
 package docs.event
 
-import akka.actor.AllDeadLetters
+import akka.actor.{ Actor, Props }
 import akka.testkit.AkkaSpec
-import akka.actor.Actor
-import akka.actor.Props
 
 object LoggingDocSpec {
 
@@ -77,12 +75,12 @@ object LoggingDocSpec {
   //#mdc-actor
 
   //#my-event-listener
+  import akka.event.Logging.Debug
+  import akka.event.Logging.Error
+  import akka.event.Logging.Info
   import akka.event.Logging.InitializeLogger
   import akka.event.Logging.LoggerInitialized
-  import akka.event.Logging.Error
   import akka.event.Logging.Warning
-  import akka.event.Logging.Info
-  import akka.event.Logging.Debug
 
   class MyEventListener extends Actor {
     def receive = {
@@ -96,8 +94,8 @@ object LoggingDocSpec {
   //#my-event-listener
 
   //#my-source
-  import akka.event.LogSource
   import akka.actor.ActorSystem
+  import akka.event.LogSource
 
   object MyType {
     implicit val logSource: LogSource[AnyRef] = new LogSource[AnyRef] {
@@ -113,11 +111,12 @@ object LoggingDocSpec {
     val log = Logging(system, this)
   }
   //#my-source
+
 }
 
 class LoggingDocSpec extends AkkaSpec {
 
-  import LoggingDocSpec.{ MyActor, MdcActor, MdcActorMixin, Req }
+  import LoggingDocSpec.{ MdcActor, MdcActorMixin, MyActor, Req }
 
   "use a logging actor" in {
     val myActor = system.actorOf(Props[MyActor])
@@ -144,9 +143,39 @@ class LoggingDocSpec extends AkkaSpec {
           case d: DeadLetter => println(d)
         }
       }
+
       val listener = system.actorOf(Props(classOf[Listener], this))
       system.eventStream.subscribe(listener, classOf[DeadLetter])
       //#deadletters
+    }
+  }
+
+  "demonstrate superclass subscriptions on eventStream" in {
+    def println(s: String) = ()
+    //#superclass-subscription-eventstream
+    abstract class AllKindsOfMusic { def artist: String }
+    case class Jazz(artist: String) extends AllKindsOfMusic
+    case class Electronic(artist: String) extends AllKindsOfMusic
+
+    new AnyRef {
+      class Listener extends Actor {
+        def receive = {
+          case m: Jazz       => println(s"${self.path.name} is listening to: ${m.artist}")
+          case m: Electronic => println(s"${self.path.name} is listening to: ${m.artist}")
+        }
+      }
+
+      val jazzListener = system.actorOf(Props(classOf[Listener], this))
+      val musicListener = system.actorOf(Props(classOf[Listener], this))
+      system.eventStream.subscribe(jazzListener, classOf[Jazz])
+      system.eventStream.subscribe(musicListener, classOf[AllKindsOfMusic])
+
+      // only musicListener gets this message, since it listens to *all* kinds of music:
+      system.eventStream.publish(Electronic("Parov Stelar"))
+
+      // jazzListener and musicListener will be notified about Jazz:
+      system.eventStream.publish(Jazz("Sonny Rollins"))
+      //#superclass-subscription-eventstream
     }
   }
 
