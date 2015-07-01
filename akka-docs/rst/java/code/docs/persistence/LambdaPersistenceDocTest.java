@@ -258,6 +258,16 @@ public class LambdaPersistenceDocTest {
   static Object o5 = new Object() {
 
     class MyPersistentActor extends AbstractPersistentActor {
+
+      //#snapshot-criteria
+      @Override
+      public Recovery recovery() {
+        return Recovery.create(
+          SnapshotSelectionCriteria
+            .create(457L, System.currentTimeMillis()));
+      }
+      //#snapshot-criteria
+
       //#snapshot-offer
       private Object state;
 
@@ -290,14 +300,6 @@ public class LambdaPersistenceDocTest {
         receive(ReceiveBuilder.
           match(Object.class, o -> {/* ... */}).build()
         );
-      }
-
-      private void recover() {
-        //#snapshot-criteria
-        persistentActor.tell(Recovery.create(
-          SnapshotSelectionCriteria
-            .create(457L, System.currentTimeMillis())), null);
-        //#snapshot-criteria
       }
     }
   };

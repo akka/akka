@@ -113,7 +113,7 @@ object AtLeastOnceDeliveryFailureSpec {
     private def debugMessage(msg: String): String =
       s"[sender] ${msg} (mode = ${if (recoveryRunning) "replay" else "live"} snr = ${lastSequenceNr} state = ${state.sorted})"
 
-    override protected def onReplayFailure(cause: Throwable, event: Option[Any]): Unit = {
+    override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit = {
       // mute logging
     }
 

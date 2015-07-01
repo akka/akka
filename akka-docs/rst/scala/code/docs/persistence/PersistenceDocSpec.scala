@@ -166,6 +166,12 @@ object PersistenceDocSpec {
     class MyPersistentActor extends PersistentActor {
       override def persistenceId = "my-stable-persistence-id"
 
+      //#snapshot-criteria
+      override def recovery = Recovery(fromSnapshot = SnapshotSelectionCriteria(
+        maxSequenceNr = 457L,
+        maxTimestamp = System.currentTimeMillis))
+      //#snapshot-criteria
+
       //#snapshot-offer
       var state: Any = _
 
@@ -179,11 +185,6 @@ object PersistenceDocSpec {
       override def receiveCommand: Receive = ???
     }
 
-    //#snapshot-criteria
-    persistentActor ! Recovery(fromSnapshot = SnapshotSelectionCriteria(
-      maxSequenceNr = 457L,
-      maxTimestamp = System.currentTimeMillis))
-    //#snapshot-criteria
   }
 
   object PersistAsync {

@@ -206,7 +206,7 @@ and before any other received messages.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#recovery-completed
 
-If there is a problem with recovering the state of the actor from the journal, ``onReplayFailure`` 
+If there is a problem with recovering the state of the actor from the journal, ``onRecoveryFailure``
 is called (logging the error by default) and the actor will be stopped. 
 
 .. _persist-async-java:
@@ -296,6 +296,8 @@ In this case no stashing is happening, yet the events are still persisted and ca
 While it is possible to nest mixed ``persist`` and ``persistAsync`` with keeping their respective semantics
 it is not a recommended practice as it may lead to overly complex nesting.
 
+.. _failures-java:
+
 Failures
 --------
 
@@ -315,7 +317,7 @@ If persistence of an event is rejected before it is stored, e.g. due to serializ
 next message.
 
 If there is a problem with recovering the state of the actor from the journal when the actor is
-started, ``onReplayFailure`` is called (logging the error by default) and the actor will be stopped.
+started, ``onRecoveryFailure`` is called (logging the error by default) and the actor will be stopped.
 
 Atomic writes
 -------------
@@ -346,14 +348,51 @@ writing the previous batch. Batch writes are never timer-based which keeps laten
 Message deletion
 ----------------
 
-To delete all messages (journaled by a single persistent actor) up to a specified sequence number,
+It is possible to delete all messages (journaled by a single persistent actor) up to a specified sequence number,
 persistent actors may call the ``deleteMessages`` method.
 
-If the delete fails ``onDeleteMessagesFailure`` will be called (logging a warning by default) 
-and the actor continues with next message.
+Deleting messages in event sourcing based applications is typically either not used at all, or used in conjunction with
+:ref:`snapshotting <snapshots>`, i.e. after a snapshot has been successfully stored, a ``deleteMessagess(toSequenceNr)``
+up until the sequence number of the data held by that snapshot can be issued, to safely delete the previous events,
+while still having access to the accumulated state during replays - by loading the snapshot.
 
-If the ``deleteMessages`` fails ``onDeleteMessagesFailure`` will be called (logging a warning by default) 
-and the actor continues with next message.
+Persistence status handling
+---------------------------
+Persisting, deleting and replaying messages can eitehr succeed or fail.
+
++---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
+| **Method**                      | **Success**                 | **Failure / Rejection**       | **After failure handler invoked** |
++---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
+| ``persist`` / ``persistAsync``  | persist handler invoked     | ``onPersistFailure``          | Actor is stopped.                 |
+|                                 |                             +-------------------------------+-----------------------------------+
+|                                 |                             | ``onPersistRejected``         | ---                               |
++---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
+| ``recovery``                    | ``RecoverySuccess``         | ``onRecoveryFailure``         | Actor is stopped.                 |
++---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
+| ``deleteMessages``              | ``DeleteMessagesSuccess``   | ``DeleteMessagesFailure``     | ---                               |
++---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
+
+The most important operations (``persist`` and ``recovery``) have failure handlers modelled as explicit callbacks which
+the user can override in the ``PersistentActor``. The default implementations of these handlers emit a log message
+(``error`` for persist/recovery failures, and ``warning`` for others), logging the failure cause and information about
+which message caused the failure.
+
+For critical failures, such as recovery or persisting events failing, the persistent actor will be stopped after the failure
+handler is invoked. This is because if the underlying journal implementation is signalling persistence failures it is most
+likely either failing completely or overloaded and restarting right-away and trying to persist the event again will most
+likely not help the journal recover – as it would likely cause a `Thundering herd problem`_, as many persistent actors
+would restart and try to persist their events again. Instead, using a ``BackoffSupervisor`` (as described in :ref:`failures-java`) which
+implements an exponential-backoff strategy which allows for more breathing room for the journal to recover between
+restarts of the persistent actor.
+
+.. note::
+  Journal implementations may choose to implement a retry mechanisms, e.g. such that only after a write fails N number
+  of times a persistence failure is signalled back to the user. In other words, once a journal returns a failure,
+  it is considered *fatal* by Akka Persistence, and the persistent actor which caused the failure will be stopped.
+
+  Check the documentation of the journal implementation you are using for details if/how it is using this technique.
+
+.. _Thundering herd problem: https://en.wikipedia.org/wiki/Thundering_herd_problem
 
 .. _persistent-views-java:
 
