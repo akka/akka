@@ -239,7 +239,7 @@ Deferring actions until preceding persist handlers have executed
 
 Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
 ''happens-after the previous ``persistAsync`` handlers have been invoked''. ``PersistentActor`` provides an utility method
-called ``defer``, which works similarly to ``persistAsync`` yet does not persist the passed in event. It is recommended to
+called ``deferAsync``, which works similarly to ``persistAsync`` yet does not persist the passed in event. It is recommended to
 use it for *read* operations, and actions which do not have corresponding events in your domain model.
 
 Using this method is very similar to the persist family of methods, yet it does **not** persist the passed in event.
@@ -248,13 +248,13 @@ It will be kept in memory and used when invoking the handler.
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#defer
 
 Notice that the ``sender()`` is **safe** to access in the handler callback, and will be pointing to the original sender
-of the command for which this ``defer`` handler was called.
+of the command for which this ``deferAsync`` handler was called.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#defer-caller
 
 .. warning::
   The callback will not be invoked if the actor is restarted (or stopped) in between the call to
-  ``defer`` and the journal has processed and confirmed all preceding writes.
+  ``deferAsync`` and the journal has processed and confirmed all preceding writes.
 
 .. _nested-persist-calls-java:
 
