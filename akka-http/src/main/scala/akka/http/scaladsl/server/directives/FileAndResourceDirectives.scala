@@ -207,12 +207,11 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
         if (file.isDirectory) None
         else Some(ResourceFile(url, file.length(), file.lastModified()))
       case "jar" ⇒
-        val jarFile = url.getFile
-        val startIndex = if (jarFile.startsWith("file:")) 5 else 0
-        val bangIndex = jarFile.indexOf("!")
-        val jarFilePath = jarFile.substring(startIndex, bangIndex)
-        val resourcePath = jarFile.substring(bangIndex + 2)
-        val jar = new java.util.zip.ZipFile(jarFilePath)
+        val path = new URI(url.getPath).getPath // remove "file:" prefix and normalize whitespace
+        val bangIndex = path.indexOf('!')
+        val filePath = path.substring(0, bangIndex)
+        val resourcePath = path.substring(bangIndex + 2)
+        val jar = new java.util.zip.ZipFile(filePath)
         try {
           val entry = jar.getEntry(resourcePath)
           Option(jar.getInputStream(entry)) map { is ⇒
