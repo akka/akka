@@ -176,13 +176,11 @@ to 4 nodes and reads from 4 nodes.
 
 Here is an example of using ``writeMajority`` and ``readMajority``:
 
-**FIXME convert this example to Java**
+.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#read-write-majority
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#read-write-majority
+.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#get-cart
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#get-cart
-
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#add-item
+.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#add-item
 
 In some rare cases, when performing an ``Update`` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a ``Get`` with ``ReadMajority`` and then continue with
@@ -194,9 +192,7 @@ performed (hence the name observed-removed set).
 
 The following example illustrates how to do that:
 
-**FIXME convert this example to Java**
-
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#remove-item 
+.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#remove-item 
 
 .. warning::
 
@@ -446,10 +442,8 @@ cluster. Data types that need pruning have to implement the ``RemovedNodePruning
 Samples
 =======
 
-**FIXME convert these sampes to Java**
-
 Several interesting samples are included and described in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Akka Distributed Data Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-distributed-data-scala>`_.
+tutorial named `Akka Distributed Data Samples with Java <http://www.typesafe.com/activator/template/akka-sample-distributed-data-java>`_.
 
 * Low Latency Voting Service
 * Highly Available Shopping Cart

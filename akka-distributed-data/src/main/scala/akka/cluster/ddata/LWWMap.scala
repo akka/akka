@@ -44,7 +44,18 @@ final class LWWMap[A] private[akka] (
 
   type T = LWWMap[A]
 
+  /**
+   * Scala API: All entries of the map.
+   */
   def entries: Map[String, A] = underlying.entries.map { case (k, r) ⇒ k -> r.value }
+
+  /**
+   * Java API: All entries of the map.
+   */
+  def getEntries(): java.util.Map[String, A] = {
+    import scala.collection.JavaConverters._
+    entries.asJava
+  }
 
   def get(key: String): Option[A] = underlying.get(key).map(_.value)
 

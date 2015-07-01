@@ -101,6 +101,8 @@ class ReplicatedMetrics(measureInterval: FiniteDuration, cleanupInterval: Finite
 
     case MemberRemoved(m, _) ⇒
       nodesInCluster -= nodeKey(m.address)
+      if (m.address == cluster.selfAddress)
+        context.stop(self)
 
     case Cleanup ⇒
       def cleanupRemoved(data: LWWMap[Long]): LWWMap[Long] =
