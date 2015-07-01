@@ -3,6 +3,7 @@
  */
 package akka.cluster
 
+import akka.actor.Address
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -45,7 +46,8 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
     "become singleton cluster when started with seed-nodes" taggedAs LongRunningTest in {
       runOn(first) {
-        cluster.joinSeedNodes(Vector(first))
+        val nodes: immutable.IndexedSeq[Address] = Vector(first) //
+        cluster.joinSeedNodes(nodes)
         awaitMembersUp(1)
         clusterView.isSingletonCluster should ===(true)
       }
