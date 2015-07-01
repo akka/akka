@@ -147,7 +147,7 @@ final case class ActorKilledException private[akka] (message: String) extends Ak
 final case class InvalidActorNameException(message: String) extends AkkaException(message)
 
 /**
- * An ActorInitializationException is thrown when the the initialization logic for an Actor fails.
+ * An ActorInitializationException is thrown when the initialization logic for an Actor fails.
  *
  * There is an extractor which works for ActorInitializationException and its subtypes:
  *

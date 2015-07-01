@@ -58,7 +58,7 @@ private[akka] object Reflect {
 
   /**
    * INTERNAL API
-   * Invokes the constructor with the the given arguments.
+   * Invokes the constructor with the given arguments.
    */
   private[akka] def instantiate[T](constructor: Constructor[T], args: immutable.Seq[Any]): T = {
     constructor.setAccessible(true)
