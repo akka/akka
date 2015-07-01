@@ -172,7 +172,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   /**
    * Common interface for all commands which aim to close down an open connection.
    */
-  sealed trait CloseCommand extends Command {
+  sealed trait CloseCommand extends Command with DeadLetterSuppression {
     /**
      * The corresponding event which is sent as an acknowledgment once the
      * close operation is finished.
