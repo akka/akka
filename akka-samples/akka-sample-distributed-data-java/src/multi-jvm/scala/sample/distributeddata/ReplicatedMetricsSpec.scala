@@ -10,6 +10,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
+import scala.collection.JavaConverters._
 
 object ReplicatedMetricsSpec extends MultiNodeConfig {
   val node1 = role("node-1")
@@ -79,7 +80,7 @@ class ReplicatedMetricsSpec extends MultiNodeSpec(ReplicatedMetricsSpec) with ST
         awaitAssert {
           probe.expectMsgType[UsedHeap](1.second).percentPerNode.size should be(2)
         }
-        probe.expectMsgType[UsedHeap].percentPerNode should not contain (
+        probe.expectMsgType[UsedHeap].percentPerNode.asScala.toMap should not contain (
           nodeKey(node3Address))
       }
       enterBarrier("after-3")
