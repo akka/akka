@@ -13,6 +13,7 @@ import akka.TestExtras.JUnitFileReporting
 import akka.TestExtras.StatsDMetrics
 import com.typesafe.sbt.S3Plugin.S3
 import com.typesafe.sbt.S3Plugin.s3Settings
+import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import sbt.Keys._
 import sbt._
@@ -253,7 +254,12 @@ object AkkaBuild extends Build {
         }
         executeMvnCommands("Osgi sample Dining hakkers test failed", "clean", "install")
       }}
-    )
+    ) ++ dontPublishSettings
+  )
+
+  val dontPublishSettings = Seq(
+    publishSigned := (),
+    publish := ()
   )
 
   override lazy val settings =
@@ -268,7 +274,7 @@ object AkkaBuild extends Build {
 
   lazy val parentSettings = baseSettings ++ Seq(
     publishArtifact := false
-  )
+  ) ++ dontPublishSettings
 
   lazy val experimentalSettings = Seq(
     description := """|This module of Akka is marked as
