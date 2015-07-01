@@ -12,6 +12,7 @@ import akka.ConfigurationException
 import akka.actor._
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
+import akka.japi.Util
 import akka.pattern._
 import akka.remote.{ DefaultFailureDetectorRegistry, FailureDetector, _ }
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -265,12 +266,22 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * An actor system can only join a cluster once. Additional attempts will be ignored.
    * When it has successfully joined it must be restarted to be able to join another
    * cluster or to join the same cluster again.
-   *
-   * JAVA API: Use akka.japi.Util.immutableSeq to convert a java.lang.Iterable
-   * to the type needed for the seedNodes parameter.
    */
   def joinSeedNodes(seedNodes: immutable.Seq[Address]): Unit =
     clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes.toVector)
+
+  /**
+   * Java API
+   *
+   * Join the specified seed nodes without defining them in config.
+   * Especially useful from tests when Addresses are unknown before startup time.
+   *
+   * An actor system can only join a cluster once. Additional attempts will be ignored.
+   * When it has successfully joined it must be restarted to be able to join another
+   * cluster or to join the same cluster again.
+   */
+  def joinSeedNodes(seedNodes: java.util.List[Address]): Unit =
+    joinSeedNodes(Util.immutableSeq(seedNodes))
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.
