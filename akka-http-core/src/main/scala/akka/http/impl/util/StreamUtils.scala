@@ -174,38 +174,6 @@ private[http] object StreamUtils {
     _.transformDataBytes(mapErrorTransformer(f))
 
   /**
-   * Simple blocking Source backed by an InputStream.
-   *
-   * FIXME: should be provided by akka-stream, see #15588
-   */
-  def fromInputStreamSource(inputStream: InputStream,
-                            fileIODispatcher: String,
-                            defaultChunkSize: Int = 65536): Source[ByteString, Unit] = {
-    val onlyOnceFlag = new AtomicBoolean(false)
-
-    val iterator = new Iterator[ByteString] {
-      var finished = false
-      if (onlyOnceFlag.get() || !onlyOnceFlag.compareAndSet(false, true))
-        throw new IllegalStateException("One time source can only be instantiated once")
-
-      def hasNext: Boolean = !finished
-
-      def next(): ByteString =
-        if (!finished) {
-          val buffer = new Array[Byte](defaultChunkSize)
-          val read = inputStream.read(buffer)
-          if (read < 0) {
-            finished = true
-            inputStream.close()
-            ByteString.empty
-          } else ByteString.fromArray(buffer, 0, read)
-        } else ByteString.empty
-    }
-
-    Source(() ⇒ iterator).withAttributes(ActorAttributes.dispatcher(fileIODispatcher))
-  }
-
-  /**
    * Returns a source that can only be used once for testing purposes.
    */
   def oneTimeSource[T, Mat](other: Source[T, Mat], errorMsg: String = "One time source can only be instantiated once"): Source[T, Mat] = {
