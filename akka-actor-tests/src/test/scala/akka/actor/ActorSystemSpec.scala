@@ -296,12 +296,12 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
           val t = system.actorOf(Props[ActorSystemSpec.Terminater])
           failing should not be true // because once failing => always failing (it’s due to shutdown)
           created :+= t
-          if (created.size % 1000 == 0) Thread.sleep(20) // in case of unfair thread scheduling
+          if (created.size % 1000 == 0) Thread.sleep(50) // in case of unfair thread scheduling
         } catch {
           case _: IllegalStateException ⇒ failing = true
         }
 
-        if (!failing && system.uptime >= 5) {
+        if (!failing && system.uptime >= 10) {
           println(created.last)
           println(system.asInstanceOf[ExtendedActorSystem].printTree)
           fail("System didn't terminate within 5 seconds")
