@@ -33,6 +33,17 @@ object DistributedDataDocSpec {
       }
     }
     #//#serializer-config
+
+    #//#japi-serializer-config
+    akka.actor {
+      serializers {
+        twophaseset = "docs.ddata.japi.protobuf.TwoPhaseSetSerializer"
+      }
+      serialization-bindings {
+        "docs.ddata.japi.TwoPhaseSet" = twophaseset
+      }
+    }
+    #//#japi-serializer-config
     """
 
   //#data-bot
@@ -385,6 +396,16 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
   "test TwoPhaseSetSerializer" in {
     val s1 = TwoPhaseSet().add("a").add("b").add("c").remove("b")
     s1.elements should be(Set("a", "c"))
+    val serializer = SerializationExtension(system).findSerializerFor(s1)
+    val blob = serializer.toBinary(s1)
+    val s2 = serializer.fromBinary(blob, None)
+    s1 should be(s1)
+  }
+
+  "test japi.TwoPhaseSetSerializer" in {
+    import scala.collection.JavaConverters._
+    val s1 = japi.TwoPhaseSet.create().add("a").add("b").add("c").remove("b")
+    s1.getElements.asScala should be(Set("a", "c"))
     val serializer = SerializationExtension(system).findSerializerFor(s1)
     val blob = serializer.toBinary(s1)
     val s2 = serializer.fromBinary(blob, None)
