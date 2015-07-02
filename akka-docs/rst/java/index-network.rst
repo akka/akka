@@ -6,10 +6,10 @@ Networking
 
    ../common/cluster
    cluster-usage
-   ../scala/cluster-singleton
-   ../scala/distributed-pub-sub
-   ../scala/cluster-client
-   ../scala/cluster-sharding
+   cluster-singleton
+   distributed-pub-sub
+   cluster-client
+   cluster-sharding
    cluster-metrics
    distributed-data
    remoting

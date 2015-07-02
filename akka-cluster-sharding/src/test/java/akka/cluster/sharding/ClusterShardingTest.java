@@ -120,11 +120,10 @@ public class ClusterShardingTest {
 
     int count = 0;
 
-    // getSelf().path().parent().parent().name() is the type name (utf-8 URL-encoded)
     // getSelf().path().name() is the entity identifier (utf-8 URL-encoded)
     @Override
     public String persistenceId() {
-      return getSelf().path().parent().parent().name() + "-" + getSelf().path().name();
+      return "Counter-" + getSelf().path().name();
     }
 
     @Override

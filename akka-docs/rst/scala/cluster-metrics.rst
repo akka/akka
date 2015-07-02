@@ -152,4 +152,12 @@ You can plug-in your own metrics collector instead of built-in
 
 Look at those two implementations for inspiration. 
 
-Custom metrics collector implementation class must be specified in the :ref:`cluster_metrics_configuration_scala`.
+Custom metrics collector implementation class must be specified in the 
+``akka.cluster.metrics.collector.provider`` configuration property.
+
+Configuration
+-------------
+
+The Cluster metrics extension can be configured with the following properties:
+
+.. includecode:: ../../../akka-cluster-metrics/src/main/resources/reference.conf
