@@ -61,7 +61,7 @@ final case class ClusterRouterGroupSettings(
   routeesPaths.foreach(p ⇒ p match {
     case RelativeActorPath(elements) ⇒ // good
     case _ ⇒
-      throw new IllegalArgumentException(s"routeesPaths [$p] is not a valid relative actor path")
+      throw new IllegalArgumentException(s"routeesPaths [$p] is not a valid actor path without address information")
   })
 
 }
