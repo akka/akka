@@ -23,7 +23,7 @@ case class TwoPhaseSet(
 
   override def merge(that: TwoPhaseSet): TwoPhaseSet =
     copy(
-      adds = GSet(this.adds.elements ++ that.adds.elements),
-      removals = GSet(this.removals.elements ++ that.removals.elements))
+      adds = this.adds.merge(that.adds),
+      removals = this.removals.merge(that.removals))
 }
 //#twophaseset

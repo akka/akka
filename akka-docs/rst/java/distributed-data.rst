@@ -372,7 +372,7 @@ Custom Data Type
 ----------------
 
 You can rather easily implement your own data types. The only requirement is that it implements
-the ``merge`` function of the ``AbstractReplicatedData`` class.
+the ``mergeData`` function of the ``AbstractReplicatedData`` class.
 
 A nice property of stateful CRDTs is that they typically compose nicely, i.e. you can combine several
 smaller data types to build richer data structures. For example, the ``PNCounter`` is composed of
@@ -382,9 +382,7 @@ Here is s simple implementation of a custom ``TwoPhaseSet`` that is using two in
 to keep track of addition and removals.  A ``TwoPhaseSet`` is a set where an element may be added and
 removed, but never added again thereafter.
 
-**FIXME convert this example to Java**
-
-.. includecode:: ../scala/code/docs/ddata/TwoPhaseSet.scala#twophaseset
+.. includecode:: code/docs/ddata/japi/TwoPhaseSet.java#twophaseset
 
 Data types should be immutable, i.e. "modifying" methods should return a new instance.
 
@@ -407,23 +405,19 @@ This is a protobuf representation of the above ``TwoPhaseSet``:
 
 The serializer for the ``TwoPhaseSet``:
 
-**FIXME convert this example to Java**
-
-.. includecode:: ../scala/code/docs/ddata/protobuf/TwoPhaseSetSerializer.scala#serializer
+.. includecode:: code/docs/ddata/japi/protobuf/TwoPhaseSetSerializer.java#serializer
 
 Note that the elements of the sets are sorted so the SHA-1 digests are the same
 for the same elements.
 
 You register the serializer in configuration:
  
-.. includecode:: ../scala/code/docs/ddata/DistributedDataDocSpec.scala#serializer-config
+.. includecode:: ../scala/code/docs/ddata/DistributedDataDocSpec.scala#japi-serializer-config
 
 Using compression can sometimes be a good idea to reduce the data size. Gzip compression is
 provided by the ``akka.cluster.ddata.protobuf.SerializationSupport`` trait:
 
-**FIXME convert this example to Java**
-
-.. includecode:: ../scala/code/docs/ddata/protobuf/TwoPhaseSetSerializer.scala#compression
+.. includecode:: code/docs/ddata/japi/protobuf/TwoPhaseSetSerializerWithCompression.java#compression
  
 The two embedded ``GSet`` can be serialized as illustrated above, but in general when composing
 new data types from the existing built in types it is better to make use of the existing 
@@ -436,9 +430,7 @@ by the ``SerializationSupport`` trait to serialize and deserialize the ``GSet`` 
 works with any type that has a registered Akka serializer. This is how such an serializer would
 look like for the ``TwoPhaseSet``:
 
-**FIXME convert this example to Java**
-
-.. includecode:: ../scala/code/docs/ddata/protobuf/TwoPhaseSetSerializer2.scala#serializer
+.. includecode:: code/docs/ddata/japi/protobuf/TwoPhaseSetSerializer2.java#serializer
   
 
 CRDT Garbage
