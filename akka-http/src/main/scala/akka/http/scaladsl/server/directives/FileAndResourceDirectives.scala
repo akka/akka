@@ -5,8 +5,11 @@
 package akka.http.scaladsl.server
 package directives
 
-import java.io.{ File, FileInputStream }
-import java.net.URL
+import java.io.File
+import java.net.{ URI, URL }
+
+import akka.stream.ActorAttributes
+import akka.stream.io.{ InputStreamSource, SynchronousFileSource }
 
 import scala.annotation.tailrec
 import akka.actor.ActorSystem
@@ -51,7 +54,8 @@ trait FileAndResourceDirectives {
             extractSettings { settings ⇒
               complete {
                 HttpEntity.Default(contentType, file.length,
-                  StreamUtils.fromInputStreamSource(new FileInputStream(file), settings.fileIODispatcher))
+                  SynchronousFileSource(file)
+                    .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
               }
             }
           }
@@ -88,7 +92,8 @@ trait FileAndResourceDirectives {
                 extractSettings { settings ⇒
                   complete {
                     HttpEntity.Default(contentType, length,
-                      StreamUtils.fromInputStreamSource(url.openStream(), settings.fileIODispatcher))
+                      InputStreamSource(() ⇒ url.openStream())
+                        .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
                   }
                 }
               }
