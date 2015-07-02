@@ -47,7 +47,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
 object Sink extends SinkApply {
 
   /** INTERNAL API */
-  private[stream] def shape[T](name: String): SinkShape[T] = SinkShape(new Inlet(name + ".in"))
+  private[stream] def shape[T](name: String): SinkShape[T] = SinkShape(Inlet(name + ".in"))
 
   /**
    * A graph with the shape of a sink logically is a sink, this method makes
