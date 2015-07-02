@@ -148,6 +148,12 @@ it can be subscribed like this:
 
 .. includecode:: code/docs/event/LoggingDocTest.java#deadletters
 
+It is also worth pointing out that thanks to the way the subchannel classification
+is implemented in the event stream, it is possible to subscribe to a group of events, by
+subscribing to their common superclass as demonstrated in the following example:
+
+.. includecode:: code/docs/event/LoggingDocTest.java#superclass-subscription-eventstream
+
 Similarly to `Actor Classification`_, :class:`EventStream` will automatically remove subscribers when they terminate.
 
 .. note::
