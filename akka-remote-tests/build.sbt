@@ -16,3 +16,5 @@ publishArtifact in Compile := false
 MimaKeys.reportBinaryIssues := () // disable bin comp check
 
 enablePlugins(MultiNodeScalaTest)
+
+AkkaBuild.dontPublishSettings
