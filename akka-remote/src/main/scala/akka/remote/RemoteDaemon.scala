@@ -172,7 +172,7 @@ private[akka] class RemoteSystemDaemon(
       val (concatenatedChildNames, m) = {
         val iter = sel.elements.iterator
         // find child elements, and the message to send, which is a remaining ActorSelectionMessage
-        // in case of SelectChildPattern, otherwise the the actual message of the selection
+        // in case of SelectChildPattern, otherwise the actual message of the selection
         @tailrec def rec(acc: List[String]): (List[String], Any) =
           if (iter.isEmpty)
             (acc.reverse, sel.msg)

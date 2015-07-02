@@ -317,7 +317,7 @@ final case class ConsistentHashingPool(
    * Uses the resizer and/or the supervisor strategy of the given RouterConfig
    * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
-   * Uses the the `hashMapping` defined in code, since that can't be defined in configuration.
+   * Uses the `hashMapping` defined in code, since that can't be defined in configuration.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
     case _: FromConfig | _: NoRouter        ⇒ this.overrideUnsetConfig(other)
@@ -385,7 +385,7 @@ final case class ConsistentHashingGroup(
     copy(hashMapping = ConsistentHashingRouter.hashMappingAdapter(mapper))
 
   /**
-   * Uses the the `hashMapping` defined in code, since that can't be defined in configuration.
+   * Uses the `hashMapping` defined in code, since that can't be defined in configuration.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
     case _: FromConfig | _: NoRouter         ⇒ super.withFallback(other)

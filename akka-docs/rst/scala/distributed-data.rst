@@ -51,7 +51,7 @@ changes of this.
 Update
 ------
 
-To modify and replicate a data value you send a ``Replicator.Update`` message to the the local
+To modify and replicate a data value you send a ``Replicator.Update`` message to the local
 ``Replicator``.
 
 The current data value for the ``key`` of the ``Update`` is passed as parameter to the ``modify``
@@ -346,7 +346,7 @@ to ``true``. Thereafter it cannot be changed. ``true`` wins over ``false`` in me
 
 ``LWWRegister`` (last writer wins register) can hold any (serializable) value.
 
-Merge of a ``LWWRegister`` takes the the register with highest timestamp. Note that this
+Merge of a ``LWWRegister`` takes the register with highest timestamp. Note that this
 relies on synchronized clocks. `LWWRegister` should only be used when the choice of
 value is not important for concurrent updates occurring within the clock skew.
 
