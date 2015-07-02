@@ -114,7 +114,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
 }
 
 /**
- * [[akka.event.LoggingFilter]] that uses the log level defined in in the SLF4J
+ * [[akka.event.LoggingFilter]] that uses the log level defined in the SLF4J
  * backend configuration (e.g. logback.xml) to filter log events before publishing
  * the log events to the `eventStream`.
  */
