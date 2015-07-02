@@ -172,7 +172,7 @@ object Source extends SourceApply {
     new Source(module)
 
   /** INTERNAL API */
-  private[stream] def shape[T](name: String): SourceShape[T] = SourceShape(new Outlet(name + ".out"))
+  private[stream] def shape[T](name: String): SourceShape[T] = SourceShape(Outlet(name + ".out"))
 
   /**
    * Helper to create [[Source]] from `Publisher`.

@@ -5,13 +5,9 @@ package akka.stream.impl
 
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.scaladsl.FlexiRoute.RouteLogic
-import akka.stream.Attributes
-import akka.stream.{ Inlet, Outlet, Shape, InPort, OutPort }
 import akka.stream.scaladsl.FlexiMerge.MergeLogic
-import akka.stream.UniformFanInShape
-import akka.stream.UniformFanOutShape
-import akka.stream.FanOutShape2
 import akka.stream.scaladsl.MergePreferred
+import akka.stream.{ Attributes, Inlet, Outlet, Shape, InPort, OutPort, UniformFanInShape, UniformFanOutShape, FanOutShape2 }
 import akka.event.Logging.simpleName
 
 /**

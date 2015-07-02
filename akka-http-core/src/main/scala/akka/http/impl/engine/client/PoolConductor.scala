@@ -28,9 +28,9 @@ private object PoolConductor {
 
     override def deepCopy(): Shape =
       Ports(
-        new Inlet(requestIn.toString),
-        new Inlet(slotEventIn.toString),
-        slotOuts.map(o ⇒ new Outlet(o.toString)))
+        requestIn.carbonCopy(),
+        slotEventIn.carbonCopy(),
+        slotOuts.map(_.carbonCopy()))
 
     override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape =
       Ports(

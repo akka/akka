@@ -26,13 +26,26 @@ sealed abstract class OutPort
  * is the InPort (which does not bear an element type because Modules only
  * express the internal structural hierarchy of stream topologies).
  */
-final class Inlet[-T](override val toString: String) extends InPort
+object Inlet {
+  def apply[T](toString: String): Inlet[T] = new Inlet[T](toString)
+}
+
+final class Inlet[-T] private (override val toString: String) extends InPort {
+  def carbonCopy(): Inlet[T] = Inlet(toString)
+}
+
 /**
  * An Outlet is a typed output to a Shape. Its partner in the Module view
  * is the OutPort (which does not bear an element type because Modules only
  * express the internal structural hierarchy of stream topologies).
  */
-final class Outlet[+T](override val toString: String) extends OutPort
+object Outlet {
+  def apply[T](toString: String): Outlet[T] = new Outlet[T](toString)
+}
+
+final class Outlet[+T] private (override val toString: String) extends OutPort {
+  def carbonCopy(): Outlet[T] = Outlet(toString)
+}
 
 /**
  * A Shape describes the inlets and outlets of a [[Graph]]. In keeping with the
@@ -148,9 +161,7 @@ object ClosedShape extends ClosedShape {
  * meaningful type of Shape when the building is finished.
  */
 case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]) extends Shape {
-  override def deepCopy() = AmorphousShape(
-    inlets.map(i ⇒ new Inlet[Any](i.toString)),
-    outlets.map(o ⇒ new Outlet[Any](o.toString)))
+  override def deepCopy() = AmorphousShape(inlets.map(_.carbonCopy()), outlets.map(_.carbonCopy()))
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = AmorphousShape(inlets, outlets)
 }
 
@@ -162,7 +173,7 @@ final case class SourceShape[+T](outlet: Outlet[T]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = Nil
   override val outlets: immutable.Seq[Outlet[_]] = List(outlet)
 
-  override def deepCopy(): SourceShape[T] = SourceShape(new Outlet(outlet.toString))
+  override def deepCopy(): SourceShape[T] = SourceShape(outlet.carbonCopy())
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
     require(inlets.isEmpty, s"proposed inlets [${inlets.mkString(", ")}] do not fit SourceShape")
     require(outlets.size == 1, s"proposed outlets [${outlets.mkString(", ")}] do not fit SourceShape")
@@ -179,7 +190,7 @@ final case class FlowShape[-I, +O](inlet: Inlet[I], outlet: Outlet[O]) extends S
   override val inlets: immutable.Seq[Inlet[_]] = List(inlet)
   override val outlets: immutable.Seq[Outlet[_]] = List(outlet)
 
-  override def deepCopy(): FlowShape[I, O] = FlowShape(new Inlet(inlet.toString), new Outlet(outlet.toString))
+  override def deepCopy(): FlowShape[I, O] = FlowShape(inlet.carbonCopy(), outlet.carbonCopy())
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
     require(inlets.size == 1, s"proposed inlets [${inlets.mkString(", ")}] do not fit FlowShape")
     require(outlets.size == 1, s"proposed outlets [${outlets.mkString(", ")}] do not fit FlowShape")
@@ -194,7 +205,7 @@ final case class SinkShape[-T](inlet: Inlet[T]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = List(inlet)
   override val outlets: immutable.Seq[Outlet[_]] = Nil
 
-  override def deepCopy(): SinkShape[T] = SinkShape(new Inlet(inlet.toString))
+  override def deepCopy(): SinkShape[T] = SinkShape(inlet.carbonCopy())
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
     require(inlets.size == 1, s"proposed inlets [${inlets.mkString(", ")}] do not fit SinkShape")
     require(outlets.isEmpty, s"proposed outlets [${outlets.mkString(", ")}] do not fit SinkShape")
@@ -229,7 +240,7 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1],
   def this(top: FlowShape[In1, Out1], bottom: FlowShape[In2, Out2]) = this(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
 
   override def deepCopy(): BidiShape[In1, Out1, In2, Out2] =
-    BidiShape(new Inlet(in1.toString), new Outlet(out1.toString), new Inlet(in2.toString), new Outlet(out2.toString))
+    BidiShape(in1.carbonCopy(), out1.carbonCopy(), in2.carbonCopy(), out2.carbonCopy())
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
     require(inlets.size == 2, s"proposed inlets [${inlets.mkString(", ")}] do not fit BidiShape")
     require(outlets.size == 2, s"proposed outlets [${outlets.mkString(", ")}] do not fit BidiShape")
