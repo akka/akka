@@ -1,4 +1,4 @@
-.. _distributed-pub-sub-scala:
+.. _distributed-pub-sub-java:
 
 Distributed Publish Subscribe in Cluster
 ========================================
@@ -84,23 +84,20 @@ A Small Example
 
 A subscriber actor:
 
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala#subscriber
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#subscriber
 
 Subscriber actors can be started on several nodes in the cluster, and all will receive
 messages published to the "content" topic.
 
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala#start-subscribers
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#start-subscribers
 
 A simple actor that publishes to this "content" topic:
 
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala#publisher
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#publisher
 
 It can publish messages to the topic from anywhere in the cluster:
 
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala#publish-message
-
-A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Akka Clustered PubSub with Scala! <http://www.typesafe.com/activator/template/akka-clustering>`_.
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#publish-message
 
 DistributedPubSub Extension
 ---------------------------

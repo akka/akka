@@ -182,14 +182,25 @@ object DistributedPubSubMediator {
   }
 
   sealed abstract class GetTopics
+
+  /**
+   * Send this message to the mediator and it will reply with
+   * [[CurrentTopics]] containing the names of the (currently known)
+   * registered topic names.
+   */
   @SerialVersionUID(1L)
   case object GetTopics extends GetTopics
 
   /**
-   * Java API
+   * Java API: Send this message to the mediator and it will reply with
+   * [[DistributedPubSubMediator.CurrentTopics]] containing the names of the (currently known)
+   * registered topic names.
    */
   def getTopicsInstance: GetTopics = GetTopics
 
+  /**
+   * Reply to `GetTopics`.
+   */
   @SerialVersionUID(1L)
   final case class CurrentTopics(topics: Set[String]) {
     /**
@@ -348,7 +359,7 @@ trait DistributedPubSubMessage extends Serializable
  * the entries to peer actors among all cluster nodes or a group of nodes
  * tagged with a specific role.
  *
- * The `DistributedPubSubMediator` is supposed to be started on all nodes,
+ * The `DistributedPubSubMediator` actor is supposed to be started on all nodes,
  * or all nodes with specified role, in the cluster. The mediator can be
  * started with the [[DistributedPubSub]] extension or as an ordinary actor.
  *

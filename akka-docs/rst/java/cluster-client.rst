@@ -1,4 +1,4 @@
-.. _cluster-client-scala:
+.. _cluster-client-java:
 
 Cluster Client
 ==============
@@ -16,7 +16,7 @@ i.e. not necessarily the initial contact points.
 
   ``ClusterClient`` should not be used when sending messages to actors that run
   within the same cluster. Similar functionality as the ``ClusterClient`` is
-  provided in a more efficient way by :ref:`distributed-pub-sub-scala` for actors that 
+  provided in a more efficient way by :ref:`distributed-pub-sub-java` for actors that 
   belong to the same cluster. 
 
 Also, note it's necessary to change ``akka.actor.provider`` from ``akka.actor.LocalActorRefProvider`` 
@@ -77,23 +77,23 @@ when the actor system is started by defining it in the ``akka.extensions`` confi
 
 Next, register the actors that should be available for the client.
 
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala#server
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java#server
 
 On the client you create the ``ClusterClient`` actor and use it as a gateway for sending
 messages to the actors identified by their path (without address information) somewhere
 in the cluster.
 
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala#client
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java#client
 
-The ``initialContacts`` parameter is a ``Set[ActorPath]``, which can be created like this:
+The ``initialContacts`` parameter is a ``Set<ActorPath>``, which can be created like this:
 
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala#initialContacts
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java#initialContacts
 
 You will probably define the address information of the initial contact points in configuration or system property.
-See also :ref:`cluster-client-config-scala`.
+See also :ref:`cluster-client-config-java`.
 
 A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Distributed workers with Akka and Scala! <http://www.typesafe.com/activator/template/akka-distributed-workers>`_.
+tutorial named `Distributed workers with Akka and Java! <http://www.typesafe.com/activator/template/akka-distributed-workers-java>`_.
 
 ClusterClientReceptionist Extension
 -----------------------------------
@@ -104,7 +104,7 @@ start the ``akka.cluster.client.ClusterReceptionist`` actor as an ordinary actor
 different receptionists at the same time, serving different types of clients.
 
 Note that the ``ClusterClientReceptionist`` uses the ``DistributedPubSub`` extension, which is described
-in :ref:`distributed-pub-sub-scala`.
+in :ref:`distributed-pub-sub-java`.
 
 It is recommended to load the extension when the actor system is started by defining it in the
 ``akka.extensions`` configuration property::
@@ -128,7 +128,7 @@ maven::
     <version>@version@</version>
   </dependency>
 
-.. _cluster-client-config-scala:
+.. _cluster-client-config-java:
   
 Configuration
 -------------

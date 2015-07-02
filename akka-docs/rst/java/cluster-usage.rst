@@ -313,7 +313,7 @@ you have exactly one actor of a certain type running somewhere in the cluster.
 
 This can be implemented by subscribing to member events, but there are several corner 
 cases to consider. Therefore, this specific use case is made easily accessible by the 
-:ref:`cluster-singleton` in the contrib module.
+:ref:`cluster-singleton-java`.
 
 Cluster Sharding
 ^^^^^^^^^^^^^^^^
@@ -322,7 +322,7 @@ Distributes actors across several nodes in the cluster and supports interaction
 with the actors using their logical identifier, but without having to care about
 their physical location in the cluster.
 
-See :ref:`cluster-sharding` in the contrib module.
+See :ref:`cluster_sharding_java`.
 
 Distributed Publish Subscribe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -331,7 +331,7 @@ Publish-subscribe messaging between actors in the cluster, and point-to-point me
 using the logical path of the actors, i.e. the sender does not have to know on which
 node the destination actor is running.
 
-See :ref:`distributed-pub-sub` in the contrib module.
+See :ref:`distributed-pub-sub-scala`.
 
 Cluster Client
 ^^^^^^^^^^^^^^
@@ -340,7 +340,15 @@ Communication from an actor system that is not part of the cluster to actors run
 somewhere in the cluster. The client does not have to know on which node the destination
 actor is running.
 
-See :ref:`cluster-client` in the contrib module.
+See :ref:`cluster-client-java`.
+
+Distributed Data
+^^^^^^^^^^^^^^^^
+
+*Akka Distributed Data* is useful when you need to share data between nodes in an
+Akka Cluster. The data is accessed with an actor providing a key-value store like API.
+
+See :ref:`distributed_data_java`.
 
 Failure Detector
 ^^^^^^^^^^^^^^^^
@@ -535,7 +543,7 @@ Router Example with Pool of Remote Deployed Routees
 ---------------------------------------------------
 
 Let's take a look at how to use a cluster aware router on single master node that creates
-and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton` 
+and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton-java` 
 in the contrib module. The ``ClusterSingletonManager`` is started on each node.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsSampleOneMasterMain.java#create-singleton-manager

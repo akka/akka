@@ -1,4 +1,4 @@
-.. _cluster-singleton-scala:
+.. _cluster-singleton-java:
 
 Cluster Singleton
 =================
@@ -61,8 +61,8 @@ This pattern may seem to be very tempting to use at first, but it has several dr
 * the cluster singleton may quickly become a *performance bottleneck*,
 * you can not rely on the cluster singleton to be *non-stop* available — e.g. when the node on which the singleton has
   been running dies, it will take a few seconds for this to be noticed and the singleton be migrated to another node,
-* in the case of a *network partition* appearing in a Cluster that is using Automatic Downing  (see Auto Downing docs for 
-  :ref:`automatic-vs-manual-downing-scala`),
+* in the case of a *network partition* appearing in a Cluster that is using Automatic Downing  (see docs for 
+  :ref:`automatic-vs-manual-downing-java`),
   it may happen that the isolated clusters each decide to spin up their own singleton, meaning that there might be multiple
   singletons running in the system, yet the Clusters have no way of finding out about them (because of the partition).
 
@@ -86,7 +86,7 @@ scenario when integrating with external systems.
 On each node in the cluster you need to start the ``ClusterSingletonManager`` and
 supply the ``Props`` of the singleton actor, in this case the JMS queue consumer.
 
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala#create-singleton-manager
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java#create-singleton-manager
 
 Here we limit the singleton to nodes tagged with the ``"worker"`` role, but all nodes, independent of
 role, can be used by not specifying ``withRole``.
@@ -95,17 +95,13 @@ Here we use an application specific ``terminationMessage`` to be able to close t
 resources before actually stopping the singleton actor. Note that ``PoisonPill`` is a
 perfectly fine ``terminationMessage`` if you only need to stop the actor.
 
-Here is how the singleton actor handles the ``terminationMessage`` in this example.
-
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala#consumer-end
-
 With the names given above, access to the singleton can be obtained from any cluster node using a properly
 configured proxy.
 
-.. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala#create-singleton-proxy
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java#create-singleton-proxy
 
 A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-tutorial named `Distributed workers with Akka and Scala! <http://www.typesafe.com/activator/template/akka-distributed-workers>`_.
+tutorial named `Distributed workers with Akka and Java! <http://www.typesafe.com/activator/template/akka-distributed-workers-java>`_.
 
 Dependencies
 ------------
