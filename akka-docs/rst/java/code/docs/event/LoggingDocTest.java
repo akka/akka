@@ -4,10 +4,7 @@
 package docs.event;
 
 //#imports
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.AllDeadLetters;
-import akka.actor.SuppressedDeadLetter;
+import akka.actor.*;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -34,15 +31,12 @@ import java.util.Map;
 //#imports-mdc
 
 //#imports-deadletter
-import akka.actor.Props;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.UntypedActor;
-import akka.actor.DeadLetter;
 //#imports-deadletter
 
 public class LoggingDocTest {
-  
+
   @Test
   public void useLoggingActor() {
     ActorSystem system = ActorSystem.create("MySystem");
@@ -69,11 +63,61 @@ public class LoggingDocTest {
     JavaTestKit.shutdownActorSystem(system);
   }
 
+  //#superclass-subscription-eventstream
+  interface AllKindsOfMusic { }
+
+  class Jazz implements AllKindsOfMusic {
+    final public String artist;
+    public Jazz(String artist) {
+      this.artist = artist;
+    }
+  }
+  class Electronic implements AllKindsOfMusic {
+    final public String artist;
+    public Electronic(String artist) {
+      this.artist = artist;
+    }
+  }
+
+  class Listener extends UntypedActor {
+    @Override
+    public void onReceive(Object message) throws Exception {
+      if (message instanceof Jazz) {
+        System.out.printf("%s is listening to: %s%n", self().path().name(), message);
+      } else if (message instanceof Electronic) {
+        System.out.printf("%s is listening to: %s%n", self().path().name(), message);
+      }
+    }
+  }
+  //#superclass-subscription-eventstream
+
+  @Test
+  public void subscribeBySubclassification() {
+    final ActorSystem system = ActorSystem.create("DeadLetters");
+    //#superclass-subscription-eventstream
+    final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
+    system.eventStream().subscribe(actor, DeadLetter.class);
+
+    final ActorRef jazzListener = system.actorOf(Props.create(Listener.class));
+    final ActorRef musicListener = system.actorOf(Props.create(Listener.class));
+    system.eventStream().subscribe(jazzListener, Jazz.class);
+    system.eventStream().subscribe(musicListener, AllKindsOfMusic.class);
+
+    // only musicListener gets this message, since it listens to *all* kinds of music:
+    system.eventStream().publish(new Electronic("Parov Stelar"));
+
+    // jazzListener and musicListener will be notified about Jazz:
+    system.eventStream().publish(new Jazz("Sonny Rollins"));
+
+    //#superclass-subscription-eventstream
+    JavaTestKit.shutdownActorSystem(system);
+  }
+
   @Test
   public void subscribeToSuppressedDeadLetters() {
     final ActorSystem system = ActorSystem.create("SuppressedDeadLetters");
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
-    
+
     //#suppressed-deadletters
     system.eventStream().subscribe(actor, SuppressedDeadLetter.class);
     //#suppressed-deadletters
