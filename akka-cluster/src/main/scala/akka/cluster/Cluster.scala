@@ -206,7 +206,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * will be sent to the subscriber as the first message.
    */
   @varargs def subscribe(subscriber: ActorRef, to: Class[_]*): Unit =
-    clusterCore ! InternalClusterAction.Subscribe(subscriber, initialStateMode = InitialStateAsSnapshot, to.toSet)
+    subscribe(subscriber, initialStateMode = InitialStateAsSnapshot, to: _*)
 
   /**
    * Subscribe to one or more cluster domain events.
@@ -223,8 +223,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    *
    * Note that for large clusters it is more efficient to use `InitialStateAsSnapshot`.
    */
-  @varargs def subscribe(subscriber: ActorRef, initialStateMode: SubscriptionInitialStateMode, to: Class[_]*): Unit =
+  @varargs def subscribe(subscriber: ActorRef, initialStateMode: SubscriptionInitialStateMode, to: Class[_]*): Unit = {
+    require(to.length > 0, "at least one `ClusterDomainEvent` class is required")
+    require(to.forall(classOf[ClusterDomainEvent].isAssignableFrom),
+      s"subscribe to `akka.cluster.ClusterEvent.ClusterDomainEvent` or subclasses, was [${to.map(_.getName).mkString(", ")}]")
     clusterCore ! InternalClusterAction.Subscribe(subscriber, initialStateMode, to.toSet)
+  }
 
   /**
    * Unsubscribe to all cluster domain events.
