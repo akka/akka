@@ -194,7 +194,7 @@ function get_current_branch {
 # get the current project version from sbt
 # a little messy as the ansi escape codes are included
 function get_current_version {
-  local result=$(sbt version | tail -1 | cut -f2)
+  local result=$(sbt version | grep -v warn | tail -1 | cut -f2)
   # remove ansi escape code from end
   local code0=$(echo -e "\033[0m")
   echo ${result%$code0}
