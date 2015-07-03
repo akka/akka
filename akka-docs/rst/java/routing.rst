@@ -279,6 +279,19 @@ configuration.
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-balancing-pool2
 
+The ``BalancingPool`` automatically uses a special ``BalancingDispatcher`` for its
+routees - disregarding any dispatcher that is set on the the routee Props object.
+This is needed in order to implement the balancing semantics via
+sharing the same mailbox by all the routees.
+
+While it is not possible to change the dispatcher used by the routees, it is possible
+to fine tune the used *executor*. By default the ``fork-join-dispatcher`` is used and
+can be configured as explained in :ref:`dispatchers-java`. In situations where the
+routees are expected to perform blocking operations it may be useful to replace it
+with a ``thread-pool-executor`` hinting the number of allocated threads explicitly:
+
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-balancing-pool3
+
 There is no Group variant of the BalancingPool.
 
 SmallestMailboxPool
