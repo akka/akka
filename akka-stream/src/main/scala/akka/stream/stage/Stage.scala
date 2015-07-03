@@ -457,11 +457,15 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
    * successfully.
    */
   final def terminationEmit(iter: Iterator[Out], ctx: Context[Out]): TerminationDirective = {
-    val empty = iter.isEmpty
-    if (empty && emitting) ctx.absorbTermination()
-    else if (empty) ctx.finish()
-    else {
-      become(emittingState(iter, andThen = Finish))
+    if (iter.isEmpty) {
+      if (emitting) ctx.absorbTermination()
+      else ctx.finish()
+    } else {
+      val nextState = current match {
+        case es: EmittingState if emitting ⇒ es.copy(iter = es.iter ++ iter)
+        case _                             ⇒ emittingState(iter, andThen = Finish)
+      }
+      become(nextState)
       ctx.absorbTermination()
     }
   }
@@ -475,7 +479,9 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
     terminationEmit(iter.asScala, ctx)
   }
 
-  private def emittingState(iter: Iterator[Out], andThen: AndThen) = new State {
+  private def emittingState(iter: Iterator[Out], andThen: AndThen) = EmittingState(iter, andThen)
+
+  private case class EmittingState(iter: Iterator[Out], andThen: AndThen) extends State {
     override def onPush(elem: In, ctx: Context[Out]) = throw new IllegalStateException("onPush not allowed in emittingState")
     override def onPull(ctx: Context[Out]) = {
       if (iter.hasNext) {
