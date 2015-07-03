@@ -789,6 +789,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         leaderActionCounter = 0
         leaderActionsOnConvergence()
       } else {
+        moveJoiningToWeaklyUp()
         leaderActionCounter += 1
         if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
           logInfo("Leader can currently not perform its duties, reachability status: [{}], member status: [{}]",
@@ -819,6 +820,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     }
   }
 
+  def isMinNrOfMembersFulfilled: Boolean = {
+    latestGossip.members.size >= MinNrOfMembers && MinNrOfMembersOfRole.forall {
+      case (role, threshold) ⇒ latestGossip.members.count(_.hasRole(role)) >= threshold
+    }
+  }
+
   /**
    * Leader actions are as follows:
    * 1. Move JOINING     => UP                   -- When a node joins the cluster
@@ -838,12 +845,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val localOverview = localGossip.overview
     val localSeen = localOverview.seen
 
-    def enoughMembers: Boolean = {
-      localMembers.size >= MinNrOfMembers && MinNrOfMembersOfRole.forall {
-        case (role, threshold) ⇒ localMembers.count(_.hasRole(role)) >= threshold
-      }
-    }
-    def isJoiningToUp(m: Member): Boolean = m.status == Joining && enoughMembers
+    val enoughMembers: Boolean = isMinNrOfMembersFulfilled
+    def isJoiningToUp(m: Member): Boolean = m.status == Joining || m.status == WeaklyUp && enoughMembers
 
     val removedUnreachable = for {
       node ← localOverview.reachability.allUnreachableOrTerminated
@@ -918,6 +921,36 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       }
 
     }
+  }
+
+  def moveJoiningToWeaklyUp(): Unit = {
+    // FIXME if we include this feature in 2.4 we must have a feature flag for it
+    //       (off by default), because deserialization will break if we send gossip
+    //       with member status WeaklyUp to a 2.3 node.
+    val localGossip = latestGossip
+    val localMembers = localGossip.members
+
+    val enoughMembers: Boolean = isMinNrOfMembersFulfilled
+    def isJoiningToWeaklyUp(m: Member): Boolean =
+      m.status == Joining && enoughMembers && latestGossip.reachabilityExcludingDownedObservers.isReachable(m.uniqueAddress)
+    val changedMembers = localMembers.collect {
+      case m if isJoiningToWeaklyUp(m) ⇒ m.copy(status = WeaklyUp)
+    }
+
+    if (changedMembers.nonEmpty) {
+      // replace changed members
+      val newMembers = changedMembers ++ localMembers
+      val newGossip = localGossip.copy(members = newMembers)
+      updateLatestGossip(newGossip)
+
+      // log status changes
+      changedMembers foreach { m ⇒
+        logInfo("Leader is moving node [{}] to [{}]", m.address, m.status)
+      }
+
+      publish(latestGossip)
+    }
+
   }
 
   /**

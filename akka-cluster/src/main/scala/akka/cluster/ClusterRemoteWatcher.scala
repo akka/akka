@@ -9,6 +9,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberRemoved
+import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteWatcher
 
@@ -72,22 +73,27 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes = state.members.collect { case m if m.address != selfAddress ⇒ m.address }
       clusterNodes foreach takeOverResponsibility
       unreachable --= clusterNodes
-    case MemberUp(m) ⇒
-      if (m.address != selfAddress) {
-        clusterNodes += m.address
-        takeOverResponsibility(m.address)
-        unreachable -= m.address
-      }
-    case MemberRemoved(m, previousStatus) ⇒
-      if (m.address != selfAddress) {
-        clusterNodes -= m.address
-        if (previousStatus == MemberStatus.Down) {
-          quarantine(m.address, Some(m.uniqueAddress.uid))
-        }
-        publishAddressTerminated(m.address)
-      }
-    case _: MemberEvent ⇒ // not interesting
+    case MemberUp(m)                      ⇒ memberUp(m)
+    case MemberWeaklyUp(m)                ⇒ memberUp(m)
+    case MemberRemoved(m, previousStatus) ⇒ memberRemoved(m, previousStatus)
+    case _: MemberEvent                   ⇒ // not interesting
   }
+
+  def memberUp(m: Member): Unit =
+    if (m.address != selfAddress) {
+      clusterNodes += m.address
+      takeOverResponsibility(m.address)
+      unreachable -= m.address
+    }
+
+  def memberRemoved(m: Member, previousStatus: MemberStatus): Unit =
+    if (m.address != selfAddress) {
+      clusterNodes -= m.address
+      if (previousStatus == MemberStatus.Down) {
+        quarantine(m.address, Some(m.uniqueAddress.uid))
+      }
+      publishAddressTerminated(m.address)
+    }
 
   override def watchNode(watchee: InternalActorRef) =
     if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
