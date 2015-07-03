@@ -433,6 +433,25 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       out.expectComplete()
     }
 
+    "chain elements to currently emitting on upstream finish" in assertAllStagesStopped {
+      Source.single("hi")
+        .transform(() ⇒ new StatefulStage[String, String] {
+          override def initial = new State {
+            override def onPush(elem: String, ctx: Context[String]) =
+              emit(Iterator(elem + "1", elem + "2"), ctx)
+          }
+          override def onUpstreamFinish(ctx: Context[String]) = {
+            terminationEmit(Iterator("byebye"), ctx)
+          }
+        })
+        .runWith(TestSink.probe[String]())
+        .request(1)
+        .expectNext("hi1")
+        .request(2)
+        .expectNext("hi2")
+        .expectNext("byebye")
+        .expectComplete()
+    }
   }
 
 }
