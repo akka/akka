@@ -31,13 +31,13 @@ object Merge {
   /**
    * Create a new `Merge` vertex with the specified output type.
    */
-  def create[T](outputCount: Int): Graph[UniformFanInShape[T, T], Unit] =
-    scaladsl.Merge(outputCount)
+  def create[T](inputPorts: Int): Graph[UniformFanInShape[T, T], Unit] =
+    scaladsl.Merge(inputPorts)
 
   /**
    * Create a new `Merge` vertex with the specified output type.
    */
-  def create[T](clazz: Class[T], outputCount: Int): Graph[UniformFanInShape[T, T], Unit] = create(outputCount)
+  def create[T](clazz: Class[T], inputPorts: Int): Graph[UniformFanInShape[T, T], Unit] = create(inputPorts)
 
 }
 
@@ -66,13 +66,13 @@ object MergePreferred {
   /**
    * Create a new `MergePreferred` vertex with the specified output type.
    */
-  def create[T](outputCount: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
-    scaladsl.MergePreferred(outputCount)
+  def create[T](secondaryPorts: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
+    scaladsl.MergePreferred(secondaryPorts)
 
   /**
    * Create a new `MergePreferred` vertex with the specified output type.
    */
-  def create[T](clazz: Class[T], outputCount: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] = create(outputCount)
+  def create[T](clazz: Class[T], secondaryPorts: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] = create(secondaryPorts)
 
 }
 
@@ -185,7 +185,7 @@ object Zip {
   import akka.japi.Pair
 
   /**
-   * Create a new `ZipWith` vertex with the specified input types and zipping-function
+   * Create a new `Zip` vertex with the specified input types and zipping-function
    * which creates `akka.japi.Pair`s.
    */
   def create[A, B]: Graph[FanInShape2[A, B, A Pair B], Unit] =

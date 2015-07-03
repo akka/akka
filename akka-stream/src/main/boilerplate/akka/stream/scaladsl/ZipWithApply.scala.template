@@ -18,8 +18,8 @@ trait ZipWithApply {
   def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): ZipWith1[[#A1#], O] = {
     val shape = new FanInShape1[[#A1#], O]("ZipWith1")
     new ZipWith1(shape, new ZipWith1Module(shape, zipper, Attributes.name("ZipWith1")))
-    }
-    #
+  }
+  #
 
   ]
 
