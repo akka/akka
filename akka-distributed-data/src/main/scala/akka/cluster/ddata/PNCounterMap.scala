@@ -37,7 +37,10 @@ final class PNCounterMap private[akka] (
   def entries: Map[String, BigInt] = underlying.entries.map { case (k, c) ⇒ k -> c.value }
 
   /** Java API */
-  def getEntries: Map[String, BigInteger] = underlying.entries.map { case (k, c) ⇒ k -> c.value.bigInteger }
+  def getEntries: java.util.Map[String, BigInteger] = {
+    import scala.collection.JavaConverters._
+    underlying.entries.map { case (k, c) ⇒ k -> c.value.bigInteger }.asJava
+  }
 
   /**
    *  Scala API: The count for a key

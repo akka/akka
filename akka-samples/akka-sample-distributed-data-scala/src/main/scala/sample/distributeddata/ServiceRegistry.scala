@@ -35,7 +35,7 @@ object ServiceRegistry {
    */
   final case class Bindings(name: String, services: Set[ActorRef])
   /**
-   * Published to `System.eventStream` when services are changed.
+   * Published to `ActorSystem.eventStream` when services are changed.
    */
   final case class BindingChanged(name: String, services: Set[ActorRef])
 
@@ -78,8 +78,8 @@ class ServiceRegistry extends Actor with ActorLogging {
       // add the service
       replicator ! Update(dKey, ORSet(), WriteLocal)(_ + service)
 
-    case Lookup(key) ⇒
-      sender() ! Bindings(key, services.getOrElse(key, Set.empty))
+    case Lookup(name) ⇒
+      sender() ! Bindings(name, services.getOrElse(name, Set.empty))
 
     case c @ Changed(AllServicesKey) ⇒
       val newKeys = c.get(AllServicesKey).elements

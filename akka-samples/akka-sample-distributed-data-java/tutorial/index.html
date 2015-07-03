@@ -1,6 +1,6 @@
 <!-- <html> -->
 <head>
-<title>Akka Distributed Data Samples with Scala</title>
+<title>Akka Distributed Data Samples with Java</title>
 </head>
 
 <body>
@@ -8,7 +8,7 @@
 <div>
 <p>
 This tutorial contains 5 samples illustrating how to use  
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html" target="_blank">Akka Distributed Data</a>.
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html" target="_blank">Akka Distributed Data</a>.
 </p>
 <ul>
 <li>Low Latency Voting Service</li>
@@ -47,7 +47,7 @@ out-of-date value.
 
 <p>
 Note that there are some 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Limitations" target="_blank">Limitations</a>
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Limitations" target="_blank">Limitations</a>
 that you should be aware of. For example, Akka Distributed Data is not intended for <i>Big Data</i>.
 </p>
 
@@ -63,20 +63,20 @@ without immediate communication with other nodes.
 </p>
 
 <p>
-Open <a href="#code/src/main/scala/sample/distributeddata/VotingService.scala" class="shortcut">VotingService.scala</a>.
+Open <a href="#code/src/main/java/sample/distributeddata/VotingService.java" class="shortcut">VotingService.java</a>.
 </p>
 
 <p>
 <code>VotingService</code> is an actor for low latency counting of votes on several cluster nodes and aggregation
 of the grand total number of votes. The actor is started on each cluster node. First it expects an 
-<code>Open</code> message on one or several nodes. After that the counting can begin. The open
+<code>OPEN</code> message on one or several nodes. After that the counting can begin. The open
 signal is immediately replicated to all nodes with a boolean
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Flags_and_Registers" target="_blank">Flag</a>.
-Note <code>WriteAll</code>.  
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Flags_and_Registers" target="_blank">Flag</a>.
+Note <code>writeAll</code>.  
 </p>
 
 <pre><code>
-replicator ! Update(OpenedKey, Flag(), WriteAll(5.seconds))(_.switchOn)
+Update&lt;Flag&gt; update = new Update&lt;&gt;(openedKey, Flag.create(), writeAll, curr -> curr.switchOn());
 </code></pre>
 
 <p>
@@ -85,29 +85,28 @@ also on other nodes, will be notified when the flag is changed.
 </p>
 
 <pre><code>
-replicator ! Subscribe(OpenedKey, self)
+replicator.tell(new Subscribe&lt;&gt;(openedKey, self()), ActorRef.noSender());
 </code></pre>
 
 <pre><code>
-case c @ Changed(OpenedKey) if c.get(OpenedKey).enabled
+.match(Changed.class, c -> c.key().equals(openedKey), c -> receiveOpenedChanged((Changed&lt;Flag&gt;) c))
 </code></pre>
 
 <p>
 The counters are kept in a 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Counters" target="_blank">PNCounterMap</a>
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Counters" target="_blank">PNCounterMap</a>
 and updated with:
 </p>
 
 <pre><code>
-val update = Update(CountersKey, PNCounterMap(), WriteLocal, request = Some(v)) {
-  _.increment(participant, 1)
-}
-replicator ! update
+Update&lt;PNCounterMap&gt; update = new Update&lt;&gt;(countersKey, PNCounterMap.create(), Replicator.writeLocal(),
+        curr -> curr.increment(node, vote.participant, 1));
+ replicator.tell(update, self());
 </code></pre>
 
 <p>
 Incrementing the counter is very fast, since it only involves communication with the local 
-<code>Replicator</code> actor. Note <code>WriteLocal</code>. Those updates are also spread
+<code>Replicator</code> actor. Note <code>writeLocal</code>. Those updates are also spread
 to other nodes, but that is performed in the background.
 </p>
 
@@ -116,12 +115,21 @@ The total number of votes is retrieved with:
 </p>
 
 <pre><code>
-case GetVotes ⇒
-  replicator ! Get(CountersKey, ReadAll(3.seconds), Some(GetVotesReq(sender())))
+Optional&lt;Object&gt; ctx = Optional.of(sender());
+replicator.tell(new Replicator.Get&lt;PNCounterMap&gt;(countersKey, readAll, ctx), self());
+</code></pre>
 
-case g @ GetSuccess(CountersKey, Some(GetVotesReq(replyTo))) ⇒
-  val data = g.get(CountersKey)
-  replyTo ! Votes(data.entries, open)
+<pre><code>
+.match(GetSuccess.class, g -> g.key().equals(countersKey),
+   g -> receiveGetSuccess(open, (GetSuccess&lt;PNCounterMap&gt;) g))
+</code></pre>
+
+<pre><code>
+private void receiveGetSuccess(boolean open, GetSuccess&lt;PNCounterMap&gt; g) {
+  Map&lt;String, BigInteger&gt; result = g.dataValue().getEntries();
+  ActorRef replyTo = (ActorRef) g.getRequest().get();
+  replyTo.tell(new Votes(result, open), self());
+}
 </code></pre>
 
 <p>
@@ -131,7 +139,7 @@ The multi-node test for the <code>VotingService</code> can be found in
 
 <p>
 Read the 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Using_the_Replicator" target="_blank">Using the Replicator</a>
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Using_the_Replicator" target="_blank">Using the Replicator</a>
 documentation for more details of how to use <code>Get</code>, <code>Update</code>, and <code>Subscribe</code>.
 </p>
 
@@ -146,7 +154,7 @@ updates to the local node (or currently available nodes) during a network partit
 </p> 
 	
 <p>
-Open <a href="#code/src/main/scala/sample/distributeddata/ShoppingCart.scala" class="shortcut">ShoppingCart.scala</a>.
+Open <a href="#code/src/main/java/sample/distributeddata/ShoppingCart.java" class="shortcut">ShoppingCart.java</a>.
 </p>
 
 <p>
@@ -157,13 +165,13 @@ instances may be started on different nodes and used at the same time.
 
 <p>
 Each product in the cart is represented by a <code>LineItem</code> and all items in the cart
-is collected in a <a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Maps" target="_blank">LWWMap</a>.
+is collected in a <a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Maps" target="_blank">LWWMap</a>.
 </p>
 
 <p>
-The actor handles the commands <code>GetCart</code>, <code>AddItem</code> and <code>RemoveItem</code>.
+The actor handles the commands <code>GET_CART</code>, <code>AddItem</code> and <code>RemoveItem</code>.
 To get the latest updates in case the same shopping cart is used from several nodes it is using
-consistency level of <code>ReadMajority</code> and <code>WriteMajority</code>, but that is only
+consistency level of <code>readMajority</code> and <code>writeMajority</code>, but that is only
 done to reduce the risk of seeing old data. If such reads and writes cannot be completed due to a 
 network partition it falls back to reading/writing from the local replica (see <code>GetFailure</code>).
 Local reads and writes will always be successful and when the network partition heals the updated
@@ -179,7 +187,7 @@ The multi-node test for the <code>ShoppingCart</code> can be found in
 
 <p>
 Read the 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Consistency" target="_blank">Consistency</a>
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Consistency" target="_blank">Consistency</a>
 section in the documentation to understand the consistency considerations.
 </p>
 
@@ -195,7 +203,7 @@ feature complete, but should be a good starting point.
 </p>
 
 <p>
-Open <a href="#code/src/main/scala/sample/distributeddata/ServiceRegistry.scala" class="shortcut">ServiceRegistry.scala</a>.
+Open <a href="#code/src/main/java/sample/distributeddata/ServiceRegistry.java" class="shortcut">ServiceRegistry.java</a>.
 </p>
 
 <p>
@@ -210,7 +218,7 @@ It supports two basic commands:
 
 <p>
 For each named service it is using an
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/distributed-data.html#Sets" target="_blank">ORSet</a>.
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Sets" target="_blank">ORSet</a>.
 Here we are using top level <code>ORSet</code> entries. An alternative would have been to use a 
 <code>ORMultiMap</code> holding all services. That would have a disadvantage if we have many services.
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e. when you 
@@ -238,7 +246,7 @@ This example illustrates a simple key-value cache.
 </p>
 
 <p>
-Open <a href="#code/src/main/scala/sample/distributeddata/ReplicatedCache.scala" class="shortcut">ReplicatedCache.scala</a>.
+Open <a href="#code/src/main/java/sample/distributeddata/ReplicatedCache.java" class="shortcut">ReplicatedCache.scala</a>.
 </p>
 
 <p>
@@ -271,7 +279,7 @@ This example illustrates to spread metrics data to all nodes in an Akka cluster.
 </p>
 
 <p>
-Open <a href="#code/src/main/scala/sample/distributeddata/ReplicatedMetrics.scala" class="shortcut">ReplicatedMetrics.scala</a>.
+Open <a href="#code/src/main/java/sample/distributeddata/ReplicatedMetrics.java" class="shortcut">ReplicatedMetrics.java</a>.
 </p>
 
 <p>
@@ -284,6 +292,12 @@ the node. The values are disseminated to other nodes with the gossip protocol.
 <p>
 The multi-node test for the <code>ReplicatedCache</code> can be found in
 <a href="#code/src/multi-jvm/scala/sample/distributeddata/ReplicatedMetricsSpec.scala" class="shortcut">ReplicatedMetricsSpec.scala</a>.
+</p>
+
+<p>
+Note that there are some 
+<a href="http://doc.akka.io/docs/akka/2.4-M2/scala/distributed-data.html#Limitations" target="_blank">Limitations</a>
+that you should be aware of. For example, Akka Distributed Data is not intended for <i>Big Data</i>.
 </p>
 
 </div>
