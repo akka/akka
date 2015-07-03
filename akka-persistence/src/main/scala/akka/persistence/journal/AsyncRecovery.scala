@@ -24,6 +24,9 @@ trait AsyncRecovery {
    * as deleted. In this case a replayed message's `deleted` method must return
    * `true`.
    *
+   * The `toSequenceNr` is the lowest of what was returned by [[#asyncReadHighestSequenceNr]]
+   * and what the user specified as recovery [[akka.persistence.Recovery]] parameter.
+   *
    * @param persistenceId persistent actor id.
    * @param fromSequenceNr sequence number where replay should start (inclusive).
    * @param toSequenceNr sequence number where replay should end (inclusive).
@@ -38,7 +41,10 @@ trait AsyncRecovery {
 
   /**
    * Plugin API: asynchronously reads the highest stored sequence number for the
-   * given `persistenceId`.
+   * given `persistenceId`. The persistent actor will use the highest sequence
+   * number after recovery as the starting point when persisting new events.
+   * This sequence number is also used as `toSequenceNr` in subsequent call
+   * to [[#asyncReplayMessages]] unless the user has specified a lower `toSequenceNr`.
    *
    * @param persistenceId persistent actor id.
    * @param fromSequenceNr hint where to start searching for the highest sequence

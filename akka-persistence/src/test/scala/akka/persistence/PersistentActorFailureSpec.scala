@@ -44,14 +44,15 @@ object PersistentActorFailureSpec {
       case w: WriteMessages if checkSerializable(w).exists(_.isFailure) ⇒
         sender() ! checkSerializable(w)
       case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
+        val highest = highestSequenceNr(pid)
         val readFromStore = read(pid, fromSnr, toSnr, max)
         if (readFromStore.length == 0)
-          sender() ! ReplaySuccess
+          sender() ! ReplaySuccess(highest)
         else if (isCorrupt(readFromStore))
           sender() ! ReplayFailure(new SimulatedException(s"blahonga $fromSnr $toSnr"))
         else {
           readFromStore.foreach(sender() ! _)
-          sender() ! ReplaySuccess
+          sender() ! ReplaySuccess(highest)
         }
     }
 
