@@ -308,9 +308,13 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   }
 
   def sendGetContacts(): Unit = {
-    if (contacts.isEmpty) initialContactsSel foreach { _ ! GetContacts }
-    else if (contacts.size == 1) (initialContactsSel ++ contacts) foreach { _ ! GetContacts }
-    else contacts foreach { _ ! GetContacts }
+    val sendTo =
+      if (contacts.isEmpty) initialContactsSel
+      else if (contacts.size == 1) (initialContactsSel ++ contacts)
+      else contacts
+    if (log.isDebugEnabled)
+      log.debug(s"""Sending GetContacts to [${sendTo.mkString(",")}]""")
+    sendTo.foreach { _ ! GetContacts }
   }
 
   def buffer(msg: Any): Unit =
