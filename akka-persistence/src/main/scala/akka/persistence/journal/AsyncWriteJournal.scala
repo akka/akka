@@ -14,6 +14,7 @@ import scala.util.control.NonFatal
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
+import akka.AkkaException
 
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.
@@ -93,29 +94,28 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       }
 
     case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor) ⇒
-      // Send replayed messages and replay result to persistentActor directly. No need
-      // to resequence replayed messages relative to written and looped messages.
-      asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) { p ⇒
-        if (!p.deleted) // old records from 2.3 may still have the deleted flag
-          adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
-            persistentActor.tell(ReplayedMessage(adaptedPersistentRepr), Actor.noSender)
-          }
-      } map {
-        case _ ⇒ ReplayMessagesSuccess
-      } recover {
+
+      asyncReadHighestSequenceNr(persistenceId, fromSequenceNr).flatMap { highSeqNr ⇒
+        val toSeqNr = math.min(toSequenceNr, highSeqNr)
+        if (highSeqNr == 0L || fromSequenceNr > toSeqNr)
+          Future.successful(highSeqNr)
+        else {
+          // Send replayed messages and replay result to persistentActor directly. No need
+          // to resequence replayed messages relative to written and looped messages.
+          asyncReplayMessages(persistenceId, fromSequenceNr, toSeqNr, max) { p ⇒
+            if (!p.deleted) // old records from 2.3 may still have the deleted flag
+              adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
+                persistentActor.tell(ReplayedMessage(adaptedPersistentRepr), Actor.noSender)
+              }
+          }.map(_ ⇒ highSeqNr)
+        }
+      }.map {
+        highSeqNr ⇒ ReplayMessagesSuccess(highSeqNr)
+      }.recover {
         case e ⇒ ReplayMessagesFailure(e)
-      } pipeTo persistentActor onSuccess {
+      }.pipeTo(persistentActor).onSuccess {
         case _ if publish ⇒ context.system.eventStream.publish(r)
       }
-
-    case ReadHighestSequenceNr(fromSequenceNr, persistenceId, persistentActor) ⇒
-      // Send read highest sequence number to persistentActor directly. No need
-      // to resequence the result relative to written and looped messages.
-      asyncReadHighestSequenceNr(persistenceId, fromSequenceNr).map {
-        highest ⇒ ReadHighestSequenceNrSuccess(highest)
-      } recover {
-        case e ⇒ ReadHighestSequenceNrFailure(e)
-      } pipeTo persistentActor
 
     case d @ DeleteMessagesTo(persistenceId, toSequenceNr, persistentActor) ⇒
       asyncDeleteMessagesTo(persistenceId, toSequenceNr) onComplete {
