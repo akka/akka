@@ -212,7 +212,7 @@ object AkkaBuild extends Build {
         sampleMainJava, sampleMainScala, sampleMainJavaLambda, sampleMultiNodeScala,
         samplePersistenceJava, samplePersistenceScala, samplePersistenceJavaLambda,
         sampleRemoteJava, sampleRemoteScala, sampleSupervisionJavaLambda,
-        sampleDistributedDataScala)
+        sampleDistributedDataScala, sampleDistributedDataJava)
   )
 
   lazy val sampleCamelJava = Sample.project("akka-sample-camel-java")
@@ -240,6 +240,7 @@ object AkkaBuild extends Build {
   lazy val sampleSupervisionJavaLambda = Sample.project("akka-sample-supervision-java-lambda")
   
   lazy val sampleDistributedDataScala = Sample.project("akka-sample-distributed-data-scala")
+  lazy val sampleDistributedDataJava = Sample.project("akka-sample-distributed-data-java")
 
   lazy val osgiDiningHakkersSampleMavenTest = Project(id = "akka-sample-osgi-dining-hakkers-maven-test",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers-maven-test"),

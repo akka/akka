@@ -217,6 +217,13 @@ object Replicator {
      * Java API: `Get` value from local `Replicator`, i.e. `ReadLocal` consistency.
      */
     def this(key: Key[A], consistency: ReadConsistency) = this(key, consistency, None)
+
+    /**
+     * Java API: `Get` value from local `Replicator`, i.e. `ReadLocal` consistency.
+     */
+    def this(key: Key[A], consistency: ReadConsistency, request: Optional[Any]) =
+      this(key, consistency, Option(request.orElse(null)))
+
   }
   sealed abstract class GetResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
     def key: Key[A]

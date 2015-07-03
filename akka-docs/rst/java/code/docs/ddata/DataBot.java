@@ -5,7 +5,6 @@ package docs.ddata;
 
 //#data-bot
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import scala.concurrent.duration.Duration;
 import scala.concurrent.forkjoin.ThreadLocalRandom;
 
@@ -42,41 +41,47 @@ public class DataBot extends AbstractActor {
 
   private final Key<ORSet<String>> dataKey = ORSetKey.create("key");
   
+  @SuppressWarnings("unchecked")
   public DataBot() {
-    receive(ReceiveBuilder.
-      match(String.class, a -> a.equals(TICK), a -> {
-        String s = String.valueOf((char) ThreadLocalRandom.current().nextInt(97, 123));
-        if (ThreadLocalRandom.current().nextBoolean()) {
-          // add
-          log.info("Adding: {}", s);
-          Update<ORSet<String>> update = new Update<>(
-              dataKey, 
-              ORSet.create(), 
-              Replicator.writeLocal(), 
-              curr ->  curr.add(node, s));
-           replicator.tell(update, self());
-        } else {
-          // remove
-          log.info("Removing: {}", s);
-          Update<ORSet<String>> update = new Update<>(
-              dataKey, 
-              ORSet.create(), 
-              Replicator.writeLocal(), 
-              curr ->  curr.remove(node, s));
-          replicator.tell(update, self());
-        }
-      }).
-      match(UpdateResponse.class, r -> {
-       // ignore
-      }).
-      match(Changed.class, c -> c.key().equals(dataKey), c -> {
-        @SuppressWarnings("unchecked")
-        Changed<ORSet<String>> c2 = c;
-        ORSet<String> data = c2.dataValue();
-        log.info("Current elements: {}", data.getElements());
-      }).
-      matchAny(o -> log.info("received unknown message")).build()
-    );
+    receive(ReceiveBuilder
+      .match(String.class, a -> a.equals(TICK), a -> receiveTick())
+      .match(Changed.class, c -> c.key().equals(dataKey), c -> receiveChanged((Changed<ORSet<String>>) c))
+      .match(UpdateResponse.class, r -> receiveUpdateResoponse())
+      .build());
+  }
+
+
+  private void receiveTick() {
+    String s = String.valueOf((char) ThreadLocalRandom.current().nextInt(97, 123));
+    if (ThreadLocalRandom.current().nextBoolean()) {
+      // add
+      log.info("Adding: {}", s);
+      Update<ORSet<String>> update = new Update<>(
+          dataKey, 
+          ORSet.create(), 
+          Replicator.writeLocal(), 
+          curr ->  curr.add(node, s));
+       replicator.tell(update, self());
+    } else {
+      // remove
+      log.info("Removing: {}", s);
+      Update<ORSet<String>> update = new Update<>(
+          dataKey, 
+          ORSet.create(), 
+          Replicator.writeLocal(), 
+          curr ->  curr.remove(node, s));
+      replicator.tell(update, self());
+    }
+  }
+
+
+  private void receiveChanged(Changed<ORSet<String>> c) {
+    ORSet<String> data = c.dataValue();
+    log.info("Current elements: {}", data.getElements());
+  }
+  
+  private void receiveUpdateResoponse() {
+    // ignore
   }
 
   

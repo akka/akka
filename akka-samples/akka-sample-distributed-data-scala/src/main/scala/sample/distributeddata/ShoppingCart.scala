@@ -69,14 +69,15 @@ class ShoppingCart(userId: String) extends Actor {
         cart ⇒ updateCart(cart, item)
       }
       replicator ! update
-
-    case GetFailure(DataKey, Some(AddItem(item))) ⇒
-      // ReadMajority of Update failed, fall back to best effort local value
-      replicator ! Update(DataKey, LWWMap.empty[LineItem], writeMajority, None) {
-        cart ⇒ updateCart(cart, item)
-      }
   }
   //#add-item
+
+  def updateCart(data: LWWMap[LineItem], item: LineItem): LWWMap[LineItem] =
+    data.get(item.productId) match {
+      case Some(LineItem(_, _, existingQuantity)) ⇒
+        data + (item.productId -> item.copy(quantity = existingQuantity + item.quantity))
+      case None ⇒ data + (item.productId -> item)
+    }
 
   //#remove-item
   def receiveRemoveItem: Receive = {
@@ -106,12 +107,5 @@ class ShoppingCart(userId: String) extends Actor {
     // UpdateTimeout, will eventually be replicated
     case e: UpdateFailure[_]                       ⇒ throw new IllegalStateException("Unexpected failure: " + e)
   }
-
-  def updateCart(data: LWWMap[LineItem], item: LineItem): LWWMap[LineItem] =
-    data.get(item.productId) match {
-      case Some(LineItem(_, _, existingQuantity)) ⇒
-        data + (item.productId -> item.copy(quantity = existingQuantity + item.quantity))
-      case None ⇒ data + (item.productId -> item)
-    }
 
 }
