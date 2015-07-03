@@ -4,6 +4,7 @@
 package docs.routing
 
 import scala.concurrent.duration._
+import scala.collection.JavaConverters._
 import akka.testkit._
 import akka.actor.{ ActorRef, Props, Actor }
 import akka.actor.Terminated
@@ -83,6 +84,24 @@ akka.actor.deployment {
   }
 }
 #//#config-balancing-pool2
+
+#//#config-balancing-pool3
+akka.actor.deployment {
+  /parent/router10b {
+    router = balancing-pool
+    nr-of-instances = 5
+    pool-dispatcher {
+      executor = "thread-pool-executor"
+
+      # allocate exactly 5 threads for this pool
+      thread-pool-executor {
+        core-pool-size-min = 5
+        core-pool-size-max = 5
+      }
+    }
+  }
+}
+#//#config-balancing-pool3
     
 #//#config-smallest-mailbox-pool
 akka.actor.deployment {
@@ -227,9 +246,7 @@ router-dispatcher {}
   final case class Work(payload: String)
 
   //#router-in-actor
-  import akka.routing.ActorRefRoutee
-  import akka.routing.Router
-  import akka.routing.RoundRobinRoutingLogic
+  import akka.routing.{ ActorRefRoutee, RoundRobinRoutingLogic, Router }
 
   class Master extends Actor {
     var router = {
@@ -326,7 +343,17 @@ router-dispatcher {}
     //#balancing-pool-2
     val router10: ActorRef =
       context.actorOf(BalancingPool(5).props(Props[Worker]), "router10")
-    //#balancing-pool-2  
+    //#balancing-pool-2
+
+    // #balancing-pool-3
+    val router10b: ActorRef =
+      context.actorOf(BalancingPool(20).props(Props[Worker]), "router10b")
+    //#balancing-pool-3
+    import scala.collection.JavaConversions._
+    for (i <- 1 to 100) router10b ! i
+    val threads10b = Thread.getAllStackTraces.keySet.filter { _.getName contains "router10b" }
+    val threads10bNr = threads10b.size
+    require(threads10bNr == 5, s"Expected 5 threads for router10b, had $threads10bNr! Got: ${threads10b.map(_.getName)}")
 
     //#smallest-mailbox-pool-1
     val router11: ActorRef =
