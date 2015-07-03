@@ -5,10 +5,11 @@ package akka.cluster.ddata;
 
 import akka.cluster.UniqueAddress;
 
-public class JavaImplOfReplicatedData extends AbstractReplicatedData implements RemovedNodePruning {
+public class JavaImplOfReplicatedData extends AbstractReplicatedData<JavaImplOfReplicatedData> implements
+    RemovedNodePruning {
 
   @Override
-  public JavaImplOfReplicatedData merge(ReplicatedData other) {
+  public JavaImplOfReplicatedData mergeData(JavaImplOfReplicatedData other) {
     return this;
   }
 

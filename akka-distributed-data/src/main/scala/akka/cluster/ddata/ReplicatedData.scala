@@ -24,6 +24,10 @@ import akka.cluster.UniqueAddress
  * a new instance.
  */
 trait ReplicatedData {
+  /**
+   * The type of the concrete implementation, e.g. `GSet[A]`.
+   * To be specified by subclass.
+   */
   type T <: ReplicatedData
 
   /**
@@ -34,14 +38,26 @@ trait ReplicatedData {
 }
 
 /**
- * Java API: Interface for implementing a [[ReplicatedData]] in
- * Java.
+ * Java API: Interface for implementing a [[ReplicatedData]] in Java.
+ *
+ * The type parameter `D` is a self-recursive type to be defined by the
+ * concrete implementation.
+ * E.g. `class TwoPhaseSet extends AbstractReplicatedData&lt;TwoPhaseSet&gt;`
  */
-abstract class AbstractReplicatedData extends ReplicatedData {
-  // it is not possible to use a more strict type, because it is erased somehow, and
-  // the implementation is anyway required to implement
-  // merge(that: ReplicatedData): ReplicatedData
-  type T = AbstractReplicatedData
+abstract class AbstractReplicatedData[D <: AbstractReplicatedData[D]] extends ReplicatedData {
+
+  override type T = ReplicatedData
+
+  /**
+   * Delegates to [[#mergeData]], which must be implemented by subclass.
+   */
+  final override def merge(that: ReplicatedData): ReplicatedData =
+    mergeData(that.asInstanceOf[D])
+
+  /**
+   * Java API: Monotonic merge function.
+   */
+  def mergeData(that: D): D
 
 }
 
@@ -52,7 +68,7 @@ abstract class AbstractReplicatedData extends ReplicatedData {
  * used by the [[Replicator]] to collapse data from the removed node
  * into some other node in the cluster.
  */
-trait RemovedNodePruning { this: ReplicatedData ⇒
+trait RemovedNodePruning extends ReplicatedData {
 
   /**
    * Does it have any state changes from a specific node,
