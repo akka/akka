@@ -59,7 +59,6 @@ object ValidatePullRequest extends AutoPlugin {
 
   val TargetBranchEnvVarName = "PR_TARGET_BRANCH"
   val TargetBranchJenkinsEnvVarName = "ghprbTargetBranch"
-  val targetBranch = settingKey[String]("Branch with which the PR changes should be diffed against")
 
   val SourceBranchEnvVarName = "PR_SOURCE_BRANCH"
   val SourcePullIdJenkinsEnvVarName = "ghprbPullId" // used to obtain branch name in form of "pullreq/17397"
@@ -123,12 +122,6 @@ object ValidatePullRequest extends AutoPlugin {
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
 
-    targetBranch in ValidatePR := {
-        sys.env.get(TargetBranchEnvVarName) orElse
-        sys.env.get(TargetBranchJenkinsEnvVarName) getOrElse // Set by "GitHub pull request builder plugin"
-        "master"
-    },
-
     sourceBranch in ValidatePR := {
       sys.env.get(SourceBranchEnvVarName) orElse
       sys.env.get(SourcePullIdJenkinsEnvVarName).map("pullreq/" + _) getOrElse // Set by "GitHub pull request builder plugin"
@@ -138,12 +131,11 @@ object ValidatePullRequest extends AutoPlugin {
     changedDirectories in ValidatePR := {
       val log = streams.value.log
 
-      val targetId = (targetBranch in ValidatePR).value
       val prId = (sourceBranch in ValidatePR).value
 
       // TODO could use jgit
-      log.info(s"Comparing [$targetId] with [$prId] to determine changed modules in PR...")
-      val gitOutput = "git diff %s..%s --name-only".format(targetId, prId).!!.split("\n")
+      log.info(s"Diffing [$prId] to determine changed modules in PR...")
+      val gitOutput = "git diff HEAD^ --name-only".!!.split("\n")
 
       val moduleNames =
         gitOutput
