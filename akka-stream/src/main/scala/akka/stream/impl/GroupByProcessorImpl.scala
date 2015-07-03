@@ -29,7 +29,7 @@ private[akka] class GroupByProcessorImpl(settings: ActorMaterializerSettings, va
   import GroupByProcessorImpl.Drop
 
   val decider = settings.supervisionDecider
-  var keyToSubstreamOutput = collection.mutable.Map.empty[Any, SubstreamOutput]
+  val keyToSubstreamOutput = collection.mutable.Map.empty[Any, SubstreamOutput]
 
   var pendingSubstreamOutput: SubstreamOutput = _
 
