@@ -353,6 +353,19 @@ as reference::
       // ...
     }
 
+Sender reference of replayed events is deadLetters
+--------------------------------------------------
+While undocumented, previously the ``sender()`` of the replayed messages would be the same sender that originally had
+sent the message. Since sender is an ``ActorRef`` and those events are often replayed in different incarnations of
+actor systems and during the entire lifetime of the app, relying on the existence of this reference is most likely
+not going to succeed. In order to avoid bugs in the style of "it worked last week", the ``sender()`` reference is now not
+stored, in order to avoid potential bugs which this could have provoked.
+
+The previous behaviour was never documented explicitly (nor was it a design goal), so it is unlikely that applications
+have explicitly relied on this behaviour, however if you find yourself with an application that did exploit this you
+should rewrite it to explicitly store the ``ActorPath`` of where such replies during replay may have to be sent to,
+instead of relying on the sender reference during replay.
+
 Persistence Plugin APIs
 =======================
 
