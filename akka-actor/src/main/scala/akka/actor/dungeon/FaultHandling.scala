@@ -69,7 +69,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
           val ex = new PreRestartException(self, e, cause, optionalMessage)
           publish(Error(ex, self.path.toString, clazz(failedActor), e.getMessage))
         } finally {
-          clearActorFields(failedActor)
+          clearActorFields(failedActor, recreate = true)
         }
       }
       assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.currentStatus)
@@ -217,7 +217,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       if (system.settings.DebugLifecycle)
         publish(Debug(self.path.toString, clazz(a), "stopped"))
 
-      clearActorFields(a)
+      clearActorFields(a, recreate = false)
       clearActorCellFields(this)
       actor = null
     }
@@ -245,7 +245,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
           publish(Error(e, self.path.toString, clazz(freshActor), "restarting " + child))
         })
     } catch handleNonFatalOrInterruptedException { e ⇒
-      clearActorFields(actor) // in order to prevent preRestart() from happening again
+      clearActorFields(actor, recreate = false) // in order to prevent preRestart() from happening again
       handleInvokeFailure(survivors, new PostRestartException(self, e, cause))
     }
   }
