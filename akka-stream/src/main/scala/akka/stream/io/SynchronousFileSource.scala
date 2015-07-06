@@ -25,8 +25,7 @@ object SynchronousFileSource {
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
   def apply(f: File, chunkSize: Int = DefaultChunkSize): Source[ByteString, Future[Long]] =
-    new Source(new SynchronousFileSource(f, chunkSize, DefaultAttributes, Source.shape("SynchronousFileSource")))
-      .named(DefaultAttributes.nameOption.get)
+    new Source(new SynchronousFileSource(f, chunkSize, DefaultAttributes, Source.shape("SynchronousFileSource")).nest()) // TO DISCUSS: I had to add wrap() here to make the name available
 
   /**
    * Creates a synchronous (Java 6 compatible) Source from a Files contents.
@@ -38,8 +37,7 @@ object SynchronousFileSource {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def create(f: File): javadsl.Source[ByteString, Future[java.lang.Long]] =
-    create(f, DefaultChunkSize)
+  def create(f: File): javadsl.Source[ByteString, Future[java.lang.Long]] = create(f, DefaultChunkSize)
 
   /**
    * Creates a synchronous (Java 6 compatible) Source from a Files contents.
@@ -53,5 +51,4 @@ object SynchronousFileSource {
    */
   def create(f: File, chunkSize: Int): javadsl.Source[ByteString, Future[java.lang.Long]] =
     apply(f, chunkSize).asJava.asInstanceOf[javadsl.Source[ByteString, Future[java.lang.Long]]]
-
 }

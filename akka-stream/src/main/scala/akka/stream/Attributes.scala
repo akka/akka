@@ -5,6 +5,7 @@ package akka.stream
 
 import akka.event.Logging
 
+import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.stream.impl.Stages.StageModule
 import akka.japi.function
@@ -63,37 +64,36 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
   /**
    * INTERNAL API
    */
-  private[akka] def nameLifted: Option[String] =
-    if (attributeList.isEmpty)
-      None
-    else {
-      val sb = new java.lang.StringBuilder
-      val iter = attributeList.iterator
-      while (iter.hasNext) {
-        iter.next() match {
-          case Name(name) ⇒
-            if (sb.length == 0) sb.append(name)
-            else sb.append("-").append(name)
-          case _ ⇒
+  private[akka] def nameLifted: Option[String] = Option(nameOrDefault(null))
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def nameOrDefault(default: String = "unknown-operation"): String = {
+    @tailrec def concatNames(i: Iterator[Attribute], first: String, buf: StringBuilder): String =
+      if (i.hasNext)
+        i.next() match {
+          case Name(n) ⇒
+            if (buf ne null) concatNames(i, null, buf.append('-').append(n))
+            else if (first ne null) {
+              val b = new StringBuilder(
+                (first.length() + n.length()) match {
+                  case x if x < 0                ⇒ throw new IllegalStateException("Names too long to concatenate")
+                  case y if y > Int.MaxValue / 2 ⇒ Int.MaxValue
+                  case z                         ⇒ Math.max(Integer.highestOneBit(z) * 2, 32)
+                })
+              concatNames(i, null, b.append(first).append('-').append(n))
+            } else concatNames(i, n, null)
+          case _ ⇒ concatNames(i, first, buf)
         }
-      }
-      if (sb.length == 0) None
-      else Some(sb.toString)
+      else if (buf eq null) first
+      else buf.toString
+
+    concatNames(attributeList.iterator, null, null) match {
+      case null ⇒ default
+      case some ⇒ some
     }
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] def nameOrDefault(default: String = "unknown-operation"): String = nameLifted match {
-    case Some(name) ⇒ name
-    case _          ⇒ default
   }
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] def nameOption: Option[String] =
-    attributeList.collectFirst { case Name(name) ⇒ name }
 
   /**
    * INTERNAL API

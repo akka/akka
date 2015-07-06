@@ -68,7 +68,7 @@ private[akka] case class ActorMaterializerImpl(
   override def materialize[Mat](runnableGraph: Graph[ClosedShape, Mat]): Mat = {
     if (haveShutDown.get())
       throw new IllegalStateException("Attempted to call materialize() after the ActorMaterializer has been shut down.")
-    if (StreamLayout.Debug) runnableGraph.module.validate()
+    if (StreamLayout.Debug) StreamLayout.validate(runnableGraph.module)
 
     val session = new MaterializerSession(runnableGraph.module) {
       private val flowName = createFlowName()
@@ -299,8 +299,6 @@ private[akka] object ActorProcessorFactory {
     val settings = materializer.effectiveSettings(att)
     def interp(s: Stage[_, _]): (Props, Unit) = (ActorInterpreter.props(settings, List(s), materializer, att), ())
     op match {
-      case Identity(_)                ⇒ throw new AssertionError("Identity cannot end up in ActorProcessorFactory")
-      case Fused(ops, _)              ⇒ (ActorInterpreter.props(settings, ops, materializer, att), ())
       case Map(f, _)                  ⇒ interp(fusing.Map(f, settings.supervisionDecider))
       case Filter(p, _)               ⇒ interp(fusing.Filter(p, settings.supervisionDecider))
       case Drop(n, _)                 ⇒ interp(fusing.Drop(n))
@@ -328,6 +326,7 @@ private[akka] object ActorProcessorFactory {
         val s_m = mkStageAndMat()
         (ActorInterpreter.props(settings, List(s_m._1), materializer, att), s_m._2)
       case DirectProcessor(p, m) ⇒ throw new AssertionError("DirectProcessor cannot end up in ActorProcessorFactory")
+      case Identity(_)           ⇒ throw new AssertionError("Identity cannot end up in ActorProcessorFactory")
     }
   }
 

@@ -3,23 +3,22 @@
  */
 package akka.stream.scaladsl
 
-import akka.actor.ActorSystem
-import akka.stream.impl.SplitDecision._
+import scala.language.higherKinds
+
 import akka.event.LoggingAdapter
-import akka.stream.impl.Stages.{ DirectProcessor, MaterializingStageFactory, StageModule }
-import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream._
 import akka.stream.Attributes._
+import akka.stream.stage._
+import akka.stream.impl.{ Stages, StreamLayout }
+import akka.stream.impl.SplitDecision._
+import akka.stream.impl.Stages.{ DirectProcessor, MaterializingStageFactory, StageModule }
+import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.util.Collections.EmptyImmutableSeq
 import org.reactivestreams.{ Subscription, Publisher, Subscriber, Processor }
-import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.Future
-import scala.language.higherKinds
-import akka.stream.stage._
-import akka.stream.impl.{ Stages, StreamLayout, FlowModule }
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -74,7 +73,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
       val flowCopy = flow.module.carbonCopy
       new Flow(
         module
-          .growConnect(flowCopy, shape.outlet, flowCopy.shape.inlets.head, combine)
+          .fuse(flowCopy, shape.outlet, flowCopy.shape.inlets.head, combine)
           .replaceShape(FlowShape(shape.inlet, flowCopy.shape.outlets.head)))
     }
   }
@@ -120,7 +119,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
       val sinkCopy = sink.module.carbonCopy
       new Sink(
         module
-          .growConnect(sinkCopy, shape.outlet, sinkCopy.shape.inlets.head, combine)
+          .fuse(sinkCopy, shape.outlet, sinkCopy.shape.inlets.head, combine)
           .replaceShape(SinkShape(shape.inlet)))
     }
   }
@@ -162,9 +161,9 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     val flowCopy = flow.module.carbonCopy
     RunnableGraph(
       module
-        .grow(flowCopy, combine)
-        .connect(shape.outlet, flowCopy.shape.inlets.head)
-        .connect(flowCopy.shape.outlets.head, shape.inlet))
+        .compose(flowCopy, combine)
+        .wire(shape.outlet, flowCopy.shape.inlets.head)
+        .wire(flowCopy.shape.outlets.head, shape.inlet))
   }
 
   /**
@@ -207,9 +206,9 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     val ins = copy.shape.inlets
     val outs = copy.shape.outlets
     new Flow(module
-      .grow(copy, combine)
-      .connect(shape.outlet, ins(0))
-      .connect(outs(1), shape.inlet)
+      .compose(copy, combine)
+      .wire(shape.outlet, ins(0))
+      .wire(outs(1), shape.inlet)
       .replaceShape(FlowShape(ins(1), outs(0))))
   }
 
@@ -247,18 +246,18 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     //No need to copy here, op is a fresh instance
     if (op.isInstanceOf[Stages.Identity]) this.asInstanceOf[Repr[U, Mat]]
     else if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat]]
-    else new Flow(module.growConnect(op, shape.outlet, op.inPort).replaceShape(FlowShape(shape.inlet, op.outPort)))
+    else new Flow(module.fuse(op, shape.outlet, op.inPort).replaceShape(FlowShape(shape.inlet, op.outPort)))
   }
 
   private[stream] def andThenMat[U, Mat2](op: MaterializingStageFactory): Repr[U, Mat2] = {
     if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat2]]
-    else new Flow(module.growConnect(op, shape.outlet, op.inPort, Keep.right).replaceShape(FlowShape(shape.inlet, op.outPort)))
+    else new Flow(module.fuse(op, shape.outlet, op.inPort, Keep.right).replaceShape(FlowShape(shape.inlet, op.outPort)))
   }
 
   private[akka] def andThenMat[U, Mat2, O >: Out](processorFactory: () ⇒ (Processor[O, U], Mat2)): Repr[U, Mat2] = {
     val op = Stages.DirectProcessor(processorFactory.asInstanceOf[() ⇒ (Processor[Any, Any], Any)])
     if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat2]]
-    else new Flow[In, U, Mat2](module.growConnect(op, shape.outlet, op.inPort, Keep.right).replaceShape(FlowShape(shape.inlet, op.outPort)))
+    else new Flow[In, U, Mat2](module.fuse(op, shape.outlet, op.inPort, Keep.right).replaceShape(FlowShape(shape.inlet, op.outPort)))
   }
 
   /**
@@ -266,10 +265,9 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
-  override def withAttributes(attr: Attributes): Repr[Out, Mat] = {
+  override def withAttributes(attr: Attributes): Repr[Out, Mat] =
     if (this.module eq EmptyModule) this
-    else new Flow(module.withAttributes(attr).wrap())
-  }
+    else new Flow(module.withAttributes(attr).nest())
 
   override def named(name: String): Repr[Out, Mat] = withAttributes(Attributes.name(name))
 
@@ -278,9 +276,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a of a [[Source#subscriber]] and
    * and `Publisher` of a [[Sink#publisher]].
    */
-  def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(implicit materializer: Materializer): (Mat1, Mat2) = {
+  def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(implicit materializer: Materializer): (Mat1, Mat2) =
     Source.wrap(source).via(this).toMat(sink)(Keep.both).run()
-  }
 
   /**
    * Converts this Flow to a [[RunnableGraph]] that materializes to a Reactive Streams [[org.reactivestreams.Processor]]
@@ -304,7 +301,6 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(this)
-
 }
 
 object Flow extends FlowApply {
@@ -362,7 +358,7 @@ case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) 
   def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
   override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
-    new RunnableGraph(module.withAttributes(attr).wrap)
+    new RunnableGraph(module.withAttributes(attr).nest)
 
   override def named(name: String): RunnableGraph[Mat] = withAttributes(Attributes.name(name))
 

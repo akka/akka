@@ -5,8 +5,9 @@ package akka.stream.impl
 
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
-import org.reactivestreams.{ Processor, Subscription, Subscriber, Publisher }
+import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 import akka.stream._
+import akka.event.Logging.simpleName
 
 class StreamLayoutSpec extends AkkaSpec {
   import StreamLayout._
@@ -40,7 +41,7 @@ class StreamLayoutSpec extends AkkaSpec {
       stage1.isSource should be(false)
 
       val stage2 = testStage()
-      val flow12 = stage1.grow(stage2, Keep.none).connect(stage1.outPorts.head, stage2.inPorts.head)
+      val flow12 = stage1.compose(stage2, Keep.none).wire(stage1.outPorts.head, stage2.inPorts.head)
 
       flow12.inPorts should be(stage1.inPorts)
       flow12.outPorts should be(stage2.outPorts)
@@ -65,7 +66,7 @@ class StreamLayoutSpec extends AkkaSpec {
       sink3.isSink should be(true)
       sink3.isSource should be(false)
 
-      val source012 = source0.grow(flow12, Keep.none).connect(source0.outPorts.head, flow12.inPorts.head)
+      val source012 = source0.compose(flow12, Keep.none).wire(source0.outPorts.head, flow12.inPorts.head)
       source012.inPorts.size should be(0)
       source012.outPorts should be(flow12.outPorts)
       source012.isRunnable should be(false)
@@ -73,7 +74,7 @@ class StreamLayoutSpec extends AkkaSpec {
       source012.isSink should be(false)
       source012.isSource should be(true)
 
-      val sink123 = flow12.grow(sink3, Keep.none).connect(flow12.outPorts.head, sink3.inPorts.head)
+      val sink123 = flow12.compose(sink3, Keep.none).wire(flow12.outPorts.head, sink3.inPorts.head)
       sink123.inPorts should be(flow12.inPorts)
       sink123.outPorts.size should be(0)
       sink123.isRunnable should be(false)
@@ -81,13 +82,13 @@ class StreamLayoutSpec extends AkkaSpec {
       sink123.isSink should be(true)
       sink123.isSource should be(false)
 
-      val runnable0123a = source0.grow(sink123, Keep.none).connect(source0.outPorts.head, sink123.inPorts.head)
-      val runnable0123b = source012.grow(sink3, Keep.none).connect(source012.outPorts.head, sink3.inPorts.head)
+      val runnable0123a = source0.compose(sink123, Keep.none).wire(source0.outPorts.head, sink123.inPorts.head)
+      val runnable0123b = source012.compose(sink3, Keep.none).wire(source012.outPorts.head, sink3.inPorts.head)
 
       val runnable0123c =
         source0
-          .grow(flow12, Keep.none).connect(source0.outPorts.head, flow12.inPorts.head)
-          .grow(sink3, Keep.none).connect(flow12.outPorts.head, sink3.inPorts.head)
+          .compose(flow12, Keep.none).wire(source0.outPorts.head, flow12.inPorts.head)
+          .compose(sink3, Keep.none).wire(flow12.outPorts.head, sink3.inPorts.head)
 
       runnable0123a.inPorts.size should be(0)
       runnable0123a.outPorts.size should be(0)
@@ -111,9 +112,9 @@ class StreamLayoutSpec extends AkkaSpec {
       val stage2 = testStage()
       val sink = testSink()
 
-      val runnable = source.grow(stage1, Keep.none).connect(source.outPorts.head, stage1.inPorts.head)
-        .grow(stage2, Keep.none).connect(stage1.outPorts.head, stage2.inPorts.head)
-        .grow(sink, Keep.none).connect(stage2.outPorts.head, sink.inPorts.head)
+      val runnable = source.compose(stage1, Keep.none).wire(source.outPorts.head, stage1.inPorts.head)
+        .compose(stage2, Keep.none).wire(stage1.outPorts.head, stage2.inPorts.head)
+        .compose(sink, Keep.none).wire(stage2.outPorts.head, sink.inPorts.head)
 
       checkMaterialized(runnable)
     }
