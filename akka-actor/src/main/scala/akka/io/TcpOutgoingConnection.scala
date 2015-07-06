@@ -30,7 +30,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
   import context._
   import connect._
 
-  context.watch(commander) // sign death pact
+  signDeathPact(commander)
 
   options.foreach(_.beforeConnect(channel.socket))
   localAddress.foreach(channel.socket.bind)

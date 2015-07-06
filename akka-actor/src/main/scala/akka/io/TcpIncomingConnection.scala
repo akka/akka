@@ -23,7 +23,7 @@ private[io] class TcpIncomingConnection(_tcp: TcpExt,
                                         readThrottling: Boolean)
   extends TcpConnection(_tcp, _channel, readThrottling) {
 
-  context.watch(bindHandler) // sign death pact
+  signDeathPact(bindHandler)
 
   registry.register(channel, initialOps = 0)
 
