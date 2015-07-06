@@ -3,20 +3,12 @@
  */
 package akka.stream.impl
 
-import java.io.File
-import java.util.concurrent.atomic.AtomicReference
 import akka.actor.{ Deploy, ActorRef, Props }
-import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.Attributes
-import akka.stream.{ Inlet, Shape, SinkShape }
-import akka.util.ByteString
+import akka.stream.{ Attributes, Inlet, Shape, SinkShape, MaterializationContext, ActorMaterializer }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
-import akka.stream.MaterializationContext
-import akka.stream.ActorMaterializer
 
 /**
  * INTERNAL API
@@ -36,12 +28,12 @@ private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) exte
 
   override def subModules: Set[Module] = Set.empty
 
-  def amendShape(attr: Attributes): SinkShape[In] = {
-    attr.nameOption match {
-      case None ⇒ shape
-      case s: Some[String] if s == attributes.nameOption ⇒ shape
-      case Some(name) ⇒ shape.copy(inlet = Inlet(name + ".in"))
-    }
+  protected def amendShape(attr: Attributes): SinkShape[In] = {
+    val thisN = attributes.nameOrDefault(null)
+    val thatN = attr.nameOrDefault(null)
+
+    if ((thatN eq null) || thisN == thatN) shape
+    else shape.copy(inlet = Inlet(thatN + ".in"))
   }
 }
 

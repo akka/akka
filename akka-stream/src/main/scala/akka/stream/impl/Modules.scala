@@ -3,17 +3,14 @@
  */
 package akka.stream.impl
 
-import java.io.{ InputStream, File }
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.{ ActorRef, Cancellable, PoisonPill, Props }
-import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.impl.StreamLayout.Module
 import akka.stream._
-import akka.util.ByteString
 import org.reactivestreams._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ Promise }
 import scala.util.{ Failure, Success }
 
 /**
@@ -34,13 +31,13 @@ private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out
 
   override def subModules: Set[Module] = Set.empty
 
-  def amendShape(attr: Attributes): SourceShape[Out] =
-    attr.nameOption match {
-      case None ⇒ shape
-      case s: Some[String] if s == attributes.nameOption ⇒ shape
-      case Some(name) ⇒ shape.copy(outlet = Outlet(name + ".out"))
-    }
+  protected def amendShape(attr: Attributes): SourceShape[Out] = {
+    val thisN = attributes.nameOrDefault(null)
+    val thatN = attr.nameOrDefault(null)
 
+    if ((thatN eq null) || thisN == thatN) shape
+    else shape.copy(outlet = Outlet(thatN + ".out"))
+  }
 }
 
 /**

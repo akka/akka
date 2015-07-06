@@ -36,7 +36,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
     new Sink(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   override def withAttributes(attr: Attributes): Sink[In, Mat] =
-    new Sink(module.withAttributes(attr).wrap())
+    new Sink(module.withAttributes(attr).nest())
 
   override def named(name: String): Sink[In, Mat] = withAttributes(Attributes.name(name))
 
