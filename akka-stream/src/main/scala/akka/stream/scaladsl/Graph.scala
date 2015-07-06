@@ -45,7 +45,7 @@ class Merge[T] private (inputPorts: Int,
   extends Graph[UniformFanInShape[T, T], Unit] {
 
   override def withAttributes(attr: Attributes): Merge[T] =
-    new Merge(inputPorts, shape, module.withAttributes(attr).wrap())
+    new Merge(inputPorts, shape, module.withAttributes(attr).nest())
 
   override def named(name: String): Merge[T] = withAttributes(Attributes.name(name))
 }
@@ -94,7 +94,7 @@ class MergePreferred[T] private (secondaryPorts: Int,
   extends Graph[MergePreferred.MergePreferredShape[T], Unit] {
 
   override def withAttributes(attr: Attributes): MergePreferred[T] =
-    new MergePreferred(secondaryPorts, shape, module.withAttributes(attr).wrap())
+    new MergePreferred(secondaryPorts, shape, module.withAttributes(attr).nest())
 
   override def named(name: String): MergePreferred[T] = withAttributes(Attributes.name(name))
 }
@@ -132,7 +132,7 @@ class Broadcast[T] private (outputPorts: Int,
   extends Graph[UniformFanOutShape[T, T], Unit] {
 
   override def withAttributes(attr: Attributes): Broadcast[T] =
-    new Broadcast(outputPorts, shape, module.withAttributes(attr).wrap())
+    new Broadcast(outputPorts, shape, module.withAttributes(attr).nest())
 
   override def named(name: String): Broadcast[T] = withAttributes(Attributes.name(name))
 }
@@ -175,7 +175,7 @@ class Balance[T] private (outputPorts: Int,
   extends Graph[UniformFanOutShape[T, T], Unit] {
 
   override def withAttributes(attr: Attributes): Balance[T] =
-    new Balance(outputPorts, waitForAllDownstreams, shape, module.withAttributes(attr).wrap())
+    new Balance(outputPorts, waitForAllDownstreams, shape, module.withAttributes(attr).nest())
 
   override def named(name: String): Balance[T] = withAttributes(Attributes.name(name))
 }
@@ -208,7 +208,7 @@ class Zip[A, B] private (override val shape: FanInShape2[A, B, (A, B)],
   extends Graph[FanInShape2[A, B, (A, B)], Unit] {
 
   override def withAttributes(attr: Attributes): Zip[A, B] =
-    new Zip(shape, module.withAttributes(attr).wrap())
+    new Zip(shape, module.withAttributes(attr).nest())
 
   override def named(name: String): Zip[A, B] = withAttributes(Attributes.name(name))
 }
@@ -257,7 +257,7 @@ class Unzip[A, B] private (override val shape: FanOutShape2[(A, B), A, B],
   extends Graph[FanOutShape2[(A, B), A, B], Unit] {
 
   override def withAttributes(attr: Attributes): Unzip[A, B] =
-    new Unzip(shape, module.withAttributes(attr).wrap())
+    new Unzip(shape, module.withAttributes(attr).nest())
 
   override def named(name: String): Unzip[A, B] = withAttributes(Attributes.name(name))
 }
@@ -292,7 +292,7 @@ class Concat[T] private (override val shape: UniformFanInShape[T, T],
   extends Graph[UniformFanInShape[T, T], Unit] {
 
   override def withAttributes(attr: Attributes): Concat[T] =
-    new Concat(shape, module.withAttributes(attr).wrap())
+    new Concat(shape, module.withAttributes(attr).nest())
 
   override def named(name: String): Concat[T] = withAttributes(Attributes.name(name))
 }
@@ -306,13 +306,13 @@ object FlowGraph extends GraphApply {
       val flowCopy = via.module.carbonCopy
       moduleInProgress =
         moduleInProgress
-          .grow(flowCopy)
-          .connect(from, flowCopy.shape.inlets.head)
-          .connect(flowCopy.shape.outlets.head, to)
+          .compose(flowCopy)
+          .wire(from, flowCopy.shape.inlets.head)
+          .wire(flowCopy.shape.outlets.head, to)
     }
 
     def addEdge[T](from: Outlet[T], to: Inlet[T]): Unit = {
-      moduleInProgress = moduleInProgress.connect(from, to)
+      moduleInProgress = moduleInProgress.wire(from, to)
     }
 
     /**
@@ -321,9 +321,9 @@ object FlowGraph extends GraphApply {
      * connected.
      */
     def add[S <: Shape](graph: Graph[S, _]): S = {
-      if (StreamLayout.Debug) graph.module.validate()
+      if (StreamLayout.Debug) StreamLayout.validate(graph.module)
       val copy = graph.module.carbonCopy
-      moduleInProgress = moduleInProgress.grow(copy)
+      moduleInProgress = moduleInProgress.compose(copy)
       graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
     }
 
@@ -334,9 +334,9 @@ object FlowGraph extends GraphApply {
      * Flow, Sink and Graph.
      */
     private[stream] def add[S <: Shape, A](graph: Graph[S, _], transform: (A) ⇒ Any): S = {
-      if (StreamLayout.Debug) graph.module.validate()
+      if (StreamLayout.Debug) StreamLayout.validate(graph.module)
       val copy = graph.module.carbonCopy
-      moduleInProgress = moduleInProgress.grow(copy.transformMaterializedValue(transform.asInstanceOf[Any ⇒ Any]))
+      moduleInProgress = moduleInProgress.compose(copy.transformMaterializedValue(transform.asInstanceOf[Any ⇒ Any]))
       graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
     }
 
@@ -347,9 +347,9 @@ object FlowGraph extends GraphApply {
      * Flow, Sink and Graph.
      */
     private[stream] def add[S <: Shape, A, B](graph: Graph[S, _], combine: (A, B) ⇒ Any): S = {
-      if (StreamLayout.Debug) graph.module.validate()
+      if (StreamLayout.Debug) StreamLayout.validate(graph.module)
       val copy = graph.module.carbonCopy
-      moduleInProgress = moduleInProgress.grow(copy, combine)
+      moduleInProgress = moduleInProgress.compose(copy, combine)
       graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
     }
 
@@ -372,15 +372,15 @@ object FlowGraph extends GraphApply {
      */
     def materializedValue: Outlet[M] = {
       val module = new MaterializedValueSource[Any]
-      moduleInProgress = moduleInProgress.grow(module)
+      moduleInProgress = moduleInProgress.compose(module)
       module.shape.outlet.asInstanceOf[Outlet[M]]
     }
 
     private[stream] def andThen(port: OutPort, op: StageModule): Unit = {
       moduleInProgress =
         moduleInProgress
-          .grow(op)
-          .connect(port, op.inPort)
+          .compose(op)
+          .wire(port, op.inPort)
     }
 
     private[stream] def buildRunnable[Mat](): RunnableGraph[Mat] = {
@@ -389,7 +389,7 @@ object FlowGraph extends GraphApply {
           "Cannot build the RunnableGraph because there are unconnected ports: " +
             (moduleInProgress.outPorts ++ moduleInProgress.inPorts).mkString(", "))
       }
-      new RunnableGraph(moduleInProgress.wrap())
+      new RunnableGraph(moduleInProgress.nest())
     }
 
     private[stream] def buildSource[T, Mat](outlet: Outlet[T]): Source[T, Mat] = {
@@ -400,7 +400,7 @@ object FlowGraph extends GraphApply {
           s"Cannot build Source with open inputs (${moduleInProgress.inPorts.mkString(",")}) and outputs (${moduleInProgress.outPorts.mkString(",")})")
       if (moduleInProgress.outPorts.head != outlet)
         throw new IllegalArgumentException(s"provided Outlet $outlet does not equal the module’s open Outlet ${moduleInProgress.outPorts.head}")
-      new Source(moduleInProgress.replaceShape(SourceShape(outlet)).wrap())
+      new Source(moduleInProgress.replaceShape(SourceShape(outlet)).nest())
     }
 
     private[stream] def buildFlow[In, Out, Mat](inlet: Inlet[In], outlet: Outlet[Out]): Flow[In, Out, Mat] = {
@@ -411,7 +411,7 @@ object FlowGraph extends GraphApply {
         throw new IllegalArgumentException(s"provided Outlet $outlet does not equal the module’s open Outlet ${moduleInProgress.outPorts.head}")
       if (moduleInProgress.inPorts.head != inlet)
         throw new IllegalArgumentException(s"provided Inlet $inlet does not equal the module’s open Inlet ${moduleInProgress.inPorts.head}")
-      new Flow(moduleInProgress.replaceShape(FlowShape(inlet, outlet)).wrap())
+      new Flow(moduleInProgress.replaceShape(FlowShape(inlet, outlet)).nest())
     }
 
     private[stream] def buildBidiFlow[I1, O1, I2, O2, Mat](shape: BidiShape[I1, O1, I2, O2]): BidiFlow[I1, O1, I2, O2, Mat] = {
@@ -422,7 +422,7 @@ object FlowGraph extends GraphApply {
         throw new IllegalArgumentException(s"provided Outlets [${shape.outlets.mkString(",")}] does not equal the module’s open Outlets [${moduleInProgress.outPorts.mkString(",")}]")
       if (moduleInProgress.inPorts.toSet != shape.inlets.toSet)
         throw new IllegalArgumentException(s"provided Inlets [${shape.inlets.mkString(",")}] does not equal the module’s open Inlets [${moduleInProgress.inPorts.mkString(",")}]")
-      new BidiFlow(moduleInProgress.replaceShape(shape).wrap())
+      new BidiFlow(moduleInProgress.replaceShape(shape).nest())
     }
 
     private[stream] def buildSink[T, Mat](inlet: Inlet[T]): Sink[T, Mat] = {
@@ -433,7 +433,7 @@ object FlowGraph extends GraphApply {
           s"Cannot build Sink with open inputs (${moduleInProgress.inPorts.mkString(",")}) and outputs (${moduleInProgress.outPorts.mkString(",")})")
       if (moduleInProgress.inPorts.head != inlet)
         throw new IllegalArgumentException(s"provided Inlet $inlet does not equal the module’s open Inlet ${moduleInProgress.inPorts.head}")
-      new Sink(moduleInProgress.replaceShape(SinkShape(inlet)).wrap())
+      new Sink(moduleInProgress.replaceShape(SinkShape(inlet)).nest())
     }
 
     private[stream] def module: Module = moduleInProgress

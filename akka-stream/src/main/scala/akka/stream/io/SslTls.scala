@@ -10,6 +10,7 @@ import javax.net.ssl._
 import scala.annotation.varargs
 import scala.collection.immutable
 import java.security.cert.Certificate
+import akka.event.Logging.simpleName
 
 /**
  * Stream cipher support based upon JSSE.

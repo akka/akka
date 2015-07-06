@@ -20,6 +20,7 @@ import scala.concurrent.{ Future, Promise }
 private[akka] final class SynchronousFileSource(f: File, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[Long]](shape) {
   override def create(context: MaterializationContext) = {
+    // FIXME rewrite to be based on AsyncStage rather than dangerous downcasts
     val mat = ActorMaterializer.downcast(context.materializer)
     val settings = mat.effectiveSettings(context.effectiveAttributes)
 
