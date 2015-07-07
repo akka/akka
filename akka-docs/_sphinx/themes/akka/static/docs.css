@@ -174,3 +174,7 @@ strong {color: #0B5567; }
 .footer h5 { text-transform: none; }
 
 .footnote .label { background-color: transparent }
+
+.section-marker { position: absolute; width: 1em; margin-left: -1em; display: block; text-decoration: none; visibility: hidden; text-align: center; font-weight: normal; }
+.section-marker:hover { text-decoration: none; }
+.section h2:hover > a,.section h3:hover > a,.section h4:hover > a,.section h5:hover > a { visibility: visible; }
