@@ -4,6 +4,8 @@
 
 package akka.persistence
 
+import akka.pattern.BackoffSupervisor
+
 import scala.concurrent.duration._
 import akka.actor._
 import akka.testkit._

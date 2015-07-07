@@ -5,6 +5,8 @@
 package docs.persistence;
 
 import java.util.concurrent.TimeUnit;
+
+import akka.pattern.BackoffSupervisor;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorPath;
 import akka.actor.ActorRef;
