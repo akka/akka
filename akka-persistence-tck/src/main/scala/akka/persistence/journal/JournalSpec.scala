@@ -149,6 +149,7 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
       subscribe[DeleteMessagesTo](sub.ref)
       journal ! cmd
       sub.expectMsg(cmd)
+      receiverProbe2.expectMsg(DeleteMessagesSuccess(cmd.toSequenceNr))
 
       journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       List(4, 5) foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }

@@ -353,11 +353,11 @@ Persisting, deleting and replaying messages can eitehr succeed or fail.
 +---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
 | ``persist`` / ``persistAsync``  | persist handler invoked     | ``onPersistFailure``          | Actor is stopped.                 |
 |                                 |                             +-------------------------------+-----------------------------------+
-|                                 |                             | ``onPersistRejected``         | ---                               |
+|                                 |                             | ``onPersistRejected``         | No automatic actions.             |
 +---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
 | ``recovery``                    | ``RecoveryCompleted``       | ``onRecoveryFailure``         | Actor is stopped.                 |
 +---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
-| ``deleteMessages``              | ``DeleteMessagesSuccess``   | ``DeleteMessagesFailure``     | ---                               |
+| ``deleteMessages``              | ``DeleteMessagesSuccess``   | ``DeleteMessagesFailure``     | No automatic actions.             |
 +---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
 
 The most important operations (``persist`` and ``recovery``) have failure handlers modelled as explicit callbacks which
@@ -499,14 +499,14 @@ status messages as illustrated in the following table.
 ============================================== ========================== ==============================
 **Method**                                     **Success**                **Failure message**
 ============================================== ========================== ==============================
-``saveSnapshot``                               ``SaveSnapshotSuccess``    ``SaveSnapshotFailure``
+``saveSnapshot(Any)``                          ``SaveSnapshotSuccess``    ``SaveSnapshotFailure``
 ``deleteSnapshot(Long)``                       ``DeleteSnapshotSuccess``  ``DeleteSnapshotFailure``
 ``deleteSnapshots(SnapshotSelectionCriteria)`` ``DeleteSnapshotsSuccess`` ``DeleteSnapshotsFailure``
 ============================================== ========================== ==============================
 
 If failure messages are left unhandled by the actor, a default warning log message will be logged for each incoming failure message.
 No default action is performed on the success messages, however you're free to handle them e.g. in order to delete
-an in memory representation of the snapshot, or in the case of failure to attempt save the snapshot aggain.
+an in memory representation of the snapshot, or in the case of failure to attempt save the snapshot again.
 
 .. _at-least-once-delivery:
 
