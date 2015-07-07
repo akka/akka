@@ -346,17 +346,19 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
       val writeButIgnoreRead: Flow[ByteString, ByteString, Unit] =
         Flow.wrap(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
-      val binding = Tcp()
-        .bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false)
-        .toMat(Sink.foreach(_.flow.join(writeButIgnoreRead).run()))(Keep.left).run()
+      val binding =
+        Await.result(
+          Tcp().bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
+            conn.flow.join(writeButIgnoreRead).run()
+          })(Keep.left).run(), 3.seconds)
 
-      val result = Source.repeat(ByteString("client data"))
+      val result = Source.lazyEmpty[ByteString]
         .via(Tcp().outgoingConnection(serverAddress.getHostName, serverAddress.getPort))
         .runFold(ByteString.empty)(_ ++ _)
 
-      val r: ByteString = Await.result(result, 3.seconds)
-      r should ===(ByteString("Early response"))
-      binding.foreach(_.unbind())
+      Await.result(result, 3.seconds) should ===(ByteString("Early response"))
+
+      binding.unbind()
     }
 
     "Echo should work even if server is in full close mode" in {
@@ -364,9 +366,11 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
 
       val serverAddress = temporaryServerAddress()
 
-      val binding = Tcp().bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
-        conn.flow.join(Flow[ByteString]).run()
-      })(Keep.left).run()
+      val binding =
+        Await.result(
+          Tcp().bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
+            conn.flow.join(Flow[ByteString]).run()
+          })(Keep.left).run(), 3.seconds)
 
       val result = Source(immutable.Iterable.fill(10000)(ByteString(0)))
         .via(Tcp().outgoingConnection(serverAddress, halfClose = true))
@@ -374,7 +378,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
 
       Await.result(result, 3.seconds) should ===(10000)
 
-      binding.foreach(_.unbind())
+      binding.unbind()
     }
 
     "handle when connection actor terminates unexpectedly" in {
