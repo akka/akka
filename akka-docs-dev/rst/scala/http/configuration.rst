@@ -16,8 +16,8 @@ akka-http-core
    :language: none
 
 
-akka-http-core-scala
-~~~~~~~~~~~~~~~~~~~~
+akka-http
+~~~~~~~~~
 
 .. literalinclude:: ../../../../akka-http/src/main/resources/reference.conf
    :language: none
