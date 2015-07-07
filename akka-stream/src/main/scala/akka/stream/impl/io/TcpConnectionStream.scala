@@ -148,8 +148,7 @@ private[akka] abstract class TcpStreamActor(val settings: ActorMaterializerSetti
             // Reading has stopped, either because of cancel, or PeerClosed, just Close now
             connection ! Close
             tryShutdown()
-          }
-          else {
+          } else {
             // We still read, so we only close the write side
             connection ! ConfirmedClose
           }
