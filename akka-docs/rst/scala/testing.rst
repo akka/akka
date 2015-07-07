@@ -54,6 +54,16 @@ obtaining a reference to the underlying actor instance, or by invoking or
 querying the actor's behaviour (:meth:`receive`). Each one warrants its own
 section below.
 
+.. note::
+  It is highly recommended to stick to traditional behavioural testing (using messaging
+  to ask the Actor to reply with the state you want to run assertions against),
+  instead of using ``TestActorRef`` whenever possible.
+
+  Due to the synchronous nature of ``TestActorRef`` it will **not** work with some support
+  traits that Akka provides as they require asynchronous behaviours to function properly.
+  Examples of traits that do not mix well with test actor refs are :ref:`PersistentActor <event-sourcing>`
+  and :ref:`AtLeastOnceDelivery <at-least-once-delivery>` provided by :ref:`Akka Persistence <persistence-scala>`.
+
 Obtaining a Reference to an :class:`Actor`
 ------------------------------------------
 
