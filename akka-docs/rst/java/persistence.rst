@@ -365,11 +365,11 @@ Persisting, deleting and replaying messages can eitehr succeed or fail.
 +---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
 | ``persist`` / ``persistAsync``  | persist handler invoked     | ``onPersistFailure``          | Actor is stopped.                 |
 |                                 |                             +-------------------------------+-----------------------------------+
-|                                 |                             | ``onPersistRejected``         | ---                               |
+|                                 |                             | ``onPersistRejected``         | No automatic actions.             |
 +---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
 | ``recovery``                    | ``RecoverySuccess``         | ``onRecoveryFailure``         | Actor is stopped.                 |
 +---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
-| ``deleteMessages``              | ``DeleteMessagesSuccess``   | ``DeleteMessagesFailure``     | ---                               |
+| ``deleteMessages``              | ``DeleteMessagesSuccess``   | ``DeleteMessagesFailure``     | No automatic actions.             |
 +---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
 
 The most important operations (``persist`` and ``recovery``) have failure handlers modelled as explicit callbacks which
@@ -496,6 +496,20 @@ when the snapshot was taken.
 
 To bulk-delete a range of snapshots matching ``SnapshotSelectionCriteria``,
 persistent actors should use the ``deleteSnapshots`` method.
+
+Snapshot status handling
+------------------------
+
+Saving or deleting snapshots can either succeed or fail – this information is reported back to the persistent actor via
+status messages as illustrated in the following table.
+
+============================================== ========================== ==============================
+**Method**                                     **Success**                **Failure message**
+============================================== ========================== ==============================
+``saveSnapshot(Any)``                          ``SaveSnapshotSuccess``    ``SaveSnapshotFailure``
+``deleteSnapshot(Long)``                       ``DeleteSnapshotSuccess``  ``DeleteSnapshotFailure``
+``deleteSnapshots(SnapshotSelectionCriteria)`` ``DeleteSnapshotsSuccess`` ``DeleteSnapshotsFailure``
+============================================== ========================== ==============================
 
 .. _at-least-once-delivery-java:
 
