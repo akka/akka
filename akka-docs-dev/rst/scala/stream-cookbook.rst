@@ -22,7 +22,7 @@ Working with Flows
 ==================
 
 In this collection we show simple recipes that involve linear flows. The recipes in this section are rather
-general, more targeted recipes are available as separate sections ("Working with rate", "Working with IO").
+general, more targeted recipes are available as separate sections (:ref:`stream-rate-scala`, :ref:`stream-io-scala`).
 
 Logging elements of a stream
 ----------------------------
@@ -34,17 +34,15 @@ While this recipe is rather simplistic, it is often suitable for a quick debug s
 
 .. includecode:: code/docs/stream/cookbook/RecipeLoggingElements.scala#println-debug
 
-If a proper logging solution is needed another approach is to create a :class:`PushStage` and override all upstream event
-handlers, emitting log information through an Akka :class:`LoggingAdapter`. This small stage does not influence
-the elements flowing in the stream, it just emits them unmodified by calling ``ctx.push(elem)`` in its ``onPush``
-event handler logic.
+Another approach to logging is to use ``log()`` operation which allows configuring logging for elements flowing through
+the stream as well as completion and erroring.
 
 .. includecode:: code/docs/stream/cookbook/RecipeLoggingElements.scala#log-custom
 
 Flattening a stream of sequences
 --------------------------------
 
-**Problem:** A stream is given as a stream of sequence of elements, but a stream of elements needed instead, streaming
+**Situation:** A stream is given as a stream of sequence of elements, but a stream of elements needed instead, streaming
 all the nested elements inside the sequences separately.
 
 The ``mapConcat`` operation can be used to implement a one-to-many transformation of elements using a mapper function
@@ -60,8 +58,8 @@ Draining a stream to a strict collection
 
 In this recipe we will use the ``grouped`` stream operation that groups incoming elements into a stream of limited
 size collections (it can be seen as the almost opposite version of the "Flattening a stream of sequences" recipe
-we showed before). By using a ``grouped(MaxAllowedSeqSize).runWith(Sink.head)`` we first create a stream of groups
-with maximum size of ``MaxAllowedSeqSize`` and then we take the first element of this stream. What we get is a
+we showed before). By using a ``grouped(MaxAllowedSeqSize)`` we create a stream of groups
+with maximum size of ``MaxAllowedSeqSize`` and then we take the first element of this stream by attaching a ``Sink.head``. What we get is a
 :class:`Future` containing a sequence with all the elements of the original up to ``MaxAllowedSeqSize`` size (further
 elements are dropped).
 
@@ -70,7 +68,7 @@ elements are dropped).
 Calculating the digest of a ByteString stream
 ---------------------------------------------
 
-**Problem:** A stream of bytes is given as a stream of ``ByteStrings`` and we want to calculate the cryptographic digest
+**Situation:** A stream of bytes is given as a stream of ``ByteStrings`` and we want to calculate the cryptographic digest
 of the stream.
 
 This recipe uses a :class:`PushPullStage` to host a mutable :class:`MessageDigest` class (part of the Java Cryptography
@@ -80,8 +78,8 @@ chunk will arrive (``onPush``) which we use to update the digest, then it will p
 
 Eventually the stream of ``ByteStrings`` depletes and we get a notification about this event via ``onUpstreamFinish``.
 At this point we want to emit the digest value, but we cannot do it in this handler directly. Instead we call
-``ctx.absorbTermination`` signalling to our context that we do not yet want to finish. When the environment decides that
-we can emit further elements ``onPull`` is called again, and we see ``ctx.isFinishing`` returning true (since the upstream
+``ctx.absorbTermination()`` signalling to our context that we do not yet want to finish. When the environment decides that
+we can emit further elements ``onPull`` is called again, and we see ``ctx.isFinishing`` returning ``true`` (since the upstream
 source has been depleted already). Since we only want to emit a final element it is enough to call ``ctx.pushAndFinish``
 passing the digest ByteString to be emitted.
 
@@ -92,7 +90,7 @@ passing the digest ByteString to be emitted.
 Parsing lines from a stream of ByteStrings
 ------------------------------------------
 
-**Problem:** A stream of bytes is given as a stream of ``ByteStrings`` containing lines terminated by line ending
+**Situation:** A stream of bytes is given as a stream of ``ByteStrings`` containing lines terminated by line ending
 characters (or, alternatively, containing binary frames delimited by a special delimiter byte sequence) which
 needs to be parsed.
 
@@ -113,7 +111,7 @@ we have a stream of streams, where every substream will serve identical words.
 To count the words, we need to process the stream of streams (the actual groups containing identical words). By mapping
 over the groups and using ``fold`` (remember that ``fold`` automatically materializes and runs the stream it is used
 on) we get a stream with elements of ``Future[String,Int]``. Now all we need is to flatten this stream, which
-can be achieved by calling ``mapAsynch(identity)``.
+can be achieved by calling ``mapAsync`` with ``identity`` function.
 
 There is one tricky issue to be noted here. The careful reader probably noticed that we put a ``buffer`` between the
 ``mapAsync()`` operation that flattens the stream of futures and the actual stream of futures. The reason for this is
@@ -195,10 +193,6 @@ The graph consists of a ``Balance`` node which is a special fan-out operation th
 downstream consumers. In a ``for`` loop we wire all of our desired workers as outputs of this balancer element, then
 we wire the outputs of these workers to a ``Merge`` element that will collect the results from the workers.
 
-To convert the graph to a :class:`Flow` we need to define special graph nodes that will correspond to the input and
-output ports of the resulting :class:`Flow`. This is achieved by defining a pair of undefined sink and source which
-we return from the builder block.
-
 .. includecode:: code/docs/stream/cookbook/RecipeWorkerPool.scala#worker-pool
 
 Working with rate
@@ -255,7 +249,7 @@ We will use ``conflate`` to solve the problem. Conflate takes two functions:
   to the insufficient processing rate of the downstream. Our folding function simply increments the currently stored
   count of the missed ticks so far.
 
-As a result, we have a stream of ``Int`` where the number represents the missed ticks. A number 0 means that we were
+As a result, we have a flow of ``Int`` where the number represents the missed ticks. A number 0 means that we were
 able to consume the tick fast enough (i.e. zero means: 1 non-missed tick + 0 missed ticks)
 
 .. includecode:: code/docs/stream/cookbook/RecipeMissedTicks.scala#missed-ticks
@@ -283,10 +277,10 @@ always possible to provide. Hence, we create a second version where the downstre
 case: if the very first element is not yet available.
 
 We introduce a boolean variable ``waitingFirstValue`` to denote whether the first element has been provided or not
-(alternatively an :class:`Option` can be used for ``currentValue`` of if the element type is a subclass of AnyRef
+(alternatively an :class:`Option` can be used for ``currentValue`` or if the element type is a subclass of AnyRef
 a null can be used with the same purpose). In the downstream ``onPull()`` handler the difference from the previous
-version is that we call ``hold()`` if the first element is not yet available and thus blocking our downstream. The
-upstream ``onPush()`` handler sets ``waitingFirstValue`` to false, and after checking if ``hold()`` has been called it
+version is that we call ``holdDownstream()`` if the first element is not yet available and thus blocking our downstream. The
+upstream ``onPush()`` handler sets ``waitingFirstValue`` to false, and after checking if ``holdDownstream()`` has been called it
 either releaves the upstream producer, or both the upstream producer and downstream consumer by calling ``pushAndPull()``
 
 .. includecode:: code/docs/stream/cookbook/RecipeHold.scala#hold-version-2
@@ -379,19 +373,3 @@ whenever the merge can choose because multiple upstream producers have elements 
 preferred upstream effectively giving it an absolute priority.
 
 .. includecode:: code/docs/stream/cookbook/RecipeKeepAlive.scala#inject-keepalive
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

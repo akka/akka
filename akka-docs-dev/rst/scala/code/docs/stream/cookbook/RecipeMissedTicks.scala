@@ -1,6 +1,6 @@
 package docs.stream.cookbook
 
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl._
 import akka.stream.testkit._
 
 import scala.concurrent.duration._
@@ -18,13 +18,12 @@ class RecipeMissedTicks extends RecipeSpec {
       val sink = Sink(sub)
 
       //#missed-ticks
-      // tickStream is a Source[Tick]
-      val missedTicks: Source[Int, Unit] =
-        tickStream.conflate(seed = (_) => 0)(
+      val missedTicks: Flow[Tick, Int, Unit] =
+        Flow[Tick].conflate(seed = (_) => 0)(
           (missedTicks, tick) => missedTicks + 1)
       //#missed-ticks
 
-      missedTicks.to(sink).run()
+      tickStream.via(missedTicks).to(sink).run()
 
       pub.sendNext(())
       pub.sendNext(())
