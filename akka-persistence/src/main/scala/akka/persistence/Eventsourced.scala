@@ -107,7 +107,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * @param event the event that was processed in `receiveRecover`, if the exception
    *   was thrown there
    */
-  protected def onReplayFailure(cause: Throwable, event: Option[Any]): Unit =
+  protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit =
     event match {
       case Some(evt) ⇒
         log.error(cause, "Exception in receiveRecover when replaying event type [{}] with sequence number [{}] for " +
@@ -146,18 +146,6 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
     log.warning("Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
       event.getClass.getName, seqNr, persistenceId, cause.getMessage)
-  }
-
-  /**
-   * Called when ``deleteMessages`` failed. By default this method logs the problem
-   * as a warning, and the actor continues.
-   *
-   * @param cause failure cause
-   * @param toSequenceNr the sequence number parameter of the ``deleteMessages`` call
-   */
-  protected def onDeleteMessagesFailure(cause: Throwable, toSequenceNr: Long): Unit = {
-    log.warning("Failed to deleteMessages toSequenceNr [{}] for persistenceId [{}] due to [{}].",
-      toSequenceNr, persistenceId, cause.getMessage)
   }
 
   private def startRecovery(recovery: Recovery): Unit = {
@@ -216,7 +204,16 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   override def unhandled(message: Any): Unit = {
     message match {
       case RecoveryCompleted ⇒ // mute
-      case m                 ⇒ super.unhandled(m)
+      case SaveSnapshotFailure(m, e) ⇒
+        log.warning("Failed to saveSnapshot given metadata [{}] due to: [{}: {}]", m, e.getClass.getCanonicalName, e.getMessage)
+      case DeleteSnapshotFailure(m, e) ⇒
+        log.warning("Failed to deleteSnapshot given metadata [{}] due to: [{}: {}]", m, e.getClass.getCanonicalName, e.getMessage)
+      case DeleteSnapshotsFailure(c, e) ⇒
+        log.warning("Failed to deleteSnapshots given criteria [{}] due to: [{}: {}]", c, e.getClass.getCanonicalName, e.getMessage)
+      case DeleteMessagesFailure(e, toSequenceNr) ⇒
+        log.warning("Failed to deleteMessages toSequenceNr [{}] for persistenceId [{}] due to [{}: {}].",
+          toSequenceNr, persistenceId, e.getClass.getCanonicalName, e.getMessage)
+      case m ⇒ super.unhandled(m)
     }
   }
 
@@ -393,7 +390,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   /**
    * Permanently deletes all persistent messages with sequence numbers less than or equal `toSequenceNr`.
    *
-   * If the delete fails [[#onDeleteMessagesFailure]] will be called.
+   * If the delete fails an [[akka.persistence.JournalProtocol.DeleteMessagesFailure]] will be sent to the actor.
    *
    * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
    */
@@ -425,7 +422,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   /**
    * Processes a loaded snapshot, if any. A loaded snapshot is offered with a `SnapshotOffer`
    * message to the actor's `receiveRecover`. Then initiates a message replay, either starting
-   * from the loaded snapshot or from scratch, and switches to `replayStarted` state.
+   * from the loaded snapshot or from scratch, and switches to `recoveryStarted` state.
    * All incoming messages are stashed.
    *
    * @param replayMax maximum number of messages to replay.
@@ -456,7 +453,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
             // Since we are recovering we can ignore the receive behavior from the stack
             Eventsourced.super.aroundReceive(recoveryBehavior, SnapshotOffer(metadata, snapshot))
         }
-        changeState(replayStarted(recoveryBehavior))
+        changeState(recovering(recoveryBehavior))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
       case other ⇒ internalStash.stash()
     }
@@ -468,11 +465,11 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    *
    * If replay succeeds it got highest stored sequence number response from the journal and then switches
    * to `processingCommands` state. Otherwise the actor is stopped.
-   * If replay succeeds the `onReplaySuccess` callback method is called, otherwise `onReplayFailure`.
+   * If replay succeeds the `onReplaySuccess` callback method is called, otherwise `onRecoveryFailure`.
    *
    * All incoming messages are stashed.
    */
-  private def replayStarted(recoveryBehavior: Receive) = new State {
+  private def recovering(recoveryBehavior: Receive) = new State {
     override def toString: String = s"replay started"
     override def recoveryRunning: Boolean = true
 
@@ -483,9 +480,9 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
           Eventsourced.super.aroundReceive(recoveryBehavior, p)
         } catch {
           case NonFatal(t) ⇒
-            try onReplayFailure(t, Some(p.payload)) finally context.stop(self)
+            try onRecoveryFailure(t, Some(p.payload)) finally context.stop(self)
         }
-      case ReplayMessagesSuccess(highestSeqNr) ⇒
+      case RecoverySuccess(highestSeqNr) ⇒
         onReplaySuccess() // callback for subclass implementation
         changeState(processingCommands)
         sequenceNr = highestSeqNr
@@ -493,7 +490,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         internalStash.unstashAll()
         Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
       case ReplayMessagesFailure(cause) ⇒
-        try onReplayFailure(cause, event = None) finally context.stop(self)
+        try onRecoveryFailure(cause, event = None) finally context.stop(self)
       case other ⇒
         internalStash.stash()
     }
@@ -581,10 +578,6 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
 
       case WriteMessagesFailed(_) ⇒
         () // it will be stopped by the first WriteMessageFailure message
-
-      case DeleteMessagesFailure(e, toSequenceNr) ⇒
-        onDeleteMessagesFailure(e, toSequenceNr)
-
     }
 
     def onWriteMessageComplete(err: Boolean): Unit =
@@ -616,7 +609,6 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       else
         internalStash.unstash()
     }
-
   }
 
   /**

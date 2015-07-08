@@ -7,6 +7,7 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
+import akka.persistence.JournalProtocol.DeleteMessagesSuccess
 import akka.testkit.{ ImplicitSender, TestLatch, TestProbe }
 import com.typesafe.config.Config
 
@@ -24,15 +25,19 @@ object PersistentActorSpec {
 
   abstract class ExamplePersistentActor(name: String) extends NamedPersistentActor(name) {
     var events: List[Any] = Nil
+    var askedForDelete: Option[ActorRef] = None
 
     val updateState: Receive = {
-      case Evt(data) ⇒ events = data :: events
+      case Evt(data)               ⇒ events = data :: events
+      case d @ Some(ref: ActorRef) ⇒ askedForDelete = d.asInstanceOf[Some[ActorRef]]
     }
 
     val commonBehavior: Receive = {
-      case "boom"               ⇒ throw new TestException("boom")
-      case Delete(toSequenceNr) ⇒ deleteMessages(toSequenceNr)
-      case GetState             ⇒ sender() ! events.reverse
+      case "boom"   ⇒ throw new TestException("boom")
+      case GetState ⇒ sender() ! events.reverse
+      case Delete(toSequenceNr) ⇒
+        persist(Some(sender())) { s ⇒ askedForDelete = s }
+        deleteMessages(toSequenceNr)
     }
 
     def receiveRecover = updateState
@@ -42,12 +47,20 @@ object PersistentActorSpec {
     val receiveCommand: Receive = commonBehavior orElse {
       case Cmd(data) ⇒
         persistAll(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
+      case d: DeleteMessagesSuccess ⇒
+        val replyTo = askedForDelete.getOrElse(throw new RuntimeException("Received DeleteMessagesSuccess without anyone asking for delete!"))
+        replyTo ! d
     }
 
     override protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit =
       event match {
         case Evt(data) ⇒ sender() ! s"Rejected: $data"
         case _         ⇒ super.onPersistRejected(cause, event, seqNr)
+      }
+    override protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit =
+      event match {
+        case Evt(data) ⇒ sender() ! s"Failure: $data"
+        case _         ⇒ super.onPersistFailure(cause, event, seqNr)
       }
   }
 
@@ -220,6 +233,13 @@ object PersistentActorSpec {
       counter += 1
       counter
     }
+
+    override protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit =
+      event match {
+        case Evt(data) ⇒ sender() ! s"Failure: $data"
+        case _         ⇒ super.onPersistFailure(cause, event, seqNr)
+      }
+
   }
   class AsyncPersistThreeTimesPersistentActor(name: String) extends ExamplePersistentActor(name) {
     var counter = 0
@@ -1107,6 +1127,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(List("a-1", "a-2", "b-1", "b-2"))
       persistentActor ! Delete(2L) // delete "a-1" and "a-2"
       persistentActor ! "boom" // restart, recover
+      expectMsgType[DeleteMessagesSuccess]
       persistentActor ! GetState
       expectMsg(List("b-1", "b-2"))
     }

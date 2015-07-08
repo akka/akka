@@ -240,9 +240,19 @@ public class PersistenceDocTest {
 
     static Object o5 = new Object() {
         class MyPersistentActor extends UntypedPersistentActor {
+
+            //#snapshot-criteria
+            @Override
+            public Recovery recovery() {
+                return Recovery.create(
+                SnapshotSelectionCriteria
+                    .create(457L, System.currentTimeMillis()));
+            }
+            //#snapshot-criteria
+
             @Override
             public String persistenceId() { return "persistence-id"; }
-            
+
             //#snapshot-offer
             private Object state;
 
@@ -258,30 +268,12 @@ public class PersistenceDocTest {
                 }
             }
             //#snapshot-offer
-            
+
             @Override
             public void onReceiveCommand(Object message) {
             }
         }
 
-        class MyActor extends UntypedActor {
-            ActorRef persistentActor;
-
-            public MyActor() {
-                persistentActor = getContext().actorOf(Props.create(MyPersistentActor.class));
-            }
-
-            public void onReceive(Object message) throws Exception {
-                // ...
-            }
-
-            private void recover() {
-                //#snapshot-criteria
-                persistentActor.tell(Recovery.create(SnapshotSelectionCriteria.create(457L,
-                    System.currentTimeMillis())), null);
-                //#snapshot-criteria
-            }
-        }
     };
 
     static Object o9 = new Object() {

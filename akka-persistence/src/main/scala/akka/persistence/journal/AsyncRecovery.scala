@@ -31,13 +31,13 @@ trait AsyncRecovery {
    * @param fromSequenceNr sequence number where replay should start (inclusive).
    * @param toSequenceNr sequence number where replay should end (inclusive).
    * @param max maximum number of messages to be replayed.
-   * @param replayCallback called to replay a single message. Can be called from any
+   * @param recoveryCallback called to replay a single message. Can be called from any
    *                       thread.
    *
    * @see [[AsyncWriteJournal]]
    */
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long,
-                          max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit]
+                          max: Long)(recoveryCallback: PersistentRepr ⇒ Unit): Future[Unit]
 
   /**
    * Plugin API: asynchronously reads the highest stored sequence number for the

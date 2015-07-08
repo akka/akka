@@ -88,8 +88,6 @@ object EndToEndEventAdapterSpec {
     }
     override def receiveCommand = persistIncoming
 
-    override def onReplayFailure(cause: Throwable, event: Option[Any]): Unit =
-      probe.foreach { _ ! cause }
   }
 
 }

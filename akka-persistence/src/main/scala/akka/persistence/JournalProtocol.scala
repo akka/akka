@@ -23,6 +23,12 @@ private[persistence] object JournalProtocol {
   sealed trait Response extends Message
 
   /**
+   * Reply message to a successful [[DeleteMessagesTo]] request.
+   */
+  final case class DeleteMessagesSuccess(toSequenceNr: Long)
+    extends Response
+
+  /**
    * Reply message to a failed [[DeleteMessagesTo]] request.
    */
   final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
@@ -128,7 +134,7 @@ private[persistence] object JournalProtocol {
    *
    * @param highestSequenceNr highest stored sequence number.
    */
-  case class ReplayMessagesSuccess(highestSequenceNr: Long)
+  case class RecoverySuccess(highestSequenceNr: Long)
     extends Response with DeadLetterSuppression
 
   /**
