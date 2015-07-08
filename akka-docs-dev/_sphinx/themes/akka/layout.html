@@ -351,7 +351,17 @@
 </style>
 {%- endif %}
 <script type="text/javascript">
-  $('#toc').toc();
+  var $toc = $('#toc');
+  $toc.toc();
+
+  // change hash when TOC link clicked:
+  $toc.find("a").click(function() { window.location.hash = $(this).attr('href'); });
+
+  // show clickable section sign when section header hovered:
+  $('.section h2,.section h3,.section h4,.section h5').each(function(i, el) {
+    var $el = $(el);
+    $el.prepend($("<a class='section-marker' href='#" + $el.attr("id") + "'>&sect;</a>"))
+  });
 </script>
   {% block footer %}{% endblock %}
   {%- endblock %}
