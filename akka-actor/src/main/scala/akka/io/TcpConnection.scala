@@ -38,6 +38,16 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   private[this] var readingSuspended = pullMode
   private[this] var interestedInResume: Option[ActorRef] = None
   var closedMessage: CloseInformation = _ // for ConnectionClosed message in postStop
+  private var watchedActor: ActorRef = context.system.deadLetters
+
+  def signDeathPact(actor: ActorRef): Unit = {
+    unsignDeathPact()
+    watchedActor = actor
+    context.watch(watchedActor)
+  }
+
+  def unsignDeathPact(): Unit =
+    if (watchedActor ne context.system.deadLetters) context.unwatch(watchedActor)
 
   def writePending = pendingWrite ne EmptyPendingWrite
 
@@ -268,6 +278,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       peerClosed = true
       context.become(peerSentEOF(info))
     case _ if writePending ⇒ // finish writing first
+      // Our registered actor is now free to terminate cleanly
+      unsignDeathPact()
       if (TraceLogging) log.debug("Got Close command but write is still pending.")
       context.become(closingWithPendingWrite(info, closeCommander, closedEvent))
     case ConfirmedClosed ⇒ // shutdown output and wait for confirmation
