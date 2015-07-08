@@ -22,16 +22,16 @@ class RecipeKeepAlive extends RecipeSpec {
       val sink = Sink(sub)
 
       //#inject-keepalive
-      val keepAliveStream: Source[ByteString, Unit] = ticks
+      val tickToKeepAlivePacket: Flow[Tick, ByteString, Unit] = Flow[Tick]
         .conflate(seed = (tick) => keepaliveMessage)((msg, newTick) => msg)
 
       val graph = FlowGraph.closed() { implicit builder =>
         import FlowGraph.Implicits._
         val unfairMerge = builder.add(MergePreferred[ByteString](1))
 
-        dataStream ~> unfairMerge.preferred
         // If data is available then no keepalive is injected
-        keepAliveStream ~> unfairMerge ~> sink
+        dataStream ~> unfairMerge.preferred
+        ticks ~> tickToKeepAlivePacket ~> unfairMerge ~> sink
       }
       //#inject-keepalive
 

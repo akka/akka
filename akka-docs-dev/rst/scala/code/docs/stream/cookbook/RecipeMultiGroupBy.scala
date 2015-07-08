@@ -15,19 +15,14 @@ class RecipeMultiGroupBy extends RecipeSpec {
       case class Topic(name: String)
 
       val elems = Source(List("1: a", "1: b", "all: c", "all: d", "1: e"))
-      val topicMapper = { msg: Message =>
+      val extractTopics = { msg: Message =>
         if (msg.startsWith("1")) List(Topic("1"))
         else List(Topic("1"), Topic("2"))
       }
 
-      class X {
-        //#multi-groupby
-        val topicMapper: (Message) => immutable.Seq[Topic] = ???
-
-        //#multi-groupby
-      }
-
       //#multi-groupby
+      val topicMapper: (Message) => immutable.Seq[Topic] = extractTopics
+
       val messageAndTopic: Source[(Message, Topic), Unit] = elems.mapConcat { msg: Message =>
         val topicsForMessage = topicMapper(msg)
         // Create a (Msg, Topic) pair for each of the topics
@@ -35,11 +30,12 @@ class RecipeMultiGroupBy extends RecipeSpec {
         topicsForMessage.map(msg -> _)
       }
 
-      val multiGroups: Source[(Topic, Source[String, Unit]), Unit] = messageAndTopic.groupBy(_._2).map {
-        case (topic, topicStream) =>
-          // chopping of the topic from the (Message, Topic) pairs
-          (topic, topicStream.map(_._1))
-      }
+      val multiGroups: Source[(Topic, Source[String, Unit]), Unit] = messageAndTopic
+        .groupBy(_._2).map {
+          case (topic, topicStream) =>
+            // chopping of the topic from the (Message, Topic) pairs
+            (topic, topicStream.map(_._1))
+        }
       //#multi-groupby
 
       val result = multiGroups.map {
