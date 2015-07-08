@@ -401,8 +401,11 @@ topics. An example may look like this:
 
 .. includecode:: code/docs/config/ConfigDocSpec.scala#deployment-section
 
-The deployment section for a specific actor is identified by the 
-path of the actor relative to ``/user``.
+
+.. note::
+
+    The deployment section for a specific actor is identified by the
+    path of the actor relative to ``/user``.
 
 You can use asterisks as wildcard matches for the actor path sections, so you could specify:
 ``/*/sampleActor`` and that would match all ``sampleActor`` on that level in the hierarchy.
