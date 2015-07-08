@@ -1,8 +1,8 @@
 .. _cluster:
 
-######################
- Cluster Specification
-######################
+#####################
+Cluster Specification
+#####################
 
 .. note:: This document describes the design concepts of the clustering.
    It is divided into two parts, where the first part describes what is
@@ -59,7 +59,7 @@ UID.
 
 The cluster membership state is a specialized `CRDT`_, which means that it has a monotonic
 merge function. When concurrent changes occur on different nodes the updates can always be
-merged and converge to the same end result. 
+merged and converge to the same end result.
 
 .. _CRDT: http://hal.upmc.fr/docs/00/55/55/88/PDF/techreport.pdf
 
@@ -70,7 +70,7 @@ The cluster membership used in Akka is based on Amazon's `Dynamo`_ system and
 particularly the approach taken in Basho's' `Riak`_ distributed database.
 Cluster membership is communicated using a `Gossip Protocol`_, where the current
 state of the cluster is gossiped randomly through the cluster, with preference to
-members that have not seen the latest version. 
+members that have not seen the latest version.
 
 .. _Gossip Protocol: http://en.wikipedia.org/wiki/Gossip_protocol
 .. _Dynamo: http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf
@@ -167,9 +167,9 @@ Leader
 After gossip convergence a ``leader`` for the cluster can be determined. There is no
 ``leader`` election process, the ``leader`` can always be recognised deterministically
 by any node whenever there is gossip convergence. The leader is just a role, any node
-can be the leader and it can change between convergence rounds. 
+can be the leader and it can change between convergence rounds.
 The ``leader`` is simply the first node in sorted order that is able to take the leadership role,
-where the preferred member states for a ``leader`` are ``up`` and ``leaving`` 
+where the preferred member states for a ``leader`` are ``up`` and ``leaving``
 (see the `Membership Lifecycle`_ section below for more  information about member states).
 
 The role of the ``leader`` is to shift members in and out of the cluster, changing
@@ -190,9 +190,9 @@ The seed nodes are configured contact points for new nodes joining the cluster.
 When a new node is started it sends a message to all seed nodes and then sends
 a join command to the seed node that answers first.
 
-The seed nodes configuration value does not have any influence on the running 
-cluster itself, it is only relevant for new nodes joining the cluster as it 
-helps them to find contact points to send the join command to; a new member 
+The seed nodes configuration value does not have any influence on the running
+cluster itself, it is only relevant for new nodes joining the cluster as it
+helps them to find contact points to send the join command to; a new member
 can send this command to any current member of the cluster, not only to the seed nodes.
 
 
@@ -209,14 +209,14 @@ makes use of this version to only push the actual state as needed.
 
 Periodically, the default is every 1 second, each node chooses another random
 node to initiate a round of gossip with. If less than ½ of the nodes resides in the
-seen set (have seen the new state) then the cluster gossips 3 times instead of once 
+seen set (have seen the new state) then the cluster gossips 3 times instead of once
 every second. This adjusted gossip interval is a way to speed up the convergence process
-in the early dissemination phase after a state change. 
+in the early dissemination phase after a state change.
 
 The choice of node to gossip with is random but it is biased to towards nodes that
 might not have seen the current state version. During each round of gossip exchange when
 no convergence it uses a probability of 0.8 (configurable) to gossip to a node not
-part of the seen set, i.e. that probably has an older version of the state. Otherwise 
+part of the seen set, i.e. that probably has an older version of the state. Otherwise
 gossip to any random live node.
 
 This biased selection is a way to speed up the convergence process in the late dissemination
@@ -225,12 +225,12 @@ phase after a state change.
 For clusters larger than 400 nodes (configurable, and suggested by empirical evidence)
 the 0.8 probability is gradually reduced to avoid overwhelming single stragglers with
 too many concurrent gossip requests. The gossip receiver also has a mechanism to
-protect itself from too many simultaneous gossip messages by dropping messages that 
+protect itself from too many simultaneous gossip messages by dropping messages that
 have been enqueued in the mailbox for too long time.
 
 While the cluster is in a converged state the gossiper only sends a small gossip status message containing the gossip
 version to the chosen node. As soon as there is a change to the cluster (meaning non-convergence)
-then it goes back to biased gossip again. 
+then it goes back to biased gossip again.
 
 The recipient of the gossip state or the gossip status can use the gossip version
 (vector clock) to determine whether:
@@ -388,10 +388,10 @@ These additional terms are used in this section.
   referred to by the ordinal position given the nodes in sorted order).
 
 
-Partitioning :ref:`[*] <niy>`
-=============================
+Partitioning
+============
 
-.. note:: Actor partitioning is not implemented yet.
+.. note:: Actor partitioning is not implemented yet :ref:`[*] <niy>`.
 
 Each partition (an actor or actor subtree) in the actor system is assigned to a
 set of nodes in the cluster. The actor at the head of the partition is referred
@@ -636,10 +636,10 @@ have a dependency on message ordering from any given source.
   and 3b would be required.
 
 
-Stateful Actor Replication :ref:`[*] <niy>`
-===========================================
+Stateful Actor Replication
+==========================
 
-.. note:: Stateful actor replication is not implemented yet.
+.. note:: Stateful actor replication is not implemented yet :ref:`[*] <niy>`.
 
 .. _niy:
 
