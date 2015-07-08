@@ -8,13 +8,11 @@ package akka.persistence.journal
 import akka.actor._
 import akka.pattern.pipe
 import akka.persistence._
+
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
-import akka.AkkaException
 
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.
@@ -110,7 +108,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           }.map(_ ⇒ highSeqNr)
         }
       }.map {
-        highSeqNr ⇒ ReplayMessagesSuccess(highSeqNr)
+        highSeqNr ⇒ RecoverySuccess(highSeqNr)
       }.recover {
         case e ⇒ ReplayMessagesFailure(e)
       }.pipeTo(persistentActor).onSuccess {
@@ -118,9 +116,12 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       }
 
     case d @ DeleteMessagesTo(persistenceId, toSequenceNr, persistentActor) ⇒
-      asyncDeleteMessagesTo(persistenceId, toSequenceNr) onComplete {
-        case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
-        case Failure(e) ⇒ persistentActor ! DeleteMessagesFailure(e, toSequenceNr)
+      asyncDeleteMessagesTo(persistenceId, toSequenceNr) map {
+        case _ ⇒ DeleteMessagesSuccess(toSequenceNr)
+      } recover {
+        case e ⇒ DeleteMessagesFailure(e, toSequenceNr)
+      } pipeTo persistentActor onComplete {
+        case _ if publish ⇒ context.system.eventStream.publish(d)
       }
   }
 

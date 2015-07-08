@@ -92,54 +92,54 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
     "replay all messages" in {
       journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       1 to 5 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower sequence number bound" in {
       journal ! ReplayMessages(3, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       3 to 5 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using an upper sequence number bound" in {
       journal ! ReplayMessages(1, 3, Long.MaxValue, pid, receiverProbe.ref)
       1 to 3 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a count limit" in {
       journal ! ReplayMessages(1, Long.MaxValue, 3, pid, receiverProbe.ref)
       1 to 3 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower and upper sequence number bound" in {
       journal ! ReplayMessages(2, 4, Long.MaxValue, pid, receiverProbe.ref)
       2 to 4 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower and upper sequence number bound and a count limit" in {
       journal ! ReplayMessages(2, 4, 2, pid, receiverProbe.ref)
       2 to 3 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay a single if lower sequence number bound equals upper sequence number bound" in {
       journal ! ReplayMessages(2, 2, Long.MaxValue, pid, receiverProbe.ref)
       2 to 2 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay a single message if count limit equals 1" in {
       journal ! ReplayMessages(2, 4, 1, pid, receiverProbe.ref)
       2 to 2 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "not replay messages if count limit equals 0" in {
       journal ! ReplayMessages(2, 4, 0, pid, receiverProbe.ref)
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "not replay messages if lower  sequence number bound is greater than upper sequence number bound" in {
       journal ! ReplayMessages(3, 2, Long.MaxValue, pid, receiverProbe.ref)
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 5L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "not replay messages if the persistent actor has not yet written messages" in {
       journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, "non-existing-pid", receiverProbe.ref)
-      receiverProbe.expectMsg(ReplayMessagesSuccess(highestSequenceNr = 0L))
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 0L))
     }
     "not replay permanently deleted messages (range deletion)" in {
       val receiverProbe2 = TestProbe()
@@ -149,6 +149,7 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
       subscribe[DeleteMessagesTo](sub.ref)
       journal ! cmd
       sub.expectMsg(cmd)
+      receiverProbe2.expectMsg(DeleteMessagesSuccess(cmd.toSequenceNr))
 
       journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       List(4, 5) foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }

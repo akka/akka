@@ -293,7 +293,7 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
           case NonFatal(t) ⇒
             changeState(ignoreRemainingReplay(t))
         }
-      case _: ReplayMessagesSuccess ⇒
+      case _: RecoverySuccess ⇒
         onReplayComplete()
       case ReplayMessagesFailure(cause) ⇒
         try onReplayError(cause) finally onReplayComplete()
@@ -339,8 +339,8 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
         // replay must be a full replay (up to the highest stored sequence number)
         // Recover(lastSequenceNr) is sent by preRestart
         setLastSequenceNr(Long.MaxValue)
-      case _: ReplayMessagesSuccess ⇒ replayCompleted(receive)
-      case _                        ⇒ internalStash.stash()
+      case _: RecoverySuccess ⇒ replayCompleted(receive)
+      case _                  ⇒ internalStash.stash()
     }
 
     def replayCompleted(receive: Receive): Unit = {

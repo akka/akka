@@ -208,8 +208,8 @@ private class PersistentPublisherBuffer(override val processorId: String, publis
     self ! Filled
   }
 
-  override def onReplayFailure(receive: Receive, await: Boolean, cause: Throwable): Unit = {
-    super.onReplayFailure(receive, await, cause)
+  override def onRecoveryFailure(receive: Receive, await: Boolean, cause: Throwable): Unit = {
+    super.onRecoveryFailure(receive, await, cause)
     self ! Filled
   }
 

@@ -489,3 +489,12 @@ The ``permanent`` deletion flag was removed. Support for non-permanent deletions
 removed. Events that were deleted with ``permanent=false`` with older version will
 still not be replayed in this version.
 
+References to "replay" in names
+-------------------------------
+Previously a number of classes and methods used the word "replay" interchangeably with the word "recover".
+This lead to slight inconsistencies in APIs, where a method would be called ``recovery``, yet the
+signal for a completed recovery was named ``ReplayMessagesSuccess``.
+
+This is now fixed, and all methods use the same "recovery" wording consistently across the entire API.
+The old ``ReplayMessagesSuccess`` is now called ``RecoverySuccess``, and an additional method called ``onRecoveryFailure``
+has been introduced.

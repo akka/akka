@@ -12,8 +12,7 @@ package akka.persistence
  * @param sequenceNr sequence number at which the snapshot was taken.
  * @param timestamp time at which the snapshot was saved, defaults to 0 when unknown.
  */
-@SerialVersionUID(1L) //
-//#snapshot-metadata
+@SerialVersionUID(1L) //#snapshot-metadata
 final case class SnapshotMetadata(persistenceId: String, sequenceNr: Long, timestamp: Long = 0L)
 //#snapshot-metadata
 
