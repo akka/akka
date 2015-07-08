@@ -128,7 +128,7 @@ trait TestKitBase {
     awaitCond(ref match {
       case r: RepointableRef ⇒ r.isStarted
       case _                 ⇒ true
-    }, 1 second, 10 millis)
+    }, testKitSettings.SingleExpectDefaultTimeout.dilated, 10 millis)
     ref
   }
 
