@@ -5,6 +5,7 @@
 package akka.http.javadsl
 
 import java.net.InetSocketAddress
+import akka.japi.function.Function;
 import scala.concurrent.Future
 import akka.stream.Materializer
 import akka.stream.javadsl.Flow
