@@ -106,10 +106,10 @@ object ValidatePullRequest extends AutoPlugin {
 
         // if this project depends on a modified module, we must test it
         deps.nodes.exists { m =>
-          val depends = modifiedModuleIds exists {
-            _.name == m.id.name
-          } // match just by name, we'd rather include too much than too little
-          if (depends) log.info(s"Project [$name] must be verified, because depends on [${modifiedModuleIds.find(_ == m.id).get}]")
+          // match just by name, we'd rather include too much than too little
+          val dependsOnModule = modifiedModuleIds find { _.name == m.id.name }
+          val depends = dependsOnModule.isDefined
+          if (depends) log.info(s"Project [$name] must be verified, because depends on [$dependsOnModule]")
           depends
         }
       }
