@@ -16,4 +16,7 @@ public abstract class Location extends akka.http.scaladsl.model.HttpHeader {
     public static Location create(Uri uri) {
         return new akka.http.scaladsl.model.headers.Location(akka.http.impl.util.Util.convertUriToScala(uri));
     }
+    public static Location create(String uri) {
+        return create(Uri.create(uri));
+    }
 }
