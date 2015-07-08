@@ -3,71 +3,58 @@
  */
 package docs.stream.cookbook;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
-import akka.stream.stage.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import akka.actor.ActorSystem;
+import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
+import akka.stream.io.Framing;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
+import scala.concurrent.Await;
+import scala.concurrent.duration.FiniteDuration;
+import scala.runtime.BoxedUnit;
 
-public class RecipeParseLines {
+public class RecipeParseLines extends RecipeTest {
 
-  public static StatefulStage<ByteString, String> parseLines(String separator, int maximumLineBytes) {
-    return new StatefulStage<ByteString, String>() {
-      
-      final ByteString separatorBytes = ByteString.fromString(separator);
-      final byte firstSeparatorByte = separatorBytes.head();
+  static ActorSystem system;
 
-      @Override
-      public StageState<ByteString, String> initial() {
-        return new StageState<ByteString, String>() {
-          ByteString buffer = ByteString.empty();
-          int nextPossibleMatch = 0;
-          
-          @Override
-          public SyncDirective onPush(ByteString chunk, Context<String> ctx) {
-            buffer = buffer.concat(chunk);
-            if (buffer.size() > maximumLineBytes) {
-              return ctx.fail(new IllegalStateException("Read " + buffer.size()  + " bytes " +
-                "which is more than " + maximumLineBytes + " without seeing a line terminator"));
-            } else { 
-              return emit(doParse().iterator(), ctx);
-            }
-          }
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create("RecipeLoggingElements");
+  }
 
-          private List<String> doParse() {
-            List<String> parsedLinesSoFar = new ArrayList<String>();
-            while (true) {
-              int possibleMatchPos = buffer.indexOf(firstSeparatorByte, nextPossibleMatch);
-              if (possibleMatchPos == -1) {
-                // No matching character, we need to accumulate more bytes into the buffer
-                nextPossibleMatch = buffer.size();
-                break;
-              } else if (possibleMatchPos + separatorBytes.size() > buffer.size()) {
-                // We have found a possible match (we found the first character of the terminator
-                // sequence) but we don't have yet enough bytes. We remember the position to
-                // retry from next time.
-                nextPossibleMatch = possibleMatchPos;
-                break;
-              } else {
-                if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.size())
-                    .equals(separatorBytes)) {
-                  // Found a match
-                  String parsedLine = buffer.slice(0, possibleMatchPos).utf8String();
-                  buffer = buffer.drop(possibleMatchPos + separatorBytes.size());
-                  nextPossibleMatch -= possibleMatchPos + separatorBytes.size();
-                  parsedLinesSoFar.add(parsedLine);
-                } else {
-                  nextPossibleMatch += 1;
-                }
-              }
-            }
-            return parsedLinesSoFar;
-          }
-          
-        };
-      }
-      
-    };
+  @AfterClass
+  public static void tearDown() {
+    JavaTestKit.shutdownActorSystem(system);
+    system = null;
+  }
+
+  final Materializer mat = ActorMaterializer.create(system);
+
+  @Test
+  public void parseLines() throws Exception {
+    final Source<ByteString, BoxedUnit> rawData = Source.from(Arrays.asList(
+      ByteString.fromString("Hello World"),
+      ByteString.fromString("\r"),
+      ByteString.fromString("!\r"),
+      ByteString.fromString("\nHello Akka!\r\nHello Streams!"),
+      ByteString.fromString("\r\n\r\n")));
+
+    //#parse-lines
+    final Source<String, BoxedUnit> lines = rawData
+      .via(Framing.delimiter(ByteString.fromString("\r\n"), 100, true))
+      .map(b -> b.utf8String());
+    //#parse-lines
+
+    Await.result(lines.grouped(10).runWith(Sink.head(), mat), new FiniteDuration(1, TimeUnit.SECONDS));
   }
 
 }
