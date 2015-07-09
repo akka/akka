@@ -26,11 +26,20 @@ Back-pressure
   A means of flow-control, a way for consumers of data to notify a producer about their current availability, effectively
   slowing down the upstream producer to match their consumption speeds.
   In the context of Akka Streams back-pressure is always understood as *non-blocking* and *asynchronous*.
+Non-Blocking
+  Means that a certain operation does not hinder the progress of the calling thread, even if it takes long time to
+  finish the requested operation.
 Processing Stage
   The common name for all building blocks that build up a Flow or FlowGraph.
   Examples of a processing stage would be  operations like ``map()``, ``filter()``, stages added by ``transform()`` like
   :class:`PushStage`, :class:`PushPullStage`, :class:`StatefulStage` and graph junctions like ``Merge`` or ``Broadcast``.
   For the full list of built-in processing stages see :ref:`stages-overview`
+
+When we talk about *asynchronous, non-blocking backpressure* we mean that the processing stages available in Akka
+Streams will not use blocking calls but asynchronous message passing to exchange messages between each other, and they
+will use asynchronous means to slow down a fast producer, without blocking its thread. This is a thread-pool friendly
+design, since entities that need to wait (a fast producer waiting on a slow consumer) will not block the thread but
+can hand it back for further use to an underlying thread-pool.
 
 Defining and running streams
 ----------------------------

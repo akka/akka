@@ -322,3 +322,19 @@ and continue with shutting down the entire stream.
 It is not possible to emit elements from the completion handling, since completion
 handlers may be invoked at any time (without regard to downstream demand being available).
 
+Thread safety of custom processing stages
+=========================================
+
+All of the above custom stages (linear or graph) provide a few simple guarantees that implementors can rely on.
+ - The callbacks exposed by all of these classes are never called concurrently.
+ - The state encapsulated by these classes can be safely modified from the provided callbacks, without any further
+   synchronization.
+
+In essence, the above guarantees are similar to what :class:`Actor`s provide, if one thinks of the state of a custom
+stage as state of an actor, and the callbacks as the ``receive`` block of the actor.
+
+.. warning::
+It is **not safe** to access the state of any custom stage outside of the callbacks that it provides, just like it
+  is unsafe to access the state of an actor from the outside. This means that Future callbacks should **not close over**
+  internal state of custom stages because such access can be concurrent with the provided callbacks, leading to undefined
+  behavior.
