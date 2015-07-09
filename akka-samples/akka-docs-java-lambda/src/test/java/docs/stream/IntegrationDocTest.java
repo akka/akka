@@ -35,15 +35,7 @@ import static junit.framework.TestCase.assertTrue;
 
 public class IntegrationDocTest {
 
-  static class MockSystem {
-    class Println {
-      @SuppressWarnings("UnusedParameters")
-      <T> void println(T s) { /* ignore */ }
-    }
-
-    public final Println out = new Println();
-  }
-  private static final MockSystem System = new MockSystem();
+  private static final SilenceSystemOut.System System = SilenceSystemOut.get();
 
   static ActorSystem system;
 

@@ -24,7 +24,7 @@ import java.util.List;
 public class ActorPublisherDocTest {
 
   static ActorSystem system;
-  
+
 
   @BeforeClass
   public static void setup() {
@@ -36,9 +36,9 @@ public class ActorPublisherDocTest {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
   }
-  
+
   final Materializer mat = ActorMaterializer.create(system);
-  
+
     //#job-manager
     public static class JobManagerProtocol {
       final public static class Job {
@@ -67,7 +67,7 @@ public class ActorPublisherDocTest {
       public static final JobDeniedMessage JobDenied = new JobDeniedMessage();
     }
     public static class JobManager extends AbstractActorPublisher<JobManagerProtocol.Job> {
-      
+
       public static Props props() { return Props.create(JobManager.class); }
 
       private final int MAX_BUFFER_SIZE = 100;
@@ -115,24 +115,15 @@ public class ActorPublisherDocTest {
       }
     }
     //#job-manager
-  
+
   @Test
   public void demonstrateActorPublisherUsage() {
     new JavaTestKit(system) {
-      class MockSystem {
-        class Println {
-          public <T> void println(T s) {
-            getTestActor().tell(s, ActorRef.noSender());
-          }
-        }
+      private final SilenceSystemOut.System System = SilenceSystemOut.get(getTestActor());
 
-        public final Println out = new Println();
-      }
-      private final MockSystem System = new MockSystem();
-      
       {
         //#actor-publisher-usage
-        final Source<JobManagerProtocol.Job, ActorRef> jobManagerSource = 
+        final Source<JobManagerProtocol.Job, ActorRef> jobManagerSource =
           Source.actorPublisher(JobManager.props());
 
         final ActorRef ref = jobManagerSource
@@ -155,5 +146,5 @@ public class ActorPublisherDocTest {
       }
     };
   }
-  
+
 }

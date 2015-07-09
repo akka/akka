@@ -37,6 +37,8 @@ public class FlexiMergeDocTest {
 
   final Materializer mat = ActorMaterializer.create(system);
 
+  final static SilenceSystemOut.System System = SilenceSystemOut.get();
+
   static//#fleximerge-zip-readall
   public class Zip<A, B> extends FlexiMerge<FlexiMerge.ReadAllInputs, Pair<A, B>, FanInShape2<A, B, Pair<A, B>>> {
     public Zip() {
@@ -272,7 +274,7 @@ public class FlexiMergeDocTest {
                     return sameState();
                   }
                 };
-        //#read-conditions    
+        //#read-conditions
 
         @Override
         public State<Integer, Integer> initialState() {
@@ -296,7 +298,7 @@ public class FlexiMergeDocTest {
               builder.from(zip.out()).to(headSink);
 
             }).run(mat);
-    //#fleximerge-zip-connecting    
+    //#fleximerge-zip-connecting
 
     assertEquals(new Pair<>(1, "A"),
             Await.result(future, FiniteDuration.create(3, TimeUnit.SECONDS)));

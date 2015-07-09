@@ -53,6 +53,10 @@ public class SilenceSystemOut {
       public void println(Object s) {
         println(s.toString());
       }
+
+      public void printf(String format, Object... args) {
+        println(String.format(format, args));
+      }
     }
 
   }
