@@ -4,10 +4,9 @@
 package docs.stream
 
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ RunnableGraph, Flow, Sink, Source }
 import akka.stream.testkit._
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import org.reactivestreams.Processor
 
 class ReactiveStreamsDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -78,11 +77,10 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     val storage = impl.storage
 
     //#flow-publisher-subscriber
-    val (in: Subscriber[Tweet], out: Publisher[Author]) =
-      authors.runWith(Source.subscriber[Tweet], Sink.publisher[Author])
+    val processor: Processor[Tweet, Author] = authors.toProcessor.run()
 
-    tweets.subscribe(in)
-    out.subscribe(storage)
+    tweets.subscribe(processor)
+    processor.subscribe(storage)
     //#flow-publisher-subscriber
 
     assertResult(storage)
@@ -133,6 +131,17 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     //#sink-subscriber
 
     assertResult(storage)
+  }
+
+  "use a processor" in {
+
+    //#use-processor
+    // An example Processor factory
+    def createProcessor: Processor[Int, Int] = Flow[Int].toProcessor.run()
+
+    val flow: Flow[Int, Int, Unit] = Flow(() => createProcessor)
+    //#use-processor
+
   }
 
 }

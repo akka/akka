@@ -5,11 +5,10 @@ package akka.stream.scaladsl
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream._
-import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
-import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.Stages.{ DirectProcessor, MaterializingStageFactory, StageModule, DefaultAttributes }
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
 import akka.stream.stage.{ Context, PushPullStage, SyncDirective, TerminationDirective }
-import org.reactivestreams.{ Publisher, Subscriber }
+import org.reactivestreams._
 
 import akka.stream.{ SourceShape, Inlet, Outlet }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
@@ -18,7 +17,6 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 import akka.actor.Props
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher }
-import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
@@ -29,7 +27,6 @@ import akka.stream.impl._
 import akka.actor.Cancellable
 import akka.actor.ActorRef
 import scala.concurrent.Promise
-import org.reactivestreams.Subscriber
 import akka.stream.stage.SyncDirective
 import akka.stream.OverflowStrategy
 import akka.stream.Attributes
