@@ -217,15 +217,14 @@ The following example demonstrates a case where the materialized ``Future`` of a
 Graph cycles, liveness and deadlocks
 ------------------------------------
 
-By default :class:`FlowGraph` does not allow (or to be precise, its builder does not allow) the creation of cycles.
-The reason for this is that cycles need special considerations to avoid potential deadlocks and other liveness issues.
+Cycles in bounded flow graphs need special considerations to avoid potential deadlocks and other liveness issues.
 This section shows several examples of problems that can arise from the presence of feedback arcs in stream processing
 graphs.
 
-The first example demonstrates a graph that contains a naive cycle (the presence of cycles is enabled by calling
-``allowCycles()`` on the builder). The graph takes elements from the source, prints them, then broadcasts those elements
-to a consumer (we just used ``Sink.ignore`` for now) and to a feedback arc that is merged back into the main stream via
-a ``Merge`` junction.
+The first example demonstrates a graph that contains a naive cycle.
+The graph takes elements from the source, prints them, then broadcasts those elements
+to a consumer (we just used ``Sink.ignore`` for now) and to a feedback arc that is merged back into the main
+via a ``Merge`` junction.
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/GraphCyclesDocTest.java#deadlocked
 
