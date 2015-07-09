@@ -93,19 +93,13 @@ Installing Sphinx on OS X
 
 Install `Homebrew <https://github.com/mxcl/homebrew>`_
 
-Install Python and pip:
+Install Python with Homebrew:
 
 ::
 
   brew install python
-  /usr/local/share/python/easy_install pip
 
-Add the Homebrew Python path to your $PATH:
-
-::
-
-  /usr/local/Cellar/python/2.7.5/bin
-
+Homebrew will automatically add Python executable to your $PATH and pip is a part of the default Python installation with Homebrew.
 
 More information in case of trouble:
 https://github.com/mxcl/homebrew/wiki/Homebrew-and-Python
@@ -116,12 +110,6 @@ Install sphinx:
 
   pip install sphinx
 
-Add sphinx_build to your $PATH:
-
-::
-
-  /usr/local/share/python
-
 Install BasicTeX package from:
 http://www.tug.org/mactex/morepackages.html
 
@@ -129,7 +117,8 @@ Add texlive bin to $PATH:
 
 ::
 
-  /usr/local/texlive/2013basic/bin/universal-darwin
+  export TEXLIVE_PATH=/usr/local/texlive/2015basic/bin/universal-darwin
+  export PATH=$TEXLIVE_PATH:$PATH
 
 Add missing tex packages:
 
