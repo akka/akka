@@ -4,11 +4,13 @@
 
 package akka.http.scaladsl.model
 
+import akka.http.javadsl.model.HttpEntityStrict
+
 import language.implicitConversions
 import java.io.File
 import java.lang.{ Iterable ⇒ JIterable, Long ⇒ JLong }
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.util.ByteString
 import akka.stream.Materializer
@@ -103,6 +105,10 @@ sealed trait HttpEntity extends jm.HttpEntity {
   def isIndefiniteLength: Boolean = false
   def isDefault: Boolean = false
   def isChunked: Boolean = false
+
+  /** Java API */
+  def toStrict(timeoutMillis: Long, materializer: Materializer): Future[HttpEntityStrict] =
+    toStrict(timeoutMillis.millis)(materializer)
 }
 
 /* An entity that can be used for body parts */

@@ -6,8 +6,10 @@ package akka.http.javadsl.model;
 
 import akka.http.scaladsl.model.HttpEntity$;
 import akka.japi.Option;
+import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import scala.concurrent.Future;
 
 /**
  * Represents the entity of an Http message. An entity consists of the content-type of the data
@@ -80,4 +82,15 @@ public interface HttpEntity {
      * Returns a stream of data bytes this entity consists of.
      */
     public abstract Source<ByteString, ?> getDataBytes();
+
+    /**
+     * Returns a future of a strict entity that contains the same data as this entity
+     * which is only completed when the complete entity has been collected. As the
+     * duration of receiving the complete entity cannot be predicted, a timeout needs to
+     * be specified to guard the process against running and keeping resources infinitely.
+     *
+     * Use getDataBytes and stream processing instead if the expected data is big or
+     * is likely to take a long time.
+     */
+    public abstract Future<HttpEntityStrict> toStrict(long timeoutMillis, Materializer materializer);
 }
