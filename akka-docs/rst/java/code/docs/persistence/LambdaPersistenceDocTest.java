@@ -10,6 +10,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.Procedure;
 import akka.japi.pf.ReceiveBuilder;
+import akka.pattern.BackoffSupervisor;
 import akka.persistence.*;
 import scala.Option;
 import scala.concurrent.duration.Duration;

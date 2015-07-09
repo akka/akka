@@ -307,7 +307,7 @@ and the actor will unconditionally be stopped.
 The reason that it cannot resume when persist fails is that it is unknown if the even was actually
 persisted or not, and therefore it is in an inconsistent state. Restarting on persistent failures 
 will most likely fail anyway, since the journal is probably unavailable. It is better to stop the 
-actor and after a back-off timeout start it again. The ``akka.persistence.BackoffSupervisor`` actor
+actor and after a back-off timeout start it again. The ``akka.pattern.BackoffSupervisor`` actor
 is provided to support such restarts.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#backoff
