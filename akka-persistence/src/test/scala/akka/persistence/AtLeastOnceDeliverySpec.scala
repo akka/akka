@@ -253,8 +253,9 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
       // and then re-delivered
       probeA.expectMsg(Action(2, "a-2")) // re-delivered
       // a-4 was re-delivered but lost
-      probeA.expectMsg(Action(5, "a-5")) // re-delivered
-      probeA.expectMsg(Action(4, "a-4")) // re-delivered, 3rd time
+      probeA.expectMsgAllOf(
+        Action(5, "a-5"), // re-delivered
+        Action(4, "a-4")) // re-delivered, 3rd time
 
       probeA.expectNoMsg(1.second)
     }
