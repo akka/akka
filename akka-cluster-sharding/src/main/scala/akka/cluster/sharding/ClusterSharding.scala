@@ -20,7 +20,7 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManager
-import akka.persistence.BackoffSupervisor
+import akka.pattern.BackoffSupervisor
 import akka.util.ByteString
 import akka.pattern.ask
 import akka.dispatch.Dispatchers

@@ -199,6 +199,37 @@ external resource, which may also be one of its own children. If a third party
 terminates a child by way of the ``system.stop(child)`` method or sending a
 :class:`PoisonPill`, the supervisor might well be affected.
 
+.. _backoff-supervisor:
+
+Delayed restarts with the BackoffSupervisor pattern
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Provided as a build-in pattern the ``akka.pattern.BackoffSupervisor`` actor implements the so-called
+*exponential backoff supervision strategy*, which can be used to death-watch an actor,
+and when it terminates try to start it again, each time with a growing time delay between those restarts.
+
+This pattern is useful when the started actor fails because some external resource is not available,
+and we need to give it some time to start-up again. One of the prime examples when this is useful is
+when a :ref:`PersistentActor <persistence-scala>` fails with an persistence failure - which indicates that
+the database may be down or overloaded, in such situations it makes most sense to give it a little bit of time
+to recover before the peristent actor is restarted.
+
+The following Scala snippet shows how to create a backoff supervisor which will start the given echo actor
+in increasing intervals of 3, 6, 12, 24 and finally 30 seconds:
+
+.. includecode:: ../scala/code/docs/pattern/BackoffSupervisorDocSpec.scala#backoff
+
+The above is equivalent to this Java code:
+
+.. includecode:: ../java/code/docs/pattern/BackoffSupervisorDocTest.java#backoff-imports
+.. includecode:: ../java/code/docs/pattern/BackoffSupervisorDocTest.java#backoff
+
+Using a ``randomFactor`` to add a little bit of additional variance to the backoff intervals
+is highly recommended, in order to avoid multiple actors re-start at the exact same point in time,
+for example because they were stopped due to a shared resource such as a database going down
+and re-starting after the same configured interval. By adding additional randomness to the
+re-start intervals the actors will start in slightly different points in time, thus avoiding
+large spikes of traffic hitting the recovering shared database or other resource that they all need to contact.
+
 One-For-One Strategy vs. All-For-One Strategy
 ---------------------------------------------
 

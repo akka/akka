@@ -11,6 +11,7 @@ import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
+import akka.pattern.BackoffSupervisor
 import akka.cluster.Cluster
 import akka.persistence.PersistentActor
 import akka.persistence.Persistence
@@ -26,7 +27,7 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.cluster.singleton.ClusterSingletonManagerSettings
-import akka.persistence.BackoffSupervisor
+import akka.pattern.BackoffSupervisor
 
 object ClusterShardingSpec extends MultiNodeConfig {
   val controller = role("controller")

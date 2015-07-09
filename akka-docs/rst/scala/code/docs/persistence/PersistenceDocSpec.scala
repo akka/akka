@@ -5,6 +5,7 @@
 package docs.persistence
 
 import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+import akka.pattern.BackoffSupervisor
 import akka.persistence._
 
 import scala.concurrent.duration._

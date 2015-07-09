@@ -1,12 +1,11 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.persistence
+package akka.pattern
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.Actor
-import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.DeadLetterSuppression
 import akka.actor.Props
@@ -17,6 +16,8 @@ import scala.concurrent.duration.Duration
 object BackoffSupervisor {
 
   /**
+   * Props for creating an [[BackoffSupervisor]] actor.
+   *
    * @param childProps the [[akka.actor.Props]] of the child actor that
    *   will be started and supervised
    * @param childName name of the child actor
@@ -24,8 +25,8 @@ object BackoffSupervisor {
    *   started again, if it is terminated
    * @param maxBackoff the exponential back-off is capped to this duration
    * @param randomFactor after calculation of the exponential back-off an additional
-   *   random delay based on this factor is added, e.g. 0.2 adds up to 20%
-   *   delay
+   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
+   *   In order to skip this additional delay pass in `0`.
    */
   def props(
     childProps: Props,
@@ -64,8 +65,14 @@ object BackoffSupervisor {
 
 /**
  * This actor can be used to supervise a child actor and start it again
- * after a back-off duration if the child actor is stopped. This is useful
- * for persistent actors, which are stopped in case of persistence failures.
+ * after a back-off duration if the child actor is stopped.
+ *
+ * This is useful in situations where the re-start of the child actor should be
+ * delayed e.g. in order to give an external resource time to recover before the
+ * child actor tries contacting it again (after being restarted).
+ *
+ * Specifically this pattern is useful for for persistent actors,
+ * which are stopped in case of persistence failures.
  * Just restarting them immediately would probably fail again (since the data
  * store is probably unavailable). It is better to try again after a delay.
  *
@@ -81,13 +88,13 @@ object BackoffSupervisor {
  * actors hit the backend resource at the same time.
  *
  * You can retrieve the current child `ActorRef` by sending `BackoffSupervisor.GetCurrentChild`
- * message to this actor and it will reply with [[BackoffSupervisor.CurrentChild]] containing the
- * `ActorRef` of the current child, if any.
+ * message to this actor and it will reply with [[akka.pattern.BackoffSupervisor.CurrentChild]]
+ * containing the `ActorRef` of the current child, if any.
  *
  * The `BackoffSupervisor` forwards all other messages to the child, if it is currently running.
  *
  * The child can stop itself and send a [[akka.actor.PoisonPill]] to the parent supervisor
- * if it want to do an intentional stop.
+ * if it wants to do an intentional stop.
  */
 final class BackoffSupervisor(
   childProps: Props,
@@ -119,7 +126,7 @@ final class BackoffSupervisor(
         if (restartCount >= 30) // Duration overflow protection (> 100 years)
           maxBackoff
         else
-          (maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd) match {
+          maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd match {
             case f: FiniteDuration ⇒ f
             case _                 ⇒ maxBackoff
           }
