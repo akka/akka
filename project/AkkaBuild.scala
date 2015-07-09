@@ -1388,7 +1388,7 @@ object AkkaBuild extends Build {
 
     val http = Nil // FIXME #15689
 
-    val httpTestKit = exports(Seq("akka.http.scaladsl.testkit.*"))
+    val httpTestKit = Nil
 
     val stream = exports(Seq("akka.stream.*"))
 
