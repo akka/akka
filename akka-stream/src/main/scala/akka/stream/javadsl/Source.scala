@@ -180,6 +180,9 @@ object Source {
    * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
    * there is no space available in the buffer.
    *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] is not supported, and an
+   * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
+   *
    * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped
    * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
    * not matter.

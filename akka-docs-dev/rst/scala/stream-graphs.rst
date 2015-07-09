@@ -275,8 +275,8 @@ Cycles in bounded flow graphs need special considerations to avoid potential dea
 This section shows several examples of problems that can arise from the presence of feedback arcs in stream processing
 graphs.
 
-The first example demonstrates a graph that contains a naïve cycle (the presence of cycles is enabled by calling
-``allowCycles()`` on the builder). The graph takes elements from the source, prints them, then broadcasts those elements
+The first example demonstrates a graph that contains a naïve cycle.
+The graph takes elements from the source, prints them, then broadcasts those elements
 to a consumer (we just used ``Sink.ignore`` for now) and to a feedback arc that is merged back into the main stream via
 a ``Merge`` junction.
 
