@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model;
 
+import akka.http.impl.util.Util;
+import akka.http.scaladsl.model.HttpEntity;
 import akka.util.ByteString;
 
 /**
@@ -31,4 +33,30 @@ public abstract class ChunkStreamPart {
      * it will be empty.
      */
     public abstract Iterable<HttpHeader> getTrailerHeaders();
+
+    /**
+     * Creates a chunk from data and extension.
+     */
+    public static ChunkStreamPart create(ByteString data, String extension) {
+        return new HttpEntity.Chunk(data, extension);
+    }
+
+    /**
+     * Creates a chunk from data with an empty extension.
+     */
+    public static ChunkStreamPart create(ByteString data) {
+        return create(data, "");
+    }
+
+    /**
+     * The default last ChunkStreamPart that has no extension and no trailer headers.
+     */
+    public static final ChunkStreamPart LAST = HttpEntity.LastChunk$.MODULE$;
+
+    /**
+     * Creates a last chunk with extension and headers.
+     */
+    public static ChunkStreamPart createLast(String extension, Iterable<HttpHeader> trailerHeaders){
+        return new HttpEntity.LastChunk(extension, Util.<HttpHeader, akka.http.scaladsl.model.HttpHeader>convertIterable(trailerHeaders));
+    }
 }
