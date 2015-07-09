@@ -37,7 +37,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       Get() ~> getFromFile(Properties.javaHome) ~> check { handled shouldEqual (false) }
     }
     "return the file content with the MediaType matching the file extension" in {
-      val file = File.createTempFile("akkaHttpTest", ".PDF")
+      val file = File.createTempFile("akka Http Test", ".PDF")
       try {
         writeAllText("This is PDF", file)
         Get() ~> getFromFile(file.getPath) ~> check {
@@ -104,11 +104,18 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "reject requests to directory resources with trailing slash" in {
       Get() ~> getFromResource("someDir/") ~> check { handled shouldEqual (false) }
     }
-    "reject requests to directory resources from an Archive " in {
+    "reject requests to directory resources from an archive " in {
       Get() ~> getFromResource("com/typesafe/config") ~> check { handled shouldEqual (false) }
     }
-    "reject requests to directory resources from an Archive with trailing slash" in {
+    "reject requests to directory resources from an archive with trailing slash" in {
       Get() ~> getFromResource("com/typesafe/config/") ~> check { handled shouldEqual (false) }
+    }
+    "return the resource from an archive with spaces and umlauts" in {
+      // contained within lib/jar with späces.jar
+      Get() ~> getFromResource("test-resource.txt") ~> check {
+        mediaType shouldEqual `text/plain`
+        responseAs[String] shouldEqual "I have spaces, too!"
+      }
     }
     "return the resource content with the MediaType matching the file extension" in {
       val route = getFromResource("sample.html")
@@ -129,7 +136,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       runCheck()
       runCheck() // additional test to check that no internal state is kept
     }
-    "return the resource content from an Archive" in {
+    "return the resource content from an archive" in {
       Get() ~> getFromResource("com/typesafe/config/Config.class") ~> check {
         mediaType shouldEqual `application/octet-stream`
         responseEntity.toStrict(1.second).awaitResult(1.second).data.asByteBuffer.getInt shouldEqual 0xCAFEBABE
@@ -160,7 +167,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "return the resource content with the MediaType matching the file extension - example 3" in {
       Get("subDirectory/empty.pdf") ~> getFromResourceDirectory("") ~> verify
     }
-    "return the resource content from an Archive" in {
+    "return the resource content from an archive" in {
       Get("Config.class") ~> getFromResourceDirectory("com/typesafe/config") ~> check {
         mediaType shouldEqual `application/octet-stream`
         responseEntity.toStrict(1.second).awaitResult(1.second).data.asByteBuffer.getInt shouldEqual 0xCAFEBABE
@@ -178,10 +185,10 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "reject requests to sub directory resources with trailing slash" in {
       Get("sub/") ~> getFromResourceDirectory("someDir") ~> check { handled shouldEqual (false) }
     }
-    "reject requests to directory resources from an Archive" in {
+    "reject requests to directory resources from an archive" in {
       Get() ~> getFromResourceDirectory("com/typesafe/config") ~> check { handled shouldEqual (false) }
     }
-    "reject requests to directory resources from an Archive with trailing slash" in {
+    "reject requests to directory resources from an archive with trailing slash" in {
       Get() ~> getFromResourceDirectory("com/typesafe/config/") ~> check { handled shouldEqual (false) }
     }
   }
