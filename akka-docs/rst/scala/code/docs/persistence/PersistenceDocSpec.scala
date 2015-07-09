@@ -102,7 +102,7 @@ object PersistenceDocSpec {
 
   object AtLeastOnce {
     //#at-least-once-example
-    import akka.actor.{ Actor, ActorPath }
+    import akka.actor.{ Actor, ActorPath, ActorSelection }
     import akka.persistence.AtLeastOnceDelivery
 
     case class Msg(deliveryId: Long, s: String)
@@ -112,7 +112,7 @@ object PersistenceDocSpec {
     case class MsgSent(s: String) extends Evt
     case class MsgConfirmed(deliveryId: Long) extends Evt
 
-    class MyPersistentActor(destination: ActorPath)
+    class MyPersistentActor(destination: ActorSelection)
       extends PersistentActor with AtLeastOnceDelivery {
 
       override def persistenceId: String = "persistence-id"
@@ -128,7 +128,7 @@ object PersistenceDocSpec {
 
       def updateState(evt: Evt): Unit = evt match {
         case MsgSent(s) =>
-          deliver(destination, deliveryId => Msg(deliveryId, s))
+          deliver(destination)(deliveryId => Msg(deliveryId, s))
 
         case MsgConfirmed(deliveryId) => confirmDelivery(deliveryId)
       }

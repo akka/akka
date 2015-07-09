@@ -91,8 +91,7 @@ class NoPersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int, val upS
 
   override def receiveCommand = {
     case n: Int =>
-      deliver(downStream, deliveryId =>
-        Msg(deliveryId, n))
+      deliver(downStream)(deliveryId => Msg(deliveryId, n))
       if (n == respondAfter)
         //switch to wait all message confirmed
         context.become(waitConfirm)
@@ -125,8 +124,7 @@ class PersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int, val upStr
   override def receiveCommand = {
     case n: Int =>
       persist(MsgSent(n)) { e =>
-        deliver(downStream, deliveryId =>
-          Msg(deliveryId, n))
+        deliver(downStream)(deliveryId => Msg(deliveryId, n))
         if (n == respondAfter)
           //switch to wait all message confirmed
           context.become(waitConfirm)
@@ -160,8 +158,7 @@ class PersistAsyncPersistentActorWithAtLeastOnceDelivery(respondAfter: Int, val 
   override def receiveCommand = {
     case n: Int =>
       persistAsync(MsgSent(n)) { e =>
-        deliver(downStream, deliveryId =>
-          Msg(deliveryId, n))
+        deliver(downStream)(deliveryId => Msg(deliveryId, n))
         if (n == respondAfter)
           //switch to wait all message confirmed
           context.become(waitConfirm)

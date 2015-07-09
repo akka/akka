@@ -3,11 +3,7 @@
  */
 package docs.persistence;
 
-import akka.actor.AbstractActor;
-import akka.actor.ActorPath;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
+import akka.actor.*;
 import akka.japi.Procedure;
 import akka.japi.pf.ReceiveBuilder;
 import akka.pattern.BackoffSupervisor;
@@ -170,9 +166,9 @@ public class LambdaPersistenceDocTest {
       }
 
       class MyPersistentActor extends AbstractPersistentActorWithAtLeastOnceDelivery {
-        private final ActorPath destination;
+        private final ActorSelection destination;
 
-        public MyPersistentActor(ActorPath destination) {
+        public MyPersistentActor(ActorSelection destination) {
             this.destination = destination;
         }
 

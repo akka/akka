@@ -6,13 +6,9 @@ package docs.persistence;
 
 import java.util.concurrent.TimeUnit;
 
+import akka.actor.*;
 import akka.pattern.BackoffSupervisor;
 import scala.concurrent.duration.Duration;
-import akka.actor.ActorPath;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.actor.UntypedActor;
 import akka.japi.Function;
 import akka.japi.Procedure;
 import akka.persistence.*;
@@ -147,12 +143,12 @@ public class PersistenceDocTest {
       }
       
       class MyPersistentActor extends UntypedPersistentActorWithAtLeastOnceDelivery {
-        private final ActorPath destination;
+        private final ActorSelection destination;
         
         @Override
         public String persistenceId() { return "persistence-id"; }
 
-        public MyPersistentActor(ActorPath destination) {
+        public MyPersistentActor(ActorSelection destination) {
             this.destination = destination;
         }
 
