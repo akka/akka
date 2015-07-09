@@ -13,6 +13,7 @@ import akka.stream.ActorAttributes;
 import akka.stream.io.SynchronousFileSink;
 import akka.stream.io.SynchronousFileSource;
 import akka.stream.javadsl.Sink;
+import docs.stream.SilenceSystemOut;
 import docs.stream.cookbook.RecipeParseLines;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -40,6 +41,8 @@ public class StreamFileDocTest {
   }
 
   final Materializer mat = ActorMaterializer.create(system);
+
+  final SilenceSystemOut.System System = SilenceSystemOut.get();
 
   {
     //#file-source

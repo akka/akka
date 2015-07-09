@@ -207,12 +207,14 @@ public class TwitterStreamQuickstartDocTest {
       //#backpressure-by-readline
     }
   }
-  
-  
+
+
   final Materializer mat = ActorMaterializer.create(system);
-  
+
   @Test
   public void demonstrateFilterAndMap() {
+    final SilenceSystemOut.System System = SilenceSystemOut.get();
+
     //#authors-filter-map
     final Source<Author, BoxedUnit> authors =
       tweets

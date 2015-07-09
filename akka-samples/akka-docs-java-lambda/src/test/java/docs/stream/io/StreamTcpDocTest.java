@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import akka.stream.io.Framing;
+import docs.stream.SilenceSystemOut;
 import docs.stream.cookbook.RecipeParseLines;
 import java.net.InetSocketAddress;
 
@@ -44,6 +45,8 @@ public class StreamTcpDocTest {
 
   final Materializer mat = ActorMaterializer.create(system);
 
+  final SilenceSystemOut.System System = SilenceSystemOut.get();
+
   private final ConcurrentLinkedQueue<String> input = new ConcurrentLinkedQueue<String>();
   {
     input.add("Hello world");
@@ -65,7 +68,7 @@ public class StreamTcpDocTest {
       //#echo-server-simple-bind
     }
     {
-      
+
       final InetSocketAddress localhost = SocketUtils.temporaryServerAddress();
       final Source<IncomingConnection, Future<ServerBinding>> connections =
         Tcp.get(system).bind(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
@@ -150,12 +153,12 @@ public class StreamTcpDocTest {
           Tcp.get(system).outgoingConnection("127.0.0.1", 8889);
       //#repl-client
     }
-    
+
     {
       final Flow<ByteString, ByteString, Future<OutgoingConnection>> connection =
           Tcp.get(system).outgoingConnection(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
       //#repl-client
-  
+
       final PushStage<String, ByteString> replParser = new PushStage<String, ByteString>() {
         @Override public SyncDirective onPush(String elem, Context<ByteString> ctx) {
           if (elem.equals("q"))
@@ -164,14 +167,14 @@ public class StreamTcpDocTest {
             return ctx.push(ByteString.fromString(elem + "\n"));
         }
       };
-  
+
       final Flow<ByteString, ByteString, BoxedUnit> repl = Flow.of(ByteString.class)
         .via(Framing.delimiter(ByteString.fromString("\n"), 256, false))
         .map(bytes -> bytes.utf8String())
         .map(text -> {System.out.println("Server: " + text); return "next";})
         .map(elem -> readLine("> "))
         .transform(() -> replParser);
-  
+
       connection.join(repl).run(mat);
     //#repl-client
     }

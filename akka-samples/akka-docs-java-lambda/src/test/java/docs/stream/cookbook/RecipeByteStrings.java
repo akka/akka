@@ -15,7 +15,6 @@ import akka.stream.stage.PushStage;
 import akka.stream.stage.SyncDirective;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
-import docs.stream.SilenceSystemOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

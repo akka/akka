@@ -37,6 +37,8 @@ public class StreamBuffersRateDocTest {
 
   final Materializer mat = ActorMaterializer.create(system);
 
+  final SilenceSystemOut.System System = SilenceSystemOut.get();
+
   @Test
   public void demonstratePipelining() {
     //#pipelining
