@@ -522,9 +522,16 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     new Source(delegate.transform(() ⇒ mkStage.create()))
 
   /**
-   * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
+   * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements)
+   * and returns a pair containing a strict sequence of the taken element
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
+   *
+   * In case of an upstream error, depending on the current state
+   *  - the master stream signals the error if less than `n` elements has been seen, and therefore the substream
+   *    has not yet been emitted
+   *  - the tail substream signals the error after the prefix and tail has been emitted by the main stream
+   *    (at that point the main stream has already completed)
    */
   def prefixAndTail(n: Int): javadsl.Source[akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
     new Source(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ akka.japi.Pair(taken.asJava, tail.asJava) })
