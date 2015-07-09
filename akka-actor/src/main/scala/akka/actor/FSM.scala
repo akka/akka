@@ -511,6 +511,8 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * last call within the constructor, or [[akka.actor.Actor#preStart]] and
    * [[akka.actor.Actor#postRestart]]
    *
+   * An initial `currentState -> currentState` notification will be triggered by calling this method.
+   *
    * @see [[#startWith]]
    */
   final def initialize(): Unit = makeTransition(currentState)
