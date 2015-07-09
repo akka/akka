@@ -9,6 +9,7 @@ import akka.stream.Supervision._
 import akka.stream.impl.Stages.StageModule
 import akka.stream.stage.Stage
 import scala.collection.immutable
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor._
 import akka.stream.{ AbruptTerminationException, Attributes, ActorMaterializerSettings, ActorMaterializer }
@@ -310,6 +311,19 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       subs.expectNext("5-s")
       subs.expectNext("6-s")
       subs.expectComplete()
+    }
+
+    "be possible to convert to a processor, and should be able to take a Processor" in {
+      val identity1 = Flow[Int].toProcessor
+      val identity2 = Flow(() ⇒ identity1.run())
+      Await.result(
+        Source(1 to 10).via(identity2).grouped(100).runWith(Sink.head),
+        3.seconds) should ===(1 to 10)
+
+      // Reusable:
+      Await.result(
+        Source(1 to 10).via(identity2).grouped(100).runWith(Sink.head),
+        3.seconds) should ===(1 to 10)
     }
   }
 

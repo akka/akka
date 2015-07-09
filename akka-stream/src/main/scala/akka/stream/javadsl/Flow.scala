@@ -8,6 +8,8 @@ import akka.stream._
 import akka.japi.{ Util, Pair }
 import akka.japi.function
 import akka.stream.scaladsl
+import akka.stream.scaladsl.{ Keep, Sink, Source }
+import org.reactivestreams.{ Subscription, Publisher, Subscriber, Processor }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -30,6 +32,9 @@ object Flow {
   /** Create a `Flow` which can process elements of type `T`. */
   def create[T](): javadsl.Flow[T, T, Unit] =
     adapt(scaladsl.Flow[T])
+
+  def create[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, Unit] =
+    adapt(scaladsl.Flow(() ⇒ processorFactory.create()))
 
   /** Create a `Flow` which can process elements of type `T`. */
   def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] =
@@ -72,12 +77,41 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
+   *
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   *
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * [[Flow#viaMat viaMat]] if a different strategy is needed.
    */
   def via[T, M](flow: Graph[FlowShape[Out, T], M]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.via(flow))
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * flow into the materialized value of the resulting Flow.
    */
   def viaMat[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
     new Flow(delegate.viaMat(flow)(combinerToScala(combine)))
@@ -809,6 +843,16 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   def log(name: String): javadsl.Flow[In, Out, Mat] =
     this.log(name, javaIdentityFunction[Out], null)
 
+  /**
+   * Converts this Flow to a [[RunnableGraph]] that materializes to a Reactive Streams [[org.reactivestreams.Processor]]
+   * which implements the operations encapsulated by this Flow. Every materialization results in a new Processor
+   * instance, i.e. the returned [[RunnableGraph]] is reusable.
+   *
+   * @return A [[RunnableGraph]] that materializes to a Processor when run() is called on it.
+   */
+  def toProcessor: RunnableGraph[Processor[In @uncheckedVariance, Out @uncheckedVariance]] = {
+    new RunnableGraphAdapter(delegate.toProcessor)
+  }
 }
 
 /**
