@@ -147,12 +147,6 @@ object Source {
     new Source(scaladsl.Source.single(element))
 
   /**
-   * Create a `Source` with the given elements.
-   */
-  def elements[T](elems: T*): Source[T, Unit] =
-    new Source(scaladsl.Source(() ⇒ elems.iterator))
-
-  /**
    * Create a `Source` that will continually emit the given element.
    */
   def repeat[T](element: T): Source[T, Unit] =
