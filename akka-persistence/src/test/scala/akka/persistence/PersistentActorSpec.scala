@@ -678,7 +678,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       persistentActor ! GetState
       expectMsg(List("a-1", "a-2", "b-10", "b-11", "b-12", "c-10", "c-11", "c-12"))
     }
-    "recover on command failure xoxo" in {
+    "recover on command failure" in {
       val persistentActor = namedPersistentActor[Behavior3PersistentActor]
       persistentActor ! Cmd("b")
       persistentActor ! "boom"

@@ -503,7 +503,9 @@ trait FSM[S, D, E] extends Actor with Listeners with ActorLogging {
   /**
    * Verify existence of initial state and setup timers. This should be the
    * last call within the constructor, or [[akka.actor.Actor#preStart]] and
-   * [[akka.actor.Actor#postRestart]]
+   * [[akka.actor.Actor#postRestart]].
+   *
+   * An initial `currentState -> currentState` notification will be triggered by calling this method.
    *
    * @see [[#startWith]]
    */
