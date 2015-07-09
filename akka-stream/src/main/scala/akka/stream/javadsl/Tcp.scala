@@ -100,6 +100,10 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
    *
+   * Please note that the startup of the server is asynchronous, i.e. after materializing the enclosing
+   * [[akka.stream.scaladsl.RunnableGraph]] the server is not immediately available. Only after the materialized future
+   * completes is the server ready to accept client connections.
+   *
    * @param interface The interface to listen on
    * @param port      The port to listen on
    * @param backlog   Controls the size of the connection backlog
@@ -127,6 +131,10 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Creates a [[Tcp.ServerBinding]] without specifying options.
    * It represents a prospective TCP server binding on the given `endpoint`.
+   *
+   * Please note that the startup of the server is asynchronous, i.e. after materializing the enclosing
+   * [[akka.stream.scaladsl.RunnableGraph]] the server is not immediately available. Only after the materialized future
+   * completes is the server ready to accept client connections.
    */
   def bind(interface: String, port: Int): Source[IncomingConnection, Future[ServerBinding]] =
     Source.adapt(delegate.bind(interface, port)

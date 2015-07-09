@@ -37,7 +37,9 @@ stream if there is demand from downstream, otherwise they will be buffered until
 demand is received.
 
 Depending on the defined :class:`OverflowStrategy` it might drop elements if there is no space
-available in the buffer.
+available in the buffer. The strategy ``OverflowStrategy.backpressure()`` is not supported
+for this Source type, you should consider using ``ActorPublisher`` if you want a backpressured
+actor interface.
 
 The stream can be completed successfully by sending ``akka.actor.PoisonPill`` or
 ``akka.actor.Status.Success`` to the actor reference.
