@@ -9,6 +9,7 @@ Akka HTTP
    introduction
    configuration
    http-model
-   low-level-server-side-api
+   server-side/low-level-server-side-api
+   server-side/websocket-support
    routing-dsl/index
    client-side/index

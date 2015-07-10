@@ -1,3 +1,5 @@
+.. _server-side-websocket-support-scala:
+
 Server-Side WebSocket Support
 =============================
 

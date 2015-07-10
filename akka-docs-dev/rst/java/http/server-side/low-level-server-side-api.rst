@@ -62,7 +62,7 @@ Starting and Stopping
 On the most basic level an Akka HTTP server is bound by invoking the ``bind`` method of the `akka.http.javadsl.Http`_
 extension:
 
-.. includecode:: ../code/docs/http/javadsl/HttpServerExampleSpec.java
+.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleSpec.java
    :include: binding-example
 
 Arguments to the ``Http().bind`` method specify the interface and port to bind to and register interest in handling
@@ -82,6 +82,7 @@ useful for example when binding to port zero (and thus letting the OS pick an av
 
 .. _akka.http.javadsl.Http: @github@/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala
 
+.. _http-low-level-server-side-example-java:
 
 Request-Response Cycle
 ----------------------
@@ -98,7 +99,7 @@ Requests are handled by calling one of the ``handleWithXXX`` methods with a hand
 
 Here is a complete example:
 
-.. includecode:: ../code/docs/http/javadsl/HttpServerExampleSpec.java
+.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleSpec.java
   :include: full-server-example
 
 In this example, a request is handled by transforming the request stream with a function ``Function<HttpRequest, HttpResponse>``
@@ -111,6 +112,7 @@ if HTTP pipelining is enabled where processing of multiple incoming requests may
 ``handleWithSyncHandler`` or ``handleWithAsyncHandler``, or the ``map`` or ``mapAsync`` stream operators, this
 requirement will be automatically fulfilled.
 
+See :ref:`routing-java` for a more convenient high-level DSL to create request handlers.
 
 Streaming Request/Response Entities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

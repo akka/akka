@@ -8,7 +8,7 @@ with a browser is of course also in scope it is not the primary focus of Akka HT
 Akka HTTP follows a rather open design and many times offers several different API levels for "doing the same thing".
 You get to pick the API level of abstraction that is most suitable for your application.
 This means that, if you have trouble achieving something using a high-level API, there's a good chance that you can get
-it done with a low-level API, which offers more flexibility but might require you do write more application code.
+it done with a low-level API, which offers more flexibility but might require you to write more application code.
 
 Akka HTTP is structured into several modules:
 

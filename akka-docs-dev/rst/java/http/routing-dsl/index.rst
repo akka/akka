@@ -9,3 +9,6 @@ High-level Server-Side API
    :maxdepth: 1
 
    overview
+   routes
+   directives/index
+   request-vals/index
