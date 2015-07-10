@@ -28,4 +28,13 @@ public class SimpleServerTest extends JUnitRouteTest {
             .assertStatusCode(200)
             .assertEntity("42 * 23 = 966");
     }
+
+    @Test
+    public void testPostWithBody() {
+        TestResponse response = route.run(HttpRequest.POST("/hello").withEntity("John"));
+
+        response
+            .assertStatusCode(200)
+            .assertEntity("Hello John!");
+    }
 }

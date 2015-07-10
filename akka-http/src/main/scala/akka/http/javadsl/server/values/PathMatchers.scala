@@ -8,8 +8,9 @@ import java.{ lang ⇒ jl, util ⇒ ju }
 
 import akka.http.impl.server.PathMatcherImpl
 import akka.http.javadsl.server.RequestVal
-import akka.http.scaladsl.server.{ PathMatcher0, PathMatcher1, PathMatchers ⇒ ScalaPathMatchers }
+import akka.http.scaladsl.server.{ PathMatcher0, PathMatcher1, PathMatchers ⇒ ScalaPathMatchers, PathMatcher ⇒ ScalaPathMatcher }
 import akka.japi.Option
+import akka.japi.function.Function
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -49,6 +50,9 @@ object PathMatchers {
   def segments(maxNumber: Int): PathMatcher[ju.List[String]] = matcher(_.Segments(maxNumber).map(_.asJava))
 
   def rest: PathMatcher[String] = matcher(_.Rest)
+
+  def segmentFromString[T](convert: Function[String, T], clazz: Class[T]): PathMatcher[T] =
+    matcher(_ ⇒ ScalaPathMatchers.Segment.map(convert(_)))(ClassTag(clazz))
 
   private def matcher[T: ClassTag](scalaMatcher: ScalaPathMatchers.type ⇒ PathMatcher1[T]): PathMatcher[T] =
     new PathMatcherImpl[T](scalaMatcher(ScalaPathMatchers))
