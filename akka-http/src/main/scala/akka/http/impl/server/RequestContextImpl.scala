@@ -4,6 +4,10 @@
 
 package akka.http.impl.server
 
+import akka.http.javadsl.model.ContentType
+import akka.http.scaladsl.model.HttpEntity
+import akka.stream.Materializer
+
 import scala.concurrent.{ ExecutionContext, Future }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -23,8 +27,11 @@ private[http] final case class RequestContextImpl(underlying: ScalaRequestContex
   def completeWith(futureResult: Future[RouteResult]): RouteResult =
     futureResult.flatMap {
       case r: RouteResultImpl ⇒ r.underlying
-    }(executionContext)
+    }(executionContext())
   def complete(text: String): RouteResult = underlying.complete(text)
+  def complete(contentType: ContentType, text: String): RouteResult =
+    underlying.complete(HttpEntity(contentType.asScala, text))
+
   def completeWithStatus(statusCode: Int): RouteResult =
     completeWithStatus(jm.StatusCodes.get(statusCode))
   def completeWithStatus(statusCode: jm.StatusCode): RouteResult =
@@ -39,5 +46,6 @@ private[http] final case class RequestContextImpl(underlying: ScalaRequestContex
 
   def notFound(): RouteResult = underlying.reject()
 
-  def executionContext: ExecutionContext = underlying.executionContext
+  def executionContext(): ExecutionContext = underlying.executionContext
+  def materializer(): Materializer = underlying.materializer
 }
