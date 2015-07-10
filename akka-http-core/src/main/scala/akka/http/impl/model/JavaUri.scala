@@ -78,4 +78,6 @@ case class JavaUri(uri: sm.Uri) extends jm.Uri {
 
   def fragment(fragment: Option[String]): jm.Uri = t(_.copy(fragment = fragment))
   def fragment(fragment: String): jm.Uri = t(_.withFragment(fragment))
+
+  override def toString: String = uri.toString
 }

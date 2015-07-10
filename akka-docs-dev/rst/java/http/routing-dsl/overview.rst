@@ -56,6 +56,12 @@ fields, details of the request like headers, URI, the entity, or authentication 
 
 Read more about :ref:`request-vals-java`.
 
+The actual application-defined processing of a request is defined with a ``Handler`` instance or by specifying
+a handling method with reflection. A handler can receive the value of any request values and is converted into
+a ``Route`` by using one of the ``BasicDirectives.handleWith`` directives.
+
+Read more about :ref:`handlers-java`.
+
 Requests or responses often contain data that needs to be interpreted or rendered in some way.
 Akka-http provides the abstraction of ``Marshaller`` and ``Unmarshaller`` that define how domain model objects map
 to HTTP entities.
