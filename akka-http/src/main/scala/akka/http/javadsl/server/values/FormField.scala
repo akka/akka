@@ -6,10 +6,13 @@ package akka.http.javadsl.server
 package values
 
 import java.{ lang ⇒ jl }
+import akka.japi.function.Function
 import akka.japi.{ Option ⇒ JOption }
 
-import akka.http.impl.server.FormFieldImpl
+import akka.http.impl.server.{ Util, FormFieldImpl }
 import akka.http.scaladsl.unmarshalling._
+
+import scala.reflect.ClassTag
 
 trait FormField[T] extends RequestVal[T] {
   def optional: RequestVal[JOption[T]]
@@ -32,4 +35,9 @@ object FormFields {
   def hexShortValue(name: String): FormField[jl.Short] = FormFieldImpl(name.as(Unmarshaller.HexShort))
   def hexIntValue(name: String): FormField[jl.Integer] = FormFieldImpl(name.as(Unmarshaller.HexInt))
   def hexLongValue(name: String): FormField[jl.Long] = FormFieldImpl(name.as(Unmarshaller.HexLong))
+
+  def fromString[T](name: String, convert: Function[String, T], clazz: Class[T]): FormField[T] = {
+    implicit val tTag: ClassTag[T] = ClassTag(clazz)
+    FormFieldImpl(name.as(Util.fromStringUnmarshallerFromFunction(convert)))
+  }
 }
