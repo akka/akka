@@ -23,12 +23,15 @@ public abstract class HttpsContext {
     public abstract Option<ClientAuth> getClientAuth();
 
     public abstract Option<SSLParameters> getSslParameters();
-    
+
+    //#http-context-creation
     public static HttpsContext create(SSLContext sslContext,
                                       Option<Collection<String>> enabledCipherSuites,
                                       Option<Collection<String>> enabledProtocols,
                                       Option<ClientAuth> clientAuth,
-                                      Option<SSLParameters> sslParameters) {
+                                      Option<SSLParameters> sslParameters)
+    //#http-context-creation
+    {
         return akka.http.scaladsl.HttpsContext.create(sslContext, enabledCipherSuites, enabledProtocols,
                 clientAuth, sslParameters);
     }
