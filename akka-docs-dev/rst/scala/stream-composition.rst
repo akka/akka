@@ -132,7 +132,7 @@ general closed graph. For example the network on the diagram can be realized lik
 .. includecode:: code/docs/stream/CompositionDocSpec.scala#complex-graph
 
 In the code above we used the implicit port numbering feature (to make the graph more readable and similar to the diagram)
-and we imported :class:`Source` s, :class:`Sink` s and :class`Flow` s explicitly. It is possible to refer to the ports
+and we imported :class:`Source` s, :class:`Sink` s and :class:`Flow` s explicitly. It is possible to refer to the ports
 explicitly, and it is not necessary to import our linear stages via ``add()``, so another version might look like this:
 
 .. includecode:: code/docs/stream/CompositionDocSpec.scala#complex-graph-alt
@@ -192,6 +192,10 @@ The code version of the above closed graph might look like this:
 
 .. includecode:: code/docs/stream/CompositionDocSpec.scala#partial-flow-dsl
 
+.. note::
+  All graph builder sections check if the resulting graph has all ports connected except the exposed ones and will
+  throw an exception if this is violated.
+
 We are still in debt of demonstrating that :class:`RunnableGraph` is a component just like any other, which can
 be embedded in graphs. In the following snippet we embed one closed graph in another:
 
@@ -223,14 +227,15 @@ actor, and returns an :class:`ActorRef` that can be used to communicate with the
 When it comes to streams, each materialization creates a new running network corresponding to the blueprint that was
 encoded in the provided :class:`RunnableGraph`. To be able to interact with the running network, each materialization
 needs to return a different object that provides the necessary interaction capabilities. In other words, the
-:class:`RunnableGraph` can be looked as a factory, which creates:
+:class:`RunnableGraph` can be seen as a factory, which creates:
 
   * a network of running processing entities, inaccessible from the outside
   * a materialized value, optionally providing a controlled interaction capability with the network
 
 Unlike actors though, each of the processing stages might provide a materialized value, so when we compose multiple
 stages or modules, we need to combine the materialized value as well (there are default rules which make this easier,
-see :ref:`flow-combine-mat-scala` for details). We demonstrate how this works by a code example and a diagram which
+for example `to()` and `via()` takes care of the most common case of taking the materialized value to the left.
+See :ref:`flow-combine-mat-scala` for details). We demonstrate how this works by a code example and a diagram which
 graphically demonstrates what is happening.
 
 The propagation of the individual materialized values from the enclosed modules towards the top will look like this:
