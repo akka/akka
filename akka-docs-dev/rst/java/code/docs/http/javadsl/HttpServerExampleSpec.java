@@ -5,6 +5,7 @@
 package docs.http.javadsl;
 
 import akka.actor.ActorSystem;
+import akka.http.impl.util.Util;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.IncomingConnection;
 import akka.http.javadsl.ServerBinding;
@@ -28,7 +29,7 @@ import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
 public class HttpServerExampleSpec {
-    public void bindingExample() {
+    public static void bindingExample() {
         //#binding-example
         ActorSystem system = ActorSystem.create();
         Materializer materializer = ActorMaterializer.create(system);
@@ -47,50 +48,74 @@ public class HttpServerExampleSpec {
                 })).run(materializer);
         //#binding-example
     }
-    public void fullServerExample() {
+    public static void fullServerExample() throws Exception {
         //#full-server-example
-        ActorSystem system = ActorSystem.create();
-        final Materializer materializer = ActorMaterializer.create(system);
+            ActorSystem system = ActorSystem.create();
+        //#full-server-example
+        try {
+            //#full-server-example
+            final Materializer materializer = ActorMaterializer.create(system);
 
-        Source<IncomingConnection, Future<ServerBinding>> serverSource =
-                Http.get(system).bind("localhost", 8080, materializer);
+            Source<IncomingConnection, Future<ServerBinding>> serverSource =
+                    Http.get(system).bind("localhost", 8080, materializer);
 
-        final Function<HttpRequest, HttpResponse> requestHandler =
-            new Function<HttpRequest, HttpResponse>() {
-                private final HttpResponse NOT_FOUND =
-                    HttpResponse.create()
-                        .withStatus(404)
-                        .withEntity("Unknown resource!");
+            //#request-handler
+            final Function<HttpRequest, HttpResponse> requestHandler =
+                new Function<HttpRequest, HttpResponse>() {
+                    private final HttpResponse NOT_FOUND =
+                        HttpResponse.create()
+                            .withStatus(404)
+                            .withEntity("Unknown resource!");
 
-                @Override
-                public HttpResponse apply(HttpRequest request) throws Exception {
-                    if (request.method() == HttpMethods.GET) {
-                        if (request.getUri().path().equals("/"))
-                            return
-                                HttpResponse.create()
-                                    .withEntity(MediaTypes.TEXT_HTML.toContentType(),
-                                        "<html><body>Hello world!</body></html>");
-                        else if (request.getUri().path().equals("/ping"))
-                            return HttpResponse.create().withEntity("PONG!");
-                        else
-                            return NOT_FOUND;
-                    }
-                    else return NOT_FOUND;
-                }
-            };
 
-        Future<ServerBinding> serverBindingFuture =
-                serverSource.to(Sink.foreach(
-                        new Procedure<IncomingConnection>() {
-                            @Override
-                            public void apply(IncomingConnection connection) throws Exception {
-                                System.out.println("Accepted new connection from " + connection.remoteAddress());
+                    @Override
+                    public HttpResponse apply(HttpRequest request) throws Exception {
+                        Uri uri = request.getUri();
+                        if (request.method() == HttpMethods.GET) {
+                            if (uri.path().equals("/"))
+                                return
+                                    HttpResponse.create()
+                                        .withEntity(MediaTypes.TEXT_HTML.toContentType(),
+                                            "<html><body>Hello world!</body></html>");
+                            else if (uri.path().equals("/hello")) {
+                                String name = Util.getOrElse(uri.parameter("name"), "Mister X");
 
-                                connection.handleWithSyncHandler(requestHandler, materializer);
-                                // this is equivalent to
-                                //connection.handleWith(Flow.of(HttpRequest.class).map(requestHandler), materializer);
+                                return
+                                    HttpResponse.create()
+                                        .withEntity("Hello " + name + "!");
                             }
-                        })).run(materializer);
-        //#full-server-example
+                            else if (uri.path().equals("/ping"))
+                                return HttpResponse.create().withEntity("PONG!");
+                            else
+                                return NOT_FOUND;
+                        }
+                        else return NOT_FOUND;
+                    }
+                };
+            //#request-handler
+
+            Future<ServerBinding> serverBindingFuture =
+                serverSource.to(Sink.foreach(
+                    new Procedure<IncomingConnection>() {
+                        @Override
+                        public void apply(IncomingConnection connection) throws Exception {
+                            System.out.println("Accepted new connection from " + connection.remoteAddress());
+
+                            connection.handleWithSyncHandler(requestHandler, materializer);
+                            // this is equivalent to
+                            //connection.handleWith(Flow.of(HttpRequest.class).map(requestHandler), materializer);
+                        }
+                    })).run(materializer);
+            //#full-server-example
+
+            Await.result(serverBindingFuture, new FiniteDuration(1, TimeUnit.SECONDS)); // will throw if binding fails
+            System.out.println("Press ENTER to stop.");
+            new BufferedReader(new InputStreamReader(System.in)).readLine();
+        } finally {
+            system.shutdown();
+        }
+    }
+    public static void main(String[] args) throws Exception {
+        fullServerExample();
     }
 }
