@@ -30,7 +30,7 @@ there are input and output channels to be handled. Due to the specific shape of 
 stack them on top of each other to build a layered protocol for example. The ``TLS`` support in Akka is for example
 implemented as a :class:`BidiFlow`.
 
-It is easy to see that these reusable components already allow the creation of complex processing networks. What we
+These reusable components already allow the creation of complex processing networks. What we
 have seen so far does not implement modularity though. It is desirable for example to package up a larger graph entity into
 a reusable component which hides its internals only exposing the ports that are meant to the users of the module
 to interact with. One good example is the ``Http`` server component, which is encoded internally as a
@@ -161,6 +161,9 @@ there is exactly one input and output port left, so we can declare it to have a 
 instance of it. While it is possible to create new :class:`Shape` types, it is usually recommended to use one of the
 matching built-in ones.
 
+The resulting graph is already a properly wrapped module, so there is no need to call `named()` to encapsulate the graph, but
+it is a good practice to give names to modules to help debugging.
+
 |
 
 .. image:: ../images/compose_graph_shape.png
@@ -210,14 +213,95 @@ stream processing entities in a convenient way.
 Materialized values
 -------------------
 
+After realizing that :class:`RunnableGraph` is nothing more than a module with no unused ports (it is an island), it becomes clear that
+after materialization the only way to communicate with the running stream processing logic is via some side-channel.
+This side channel is represented as a *materialized value*. The situation is similar to :class:`Actor` s, where the
+:class:`Props` instance describes the actor logic, but it is the call to ``actorOf()`` that creates an actually running
+actor, and returns an :class:`ActorRef` that can be used to communicate with the running actor itself. Since the
+:class:`Props` can be reused, each call will return a different reference.
+
+When it comes to streams, each materialization creates a new running network corresponding to the blueprint that was
+encoded in the provided :class:`RunnableGraph`. To be able to interact with the running network, each materialization
+needs to return a different object that provides the necessary interaction capabilities. In other words, the
+:class:`RunnableGraph` can be looked as a factory, which creates:
+
+  * a network of running processing entities, inaccessible from the outside
+  * a materialized value, optionally providing a controlled interaction capability with the network
+
+Unlike actors though, each of the processing stages might provide a materialized value, so when we compose multiple
+stages or modules, we need to combine the materialized value as well (there are default rules which make this easier,
+see :ref:`flow-combine-mat-scala` for details). We demonstrate how this works by a code example and a diagram which
+graphically demonstrates what is happening.
+
+The propagation of the individual materialized values from the enclosed modules towards the top will look like this:
+
+|
+
 .. image:: ../images/compose_mat.png
-   :align: center
+  :align: center
+
+|
+
+To implement the above, first, we create a composite :class:`Source`, where the enclosed :class:`Source` have a
+materialized type of :class:`Promise[Unit]`. By using the combiner function ``Keep.left``, the resulting materialized
+type is of the nested module (indicated by the color *red* on the diagram):
+
+.. includecode:: code/docs/stream/CompositionDocSpec.scala#mat-combine-1
+
+Next, we create a composite :class:`Flow` from two smaller components. Here, the second enclosed :class:`Flow` has a
+materialized type of :class:`Future[OutgoingConnection]`, and we propagate this to the parent by using ``Keep.right``
+as the combiner function (indicated by the color *yellow* on the diagram):
+
+.. includecode:: code/docs/stream/CompositionDocSpec.scala#mat-combine-2
+
+As a third step, we create a composite :class:`Sink`, using our ``nestedFlow`` as a building block. In this snippet, both
+the enclosed :class:`Flow` and the folding :class:`Sink` has a materialized value that is interesting for us, so
+we use ``Keep.both`` to get a :class:`Pair` of them as the materialized type of ``nestedSink`` (indicated by the color
+*blue* on the diagram)
+
+.. includecode:: code/docs/stream/CompositionDocSpec.scala#mat-combine-3
+
+As the last example, we wire together ``nestedSource`` and ``nestedSink`` and we use a custom combiner function to
+create a yet another materialized type of the resulting :class:`RunnableGraph`. This combiner function just ignores
+the :class:`Future[Sink]` part, and wraps the other two values in a custom case class :class:`MyClass`
+(indicated by color *purple* on the diagram):
+
+.. includecode:: code/docs/stream/CompositionDocSpec.scala#mat-combine-4
+
+
+
+.. note::
+  The nested structure in the above example is not necessary for combining the materialized values, it just
+  demonstrates how the two features work together. See :ref:`flow-combine-mat-scala` for further examples
+  of combining materialized values without nesting and hierarchy involved.
 
 Attributes
 ----------
 
+We have seen that we can use ``named()`` to introduce a nesting level in the fluid DSL (and also explicit nesting by using
+``partial()`` from :class:`FlowGraph`). Apart from having the effect of adding a nesting level, ``named()`` is actually
+a shorthand for calling `withAttributes(Attributes.name("someName"))`. Attributes provide a way to fine-tune certain
+aspects of the materialized running entity. For example buffer sizes can be controlled via attributes (see
+:ref:`stream-buffers-scala`). When it comes to hierarchic composition, attributes are inherited by nested modules,
+unless they override them with a custom value.
+
+The code below, a modification of an earlier example sets the ``inputBuffer`` attribute on certain modules, but not
+on others:
+
+.. includecode:: code/docs/stream/CompositionDocSpec.scala#attributes-inheritance
+
+The effect is, that each module inherits the ``inputBuffer`` attribute from its enclosing parent, unless it has
+the same attribute explicitly set. ``nestedSource`` gets the default attributes from the materializer itself. ``nestedSink``
+on the other hand has this attribute set, so it will be used by all nested modules. ``nestedFlow`` will inherit from ``nestedSource``
+except the ``map`` stage which has again an explicitly provided attribute overriding the inherited one.
+
+|
+
 .. image:: ../images/compose_attributes.png
    :align: center
 
-Examples
---------
+|
+
+This diagram illustrates the inheritance process for the example code (representing the materializer default attributes
+as the color *red*, the attributes set on ``nestedSink`` as *blue* and the attributes set on ``nestedFlow`` as *green*).
+

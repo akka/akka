@@ -1,8 +1,12 @@
 package docs.stream
 
 import akka.stream._
+import akka.stream.scaladsl.Tcp.OutgoingConnection
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
+import akka.util.ByteString
+
+import scala.concurrent.{ Future, Promise }
 
 class CompositionDocSpec extends AkkaSpec {
 
@@ -161,5 +165,77 @@ class CompositionDocSpec extends AkkaSpec {
       val embeddedClosed: ClosedShape = builder.add(closed1)
     }
     //#embed-closed
+  }
+
+  "materialized values" in {
+    //#mat-combine-1
+    // Materializes to Promise[Unit]                                          (red)
+    val source: Source[Int, Promise[Unit]] = Source.lazyEmpty[Int]
+
+    // Materializes to Unit                                                   (black)
+    val flow1: Flow[Int, Int, Unit] = Flow[Int].take(100)
+
+    // Materializes to Promise[Unit]                                          (red)
+    val nestedSource: Source[Int, Promise[Unit]] =
+      source.viaMat(flow1)(Keep.left).named("nestedSource")
+    //#mat-combine-1
+
+    //#mat-combine-2
+    // Materializes to Unit                                                   (orange)
+    val flow2: Flow[Int, ByteString, Unit] = Flow[Int].map { i => ByteString(i.toString) }
+
+    // Materializes to Future[OutgoingConnection]                             (yellow)
+    val flow3: Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+      Tcp().outgoingConnection("localhost", 8080)
+
+    // Materializes to Future[OutgoingConnection]                             (yellow)
+    val nestedFlow: Flow[Int, ByteString, Future[OutgoingConnection]] =
+      flow2.viaMat(flow3)(Keep.right).named("nestedFlow")
+    //#mat-combine-2
+
+    //#mat-combine-3
+    // Materializes to Future[String]                                         (green)
+    val sink: Sink[ByteString, Future[String]] = Sink.fold("")(_ + _.utf8String)
+
+    // Materializes to (Future[OutgoingConnection], Future[String])           (blue)
+    val nestedSink: Sink[Int, (Future[OutgoingConnection], Future[String])] =
+      nestedFlow.toMat(sink)(Keep.both)
+    //#mat-combine-3
+
+    //#mat-combine-4
+    case class MyClass(private val p: Promise[Unit], conn: OutgoingConnection) {
+      def close() = p.success(())
+    }
+
+    def f(p: Promise[Unit],
+          rest: (Future[OutgoingConnection], Future[String])): Future[MyClass] = {
+
+      val connFuture = rest._1
+      connFuture.map(MyClass(p, _))
+    }
+
+    // Materializes to Future[MyClass]                                        (purple)
+    val runnableGraph: RunnableGraph[Future[MyClass]] =
+      nestedSource.toMat(nestedSink)(f)
+    //#mat-combine-4
+  }
+
+  "attributes" in {
+    //#attributes-inheritance
+    import Attributes._
+    val nestedSource =
+      Source.single(0)
+        .map(_ + 1)
+        .named("nestedSource") // Wrap, no inputBuffer set
+
+    val nestedFlow =
+      Flow[Int].filter(_ != 0)
+        .via(Flow[Int].map(_ - 2).withAttributes(inputBuffer(4, 4))) // override
+        .named("nestedFlow") // Wrap, no inputBuffer set
+
+    val nestedSink =
+      nestedFlow.to(Sink.fold(0)(_ + _)) // wire an atomic sink to the nestedFlow
+        .withAttributes(name("nestedSink") and inputBuffer(3, 3)) // override
+    //#attributes-inheritance
   }
 }
