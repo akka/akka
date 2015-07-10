@@ -215,6 +215,8 @@ which will be running on the thread pools they have been configured to run on - 
    Reusing *instances* of linear computation stages (Source, Sink, Flow) inside FlowGraphs is legal,
    yet will materialize that stage multiple times.
 
+.. _flow-combine-mat-scala:
+
 Combining materialized values
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
