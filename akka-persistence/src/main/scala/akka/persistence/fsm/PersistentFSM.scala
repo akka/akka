@@ -18,10 +18,12 @@ import scala.reflect.ClassTag
  * A FSM implementation with persistent state.
  *
  * Supports the usual [[akka.actor.FSM]] functionality with additional persistence features.
- * State and State Data are persisted on every state change.
  * `PersistentFSM` is identified by 'persistenceId' value.
+ * State changes are persisted atomically together with domain events, which means that either both succeed or both fail,
+ * i.e. a state transition event will not be stored if persistence of an event related to that change fails.
  * Persistence execution order is: persist -&gt; wait for ack -&gt; apply state.
  * Incoming messages are deferred until the state is applied.
+ * State Data is constructed based on domain events, according to user's implementation of applyEvent function.
  */
 trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with PersistentFSMBase[S, D, E] with ActorLogging {
   import akka.persistence.fsm.PersistentFSM._
@@ -80,14 +82,36 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
    * Persist FSM State and FSM State Data
    */
   override private[akka] def applyState(nextState: State): Unit = {
-    val eventsToPersist: immutable.Seq[Any] = nextState.domainEvents.toList :+ StateChangeEvent(nextState.stateName.identifier, nextState.timeout)
-    var nextData: D = stateData
-    persistAll[Any](eventsToPersist) {
-      case domainEventTag(event) ⇒
-        nextData = applyEvent(event, nextData)
-      case StateChangeEvent(stateIdentifier, timeout) ⇒
-        super.applyState(nextState using nextData)
-        nextState.afterTransitionDo(stateData)
+    var eventsToPersist: immutable.Seq[Any] = nextState.domainEvents.toList
+
+    //Prevent StateChangeEvent persistence when staying in the same state, except when state defines a timeout
+    if (nextState.notifies || nextState.timeout.nonEmpty) {
+      eventsToPersist = eventsToPersist :+ StateChangeEvent(nextState.stateName.identifier, nextState.timeout)
+    }
+
+    if (eventsToPersist.isEmpty) {
+      //If there are no events to persist, just apply the state
+      super.applyState(nextState)
+    } else {
+      //Persist the events and apply the new state after all event handlers were executed
+      var nextData: D = stateData
+      var handlersExecutedCounter = 0
+
+      def applyStateOnLastHandler() = {
+        handlersExecutedCounter += 1
+        if (handlersExecutedCounter == eventsToPersist.size) {
+          super.applyState(nextState using nextData)
+          nextState.afterTransitionDo(stateData)
+        }
+      }
+
+      persistAll[Any](eventsToPersist) {
+        case domainEventTag(event) ⇒
+          nextData = applyEvent(event, nextData)
+          applyStateOnLastHandler()
+        case StateChangeEvent(stateIdentifier, timeout) ⇒
+          applyStateOnLastHandler()
+      }
     }
   }
 }
