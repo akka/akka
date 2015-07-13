@@ -1412,7 +1412,6 @@ object AkkaBuild extends Build {
     val httpXml = exports(Seq("akka.http.scaladsl.marshallers.xml"),
         imports = Seq(streamAndHttpImport("akka.stream.*"),
             streamAndHttpImport("akka.http.*")))
-    // TODO Scala 2.11+ needs also versionedImport("scala.xml.*", "1.0", "1.1")
 
     val httpJackson = exports(Seq("akka.http.javadsl.marshallers.jackson"),
         imports = Seq(streamAndHttpImport("akka.stream.*"),
@@ -1459,7 +1458,12 @@ object AkkaBuild extends Build {
       "com.google.protobuf")
 
     def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
-      OsgiKeys.importPackage := imports ++ defaultImports,
+      OsgiKeys.importPackage := imports,
+      OsgiKeys.importPackage <++= scalaVersion { v =>
+        if (v.startsWith("2.10.")) Nil
+        else Seq(versionedImport("scala.xml.*", "1.0", "1.1"))
+      },
+      OsgiKeys.importPackage ++= defaultImports,
       OsgiKeys.exportPackage := packages
     )
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
