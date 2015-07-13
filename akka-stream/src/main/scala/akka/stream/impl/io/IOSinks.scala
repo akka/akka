@@ -4,10 +4,11 @@
 package akka.stream.impl.io
 
 import java.io.{ File, OutputStream }
+import java.lang.{ Long ⇒ JLong }
 
+import akka.stream._
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.{ ActorMaterializer, MaterializationContext, Attributes, SinkShape }
 import akka.util.ByteString
 
 import scala.concurrent.{ Future, Promise }
@@ -26,7 +27,7 @@ private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attr
 
     val bytesWrittenPromise = Promise[Long]()
     val props = SynchronousFileSubscriber.props(f, bytesWrittenPromise, settings.maxInputBufferSize, append)
-    val dispatcher = IOSettings.fileIoDispatcher(context)
+    val dispatcher = IOSettings.blockingIoDispatcher(context)
 
     val ref = mat.actorOf(context, props.withDispatcher(dispatcher))
     (akka.stream.actor.ActorSubscriber[ByteString](ref), bytesWrittenPromise.future)
@@ -66,3 +67,4 @@ private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, va
   override def withAttributes(attr: Attributes): Module =
     new OutputStreamSink(createOutput, attr, amendShape(attr))
 }
+
