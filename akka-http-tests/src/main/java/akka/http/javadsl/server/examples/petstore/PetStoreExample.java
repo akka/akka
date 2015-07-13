@@ -26,7 +26,7 @@ public class PetStoreExample {
         final RequestVal<Pet> existingPet = RequestVals.lookupInMap(petId, Pet.class, pets);
 
         Handler1<Pet> putPetHandler = new Handler1<Pet>() {
-            public RouteResult handle(RequestContext ctx, Pet thePet) {
+            public RouteResult apply(RequestContext ctx, Pet thePet) {
                 pets.put(thePet.getId(), thePet);
                 return ctx.completeAs(Jackson.json(), thePet);
             }
@@ -44,10 +44,10 @@ public class PetStoreExample {
                     get(extractAndComplete(Jackson.<Pet>json(), existingPet)),
 
                     // 2. using a handler
-                    put(handleWith(petEntity, putPetHandler)),
+                    put(handleWith1(petEntity, putPetHandler)),
 
                     // 3. calling a method of a controller instance reflectively
-                    delete(handleWith(controller, "deletePet", petId))
+                    delete(handleReflectively(controller, "deletePet", petId))
                 )
             );
     }

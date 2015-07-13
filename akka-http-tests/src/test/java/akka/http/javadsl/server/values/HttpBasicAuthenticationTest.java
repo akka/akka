@@ -29,7 +29,7 @@ public class HttpBasicAuthenticationTest extends JUnitRouteTest {
     Handler1<String> helloWorldHandler =
         new Handler1<String>() {
             @Override
-            public RouteResult handle(RequestContext ctx, String user) {
+            public RouteResult apply(RequestContext ctx, String user) {
                 return ctx.complete("Hello "+user+"!");
             }
         };
@@ -38,7 +38,7 @@ public class HttpBasicAuthenticationTest extends JUnitRouteTest {
         testRoute(
             path("secure").route(
                 authenticatedUser.route(
-                    handleWith(authenticatedUser, helloWorldHandler)
+                    handleWith1(authenticatedUser, helloWorldHandler)
                 )
             )
         );

@@ -37,7 +37,7 @@ public class MarshallerTest extends JUnitRouteTest {
 
         Handler1<Integer> nummerHandler = new Handler1<Integer>() {
             @Override
-            public RouteResult handle(RequestContext ctx, Integer integer) {
+            public RouteResult apply(RequestContext ctx, Integer integer) {
                 return ctx.completeAs(numberAsNameMarshaller, integer);
             }
         };
@@ -46,7 +46,7 @@ public class MarshallerTest extends JUnitRouteTest {
             testRoute(
                 get(
                     path("nummer").route(
-                        handleWith(n, nummerHandler)
+                        handleWith1(n, nummerHandler)
                     )
                 )
             );
@@ -88,7 +88,7 @@ public class MarshallerTest extends JUnitRouteTest {
 
         Handler1<Integer> nummerHandler = new Handler1<Integer>() {
             @Override
-            public RouteResult handle(RequestContext ctx, Integer integer) {
+            public RouteResult apply(RequestContext ctx, Integer integer) {
                 return ctx.completeAs(numberAsJsonListMarshaller, integer);
             }
         };
@@ -97,7 +97,7 @@ public class MarshallerTest extends JUnitRouteTest {
                 testRoute(
                         get(
                                 path("nummer").route(
-                                        handleWith(n, nummerHandler)
+                                        handleWith1(n, nummerHandler)
                                 )
                         )
                 );
@@ -132,7 +132,7 @@ public class MarshallerTest extends JUnitRouteTest {
 
         Handler1<Integer> nummerHandler = new Handler1<Integer>() {
             @Override
-            public RouteResult handle(RequestContext ctx, Integer integer) {
+            public RouteResult apply(RequestContext ctx, Integer integer) {
                 return ctx.completeAs(numberAsJsonListMarshaller, integer);
             }
         };
@@ -141,7 +141,7 @@ public class MarshallerTest extends JUnitRouteTest {
             testRoute(
                 get(
                     path("nummer").route(
-                        handleWith(n, nummerHandler)
+                        handleWith1(n, nummerHandler)
                     )
                 )
             );
@@ -176,7 +176,7 @@ public class MarshallerTest extends JUnitRouteTest {
 
         Handler1<Integer> nummerHandler = new Handler1<Integer>() {
             @Override
-            public RouteResult handle(RequestContext ctx, Integer integer) {
+            public RouteResult apply(RequestContext ctx, Integer integer) {
                 return ctx.completeAs(numberAsJsonListMarshaller, integer);
             }
         };
@@ -185,7 +185,7 @@ public class MarshallerTest extends JUnitRouteTest {
             testRoute(
                 get(
                     path("nummer").route(
-                        handleWith(n, nummerHandler)
+                        handleWith1(n, nummerHandler)
                     )
                 )
             );
