@@ -24,7 +24,7 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
         override def onPush(in: Int, ctx: Context[Int]) = ctx.push(in)
       }
 
-    processorFromFlow(Flow[Int].transform(mkStage))
+    Flow[Int].transform(mkStage).toProcessor.run()
   }
 
   override def createElement(element: Int): Int = element

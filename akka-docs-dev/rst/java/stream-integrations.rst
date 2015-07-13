@@ -401,7 +401,9 @@ Using an Akka Streams :class:`Flow` we can transform the stream and connect thos
 The :class:`Publisher` is used as an input :class:`Source` to the flow and the
 :class:`Subscriber` is used as an output :class:`Sink`.
 
-A :class:`Flow` can also be materialized to a :class:`Subscriber`, :class:`Publisher` pair:
+A :class:`Flow` can also be also converted to a :class:`RunnableGraph[Processor[In, Out]]` which
+materializes to a :class:`Processor` when ``run()`` is called. ``run()`` itself can be called multiple
+times, resulting in a new :class:`Processor` instance each time.
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/ReactiveStreamsDocTest.java#flow-publisher-subscriber
 
@@ -431,4 +433,9 @@ by using the Subscriber-:class:`Source`:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/ReactiveStreamsDocTest.java#sink-subscriber
 
+It is also possible to use re-wrap :class:`Processor` instances as a :class:`Flow` by
+passing a factory function that will create the :class:`Processor` instances:
 
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/ReactiveStreamsDocTest.java#use-processor
+
+Please note that a factory is necessary to achieve reusability of the resulting :class:`Flow`.

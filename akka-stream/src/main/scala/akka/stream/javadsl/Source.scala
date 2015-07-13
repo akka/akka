@@ -14,8 +14,7 @@ import akka.stream.Attributes._
 import akka.stream._
 import akka.stream.impl.{ ActorPublisherSource, StreamLayout }
 import akka.util.ByteString
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
+import org.reactivestreams.{ Processor, Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.concurrent.{ Promise, Future }

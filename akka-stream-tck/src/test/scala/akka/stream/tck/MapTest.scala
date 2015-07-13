@@ -13,8 +13,7 @@ class MapTest extends AkkaIdentityProcessorVerification[Int] {
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
     implicit val materializer = ActorMaterializer()(system)
 
-    processorFromFlow(
-      Flow[Int].map(elem ⇒ elem).named("identity"))
+    Flow[Int].map(elem ⇒ elem).named("identity").toProcessor.run()
   }
 
   override def createElement(element: Int): Int = element
