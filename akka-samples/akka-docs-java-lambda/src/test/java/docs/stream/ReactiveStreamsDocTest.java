@@ -7,6 +7,7 @@ package docs.stream;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
+import akka.japi.function.Creator;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
@@ -20,10 +21,14 @@ import org.junit.Test;
 //#imports
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Processor;
 //#imports
 import org.reactivestreams.Subscription;
 
 import scala.runtime.BoxedUnit;
+
+import java.lang.Exception;
+
 import static docs.stream.ReactiveStreamsDocTest.Fixture.Data.authors;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 
@@ -151,15 +156,15 @@ public class ReactiveStreamsDocTest {
       
       {
         //#flow-publisher-subscriber
-        final Pair<Subscriber<Tweet>, Publisher<Author>> ports =
-          authors.runWith(
-            Source.<Tweet>subscriber(), 
-            Sink.<Author>publisher(), 
-            mat);
+        final Processor<Tweet, Author> processor =
+          authors.toProcessor().run(mat);
 
-        final Subscriber<Tweet> subscriber = ports.first();
-        final Publisher<Author> publisher = ports.second();
+
+        rs.tweets().subscribe(processor);
+        processor.subscribe(rs.storage());
         //#flow-publisher-subscriber
+
+        assertStorageResult();
       }
     };
   }
@@ -221,6 +226,26 @@ public class ReactiveStreamsDocTest {
         //#sink-subscriber
         
         assertStorageResult();
+      }
+    };
+  }
+
+  @Test
+  public void useProcessor() throws Exception {
+    new JavaTestKit(system) {
+      {
+        //#use-processor
+        // An example Processor factory
+        final Creator<Processor<Integer, Integer>> factory =
+                new Creator<Processor<Integer, Integer>>() {
+                  public Processor<Integer, Integer> create() {
+                    return Flow.of(Integer.class).toProcessor().run(mat);
+                  }
+                };
+
+        final Flow<Integer, Integer, BoxedUnit> flow = Flow.create(factory);
+
+        //#use-processor
       }
     };
   }
