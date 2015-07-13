@@ -14,7 +14,6 @@ import org.scalatest.matchers.Matcher
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.scaladsl.FlattenStrategy
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
@@ -76,6 +75,11 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Content-Length: 0
           |
           |""" should parseTo(HttpResponse(ServerOnTheMove))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "a response with a missing reason phrase" in new Test {
+        "HTTP/1.1 200 \r\nContent-Length: 0\r\n\r\n" should parseTo(HttpResponse(OK))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -225,6 +229,11 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       "a too-long response status reason" in new Test {
         Seq("HTTP/1.1 204 12345678", "90123456789012\r\n") should generalMultiParseTo(Left(
           MessageStartError(400: StatusCode, ErrorInfo("Response reason phrase exceeds the configured limit of 21 characters"))))
+      }
+
+      "with a missing reason phrase and no trailing space" in new Test {
+        Seq("HTTP/1.1 200\r\nContent-Length: 0\r\n\r\n") should generalMultiParseTo(Left(MessageStartError(
+          400: StatusCode, ErrorInfo("Status code misses trailing space"))))
       }
 
       "with entity length > max-content-length" - {
