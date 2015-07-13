@@ -7,7 +7,7 @@ The Akka HTTP :ref:`http-low-level-server-side-api-java` provides a ``Flow``- or
 an application to respond to incoming HTTP requests by simply mapping requests to responses
 (excerpt from :ref:`Low-level server side example <http-low-level-server-side-example-java>`):
 
-.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleSpec.java
+.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleDocTest.java
   :include: request-handler
 
 While it'd be perfectly possible to define a complete REST API service purely by inspecting the incoming

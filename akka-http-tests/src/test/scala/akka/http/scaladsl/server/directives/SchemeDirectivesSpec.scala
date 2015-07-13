@@ -5,8 +5,6 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.scaladsl.model.StatusCodes._
-
 class SchemeDirectivesSpec extends RoutingSpec {
   "the extractScheme directive" should {
     "extract the Uri scheme" in {

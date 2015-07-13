@@ -51,7 +51,7 @@ public class CompleteTest extends JUnitRouteTest {
 
         Handler2<Integer, Integer> slowCalc = new Handler2<Integer, Integer>() {
             @Override
-            public RouteResult handle(final RequestContext ctx, final Integer x, final Integer y) {
+            public RouteResult apply(final RequestContext ctx, final Integer x, final Integer y) {
                 return ctx.completeWith(Futures.future(new Callable<RouteResult>() {
                     @Override
                     public RouteResult call() throws Exception {
@@ -62,7 +62,7 @@ public class CompleteTest extends JUnitRouteTest {
             }
         };
 
-        Route route = handleWith(x, y, slowCalc);
+        Route route = handleWith2(x, y, slowCalc);
         runRoute(route, HttpRequest.GET("add?x=42&y=23"))
             .assertStatusCode(200)
             .assertEntity("42 + 23 = 65");
