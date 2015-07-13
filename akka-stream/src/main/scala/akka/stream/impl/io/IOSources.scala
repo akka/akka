@@ -3,15 +3,22 @@
  */
 package akka.stream.impl.io
 
-import java.io.{ File, InputStream }
+import java.io.{ File, IOException, InputStream, OutputStream }
+import java.lang.{ Long ⇒ JLong }
+import java.util.concurrent.{ LinkedBlockingQueue, BlockingQueue }
 
+import akka.actor.{ ActorRef, Deploy }
+import akka.japi
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.{ ErrorPublisher, SourceModule }
-import akka.util.ByteString
+import akka.stream.scaladsl.{ Source, FlowGraph }
+import akka.util.{ ByteString, Timeout }
 import org.reactivestreams._
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ Await, Future, Promise }
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -26,7 +33,7 @@ private[akka] final class SynchronousFileSource(f: File, chunkSize: Int, val att
 
     val bytesReadPromise = Promise[Long]()
     val props = SynchronousFilePublisher.props(f, bytesReadPromise, chunkSize, settings.initialInputBufferSize, settings.maxInputBufferSize)
-    val dispatcher = IOSettings.fileIoDispatcher(context)
+    val dispatcher = IOSettings.blockingIoDispatcher(context)
 
     val ref = mat.actorOf(context, props.withDispatcher(dispatcher))
 
