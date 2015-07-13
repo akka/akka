@@ -19,7 +19,7 @@ public class ExecutionDirectivesTest extends JUnitRouteTest {
         Handler2<Integer, Integer> divide =
             new Handler2<Integer, Integer>() {
                 @Override
-                public RouteResult handle(RequestContext ctx, Integer a, Integer b) {
+                public RouteResult apply(RequestContext ctx, Integer a, Integer b) {
                     int result = a / b;
                     return ctx.complete("The result is: " + result);
                 }
@@ -44,7 +44,7 @@ public class ExecutionDirectivesTest extends JUnitRouteTest {
             testRoute(
                 handleExceptions(handleDivByZero,
                     path("divide").route(
-                        handleWith(a, b, divide)
+                        handleWith2(a, b, divide)
                     )
                 )
             );

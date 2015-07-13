@@ -28,7 +28,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
-public class HttpServerExampleSpec {
+public class HttpServerExampleDocTest {
     public static void bindingExample() {
         //#binding-example
         ActorSystem system = ActorSystem.create();
