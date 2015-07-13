@@ -425,10 +425,10 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
 
   initialPhase(2, bidirectional)
 
-  protected def fail(e: Throwable, closeTransport: Boolean=true): Unit = {
+  protected def fail(e: Throwable, closeTransport: Boolean = true): Unit = {
     if (tracing) log.debug("fail {} due to: {}", self, e.getMessage)
     inputBunch.cancel()
-    if(closeTransport) {
+    if (closeTransport) {
       log.debug("closing output")
       outputBunch.error(TransportOut, e)
     }
