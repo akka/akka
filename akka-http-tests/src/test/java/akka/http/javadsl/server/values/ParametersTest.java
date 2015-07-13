@@ -274,9 +274,9 @@ public class ParametersTest extends JUnitRouteTest {
 
     @Test
     public void testParametersAsMapExtraction() {
-        TestRoute route = testRoute(handleWith(paramMap, new Handler1<Map<String, String>>(){
+        TestRoute route = testRoute(handleWith1(paramMap, new Handler1<Map<String, String>>(){
             @Override
-            public RouteResult handle(RequestContext ctx, Map<String, String> paramMap) {
+            public RouteResult apply(RequestContext ctx, Map<String, String> paramMap) {
                 ArrayList<String> keys = new ArrayList<String>(paramMap.keySet());
                 Collections.sort(keys);
                 StringBuilder res = new StringBuilder();
@@ -305,9 +305,9 @@ public class ParametersTest extends JUnitRouteTest {
     }
     @Test
     public void testParametersAsMultiMapExtraction() {
-        TestRoute route = testRoute(handleWith(paramMultiMap, new Handler1<Map<String, Collection<String>>>(){
+        TestRoute route = testRoute(handleWith1(paramMultiMap, new Handler1<Map<String, Collection<String>>>(){
             @Override
-            public RouteResult handle(RequestContext ctx, Map<String, Collection<String>> paramMap) {
+            public RouteResult apply(RequestContext ctx, Map<String, Collection<String>> paramMap) {
                 ArrayList<String> keys = new ArrayList<String>(paramMap.keySet());
                 Collections.sort(keys);
                 StringBuilder res = new StringBuilder();
@@ -342,9 +342,9 @@ public class ParametersTest extends JUnitRouteTest {
     }
     @Test
     public void testParametersAsCollectionExtraction() {
-        TestRoute route = testRoute(handleWith(paramEntries, new Handler1<Collection<Map.Entry<String, String>>>(){
+        TestRoute route = testRoute(handleWith1(paramEntries, new Handler1<Collection<Map.Entry<String, String>>>(){
             @Override
-            public RouteResult handle(RequestContext ctx, Collection<Map.Entry<String, String>> paramEntries) {
+            public RouteResult apply(RequestContext ctx, Collection<Map.Entry<String, String>> paramEntries) {
                 ArrayList<Map.Entry<String, String>> entries = new ArrayList<Map.Entry<String, String>>(paramEntries);
                 Collections.sort(entries, new Comparator<Map.Entry<String, String>>() {
                     @Override
