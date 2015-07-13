@@ -91,7 +91,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       }
     }
 
-    "use dedicated file-io-dispatcher by default" in assertAllStagesStopped {
+    "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
         val mat = ActorMaterializer()(sys)
@@ -102,7 +102,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
           mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
-          assertDispatcher(ref, "akka.stream.default-file-io-dispatcher")
+          assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
         } finally shutdown(sys)
       }
     }
