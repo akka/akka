@@ -45,6 +45,24 @@ abstract class GraphStage[S <: Shape] extends GraphStageWithMaterializedValue[S,
   def createLogic: GraphStageLogic
 }
 
+/**
+ * A SourceStage represents a reusable graph stream processing stage. A SourceStage consists of a [[akka.stream.Shape]] which describes
+ * its output port.
+ */
+abstract class SourceStage[Out, M](name: String) extends GraphStageWithMaterializedValue[SourceShape[Out], M] {
+  val out: Outlet[Out] = Outlet[Out](name + ".out")
+  override val shape: SourceShape[Out] = SourceShape(out)
+}
+
+/**
+ * A SinkStage represents a reusable graph stream processing stage. A SinkStage consists of a [[akka.stream.Shape]] which describes
+ * its input port.
+ */
+abstract class SinkStage[In, M](name: String) extends GraphStageWithMaterializedValue[SinkShape[In], M] {
+  val in: Inlet[In] = Inlet[In](name + ".in")
+  override val shape: SinkShape[In] = SinkShape(in)
+}
+
 private object TimerMessages {
   final case class Scheduled(timerKey: Any, timerId: Int, repeating: Boolean) extends DeadLetterSuppression
   final case class Timer(id: Int, task: Cancellable)

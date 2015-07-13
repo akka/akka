@@ -166,7 +166,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
         }
       }
 
-    "use dedicated file-io-dispatcher by default" in assertAllStagesStopped {
+    "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val mat = ActorMaterializer()(sys)
       implicit val timeout = Timeout(500.millis)
@@ -176,7 +176,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
         mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
-        try assertDispatcher(ref, "akka.stream.default-file-io-dispatcher") finally p.cancel()
+        try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher") finally p.cancel()
       } finally shutdown(sys)
     }
 

@@ -118,7 +118,7 @@ Streaming data from a file is as easy as defining a `SynchronousFileSource` give
 Please note that these processing stages are backed by Actors and by default are configured to run on a pre-configured
 threadpool-backed dispatcher dedicated for File IO. This is very important as it isolates the blocking file IO operations from the rest
 of the ActorSystem allowing each dispatcher to be utilised in the most efficient way. If you want to configure a custom
-dispatcher for file IO operations globally, you can do so by changing the ``akka.stream.file-io-dispatcher``,
+dispatcher for file IO operations globally, you can do so by changing the ``akka.stream.blocking-io-dispatcher``,
 or for a specific stage by specifying a custom Dispatcher in code, like this:
 
 .. includecode:: code/docs/stream/io/StreamFileDocSpec.scala#custom-dispatcher-code

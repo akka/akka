@@ -138,12 +138,7 @@ class GraphFlowSpec extends AkkaSpec {
 
       "work with a Sink when having KeyedSource inside" in {
         val probe = TestSubscriber.manualProbe[Int]()
-
-        val source = Source.fromGraph(FlowGraph.create(Source.subscriber[Int]) { implicit b ⇒
-          subSource ⇒
-            SourceShape(subSource.outlet)
-        })
-
+        val source = Source.subscriber[Int]
         val mm: Subscriber[Int] = source.to(Sink(probe)).run()
         source1.to(Sink(mm)).run()
 
