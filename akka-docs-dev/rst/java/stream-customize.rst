@@ -330,7 +330,7 @@ All of the above custom stages (linear or graph) provide a few simple guarantees
  - The state encapsulated by these classes can be safely modified from the provided callbacks, without any further
    synchronization.
 
-In essence, the above guarantees are similar to what :class:`Actor`s provide, if one thinks of the state of a custom
+In essence, the above guarantees are similar to what :class:`Actor` s provide, if one thinks of the state of a custom
 stage as state of an actor, and the callbacks as the ``receive`` block of the actor.
 
 .. warning::
