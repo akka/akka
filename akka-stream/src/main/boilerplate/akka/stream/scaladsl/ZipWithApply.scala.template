@@ -31,7 +31,7 @@ class ZipWith1[[#A1#], O] private[stream] (override val shape: FanInShape1[[#A1#
   extends Graph[FanInShape1[[#A1#], O], Unit] {
 
   override def withAttributes(attr: Attributes): ZipWith1[[#A1#], O] =
-    new ZipWith1(shape, module.withAttributes(attr).wrap())
+    new ZipWith1(shape, module.withAttributes(attr).nest())
 
   override def named(name: String): ZipWith1[[#A1#], O] = withAttributes(Attributes.name(name))
 }

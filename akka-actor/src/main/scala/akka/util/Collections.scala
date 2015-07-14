@@ -4,6 +4,8 @@
 
 package akka.util
 
+import akka.util.Collections.EmptyImmutableSeq
+
 import scala.collection.immutable
 import scala.annotation.tailrec
 

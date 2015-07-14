@@ -56,9 +56,9 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
     val ins = copy.shape.inlets
     val outs = copy.shape.outlets
     new BidiFlow(module
-      .grow(copy, combine)
-      .connect(shape.out1, ins(0))
-      .connect(outs(1), shape.in2)
+      .compose(copy, combine)
+      .wire(shape.out1, ins(0))
+      .wire(outs(1), shape.in2)
       .replaceShape(BidiShape(shape.in1, outs(0), ins(1), shape.out2)))
   }
 
@@ -106,9 +106,9 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
     val in = copy.shape.inlets.head
     val out = copy.shape.outlets.head
     new Flow(module
-      .grow(copy, combine)
-      .connect(shape.out1, in)
-      .connect(out, shape.in2)
+      .compose(copy, combine)
+      .wire(shape.out1, in)
+      .wire(out, shape.in2)
       .replaceShape(FlowShape(shape.in1, shape.out2)))
   }
 
@@ -118,7 +118,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
   def reversed: BidiFlow[I2, O2, I1, O1, Mat] = new BidiFlow(module.replaceShape(shape.reversed))
 
   override def withAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
-    new BidiFlow(module.withAttributes(attr).wrap())
+    new BidiFlow(module.withAttributes(attr).nest())
 
   override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
     withAttributes(Attributes.name(name))

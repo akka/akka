@@ -3,6 +3,8 @@
  */
 package akka.stream
 
+import akka.util.Collections.EmptyImmutableSeq
+
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
@@ -12,14 +14,20 @@ import scala.collection.JavaConverters._
  * It is also used in the Java DSL for “untyped Inlets” as a work-around
  * for otherwise unreasonable existential types.
  */
-sealed abstract class InPort
+sealed abstract class InPort { self: Inlet[_] ⇒
+  final override def hashCode: Int = System.identityHashCode(this)
+  final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+}
 /**
  * An output port of a StreamLayout.Module. This type logically belongs
  * into the impl package but must live here due to how `sealed` works.
  * It is also used in the Java DSL for “untyped Outlets” as a work-around
  * for otherwise unreasonable existential types.
  */
-sealed abstract class OutPort
+sealed abstract class OutPort { self: Outlet[_] ⇒
+  final override def hashCode: Int = System.identityHashCode(this)
+  final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+}
 
 /**
  * An Inlet is a typed input to a Shape. Its partner in the Module view
@@ -139,8 +147,8 @@ abstract class AbstractShape extends Shape {
  */
 sealed abstract class ClosedShape extends Shape
 object ClosedShape extends ClosedShape {
-  override val inlets: immutable.Seq[Inlet[_]] = Nil
-  override val outlets: immutable.Seq[Outlet[_]] = Nil
+  override val inlets: immutable.Seq[Inlet[_]] = EmptyImmutableSeq
+  override val outlets: immutable.Seq[Outlet[_]] = EmptyImmutableSeq
   override def deepCopy() = this
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
     require(inlets.isEmpty, s"proposed inlets [${inlets.mkString(", ")}] do not fit ClosedShape")
@@ -170,7 +178,7 @@ case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Se
  * of data.
  */
 final case class SourceShape[+T](outlet: Outlet[T]) extends Shape {
-  override val inlets: immutable.Seq[Inlet[_]] = Nil
+  override val inlets: immutable.Seq[Inlet[_]] = EmptyImmutableSeq
   override val outlets: immutable.Seq[Outlet[_]] = List(outlet)
 
   override def deepCopy(): SourceShape[T] = SourceShape(outlet.carbonCopy())
@@ -203,7 +211,7 @@ final case class FlowShape[-I, +O](inlet: Inlet[I], outlet: Outlet[O]) extends S
  */
 final case class SinkShape[-T](inlet: Inlet[T]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = List(inlet)
-  override val outlets: immutable.Seq[Outlet[_]] = Nil
+  override val outlets: immutable.Seq[Outlet[_]] = EmptyImmutableSeq
 
   override def deepCopy(): SinkShape[T] = SinkShape(inlet.carbonCopy())
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
