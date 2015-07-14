@@ -3,7 +3,7 @@
 High-level Server-Side API
 ==========================
 
-...
+To use the high-level API you need to add a dependency to the ``akka-http-experimental`` module.
 
 .. toctree::
    :maxdepth: 1

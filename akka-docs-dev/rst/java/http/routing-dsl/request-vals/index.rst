@@ -27,11 +27,19 @@ service.
 
 These request values are defined:
 
- * in ``RequestVals``: request values for basic data like URI components, request method, peer address, or the entity data
- * in ``Cookies``: request values representing cookies
- * in ``FormFields``: request values to access form fields unmarshalled to various primitive Java types
- * in ``Headers``:: request values to access request headers or header values
- * ``HttpBasicAuthenticator``: an abstract class to implement to create a request value representing a HTTP basic authenticated principal
- * in ``Parameters``: request values to access URI paramaters unmarshalled to various primitive Java types
- * in ``PathMatchers``: request values to match and access URI path segments
- * ``CustomRequestVal``: an abstract class to implement arbitrary custom request values
+RequestVals
+  Contains request values for basic data like URI components, request method, peer address, or the entity data.
+Cookies
+  Contains request values representing cookies.
+FormFields
+  Contains request values to access form fields unmarshalled to various primitive Java types.
+Headers
+  Contains request values to access request headers or header values.
+HttpBasicAuthenticator
+  An abstract class to implement to create a request value representing a HTTP basic authenticated principal.
+Parameters
+  Contains request values to access URI paramaters unmarshalled to various primitive Java types.
+PathMatchers
+  Contains request values to match and access URI path segments.
+CustomRequestVal
+  An abstract class to implement arbitrary custom request values.
