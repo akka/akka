@@ -256,6 +256,13 @@ object MediaType {
     if (parts.length != 2) throw new IllegalArgumentException(value + " is not a valid media-type")
     custom(parts(0), parts(1), encoding)
   }
+
+  /**
+   * Tries to parse a ``MediaType`` value from the given String. Returns ``Right(mediaType)`` if successful and
+   * ``Left(errors)`` otherwise.
+   */
+  def parse(value: String): Either[List[ErrorInfo], MediaType] =
+    ContentType.parse(value).right.map(_.mediaType)
 }
 
 object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
