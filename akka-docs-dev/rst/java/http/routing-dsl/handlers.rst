@@ -59,7 +59,7 @@ route structure, this time representing segments from the URI path.
 Handlers in Java 8
 ------------------
 
-In Java 8 handlers can be provided as function literals. The example from before then looks like this:
+In Java 8 handlers can be provided as function literals. The previous example can then be written like this:
 
 .. includecode:: /../../akka-http-tests-java8/src/test/java/docs/http/javadsl/server/HandlerExampleSpec.java
    :include: handler2-example-full
