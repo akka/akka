@@ -9,7 +9,7 @@ import akka.http.javadsl.server.Route
 
 import scala.annotation.varargs
 
-abstract class SchemeDirectives extends RouteDirectives {
+abstract class SchemeDirectives extends RangeDirectives {
   /**
    * Rejects all requests whose Uri scheme does not match the given one.
    */
