@@ -239,7 +239,8 @@ class FlexiDocSpec extends AkkaSpec {
   "flexi route completion handling" in {
     import FanOutShape._
     //#flexiroute-completion
-    class ImportantRouteShape[A](_init: Init[A] = Name[A]("ImportantRoute")) extends FanOutShape[A](_init) {
+    class ImportantRouteShape[A](_init: Init[A] = Name[A]("ImportantRoute"))
+      extends FanOutShape[A](_init) {
       val important = newOutlet[A]("important")
       val additional1 = newOutlet[A]("additional1")
       val additional2 = newOutlet[A]("additional2")
