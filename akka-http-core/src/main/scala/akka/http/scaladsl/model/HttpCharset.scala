@@ -70,6 +70,7 @@ final case class HttpCharset private[http] (override val value: String)(val alia
   }
 
   def withQValue(qValue: Float): HttpCharsetRange = HttpCharsetRange(this, qValue.toFloat)
+  override def toRange: HttpCharsetRange = HttpCharsetRange(this)
 
   /** Java API */
   def getAliases: JIterable[String] = {
