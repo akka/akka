@@ -4,6 +4,8 @@
 Basics and working with Flows
 #############################
 
+.. _core-concepts-java:
+
 Core concepts
 =============
 
@@ -41,6 +43,7 @@ will use asynchronous means to slow down a fast producer, without blocking its t
 design, since entities that need to wait (a fast producer waiting on a slow consumer) will not block the thread but
 can hand it back for further use to an underlying thread-pool.
 
+.. _defining-and-running-streams-java:
 
 Defining and running streams
 ----------------------------
