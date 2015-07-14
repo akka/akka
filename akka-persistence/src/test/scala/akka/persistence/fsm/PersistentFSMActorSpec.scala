@@ -223,6 +223,20 @@ abstract class PersistentFSMActorSpec(config: Config) extends PersistenceSpec(co
         expectTerminated(recoveredFsmRef)
       }
     }
+
+    "not trigger onTransition for stay()" taggedAs TimingTest in {
+      val persistenceId = name
+      val probe = TestProbe()
+      val fsmRef = system.actorOf(SimpleTransitionFSMActor.props(persistenceId, probe.ref))
+
+      probe.expectMsg(3.seconds, "LookingAround -> LookingAround") // caused by initialize(), OK
+
+      fsmRef ! "goto(the same state)" // causes goto()
+      probe.expectMsg(3.seconds, "LookingAround -> LookingAround")
+
+      fsmRef ! "stay" // causes stay()
+      probe.expectNoMsg(3.seconds)
+    }
   }
 
 }
@@ -280,6 +294,28 @@ object PersistentFSMActorSpec {
   sealed trait ReportEvent
   case class PurchaseWasMade(items: Seq[Item]) extends ReportEvent
   case object ShoppingCardDiscarded extends ReportEvent
+
+  class SimpleTransitionFSMActor(_persistenceId: String, reportActor: ActorRef)(implicit val domainEventClassTag: ClassTag[DomainEvent]) extends PersistentFsmActor[UserState, ShoppingCart, DomainEvent] {
+    override val persistenceId = _persistenceId
+
+    startWith(LookingAround, EmptyShoppingCart)
+
+    when(LookingAround) {
+      case Event("stay", _) ⇒ stay
+      case Event(e, _)      ⇒ goto(LookingAround)
+    }
+
+    onTransition {
+      case (from, to) ⇒ reportActor ! s"$from -> $to"
+    }
+
+    override def applyEvent(domainEvent: DomainEvent, currentData: ShoppingCart): ShoppingCart =
+      currentData
+  }
+  object SimpleTransitionFSMActor {
+    def props(persistenceId: String, reportActor: ActorRef) =
+      Props(new SimpleTransitionFSMActor(persistenceId, reportActor))
+  }
 
   class WebStoreCustomerFSMActor(_persistenceId: String, reportActor: ActorRef)(implicit val domainEventClassTag: ClassTag[DomainEvent]) extends PersistentFsmActor[UserState, ShoppingCart, DomainEvent] {
     override def persistenceId = _persistenceId
