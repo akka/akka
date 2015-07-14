@@ -14,8 +14,8 @@ public class SimpleServerApp8 extends HttpApp {
     static Parameter<Integer> x = Parameters.intValue("x");
     static Parameter<Integer> y = Parameters.intValue("y");
 
-    static PathMatcher<Integer> xSegment = PathMatchers.integerNumber();
-    static PathMatcher<Integer> ySegment = PathMatchers.integerNumber();
+    static PathMatcher<Integer> xSegment = PathMatchers.intValue();
+    static PathMatcher<Integer> ySegment = PathMatchers.intValue();
 
     public static RouteResult multiply(RequestContext ctx, int x, int y) {
         int result = x * y;
