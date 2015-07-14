@@ -8,6 +8,11 @@ Strategies for how to handle exceptions from processing stream elements can be d
 materializing the stream. The error handling strategies are inspired by actor supervision
 strategies, but the semantics have been adapted to the domain of stream processing.
 
+.. warning::
+
+  *ZipWith*, *FlexiMerge*, *FlexiRoute* junction, *ActorPublisher* source and *ActorSubscriber* sink
+  components do not honour the supervision strategy attribute yet.
+
 Supervision Strategies
 ======================
 
@@ -29,7 +34,7 @@ The default supervision strategy for a stream can be defined on the settings of 
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowErrorDocTest.java#resume
 
-Here you can see that all ``ArithmeticException`` will resume the processing, i.e. the 
+Here you can see that all ``ArithmeticException`` will resume the processing, i.e. the
 elements that cause the division by zero are effectively dropped.
 
 .. note::
@@ -41,7 +46,7 @@ The supervision strategy can also be defined for all operators of a flow.
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowErrorDocTest.java#resume-section
 
-``Restart`` works in a similar way as ``Resume`` with the addition that accumulated state, 
+``Restart`` works in a similar way as ``Resume`` with the addition that accumulated state,
 if any, of the failing processing stage will be reset.
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowErrorDocTest.java#restart-section
