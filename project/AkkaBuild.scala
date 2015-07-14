@@ -432,10 +432,12 @@ object AkkaBuild extends Build {
   lazy val httpXml =
     httpMarshallersScalaSubproject("xml")
       .settings(Dependencies.httpXml)
+      .settings(OSGi.httpXml: _*)
 
   lazy val httpSprayJson =
     httpMarshallersScalaSubproject("spray-json")
       .settings(Dependencies.httpSprayJson)
+      .settings(OSGi.httpSprayJson: _*)
 
   def httpMarshallersScalaSubproject(name: String) =
     Project(
@@ -459,6 +461,7 @@ object AkkaBuild extends Build {
   lazy val httpJackson =
     httpMarshallersJavaSubproject("jackson")
       .settings(Dependencies.httpJackson)
+      .settings(OSGi.httpJackson: _*)
 
   def httpMarshallersJavaSubproject(name: String) =
     Project(
@@ -546,7 +549,7 @@ object AkkaBuild extends Build {
     id = "akka-stream-testkit-experimental",
     base = file("akka-stream-testkit"),
     dependencies = Seq(stream),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ Seq(
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.streamTestkit ++ Seq(
       version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.streamTestkit,
       previousArtifact := None
@@ -1382,15 +1385,42 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
 
-    val parsing = exports(Seq("akka.parboiled2.*", "akka.shapeless.*"))
+    val parsing = exports(Seq("akka.parboiled2.*", "akka.shapeless.*"),
+        imports = Seq(optionalResolution("scala.quasiquotes")))
 
-    val httpCore = Nil // FIXME #15689
+    val httpCore = exports(Seq("akka.http.*"),
+        imports = Seq(streamAndHttpImport("akka.stream.*"),
+            streamAndHttpImport("akka.parboiled2.*"),
+            streamAndHttpImport("akka.shapeless.*")))
 
-    val http = Nil // FIXME #15689
+    val http = exports(Seq("akka.http.impl.server",
+        "akka.http.scaladsl.server.*", "akka.http.javadsl.server.*",
+        "akka.http.scaladsl.client", "akka.http.scaladsl.coding", "akka.http.scaladsl.common",
+        "akka.http.scaladsl.marshalling", "akka.http.scaladsl.unmarshalling"),
+        imports = Seq(streamAndHttpImport("akka.stream.*"),
+            streamAndHttpImport("akka.http.*"),
+            streamAndHttpImport("akka.parboiled2.*")))
 
-    val httpTestKit = Nil
+    val httpTestKit = exports(Seq("akka.http.scaladsl.testkit.*", "akka.http.javaadsl.testkit.*"),
+        imports = Seq(streamAndHttpImport("akka.stream.*"),
+            streamAndHttpImport("akka.http.*")))
+
+    val httpSprayJson = exports(Seq("akka.http.scaladsl.marshallers.sprayjson"),
+        imports = Seq(streamAndHttpImport("akka.stream.*"),
+            streamAndHttpImport("akka.http.*")))
+
+    val httpXml = exports(Seq("akka.http.scaladsl.marshallers.xml"),
+        imports = Seq(streamAndHttpImport("akka.stream.*"),
+            streamAndHttpImport("akka.http.*")))
+
+    val httpJackson = exports(Seq("akka.http.javadsl.marshallers.jackson"),
+        imports = Seq(streamAndHttpImport("akka.stream.*"),
+            streamAndHttpImport("akka.http.*")))
 
     val stream = exports(Seq("akka.stream.*"))
+
+    val streamTestkit = exports(Seq("akka.stream.testkit.*"),
+        imports = Seq(streamAndHttpImport("akka.stream.*")))
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
@@ -1428,11 +1458,17 @@ object AkkaBuild extends Build {
       "com.google.protobuf")
 
     def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
-      OsgiKeys.importPackage := imports ++ defaultImports,
+      OsgiKeys.importPackage := imports,
+      OsgiKeys.importPackage <++= scalaVersion { v =>
+        if (v.startsWith("2.10.")) Nil
+        else Seq(versionedImport("scala.xml.*", "1.0", "1.1"))
+      },
+      OsgiKeys.importPackage ++= defaultImports,
       OsgiKeys.exportPackage := packages
     )
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.3", "2.4")
+    def streamAndHttpImport(packageName: String) = versionedImport(packageName, "1.0", "1.1")
     def configImport(packageName: String = "com.typesafe.config.*") = versionedImport(packageName, "1.2.0", "1.3.0")
     def protobufImport(packageName: String = "com.google.protobuf.*") = versionedImport(packageName, "2.5.0", "2.6.0")
     def scalaImport(packageName: String = "scala.*") = versionedImport(packageName, s"$scalaEpoch.$scalaMajor", s"$scalaEpoch.${scalaMajor+1}")
