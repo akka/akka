@@ -38,13 +38,16 @@ public class FlexiMergeDocTest {
   final Materializer mat = ActorMaterializer.create(system);
 
   static//#fleximerge-zip-readall
-  public class Zip<A, B> extends FlexiMerge<FlexiMerge.ReadAllInputs, Pair<A, B>, FanInShape2<A, B, Pair<A, B>>> {
+  public class Zip<A, B>
+    extends FlexiMerge<FlexiMerge.ReadAllInputs, Pair<A, B>, FanInShape2<A, B, Pair<A, B>>> {
+
     public Zip() {
       super(new FanInShape2<A, B, Pair<A, B>>("Zip"), Attributes.name("Zip"));
     }
 
     @Override
-    public MergeLogic<ReadAllInputs, Pair<A, B>> createMergeLogic(final FanInShape2<A, B, Pair<A, B>> s) {
+    public MergeLogic<ReadAllInputs, Pair<A, B>>createMergeLogic(
+        final FanInShape2<A, B, Pair<A, B>> s) {
       return new MergeLogic<ReadAllInputs, Pair<A, B>>() {
         @Override
         public State<ReadAllInputs, Pair<A, B>> initialState() {
@@ -89,7 +92,8 @@ public class FlexiMergeDocTest {
 
         private final State<A, Pair<A, B>> readA = new State<A, Pair<A, B>>(read(s.in0())) {
           @Override
-          public State<B, Pair<A, B>> onInput(MergeLogicContext<Pair<A, B>> ctx, InPort inputHandle, A element) {
+          public State<B, Pair<A, B>> onInput(
+              MergeLogicContext<Pair<A, B>> ctx, InPort inputHandle, A element) {
             lastInA = element;
             return readB;
           }
@@ -97,7 +101,8 @@ public class FlexiMergeDocTest {
 
         private final State<B, Pair<A, B>> readB = new State<B, Pair<A, B>>(read(s.in1())) {
           @Override
-          public State<A, Pair<A, B>> onInput(MergeLogicContext<Pair<A, B>> ctx, InPort inputHandle, B element) {
+          public State<A, Pair<A, B>> onInput(
+              MergeLogicContext<Pair<A, B>> ctx, InPort inputHandle, B element) {
             ctx.emit(new Pair<A, B>(lastInA, element));
             return readA;
           }
@@ -190,7 +195,8 @@ public class FlexiMergeDocTest {
   //#fleximerge-completion
 
   static //#flexi-preferring-merge
-  public class PreferringMerge extends FlexiMerge<Integer, Integer, FanInShape3<Integer, Integer, Integer, Integer>> {
+  public class PreferringMerge
+    extends FlexiMerge<Integer, Integer, FanInShape3<Integer, Integer, Integer, Integer>> {
     public PreferringMerge() {
       super(
               new FanInShape3<Integer, Integer, Integer, Integer>("PreferringMerge"),
@@ -199,7 +205,8 @@ public class FlexiMergeDocTest {
     }
 
     @Override
-    public MergeLogic<Integer, Integer> createMergeLogic(FanInShape3<Integer, Integer, Integer, Integer> s) {
+    public MergeLogic<Integer, Integer> createMergeLogic(
+        FanInShape3<Integer, Integer, Integer, Integer> s) {
       return new MergeLogic<Integer, Integer>() {
 
         @Override
@@ -272,7 +279,7 @@ public class FlexiMergeDocTest {
                     return sameState();
                   }
                 };
-        //#read-conditions    
+        //#read-conditions
 
         @Override
         public State<Integer, Integer> initialState() {
@@ -290,13 +297,14 @@ public class FlexiMergeDocTest {
 
     final Future<Pair<Integer, String>> future = FlowGraph.factory().closed(head,
             (builder, headSink) -> {
-              final FanInShape2<Integer, String, Pair<Integer, String>> zip = builder.graph(new Zip<Integer, String>());
+              final FanInShape2<Integer, String, Pair<Integer, String>> zip =
+                builder.graph(new Zip<Integer, String>());
               builder.from(Source.single(1)).to(zip.in0());
               builder.from(Source.single("A")).to(zip.in1());
               builder.from(zip.out()).to(headSink);
 
             }).run(mat);
-    //#fleximerge-zip-connecting    
+    //#fleximerge-zip-connecting
 
     assertEquals(new Pair<>(1, "A"),
             Await.result(future, FiniteDuration.create(3, TimeUnit.SECONDS)));

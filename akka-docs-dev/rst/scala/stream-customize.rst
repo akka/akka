@@ -136,7 +136,6 @@ calling ``absorbTermination()`` the ``onPull()`` handler will be called eventual
 ``ctx.isFinishing`` will return true, indicating that ``ctx.pull()`` cannot be called anymore. Now we are free to
 emit additional elementss and call ``ctx.finish()`` or ``ctx.pushAndFinish()`` eventually to finish processing.
 
-
 The reason for this slightly complex termination sequence is that the underlying ``onComplete`` signal of
 Reactive Streams may arrive without any pending demand, i.e. without respecting backpressure. This means that
 our push/pull structure that was illustrated in the figure of our custom processing chain does not
@@ -159,7 +158,7 @@ representing the movement of the "event token" is uninterrupted.
 
 In the second scenario the "event token" is somewhere upstream when the termination signal arrives. In this case
 ``absorbTermination`` needs to ensure that a new "event token" is generated replacing the old one that is forever gone
-(since the upstream finished). This is done by calling the ``onPull()`` event handler of the stage.  ű
+(since the upstream finished). This is done by calling the ``onPull()`` event handler of the stage.
 
 |
 
@@ -231,13 +230,13 @@ involving the upstream "event token", while *red* arrows show the downstream reg
 separation of these regions, and the invariant that the number of tokens in the two regions are kept unchanged.
 
 For buffer it is necessary to detach the two regions, but it is also necessary to sometimes hold back the upstream
-or downstream. The new API calls that are available for :class:`DetachedStage` s are the various``ctx.holdXXX()`` methods
-, ``ctx.pushAndPull()`` and variangs, and ``ctx.isHoldingXXX()``.
+or downstream. The new API calls that are available for :class:`DetachedStage` s are the various ``ctx.holdXXX()`` methods
+, ``ctx.pushAndPull()`` and variants, and ``ctx.isHoldingXXX()``.
 Calling ``ctx.holdXXX()`` from ``onPull()`` or ``onPush`` results in suspending the corresponding
-region from progress, and temporarily taking ownership of the "event token". This state can be queried by ``ctx.isHolding``
+region from progress, and temporarily taking ownership of the "event token". This state can be queried by ``ctx.isHolding()``
 which will tell if the stage is currently holding a token or not. It is only allowed to suspend one of the regions, not
 both, since that would disable all possible future events, resulting in a dead-lock. Releasing the held token is only
-possible by calling ``pushAndPull()``. This is to ensure that both the held token is released, and the triggering region
+possible by calling ``ctx.pushAndPull()``. This is to ensure that both the held token is released, and the triggering region
 gets its token back (one inbound token + one held token = two released tokens).
 
 The following code example demonstrates the buffer class corresponding to the message sequence chart we discussed.
@@ -391,7 +390,7 @@ we use the special :class:`SameState` object which signals :class:`FlexiRoute` t
 .. warning::
   While a :class:`RouteLogic` instance *may* be stateful, the :class:`FlexiRoute` instance
   *must not* hold any mutable state, since it may be shared across several materialized ``FlowGraph`` instances.
-  
+
 .. note::
   It is only allowed to `emit` at most one element to each output in response to `onInput`, `IllegalStateException` is thrown.
 
@@ -428,7 +427,7 @@ All of the above custom stages (linear or graph) provide a few simple guarantees
  - The state encapsulated by these classes can be safely modified from the provided callbacks, without any further
    synchronization.
 
-In essence, the above guarantees are similar to what :class:`Actor`s provide, if one thinks of the state of a custom
+In essence, the above guarantees are similar to what :class:`Actor` s provide, if one thinks of the state of a custom
 stage as state of an actor, and the callbacks as the ``receive`` block of the actor.
 
 .. warning::
