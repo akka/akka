@@ -1,4 +1,4 @@
-.. _http-model-scala:
+.. _http-model-java:
 
 HTTP Model
 ==========
@@ -13,7 +13,7 @@ Overview
 Since akka-http-core provides the central HTTP data structures you will find the following import in quite a
 few places around the code base (and probably your own code as well):
 
-.. includecode:: ../../code/docs/http/scaladsl/ModelSpec.scala
+.. includecode:: ../code/docs/http/javadsl/ModelSpec.java
    :include: import-model
 
 This brings all of the most relevant types in scope, mainly:
@@ -28,17 +28,17 @@ the type plus a trailing plural 's'.
 
 For example:
 
-- Defined ``HttpMethod`` instances live in the ``HttpMethods`` object.
-- Defined ``HttpCharset`` instances live in the ``HttpCharsets`` object.
-- Defined ``HttpEncoding`` instances live in the ``HttpEncodings`` object.
-- Defined ``HttpProtocol`` instances live in the ``HttpProtocols`` object.
-- Defined ``MediaType`` instances live in the ``MediaTypes`` object.
-- Defined ``StatusCode`` instances live in the ``StatusCodes`` object.
+- Defined ``HttpMethod`` instances are defined as static fields of the ``HttpMethods`` class.
+- Defined ``HttpCharset`` instances are defined as static fields of the ``HttpCharsets`` class.
+- Defined ``HttpEncoding`` instances are defined as static fields of the ``HttpEncodings`` class.
+- Defined ``HttpProtocol`` instances are defined as static fields of the ``HttpProtocols`` class.
+- Defined ``MediaType`` instances are defined as static fields of the ``MediaTypes`` class.
+- Defined ``StatusCode`` instances are defined as static fields of the ``StatusCodes`` class.
 
 HttpRequest
 -----------
 
-``HttpRequest`` and ``HttpResponse`` are the basic case classes representing HTTP messages.
+``HttpRequest`` and ``HttpResponse`` are the basic immutable classes representing HTTP messages.
 
 An ``HttpRequest`` consists of
 
@@ -50,12 +50,14 @@ An ``HttpRequest`` consists of
 
 Here are some examples how to construct an ``HttpRequest``:
 
-.. includecode:: ../../code/docs/http/scaladsl/ModelSpec.scala
+.. includecode:: ../code/docs/http/javadsl/ModelSpec.java
    :include: construct-request
 
-All parameters of ``HttpRequest.apply`` have default values set, so ``headers`` for example don't need to be specified
-if there are none. Many of the parameters types (like ``HttpEntity`` and ``Uri``) define implicit conversions
-for common use cases to simplify the creation of request and response instances.
+In its basic form ``HttpRequest.create`` creates an empty default GET request without headers which can then be
+transformed using one of the ``withX`` methods, ``addHeader``, or ``addHeaders``. Each of those will create a
+new immutable instance, so instances can be shared freely. There exist some overloads for ``HttpRequest.create`` that
+simplify creating requests for common cases. Also, to aid readability, there are predefined alternatives for ``create``
+named after HTTP methods to create a request with a given method and uri directly.
 
 HttpResponse
 ------------
@@ -63,21 +65,21 @@ HttpResponse
 An ``HttpResponse`` consists of
 
  - a status code
- - a seq of headers
+ - a list of headers
  - an entity (body data)
  - a protocol
 
 Here are some examples how to construct an ``HttpResponse``:
 
-.. includecode:: ../../code/docs/http/scaladsl/ModelSpec.scala
+.. includecode:: ../code/docs/http/javadsl/ModelSpec.java
    :include: construct-response
 
-In addition to the simple ``HttpEntity`` constructors which create an entity from a fixed ``String`` or ``ByteString``
+In addition to the simple ``HttpEntities.create`` methods which create an entity from a fixed ``String`` or ``ByteString``
 as shown here the Akka HTTP model defines a number of subclasses of ``HttpEntity`` which allow body data to be specified as a
-stream of bytes.
+stream of bytes. All of these types can be created using the method on ``HttpEntites``.
 
 
-.. _HttpEntity:
+.. _HttpEntity-java:
 
 HttpEntity
 ----------
@@ -86,72 +88,73 @@ An ``HttpEntity`` carries the data bytes of a message together with its Content-
 In Akka HTTP there are five different kinds of entities which model the various ways that message content can be
 received or sent:
 
-HttpEntity.Strict
+HttpEntityStrict
   The simplest entity, which is used when all the entity are already available in memory.
   It wraps a plain ``ByteString`` and  represents a standard, unchunked entity with a known ``Content-Length``.
 
 
-HttpEntity.Default
+HttpEntityDefault
   The general, unchunked HTTP/1.1 message entity.
   It has a known length and presents its data as a ``Source[ByteString]`` which can be only materialized once.
   It is an error if the provided source doesn't produce exactly as many bytes as specified.
-  The distinction of ``Strict`` and ``Default`` is an API-only one. One the wire, both kinds of entities look the same.
+  The distinction of ``HttpEntityStrict`` and ``HttpEntityDefault`` is an API-only one. One the wire,
+  both kinds of entities look the same.
 
 
-HttpEntity.Chunked
+HttpEntityChunked
   The model for HTTP/1.1 `chunked content`__ (i.e. sent with ``Transfer-Encoding: chunked``).
-  The content length is unknown and the individual chunks are presented as a ``Source[HttpEntity.ChunkStreamPart]``.
-  A ``ChunkStreamPart`` is either a non-empty ``Chunk`` or a ``LastChunk`` containing optional trailer headers.
-  The stream consists of zero or more ``Chunked`` parts and can be terminated by an optional ``LastChunk`` part.
+  The content length is unknown and the individual chunks are presented as a ``Source[ChunkStreamPart]``.
+  A ``ChunkStreamPart`` is either a non-empty chunk or the empty last chunk containing optional trailer headers.
+  The stream consists of zero or more non-empty chunks parts and can be terminated by an optional last chunk.
 
 
-HttpEntity.CloseDelimited
+HttpEntityCloseDelimited
   An unchunked entity of unknown length that is implicitly delimited by closing the connection (``Connection: close``).
-  The content data are presented as a ``Source[ByteString]``.
+  Content data is presented as a ``Source[ByteString]``.
   Since the connection must be closed after sending an entity of this type it can only be used on the server-side for
   sending a response.
   Also, the main purpose of ``CloseDelimited`` entities is compatibility with HTTP/1.0 peers, which do not support
   chunked transfer encoding. If you are building a new application and are not constrained by legacy requirements you
   shouldn't rely on ``CloseDelimited`` entities, since implicit terminate-by-connection-close is not a robust way of
   signaling response end, especially in the presence of proxies. Additionally this type of entity prevents connection
-  reuse which can seriously degrade performance. Use ``HttpEntity.Chunked`` instead!
+  reuse which can seriously degrade performance. Use ``HttpEntityChunked`` instead!
 
 
-HttpEntity.IndefiniteLength
+HttpEntityIndefiniteLength
   A streaming entity of unspecified length for use in a ``Multipart.BodyPart``.
 
 __ http://tools.ietf.org/html/rfc7230#section-4.1
 
-Entity types ``Strict``, ``Default``, and ``Chunked`` are a subtype of ``HttpEntity.Regular`` which allows to use them
-for requests and responses. In contrast, ``HttpEntity.CloseDelimited`` can only be used for responses.
+Entity types ``HttpEntityStrict``, ``HttpEntityDefault``, and ``HttpEntityChunked`` are a subtype of ``RequestEntity``
+which allows to use them for requests and responses. In contrast, ``HttpEntityCloseDelimited`` can only be used for responses.
 
-Streaming entity types (i.e. all but ``Strict``) cannot be shared or serialized. To create a strict, sharable copy of an
+Streaming entity types (i.e. all but ``HttpEntityStrict``) cannot be shared or serialized. To create a strict, sharable copy of an
 entity or message use ``HttpEntity.toStrict`` or ``HttpMessage.toStrict`` which returns a ``Future`` of the object with
 the body data collected into a ``ByteString``.
 
-The ``HttpEntity`` companion object contains several helper constructors to create entities from common types easily.
+The class ``HttpEntities`` contains static methods to create entities from common types easily.
 
-You can pattern match over the subtypes of ``HttpEntity`` if you want to provide special handling for each of the
-subtypes. However, in many cases a recipient of an ``HttpEntity`` doesn't care about of which subtype an entity is
-(and how data is transported exactly on the HTTP layer). Therefore, a general
-``HttpEntity::dataBytes: Source[ByteString, Any]`` is provided which allows access to the data of an entity regardless
+You can use the ``isX` methods of ``HttpEntity`` to find out of which subclass an entity is if you want to provide
+special handling for each of the subtypes. However, in many cases a recipient of an ``HttpEntity`` doesn't care about
+of which subtype an entity is (and how data is transported exactly on the HTTP layer). Therefore, a general
+``HttpEntity::getDataBytes: Source<ByteString, ?>`` is provided which allows access to the data of an entity regardless
 of its concrete subtype.
 
 .. note::
 
   When to use which subtype?
-    - Use ``Strict`` if the amount of data is "small" and already available in memory (e.g. as a ``String`` or ``ByteString``)
-    - Use ``Default`` if the data is generated by a streaming data source and the size of the data is known
-    - Use ``Chunked`` for an entity of unknown length
-    - Use ``CloseDelimited`` for a response as a legacy alternative to ``Chunked`` if the client doesn't support
-      chunked transfer encoding. Otherwise use ``Chunked``!
-    - In a ``Multipart.Bodypart`` use ``IndefiniteLength`` for content of unknown length.
+    - Use ``HttpEntityStrict`` if the amount of data is "small" and already available in memory (e.g. as a ``String`` or ``ByteString``)
+    - Use ``HttpEntityDefault`` if the data is generated by a streaming data source and the size of the data is known
+    - Use ``HttpEntityChunked`` for an entity of unknown length
+    - Use ``HttpEntityCloseDelimited`` for a response as a legacy alternative to ``HttpEntityChunked`` if the client
+      doesn't support chunked transfer encoding. Otherwise use ``HttpEntityChunked``!
+    - In a ``Multipart.Bodypart`` use ``HttpEntityIndefiniteLength`` for content of unknown length.
 
 .. caution::
 
-  When you receive a non-strict message from a connection then additional data are only read from the network when you
-  request them by consuming the entity data stream. This means that, if you *don't* consume the entity stream then the
-  connection will effectively be stalled. In particular no subsequent message (request or response) will be read from
+  When you receive a non-strict message from a connection then additional data is only read from the network when you
+  request it by consuming the entity data stream. This means that, if you *don't* consume the entity stream then the
+  connection will effectively be stalled. In particular, no subsequent message (request or response) will be read from
   the connection as the entity of the current message "blocks" the stream.
   Therefore you must make sure that you always consume the entity data, even in the case that you are not actually
   interested in it!
@@ -166,7 +169,7 @@ as a ``RawHeader`` (which is essentially a String/String name/value pair).
 
 See these examples of how to deal with headers:
 
-.. includecode:: ../../code/docs/http/scaladsl/ModelSpec.scala
+.. includecode:: ../code/docs/http/javadsl/ModelSpec.java
    :include: headers
 
 
@@ -188,14 +191,14 @@ Content-Type
   not be rendered onto the wire and trigger a warning being logged instead!
 
 Transfer-Encoding
-  Messages with ``Transfer-Encoding: chunked`` are represented via the ``HttpEntity.Chunked`` entity.
+  Messages with ``Transfer-Encoding: chunked`` are represented as a ``HttpEntityChunked`` entity.
   As such chunked messages that do not have another deeper nested transfer encoding will not have a ``Transfer-Encoding``
-  header in their ``headers`` sequence.
+  header in their ``headers`` list.
   Similarly, a ``Transfer-Encoding`` header instance that is explicitly added to the ``headers`` of a request or
   response will not be rendered onto the wire and trigger a warning being logged instead!
 
 Content-Length
-  The content length of a message is modelled via its :ref:`HttpEntity`. As such no ``Content-Length`` header will ever
+  The content length of a message is modelled via its :ref:`HttpEntity-java`. As such no ``Content-Length`` header will ever
   be part of a message's ``header`` sequence.
   Similarly, a ``Content-Length`` header instance that is explicitly added to the ``headers`` of a request or
   response will not be rendered onto the wire and trigger a warning being logged instead!

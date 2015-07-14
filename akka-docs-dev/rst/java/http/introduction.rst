@@ -22,11 +22,7 @@ akka-http
 akka-http-testkit
   A test harness and set of utilities for verifying server-side service implementations
 
-akka-http-spray-json
-  Predefined glue-code for (de)serializing custom types from/to JSON with spray-json_
+akka-http-jackson
+  Predefined glue-code for (de)serializing custom types from/to JSON with jackson_
 
-akka-http-xml
-  Predefined glue-code for (de)serializing custom types from/to XML with scala-xml_
-
-.. _spray-json: https://github.com/spray/spray-json
-.. _scala-xml: https://github.com/scala/scala-xml
+.. _jackson: https://github.com/FasterXML/jackson

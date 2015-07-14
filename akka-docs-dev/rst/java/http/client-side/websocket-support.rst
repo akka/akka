@@ -1,4 +1,4 @@
-.. _client-side-websocket-support:
+.. _client-side-websocket-support-java:
 
 Client-Side WebSocket Support
 =============================

@@ -11,9 +11,11 @@ package akka.http.javadsl.server
  * Use the methods in [[RequestContext]] to create a [[RouteResult]]. A handler mustn't
  * return [[null]] as the result.
  */
+//#handler
 trait Handler {
   def handle(ctx: RequestContext): RouteResult
 }
+//#handler
 
 /**
  * A route handler with one additional argument.

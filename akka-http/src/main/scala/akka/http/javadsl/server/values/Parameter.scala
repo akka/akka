@@ -11,12 +11,13 @@ import java.util.{ Map ⇒ JMap, Collection ⇒ JCollection }
 
 import akka.http.scaladsl.server.directives.ParameterDirectives
 import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.japi.function.Function
 
 import scala.reflect.ClassTag
 
 import akka.japi.{ Option ⇒ JOption }
 
-import akka.http.impl.server.{ StandaloneExtractionImpl, ParameterImpl }
+import akka.http.impl.server.{ Util, StandaloneExtractionImpl, ParameterImpl }
 import akka.http.javadsl.server.RequestVal
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
@@ -63,5 +64,10 @@ object Parameters {
     StandaloneExtractionImpl(ParameterDirectives.parameterMultiMap.map(_.mapValues(_.asJavaCollection).asJava))
   def asCollection: RequestVal[JCollection[JMap.Entry[String, String]]] =
     StandaloneExtractionImpl(ParameterDirectives.parameterSeq.map(_.map(e ⇒ new SimpleEntry(e._1, e._2): JMap.Entry[String, String]).asJavaCollection))
+
+  def fromString[T](name: String, convert: Function[String, T], clazz: Class[T]): Parameter[T] = {
+    implicit val tTag: ClassTag[T] = ClassTag(clazz)
+    ParameterImpl(name.as(Util.fromStringUnmarshallerFromFunction(convert)))
+  }
 }
 
