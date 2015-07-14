@@ -5,7 +5,9 @@ package docs.stream;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -15,12 +17,16 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.stage.*;
+import akka.stream.testkit.*;
+import akka.stream.testkit.javadsl.*;
 import akka.testkit.JavaTestKit;
 
 public class FlowStagesDocTest {
@@ -39,7 +45,7 @@ public class FlowStagesDocTest {
   }
 
   final Materializer mat = ActorMaterializer.create(system);
-  
+
   static //#one-to-one
   public class Map<A, B> extends PushPullStage<A, B> {
     private final Function<A, B> f;
@@ -163,6 +169,88 @@ public class FlowStagesDocTest {
 
     assertEquals(Arrays.asList(1, 1, 2, 2, 3, 3, 4, 4, 5, 5),
         Await.result(runnable.run(mat), FiniteDuration.create(3, TimeUnit.SECONDS)));
+  }
+
+  //#detached
+  class Buffer2<T> extends DetachedStage<T, T> {
+    final private Integer SIZE = 2;
+    final private List<T> buf = new ArrayList<>(SIZE);
+    private Integer capacity = SIZE;
+
+    private boolean isFull() {
+      return capacity == 0;
+    }
+
+    private boolean isEmpty() {
+      return capacity == SIZE;
+    }
+
+    private T dequeue() {
+      capacity += 1;
+      return buf.remove(0);
+    }
+
+    private void enqueue(T elem) {
+      capacity -= 1;
+      buf.add(elem);
+    }
+
+    public DownstreamDirective onPull(DetachedContext<T> ctx) {
+      if (isEmpty()) {
+        if (ctx.isFinishing()) return ctx.finish(); // No more elements will arrive
+        else return ctx.holdDownstream(); // waiting until new elements
+      } else {
+        final T next = dequeue();
+        if (ctx.isHoldingUpstream()) return ctx.pushAndPull(next); // release upstream
+        else return ctx.push(next);
+      }
+    }
+
+    public UpstreamDirective onPush(T elem, DetachedContext<T> ctx) {
+      enqueue(elem);
+      if (isFull()) return ctx.holdUpstream(); // Queue is now full, wait until new empty slot
+      else {
+        if (ctx.isHoldingDownstream()) return ctx.pushAndPull(dequeue()); // Release downstream
+        else return ctx.pull();
+      }
+    }
+
+    public TerminationDirective onUpstreamFinish(DetachedContext<T> ctx) {
+      if (!isEmpty()) return ctx.absorbTermination(); // still need to flush from buffer
+      else return ctx.finish(); // already empty, finishing
+    }
+  }
+  //#detached
+
+  @Test
+  public void demonstrateDetachedStage() throws Exception {
+    final Pair<TestPublisher.Probe<Integer>,TestSubscriber.Probe<Integer>> pair =
+      TestSource.<Integer>probe(system)
+        .transform(() -> new Buffer2<Integer>())
+        .toMat(TestSink.probe(system), Keep.both())
+        .run(mat);
+
+    final TestPublisher.Probe<Integer> pub = pair.first();
+    final TestSubscriber.Probe<Integer> sub = pair.second();
+
+    final FiniteDuration timeout = Duration.create(100, TimeUnit.MILLISECONDS);
+
+    sub.request(2);
+    sub.expectNoMsg(timeout);
+
+    pub.sendNext(1);
+    pub.sendNext(2);
+    sub.expectNext(1, 2);
+
+    pub.sendNext(3);
+    pub.sendNext(4);
+    sub.expectNoMsg(timeout);
+
+    sub.request(2);
+    sub.expectNext(3, 4);
+
+    pub.sendComplete();
+    sub.expectComplete();
   }
 
 }

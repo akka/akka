@@ -16,7 +16,7 @@ import akka.testkit.JavaTestKit;
 import scala.runtime.BoxedUnit;
 
 public class FlexiRouteDocTest {
-  
+
   static ActorSystem system;
 
   @BeforeClass
@@ -31,8 +31,8 @@ public class FlexiRouteDocTest {
   }
 
   final Materializer mat = ActorMaterializer.create(system);
-  
-  
+
+
   static//#flexiroute-unzip
   public class Unzip<A, B> extends FlexiRoute<Pair<A, B>, FanOutShape2<Pair<A, B>, A, B>> {
     public Unzip() {
@@ -45,8 +45,8 @@ public class FlexiRouteDocTest {
         public State<BoxedUnit, Pair<A, B>> initialState() {
           return new State<BoxedUnit, Pair<A, B>>(demandFromAll(s.out0(), s.out1())) {
             @Override
-            public State<BoxedUnit, Pair<A, B>> onInput(RouteLogicContext<Pair<A, B>> ctx, BoxedUnit x,
-                                                        Pair<A, B> element) {
+            public State<BoxedUnit, Pair<A, B>> onInput(
+                RouteLogicContext<Pair<A, B>> ctx, BoxedUnit x, Pair<A, B> element) {
               ctx.emit(s.out0(), element.first());
               ctx.emit(s.out1(), element.second());
               return sameState();
@@ -63,7 +63,7 @@ public class FlexiRouteDocTest {
     }
   }
   //#flexiroute-unzip
-  
+
   static//#flexiroute-completion
   public class ImportantRoute<T> extends FlexiRoute<T, FanOutShape3<T, T, T, T>> {
 
@@ -89,7 +89,7 @@ public class FlexiRouteDocTest {
                 return sameState();
               }
             }
-            
+
             @Override
             public void onUpstreamFinish(RouteLogicContextBase<T> ctx) {
             }
@@ -98,7 +98,7 @@ public class FlexiRouteDocTest {
             public void onUpstreamFailure(RouteLogicContextBase<T> ctx, Throwable t) {
             }
           };
-          
+
         }
 
         @Override
@@ -106,7 +106,8 @@ public class FlexiRouteDocTest {
           return new State<OutPort, T>(demandFromAny(s.out0(), s.out1(), s.out2())) {
             @SuppressWarnings("unchecked")
             @Override
-            public State<T, T> onInput(RouteLogicContext<T> ctx, OutPort preferred, T element) {
+            public State<T, T> onInput(
+                RouteLogicContext<T> ctx, OutPort preferred, T element) {
               ctx.emit((Outlet<T>) preferred, element);
               return sameState();
             }
@@ -116,5 +117,5 @@ public class FlexiRouteDocTest {
     }
   }
   //#flexiroute-completion
-  
+
 }
