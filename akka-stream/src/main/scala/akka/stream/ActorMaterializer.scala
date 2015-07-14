@@ -129,12 +129,11 @@ object ActorMaterializer {
    * INTERNAL API
    */
   private[akka] def downcast(materializer: Materializer): ActorMaterializer =
-    materializer match {
+    materializer match { //FIXME this method is going to cause trouble for other Materializer implementations
       case m: ActorMaterializer ⇒ m
       case _ ⇒ throw new IllegalArgumentException(s"required [${classOf[ActorMaterializer].getName}] " +
         s"but got [${materializer.getClass.getName}]")
     }
-
 }
 
 /**

@@ -28,7 +28,7 @@ trait GraphApply {
   def partial[S <: Shape]()(buildBlock: FlowGraph.Builder[Unit] ⇒ S): Graph[S, Unit] = {
     val builder = new FlowGraph.Builder
     val s = buildBlock(builder)
-    val mod = builder.module.wrap().replaceShape(s)
+    val mod = builder.module.nest().replaceShape(s)
 
     new GraphApply.GraphImpl(s, mod)
   }
@@ -56,7 +56,7 @@ trait GraphApply {
     val builder = new FlowGraph.Builder
     val s1 = builder.add(g1)
     val s = buildBlock(builder)(s1)
-    val mod = builder.module.wrap().replaceShape(s)
+    val mod = builder.module.nest().replaceShape(s)
 
     new GraphApply.GraphImpl(s, mod)
   }
@@ -91,7 +91,7 @@ trait GraphApply {
     [2..#val s1 = builder.add(g1, (f: M1 ⇒ Any, m1: M1) ⇒ f(m1))#
     ]
     val s = buildBlock(builder)([#s1#])
-    val mod = builder.module.wrap().replaceShape(s)
+    val mod = builder.module.nest().replaceShape(s)
 
     new GraphApply.GraphImpl(s, mod)
   }#
@@ -109,7 +109,7 @@ private[stream] object GraphApply {
     extends Graph[S, Mat] {
 
     override def withAttributes(attr: Attributes): Graph[S, Mat] =
-      new GraphImpl(shape, module.withAttributes(attr).wrap())
+      new GraphImpl(shape, module.withAttributes(attr).nest())
 
     override def named(name: String): Graph[S, Mat] = withAttributes(Attributes.name(name))
   }

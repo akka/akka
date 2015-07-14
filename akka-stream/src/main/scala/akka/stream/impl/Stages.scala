@@ -5,13 +5,12 @@ package akka.stream.impl
 
 import akka.event.{ LoggingAdapter, Logging }
 import akka.stream.impl.SplitDecision.SplitDecision
-import akka.stream.{ OverflowStrategy, TimerTransformer }
-import akka.stream.Attributes
+import akka.stream.impl.StreamLayout._
+import akka.stream.{ OverflowStrategy, TimerTransformer, Attributes }
 import akka.stream.Attributes._
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
-import StreamLayout._
-
+import akka.event.Logging.simpleName
 import scala.collection.immutable
 import scala.concurrent.Future
 
@@ -117,16 +116,6 @@ private[stream] object Stages {
   }
 
   final case class Identity(attributes: Attributes = Attributes.name("identity")) extends StageModule {
-    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-    override protected def newInstance: StageModule = this.copy()
-  }
-
-  object Fused {
-    def apply(ops: immutable.Seq[Stage[_, _]]): Fused =
-      Fused(ops, name(ops.iterator.map(x ⇒ Logging.simpleName(x).toLowerCase).mkString("+")))
-  }
-
-  final case class Fused(ops: immutable.Seq[Stage[_, _]], attributes: Attributes = fused) extends StageModule {
     def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
