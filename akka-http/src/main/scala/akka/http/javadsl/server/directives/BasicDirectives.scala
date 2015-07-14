@@ -7,7 +7,7 @@ package akka.http.javadsl.server.directives
 import scala.annotation.varargs
 import java.lang.reflect.{ ParameterizedType, Method }
 
-import akka.http.javadsl.model.{ StatusCode, HttpResponse }
+import akka.http.javadsl.model.{ ContentType, StatusCode, HttpResponse }
 import akka.http.javadsl.server._
 import akka.http.impl.server.RouteStructure._
 import akka.http.impl.server._
@@ -28,6 +28,15 @@ abstract class BasicDirectives {
   def complete(text: String): Route =
     new OpaqueRoute() {
       def handle(ctx: RequestContext): RouteResult = ctx.complete(text)
+    }
+
+  /**
+   * A route that completes the request with a static text
+   */
+  def complete(contentType: ContentType, text: String): Route =
+    new OpaqueRoute() {
+      def handle(ctx: RequestContext): RouteResult =
+        ctx.complete(contentType, text)
     }
 
   /**

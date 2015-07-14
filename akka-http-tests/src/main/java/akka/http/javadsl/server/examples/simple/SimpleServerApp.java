@@ -23,6 +23,8 @@ public class SimpleServerApp extends HttpApp {
     static PathMatcher<Integer> xSegment = PathMatchers.integerNumber();
     static PathMatcher<Integer> ySegment = PathMatchers.integerNumber();
 
+    static RequestVal<String> bodyAsName = RequestVals.entityAs(Unmarshallers.String());
+
     public static RouteResult multiply(RequestContext ctx, int x, int y) {
         int result = x * y;
         return ctx.complete(String.format("%d * %d = %d", x, y, result));
@@ -52,6 +54,13 @@ public class SimpleServerApp extends HttpApp {
                 return ctx.complete(String.format("%d - %d = %d", xVal, yVal, result));
             }
         };
+        Handler1<String> helloPostHandler =
+            new Handler1<String>() {
+                @Override
+                public RouteResult handle(RequestContext ctx, String s) {
+                    return ctx.complete("Hello " + s + "!");
+                }
+            };
         return
             route(
                 // matches the empty path
@@ -73,6 +82,11 @@ public class SimpleServerApp extends HttpApp {
                 path("multiplyAsync", xSegment, ySegment).route(
                     // bind async handler by reflection
                     handleWith(SimpleServerApp.class, "multiplyAsync", xSegment, ySegment)
+                ),
+                post(
+                    path("hello").route(
+                        handleWith(bodyAsName, helloPostHandler)
+                    )
                 )
             );
     }

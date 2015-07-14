@@ -119,6 +119,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
         }
       }
 
+    // `route` will be implicitly converted to `Flow` using `RouteResult.route2HandlerFlow`
     Http().bindAndHandle(route, "localhost", 8080)
   }
 

@@ -334,7 +334,7 @@ In essence, the above guarantees are similar to what :class:`Actor`s provide, if
 stage as state of an actor, and the callbacks as the ``receive`` block of the actor.
 
 .. warning::
-It is **not safe** to access the state of any custom stage outside of the callbacks that it provides, just like it
+  It is **not safe** to access the state of any custom stage outside of the callbacks that it provides, just like it
   is unsafe to access the state of an actor from the outside. This means that Future callbacks should **not close over**
   internal state of custom stages because such access can be concurrent with the provided callbacks, leading to undefined
   behavior.

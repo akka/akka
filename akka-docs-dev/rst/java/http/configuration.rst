@@ -1,4 +1,4 @@
-.. _akka-http-configuration:
+.. _akka-http-configuration-java:
 
 Configuration
 =============

@@ -15,7 +15,9 @@ service definition as DRY_ as you might like.
 As an alternative Akka HTTP provides a flexible DSL for expressing your service behavior as a structure of
 composable elements (called :ref:`Directives`) in a concise and readable way. Directives are assembled into a so called
 *route structure* which, at its top-level, forms a handler ``Flow`` (or, alternatively, an async handler function) that
-can be directly supplied to a ``bind`` call.
+can be directly supplied to a ``bind`` call. The conversion from ``Route`` to flow can either be invoked explicitly
+using ``Route.handlerFlow`` or, otherwise, the conversion is also provided implicitly by
+``RouteResult.route2HandlerFlow`` [1]_.
 
 For example, the service definition from above, written using the routing DSL, would look like this:
 
@@ -37,5 +39,12 @@ regard.
 For learning how to work with the Routing DSL you should first understand the concept of :ref:`Routes`.
 
 
+.. [1] To be picked up automatically, the implicit conversion needs to be provided in the companion object of the source
+       type. However, as ``Route`` is just a type alias for ``RequestContext => Future[RouteResult]``, there's no
+       companion object for ``Route``. Fortunately, the `implicit scope`_ for finding an implicit conversion also
+       includes all types that are "associated with any part" of the source type which in this case means that the
+       implicit conversion will also be picked up from ``RouteResult.route2HandlerFlow`` automatically.
+
 .. _Unfiltered: http://unfiltered.databinder.net/
 .. _DRY: http://en.wikipedia.org/wiki/Don%27t_repeat_yourself
+.. _implicit scope: http://www.scala-lang.org/files/archive/spec/2.11/07-implicits.html#implicit-parameters
