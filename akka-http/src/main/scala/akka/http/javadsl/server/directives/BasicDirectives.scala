@@ -7,7 +7,7 @@ package akka.http.javadsl.server.directives
 import scala.annotation.varargs
 import java.lang.reflect.{ ParameterizedType, Method }
 
-import akka.http.javadsl.model.{ ContentType, StatusCode, HttpResponse }
+import akka.http.javadsl.model.{ Uri, ContentType, StatusCode, HttpResponse }
 import akka.http.javadsl.server._
 import akka.http.impl.server.RouteStructure._
 import akka.http.impl.server._
@@ -16,7 +16,7 @@ import scala.concurrent.Future
 
 abstract class BasicDirectives {
   /**
-   * Tries the given routes in sequence until the first one matches.
+   * Tries the given route alternatives in sequence until the first one matches.
    */
   @varargs
   def route(innerRoute: Route, moreInnerRoutes: Route*): Route =
@@ -62,6 +62,13 @@ abstract class BasicDirectives {
     new OpaqueRoute() {
       def handle(ctx: RequestContext): RouteResult = ctx.completeAs(marshaller, value)
     }
+
+  /**
+   * Completes the request with redirection response of the given type to the given URI.
+   *
+   * The ``redirectionType`` must be a StatusCode for which ``isRedirection`` returns true.
+   */
+  def redirect(uri: Uri, redirectionType: StatusCode): Route = Redirect(uri, redirectionType)
 
   /**
    * A route that extracts a value and completes the request with it.
