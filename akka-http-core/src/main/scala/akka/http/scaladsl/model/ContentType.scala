@@ -79,6 +79,13 @@ object ContentType {
       }
     new ContentType(mediaType, definedCharset) {}
   }
+
+  /**
+   * Tries to parse a ``ContentType`` value from the given String. Returns ``Right(contentType)`` if successful and
+   * ``Left(errors)`` otherwise.
+   */
+  def parse(value: String): Either[List[ErrorInfo], ContentType] =
+    headers.`Content-Type`.parseFromValueString(value).right.map(_.contentType)
 }
 
 object ContentTypes {
