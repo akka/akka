@@ -60,20 +60,25 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   }
 
   trait Example1 {
+    //#first-sample
     //#materializer-setup
     implicit val system = ActorSystem("reactive-tweets")
     implicit val materializer = ActorMaterializer()
     //#materializer-setup
+    //#first-sample
   }
 
   implicit val mat = ActorMaterializer()
 
   "filter and map" in {
+    //#first-sample
+
     //#authors-filter-map
     val authors: Source[Author, Unit] =
       tweets
         .filter(_.hashtags.contains(akka))
         .map(_.author)
+    //#first-sample
     //#authors-filter-map
 
     trait Example3 {
@@ -83,9 +88,12 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       //#authors-collect
     }
 
+    //#first-sample
+
     //#authors-foreachsink-println
     authors.runWith(Sink.foreach(println))
     //#authors-foreachsink-println
+    //#first-sample
 
     //#authors-foreach-println
     authors.runForeach(println)
@@ -155,11 +163,16 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   "count elements on finite stream" in {
     //#tweets-fold-count
+    val count: Flow[Tweet, Int, Unit] = Flow[Tweet].map(_ => 1)
+
     val sumSink: Sink[Int, Future[Int]] = Sink.fold[Int, Int](0)(_ + _)
 
-    val counter: RunnableGraph[Future[Int]] = tweets.map(t => 1).toMat(sumSink)(Keep.right)
+    val counterGraph: RunnableGraph[Future[Int]] =
+      tweets
+        .via(count)
+        .toMat(sumSink)(Keep.right)
 
-    val sum: Future[Int] = counter.run()
+    val sum: Future[Int] = counterGraph.run()
 
     sum.foreach(c => println(s"Total tweets processed: $c"))
     //#tweets-fold-count

@@ -17,8 +17,16 @@ Here's the data model we'll be working with throughout the quickstart examples:
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#model
 
+.. note::
+  If you would like to get an overview of the used vocabulary first instead of diving head-first
+  into an actual example you can have a look at the :ref:`core-concepts-scala` and :ref:`defining-and-running-streams-scala`
+  sections of the docs, and then come back to this quickstart to see it all pieced together into a simple example application.
+
 Transforming and consuming simple streams
 -----------------------------------------
+The example application we will be looking at is a simple Twitter fed stream from which we'll want to extract certain information,
+like for example finding all twitter handles of users who tweet about ``#akka``.
+
 In order to prepare our environment by creating an :class:`ActorSystem` and :class:`ActorMaterializer`,
 which will be responsible for materializing and running the streams we are about to create:
 
@@ -34,12 +42,12 @@ Let's assume we have a stream of tweets readily available, in Akka this is expre
 
 Streams always start flowing from a :class:`Source[Out,M1]` then can continue through :class:`Flow[In,Out,M2]` elements or
 more advanced graph elements to finally be consumed by a :class:`Sink[In,M3]` (ignore the type parameters ``M1``, ``M2``
-and ``M3`` for now, they are not relevant to the types of the elements produced/consumed by these classes). Both Sources and
-Flows provide stream operations that can be used to transform the flowing data, a :class:`Sink` however does not since
-its the "end of stream" and its behavior depends on the type of :class:`Sink` used.
+and ``M3`` for now, they are not relevant to the types of the elements produced/consumed by these classes – they are
+"materialized types", which we'll talk about :ref:`below <materialized-values-quick-scala>`).
 
-In our case let's say we want to find all twitter handles of users which tweet about ``#akka``, the operations should look
-familiar to anyone who has used the Scala Collections library, however they operate on streams and not collections of data:
+The operations should look familiar to anyone who has used the Scala Collections library,
+however they operate on streams and not collections of data (which is a very important distinction, as some operations
+only make sense in streaming and vice versa):
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#authors-filter-map
 
@@ -51,12 +59,16 @@ For now let's simply print each author:
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#authors-foreachsink-println
 
-or by using the shorthand version (which are defined only for the most popular sinks such as :class:`FoldSink` and :class:`ForeachSink`):
+or by using the shorthand version (which are defined only for the most popular sinks such as ``Sink.fold`` and ``Sink.foreach``):
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#authors-foreach-println
 
 Materializing and running a stream always requires a :class:`Materializer` to be in implicit scope (or passed in explicitly,
 like this: ``.run(materializer)``).
+
+The complete snippet looks like this:
+
+.. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#first-sample
 
 Flattening sequences in streams
 -------------------------------
@@ -89,7 +101,14 @@ input port to all of its output ports.
 
 Akka Streams intentionally separate the linear stream structures (Flows) from the non-linear, branching ones (FlowGraphs)
 in order to offer the most convenient API for both of these cases. Graphs can express arbitrarily complex stream setups
-at the expense of not reading as familiarly as collection transformations. It is also possible to wrap complex computation
+at the expense of not reading as familiarly as collection transformations.
+
+A graph can be either ``closed`` which is also known as a "*fully connected graph*", or ``partial`` which can be seen as
+a *partial graph* (a graph with some unconnected ports), thus being a generalisation of the Flow concept, where ``Flow``
+is simply a partial graph with one unconnected input and one unconnected output. Concepts around composing and nesting
+graphs in large structures are explained explained in detail in :ref:`composition-scala`.
+
+It is also possible to wrap complex computation
 graphs as Flows, Sinks or Sources, which will be explained in detail in :ref:`constructing-sources-sinks-flows-from-partial-graphs-scala`.
 FlowGraphs are constructed like this:
 
@@ -127,6 +146,8 @@ The ``buffer`` element takes an explicit and required ``OverflowStrategy``, whic
 when it receives another element while it is full. Strategies provided include dropping the oldest element (``dropHead``),
 dropping the entire buffer, signalling errors etc. Be sure to pick and choose the strategy that fits your use case best.
 
+.. _materialized-values-quick-scala:
+
 Materialized values
 -------------------
 So far we've been only processing data using Flows and consuming it into some kind of external Sink - be it by printing
@@ -136,22 +157,25 @@ While this question is not as obvious to give an answer to in case of an infinit
 this question in a streaming setting would to create a stream of counts described as "*up until now*, we've processed N tweets"),
 but in general it is possible to deal with finite streams and come up with a nice result such as a total count of elements.
 
-First, let's write such an element counter using :class:`FoldSink` and see how the types look like:
+First, let's write such an element counter using ``Sink.fold`` and see how the types look like:
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#tweets-fold-count
 
-First, we prepare the :class:`FoldSink` which will be used to sum all ``Int`` elements of the stream.
-Next we connect the ``tweets`` stream though a ``map`` step which converts each tweet into the number ``1``,
-finally we connect the flow using ``toMat`` the previously prepared Sink. Remember those mysterious type parameters on
-:class:`Source` :class:`Flow` and :class:`Sink`? They represent the type of values these processing parts return when
-materialized. When you chain these together, you can explicitly combine their materialized values: in our example we
-used the ``Keep.right`` predefined function, which tells the implementation to only care about the materialized
-type of the stage currently appended to the right. As you can notice, the materialized type of sumSink is ``Future[Int]``
-and because of using ``Keep.right``, the resulting :class:`RunnableGraph` has also a type parameter of ``Future[Int]``.
+First we prepare a reusable ``Flow`` that will change each incoming tweet into an integer of value ``1``.
+We'll use this in order to combine those ones with a ``Sink.fold`` will sum all ``Int`` elements of the stream
+and make its result available as a ``Future[Int]``. Next we connect the ``tweets`` stream though a ``map`` step which
+converts each tweet into the number ``1``, finally we connect the flow using ``toMat`` the previously prepared Sink.
+
+Remember those mysterious ``Mat`` type parameters on ``Source[+Out, +Mat]``, ``Flow[-In, +Out, +Mat]`` and ``Sink[-In, +Mat]``?
+They represent the type of values these processing parts return when materialized. When you chain these together,
+you can explicitly combine their materialized values: in our example we used the ``Keep.right`` predefined function,
+which tells the implementation to only care about the materialized type of the stage currently appended to the right.
+As you can notice, the materialized type of sumSink is ``Future[Int]`` and because of using ``Keep.right``,
+the resulting :class:`RunnableGraph` has also a type parameter of ``Future[Int]``.
 
 This step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be ``run()``, as indicated by its type: :class:`RunnableGraph[Future[Int]]`. Next we call ``run()`` which uses the implicit :class:`ActorMaterializer`
+be ``run()``, as indicated by its type: ``RunnableGraph[Future[Int]]``. Next we call ``run()`` which uses the implicit :class:`ActorMaterializer`
 to materialize and run the flow. The value returned by calling ``run()`` on a ``RunnableGraph[T]`` is of type ``T``.
 In our case this type is ``Future[Int]`` which, when completed, will contain the total length of our tweets stream.
 In case of the stream failing, this future would complete with a Failure.
