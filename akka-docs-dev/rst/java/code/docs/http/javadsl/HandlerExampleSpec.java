@@ -63,8 +63,8 @@ public class HandlerExampleSpec extends JUnitRouteTest {
             RequestVal<Integer> xParam = Parameters.intValue("x");
             RequestVal<Integer> yParam = Parameters.intValue("y");
 
-            RequestVal<Integer> xSegment = PathMatchers.integerNumber();
-            RequestVal<Integer> ySegment = PathMatchers.integerNumber();
+            RequestVal<Integer> xSegment = PathMatchers.intValue();
+            RequestVal<Integer> ySegment = PathMatchers.intValue();
 
             //#handler2
             Handler2<Integer, Integer> multiply =
@@ -114,8 +114,8 @@ public class HandlerExampleSpec extends JUnitRouteTest {
             RequestVal<Integer> xParam = Parameters.intValue("x");
             RequestVal<Integer> yParam = Parameters.intValue("y");
 
-            RequestVal<Integer> xSegment = PathMatchers.integerNumber();
-            RequestVal<Integer> ySegment = PathMatchers.integerNumber();
+            RequestVal<Integer> xSegment = PathMatchers.intValue();
+            RequestVal<Integer> ySegment = PathMatchers.intValue();
 
 
             //#reflective

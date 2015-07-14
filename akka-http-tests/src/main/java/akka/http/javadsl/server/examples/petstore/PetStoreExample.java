@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static akka.http.javadsl.server.Directives.*;
 
 public class PetStoreExample {
-    static PathMatcher<Integer> petId = PathMatchers.integerNumber();
+    static PathMatcher<Integer> petId = PathMatchers.intValue();
     static RequestVal<Pet> petEntity = RequestVals.entityAs(Jackson.jsonAs(Pet.class));
 
     public static Route appRoute(final Map<Integer, Pet> pets) {

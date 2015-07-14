@@ -46,7 +46,7 @@ MethodDirectives
 MiscDirectives
   Contains directives that validate a request by user-defined logic.
 
-PathDirectives
+:ref:`PathDirectives-java`
   Contains directives to match and filter on the URI path of the incoming request.
 
 RangeDirectives
@@ -57,5 +57,10 @@ SchemeDirectives
 
 WebsocketDirectives
   Contains directives to support answering Websocket requests.
+
+.. toctree::
+  :maxdepth: 1
+
+  path-directives
 
 .. _`RFC 7234`: http://tools.ietf.org/html/rfc7234

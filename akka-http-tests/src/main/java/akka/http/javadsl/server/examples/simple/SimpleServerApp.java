@@ -20,8 +20,8 @@ public class SimpleServerApp extends HttpApp {
     static Parameter<Integer> x = Parameters.intValue("x");
     static Parameter<Integer> y = Parameters.intValue("y");
 
-    static PathMatcher<Integer> xSegment = PathMatchers.integerNumber();
-    static PathMatcher<Integer> ySegment = PathMatchers.integerNumber();
+    static PathMatcher<Integer> xSegment = PathMatchers.intValue();
+    static PathMatcher<Integer> ySegment = PathMatchers.intValue();
 
     static RequestVal<String> bodyAsName = RequestVals.entityAs(Unmarshallers.String());
 
