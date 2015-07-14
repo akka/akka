@@ -23,7 +23,7 @@ BasicDirectives
 
 CacheConditionDirectives
   Contains a single directive ``conditional`` that wraps its inner route with support for Conditional Requests as defined
-  by http://tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26.
+  by `RFC 7234`_.
 
 CodingDirectives
   Contains directives to decode compressed requests and encode responses.
@@ -57,3 +57,5 @@ SchemeDirectives
 
 WebsocketDirectives
   Contains directives to support answering Websocket requests.
+
+.. _`RFC 7234`: http://tools.ietf.org/html/rfc7234
