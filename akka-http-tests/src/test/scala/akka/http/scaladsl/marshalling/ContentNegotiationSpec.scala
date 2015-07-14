@@ -53,6 +53,13 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
       accept(`text/plain` withCharset `UTF-8`) should reject
     }
 
+    "manually created Accept-Charset: UTF-16" in testHeaders(headers.`Accept-Charset`(Vector(HttpCharsets.`UTF-16`.toRange))) { accept ⇒
+      accept(`text/plain`) should select(`text/plain`, `UTF-16`)
+
+      // FIXME: reenable, currently fails because of #17984
+      // accept(`text/plain` withCharset `UTF-8`) should reject
+    }
+
     "Accept-Charset: UTF-16, UTF-8" test { accept ⇒
       accept(`text/plain`) should select(`text/plain`, `UTF-8`)
       accept(`text/plain` withCharset `UTF-16`) should select(`text/plain`, `UTF-16`)
