@@ -3,6 +3,8 @@
  */
 package akka.testkit.metrics
 
+import java.util.concurrent.atomic.LongAdder
+
 import com.codahale.metrics.Gauge
 
 /**
