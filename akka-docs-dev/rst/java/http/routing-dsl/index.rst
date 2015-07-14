@@ -13,5 +13,5 @@ To use the high-level API you need to add a dependency to the ``akka-http-experi
    directives/index
    request-vals/index
    handlers
-   path-matchers
    marshalling
+   json-jackson-support
