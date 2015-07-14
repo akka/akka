@@ -11,6 +11,7 @@ Streams
    ../stream-design
    stream-flows-and-basics
    stream-graphs
+   stream-composition
    stream-rate
    stream-customize
    stream-integrations

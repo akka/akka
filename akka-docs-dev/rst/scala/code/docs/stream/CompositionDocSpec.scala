@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package docs.stream
 
 import akka.stream._
