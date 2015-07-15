@@ -4,14 +4,14 @@
 
 package akka.http.javadsl.testkit
 
-import akka.http.javadsl.server._
-import Directives._
-import org.junit.rules.ExternalResource
-import org.junit.{ Rule, Assert }
-import scala.concurrent.duration._
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.http.javadsl.server._
 import akka.http.scaladsl.model.HttpResponse
+import akka.stream.ActorMaterializer
+import org.junit.rules.ExternalResource
+import org.junit.{ Assert, Rule }
+
+import scala.concurrent.duration._
 
 /**
  * A RouteTest that uses JUnit assertions.
@@ -39,8 +39,8 @@ abstract class JUnitRouteTestBase extends RouteTest {
     }
 
   protected def completeWithValueToString[T](value: RequestVal[T]): Route =
-    handleWith(value, new Handler1[T] {
-      def handle(ctx: RequestContext, t: T): RouteResult = ctx.complete(t.toString)
+    handleWith1(value, new Handler1[T] {
+      def apply(ctx: RequestContext, t: T): RouteResult = ctx.complete(t.toString)
     })
 }
 abstract class JUnitRouteTest extends JUnitRouteTestBase {

@@ -4,17 +4,18 @@
 
 package akka.http.javadsl.server.directives
 
-import scala.annotation.varargs
-import java.lang.reflect.{ ParameterizedType, Method }
+import java.lang.reflect.{ Method, ParameterizedType }
 
 import akka.http.javadsl.model.{ Uri, ContentType, StatusCode, HttpResponse }
-import akka.http.javadsl.server._
 import akka.http.impl.server.RouteStructure._
 import akka.http.impl.server._
+import akka.http.javadsl.model.{ ContentType, HttpResponse, StatusCode }
+import akka.http.javadsl.server._
 
+import scala.annotation.varargs
 import scala.concurrent.Future
 
-abstract class BasicDirectives {
+abstract class BasicDirectives extends BasicDirectivesBase {
   /**
    * Tries the given route alternatives in sequence until the first one matches.
    */
@@ -84,40 +85,6 @@ abstract class BasicDirectives {
   def extractHere(extractions: RequestVal[_]*): Directive =
     Directives.custom(Extract(extractions.map(_.asInstanceOf[StandaloneExtractionImpl[_ <: AnyRef]])))
 
-  /**
-   * A route that handles the request with the given opaque handler. Specify a set of extractions
-   * that will be used in the handler to make sure they are available.
-   */
-  @varargs
-  def handleWith[T1](handler: Handler, extractions: RequestVal[_]*): Route =
-    handle(extractions: _*)(handler.handle(_))
-
-  /**
-   * A route that handles the request given the value of a single [[RequestVal]].
-   */
-  def handleWith[T1](e1: RequestVal[T1], handler: Handler1[T1]): Route =
-    handle(e1)(ctx ⇒ handler.handle(ctx, e1.get(ctx)))
-
-  /**
-   * A route that handles the request given the values of the given [[RequestVal]]s.
-   */
-  def handleWith[T1, T2](e1: RequestVal[T1], e2: RequestVal[T2], handler: Handler2[T1, T2]): Route =
-    handle(e1, e2)(ctx ⇒ handler.handle(ctx, e1.get(ctx), e2.get(ctx)))
-
-  /**
-   * A route that handles the request given the values of the given [[RequestVal]]s.
-   */
-  def handleWith[T1, T2, T3](
-    e1: RequestVal[T1], e2: RequestVal[T2], e3: RequestVal[T3], handler: Handler3[T1, T2, T3]): Route =
-    handle(e1, e2, e3)(ctx ⇒ handler.handle(ctx, e1.get(ctx), e2.get(ctx), e3.get(ctx)))
-
-  /**
-   * A route that handles the request given the values of the given [[RequestVal]]s.
-   */
-  def handleWith[T1, T2, T3, T4](
-    e1: RequestVal[T1], e2: RequestVal[T2], e3: RequestVal[T3], e4: RequestVal[T4], handler: Handler4[T1, T2, T3, T4]): Route =
-    handle(e1, e2, e3, e4)(ctx ⇒ handler.handle(ctx, e1.get(ctx), e2.get(ctx), e3.get(ctx), e4.get(ctx)))
-
   private[http] def handle(extractions: RequestVal[_]*)(f: RequestContext ⇒ RouteResult): Route = {
     val route =
       new OpaqueRoute() {
@@ -137,8 +104,8 @@ abstract class BasicDirectives {
    * public static RouteResult methodName(RequestContext ctx, T1 t1, T2 t2, ...)
    */
   @varargs
-  def handleWith(instance: AnyRef, methodName: String, extractions: RequestVal[_]*): Route =
-    handleWith(instance.getClass, instance, methodName, extractions: _*)
+  def handleReflectively(instance: AnyRef, methodName: String, extractions: RequestVal[_]*): Route =
+    handleReflectively(instance.getClass, instance, methodName, extractions: _*)
 
   /**
    * Handles the route by reflectively calling the static method specified by `clazz`, and `methodName`.
@@ -149,8 +116,8 @@ abstract class BasicDirectives {
    * public static RouteResult methodName(RequestContext ctx, T1 t1, T2 t2, ...)
    */
   @varargs
-  def handleWith(clazz: Class[_], methodName: String, extractions: RequestVal[_]*): Route =
-    handleWith(clazz, null, methodName, extractions: _*)
+  def handleReflectively(clazz: Class[_], methodName: String, extractions: RequestVal[_]*): Route =
+    handleReflectively(clazz, null, methodName, extractions: _*)
 
   /**
    * Handles the route by calling the method specified by `clazz`, `instance`, and `methodName`. Additionally, the value
@@ -161,7 +128,7 @@ abstract class BasicDirectives {
    * public static RouteResult methodName(RequestContext ctx, T1 t1, T2 t2, ...)
    */
   @varargs
-  def handleWith(clazz: Class[_], instance: AnyRef, methodName: String, extractions: RequestVal[_]*): Route = {
+  def handleReflectively(clazz: Class[_], instance: AnyRef, methodName: String, extractions: RequestVal[_]*): Route = {
     def chooseOverload(methods: Seq[Method]): (RequestContext, Seq[Any]) ⇒ RouteResult = {
       val extractionTypes = extractions.map(_.resultClass).toList
       val RequestContextClass = classOf[RequestContext]
