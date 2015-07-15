@@ -7,7 +7,7 @@ import akka.actor.ActorRef;
 import akka.dispatch.japi;
 import akka.japi.Pair;
 import akka.pattern.Patterns;
-import akka.japi.Tuple4;
+import akka.japi.tuple.Tuple4;
 import akka.stream.*;
 import akka.stream.javadsl.FlowGraph.Builder;
 import akka.stream.stage.*;
