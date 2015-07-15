@@ -117,7 +117,7 @@ class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
         logProbe.expectMsg(Logging.Debug(src, clazz, "[flow-5] Upstream finished."))
       }
 
-      "allow configuring log levels via OperationAttributes" in {
+      "allow configuring log levels via Attributes" in {
         val logAttrs = Attributes.logLevels(
           onElement = Logging.WarningLevel,
           onFinish = Logging.InfoLevel,
