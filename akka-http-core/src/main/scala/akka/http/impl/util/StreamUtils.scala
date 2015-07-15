@@ -278,7 +278,7 @@ private[http] object StreamUtils {
   }
 
   /**
-   * Returns a no-op flow that materialized to a future that will be completed when the flow gets a
+   * Returns a no-op flow that materializes to a future that will be completed when the flow gets a
    * completion or error signal. It doesn't necessarily mean, though, that all of a streaming pipeline
    * is finished, only that the part that contains this flow has finished work.
    */
