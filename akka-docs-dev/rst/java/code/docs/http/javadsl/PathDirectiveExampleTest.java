@@ -44,7 +44,7 @@ public class PathDirectiveExampleTest extends JUnitRouteTest {
         Handler1<Integer> completeWithUserId =
             new Handler1<Integer>() {
                 @Override
-                public RouteResult handle(RequestContext ctx, Integer userId) {
+                public RouteResult apply(RequestContext ctx, Integer userId) {
                     return ctx.complete("Hello user " + userId);
                 }
             };

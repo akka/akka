@@ -32,12 +32,12 @@ public class HighLevelServerExample extends HttpApp {
     public Route createRoute() {
         // This handler generates responses to `/hello?name=XXX` requests
         Route helloRoute =
-            handleWith(name,
+            handleWith1(name,
                 // in Java 8 the following becomes simply
                 // (ctx, name) -> ctx.complete("Hello " + name + "!")
                 new Handler1<String>() {
                     @Override
-                    public RouteResult handle(RequestContext ctx, String name) {
+                    public RouteResult apply(RequestContext ctx, String name) {
                         return ctx.complete("Hello " + name + "!");
                     }
                 });

@@ -62,7 +62,7 @@ Starting and Stopping
 On the most basic level an Akka HTTP server is bound by invoking the ``bind`` method of the `akka.http.javadsl.Http`_
 extension:
 
-.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleSpec.java
+.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleDocTest.java
    :include: binding-example
 
 Arguments to the ``Http().bind`` method specify the interface and port to bind to and register interest in handling
@@ -99,7 +99,7 @@ Requests are handled by calling one of the ``handleWithXXX`` methods with a hand
 
 Here is a complete example:
 
-.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleSpec.java
+.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleDocTest.java
   :include: full-server-example
 
 In this example, a request is handled by transforming the request stream with a function ``Function<HttpRequest, HttpResponse>``
