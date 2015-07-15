@@ -147,7 +147,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Authorization: QVFJQzV3TTJMWTRTZmN3Zk=" =!=
         ErrorInfo("Illegal HTTP header 'Authorization': Invalid input '=', expected tchar, '\\r', WSP, token68-start or 'EOI' (line 1, column 23)",
           """QVFJQzV3TTJMWTRTZmN3Zk=
-            |                      ^""".stripMargin)
+            |                      ^""".stripMarginWithNewline("\n"))
     }
 
     "Cache-Control" in {
