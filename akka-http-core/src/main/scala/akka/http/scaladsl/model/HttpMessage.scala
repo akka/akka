@@ -141,7 +141,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
                              entity: RequestEntity = HttpEntity.Empty,
                              protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends jm.HttpRequest with HttpMessage {
   HttpRequest.verifyUri(uri)
-  require(entity.isKnownEmpty || method.isEntityAccepted, "Requests with this method must have an empty entity")
+  require(entity.isKnownEmpty || method.isEntityAccepted, s"Requests with method '${method.value}' must have an empty entity")
   require(protocol != HttpProtocols.`HTTP/1.0` || !entity.isInstanceOf[HttpEntity.Chunked],
     "HTTP/1.0 requests must not have a chunked entity")
 
