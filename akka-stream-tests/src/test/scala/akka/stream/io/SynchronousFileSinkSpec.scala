@@ -107,7 +107,7 @@ class SynchronousFileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       }
     }
 
-    "allow overriding the dispatcher using OperationAttributes" in assertAllStagesStopped {
+    "allow overriding the dispatcher using Attributes" in assertAllStagesStopped {
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
         val mat = ActorMaterializer()(sys)
