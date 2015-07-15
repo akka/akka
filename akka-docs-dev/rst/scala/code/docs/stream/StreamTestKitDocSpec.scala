@@ -11,7 +11,6 @@ import scala.util._
 import scala.concurrent.duration._
 import scala.concurrent._
 import akka.testkit.TestProbe
-import akka.pattern.pipe
 import akka.pattern
 
 class StreamTestKitDocSpec extends AkkaSpec {
@@ -30,6 +29,9 @@ class StreamTestKitDocSpec extends AkkaSpec {
 
   "grouped part of infinite stream" in {
     //#grouped-infinite
+    import system.dispatcher
+    import akka.pattern.pipe
+
     val sourceUnderTest = Source.repeat(1).map(_ * 2)
 
     val future = sourceUnderTest.grouped(10).runWith(Sink.head)
@@ -49,8 +51,10 @@ class StreamTestKitDocSpec extends AkkaSpec {
   }
 
   "pipe to test probe" in {
-    import system.dispatcher
     //#pipeto-testprobe
+    import system.dispatcher
+    import akka.pattern.pipe
+
     val sourceUnderTest = Source(1 to 4).grouped(2)
 
     val probe = TestProbe()
