@@ -6,10 +6,9 @@ package akka.http.javadsl.server.directives
 
 import java.lang.reflect.{ Method, ParameterizedType }
 
-import akka.http.javadsl.model.{ Uri, ContentType, StatusCode, HttpResponse }
 import akka.http.impl.server.RouteStructure._
 import akka.http.impl.server._
-import akka.http.javadsl.model.{ ContentType, HttpResponse, StatusCode }
+import akka.http.javadsl.model.{ ContentType, HttpResponse, StatusCode, Uri }
 import akka.http.javadsl.server._
 
 import scala.annotation.varargs

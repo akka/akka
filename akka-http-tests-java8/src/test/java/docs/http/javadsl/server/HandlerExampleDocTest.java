@@ -66,11 +66,11 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
     public void testCalculator() {
         //#handler2-example-full
         class TestHandler extends akka.http.javadsl.server.AllDirectives {
-            RequestVal<Integer> xParam = Parameters.intValue("x");
-            RequestVal<Integer> yParam = Parameters.intValue("y");
+            final RequestVal<Integer> xParam = Parameters.intValue("x");
+            final RequestVal<Integer> yParam = Parameters.intValue("y");
 
-            RequestVal<Integer> xSegment = PathMatchers.intValue();
-            RequestVal<Integer> ySegment = PathMatchers.intValue();
+            final RequestVal<Integer> xSegment = PathMatchers.intValue();
+            final RequestVal<Integer> ySegment = PathMatchers.intValue();
 
             //#handler2
             final Handler2<Integer, Integer> multiply =
