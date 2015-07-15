@@ -6,7 +6,7 @@ package akka.stream.impl
 import akka.actor.Props
 import akka.actor.Deploy
 import akka.stream._
-import akka.stream.impl.Junctions.FanInModule
+import akka.stream.impl.Junctions.{ FanInModule, FanOutModule }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.Attributes
 import akka.stream.Attributes._
@@ -31,6 +31,26 @@ private[akka] object GenJunctions {
 
     override def props(settings: ActorMaterializerSettings): Props =
       Props(new Zip1With(settings, f.asInstanceOf[Function1[[#Any#], Any]])).withDeploy(Deploy.local)
+  }#
+  ]
+
+  sealed trait UnzipWithModule {
+    /** Allows hiding the boilerplate Props creation from the materializer */
+    def props(settings: ActorMaterializerSettings): Props
+  }
+
+  [2..20#
+  final case class UnzipWith1Module[B, [#A1#]](
+    shape: FanOutShape1[B, [#A1#]],
+    f: B ⇒ ([#A1#]),
+    override val attributes: Attributes = name("unzipWith1")) extends FanOutModule with UnzipWithModule {
+
+    override def withAttributes(attr: Attributes): Module = copy(attributes = attr)
+
+    override def carbonCopy: Module = UnzipWith1Module(shape.deepCopy(), f, attributes)
+
+    override def props(settings: ActorMaterializerSettings): Props =
+      Props(new Unzip1With(settings, f.asInstanceOf[Function##1[Any, ([#Any#])]])).withDeploy(Deploy.local)
   }#
   ]
 

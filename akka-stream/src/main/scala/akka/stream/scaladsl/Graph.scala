@@ -240,12 +240,18 @@ object ZipWith extends ZipWithApply
  * '''Cancels when''' any downstream cancels
  */
 object Unzip {
+
+  private final val _identity: Any ⇒ Any = a ⇒ a
+
   /**
    * Create a new `Unzip`.
    */
   def apply[A, B](): Unzip[A, B] = {
     val shape = new FanOutShape2[(A, B), A, B]("Unzip")
-    new Unzip(shape, new UnzipModule(shape, Attributes.name("Unzip")))
+    new Unzip(shape, new UnzipWith2Module[(A, B), A, B](
+      shape,
+      _identity.asInstanceOf[((A, B)) ⇒ (A, B)],
+      Attributes.name("Unzip")))
   }
 }
 
@@ -261,6 +267,19 @@ class Unzip[A, B] private (override val shape: FanOutShape2[(A, B), A, B],
 
   override def named(name: String): Unzip[A, B] = withAttributes(Attributes.name(name))
 }
+
+/**
+ * Transforms each element of input stream into multiple streams using a splitter function.
+ *
+ * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' any of the outputs backpressures
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' any downstream cancels
+ */
+object UnzipWith extends UnzipWithApply
 
 object Concat {
   /**

@@ -1,0 +1,57 @@
+/**
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.scaladsl
+
+import akka.stream._
+import akka.stream.impl.GenJunctions._
+import akka.stream.impl.StreamLayout
+
+object UnzipWithApply {
+  import scala.language.implicitConversions
+
+  abstract trait UnzipWithCreator[In, Out, T] {
+    def create(unzipper: Function1[In, Out]): T
+  }
+
+  [2..20#trait UnzipWithCreator1[In, [#A1#]] extends UnzipWithCreator[In, Tuple1[[#A1#]], UnzipWith1[In, [#A1#]]] {
+    override def create(unzipper: In ⇒ ([#A1#])): UnzipWith1[In, [#A1#]] = {
+      val shape = new FanOutShape1[In, [#A1#]]("UnzipWith1")
+      new UnzipWith1(shape, new UnzipWith1Module(shape, unzipper, Attributes.name("UnzipWith1")))
+    }
+  }
+
+  implicit object UnzipWithCreatorObject1 extends UnzipWithCreator1[Any, [#Any#]]#
+
+  ]
+}
+
+
+trait UnzipWithApply {
+  import UnzipWithApply._
+
+
+  [2..20#/**
+   * Create a new `UnzipWith` specialized for 1 outputs.
+   *
+   * @param unzipper unzipping-function from the input value to 1 output values
+   */
+   def apply[In, [#A1#]](unzipper: In ⇒ Tuple1[[#A1#]])(implicit creator: UnzipWithCreator1[Any, [#Any#]]): UnzipWith1[In, [#A1#]] = {
+     creator.asInstanceOf[UnzipWithCreator1[In, [#A1#]]].create(unzipper)
+   }#
+
+  ]
+}
+
+[2..20#/** `UnzipWith` specialized for 1 outputs */
+class UnzipWith1[In, [#A1#]] private[stream] (override val shape: FanOutShape1[In, [#A1#]],
+                         private[stream] override val module: StreamLayout.Module)
+  extends Graph[FanOutShape1[In, [#A1#]], Unit] {
+
+  override def withAttributes(attr: Attributes): UnzipWith1[In, [#A1#]] =
+    new UnzipWith1(shape, module.withAttributes(attr).nest())
+
+  override def named(name: String): UnzipWith1[In, [#A1#]] = withAttributes(Attributes.name(name))
+}
+#
+]
