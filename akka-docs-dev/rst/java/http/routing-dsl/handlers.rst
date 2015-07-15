@@ -64,7 +64,8 @@ about the number of handled arguments easier. For example, a :class:`Handler1[St
 ``Function2[RequestContext, String, RouteResult]``. You can think of handlers as hot-dogs, where each ``T``
 type represents a sausage, put between the "buns" which are ``RequestContext`` and ``RouteResult``.
 
-In Java 8 handlers can be provided as function literals or method references. The example from before then looks like this:
+In Java 8 handlers can be provided as function literals or method references. The previous example can then be written
+like this:
 
 .. includecode:: /../../akka-http-tests-java8/src/test/java/docs/http/javadsl/server/HandlerExampleDocTest.java
    :include: handler2-java8-example-full
@@ -76,11 +77,9 @@ In Java 8 handlers can be provided as function literals or method references. Th
   if one type of a handler does not match the given values, *all* possible candidates would be printed in the error message
   (22 of them), instead of just the one arity-matching method, pointing out that the type does not match.
 
-   We opted for better error messages as we feel this is more helpful when developing applications,
-   instead of having one overloaded method which looks nice when everything works, but procudes hard to read error
-   messages if something does not match up.
-
-
+  We opted for better error messages as we feel this is more helpful when developing applications,
+  instead of having one overloaded method which looks nice when everything works, but procudes hard to read error
+  messages if something does not match up.
 
 Providing Handlers by Reflection
 --------------------------------
