@@ -94,7 +94,15 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
       }
 
     bind(interface, port, settings, httpsContext, log)
-      .mapAsyncUnordered(settings.maxConnections)(handleOneConnection)
+      .mapAsyncUnordered(settings.maxConnections) { connection ⇒
+        handleOneConnection(connection).recoverWith {
+          // Ignore incoming errors from the connection as they will cancel the binding.
+          // As far as it is known currently, these errors can only happen if a TCP error bubbles up
+          // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
+          // See https://github.com/akka/akka/issues/17992
+          case NonFatal(_) ⇒ Future.successful(())
+        }(fm.executionContext)
+      }
       .to(Sink.ignore)
       .run()
   }
