@@ -5,13 +5,13 @@
 package akka.http.scaladsl.marshalling
 
 import akka.http.scaladsl.model.MediaType.Encoding
-import akka.http.scaladsl.unmarshalling.FromResponseUnmarshaller
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ Matchers, FreeSpec }
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model._
+import akka.http.impl.util._
 import MediaTypes._
 import HttpCharsets._
 
@@ -19,7 +19,7 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
   "Content Negotiation should work properly for requests with header(s)" - {
 
     "(without headers)" test { accept ⇒
-      //accept(`text/plain`) should select(`text/plain`, `UTF-8`)
+      accept(`text/plain`) should select(`text/plain`, `UTF-8`)
       accept(`text/plain` withCharset `UTF-16`) should select(`text/plain`, `UTF-16`)
     }
 
@@ -107,7 +107,7 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
     }
 
     """Accept: text/html, text/plain;q=0.8, application/*;q=.5, *;q= .2
-       Accept-Charset: UTF-16""" test { accept ⇒
+      |Accept-Charset: UTF-16""" test { accept ⇒
       accept(`text/plain`, `text/html`, `audio/ogg`) should select(`text/html`, `UTF-16`)
       accept(`text/plain`, `text/html` withCharset `UTF-8`, `audio/ogg`) should select(`text/plain`, `UTF-16`)
       accept(`audio/ogg`, `application/javascript`, `text/plain` withCharset `UTF-8`) should select(`application/javascript`, `UTF-16`)
@@ -149,7 +149,7 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
     def test(body: ((ContentType*) ⇒ Option[ContentType]) ⇒ Unit): Unit = example in {
       val headers =
         if (example != "(without headers)") {
-          example.split('\n').toList map { rawHeader ⇒
+          example.stripMarginWithNewline("\n").split('\n').toList map { rawHeader ⇒
             val Array(name, value) = rawHeader.split(':')
             HttpHeader.parse(name.trim, value) match {
               case HttpHeader.ParsingResult.Ok(header, Nil) ⇒ header
