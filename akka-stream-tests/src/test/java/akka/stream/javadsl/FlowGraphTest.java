@@ -4,8 +4,10 @@
 package akka.stream.javadsl;
 
 import akka.actor.ActorRef;
+import akka.dispatch.japi;
 import akka.japi.Pair;
 import akka.pattern.Patterns;
+import akka.japi.tuple.Tuple4;
 import akka.stream.*;
 import akka.stream.javadsl.FlowGraph.Builder;
 import akka.stream.stage.*;
@@ -97,13 +99,7 @@ public class FlowGraphTest extends StreamTest {
     final Source<String, BoxedUnit> in1 = Source.from(input1);
     final Source<Integer, BoxedUnit> in2 = Source.from(input2);
     final FanInShape2<String, Integer, Pair<String,Integer>> zip = b.graph(Zip.<String, Integer>create());
-    final Sink<Pair<String, Integer>, Future<BoxedUnit>> out = Sink
-      .foreach(new Procedure<Pair<String, Integer>>() {
-        @Override
-        public void apply(Pair<String, Integer> param) throws Exception {
-          probe.getRef().tell(param, ActorRef.noSender());
-        }
-      });
+    final Sink<Pair<String, Integer>, BoxedUnit> out = createSink(probe);
 
     b.edge(b.source(in1), zip.in0());
     b.edge(b.source(in2), zip.in1());
@@ -133,19 +129,9 @@ public class FlowGraphTest extends StreamTest {
     final Outlet<Pair<String, Integer>> in = b.source(Source.from(input));
     final FanOutShape2<Pair<String, Integer>, String, Integer> unzip = b.graph(Unzip.<String, Integer>create());
 
-    final Sink<String, Future<BoxedUnit>> out1 = Sink.foreach(new Procedure<String>() {
-      @Override
-      public void apply(String param) throws Exception {
-        probe1.getRef().tell(param, ActorRef.noSender());
-      }
-    });
-    final Sink<Integer, Future<BoxedUnit>> out2 = Sink.foreach(new Procedure<Integer>() {
-      @Override
-      public void apply(Integer param) throws Exception {
-        probe2.getRef().tell(param, ActorRef.noSender());
-      }
-    });
-    
+    final Sink<String, BoxedUnit> out1 = createSink(probe1);
+    final Sink<Integer, BoxedUnit> out2 = createSink(probe2);
+
     b.edge(in, unzip.in());
     b.edge(unzip.out0(), b.sink(out1));
     b.edge(unzip.out1(), b.sink(out2));
@@ -155,6 +141,87 @@ public class FlowGraphTest extends StreamTest {
     List<Object> output2 = Arrays.asList(probe2.receiveN(3));
     assertEquals(expected1, output1);
     assertEquals(expected2, output2);
+  }
+
+  private static <T> Sink<T, BoxedUnit> createSink(final JavaTestKit probe){
+    return Sink.actorRef(probe.getRef(), "onComplete");
+  }
+
+  @Test
+  public void mustBeAbleToUseUnzipWith() throws Exception {
+    final JavaTestKit probe1 = new JavaTestKit(system);
+    final JavaTestKit probe2 = new JavaTestKit(system);
+
+    final Builder<BoxedUnit> b = FlowGraph.builder();
+    final Source<Integer, BoxedUnit> in = Source.single(1);
+
+    final FanOutShape2<Integer, String, Integer> unzip = b.graph(UnzipWith.create(
+      new Function<Integer, Pair<String, Integer>>() {
+        @Override public Pair<String, Integer> apply(Integer l) throws Exception {
+          return new Pair<String, Integer>(l + "!", l);
+        }
+      })
+    );
+
+    final Sink<String, BoxedUnit> out1 = createSink(probe1);
+    final Sink<Integer, BoxedUnit> out2 = createSink(probe2);
+
+    b.edge(b.source(in), unzip.in());
+    b.edge(unzip.out0(), b.sink(out1));
+    b.edge(unzip.out1(), b.sink(out2));
+    b.run(materializer);
+
+    Duration d = Duration.create(300, TimeUnit.MILLISECONDS);
+
+    Object output1 = probe1.receiveOne(d);
+    Object output2 = probe2.receiveOne(d);
+
+    assertEquals("1!", output1);
+    assertEquals(1, output2);
+
+  }
+
+  @Test
+  public void mustBeAbleToUseUnzip4With() throws Exception {
+    final JavaTestKit probe1 = new JavaTestKit(system);
+    final JavaTestKit probe2 = new JavaTestKit(system);
+    final JavaTestKit probe3 = new JavaTestKit(system);
+    final JavaTestKit probe4 = new JavaTestKit(system);
+
+    final Builder<BoxedUnit> b = FlowGraph.builder();
+    final Source<Integer, BoxedUnit> in = Source.single(1);
+
+    final FanOutShape4<Integer, String, Integer, String, Integer> unzip = b.graph(UnzipWith.create4(
+      new Function<Integer, Tuple4<String, Integer, String, Integer>>() {
+        @Override public Tuple4<String, Integer, String, Integer> apply(Integer l) throws Exception {
+          return new Tuple4<String, Integer, String, Integer>(l.toString(), l, l + "+" + l, l + l);
+        }
+      })
+    );
+
+    final Sink<String, BoxedUnit> out1 = createSink(probe1);
+    final Sink<Integer, BoxedUnit> out2 = createSink(probe2);
+    final Sink<String, BoxedUnit> out3 = createSink(probe3);
+    final Sink<Integer, BoxedUnit> out4 = createSink(probe4);
+
+    b.edge(b.source(in), unzip.in());
+    b.edge(unzip.out0(), b.sink(out1));
+    b.edge(unzip.out1(), b.sink(out2));
+    b.edge(unzip.out2(), b.sink(out3));
+    b.edge(unzip.out3(), b.sink(out4));
+    b.run(materializer);
+
+    Duration d = Duration.create(300, TimeUnit.MILLISECONDS);
+
+    Object output1 = probe1.receiveOne(d);
+    Object output2 = probe2.receiveOne(d);
+    Object output3 = probe3.receiveOne(d);
+    Object output4 = probe4.receiveOne(d);
+
+    assertEquals("1", output1);
+    assertEquals(1, output2);
+    assertEquals("1+1", output3);
+    assertEquals(2, output4);
   }
 
   @Test
