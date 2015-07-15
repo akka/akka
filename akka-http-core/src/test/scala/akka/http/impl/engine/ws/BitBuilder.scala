@@ -13,10 +13,9 @@ import parboiled2._
 object BitBuilder {
   implicit class BitBuilderContext(val ctx: StringContext) {
     def b(args: Any*): ByteString = {
-      val parser = new BitSpecParser(ctx.parts.mkString)
+      val input = ctx.parts.mkString.replace("\r\n", "\n")
+      val parser = new BitSpecParser(input)
       val bits = parser.parseBits()
-      //println(bits)
-      //println(bits.get.toByteString.map(_ formatted "%02x").mkString(" "))
       bits.get.toByteString
     }
   }
@@ -76,6 +75,7 @@ class BitSpecParser(val input: ParserInput) extends parboiled2.Parser {
     bits.run() match {
       case s: Success[Bits]       ⇒ s
       case Failure(e: ParseError) ⇒ Failure(new RuntimeException(formatError(e, showTraces = true)))
+      case _                      ⇒ throw new IllegalStateException()
     }
 
   def bits: Rule1[Bits] = rule { zeroOrMore(element) ~ EOI ~> (Bits(_)) }
