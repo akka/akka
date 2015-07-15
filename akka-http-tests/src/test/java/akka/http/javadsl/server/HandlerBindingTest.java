@@ -14,12 +14,12 @@ public class HandlerBindingTest extends JUnitRouteTest {
     @Test
     public void testHandlerWithoutExtractions() {
         Route route = handleWith(
-            new Handler() {
-                @Override
-                public RouteResult handle(RequestContext ctx) {
-                    return ctx.complete("Ok");
+                new Handler() {
+                    @Override
+                    public RouteResult apply(RequestContext ctx) {
+                        return ctx.complete("Ok");
+                    }
                 }
-            }
         );
         runRoute(route, HttpRequest.GET("/"))
             .assertEntity("Ok");
@@ -30,12 +30,12 @@ public class HandlerBindingTest extends JUnitRouteTest {
         final Parameter<Integer> b = Parameters.intValue("b");
 
         Route route = handleWith(
-            new Handler() {
-                @Override
-                public RouteResult handle(RequestContext ctx) {
-                    return ctx.complete("Ok a:" + a.get(ctx) +" b:" + b.get(ctx));
-                }
-            }, a, b
+                new Handler() {
+                    @Override
+                    public RouteResult apply(RequestContext ctx) {
+                        return ctx.complete("Ok a:" + a.get(ctx) + " b:" + b.get(ctx));
+                    }
+                }, a, b
         );
         runRoute(route, HttpRequest.GET("?a=23&b=42"))
             .assertEntity("Ok a:23 b:42");
@@ -45,12 +45,12 @@ public class HandlerBindingTest extends JUnitRouteTest {
         final Parameter<Integer> a = Parameters.intValue("a");
 
         Route route = handleWith(
-            new Handler() {
-                @Override
-                public RouteResult handle(RequestContext ctx) {
-                    return ctx.complete("Ok " + a.get(ctx));
-                }
-            }, a
+                new Handler() {
+                    @Override
+                    public RouteResult apply(RequestContext ctx) {
+                        return ctx.complete("Ok " + a.get(ctx));
+                    }
+                }, a
         );
         runRoute(route, HttpRequest.GET("/"))
             .assertStatusCode(404)
@@ -60,14 +60,13 @@ public class HandlerBindingTest extends JUnitRouteTest {
     public void testHandler1() {
         final Parameter<Integer> a = Parameters.intValue("a");
 
-        Route route = handleWith(
-            a,
-            new Handler1<Integer>() {
-                @Override
-                public RouteResult handle(RequestContext ctx, Integer a) {
-                    return ctx.complete("Ok " + a);
+        Route route = handleWith1(a,
+                new Handler1<Integer>() {
+                    @Override
+                    public RouteResult apply(RequestContext ctx, Integer a) {
+                        return ctx.complete("Ok " + a);
+                    }
                 }
-            }
         );
         runRoute(route, HttpRequest.GET("?a=23"))
             .assertStatusCode(200)
@@ -75,12 +74,12 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandler2() {
-        Route route = handleWith(
+        Route route = handleWith2(
                 Parameters.intValue("a"),
                 Parameters.intValue("b"),
                 new Handler2<Integer, Integer>() {
                     @Override
-                    public RouteResult handle(RequestContext ctx, Integer a, Integer b) {
+                    public RouteResult apply(RequestContext ctx, Integer a, Integer b) {
                         return ctx.complete("Sum: " + (a + b));
                     }
                 }
@@ -91,13 +90,13 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandler3() {
-        Route route = handleWith(
+        Route route = handleWith3(
                 Parameters.intValue("a"),
                 Parameters.intValue("b"),
                 Parameters.intValue("c"),
                 new Handler3<Integer, Integer, Integer>() {
                     @Override
-                    public RouteResult handle(RequestContext ctx, Integer a, Integer b, Integer c) {
+                    public RouteResult apply(RequestContext ctx, Integer a, Integer b, Integer c) {
                         return ctx.complete("Sum: " + (a + b + c));
                     }
                 }
@@ -108,14 +107,14 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandler4() {
-        Route route = handleWith(
+        Route route = handleWith4(
                 Parameters.intValue("a"),
                 Parameters.intValue("b"),
                 Parameters.intValue("c"),
                 Parameters.intValue("d"),
                 new Handler4<Integer, Integer, Integer, Integer>() {
                     @Override
-                    public RouteResult handle(RequestContext ctx, Integer a, Integer b, Integer c, Integer d) {
+                    public RouteResult apply(RequestContext ctx, Integer a, Integer b, Integer c, Integer d) {
                         return ctx.complete("Sum: " + (a + b + c + d));
                     }
                 }
@@ -131,7 +130,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
                 return ctx.complete("Negated: " + (- a));
             }
         }
-        Route route = handleWith(new Test(), "negate", Parameters.intValue("a"));
+        Route route = handleReflectively(new Test(), "negate", Parameters.intValue("a"));
         runRoute(route, HttpRequest.GET("?a=23"))
             .assertStatusCode(200)
             .assertEntity("Negated: -23");
@@ -142,7 +141,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testStaticReflectiveHandler() {
-        Route route = handleWith(HandlerBindingTest.class, "squared", Parameters.intValue("a"));
+        Route route = handleReflectively(HandlerBindingTest.class, "squared", Parameters.intValue("a"));
         runRoute(route, HttpRequest.GET("?a=23"))
             .assertStatusCode(200)
             .assertEntity("Squared: 529");

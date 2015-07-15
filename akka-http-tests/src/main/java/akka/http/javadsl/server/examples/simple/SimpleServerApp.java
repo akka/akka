@@ -41,7 +41,7 @@ public class SimpleServerApp extends HttpApp {
     public Route createRoute() {
         Handler addHandler = new Handler() {
             @Override
-            public RouteResult handle(RequestContext ctx) {
+            public RouteResult apply(RequestContext ctx) {
                 int xVal = x.get(ctx);
                 int yVal = y.get(ctx);
                 int result = xVal + yVal;
@@ -49,7 +49,7 @@ public class SimpleServerApp extends HttpApp {
             }
         };
         Handler2<Integer, Integer> subtractHandler = new Handler2<Integer, Integer>() {
-            public RouteResult handle(RequestContext ctx, Integer xVal, Integer yVal) {
+            public RouteResult apply(RequestContext ctx, Integer xVal, Integer yVal) {
                 int result = xVal - yVal;
                 return ctx.complete(String.format("%d - %d = %d", xVal, yVal, result));
             }
@@ -57,7 +57,7 @@ public class SimpleServerApp extends HttpApp {
         Handler1<String> helloPostHandler =
             new Handler1<String>() {
                 @Override
-                public RouteResult handle(RequestContext ctx, String s) {
+                public RouteResult apply(RequestContext ctx, String s) {
                     return ctx.complete("Hello " + s + "!");
                 }
             };
@@ -72,20 +72,20 @@ public class SimpleServerApp extends HttpApp {
                     handleWith(addHandler, x, y)
                 ),
                 path("subtract").route(
-                    handleWith(x, y, subtractHandler)
+                    handleWith2(x, y, subtractHandler)
                 ),
                 // matches paths like this: /multiply/{x}/{y}
                 path("multiply", xSegment, ySegment).route(
                     // bind handler by reflection
-                    handleWith(SimpleServerApp.class, "multiply", xSegment, ySegment)
+                    handleReflectively(SimpleServerApp.class, "multiply", xSegment, ySegment)
                 ),
                 path("multiplyAsync", xSegment, ySegment).route(
                     // bind async handler by reflection
-                    handleWith(SimpleServerApp.class, "multiplyAsync", xSegment, ySegment)
+                    handleReflectively(SimpleServerApp.class, "multiplyAsync", xSegment, ySegment)
                 ),
                 post(
                     path("hello").route(
-                        handleWith(bodyAsName, helloPostHandler)
+                        handleWith1(bodyAsName, helloPostHandler)
                     )
                 )
             );

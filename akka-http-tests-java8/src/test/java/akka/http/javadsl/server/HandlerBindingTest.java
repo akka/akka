@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.HttpRequest;
 import org.junit.Test;
 import akka.http.javadsl.testkit.*;
 import akka.http.javadsl.server.values.*;
-import static akka.http.javadsl.server.Directives.*;
 
 public class HandlerBindingTest extends JUnitRouteTest {
     Parameter<Integer> aParam = Parameters.intValue("a");
@@ -24,7 +23,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     }
     @Test
     public void testHandler1() {
-        Route route = handleWith(aParam, (ctx, a) -> ctx.complete("Ok " + a));
+        Route route = handleWith1(aParam, (ctx, a) -> ctx.complete("Ok " + a));
         TestResponse response = runRoute(route, HttpRequest.GET("?a=23"));
         response.assertStatusCode(200);
         response.assertEntity("Ok 23");
@@ -32,7 +31,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     @Test
     public void testHandler2() {
         Route route =
-            handleWith(
+            handleWith2(
                 aParam,
                 bParam,
                 (ctx, a, b) -> ctx.complete("Sum: " + (a + b)));
@@ -43,7 +42,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     @Test
     public void testHandler3() {
         Route route =
-            handleWith(
+            handleWith3(
                     aParam,
                     bParam,
                     cParam,
@@ -55,7 +54,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     @Test
     public void testHandler4() {
         Route route =
-            handleWith(
+            handleWith4(
                     aParam,
                     bParam,
                     cParam,
@@ -71,7 +70,7 @@ public class HandlerBindingTest extends JUnitRouteTest {
     @Test
     public void testHandler4MethodRef() {
         Route route =
-                handleWith(
+                handleWith4(
                         aParam,
                         bParam,
                         cParam,

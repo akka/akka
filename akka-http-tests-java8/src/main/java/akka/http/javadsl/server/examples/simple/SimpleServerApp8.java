@@ -34,14 +34,14 @@ public class SimpleServerApp8 extends HttpApp {
     }
 
     public void test() {
-        handleWith(xSegment, ySegment, SimpleServerApp8::multiply);
+        handleWith2(xSegment, ySegment, SimpleServerApp8::multiply);
     }
 
     @Override
     public Route createRoute() {
         Handler addHandler = new Handler() {
             @Override
-            public RouteResult handle(RequestContext ctx) {
+            public RouteResult apply(RequestContext ctx) {
                 int xVal = x.get(ctx);
                 int yVal = y.get(ctx);
                 int result = xVal + yVal;
@@ -49,7 +49,7 @@ public class SimpleServerApp8 extends HttpApp {
             }
         };
         Handler2<Integer, Integer> subtractHandler = new Handler2<Integer, Integer>() {
-            public RouteResult handle(RequestContext ctx, Integer xVal, Integer yVal) {
+            public RouteResult apply(RequestContext ctx, Integer xVal, Integer yVal) {
                 int result = xVal - yVal;
                 return ctx.complete(String.format("%d - %d = %d", xVal, yVal, result));
             }
@@ -63,25 +63,25 @@ public class SimpleServerApp8 extends HttpApp {
                 ),
                 // matches paths like this: /add?x=42&y=23
                 path("add").route(
-                    handleWith(addHandler, x, y)
+                    handleWith(addHandler)
                 ),
                 path("subtract").route(
-                    handleWith(x, y, subtractHandler)
+                    handleWith2(x, y, subtractHandler)
                 ),
                 path("divide").route(
-                    handleWith(x, y,
-                        (ctx, x, y) ->
-                            ctx.complete(String.format("%d / %d = %d", x, y, x / y))
+                    handleWith2(x, y,
+                            (ctx, x, y) ->
+                                    ctx.complete(String.format("%d / %d = %d", x, y, x / y))
                     )
                 ),
                 // matches paths like this: /multiply/{x}/{y}
                 path("multiply", xSegment, ySegment).route(
                     // bind handler by reflection
-                    handleWith(xSegment, ySegment, SimpleServerApp8::multiply)
+                    handleWith2(xSegment, ySegment, SimpleServerApp8::multiply)
                 ),
                 path("multiply-methodref", xSegment, ySegment).route(
-                    // bind handler by reflection
-                    handleWith(xSegment, ySegment, new Test(123)::constantPlusMultiply)
+                    // bind handler by reference to new instance of handler
+                    handleWith2(xSegment, ySegment, new Test(123)::constantPlusMultiply)
                 )
             );
     }

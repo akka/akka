@@ -239,9 +239,9 @@ public class PathDirectivesTest extends JUnitRouteTest {
         TestRoute route =
             testRoute(
                 path("multiply", x, "with", y).route(
-                    handleWith(x, y, new Handler2<Integer, Integer>() {
+                    handleWith2(x, y, new Handler2<Integer, Integer>() {
                         @Override
-                        public RouteResult handle(RequestContext ctx, Integer x, Integer y) {
+                        public RouteResult apply(RequestContext ctx, Integer x, Integer y) {
                             return ctx.complete(String.format("%d * %d = %d", x, y, x * y));
                         }
                     })
