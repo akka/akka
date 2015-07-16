@@ -16,7 +16,7 @@ import akka.stream.{ AbruptTerminationException, Attributes, ActorMaterializerSe
 import akka.stream.impl._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit._
+import akka.testkit.{ TestDuration, EventFilter }
 import akka.testkit.TestEvent.{ UnMute, Mute }
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.{ Subscription, Processor, Subscriber, Publisher }
