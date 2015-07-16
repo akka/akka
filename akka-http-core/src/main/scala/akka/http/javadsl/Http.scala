@@ -170,6 +170,13 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    */
+  def outgoingConnection(host: String): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+    outgoingConnection(host, 80)
+
+  /**
+   * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
+   * Every materialization of the produced flow will attempt to establish a new outgoing connection.
+   */
   def outgoingConnection(host: String, port: Int): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
     Flow.wrap {
       akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
@@ -376,7 +383,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
-   * depending on their respective effective URI. Note that incoming requests must have either an absolute URI or
+   * depending on their respective effective URIs. Note that incoming requests must have either an absolute URI or
    * a valid `Host` header.
    *
    * Since the underlying transport usually comprises more than a single connection the produced flow might generate
@@ -391,7 +398,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
-   * depending on their respective effective URI. Note that incoming requests must have either an absolute URI or
+   * depending on their respective effective URIs. Note that incoming requests must have either an absolute URI or
    * a valid `Host` header.
    *
    * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used

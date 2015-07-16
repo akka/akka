@@ -13,7 +13,7 @@ Overview
 Since akka-http-core provides the central HTTP data structures you will find the following import in quite a
 few places around the code base (and probably your own code as well):
 
-.. includecode:: ../code/docs/http/javadsl/ModelTest.java
+.. includecode:: ../code/docs/http/javadsl/ModelDocTest.java
    :include: import-model
 
 This brings all of the most relevant types in scope, mainly:
@@ -50,7 +50,7 @@ An ``HttpRequest`` consists of
 
 Here are some examples how to construct an ``HttpRequest``:
 
-.. includecode:: ../code/docs/http/javadsl/ModelTest.java
+.. includecode:: ../code/docs/http/javadsl/ModelDocTest.java
    :include: construct-request
 
 In its basic form ``HttpRequest.create`` creates an empty default GET request without headers which can then be
@@ -71,7 +71,7 @@ An ``HttpResponse`` consists of
 
 Here are some examples how to construct an ``HttpResponse``:
 
-.. includecode:: ../code/docs/http/javadsl/ModelTest.java
+.. includecode:: ../code/docs/http/javadsl/ModelDocTest.java
    :include: construct-response
 
 In addition to the simple ``HttpEntities.create`` methods which create an entity from a fixed ``String`` or ``ByteString``
@@ -169,7 +169,7 @@ as a ``RawHeader`` (which is essentially a String/String name/value pair).
 
 See these examples of how to deal with headers:
 
-.. includecode:: ../code/docs/http/javadsl/ModelTest.java
+.. includecode:: ../code/docs/http/javadsl/ModelDocTest.java
    :include: headers
 
 
