@@ -440,11 +440,11 @@ trait FlowOps[+Out, +Mat] {
    * These Futures may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
    *
-   * If the group by function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `Future` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision.Stop]]
    * the stream will be completed with failure.
    *
-   * If the group by function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `Future` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision.Resume]] or
    * [[akka.stream.Supervision.Restart]] the element is dropped and the stream continues.
    *
@@ -470,11 +470,11 @@ trait FlowOps[+Out, +Mat] {
    * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
    * in the same order as received from upstream.
    *
-   * If the group by function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `Future` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision.Stop]]
    * the stream will be completed with failure.
    *
-   * If the group by function `f` throws an exception or if the `Future` is completed
+   * If the function `f` throws an exception or if the `Future` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision.Resume]] or
    * [[akka.stream.Supervision.Restart]] the element is dropped and the stream continues.
    *
