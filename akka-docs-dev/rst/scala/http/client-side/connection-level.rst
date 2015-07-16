@@ -1,4 +1,4 @@
-.. _ConnectionLevelApi:
+.. _connection-level-api:
 
 Connection-Level Client-Side API
 ================================
@@ -11,9 +11,8 @@ highest flexibility at the cost of providing the least convenience.
 Opening HTTP Connections
 ------------------------
 
-With the connection-level API you open a new HTTP connection by materializing a ``Flow`` returned by the
-``Http().outgoingConnection(...)`` method. The target endpoint to which a connection is to be opened needs to be
-specified as an argument to ``Http().outgoingConnection(...)``. Here is an example:
+With the connection-level API you open a new HTTP connection to a target endpoint by materializing a ``Flow``
+returned by the ``Http().outgoingConnection(...)`` method. Here is an example:
 
 .. includecode:: ../../code/docs/http/scaladsl/HttpClientExampleSpec.scala
    :include: outgoing-connection-example
@@ -51,7 +50,7 @@ Closing Connections
 -------------------
 
 Akka HTTP actively closes an established connection upon reception of a response containing ``Connection: close`` header.
-Of course the connection can also be closed by the server.
+The connection can also be closed by the server.
 
 An application can actively trigger the closing of the connection by completing the request stream. In this case the
 underlying TCP connection will be closed when the last pending response has been received.

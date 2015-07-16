@@ -1,9 +1,9 @@
-.. _HostLevelApi:
+.. _host-level-api:
 
 Host-Level Client-Side API
 ==========================
 
-As opposed to the :ref:`ConnectionLevelApi` the host-level API relieves you from manually managing individual HTTP
+As opposed to the :ref:`connection-level-api` the host-level API relieves you from manually managing individual HTTP
 connections. It autonomously manages a configurable pool of connections to *one particular target endpoint* (i.e.
 host/port combination).
 
@@ -40,15 +40,15 @@ This means that, in total, your application might open more concurrent HTTP conn
 of the individual pool's ``max-connections`` settings allow!
 
 There is one setting that likely deserves a bit deeper explanation: ``max-open-requests``.
-This setting limits the maximum number of requests that can be open at any time for a single connection pool.
+This setting limits the maximum number of requests that can be in-flight at any time for a single connection pool.
 If an application calls ``Http().cachedHostConnectionPool(...)`` 3 times (with the same endpoint and settings) it will get
-back 3 different client flow instances for the same pool. If each of these client flows is then materialized 4 times
+back ``3`` different client flow instances for the same pool. If each of these client flows is then materialized ``4`` times
 (concurrently) the application will have 12 concurrently running client flow materializations.
 All of these share the resources of the single pool.
 
-This means that, if the pool's ``pipelining-limit`` is left at ``1``, no more than 12 requests can be open at any time.
+This means that, if the pool's ``pipelining-limit`` is left at ``1`` (effecitvely disabeling pipelining), no more than 12 requests can be open at any time.
 With a ``pipelining-limit`` of ``8`` and 12 concurrent client flow materializations the theoretical open requests
-maximum is 96.
+maximum is ``96``.
 
 The ``max-open-requests`` config setting allows for applying a hard limit which serves mainly as a protection against
 erroneous connection pool use, e.g. because the application is materializing too many client flows that all compete for
@@ -131,7 +131,7 @@ If a new client flow is requested with ``Http().cachedHostConnectionPool(...)`` 
 re-materialized the respective pool is automatically and transparently restarted.
 
 In addition to the automatic shutdown via the configured idle timeouts it's also possible to trigger the immediate
-shutdown of specific pool by calling ``shutdown()`` on the ``Http().HostConnectionPool`` instance that a pool client
+shutdown of a specific pool by calling ``shutdown()`` on the :class:`HostConnectionPool` instance that the pool client
 flow materializes into. This ``shutdown()`` call produces a ``Future[Unit]`` which is fulfilled when the pool
 termination has been completed.
 
