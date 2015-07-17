@@ -68,4 +68,16 @@ However, akka-stream should soon provide such a feature.
 Stand-Alone HTTP Layer Usage
 ----------------------------
 
-// TODO
+Due to its Reactive-Stream-based nature the Akka HTTP layer is fully detachable from the underlying TCP
+interface. While in most applications this "feature" will not be crucial it can be useful in certain cases to be able
+to "run" the HTTP layer (and, potentially, higher-layers) against data that do not come from the network but rather
+some other source. Potential scenarios where this might be useful include tests, debugging or low-level event-sourcing
+(e.g by replaying network traffic).
+
+On the client-side the stand-alone HTTP layer forms a ``BidiStage`` that is defined like this:
+
+.. includecode2:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
+   :snippet: client-layer
+
+You create an instance of ``Http.ClientLayer`` by calling one of the two overloads of the ``Http().clientLayer`` method,
+which also allows for varying degrees of configuration.
