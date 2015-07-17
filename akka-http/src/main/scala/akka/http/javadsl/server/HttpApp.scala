@@ -16,7 +16,7 @@ import akka.http.scaladsl.Http.ServerBinding
 abstract class HttpApp
   extends AllDirectives
   with HttpServiceBase {
-  protected def createRoute(): Route
+  def createRoute(): Route
 
   /**
    * Starts an HTTP server on the given interface and port. Creates the route by calling the
