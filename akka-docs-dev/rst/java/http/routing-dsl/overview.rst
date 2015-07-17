@@ -7,7 +7,7 @@ The Akka HTTP :ref:`http-low-level-server-side-api-java` provides a ``Flow``- or
 an application to respond to incoming HTTP requests by simply mapping requests to responses
 (excerpt from :ref:`Low-level server side example <http-low-level-server-side-example-java>`):
 
-.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleDocTest.java
+.. includecode:: ../../code/docs/http/javadsl/server/HttpServerExampleDocTest.java
   :include: request-handler
 
 While it'd be perfectly possible to define a complete REST API service purely by inspecting the incoming
@@ -21,7 +21,7 @@ async handler function) that can be directly supplied to a ``bind`` call.
 
 Here's the complete example rewritten using the composable high-level API:
 
-.. includecode:: ../../code/docs/http/javadsl/HighLevelServerExample.java
+.. includecode:: ../../code/docs/http/javadsl/server/HighLevelServerExample.java
   :include: high-level-server-example
 
 Heart of the high-level architecture is the route tree. It is a big expression of type ``Route``

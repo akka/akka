@@ -21,7 +21,7 @@ Example
 
 To see the testkit in action consider the following simple calculator app service:
 
-.. includecode:: ../../code/docs/http/javadsl/testkit/MyAppService.java
+.. includecode:: ../../code/docs/http/javadsl/server/testkit/MyAppService.java
   :include: simple-app
 
 The app extends from ``HttpApp`` which brings all of the directives into scope. Method ``createRoute``
@@ -29,7 +29,7 @@ needs to be implemented to return the complete route of the app.
 
 Here's how you would test that service:
 
-.. includecode:: ../../code/docs/http/javadsl/testkit/TestkitExampleTest.java
+.. includecode:: ../../code/docs/http/javadsl/server/testkit/TestkitExampleTest.java
   :include: simple-app-testing
 
 
