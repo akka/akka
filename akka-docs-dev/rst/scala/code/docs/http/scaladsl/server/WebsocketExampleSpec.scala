@@ -22,6 +22,7 @@ class WebsocketExampleSpec extends WordSpec with Matchers {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
+    //#websocket-handler
     // The Greeter WebSocket Service expects a "name" per message and
     // returns a greeting message for that name
     val greeterWebsocketService =
@@ -34,16 +35,21 @@ class WebsocketExampleSpec extends WordSpec with Matchers {
           case tm: TextMessage ⇒ TextMessage(Source.single("Hello ") ++ tm.textStream)
           // ignore binary messages
         }
+    //#websocket-handler
 
-    val bindingFuture = Http().bindAndHandleSync({
-      case req @ HttpRequest(GET, Uri.Path("/ws-greeter"), _, _, _) ⇒
+    //#websocket-request-handling
+    val requestHandler: HttpRequest ⇒ HttpResponse = {
+      case req @ HttpRequest(GET, Uri.Path("/greeter"), _, _, _) ⇒
         req.header[UpgradeToWebsocket] match {
           case Some(upgrade) ⇒ upgrade.handleMessages(greeterWebsocketService)
           case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
         }
       case _: HttpRequest ⇒ HttpResponse(404, entity = "Unknown resource!")
-    }, interface = "localhost", port = 8080)
-    //#websocket-example-using-core
+    }
+    //#websocket-request-handling
+
+    val bindingFuture =
+      Http().bindAndHandleSync(requestHandler, interface = "localhost", port = 8080)
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     Console.readLine()
@@ -55,7 +61,6 @@ class WebsocketExampleSpec extends WordSpec with Matchers {
   }
   "routing-example" in {
     pending // compile-time only test
-    //#websocket-example-using-routing
     import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.{ Source, Flow }
@@ -77,12 +82,14 @@ class WebsocketExampleSpec extends WordSpec with Matchers {
           // ignore binary messages
         }
 
+    //#websocket-routing
     val route =
-      path("ws-greeter") {
+      path("greeter") {
         get {
           handleWebsocketMessages(greeterWebsocketService)
         }
       }
+    //#websocket-routing
 
     val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
 
@@ -93,6 +100,5 @@ class WebsocketExampleSpec extends WordSpec with Matchers {
     bindingFuture
       .flatMap(_.unbind()) // trigger unbinding from the port
       .onComplete(_ ⇒ system.shutdown()) // and shutdown when done
-    //#websocket-example-using-routing
   }
 }

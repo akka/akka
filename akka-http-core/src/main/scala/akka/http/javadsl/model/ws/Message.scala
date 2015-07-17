@@ -43,7 +43,13 @@ object Message {
  * the complete data is already available or it can be streamed in which case [[getStreamedText]]
  * will return a Source streaming the data as it comes in.
  */
+//#message-model
 abstract class TextMessage extends Message {
+  /**
+   * Returns a source of the text message data.
+   */
+  def getStreamedText: Source[String, _]
+
   /** Is this message a strict one? */
   def isStrict: Boolean
 
@@ -51,17 +57,14 @@ abstract class TextMessage extends Message {
    * Returns the strict message text if this message is strict, throws otherwise.
    */
   def getStrictText: String
-
-  /**
-   * Returns a source of the text message data.
-   */
-  def getStreamedText: Source[String, _]
-
+  //#message-model
   def isText: Boolean = true
   def asTextMessage: TextMessage = this
   def asBinaryMessage: BinaryMessage = throw new ClassCastException("This message is not a binary message.")
   def asScala: sm.ws.TextMessage
+  //#message-model
 }
+//#message-model
 
 object TextMessage {
   /**
@@ -94,6 +97,11 @@ object TextMessage {
 }
 
 abstract class BinaryMessage extends Message {
+  /**
+   * Returns a source of the binary message data.
+   */
+  def getStreamedData: Source[ByteString, _]
+
   /** Is this message a strict one? */
   def isStrict: Boolean
 
@@ -101,11 +109,6 @@ abstract class BinaryMessage extends Message {
    * Returns the strict message data if this message is strict, throws otherwise.
    */
   def getStrictData: ByteString
-
-  /**
-   * Returns a source of the binary message data.
-   */
-  def getStreamedData: Source[ByteString, _]
 
   def isText: Boolean = false
   def asTextMessage: TextMessage = throw new ClassCastException("This message is not a text message.")
