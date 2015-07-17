@@ -35,6 +35,9 @@ object Unmarshaller
   with PredefinedFromEntityUnmarshallers
   with PredefinedFromStringUnmarshallers {
 
+  // format: OFF
+
+  //#unmarshaller-creation
   /**
    * Creates an `Unmarshaller` from the given function.
    */
@@ -55,17 +58,19 @@ object Unmarshaller
    * in the given order. The first successful unmarshalling of a "sub-unmarshallers" is the one produced by the
    * "super-unmarshaller".
    */
-  def firstOf[A, B](unmarshallers: Unmarshaller[A, B]*): Unmarshaller[A, B] =
-    Unmarshaller { implicit ec ⇒
-      a ⇒
-        def rec(ix: Int, supported: Set[ContentTypeRange]): Future[B] =
-          if (ix < unmarshallers.size) {
-            unmarshallers(ix)(a).fast.recoverWith {
-              case Unmarshaller.UnsupportedContentTypeException(supp) ⇒ rec(ix + 1, supported ++ supp)
-            }
-          } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported))
-        rec(0, Set.empty)
+  def firstOf[A, B](unmarshallers: Unmarshaller[A, B]*): Unmarshaller[A, B] = //...
+  //#
+    Unmarshaller { implicit ec ⇒ a ⇒
+      def rec(ix: Int, supported: Set[ContentTypeRange]): Future[B] =
+        if (ix < unmarshallers.size) {
+          unmarshallers(ix)(a).fast.recoverWith {
+            case Unmarshaller.UnsupportedContentTypeException(supp) ⇒ rec(ix + 1, supported ++ supp)
+          }
+        } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported))
+      rec(0, Set.empty)
     }
+
+  // format: ON
 
   implicit def identityUnmarshaller[T]: Unmarshaller[T, T] = Unmarshaller(_ ⇒ FastFuture.successful)
 
