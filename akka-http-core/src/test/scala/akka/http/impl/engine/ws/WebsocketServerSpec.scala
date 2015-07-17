@@ -37,8 +37,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
 
           val request = expectRequest
           val upgrade = request.header[UpgradeToWebsocket]
-          upgrade.isDefined shouldBe
-            true
+          upgrade.isDefined shouldBe true
 
           val source =
             Source(List(1, 2, 3, 4, 5)).map(num ⇒ TextMessage.Strict(s"Message $num"))

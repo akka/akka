@@ -302,7 +302,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         }
         "for a streamed message don't convert half surrogate pairs naively" in new ServerTestSetup {
           val gclef = "𝄞"
-          gclef.size shouldEqual 2
+          gclef.length shouldEqual 2
 
           // split up the code point
           val half1 = gclef.take(1)

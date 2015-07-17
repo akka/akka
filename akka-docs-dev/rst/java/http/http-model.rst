@@ -136,9 +136,9 @@ The class ``HttpEntities`` contains static methods to create entities from commo
 
 You can use the ``isX` methods of ``HttpEntity`` to find out of which subclass an entity is if you want to provide
 special handling for each of the subtypes. However, in many cases a recipient of an ``HttpEntity`` doesn't care about
-of which subtype an entity is (and how data is transported exactly on the HTTP layer). Therefore, a general
-``HttpEntity::getDataBytes: Source<ByteString, ?>`` is provided which allows access to the data of an entity regardless
-of its concrete subtype.
+of which subtype an entity is (and how data is transported exactly on the HTTP layer). Therefore, the general method
+``HttpEntity.getDataBytes()`` is provided which returns a ``Source<ByteString, ?>`` that allows access to the data of an
+entity regardless of its concrete subtype.
 
 .. note::
 
