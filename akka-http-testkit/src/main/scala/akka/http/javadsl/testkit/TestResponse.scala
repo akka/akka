@@ -21,49 +21,124 @@ import akka.http.javadsl.model._
  * A wrapper for responses
  */
 abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: ActorMaterializer) {
-  lazy val entity: HttpEntityStrict =
-    _response.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost)
+  /**
+   * Returns the strictified entity of the response. It will be strictified on first access.
+   */
+  lazy val entity: HttpEntityStrict = _response.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost)
+
+  /**
+   * Returns a copy of the underlying response with the strictified entity.
+   */
   lazy val response: HttpResponse = _response.withEntity(entity)
 
-  // FIXME: add header getters / assertions
-
+  /**
+   * Returns the media-type of the the response's content-type
+   */
   def mediaType: MediaType = extractFromResponse(_.entity.contentType.mediaType)
+
+  /**
+   * Returns a string representation of the media-type of the the response's content-type
+   */
   def mediaTypeString: String = mediaType.toString
+
+  /**
+   * Returns the bytes of the response entity
+   */
   def entityBytes: ByteString = entity.data()
+
+  /**
+   * Returns the entity of the response unmarshalled with the given ``Unmarshaller``.
+   */
   def entityAs[T](unmarshaller: Unmarshaller[T]): T =
     Unmarshal(response)
       .to(unmarshaller.asInstanceOf[UnmarshallerImpl[T]].scalaUnmarshaller(ec, materializer), ec)
       .awaitResult(awaitAtMost)
+
+  /**
+   * Returns the entity of the response interpreted as an UTF-8 encoded string.
+   */
   def entityAsString: String = entity.data().utf8String
+
+  /**
+   * Returns the [[StatusCode]] of the response.
+   */
   def status: StatusCode = response.status.asJava
+
+  /**
+   * Returns the numeric status code of the response.
+   * @return
+   */
   def statusCode: Int = response.status.intValue
+
+  /**
+   * Returns the first header of the response which is of the given class.
+   */
   def header[T <: HttpHeader](clazz: Class[T]): T =
     response.header(ClassTag(clazz))
       .getOrElse(fail(s"Expected header of type ${clazz.getSimpleName} but wasn't found."))
 
+  /**
+   * Assert on the numeric status code.
+   */
   def assertStatusCode(expected: Int): TestResponse =
     assertStatusCode(StatusCodes.get(expected))
+
+  /**
+   * Assert on the status code.
+   */
   def assertStatusCode(expected: StatusCode): TestResponse =
     assertEqualsKind(expected, status, "status code")
+
+  /**
+   * Assert on the media type of the response.
+   */
   def assertMediaType(expected: String): TestResponse =
     assertEqualsKind(expected, mediaTypeString, "media type")
+
+  /**
+   * Assert on the media type of the response.
+   */
   def assertMediaType(expected: MediaType): TestResponse =
     assertEqualsKind(expected, mediaType, "media type")
+
+  /**
+   * Assert on the response entity to be a UTF8 representation of the given string.
+   */
   def assertEntity(expected: String): TestResponse =
     assertEqualsKind(expected, entityAsString, "entity")
+
+  /**
+   * Assert on the response entity to equal the given bytes.
+   */
   def assertEntityBytes(expected: ByteString): TestResponse =
     assertEqualsKind(expected, entityBytes, "entity")
+
+  /**
+   * Assert on the response entity to equal the given object after applying an [[Unmarshaller]].
+   */
   def assertEntityAs[T <: AnyRef](unmarshaller: Unmarshaller[T], expected: T): TestResponse =
     assertEqualsKind(expected, entityAs(unmarshaller), "entity")
+
+  /**
+   * Assert that a given header instance exists in the response.
+   */
   def assertHeaderExists(expected: HttpHeader): TestResponse = {
     assertTrue(response.headers.exists(_ == expected), s"Header $expected was missing.")
     this
   }
+
+  /**
+   * Assert that a header of the given type exists.
+   */
   def assertHeaderKindExists(name: String): TestResponse = {
     val lowercased = name.toRootLowerCase
     assertTrue(response.headers.exists(_.is(lowercased)), s"Expected `$name` header was missing.")
     this
   }
+
+  /**
+   * Assert that a header of the given name and value exists.
+   */
   def assertHeaderExists(name: String, value: String): TestResponse = {
     val lowercased = name.toRootLowerCase
     val headers = response.headers.filter(_.is(lowercased))
