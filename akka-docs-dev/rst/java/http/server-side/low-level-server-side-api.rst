@@ -149,8 +149,12 @@ optional ``httpsContext`` parameter, which can receive the HTTPS configuration i
 instance.
 If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
 
+.. _http-server-layer-java:
 
 Stand-Alone HTTP Layer Usage
 ----------------------------
 
-// TODO
+It is currently only possible to use the HTTP server layer with Scala in a stand-alone fashion.
+See :ref:`http-server-layer-scala` and `#18027`_ for the plan to add Java support.
+
+.. _`#18027`: https://github.com/akka/akka/issues/18027
