@@ -63,6 +63,7 @@ sealed abstract class Marshaller[-A, +B] {
     Marshaller(implicit ec ⇒ c ⇒ apply(f(ec)(c)))
 }
 
+//# marshaller-creation
 object Marshaller
   extends GenericMarshallers
   with PredefinedToEntityMarshallers
@@ -117,7 +118,9 @@ object Marshaller
   def opaque[A, B](marshal: A ⇒ B): Marshaller[A, B] =
     strict { value ⇒ Marshalling.Opaque(() ⇒ marshal(value)) }
 }
+//#
 
+//# marshalling
 /**
  * Describes one possible option for marshalling a given value.
  */
@@ -151,3 +154,4 @@ object Marshalling {
     def map[B](f: A ⇒ B): Opaque[B] = copy(marshal = () ⇒ f(marshal()))
   }
 }
+//#

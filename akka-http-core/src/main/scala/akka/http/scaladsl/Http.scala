@@ -140,19 +140,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                          log: LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] =
     bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, settings, httpsContext, log)
 
-  /**
-   * The type of the server-side HTTP layer as a stand-alone BidiStage
-   * that can be put atop the TCP layer to form an HTTP server.
-   *
-   * {{{
-   *                +------+
-   * HttpResponse ~>|      |~> SslTlsOutbound
-   *                | bidi |
-   * HttpRequest  <~|      |<~ SslTlsInbound
-   *                +------+
-   * }}}
-   */
-  type ServerLayer = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit]
+  type ServerLayer = Http.ServerLayer
 
   /**
    * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]]. The returned [[BidiFlow]]
@@ -207,19 +195,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     }
   }
 
-  /**
-   * The type of the client-side HTTP layer as a stand-alone BidiStage
-   * that can be put atop the TCP layer to form an HTTP client.
-   *
-   * {{{
-   *                +------+
-   * HttpRequest  ~>|      |~> SslTlsOutbound
-   *                | bidi |
-   * HttpResponse <~|      |<~ SslTlsInbound
-   *                +------+
-   * }}}
-   */
-  type ClientLayer = BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit]
+  type ClientLayer = Http.ClientLayer
 
   /**
    * Constructs a [[ClientLayer]] stage using the configured default [[ClientConnectionSettings]].
@@ -501,6 +477,38 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
 }
 
 object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
+
+  //#server-layer
+  /**
+   * The type of the server-side HTTP layer as a stand-alone BidiStage
+   * that can be put atop the TCP layer to form an HTTP server.
+   *
+   * {{{
+   *                +------+
+   * HttpResponse ~>|      |~> SslTlsOutbound
+   *                | bidi |
+   * HttpRequest  <~|      |<~ SslTlsInbound
+   *                +------+
+   * }}}
+   */
+  type ServerLayer = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit]
+  //#
+
+  //#client-layer
+  /**
+   * The type of the client-side HTTP layer as a stand-alone BidiStage
+   * that can be put atop the TCP layer to form an HTTP client.
+   *
+   * {{{
+   *                +------+
+   * HttpRequest  ~>|      |~> SslTlsOutbound
+   *                | bidi |
+   * HttpResponse <~|      |<~ SslTlsInbound
+   *                +------+
+   * }}}
+   */
+  type ClientLayer = BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit]
+  //#
 
   /**
    * Represents a prospective HTTP server binding.

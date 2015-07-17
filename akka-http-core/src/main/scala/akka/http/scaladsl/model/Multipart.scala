@@ -21,7 +21,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.engine.rendering.BodyPartRenderer
 import FastFuture._
 
-trait Multipart {
+sealed trait Multipart {
   def mediaType: MultipartMediaType
   def parts: Source[Multipart.BodyPart, Any]
 
