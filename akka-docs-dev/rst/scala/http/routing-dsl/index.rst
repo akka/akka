@@ -40,7 +40,7 @@ Longer Example
 
 The following is an Akka HTTP route definition that tries to show off a few features. The resulting service does
 not really do anything useful but its definition should give you a feel for what an actual API definition with
-the :ref:`http-high-level-server-side-api` will look like:
+the Routing DSL will look like:
 
 .. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: long-routing-example
