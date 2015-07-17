@@ -62,7 +62,7 @@ Starting and Stopping
 On the most basic level an Akka HTTP server is bound by invoking the ``bind`` method of the `akka.http.javadsl.Http`_
 extension:
 
-.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleDocTest.java
+.. includecode:: ../../code/docs/http/javadsl/server/HttpServerExampleDocTest.java
    :include: binding-example
 
 Arguments to the ``Http().bind`` method specify the interface and port to bind to and register interest in handling
@@ -99,7 +99,7 @@ Requests are handled by calling one of the ``handleWithXXX`` methods with a hand
 
 Here is a complete example:
 
-.. includecode:: ../../code/docs/http/javadsl/HttpServerExampleDocTest.java
+.. includecode:: ../../code/docs/http/javadsl/server/HttpServerExampleDocTest.java
   :include: full-server-example
 
 In this example, a request is handled by transforming the request stream with a function ``Function<HttpRequest, HttpResponse>``
@@ -149,8 +149,12 @@ optional ``httpsContext`` parameter, which can receive the HTTPS configuration i
 instance.
 If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
 
+.. _http-server-layer-java:
 
 Stand-Alone HTTP Layer Usage
 ----------------------------
 
-// TODO
+It is currently only possible to use the HTTP server layer with Scala in a stand-alone fashion.
+See :ref:`http-server-layer-scala` and `#18027`_ for the plan to add Java support.
+
+.. _`#18027`: https://github.com/akka/akka/issues/18027
