@@ -10,7 +10,6 @@ import akka.http.scaladsl.model.headers.{ UpgradeProtocol, Upgrade }
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, HttpResponse }
 import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebsocket }
 import akka.http.scaladsl.server.{ Route, RoutingSpec }
-import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 
 class WebsocketDirectivesSpec extends RoutingSpec {
