@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package docs.http.javadsl.testkit;
+package docs.http.javadsl.server.testkit;
 
 //#simple-app
 import akka.http.javadsl.server.*;
