@@ -39,6 +39,9 @@ abstract class RouteTest extends AllDirectives {
     }
   }
 
+  /**
+   * Wraps a list of route alternatives with testing support.
+   */
   @varargs
   def testRoute(first: Route, others: Route*): TestRoute =
     new TestRoute {
