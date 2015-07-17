@@ -115,13 +115,23 @@ sealed trait HttpEntity extends jm.HttpEntity {
 sealed trait BodyPartEntity extends HttpEntity with jm.BodyPartEntity {
   def withContentType(contentType: ContentType): BodyPartEntity
 }
-/* An entity that can be used for requests */
+
+/**
+ * An [[HttpEntity]] that can be used for requests.
+ * Note that all entities that can be used for requests can also be used for responses.
+ * (But not the other way around, since [[HttpEntity.CloseDelimited]] can only be used for responses!)
+ */
 sealed trait RequestEntity extends HttpEntity with jm.RequestEntity with ResponseEntity {
   def withContentType(contentType: ContentType): RequestEntity
 
   override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): RequestEntity
 }
-/* An entity that can be used for responses */
+
+/**
+ * An [[HttpEntity]] that can be used for responses.
+ * Note that all entities that can be used for requests can also be used for responses.
+ * (But not the other way around, since [[HttpEntity.CloseDelimited]] can only be used for responses!)
+ */
 sealed trait ResponseEntity extends HttpEntity with jm.ResponseEntity {
   def withContentType(contentType: ContentType): ResponseEntity
 

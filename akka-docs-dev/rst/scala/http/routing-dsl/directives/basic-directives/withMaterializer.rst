@@ -1,7 +1,7 @@
 .. _-withMaterializer-:
 
 withMaterializer
-====================
+================
 
 ...
 

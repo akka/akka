@@ -154,4 +154,16 @@ If defined encryption is enabled on all accepted connections. Otherwise it is di
 Stand-Alone HTTP Layer Usage
 ----------------------------
 
-// TODO
+Due to its Reactive-Stream-based nature the Akka HTTP layer is fully detachable from the underlying TCP
+interface. While in most applications this "feature" will not be crucial it can be useful in certain cases to be able
+to "run" the HTTP layer (and, potentially, higher-layers) against data that do not come from the network but rather
+some other source. Potential scenarios where this might be useful include tests, debugging or low-level event-sourcing
+(e.g by replaying network traffic).
+
+On the server-side the stand-alone HTTP layer forms a ``BidiStage`` that is defined like this:
+
+.. includecode2:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
+   :snippet: server-layer
+
+You create an instance of ``Http.ServerLayer`` by calling one of the two overloads of the ``Http().serverLayer`` method,
+which also allows for varying degrees of configuration.
