@@ -3,7 +3,7 @@ Route TestKit
 
 One of Akka HTTP's design goals is good testability of the created services.
 For services built with the Routing DSL Akka HTTP provides a dedicated testkit that makes efficient testing of
-route logic easy and convenient. This "route test DSL" is made available with the *akka-http-testkit-scala* module.
+route logic easy and convenient. This "route test DSL" is made available with the *akka-http-testkit* module.
 
 
 Usage
@@ -102,6 +102,6 @@ Examples
 A great pool of examples are the tests for all the predefined directives in Akka HTTP.
 They can be found here__.
 
-__ @github@/akka-http-tests-scala/src/test/scala/akka/http/scaladsl/server/directives/
+__ @github@/akka-http-tests/src/test/scala/akka/http/scaladsl/server/directives/
 
 .. _scalatest: http://www.scalatest.org
