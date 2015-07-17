@@ -141,9 +141,29 @@ Rate transformation
 Understanding conflate
 ----------------------
 
-*TODO*
+When a fast producer can not be informed to slow down by backpressure or some other signal, conflate might be useful to combine elements from a producer until a demand signal comes from a consumer.
+
+Below is an example snippet that summarizes fast stream of elements to a standart deviation, mean and count of elements that have arrived  while the stats have been calculated.
+
+.. includecode:: code/docs/stream/RateTransformationDocSpec.scala#conflate-summarize
+
+This example demonstrates that such flow's rate is decoupled. Element rate at the start of the flow can be much higher that the element rate at the end of the flow.
+
+Another possible use of conflate is to not consider all elements for summary when producer starts getting too fast. Example below demonstrates how conflate can be used to implement random drop of elements when consumer is not able to keep up with the producer.
+
+.. includecode:: code/docs/stream/RateTransformationDocSpec.scala#conflate-sample
 
 Understanding expand
 --------------------
 
-*TODO*
+Expand helps to deal with slow producers which are unable to keep up with the demand coming from consumers. Expand allows to extrapolate a value to be sent as an element to a consumer.
+
+As a simple use of expand here is a flow that sends the same element to consumer when producer does not send any new elements.
+
+.. includecode:: code/docs/stream/RateTransformationDocSpec.scala#expand-last
+
+Expand also allows to keep some state between demand requests from the downstream. Leveraging this, here is a flow that tracks and reports a drift between fast consumer and slow producer.
+
+.. includecode:: code/docs/stream/RateTransformationDocSpec.scala#expand-drift
+
+Note that all of the elements coming from upstream will go through expand at least once. This means that the output of this flow is going to report a drift of zero if producer if fast enough, of a larger drift otherwise.
