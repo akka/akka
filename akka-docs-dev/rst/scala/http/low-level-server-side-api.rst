@@ -150,6 +150,7 @@ optional ``httpsContext`` parameter, which can receive the HTTPS configuration i
 instance.
 If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
 
+.. _http-server-layer-scala:
 
 Stand-Alone HTTP Layer Usage
 ----------------------------
