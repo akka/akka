@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package docs.http.javadsl;
+package docs.http.javadsl.server;
 
 import akka.actor.ActorSystem;
 import akka.http.impl.util.Util;
