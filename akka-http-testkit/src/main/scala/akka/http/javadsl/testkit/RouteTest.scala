@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server
 import akka.http.javadsl.model.HttpRequest
-import akka.http.javadsl.server.{ AllDirectives, Route, Directives }
+import akka.http.javadsl.server.{ HttpApp, AllDirectives, Route, Directives }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.impl.server.RouteImplementation
 import akka.http.scaladsl.model.HttpResponse
@@ -49,6 +49,11 @@ abstract class RouteTest extends AllDirectives {
 
       def run(request: HttpRequest): TestResponse = runRoute(underlying, request)
     }
+
+  /**
+   * Creates a [[TestRoute]] for the main route of an [[HttpApp]].
+   */
+  def testAppRoute(app: HttpApp): TestRoute = testRoute(app.createRoute)
 
   protected def createTestResponse(response: HttpResponse): TestResponse
 }
