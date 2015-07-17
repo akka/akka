@@ -51,12 +51,12 @@ class RateTransformationDocSpec extends AkkaSpec {
       .mapConcat(identity)
     //#conflate-sample
 
-    val fut = Source(1 to 10000)
+    val fut = Source(1 to 100)
       .map(_.toDouble)
       .via(sampleFlow)
       .runWith(Sink.fold(Seq.empty[Double])(_ :+ _))
 
-    val count = Await.result(fut, 100.millis).size
+    val count = Await.result(fut, 300.millis).size
   }
 
   "expand should repeat last" in {
