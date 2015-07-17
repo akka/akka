@@ -133,9 +133,9 @@ The ``HttpEntity`` companion object contains several helper constructors to crea
 
 You can pattern match over the subtypes of ``HttpEntity`` if you want to provide special handling for each of the
 subtypes. However, in many cases a recipient of an ``HttpEntity`` doesn't care about of which subtype an entity is
-(and how data is transported exactly on the HTTP layer). Therefore, a general
-``HttpEntity::dataBytes: Source[ByteString, Any]`` is provided which allows access to the data of an entity regardless
-of its concrete subtype.
+(and how data is transported exactly on the HTTP layer). Therefore, the general method ``HttpEntity.dataBytes`` is
+provided which returns a ``Source[ByteString, Any]`` that allows access to the data of an entity regardless of its
+concrete subtype.
 
 .. note::
 
