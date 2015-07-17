@@ -68,4 +68,9 @@ to HTTP entities.
 
 Read more about :ref:`marshalling-java`.
 
+akka-http contains a testkit that simplifies testing routes. It allows to run test-requests against (sub-)routes
+quickly without running them over the network and helps with writing assertions on HTTP response properties.
+
+Read more about :ref:`http-testkit-java`.
+
 .. _DRY: http://en.wikipedia.org/wiki/Don%27t_repeat_yourself
