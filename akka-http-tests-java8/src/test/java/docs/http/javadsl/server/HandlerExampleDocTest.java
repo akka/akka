@@ -4,14 +4,19 @@
 
 package docs.http.javadsl.server;
 
-import akka.dispatch.Futures;
+import akka.dispatch.Mapper;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.server.*;
 import akka.http.javadsl.server.values.Parameters;
 import akka.http.javadsl.server.values.PathMatchers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
+import akka.japi.function.Function;
 import org.junit.Test;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.Future;
+
+import java.util.concurrent.Callable;
 
 public class HandlerExampleDocTest extends JUnitRouteTest {
     @Test
@@ -211,5 +216,84 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
             .assertStatusCode(200)
             .assertEntity("x * y = 115");
         //#reflective-example-full
+    }
+
+    @Test
+    public void testDeferredResultAsyncHandler() {
+        //#async-example-full
+        //#async-service-definition
+        class CalculatorService {
+            public Future<Integer> multiply(final int x, final int y, ExecutionContext ec) {
+                return akka.dispatch.Futures.future(() -> x * y, ec);
+            }
+
+            public Future<Integer> add(final int x, final int y, ExecutionContext ec) {
+                return akka.dispatch.Futures.future(() -> x + y, ec);
+            }
+        }
+        //#async-service-definition
+
+        class TestHandler extends akka.http.javadsl.server.AllDirectives {
+            RequestVal<Integer> xParam = Parameters.intValue("x");
+            RequestVal<Integer> yParam = Parameters.intValue("y");
+
+            //#async-handler-1
+            // would probably be injected or passed at construction time in real code
+            CalculatorService calculatorService = new CalculatorService();
+            public Future<RouteResult> multiplyAsync(final RequestContext ctx, int x, int y) {
+                Future<Integer> result = calculatorService.multiply(x, y, ctx.executionContext());
+                Mapper<Integer, RouteResult> func = new Mapper<Integer, RouteResult>() {
+                    @Override
+                    public RouteResult apply(Integer product) {
+                        return ctx.complete("x * y = " + product);
+                    }
+                }; // cannot be written as lambda, unfortunately
+                return result.map(func, ctx.executionContext());
+            }
+            Route multiplyAsyncRoute =
+                path("multiply").route(
+                    handleWithAsync2(xParam, yParam, this::multiplyAsync)
+                );
+            //#async-handler-1
+
+            //#async-handler-2
+            public RouteResult addAsync(final RequestContext ctx, int x, int y) {
+                Future<Integer> result = calculatorService.add(x, y, ctx.executionContext());
+                Mapper<Integer, RouteResult> func = new Mapper<Integer, RouteResult>() {
+                    @Override
+                    public RouteResult apply(Integer sum) {
+                        return ctx.complete("x + y = " + sum);
+                    }
+                }; // cannot be written as lambda, unfortunately
+                return ctx.completeWith(result.map(func, ctx.executionContext()));
+            }
+            Route addAsyncRoute =
+                path("add").route(
+                    handleWith2(xParam, yParam, this::addAsync)
+                );
+            //#async-handler-2
+
+            Route createRoute() {
+                return route(
+                    get(
+                        pathPrefix("calculator").route(
+                            multiplyAsyncRoute,
+                            addAsyncRoute
+                        )
+                    )
+                );
+            }
+        }
+
+        // testing code
+        TestRoute r = testRoute(new TestHandler().createRoute());
+        r.run(HttpRequest.GET("/calculator/multiply?x=12&y=42"))
+            .assertStatusCode(200)
+            .assertEntity("x * y = 504");
+
+        r.run(HttpRequest.GET("/calculator/add?x=23&y=5"))
+            .assertStatusCode(200)
+            .assertEntity("x + y = 28");
+        //#async-example-full
     }
 }
