@@ -546,6 +546,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
           updateLastSequenceNr(p)
           try {
             peekApplyHandler(p.payload)
+            onPersistSuccess(p.payload)
             onWriteMessageComplete(err = false)
           } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
         }
@@ -583,6 +584,12 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     def onWriteMessageComplete(err: Boolean): Unit =
       pendingInvocations.pop()
   }
+
+  /**
+   * Hook to be able to extend the PersistentActor with behaviour when a message is persisted.
+   * @param msg The message that was persisted to the journal
+   */
+  def onPersistSuccess(msg: Any): Unit = {}
 
   /**
    * Command processing state. If event persistence is pending after processing a

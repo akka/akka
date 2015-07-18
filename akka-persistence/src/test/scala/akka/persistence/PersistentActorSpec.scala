@@ -374,6 +374,42 @@ object PersistentActorSpec {
     }
   }
 
+  class PublishAfterPersistActor(name: String) extends ExamplePersistentActor(name) {
+    override def onPersistSuccess(msg: Any): Unit = {
+      context.system.eventStream.publish(s"message: $msg")
+    }
+    val receiveCommand: Receive = {
+      case "a" ⇒ persist(982417)(evt ⇒ sender() ! evt)
+    }
+  }
+
+  class PublishAfterPersistAllActor(name: String) extends ExamplePersistentActor(name) {
+    override def onPersistSuccess(msg: Any): Unit = {
+      context.system.eventStream.publish(s"message: $msg")
+    }
+    val receiveCommand: Receive = {
+      case "a" ⇒ persistAll(Seq(654, 876))(evt ⇒ sender() ! evt)
+    }
+  }
+
+  class PublishAfterPersistAllAsyncActor(name: String) extends ExamplePersistentActor(name) {
+    override def onPersistSuccess(msg: Any): Unit = {
+      context.system.eventStream.publish(s"message: $msg")
+    }
+    val receiveCommand: Receive = {
+      case "a" ⇒ persistAllAsync(Seq(654, 876))(evt ⇒ sender() ! evt)
+    }
+  }
+
+  class PublishAfterPersistAsyncActor(name: String) extends ExamplePersistentActor(name) {
+    override def onPersistSuccess(msg: Any): Unit = {
+      context.system.eventStream.publish(s"message: $msg")
+    }
+    val receiveCommand: Receive = {
+      case "a" ⇒ persistAsync(123)(evt ⇒ sender() ! evt)
+    }
+  }
+
   class HandleRecoveryFinishedEventPersistentActor(name: String, probe: ActorRef) extends SnapshottingPersistentActor(name, probe) {
     val sendingRecover: Receive = {
       case msg: SnapshotOffer ⇒
@@ -1132,6 +1168,42 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(List("b-1", "b-2"))
     }
 
+    "be extendible by hooking into onPersisted, which is called after persist" in {
+      val persistentActor = namedPersistentActor[PublishAfterPersistActor]
+      val listener = TestProbe()
+      system.eventStream.subscribe(listener.ref, classOf[String])
+      persistentActor ! "a"
+      expectMsg(982417)
+      listener.expectMsg("message: 982417")
+    }
+    "be extendible by hooking into onPersisted, which is called after persistAsync" in {
+      val persistentActor = namedPersistentActor[PublishAfterPersistAsyncActor]
+      val listener = TestProbe()
+      system.eventStream.subscribe(listener.ref, classOf[String])
+      persistentActor ! "a"
+      expectMsg(123)
+      listener.expectMsg("message: 123")
+    }
+    "be extendible by hooking into onPersisted, which is called after persistAll" in {
+      val persistentActor = namedPersistentActor[PublishAfterPersistAllActor]
+      val listener = TestProbe()
+      system.eventStream.subscribe(listener.ref, classOf[String])
+      persistentActor ! "a"
+      expectMsg(654)
+      expectMsg(876)
+      listener.expectMsg("message: 654")
+      listener.expectMsg("message: 876")
+    }
+    "be extendible by hooking into onPersisted, which is called after persistAllAsync" in {
+      val persistentActor = namedPersistentActor[PublishAfterPersistAllAsyncActor]
+      val listener = TestProbe()
+      system.eventStream.subscribe(listener.ref, classOf[String])
+      persistentActor ! "a"
+      expectMsg(654)
+      expectMsg(876)
+      listener.expectMsg("message: 654")
+      listener.expectMsg("message: 876")
+    }
   }
 
 }

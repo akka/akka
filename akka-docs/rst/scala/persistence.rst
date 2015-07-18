@@ -305,6 +305,17 @@ next message.
 If there is a problem with recovering the state of the actor from the journal when the actor is
 started, ``onRecoveryFailure`` is called (logging the error by default) and the actor will be stopped.
 
+Success
+-------
+
+When persistence of an event succeeded, ``onPersistSuccess`` will be invoked (doing nothing by default).
+With this hook it is possible to define a default behaviour when a message is persisted. This can for example be useful
+for broadcasting the published event. The ``onPersistSuccess`` hook will be called with the persisted event right after the
+callback defined by the caller is executed.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#onPersistSuccess-hook
+
+
 Atomic writes
 -------------
 
