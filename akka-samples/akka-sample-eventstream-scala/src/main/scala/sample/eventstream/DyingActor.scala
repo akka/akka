@@ -9,7 +9,7 @@ import akka.actor.Cancellable
 
 object DyingActor {
   def props(ttl: FiniteDuration): Props = Props(new DyingActor(ttl))
-  case class DyingCry(message: String)
+  case class Notification(message: String)
 }
 
 class DyingActor(timeToLive: FiniteDuration) extends Actor with ActorLogging {
@@ -17,15 +17,15 @@ class DyingActor(timeToLive: FiniteDuration) extends Actor with ActorLogging {
   import context.dispatcher
 
   // scheduled to die
-  val scheduler: Cancellable = context.system.scheduler.scheduleOnce(timeToLive)(die)
+  val scheduler: Cancellable = context.system.scheduler.scheduleOnce(timeToLive, self, "die")
 
   def die() = {
-    context.system.eventStream.publish(DyingCry(s"${context.parent} let me die after $timeToLive!"))
-    scheduler.cancel
+    context.system.eventStream.publish(Notification(s"${context.parent} let me die after $timeToLive!"))
     context.stop(self)
   }
 
   def receive = {
+    case "die" => die()
     case _ =>
   }
 }

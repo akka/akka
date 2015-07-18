@@ -11,10 +11,10 @@ object ListeningActor {
 }
 
 class ListeningActor extends Actor with ActorLogging {
-  context.system.eventStream.subscribe(self, classOf[DyingActor.DyingCry])
+  context.system.eventStream.subscribe(self, classOf[DyingActor.Notification])
 
   def receive = {
-    case DyingActor.DyingCry(msg) => log.info("Received DyingCry({})", msg)
+    case DyingActor.Notification(msg) => log.info("Received Notification({})", msg)
   }
 
   override def postStop(): Unit = {
