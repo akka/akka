@@ -24,7 +24,7 @@ class ParentActor extends Actor with ActorLogging {
   def receive = {
     case Terminated(ref) =>
       log.info("{} terminated, {} children left", ref, context.children.size)
-      if (context.children.size.equals(1)) {
+      if (context.children.size == 1) {
         // stop the listening actor
         context.children.foreach(context.stop)
         log.info("Parent dying!")
