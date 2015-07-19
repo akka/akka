@@ -13,7 +13,7 @@ import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.*;
 //#import-model
 
-public class ModelTest {
+public class ModelDocTest {
     @Test
     public void testConstructRequest() {
         //#construct-request
