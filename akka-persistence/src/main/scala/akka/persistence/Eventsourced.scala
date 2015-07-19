@@ -523,9 +523,9 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     eventBatch = Nil
   }
 
-  private def peekApplyHandler(payload: Any): Unit = {
+  private def applyHandlerOn(payload: Any)(handler: Any ⇒ Unit): Unit = {
     val batchSizeBeforeApply = eventBatch.size
-    try pendingInvocations.peek().handler(payload)
+    try handler(payload)
     finally {
       val batchSizeAfterApply = eventBatch.size
 
@@ -544,9 +544,10 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         // while message is in flight, in that case we ignore the call to the handler
         if (id == instanceId) {
           updateLastSequenceNr(p)
+          val applyHandler = applyHandlerOn(p.payload) _
           try {
-            peekApplyHandler(p.payload)
-            onPersistSuccess(p.payload)
+            applyHandler(onPersistSuccess)
+            applyHandler(pendingInvocations.peek().handler)
             onWriteMessageComplete(err = false)
           } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
         }

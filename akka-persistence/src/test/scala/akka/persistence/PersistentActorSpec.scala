@@ -383,6 +383,15 @@ object PersistentActorSpec {
     }
   }
 
+  class ExceptionInHookAfterPersistActor(name: String) extends ExamplePersistentActor(name) {
+    override def onPersistSuccess(msg: Any): Unit = {
+      throw new TestException("on purpose")
+    }
+    val receiveCommand: Receive = {
+      case "a" ⇒ persist(982417)(evt ⇒ sender() ! evt)
+    }
+  }
+
   class PublishAfterPersistAllActor(name: String) extends ExamplePersistentActor(name) {
     override def onPersistSuccess(msg: Any): Unit = {
       context.system.eventStream.publish(s"message: $msg")
@@ -1175,6 +1184,13 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       persistentActor ! "a"
       expectMsg(982417)
       listener.expectMsg("message: 982417")
+    }
+    "not call the callback hook when onPersistSuccess throws an exception" in {
+      val persistentActor = namedPersistentActor[ExceptionInHookAfterPersistActor]
+      val listener = TestProbe()
+      system.eventStream.subscribe(listener.ref, classOf[String])
+      persistentActor ! "a"
+      expectNoMsg(100.millis)
     }
     "be extendible by hooking into onPersisted, which is called after persistAsync" in {
       val persistentActor = namedPersistentActor[PublishAfterPersistAsyncActor]
