@@ -37,7 +37,6 @@ private[akka] class OutputStreamSubscriber(os: OutputStream, bytesWrittenPromise
         bytesWritten += bytes.length
       } catch {
         case ex: Exception ⇒
-          println("ex = " + ex)
           bytesWrittenPromise.failure(ex)
           cancel()
       }
