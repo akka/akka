@@ -612,7 +612,7 @@ Event Adapters
 
   Complete documentation featuring use-cases and implementation examples for this feature will follow shortly.
 
-In long running projects using event sourcing sometimes the need arrises to detach the data model from the domain model
+In long running projects using event sourcing sometimes the need arises to detach the data model from the domain model
 completely.
 
 Event Adapters help in situations where:
