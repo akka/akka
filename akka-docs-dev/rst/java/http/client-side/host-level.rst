@@ -46,7 +46,7 @@ back ``3`` different client flow instances for the same pool. If each of these c
 (concurrently) the application will have 12 concurrently running client flow materializations.
 All of these share the resources of the single pool.
 
-This means that, if the pool's ``pipelining-limit`` is left at ``1`` (effecitvely disabeling pipelining) (effecitvely disabeling pipelining), no more than 12 requests can be open at any time.
+This means that, if the pool's ``pipelining-limit`` is left at ``1`` (effecitvely disabeling pipelining), no more than 12 requests can be open at any time.
 With a ``pipelining-limit`` of ``8`` and 12 concurrent client flow materializations the theoretical open requests
 maximum is ``96``.
 

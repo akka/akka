@@ -34,7 +34,7 @@ public class HttpClientExampleDocTest {
         final Future<HttpResponse> responseFuture =
                 Source.single(HttpRequest.create("/"))
                         .via(connectionFlow)
-                        .runWith(Sink.head(), materializer);
+                        .runWith(Sink.<HttpResponse>head(), materializer);
         //#outgoing-connection-example
     }
 
@@ -58,7 +58,7 @@ public class HttpClientExampleDocTest {
       Source
         .single(Pair.create(HttpRequest.create("/"), 42).toScala())
         .via(poolClientFlow)
-        .runWith(Sink.head(), materializer);
+        .runWith(Sink.<Tuple2<Try<HttpResponse>, Integer>>head(), materializer);
     //#host-level-example
   }
 
