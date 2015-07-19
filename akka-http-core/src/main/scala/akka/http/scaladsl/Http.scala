@@ -329,7 +329,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
-   * depending on their respective effective URI. Note that incoming requests must have an absolute URI.
+   * depending on their respective effective URIs. Note that incoming requests must have an absolute URI.
    *
    * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
    * for setting up HTTPS connection pools, if required.
