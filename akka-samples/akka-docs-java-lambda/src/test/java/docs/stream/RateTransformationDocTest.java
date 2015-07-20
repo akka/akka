@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -56,15 +58,10 @@ public class RateTransformationDocTest {
     //#conflate-summarize
     final Flow<Double, Tuple3<Double, Double, Integer>, BoxedUnit> statsFlow =
       Flow.of(Double.class)
-        .conflate(elem -> {
-          return new ArrayList<Double>() {
-            {
-              this.add(elem);
-            }
-          };
-        } , (acc, elem) -> {
-          acc.add(elem);
-          return acc;
+        .conflate(elem -> Collections.singletonList(elem), (acc, elem) -> {
+          return Stream
+            .concat(acc.stream(), Collections.singletonList(elem).stream())
+            .collect(Collectors.toList());
         })
         .map(s -> {
           final Double mean = s.stream().mapToDouble(d -> d).sum() / s.size();
@@ -88,22 +85,18 @@ public class RateTransformationDocTest {
     //#conflate-sample
     final Double p = 0.01;
     final Flow<Double, Double, BoxedUnit> sampleFlow = Flow.of(Double.class)
-      .conflate(elem -> {
-        return new ArrayList<Double>() {
-          {
-            this.add(elem);
-          }
-        };
-      } , (acc, elem) -> {
+      .conflate(elem -> Collections.singletonList(elem), (acc, elem) -> {
         if (r.nextDouble() < p) {
-          acc.add(elem);
+          return Stream
+            .concat(acc.stream(), Collections.singletonList(elem).stream())
+            .collect(Collectors.toList());
         }
         return acc;
       })
       .mapConcat(d -> d);
     //#conflate-sample
 
-    final Future<Double> fut = Source.from(new ArrayList<Double>(Collections.nCopies(10000, 1.0)))
+    final Future<Double> fut = Source.from(new ArrayList<Double>(Collections.nCopies(1000, 1.0)))
       .via(sampleFlow)
       .runWith(Sink.fold(0.0, (agg, next) -> agg + next), mat);
 
