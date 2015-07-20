@@ -297,7 +297,7 @@ on others:
 
 The effect is, that each module inherits the ``inputBuffer`` attribute from its enclosing parent, unless it has
 the same attribute explicitly set. ``nestedSource`` gets the default attributes from the materializer itself. ``nestedSink``
-on the other hand has this attribute set, so it will be used by all nested modules. ``nestedFlow`` will inherit from ``nestedSource``
+on the other hand has this attribute set, so it will be used by all nested modules. ``nestedFlow`` will inherit from ``nestedSink``
 except the ``map`` stage which has again an explicitly provided attribute overriding the inherited one.
 
 |
