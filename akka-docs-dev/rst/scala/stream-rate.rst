@@ -166,4 +166,4 @@ Expand also allows to keep some state between demand requests from the downstrea
 
 .. includecode:: code/docs/stream/RateTransformationDocSpec.scala#expand-drift
 
-Note that all of the elements coming from upstream will go through expand at least once. This means that the output of this flow is going to report a drift of zero if producer if fast enough, of a larger drift otherwise.
+Note that all of the elements coming from upstream will go through expand at least once. This means that the output of this flow is going to report a drift of zero if producer is fast enough, or a larger drift otherwise.
