@@ -162,7 +162,8 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
           }
           if (contentLength > maxContentLength)
             failMessageStart(RequestEntityTooLarge,
-              s"Request Content-Length $contentLength exceeds the configured limit of $maxContentLength")
+              summary = s"Request Content-Length of $contentLength bytes exceeds the configured limit of $maxContentLength bytes",
+              detail = "Consider increasing the value of akka.http.server.parsing.max-content-length")
           else if (contentLength == 0) {
             emitRequestStart(emptyEntity(cth))
             setCompletionHandling(HttpMessageParser.CompletionOk)
@@ -187,10 +188,16 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
           if (te.isChunked) {
             if (clh.isEmpty) {
               emitRequestStart(chunkedEntity(cth, expect100continueHandling), completedHeaders)
-              parseChunk(input, bodyStart, closeAfterResponseCompletion)
+              parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
             } else failMessageStart("A chunked request must not contain a Content-Length header.")
           } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
             expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
       }
     } else failMessageStart("Request is missing required `Host` header")
+
+  def failWithChunkedEntityTooLong(totalBytesRead: Long): StateResult =
+    failEntityStream(
+      summary = s"Aggregated data length of chunked request entity of $totalBytesRead " +
+        s"bytes exceeds the configured limit of $maxContentLength bytes",
+      detail = "Consider increasing the value of akka.http.server.parsing.max-content-length")
 }
