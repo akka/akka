@@ -8,8 +8,8 @@ Akka HTTP
 
    introduction
    configuration
-   client-side/index
+   common/index
    low-level-server-side-api
    routing-dsl/index
-   common/index
+   client-side/index
    migration-from-spray
