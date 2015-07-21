@@ -8,6 +8,10 @@ XML or even binary encodings.
 For JSON Akka HTTP currently provides support for `spray-json`_ right out of the box through it's
 ``akka-http-spray-json`` module.
 
+Other JSON libraries are supported by the community.
+See `the list of current community extensions for Akka HTTP`_.
+
+.. _`the list of current community extensions for Akka HTTP`: http://akka.io/community/#extensions-to-akka-http
 
 spray-json Support
 ------------------
