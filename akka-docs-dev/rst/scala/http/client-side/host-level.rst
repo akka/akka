@@ -79,6 +79,10 @@ response with its respective request. The way that this is done is by allowing t
 This context object of type ``T`` is completely opaque to Akka HTTP, i.e. you can pick whatever works best for your
 particular application scenario.
 
+.. note::
+  A consequence of using a pool is that long-running requests block a connection while running and may starve other
+  requests. Make sure not to use a connection pool for long-running requests like long-polling GET requests.
+  Use the :ref:`connection-level-api` instead.
 
 Connection Allocation Logic
 ---------------------------
