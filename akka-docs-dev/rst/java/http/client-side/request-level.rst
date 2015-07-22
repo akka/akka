@@ -7,6 +7,10 @@ The request-level API is the most convenient way of using Akka HTTP's client-sid
 :ref:`host-level-api-java` to provide you with a simple and easy-to-use way of retrieving HTTP responses from remote servers.
 Depending on your preference you can pick the flow-based or the future-based variant.
 
+.. note::
+  The request-level API is implemented on top of a connection pool that is shared inside the ActorSystem. A consequence of
+  using a pool is that long-running requests block a connection while running and starve other requests. Make sure not to use
+  the request-level API for long-running requests like long-polling GET requests. Use the :ref:`connection-level-api-java` instead.
 
 Flow-Based Variant
 ------------------
