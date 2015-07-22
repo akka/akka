@@ -586,6 +586,46 @@ not accept more messages and it will throw ``AtLeastOnceDelivery.MaxUnconfirmedM
 The default value can be configured with the ``akka.persistence.at-least-once-delivery.max-unconfirmed-messages``
 configuration key. The method can be overridden by implementation classes to return non-default values.
 
+.. _event-adapters-lambda:
+
+Event Adapters
+==============
+
+In long running projects using event sourcing sometimes the need arises to detach the data model from the domain model
+completely.
+
+Event Adapters help in situations where:
+
+- **Version Migrations** – existing events stored in *Version 1* should be "upcasted" to a new *Version 2* representation,
+  and the process of doing so involves actual code, not just changes on the serialization layer. For these scenarios
+  the ``toJournal`` function is usually an identity function, however the ``fromJournal`` is implemented as
+  ``v1.Event=>v2.Event``, performing the neccessary mapping inside the fromJournal method.
+  This technique is sometimes refered to as "upcasting" in other CQRS libraries.
+- **Separating Domain and Data models** – thanks to EventAdapters it is possible to completely separate the domain model
+  from the model used to persist data in the Journals. For example one may want to use case classes in the
+  domain model, however persist their protocol-buffer (or any other binary serialization format) counter-parts to the Journal.
+  A simple ``toJournal:MyModel=>MyDataModel`` and ``fromJournal:MyDataModel=>MyModel`` adapter can be used to implement this feature.
+- **Journal Specialized Data Types** – exposing data types understood by the underlying Journal, for example for data stores which
+  understand JSON it is possible to write an EventAdapter ``toJournal:Any=>JSON`` such that the Journal can *directly* store the
+  json instead of serializing the object to its binary representation.
+
+Implementing an EventAdapter is rather stright forward:
+
+.. includecode:: code/docs/persistence/PersistenceEventAdapterDocTest.java#identity-event-adapter
+
+Then in order for it to be used on events coming to and from the journal you must bind it using the below configuration syntax:
+
+.. includecode:: ../scala/code/docs/persistence/PersistenceEventAdapterDocSpec.scala#event-adapters-config
+
+It is possible to bind multiple adapters to one class *for recovery*, in which case the ``fromJournal`` methods of all
+bound adapters will be applied to a given matching event (in order of definition in the configuration). Since each adapter may
+return from ``0`` to ``n`` adapted events (called as ``EventSeq``), each adapter can investigate the event and if it should
+indeed adapt it return the adapted event(s) for it, other adapters which do not have anything to contribute during this
+adaptation simply return ``EventSeq.empty``. The adapted events are then delivered in-order to the ``PersistentActor`` during replay.
+
+.. note::
+  For more advanced schema evolution techniques refer to the :ref:`persistence-schema-evolution-scala` documentation.
+
 .. _persistent-fsm-java-lambda:
 
 Persistent FSM
@@ -793,6 +833,8 @@ it must add
 .. includecode:: ../scala/code/docs/persistence/PersistenceSerializerDocSpec.scala#custom-serializer-config
 
 to the application configuration. If not specified, a default serializer is used.
+
+For more advanced schema evolution techniques refer to the :ref:`persistence-schema-evolution-scala` documentation.
 
 Testing
 =======
