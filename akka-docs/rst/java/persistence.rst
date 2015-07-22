@@ -601,10 +601,6 @@ configuration key. The method can be overridden by implementation classes to ret
 Event Adapters
 ==============
 
-.. note::
-
-  Complete documentation featuring use-cases and implementation examples for this feature will follow shortly.
-
 In long running projects using event sourcing sometimes the need arises to detach the data model from the domain model
 completely.
 
@@ -638,11 +634,7 @@ indeed adapt it return the adapted event(s) for it, other adapters which do not 
 adaptation simply return ``EventSeq.empty``. The adapted events are then delivered in-order to the ``PersistentActor`` during replay.
 
 .. note::
-  More advanced techniques utilising advanced binary serialization formats such as protocol buffers or kryo / thrift / avro
-  will be documented very soon. These schema evolutions often may need to reach into the serialization layer, however
-  are much more powerful in terms of flexibly removing unused/deprecated classes from your classpath etc.
-
-
+  For more advanced schema evolution techniques refer to the :ref:`persistence-schema-evolution-scala` documentation.
 
 Storage plugins
 ===============
@@ -832,6 +824,8 @@ it must add
 .. includecode:: ../scala/code/docs/persistence/PersistenceSerializerDocSpec.scala#custom-serializer-config
 
 to the application configuration. If not specified, a default serializer is used.
+
+For more advanced schema evolution techniques refer to the :ref:`persistence-schema-evolution-scala` documentation.
 
 Testing
 =======

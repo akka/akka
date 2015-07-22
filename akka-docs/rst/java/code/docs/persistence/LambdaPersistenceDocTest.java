@@ -8,6 +8,8 @@ import akka.japi.Procedure;
 import akka.japi.pf.ReceiveBuilder;
 import akka.pattern.BackoffSupervisor;
 import akka.persistence.*;
+import akka.persistence.journal.EventAdapter;
+import akka.persistence.journal.EventSeq;
 import scala.Option;
 import scala.concurrent.duration.Duration;
 import scala.PartialFunction;
