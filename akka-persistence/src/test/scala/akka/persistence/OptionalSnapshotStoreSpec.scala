@@ -1,0 +1,70 @@
+/*
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.persistence
+
+import akka.actor.{ Actor, Props }
+import akka.event.Logging
+import akka.event.Logging.Warning
+import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
+import com.typesafe.config.ConfigFactory
+
+import scala.language.postfixOps
+
+object OptionalSnapshotStoreSpec {
+
+  class AnyPersistentActor(name: String) extends PersistentActor {
+    var lastSender = context.system.deadLetters
+
+    override def persistenceId = name
+    override def receiveCommand: Receive = {
+      case s: String ⇒
+        lastSender = sender()
+        saveSnapshot(s)
+      case f: SaveSnapshotFailure ⇒ lastSender ! f
+      case s: SaveSnapshotSuccess ⇒ lastSender ! s
+    }
+    override def receiveRecover: Receive = Actor.emptyBehavior
+  }
+
+  class PickedSnapshotStorePersistentActor(name: String) extends AnyPersistentActor(name) {
+    override def snapshotPluginId: String = "akka.persistence.snapshot-store.local"
+  }
+}
+
+class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseString(
+  s"""
+    akka.persistence.publish-plugin-commands = on
+    akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+    akka.persistence.journal.leveldb.dir = "target/journal-${classOf[OptionalSnapshotStoreSpec].getName}"
+
+    # snapshot store plugin is NOT defined, things should still work
+    akka.persistence.snapshot-store.local.dir = "target/snapshots-${classOf[OptionalSnapshotStoreSpec].getName}/"
+  """)) with ImplicitSender {
+  import OptionalSnapshotStoreSpec._
+
+  system.eventStream.publish(TestEvent.Mute(EventFilter[akka.pattern.AskTimeoutException]()))
+
+  "Persistence extension" must {
+    "initialize properly even in absence of configured snapshot store" in {
+      system.actorOf(Props(classOf[AnyPersistentActor], name))
+      system.eventStream.subscribe(testActor, classOf[Logging.Warning])
+      val message = expectMsgType[Warning].message.toString
+      message should include("No default snapshot store configured")
+    }
+
+    "fail if PersistentActor tries to saveSnapshot without snapshot-store available" in {
+      val persistentActor = system.actorOf(Props(classOf[AnyPersistentActor], name))
+      persistentActor ! "snap"
+      expectMsgType[SaveSnapshotFailure].cause.getMessage should include("No snapshot store configured")
+    }
+
+    "successfully save a snapshot when no default snapshot-store configured, yet PersistentActor picked one explicitly" in {
+      val persistentActor = system.actorOf(Props(classOf[PickedSnapshotStorePersistentActor], name))
+      persistentActor ! "snap"
+      expectMsgType[SaveSnapshotSuccess]
+    }
+
+  }
+}
+
