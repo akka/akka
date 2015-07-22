@@ -15,4 +15,4 @@ To use the high-level API you need to add a dependency to the ``akka-http-experi
    handlers
    marshalling
    testkit
-   json-jackson-support
+   json-support
