@@ -31,9 +31,9 @@ public class WebsocketRoutingExample extends HttpApp {
      * A handler that treats incoming messages as a name,
      * and responds with a greeting to that name
      */
-    public static Flow<Message, Message, Object> greeter() {
+    public static Flow<Message, Message, ?> greeter() {
         return
-            upcastMaterializerToObject(Flow.<Message>create())
+            Flow.<Message>create()
                 .collect(new JavaPartialFunction<Message, Message>() {
                     @Override
                     public Message apply(Message msg, boolean isCheck) throws Exception {
@@ -50,11 +50,5 @@ public class WebsocketRoutingExample extends HttpApp {
             return TextMessage.create("Hello "+msg.getStrictText());
         else // ... this would suffice to handle all text messages in a streaming fashion
             return TextMessage.create(Source.single("Hello ").concat(msg.getStreamedText()));
-    }
-
-    // needed because of #18028, see https://github.com/akka/akka/issues/18028
-    @SuppressWarnings("unchecked")
-    public static <T, U> Flow<T, U, Object> upcastMaterializerToObject(Flow< T, U, ?> flow) {
-        return (Flow<T, U, Object>) flow;
     }
 }
