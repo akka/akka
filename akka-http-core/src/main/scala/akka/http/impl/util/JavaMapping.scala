@@ -7,6 +7,7 @@ package akka.http.impl.util
 import java.net.InetAddress
 import java.{ util ⇒ ju, lang ⇒ jl }
 import akka.http.scaladsl.model.ws.Message
+import akka.japi.Pair
 import akka.stream.javadsl
 import akka.stream.scaladsl
 
@@ -17,13 +18,16 @@ import akka.http.impl.model.JavaUri
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.{ model ⇒ sm }
 
+import scala.util.Try
+
 /** INTERNAL API */
-trait J2SMapping[J] {
+private[http] trait J2SMapping[J] {
   type S
   def toScala(javaObject: J): S
 }
+
 /** INTERNAL API */
-object J2SMapping {
+private[http] object J2SMapping {
   implicit def fromJavaMapping[J](implicit mapping: JavaMapping[J, _]): J2SMapping[J] { type S = mapping.S } = mapping
 
   implicit def seqMapping[J](implicit mapping: J2SMapping[J]): J2SMapping[Seq[J]] { type S = immutable.Seq[mapping.S] } =
@@ -32,23 +36,26 @@ object J2SMapping {
       def toScala(javaObject: Seq[J]): S = javaObject.map(mapping.toScala(_)).toList
     }
 }
+
 /** INTERNAL API */
-trait S2JMapping[S] {
+private[http] trait S2JMapping[S] {
   type J
   def toJava(scalaObject: S): J
 }
+
 /** INTERNAL API */
-object S2JMapping {
+private[http] object S2JMapping {
   implicit def fromJavaMapping[S](implicit mapping: JavaMapping[_, S]): S2JMapping[S] { type J = mapping.J } = mapping
 }
 
 /** INTERNAL API */
-trait JavaMapping[_J, _S] extends J2SMapping[_J] with S2JMapping[_S] {
+private[http] trait JavaMapping[_J, _S] extends J2SMapping[_J] with S2JMapping[_S] {
   type J = _J
   type S = _S
 }
+
 /** INTERNAL API */
-object JavaMapping {
+private[http] object JavaMapping {
   trait AsScala[S] {
     def asScala: S
   }
@@ -73,6 +80,13 @@ object JavaMapping {
       def asJava = mapping.toJava(scalaObject)
     }
   }
+
+  /** This trivial mapping isn't enabled by default to prevent it from conflicting with the `Inherited ones `*/
+  def identity[T]: JavaMapping[T, T] =
+    new JavaMapping[T, T] {
+      def toJava(scalaObject: T): J = scalaObject
+      def toScala(javaObject: T): S = javaObject
+    }
 
   implicit def iterableMapping[_J, _S](implicit mapping: JavaMapping[_J, _S]): JavaMapping[jl.Iterable[_J], immutable.Seq[_S]] =
     new JavaMapping[jl.Iterable[_J], immutable.Seq[_S]] {
@@ -102,6 +116,16 @@ object JavaMapping {
         javadsl.Flow.wrap {
           scaladsl.Flow[JIn].map(inMapping.toScala(_)).viaMat(scalaObject)(scaladsl.Keep.right).map(outMapping.toJava(_))
         }
+    }
+  implicit def pairMapping[J1, J2, S1, S2](implicit _1Mapping: JavaMapping[J1, S1], _2Mapping: JavaMapping[J2, S2]): JavaMapping[Pair[J1, J2], (S1, S2)] =
+    new JavaMapping[Pair[J1, J2], (S1, S2)] {
+      def toJava(scalaObject: (S1, S2)): J = Pair(_1Mapping.toJava(scalaObject._1), _2Mapping.toJava(scalaObject._2))
+      def toScala(javaObject: Pair[J1, J2]): (S1, S2) = (_1Mapping.toScala(javaObject.first), _2Mapping.toScala(javaObject.second))
+    }
+  implicit def tryMapping[_J, _S](implicit mapping: JavaMapping[_J, _S]): JavaMapping[Try[_J], Try[_S]] =
+    new JavaMapping[Try[_J], Try[_S]] {
+      def toScala(javaObject: Try[_J]): S = javaObject.map(mapping.toScala(_))
+      def toJava(scalaObject: Try[_S]): J = scalaObject.map(mapping.toJava(_))
     }
 
   implicit object StringIdentity extends Identity[String]

@@ -6,12 +6,13 @@ package akka.http.javadsl
 
 import java.lang.{ Iterable ⇒ JIterable }
 import java.net.InetSocketAddress
+import akka.http.impl.util.JavaMapping
+
 import scala.language.implicitConversions
 import scala.concurrent.Future
 import scala.util.Try
 import akka.stream.scaladsl.Keep
-import akka.japi.Util._
-import akka.japi.{ Option, Function }
+import akka.japi.{ Pair, Option, Function }
 import akka.actor.{ ExtendedActorSystem, ActorSystem, ExtensionIdProvider, ExtensionId }
 import akka.event.LoggingAdapter
 import akka.io.Inet
@@ -240,13 +241,13 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type ``T`` from the application which is emitted together with the corresponding response.
    */
-  def newHostConnectionPool[T](host: String, port: Int, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+  def newHostConnectionPool[T](host: String, port: Int, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.newHostConnectionPool[T](host, port)(materializer))
 
   /**
    * Same as [[newHostConnectionPool]] but with HTTPS encryption.
    */
-  def newHostConnectionPoolTls[T](host: String, port: Int, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+  def newHostConnectionPoolTls[T](host: String, port: Int, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.newHostConnectionPoolTls[T](host, port)(materializer))
 
   /**
@@ -266,7 +267,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def newHostConnectionPool[T](host: String, port: Int,
                                options: JIterable[Inet.SocketOption],
                                settings: ConnectionPoolSettings,
-                               log: LoggingAdapter, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+                               log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.newHostConnectionPool[T](host, port, settings, log)(materializer))
 
   /**
@@ -279,7 +280,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
                                   options: JIterable[Inet.SocketOption],
                                   settings: ConnectionPoolSettings,
                                   httpsContext: Option[HttpsContext],
-                                  log: LoggingAdapter, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+                                  log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.newHostConnectionPoolTls[T](host, port, settings,
       httpsContext.map(_.asInstanceOf[akka.http.scaladsl.HttpsContext]), log)(materializer))
 
@@ -297,7 +298,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type ``T`` from the application which is emitted together with the corresponding response.
    */
-  def newHostConnectionPool[T](setup: HostConnectionPoolSetup, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+  def newHostConnectionPool[T](setup: HostConnectionPoolSetup, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.newHostConnectionPool[T](setup)(materializer))
 
   /**
@@ -317,13 +318,13 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type ``T`` from the application which is emitted together with the corresponding response.
    */
-  def cachedHostConnectionPool[T](host: String, port: Int, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+  def cachedHostConnectionPool[T](host: String, port: Int, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.cachedHostConnectionPool[T](host, port)(materializer))
 
   /**
    * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
    */
-  def cachedHostConnectionPoolTls[T](host: String, port: Int, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+  def cachedHostConnectionPoolTls[T](host: String, port: Int, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.cachedHostConnectionPoolTls[T](host, port)(materializer))
 
   /**
@@ -345,7 +346,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def cachedHostConnectionPool[T](host: String, port: Int,
                                   settings: ConnectionPoolSettings,
-                                  log: LoggingAdapter, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+                                  log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.cachedHostConnectionPool[T](host, port, settings, log)(materializer))
 
   /**
@@ -357,7 +358,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def cachedHostConnectionPoolTls[T](host: String, port: Int,
                                      settings: ConnectionPoolSettings,
                                      httpsContext: Option[HttpsContext],
-                                     log: LoggingAdapter, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+                                     log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.cachedHostConnectionPoolTls[T](host, port, settings,
       httpsContext.map(_.asInstanceOf[akka.http.scaladsl.HttpsContext]), log)(materializer))
 
@@ -378,7 +379,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type ``T`` from the application which is emitted together with the corresponding response.
    */
-  def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+  def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.cachedHostConnectionPool[T](setup)(materializer))
 
   /**
@@ -393,7 +394,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type ``T`` from the application which is emitted together with the corresponding response.
    */
-  def superPool[T](materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] =
+  def superPool[T](materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Unit] =
     adaptTupleFlow(delegate.superPool[T]()(materializer))
 
   /**
@@ -413,7 +414,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def superPool[T](settings: ConnectionPoolSettings,
                    httpsContext: Option[HttpsContext],
-                   log: LoggingAdapter, materializer: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), Unit] =
+                   log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Unit] =
     adaptTupleFlow(delegate.superPool[T](settings, httpsContext, log)(materializer))
 
   /**
@@ -463,9 +464,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def setDefaultClientHttpsContext(context: HttpsContext): Unit =
     delegate.setDefaultClientHttpsContext(context.asInstanceOf[akka.http.scaladsl.HttpsContext])
 
-  private def adaptTupleFlow[T, Mat](scalaFlow: akka.stream.scaladsl.Flow[(scaladsl.model.HttpRequest, T), (Try[HttpResponse], T), Mat]): Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat] =
-    Flow.wrap {
-      // we know that downcasting javadsl.model.HttpRequest => scaladsl.model.HttpRequest will always work
-      scalaFlow.asInstanceOf[akka.stream.scaladsl.Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat]]
-    }
+  private def adaptTupleFlow[T, Mat](scalaFlow: akka.stream.scaladsl.Flow[(scaladsl.model.HttpRequest, T), (Try[scaladsl.model.HttpResponse], T), Mat]): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Mat] = {
+    implicit val _ = JavaMapping.identity[T]
+    JavaMapping.toJava(scalaFlow)(JavaMapping.flowMapping[Pair[HttpRequest, T], (scaladsl.model.HttpRequest, T), Pair[Try[HttpResponse], T], (Try[scaladsl.model.HttpResponse], T), Mat])
+  }
 }
