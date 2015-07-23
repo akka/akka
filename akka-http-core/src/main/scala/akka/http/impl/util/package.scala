@@ -146,4 +146,6 @@ package util {
         }
       }
   }
+
+  private[http] class ReadTheDocumentationException(message: String) extends RuntimeException(message)
 }

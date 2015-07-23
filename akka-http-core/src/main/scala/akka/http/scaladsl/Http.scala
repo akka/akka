@@ -14,7 +14,7 @@ import akka.event.LoggingAdapter
 import akka.http._
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
-import akka.http.impl.util.StreamUtils
+import akka.http.impl.util.{ ReadTheDocumentationException, Java6Compat, StreamUtils }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.util.FastFuture
@@ -186,7 +186,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                                   log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     val hostHeader = if (port == (if (httpsContext.isEmpty) 80 else 443)) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)
-    val tlsStage = sslTlsStage(httpsContext, Client)
+    val tlsStage = sslTlsStage(httpsContext, Client, Some(host -> port))
     val transportFlow = Tcp().outgoingConnection(new InetSocketAddress(host, port), localAddress,
       settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
 
@@ -391,12 +391,24 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     synchronized {
       _defaultClientHttpsContext match {
         case null ⇒
-          val ctx = HttpsContext(SSLContext.getDefault)
+          val ctx = createDefaultClientHttpsContext
           _defaultClientHttpsContext = ctx
           ctx
         case ctx ⇒ ctx
       }
     }
+
+  private def createDefaultClientHttpsContext: HttpsContext = {
+    val defaultCtx = SSLContext.getDefault
+
+    val params = new SSLParameters
+    if (!Java6Compat.setEndpointIdentificationAlgorithm(params, "https"))
+      throw new ReadTheDocumentationException(
+        "Cannot enable HTTPS hostname verification on Java 6. See the " +
+          "\"Client-Side HTTPS Support\" section in the documentation")
+
+    HttpsContext(defaultCtx, sslParameters = Some(params))
+  }
 
   /**
    * Sets the default client-side [[HttpsContext]].
@@ -470,9 +482,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   private def effectiveHttpsContext(ctx: Option[HttpsContext]): Option[HttpsContext] =
     ctx orElse Some(defaultClientHttpsContext)
 
-  private def sslTlsStage(httpsContext: Option[HttpsContext], role: Role) =
+  private[http] def sslTlsStage(httpsContext: Option[HttpsContext], role: Role, hostInfo: Option[(String, Int)] = None) =
     httpsContext match {
-      case Some(hctx) ⇒ SslTls(hctx.sslContext, hctx.firstSession, role)
+      case Some(hctx) ⇒ SslTls(hctx.sslContext, hctx.firstSession, role, hostInfo = hostInfo)
       case None       ⇒ SslTlsPlacebo.forScala
     }
 }
