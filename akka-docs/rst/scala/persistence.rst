@@ -778,9 +778,9 @@ Plugin TCK
 ----------
 In order to help developers build correct and high quality storage plugins, we provide an Technology Compatibility Kit (`TCK <http://en.wikipedia.org/wiki/Technology_Compatibility_Kit>`_ for short).
 
-The TCK is usable from Java as well as Scala projects, for Scala you need to include the akka-persistence-tck-experimental dependency::
+The TCK is usable from Java as well as Scala projects, for Scala you need to include the akka-persistence-experimental-tck dependency::
 
-  "com.typesafe.akka" %% "akka-persistence-tck-experimental" % "@version@" % "test"
+  "com.typesafe.akka" %% "akka-persistence-experimental-tck" % "@version@" % "test"
 
 To include the Journal TCK tests in your test suite simply extend the provided ``JournalSpec``:
 
