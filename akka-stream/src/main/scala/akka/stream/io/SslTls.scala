@@ -3,6 +3,9 @@
  */
 package akka.stream.io
 
+import java.lang.{ Integer ⇒ jInteger }
+
+import akka.japi
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.util.ByteString
@@ -10,7 +13,6 @@ import javax.net.ssl._
 import scala.annotation.varargs
 import scala.collection.immutable
 import java.security.cert.Certificate
-import akka.event.Logging.simpleName
 
 /**
  * Stream cipher support based upon JSSE.
@@ -63,10 +65,15 @@ object SslTls {
    * protocol.
    *
    * For a description of the `closing` parameter please refer to [[Closing]].
+   *
+   * The `hostInfo` parameter allows to optionally specify a pair of hostname and port
+   * that will be used when creating the SSLEngine with `sslContext.createSslEngine`.
+   * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
+   * configured using [[SSLParameters.setEndpointIdentificationAlgorithm]].
    */
-  def apply(sslContext: SSLContext, firstSession: NegotiateNewSession,
-            role: Role, closing: Closing = IgnoreComplete): ScalaFlow =
-    new scaladsl.BidiFlow(TlsModule(Attributes.none, sslContext, firstSession, role, closing))
+  def apply(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role,
+            closing: Closing = IgnoreComplete, hostInfo: Option[(String, Int)] = None): ScalaFlow =
+    new scaladsl.BidiFlow(TlsModule(Attributes.none, sslContext, firstSession, role, closing, hostInfo))
 
   /**
    * Java API: create a StreamTls [[akka.stream.javadsl.BidiFlow]] in client mode. The
@@ -92,9 +99,14 @@ object SslTls {
    * protocol.
    *
    * For a description of the `closing` parameter please refer to [[Closing]].
+   *
+   * The `hostInfo` parameter allows to optionally specify a pair of hostname and port
+   * that will be used when creating the SSLEngine with `sslContext.createSslEngine`.
+   * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
+   * configured using [[SSLParameters.setEndpointIdentificationAlgorithm]].
    */
-  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, closing: Closing): JavaFlow =
-    new javadsl.BidiFlow(apply(sslContext, firstSession, role, closing))
+  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, hostInfo: japi.Option[japi.Pair[String, jInteger]], closing: Closing): JavaFlow =
+    new javadsl.BidiFlow(apply(sslContext, firstSession, role, closing, hostInfo.asScala.map(e ⇒ (e.first, e.second))))
 
   /**
    * INTERNAL API.
@@ -103,12 +115,12 @@ object SslTls {
                                      cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
                                      shape: Shape, attributes: Attributes,
                                      sslContext: SSLContext, firstSession: NegotiateNewSession,
-                                     role: Role, closing: Closing) extends Module {
+                                     role: Role, closing: Closing, hostInfo: Option[(String, Int)]) extends Module {
     override def subModules: Set[Module] = Set.empty
 
     override def withAttributes(att: Attributes): Module = copy(attributes = att)
     override def carbonCopy: Module = {
-      val mod = TlsModule(attributes, sslContext, firstSession, role, closing)
+      val mod = TlsModule(attributes, sslContext, firstSession, role, closing, hostInfo)
       if (plainIn == shape.inlets(0)) mod
       else mod.replaceShape(mod.shape.asInstanceOf[BidiShape[_, _, _, _]].reversed)
     }
@@ -123,14 +135,14 @@ object SslTls {
    * INTERNAL API.
    */
   private[akka] object TlsModule {
-    def apply(attributes: Attributes, sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, closing: Closing): TlsModule = {
+    def apply(attributes: Attributes, sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, closing: Closing, hostInfo: Option[(String, Int)]): TlsModule = {
       val name = attributes.nameOrDefault(s"StreamTls($role)")
       val cipherIn = Inlet[ByteString](s"$name.cipherIn")
       val cipherOut = Outlet[ByteString](s"$name.cipherOut")
       val plainIn = Inlet[SslTlsOutbound](s"$name.transportIn")
       val plainOut = Outlet[SslTlsInbound](s"$name.transportOut")
       val shape = new BidiShape(plainIn, cipherOut, cipherIn, plainOut)
-      TlsModule(plainIn, plainOut, cipherIn, cipherOut, shape, attributes, sslContext, firstSession, role, closing)
+      TlsModule(plainIn, plainOut, cipherIn, cipherOut, shape, attributes, sslContext, firstSession, role, closing, hostInfo)
     }
   }
 }
