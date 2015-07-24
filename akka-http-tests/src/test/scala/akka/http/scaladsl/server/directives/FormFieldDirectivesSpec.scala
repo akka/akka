@@ -12,6 +12,9 @@ import akka.http.scaladsl.model._
 import MediaTypes._
 
 class FormFieldDirectivesSpec extends RoutingSpec {
+  // FIXME: unfortunately, it has make a come back, this time it's reproducible ...
+  import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
+
   implicit val nodeSeqUnmarshaller =
     ScalaXmlSupport.nodeSeqUnmarshaller(`text/xml`, `text/html`, `text/plain`)
 
