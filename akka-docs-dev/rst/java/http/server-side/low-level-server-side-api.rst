@@ -154,7 +154,15 @@ If defined encryption is enabled on all accepted connections. Otherwise it is di
 Stand-Alone HTTP Layer Usage
 ----------------------------
 
-It is currently only possible to use the HTTP server layer with Scala in a stand-alone fashion.
-See :ref:`http-server-layer-scala` and `#18027`_ for the plan to add Java support.
+Due to its Reactive-Streams-based nature the Akka HTTP layer is fully detachable from the underlying TCP
+interface. While in most applications this "feature" will not be crucial it can be useful in certain cases to be able
+to "run" the HTTP layer (and, potentially, higher-layers) against data that do not come from the network but rather
+some other source. Potential scenarios where this might be useful include tests, debugging or low-level event-sourcing
+(e.g by replaying network traffic).
 
-.. _`#18027`: https://github.com/akka/akka/issues/18027
+On the server-side the stand-alone HTTP layer forms a ``BidiFlow<HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, BoxedUnit>``,
+that is a stage that "upgrades" a potentially encrypted raw connection to the HTTP level.
+
+You create an instance of the layer by calling one of the two overloads of the ``Http.get(system).serverLayer`` method,
+which also allows for varying degrees of configuration. Note, that the returned instance is not reusable and can only
+be materialized once.

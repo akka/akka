@@ -6,12 +6,8 @@ package docs.http.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.HostConnectionPool;
-import akka.japi.Option;
 import akka.japi.Pair;
-import akka.util.ByteString;
-import org.junit.Test;
 
-import scala.Tuple2;
 import scala.concurrent.Future;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.*;
@@ -44,21 +40,20 @@ public class HttpClientExampleDocTest {
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    // construct a pool client flow with context type `Int`
-    // TODO these Tuple2 will be changed to akka.japi.Pair
+    // construct a pool client flow with context type `Integer`
     final Flow<
-      Tuple2<HttpRequest, Integer>,
-      Tuple2<Try<HttpResponse>, Integer>,
+      Pair<HttpRequest, Integer>,
+      Pair<Try<HttpResponse>, Integer>,
       HostConnectionPool> poolClientFlow =
       Http.get(system).<Integer>cachedHostConnectionPool("akka.io", 80, materializer);
 
-    // construct a pool client flow with context type `Int`
+    // construct a pool client flow with context type `Integer`
 
-    final Future<Tuple2<Try<HttpResponse>, Integer>> responseFuture =
+    final Future<Pair<Try<HttpResponse>, Integer>> responseFuture =
       Source
-        .single(Pair.create(HttpRequest.create("/"), 42).toScala())
+        .single(Pair.create(HttpRequest.create("/"), 42))
         .via(poolClientFlow)
-        .runWith(Sink.<Tuple2<Try<HttpResponse>, Integer>>head(), materializer);
+        .runWith(Sink.<Pair<Try<HttpResponse>, Integer>>head(), materializer);
     //#host-level-example
   }
 

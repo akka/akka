@@ -62,7 +62,19 @@ as a more general purpose streaming infrastructure feature.
 However, akka-stream should soon provide such a feature.
 
 
+.. _http-client-layer-java:
+
 Stand-Alone HTTP Layer Usage
 ----------------------------
 
-// TODO
+Due to its Reactive-Streams-based nature the Akka HTTP layer is fully detachable from the underlying TCP
+interface. While in most applications this "feature" will not be crucial it can be useful in certain cases to be able
+to "run" the HTTP layer (and, potentially, higher-layers) against data that do not come from the network but rather
+some other source. Potential scenarios where this might be useful include tests, debugging or low-level event-sourcing
+(e.g by replaying network traffic).
+
+On the client-side the stand-alone HTTP layer forms a ``BidiFlow<HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, BoxedUnit>``,
+that is a stage that "upgrades" a potentially encrypted raw connection to the HTTP level.
+
+You create an instance of the layer by calling one of the two overloads of the ``Http.get(system).clientLayer`` method,
+which also allows for varying degrees of configuration.

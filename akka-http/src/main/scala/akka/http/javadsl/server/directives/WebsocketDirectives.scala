@@ -14,6 +14,6 @@ abstract class WebsocketDirectives extends SchemeDirectives {
    * Handles websocket requests with the given handler and rejects other requests with a
    * [[ExpectedWebsocketRequestRejection]].
    */
-  def handleWebsocketMessages(handler: Flow[Message, Message, Any]): Route =
+  def handleWebsocketMessages(handler: Flow[Message, Message, _]): Route =
     RouteStructure.HandleWebsocketMessages(handler)
 }
