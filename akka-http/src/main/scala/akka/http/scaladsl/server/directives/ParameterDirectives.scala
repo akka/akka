@@ -98,6 +98,7 @@ object ParameterDirectives extends ParameterDirectives {
     private def filter[T](paramName: String, fsou: FSOU[T]): Directive1[T] =
       extractRequestContext flatMap { ctx ⇒
         import ctx.executionContext
+        import ctx.materializer
         handleParamResult(paramName, fsou(ctx.request.uri.query get paramName))
       }
     implicit def forString(implicit fsu: FSU[String]): ParamDefAux[String, Directive1[String]] =
@@ -122,6 +123,7 @@ object ParameterDirectives extends ParameterDirectives {
     private def requiredFilter[T](paramName: String, fsou: FSOU[T], requiredValue: Any): Directive0 =
       extractRequestContext flatMap { ctx ⇒
         import ctx.executionContext
+        import ctx.materializer
         onComplete(fsou(ctx.request.uri.query get paramName)) flatMap {
           case Success(value) if value == requiredValue ⇒ pass
           case _                                        ⇒ reject
@@ -137,6 +139,7 @@ object ParameterDirectives extends ParameterDirectives {
     private def repeatedFilter[T](paramName: String, fsu: FSU[T]): Directive1[Iterable[T]] =
       extractRequestContext flatMap { ctx ⇒
         import ctx.executionContext
+        import ctx.materializer
         handleParamResult(paramName, Future.sequence(ctx.request.uri.query.getAll(paramName).map(fsu.apply)))
       }
     implicit def forRepVR[T](implicit fsu: FSU[T]): ParamDefAux[RepeatedValueReceptacle[T], Directive1[Iterable[T]]] =
