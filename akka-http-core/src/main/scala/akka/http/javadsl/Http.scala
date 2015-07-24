@@ -7,6 +7,7 @@ package akka.http.javadsl
 import java.lang.{ Iterable ⇒ JIterable }
 import java.net.InetSocketAddress
 import akka.http.impl.util.JavaMapping
+import akka.stream.io.{ SslTlsInbound, SslTlsOutbound }
 
 import scala.language.implicitConversions
 import scala.concurrent.Future
@@ -17,7 +18,8 @@ import akka.actor.{ ExtendedActorSystem, ActorSystem, ExtensionIdProvider, Exten
 import akka.event.LoggingAdapter
 import akka.io.Inet
 import akka.stream.Materializer
-import akka.stream.javadsl.{ Flow, Source }
+import akka.stream.javadsl.{ BidiFlow, Flow, Source }
+
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.model._
@@ -36,6 +38,42 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   private implicit def convertHttpsContext(hctx: Option[HttpsContext]) =
     hctx.map(_.asInstanceOf[akka.http.scaladsl.HttpsContext])
+
+  /**
+   * Constructs a server layer stage using the configured default [[ServerSettings]]. The returned [[BidiFlow]] isn't
+   * reusable and can only be materialized once.
+   */
+  def serverLayer(materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+    adaptServerLayer(delegate.serverLayer()(materializer))
+
+  /**
+   * Constructs a server layer stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
+   * can only be materialized once.
+   */
+  def serverLayer(settings: ServerSettings,
+                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+    adaptServerLayer(delegate.serverLayer(settings)(materializer))
+
+  /**
+   * Constructs a server layer stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
+   * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest]]
+   * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
+   */
+  def serverLayer(settings: ServerSettings,
+                  remoteAddress: Option[InetSocketAddress],
+                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+    adaptServerLayer(delegate.serverLayer(settings, remoteAddress.asScala)(materializer))
+
+  /**
+   * Constructs a server layer stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
+   * can only be materialized once. The remoteAddress, if provided, will be added as a header to each [[HttpRequest]]
+   * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
+   */
+  def serverLayer(settings: ServerSettings,
+                  remoteAddress: Option[InetSocketAddress],
+                  log: LoggingAdapter,
+                  materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+    adaptServerLayer(delegate.serverLayer(settings, remoteAddress.asScala, log)(materializer))
 
   /**
    * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -166,6 +204,27 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     delegate.bindAndHandleAsync(handler.apply(_).asInstanceOf[Future[sm.HttpResponse]],
       interface, port, settings, httpsContext, parallelism, log)(materializer)
       .map(new ServerBinding(_))(ec)
+
+  /**
+   * Constructs a client layer stage using the configured default [[ClientConnectionSettings]].
+   */
+  def clientLayer(hostHeader: headers.Host): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit] =
+    adaptClientLayer(delegate.clientLayer(JavaMapping.toScala(hostHeader)))
+
+  /**
+   * Constructs a client layer stage using the given [[ClientConnectionSettings]].
+   */
+  def clientLayer(hostHeader: headers.Host,
+                  settings: ClientConnectionSettings): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit] =
+    adaptClientLayer(delegate.clientLayer(JavaMapping.toScala(hostHeader), settings))
+
+  /**
+   * Constructs a client layer stage using the given [[ClientConnectionSettings]].
+   */
+  def clientLayer(hostHeader: headers.Host,
+                  settings: ClientConnectionSettings,
+                  log: LoggingAdapter): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit] =
+    adaptClientLayer(delegate.clientLayer(JavaMapping.toScala(hostHeader), settings, log))
 
   /**
    * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
@@ -468,4 +527,14 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     implicit val _ = JavaMapping.identity[T]
     JavaMapping.toJava(scalaFlow)(JavaMapping.flowMapping[Pair[HttpRequest, T], (scaladsl.model.HttpRequest, T), Pair[Try[HttpResponse], T], (Try[scaladsl.model.HttpResponse], T), Mat])
   }
+
+  private def adaptServerLayer(serverLayer: scaladsl.Http.ServerLayer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, Unit] =
+    new BidiFlow(
+      JavaMapping.adapterBidiFlow[HttpResponse, sm.HttpResponse, sm.HttpRequest, HttpRequest]
+        .atop(serverLayer))
+
+  private def adaptClientLayer(clientLayer: scaladsl.Http.ClientLayer): BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, Unit] =
+    new BidiFlow(
+      JavaMapping.adapterBidiFlow[HttpRequest, sm.HttpRequest, sm.HttpResponse, HttpResponse]
+        .atop(clientLayer))
 }

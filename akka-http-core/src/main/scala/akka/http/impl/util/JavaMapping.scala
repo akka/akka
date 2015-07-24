@@ -81,7 +81,7 @@ private[http] object JavaMapping {
     }
   }
 
-  /** This trivial mapping isn't enabled by default to prevent it from conflicting with the `Inherited ones `*/
+  /** This trivial mapping isn't enabled by default to prevent it from conflicting with the `Inherited` ones `*/
   def identity[T]: JavaMapping[T, T] =
     new JavaMapping[T, T] {
       def toJava(scalaObject: T): J = scalaObject
@@ -117,6 +117,14 @@ private[http] object JavaMapping {
           scaladsl.Flow[JIn].map(inMapping.toScala(_)).viaMat(scalaObject)(scaladsl.Keep.right).map(outMapping.toJava(_))
         }
     }
+
+  def scalaToJavaAdapterFlow[J, S](implicit mapping: JavaMapping[J, S]): scaladsl.Flow[S, J, Unit] =
+    scaladsl.Flow[S].map(mapping.toJava(_))
+  def javaToScalaAdapterFlow[J, S](implicit mapping: JavaMapping[J, S]): scaladsl.Flow[J, S, Unit] =
+    scaladsl.Flow[J].map(mapping.toScala(_))
+  def adapterBidiFlow[JIn, SIn, SOut, JOut](implicit inMapping: JavaMapping[JIn, SIn], outMapping: JavaMapping[JOut, SOut]): scaladsl.BidiFlow[JIn, SIn, SOut, JOut, Unit] =
+    scaladsl.BidiFlow.wrap(javaToScalaAdapterFlow(inMapping), scalaToJavaAdapterFlow(outMapping))(scaladsl.Keep.none)
+
   implicit def pairMapping[J1, J2, S1, S2](implicit _1Mapping: JavaMapping[J1, S1], _2Mapping: JavaMapping[J2, S2]): JavaMapping[Pair[J1, J2], (S1, S2)] =
     new JavaMapping[Pair[J1, J2], (S1, S2)] {
       def toJava(scalaObject: (S1, S2)): J = Pair(_1Mapping.toJava(scalaObject._1), _2Mapping.toJava(scalaObject._2))
@@ -164,6 +172,8 @@ private[http] object JavaMapping {
   implicit object ContentRange extends Inherited[jm.ContentRange, sm.ContentRange]
   implicit object RemoteAddress extends Inherited[jm.RemoteAddress, sm.RemoteAddress]
   implicit object TransferEncoding extends Inherited[jm.TransferEncoding, sm.TransferEncoding]
+
+  implicit object HostHeader extends Inherited[jm.headers.Host, sm.headers.Host]
 
   implicit object ByteRange extends Inherited[jm.headers.ByteRange, sm.headers.ByteRange]
   implicit object CacheDirective extends Inherited[jm.headers.CacheDirective, sm.headers.CacheDirective]
