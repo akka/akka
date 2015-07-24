@@ -67,7 +67,7 @@ However, akka-stream should soon provide such a feature.
 Stand-Alone HTTP Layer Usage
 ----------------------------
 
-Due to its Reactive-Stream-based nature the Akka HTTP layer is fully detachable from the underlying TCP
+Due to its Reactive-Streams-based nature the Akka HTTP layer is fully detachable from the underlying TCP
 interface. While in most applications this "feature" will not be crucial it can be useful in certain cases to be able
 to "run" the HTTP layer (and, potentially, higher-layers) against data that do not come from the network but rather
 some other source. Potential scenarios where this might be useful include tests, debugging or low-level event-sourcing
