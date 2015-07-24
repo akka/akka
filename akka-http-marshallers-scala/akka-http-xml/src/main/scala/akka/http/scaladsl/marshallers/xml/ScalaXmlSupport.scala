@@ -21,10 +21,10 @@ trait ScalaXmlSupport {
   def nodeSeqMarshaller(contentType: ContentType): ToEntityMarshaller[NodeSeq] =
     Marshaller.StringMarshaller.wrap(contentType)(_.toString())
 
-  implicit def defaultNodeSeqUnmarshaller(implicit fm: Materializer): FromEntityUnmarshaller[NodeSeq] =
+  implicit def defaultNodeSeqUnmarshaller: FromEntityUnmarshaller[NodeSeq] =
     nodeSeqUnmarshaller(ScalaXmlSupport.nodeSeqContentTypeRanges: _*)
 
-  def nodeSeqUnmarshaller(ranges: ContentTypeRange*)(implicit fm: Materializer): FromEntityUnmarshaller[NodeSeq] =
+  def nodeSeqUnmarshaller(ranges: ContentTypeRange*): FromEntityUnmarshaller[NodeSeq] =
     Unmarshaller.byteArrayUnmarshaller.forContentTypes(ranges: _*).mapWithCharset { (bytes, charset) ⇒
       if (bytes.length > 0) {
         val reader = new InputStreamReader(new ByteArrayInputStream(bytes), charset.nioCharset)

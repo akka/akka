@@ -16,11 +16,11 @@ import spray.json._
  * A trait providing automatic to and from JSON marshalling/unmarshalling using an in-scope *spray-json* protocol.
  */
 trait SprayJsonSupport {
-  implicit def sprayJsonUnmarshallerConverter[T](reader: RootJsonReader[T])(implicit mat: Materializer): FromEntityUnmarshaller[T] =
-    sprayJsonUnmarshaller(reader, mat)
-  implicit def sprayJsonUnmarshaller[T](implicit reader: RootJsonReader[T], mat: Materializer): FromEntityUnmarshaller[T] =
+  implicit def sprayJsonUnmarshallerConverter[T](reader: RootJsonReader[T]): FromEntityUnmarshaller[T] =
+    sprayJsonUnmarshaller(reader)
+  implicit def sprayJsonUnmarshaller[T](implicit reader: RootJsonReader[T]): FromEntityUnmarshaller[T] =
     sprayJsValueUnmarshaller.map(jsonReader[T].read)
-  implicit def sprayJsValueUnmarshaller(implicit mat: Materializer): FromEntityUnmarshaller[JsValue] =
+  implicit def sprayJsValueUnmarshaller: FromEntityUnmarshaller[JsValue] =
     Unmarshaller.byteStringUnmarshaller.forContentTypes(`application/json`).mapWithCharset { (data, charset) ⇒
       val input =
         if (charset == HttpCharsets.`UTF-8`) ParserInput(data.toArray)
