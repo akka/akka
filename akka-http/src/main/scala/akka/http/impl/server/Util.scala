@@ -7,6 +7,7 @@ package akka.http.impl.server
 import akka.http.scaladsl.unmarshalling.{ Unmarshaller, FromStringUnmarshaller }
 import akka.http.scaladsl.util.FastFuture
 import akka.japi.function
+import akka.stream.Materializer
 
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.util.Try
@@ -17,7 +18,7 @@ object Util {
 
   def scalaUnmarshallerFromFunction[T, U](convert: function.Function[T, U]): Unmarshaller[T, U] =
     new Unmarshaller[T, U] {
-      def apply(value: T)(implicit ec: ExecutionContext): Future[U] = FastFuture(Try(convert(value)))
+      def apply(value: T)(implicit ec: ExecutionContext, mat: Materializer): Future[U] = FastFuture(Try(convert(value)))
     }
 
   implicit class JApiFunctionAndThen[T, U](f1: function.Function[T, U]) {
