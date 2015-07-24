@@ -150,7 +150,8 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
 
   /**
    * Constructs a [[ServerLayer]] stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
-   * can only be materialized once.
+   * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest]]
+   * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
   def serverLayer(settings: ServerSettings,
                   remoteAddress: Option[InetSocketAddress] = None,
