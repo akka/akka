@@ -5,6 +5,8 @@
 package akka.http.scaladsl.server
 
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
+import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 
@@ -20,6 +22,11 @@ object RouteResult {
   final case class Complete(response: HttpResponse) extends RouteResult
   final case class Rejected(rejections: immutable.Seq[Rejection]) extends RouteResult
 
-  implicit def route2HandlerFlow(route: Route)(implicit setup: RoutingSetup): Flow[HttpRequest, HttpResponse, Unit] =
+  implicit def route2HandlerFlow(route: Route)(implicit routingSettings: RoutingSettings,
+                                               materializer: Materializer,
+                                               routingLog: RoutingLog,
+                                               executionContext: ExecutionContext = null,
+                                               rejectionHandler: RejectionHandler = RejectionHandler.default,
+                                               exceptionHandler: ExceptionHandler = null): Flow[HttpRequest, HttpResponse, Unit] =
     Route.handlerFlow(route)
 }
