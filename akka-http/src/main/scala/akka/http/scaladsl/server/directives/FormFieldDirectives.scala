@@ -73,6 +73,7 @@ object FormFieldDirectives extends FormFieldDirectives {
 
     private def fieldOfForm[T](fieldName: String, fu: Unmarshaller[Option[StrictForm.Field], T])(implicit sfu: SFU): RequestContext ⇒ Future[T] = { ctx ⇒
       import ctx.executionContext
+      import ctx.materializer
       sfu(ctx.request.entity).fast.flatMap(form ⇒ fu(form field fieldName))
     }
     private def filter[T](fieldName: String, fu: FSFFOU[T])(implicit sfu: SFU): Directive1[T] =
@@ -114,6 +115,7 @@ object FormFieldDirectives extends FormFieldDirectives {
     private def repeatedFilter[T](fieldName: String, fu: FSFFU[T])(implicit sfu: SFU): Directive1[Iterable[T]] =
       extract { ctx ⇒
         import ctx.executionContext
+        import ctx.materializer
         sfu(ctx.request.entity).fast.flatMap(form ⇒ Future.sequence(form.fields.collect { case (`fieldName`, value) ⇒ fu(value) }))
       }.flatMap { result ⇒
         handleFieldResult(fieldName, result)

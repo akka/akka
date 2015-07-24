@@ -17,12 +17,12 @@ trait GenericUnmarshallers extends LowerPriorityGenericUnmarshallers {
 sealed trait LowerPriorityGenericUnmarshallers {
 
   implicit def messageUnmarshallerFromEntityUnmarshaller[T](implicit um: FromEntityUnmarshaller[T]): FromMessageUnmarshaller[T] =
-    Unmarshaller { implicit ec ⇒ request ⇒ um(request.entity) }
+    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ request ⇒ um(request.entity) }
 
   implicit def liftToSourceOptionUnmarshaller[A, B](um: Unmarshaller[A, B]): Unmarshaller[Option[A], B] =
     sourceOptionUnmarshaller(um)
   implicit def sourceOptionUnmarshaller[A, B](implicit um: Unmarshaller[A, B]): Unmarshaller[Option[A], B] =
-    Unmarshaller(implicit ec ⇒ {
+    Unmarshaller.withMaterializer(implicit ec ⇒ implicit mat ⇒ {
       case Some(a) ⇒ um(a)
       case None    ⇒ FastFuture.failed(Unmarshaller.NoContentException)
     })

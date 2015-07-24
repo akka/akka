@@ -4,39 +4,38 @@
 
 package akka.http.scaladsl.unmarshalling
 
-import akka.stream.Materializer
 import akka.util.ByteString
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model._
 
 trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
 
-  implicit def byteStringUnmarshaller(implicit fm: Materializer): FromEntityUnmarshaller[ByteString] =
-    Unmarshaller(_ ⇒ {
+  implicit def byteStringUnmarshaller: FromEntityUnmarshaller[ByteString] =
+    Unmarshaller.withMaterializer(_ ⇒ implicit mat ⇒ {
       case HttpEntity.Strict(_, data) ⇒ FastFuture.successful(data)
       case entity                     ⇒ entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
     })
 
-  implicit def byteArrayUnmarshaller(implicit fm: Materializer): FromEntityUnmarshaller[Array[Byte]] =
+  implicit def byteArrayUnmarshaller: FromEntityUnmarshaller[Array[Byte]] =
     byteStringUnmarshaller.map(_.toArray[Byte])
 
-  implicit def charArrayUnmarshaller(implicit fm: Materializer): FromEntityUnmarshaller[Array[Char]] =
-    byteStringUnmarshaller(fm) mapWithInput { (entity, bytes) ⇒
+  implicit def charArrayUnmarshaller: FromEntityUnmarshaller[Array[Char]] =
+    byteStringUnmarshaller mapWithInput { (entity, bytes) ⇒
       val charBuffer = entity.contentType.charset.nioCharset.decode(bytes.asByteBuffer)
       val array = new Array[Char](charBuffer.length())
       charBuffer.get(array)
       array
     }
 
-  implicit def stringUnmarshaller(implicit fm: Materializer): FromEntityUnmarshaller[String] =
-    byteStringUnmarshaller(fm) mapWithInput { (entity, bytes) ⇒
+  implicit def stringUnmarshaller: FromEntityUnmarshaller[String] =
+    byteStringUnmarshaller mapWithInput { (entity, bytes) ⇒
       // FIXME: add `ByteString::decodeString(java.nio.Charset): String` overload!!!
       bytes.decodeString(entity.contentType.charset.nioCharset.name) // ouch!!!
     }
 
-  implicit def defaultUrlEncodedFormDataUnmarshaller(implicit fm: Materializer): FromEntityUnmarshaller[FormData] =
+  implicit def defaultUrlEncodedFormDataUnmarshaller: FromEntityUnmarshaller[FormData] =
     urlEncodedFormDataUnmarshaller(MediaTypes.`application/x-www-form-urlencoded`)
-  def urlEncodedFormDataUnmarshaller(ranges: ContentTypeRange*)(implicit fm: Materializer): FromEntityUnmarshaller[FormData] =
+  def urlEncodedFormDataUnmarshaller(ranges: ContentTypeRange*): FromEntityUnmarshaller[FormData] =
     stringUnmarshaller.forContentTypes(ranges: _*).mapWithInput { (entity, string) ⇒
       try {
         val nioCharset = entity.contentType.definedCharset.getOrElse(HttpCharsets.`UTF-8`).nioCharset

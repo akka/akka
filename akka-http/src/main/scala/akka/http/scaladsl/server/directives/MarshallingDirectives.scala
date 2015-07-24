@@ -24,6 +24,7 @@ trait MarshallingDirectives {
   def entity[T](um: FromRequestUnmarshaller[T]): Directive1[T] =
     extractRequestContext.flatMap[Tuple1[T]] { ctx ⇒
       import ctx.executionContext
+      import ctx.materializer
       onComplete(um(ctx.request)) flatMap {
         case Success(value) ⇒ provide(value)
         case Failure(Unmarshaller.NoContentException) ⇒ reject(RequestEntityExpectedRejection)
@@ -43,7 +44,9 @@ trait MarshallingDirectives {
    * You can use it do decouple marshaller resolution from request completion.
    */
   def completeWith[T](marshaller: ToResponseMarshaller[T])(inner: (T ⇒ Unit) ⇒ Unit): Route =
-    extractExecutionContext { implicit ec ⇒
+    extractRequestContext { ctx ⇒
+      import ctx.executionContext
+      import ctx.materializer
       implicit val m = marshaller
       complete {
         val promise = Promise[T]()

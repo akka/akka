@@ -14,23 +14,18 @@ import akka.util.ByteString
 import scala.reflect.ClassTag
 
 object Unmarshallers {
-  def String: Unmarshaller[String] = withMat(implicit mat ⇒ implicitly)
-  def ByteString: Unmarshaller[ByteString] = withMat(implicit mat ⇒ implicitly)
-  def ByteArray: Unmarshaller[Array[Byte]] = withMat(implicit mat ⇒ implicitly)
-  def CharArray: Unmarshaller[Array[Char]] = withMat(implicit mat ⇒ implicitly)
+  def String: Unmarshaller[String] = implicitInstance
+  def ByteString: Unmarshaller[ByteString] = implicitInstance
+  def ByteArray: Unmarshaller[Array[Byte]] = implicitInstance
+  def CharArray: Unmarshaller[Array[Char]] = implicitInstance
 
   def fromMessage[T](convert: Function[HttpMessage, T], clazz: Class[T]): Unmarshaller[T] =
-    new UnmarshallerImpl[T]({ (ec, mat) ⇒
-      Util.scalaUnmarshallerFromFunction(convert)
-    })(ClassTag(clazz))
+    new UnmarshallerImpl[T](Util.scalaUnmarshallerFromFunction(convert))(ClassTag(clazz))
 
   def fromEntity[T](convert: Function[HttpEntity, T], clazz: Class[T]): Unmarshaller[T] =
-    new UnmarshallerImpl[T]({ (ec, mat) ⇒
-      ScalaUnmarshaller.messageUnmarshallerFromEntityUnmarshaller(Util.scalaUnmarshallerFromFunction[HttpEntity, T](convert))
-    })(ClassTag(clazz))
+    new UnmarshallerImpl[T](
+      ScalaUnmarshaller.messageUnmarshallerFromEntityUnmarshaller(Util.scalaUnmarshallerFromFunction[HttpEntity, T](convert)))(ClassTag(clazz))
 
-  private def withMat[T: ClassTag](f: Materializer ⇒ FromMessageUnmarshaller[T]): Unmarshaller[T] =
-    new UnmarshallerImpl[T]({ (ec, mat) ⇒
-      f(mat)
-    })
+  private def implicitInstance[T: ClassTag](implicit um: FromMessageUnmarshaller[T]): Unmarshaller[T] =
+    new UnmarshallerImpl[T](um)
 }
