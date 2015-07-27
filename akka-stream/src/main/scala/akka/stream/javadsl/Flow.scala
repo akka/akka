@@ -346,6 +346,24 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
     new Flow(delegate.grouped(n).map(_.asJava)) // TODO optimize to one step
 
   /**
+   * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
+   * possibly smaller than requested due to end-of-stream.
+   *
+   * `n` must be positive, otherwise IllegalArgumentException is thrown.
+   * `step` must be positive, otherwise IllegalArgumentException is thrown.
+   *
+   * '''Emits when''' enough elements have been collected within the window or upstream completed
+   *
+   * '''Backpressures when''' a window has been assembled and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def sliding(n: Int, step: Int = 1): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    new Flow(delegate.sliding(n, step).map(_.asJava)) // TODO optimize to one step
+
+  /**
    * Similar to `fold` but is not a terminal operation,
    * emits its current value which starts at `zero` and then
    * applies the current and next value to the given function `f`,

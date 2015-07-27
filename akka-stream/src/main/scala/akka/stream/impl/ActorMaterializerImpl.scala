@@ -318,6 +318,7 @@ private[akka] object ActorProcessorFactory {
       case MapAsync(p, f, _)          ⇒ (ActorInterpreter.props(settings, List(fusing.MapAsync(p, f, settings.supervisionDecider)), materializer, att), ())
       case MapAsyncUnordered(p, f, _) ⇒ (ActorInterpreter.props(settings, List(fusing.MapAsyncUnordered(p, f, settings.supervisionDecider)), materializer, att), ())
       case Grouped(n, _)              ⇒ (ActorInterpreter.props(settings, List(fusing.Grouped(n)), materializer, att), ())
+      case Sliding(n, step, _)        ⇒ (ActorInterpreter.props(settings, List(fusing.Sliding(n, step)), materializer, att), ())
       case Log(n, e, l, _)            ⇒ (ActorInterpreter.props(settings, List(fusing.Log(n, e, l)), materializer, att), ())
       case GroupBy(f, _)              ⇒ (GroupByProcessorImpl.props(settings, f), ())
       case PrefixAndTail(n, _)        ⇒ (PrefixAndTailImpl.props(settings, n), ())
