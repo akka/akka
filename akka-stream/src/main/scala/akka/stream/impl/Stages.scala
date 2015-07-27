@@ -30,6 +30,7 @@ private[stream] object Stages {
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val grouped = name("grouped")
+    val sliding = name("sliding")
     val take = name("take")
     val drop = name("drop")
     val takeWhile = name("takeWhile")
@@ -158,6 +159,14 @@ private[stream] object Stages {
 
   final case class Grouped(n: Int, attributes: Attributes = grouped) extends StageModule {
     require(n > 0, "n must be greater than 0")
+
+    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+    override protected def newInstance: StageModule = this.copy()
+  }
+
+  final case class Sliding(n: Int, step: Int, attributes: Attributes = sliding) extends StageModule {
+    require(n > 0, "n must be greater than 0")
+    require(step > 0, "step must be greater than 0")
 
     def withAttributes(attributes: Attributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()

@@ -569,6 +569,23 @@ trait FlowOps[+Out, +Mat] {
   def grouped(n: Int): Repr[immutable.Seq[Out], Mat] = andThen(Grouped(n))
 
   /**
+   * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
+   * possibly smaller than requested due to end-of-stream.
+   *
+   * `n` must be positive, otherwise IllegalArgumentException is thrown.
+   * `step` must be positive, otherwise IllegalArgumentException is thrown.
+   *
+   * '''Emits when''' enough elements have been collected within the window or upstream completed
+   *
+   * '''Backpressures when''' a window has been assembled and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Out], Mat] = andThen(Sliding(n, step))
+
+  /**
    * Similar to `fold` but is not a terminal operation,
    * emits its current value which starts at `zero` and then
    * applies the current and next value to the given function `f`,
