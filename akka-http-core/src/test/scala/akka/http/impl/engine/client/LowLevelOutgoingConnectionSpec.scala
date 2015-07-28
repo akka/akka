@@ -4,7 +4,6 @@
 
 package akka.http.impl.engine.client
 
-import java.net.InetSocketAddress
 import akka.http.ClientConnectionSettings
 import akka.stream.io.{ SessionBytes, SslTlsOutbound, SendBytes }
 import org.scalatest.Inside
@@ -349,7 +348,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
   class TestSetup {
     val requests = TestPublisher.manualProbe[HttpRequest]()
-    val responses = TestSubscriber.manualProbe[HttpResponse]
+    val responses = TestSubscriber.manualProbe[HttpResponse]()
 
     def settings = ClientConnectionSettings(system)
       .copy(userAgentHeader = Some(`User-Agent`(List(ProductVersion("akka-http", "test")))))
