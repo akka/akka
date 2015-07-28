@@ -346,7 +346,7 @@ while still having access to the accumulated state during replays - by loading t
 
 Persistence status handling
 ---------------------------
-Persisting, deleting and replaying messages can eitehr succeed or fail.
+Persisting, deleting and replaying messages can either succeed or fail.
 
 +---------------------------------+-----------------------------+-------------------------------+-----------------------------------+
 | **Method**                      | **Success**                 | **Failure / Rejection**       | **After failure handler invoked** |
