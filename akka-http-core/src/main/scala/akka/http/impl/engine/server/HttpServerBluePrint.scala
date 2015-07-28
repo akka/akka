@@ -21,6 +21,7 @@ import akka.stream.scaladsl.FlexiRoute.{ DemandFrom, RouteLogic }
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ ResponseRenderingOutput, ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.impl.engine.TokenSourceActor
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import akka.http.impl.engine.ws._
@@ -31,10 +32,7 @@ import ParserOutput._
  * INTERNAL API
  */
 private[http] object HttpServerBluePrint {
-
-  type ServerShape = BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest]
-
-  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Graph[ServerShape, Unit] = {
+  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -98,7 +96,7 @@ private[http] object HttpServerBluePrint {
         .flatten(FlattenStrategy.concat)
         .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
 
-    FlowGraph.partial(requestParsingFlow, rendererPipeline, oneHundredContinueSource)((_, _, _) ⇒ ()) { implicit b ⇒
+    BidiFlow(requestParsingFlow, rendererPipeline, oneHundredContinueSource)((_, _, _) ⇒ ()) { implicit b ⇒
       (requestParsing, renderer, oneHundreds) ⇒
         import FlowGraph.Implicits._
 
