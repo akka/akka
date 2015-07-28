@@ -358,19 +358,19 @@ object AkkaBuild extends Build {
     id = "akka-http-core-experimental",
     base = file("akka-http-core"),
     dependencies = Seq(parsing, streamTestkit % "test->test", stream),
-    // FIXME enable javadoc generation when genjavadoc is fixed (++ javadocSettings)
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.httpCore ++ Seq(
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
       version := streamAndHttpVersion,
       Dependencies.httpCore,
       // FIXME include mima when akka-http-core-2.3.x is released
       //previousArtifact := akkaPreviousArtifact("akka-http-core-experimental")
       previousArtifact := None
     )
-    // FIXME enable javadoc generation when genjavadoc is fixed
-    //++ (if (GenJavaDocEnabled) Seq(
-    //  // genjavadoc needs to generate synthetic methods since the java code uses them
-    //  scalacOptions += "-P:genjavadoc:suppressSynthetic=false"
-    //) else Nil)
+    ++ (if (GenJavaDocEnabled) Seq(
+      // genjavadoc needs to generate synthetic methods since the java code uses them
+      scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
+      // FIXME: see #18056
+      sources in JavaDoc ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
+    ) else Nil)
   )
 
   lazy val http = Project(
