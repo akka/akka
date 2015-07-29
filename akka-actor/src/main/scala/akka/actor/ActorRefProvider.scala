@@ -769,13 +769,12 @@ private[akka] class LocalActorRefProvider private[akka] (
 
       case router ⇒
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
-        val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
-        val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
-        val p = props.withRouter(d.routerConfig)
+        val r = router :: deploy.map(_.routerConfig).toList ::: lookup.map(_.routerConfig).toList reduce ((a, b) ⇒ b withFallback a)
+        val p = props.withRouter(r)
 
         if (!system.dispatchers.hasDispatcher(p.dispatcher))
           throw new ConfigurationException(s"Dispatcher [${p.dispatcher}] not configured for routees of $path")
-        if (!system.dispatchers.hasDispatcher(d.routerConfig.routerDispatcher))
+        if (!system.dispatchers.hasDispatcher(r.routerDispatcher))
           throw new ConfigurationException(s"Dispatcher [${p.dispatcher}] not configured for router of $path")
 
         val routerProps = Props(p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
