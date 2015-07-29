@@ -53,6 +53,68 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
     }
   }
 
+  "The headerValueByName directive" should {
+    lazy val route =
+      headerValueByName("Referer") { referer ⇒
+        complete(s"The referer was $referer")
+      }
+
+    "extract a header if the name is matching" in {
+      Get("abc") ~> RawHeader("Referer", "http://example.com") ~> route ~> check {
+        responseAs[String] shouldEqual "The referer was http://example.com"
+      }
+    }
+
+    "extract a header with Symbol name" in {
+      lazy val symbolRoute =
+        headerValueByName('Referer) { referer ⇒
+          complete(s"The symbol referer was $referer")
+        }
+
+      Get("abc") ~> RawHeader("Referer", "http://example.com/symbol") ~> symbolRoute ~> check {
+        responseAs[String] shouldEqual "The symbol referer was http://example.com/symbol"
+      }
+    }
+
+    "reject a request if no header of the given type is present" in {
+      Get("abc") ~> route ~> check {
+        inside(rejection) {
+          case MissingHeaderRejection("Referer") ⇒
+        }
+      }
+    }
+  }
+
+  "The optionalHeaderValueByName directive" should {
+    lazy val route =
+      optionalHeaderValueByName("Referer") { referer ⇒
+        complete(s"The referer was $referer")
+      }
+
+    "extract a header if the name is matching" in {
+      Get("abc") ~> RawHeader("Referer", "http://example.com") ~> route ~> check {
+        responseAs[String] shouldEqual "The referer was Some(http://example.com)"
+      }
+    }
+
+    "extract a header with Symbol name" in {
+      lazy val symbolRoute =
+        optionalHeaderValueByName('Referer) { referer ⇒
+          complete(s"The symbol referer was $referer")
+        }
+
+      Get("abc") ~> RawHeader("Referer", "http://example.com/symbol") ~> symbolRoute ~> check {
+        responseAs[String] shouldEqual "The symbol referer was Some(http://example.com/symbol)"
+      }
+    }
+
+    "extract None if no header of the given name is present" in {
+      Get("abc") ~> route ~> check {
+        responseAs[String] shouldEqual "The referer was None"
+      }
+    }
+  }
+
   "The optionalHeaderValue directive" should {
     lazy val myHeaderValue = optionalHeaderValue {
       case Connection(tokens) ⇒ Some(tokens.head)
