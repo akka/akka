@@ -208,7 +208,7 @@ private[akka] object StreamLayout {
     def compose[A, B, C](that: Module, f: (A, B) ⇒ C): Module = {
       if (Debug) validate(this)
 
-      require(that ne this, "A module cannot be added to itself. You should pass a separate instance to grow().")
+      require(that ne this, "A module cannot be added to itself. You should pass a separate instance to compose().")
       require(!subModules(that), "An existing submodule cannot be added again. All contained modules must be unique.")
 
       val modules1 = if (this.isSealed) Set(this) else this.subModules
