@@ -43,7 +43,7 @@ trait HeaderDirectives {
    * Extracts the value of the first HTTP request header with the given name.
    * If no header with a matching name is found the request is rejected with a [[spray.routing.MissingHeaderRejection]].
    */
-  def headerValueByName(headerName: Symbol): Directive1[String] = headerValueByName(headerName.toString)
+  def headerValueByName(headerName: Symbol): Directive1[String] = headerValueByName(headerName.name)
 
   /**
    * Extracts the value of the HTTP request header with the given name.
@@ -81,7 +81,7 @@ trait HeaderDirectives {
    * Extracts the value of the optional HTTP request header with the given name.
    */
   def optionalHeaderValueByName(headerName: Symbol): Directive1[Option[String]] =
-    optionalHeaderValueByName(headerName.toString)
+    optionalHeaderValueByName(headerName.name)
 
   /**
    * Extracts the value of the optional HTTP request header with the given name.
