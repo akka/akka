@@ -18,6 +18,7 @@ import akka.stream.impl.io.SslTlsCipherActor
 import akka.stream._
 import akka.stream.io.SslTls.TlsModule
 import akka.stream.stage.Stage
+import akka.stream.Attributes._
 import org.reactivestreams._
 
 import scala.concurrent.{ Await, ExecutionContextExecutor }
@@ -292,11 +293,20 @@ private[akka] object ActorProcessorFactory {
     // Also, otherwise the attributes will not affect the settings properly!
     val settings = materializer.effectiveSettings(att)
     def interp(s: Stage[_, _]): (Props, Unit) = (ActorInterpreter.props(settings, List(s), materializer, att), ())
+    def interpAttr(s: Stage[_, _], newAttributes: Attributes): (Props, Unit) = (ActorInterpreter.props(settings, List(s), materializer, newAttributes), ())
+    def inputSizeAttr(n: Long) = {
+      if (n <= 0)
+        inputBuffer(initial = 1, max = 1) and att
+      else if (n <= materializer.settings.maxInputBufferSize)
+        inputBuffer(initial = n.toInt, max = n.toInt) and att
+      else
+        att
+    }
     op match {
       case Map(f, _)                  ⇒ interp(fusing.Map(f, settings.supervisionDecider))
       case Filter(p, _)               ⇒ interp(fusing.Filter(p, settings.supervisionDecider))
       case Drop(n, _)                 ⇒ interp(fusing.Drop(n))
-      case Take(n, _)                 ⇒ interp(fusing.Take(n))
+      case Take(n, _)                 ⇒ interpAttr(fusing.Take(n), inputSizeAttr(n))
       case TakeWhile(p, _)            ⇒ interp(fusing.TakeWhile(p, settings.supervisionDecider))
       case DropWhile(p, _)            ⇒ interp(fusing.DropWhile(p, settings.supervisionDecider))
       case Collect(pf, _)             ⇒ interp(fusing.Collect(pf, settings.supervisionDecider))
