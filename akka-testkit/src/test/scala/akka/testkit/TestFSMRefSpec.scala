@@ -58,4 +58,43 @@ class TestFSMRefSpec extends AkkaSpec {
       fsm.isTimerActive("test") should ===(false)
     }
   }
+
+  "A TestFSMRef Companion Object" must {
+
+    val guardian = system.asInstanceOf[ActorSystemImpl].guardian
+
+    val parent = system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
+
+    class TestFSMActor extends Actor with FSM[Int, Null] {
+      startWith(1, null)
+      when(1) {
+        case x ⇒ stay
+      }
+      val supervisor = context.parent
+      val name = context.self.path.name
+    }
+
+    def fsmActorFactory = new TestFSMActor
+
+    "allow creation of a TestFSMRef with a default supervisor" in {
+      val fsm = TestFSMRef(fsmActorFactory)
+      fsm.underlyingActor.supervisor should be(guardian)
+    }
+
+    "allow creation of a TestFSMRef with a specified name" in {
+      val fsm = TestFSMRef(fsmActorFactory, "fsmActor")
+      fsm.underlyingActor.name should be("fsmActor")
+    }
+
+    "allow creation of a TestFSMRef with a specified supervisor" in {
+      val fsm = TestFSMRef(fsmActorFactory, parent)
+      fsm.underlyingActor.supervisor should be(parent)
+    }
+
+    "allow creation of a TestFSMRef with a specified supervisor and name" in {
+      val fsm = TestFSMRef(fsmActorFactory, parent, "supervisedFsmActor")
+      fsm.underlyingActor.supervisor should be(parent)
+      fsm.underlyingActor.name should be("supervisedFsmActor")
+    }
+  }
 }
