@@ -6,12 +6,12 @@ package akka.http.scaladsl.testkit
 
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ ExecutionContext, Await, Future }
 import scala.concurrent.duration._
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ Materializer, ActorMaterializer }
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.server._
@@ -115,8 +115,14 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent with Marsh
       type Out = HttpRequest
       def apply(request: HttpRequest, f: HttpRequest ⇒ HttpRequest) = f(request)
     }
-    implicit def injectIntoRoute(implicit timeout: RouteTestTimeout, setup: RoutingSetup,
-                                 defaultHostInfo: DefaultHostInfo) =
+    implicit def injectIntoRoute(implicit timeout: RouteTestTimeout,
+                                 defaultHostInfo: DefaultHostInfo,
+                                 routingSettings: RoutingSettings,
+                                 executionContext: ExecutionContext,
+                                 materializer: Materializer,
+                                 routingLog: RoutingLog,
+                                 rejectionHandler: RejectionHandler = RejectionHandler.default,
+                                 exceptionHandler: ExceptionHandler = null) =
       new TildeArrow[RequestContext, Future[RouteResult]] {
         type Out = RouteTestResult
         def apply(request: HttpRequest, route: Route): Out = {
@@ -125,12 +131,12 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent with Marsh
             request.withEffectiveUri(
               securedConnection = defaultHostInfo.securedConnection,
               defaultHostHeader = defaultHostInfo.host)
-          val ctx = new RequestContextImpl(effectiveRequest, setup.routingLog.requestLog(effectiveRequest), setup.settings)
-          val sealedExceptionHandler = setup.exceptionHandler.seal(setup.settings)
+          val ctx = new RequestContextImpl(effectiveRequest, routingLog.requestLog(effectiveRequest), routingSettings)
+          val sealedExceptionHandler = ExceptionHandler.seal(exceptionHandler)
           val semiSealedRoute = // sealed for exceptions but not for rejections
             Directives.handleExceptions(sealedExceptionHandler) { route }
           val deferrableRouteResult = semiSealedRoute(ctx)
-          deferrableRouteResult.fast.foreach(routeTestResult.handleResult)(setup.executor)
+          deferrableRouteResult.fast.foreach(routeTestResult.handleResult)(executionContext)
           routeTestResult
         }
       }
