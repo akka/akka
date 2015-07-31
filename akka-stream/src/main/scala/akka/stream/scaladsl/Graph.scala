@@ -5,11 +5,12 @@ package akka.stream.scaladsl
 
 import akka.stream.impl.Junctions._
 import akka.stream.impl.GenJunctions._
-import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
+import akka.stream.impl.Stages.{ Split, MaterializingStageFactory, StageModule }
 import akka.stream.impl._
 import akka.stream.impl.StreamLayout._
 import akka.stream._
 import Attributes.name
+import akka.stream.scaladsl.FlexiRoute.{ DemandFromAll, RouteLogic }
 import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
@@ -314,6 +315,50 @@ class Concat[T] private (override val shape: UniformFanInShape[T, T],
     new Concat(shape, module.withAttributes(attr).nest())
 
   override def named(name: String): Concat[T] = withAttributes(Attributes.name(name))
+}
+
+object Split {
+  /** Creates an Split using the given function */
+  def apply[In, A, B](f: In ⇒ Either[A, B]): Split[In, A, B] = {
+    val shape = new FanOutShape2[In, A, B]("Split")
+    new Split(shape, new FlexiRouteModule(
+      shape,
+      (s: FanOutShape2[In, A, B]) ⇒ new RouteLogic[In] {
+        override def initialState: State[_] = State[Any](DemandFromAll(s.out0, s.out1)) {
+          (ctx, _, input) ⇒
+            f(input).fold(ctx.emit(s.out0), ctx.emit(s.out1))
+            SameState[Any]
+        }
+      },
+      Attributes.name("Split")))
+  }
+
+  /** Creates a split using a predicate where `true` values are placed `Right` (`out1`) */
+  def using[A](f: A ⇒ Boolean): Split[A, A, A] = apply((in: A) ⇒
+    if (f(in)) Right[A, A](in)
+    else Left[A, A](in))
+}
+
+/**
+ * Takes one stream and outputs two streams based on an Either. `out0` representing the `Left` values
+ * and `out1` representing the `Right` values.
+ *
+ * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' any of the outputs backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
+ */
+class Split[In, A, B] private (override val shape: FanOutShape2[In, A, B],
+                               private[stream] override val module: StreamLayout.Module)
+  extends Graph[FanOutShape2[In, A, B], Unit] {
+
+  override def withAttributes(attr: Attributes): Split[In, A, B] =
+    new Split(shape, module.withAttributes(attr).nest())
+
+  override def named(name: String): Split[In, A, B] = withAttributes(Attributes.name(name))
 }
 
 object FlowGraph extends GraphApply {
