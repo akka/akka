@@ -3,19 +3,16 @@
  */
 package akka.stream.impl.fusing
 
-import java.util.Arrays
 import akka.actor._
 import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, Attributes, ActorMaterializer }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnError, OnComplete }
 import akka.stream.impl._
-import akka.stream.impl.fusing.OneBoundedInterpreter.{ InitializationFailed, InitializationFailure, InitializationSuccessful }
+import akka.stream.impl.fusing.OneBoundedInterpreter.{ InitializationFailed, InitializationSuccessful }
 import akka.stream.stage._
 import org.reactivestreams.{ Subscriber, Subscription }
 import akka.event.{ Logging, LoggingAdapter }
-
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -101,7 +98,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
   }
 
   private def clear(): Unit = {
-    Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
+    java.util.Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
     inputBufferElements = 0
   }
 

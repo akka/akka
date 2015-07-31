@@ -10,7 +10,7 @@ import akka.stream._
 import org.reactivestreams._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Promise }
+import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 
 /**

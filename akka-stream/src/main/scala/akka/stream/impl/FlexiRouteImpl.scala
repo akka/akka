@@ -51,9 +51,9 @@ private[akka] class FlexiRouteImpl[T, S <: Shape](_settings: ActorMaterializerSe
   }
 
   override protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.maxInputBufferSize, this) {
-    override def onError(e: Throwable): Unit = {
-      try completion.onUpstreamFailure(ctx, e) catch { case NonFatal(e) ⇒ fail(e) }
-      fail(e)
+    override def onError(t: Throwable): Unit = {
+      try completion.onUpstreamFailure(ctx, t) catch { case NonFatal(e) ⇒ fail(e) }
+      fail(t)
     }
 
     override def onComplete(): Unit = {

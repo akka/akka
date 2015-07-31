@@ -3,7 +3,6 @@
  */
 package akka.stream.impl
 
-import java.util.Arrays
 import akka.actor._
 import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
@@ -101,7 +100,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
   override def isClosed: Boolean = upstreamCompleted
 
   private def clear(): Unit = {
-    Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
+    java.util.Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
     inputBufferElements = 0
   }
 

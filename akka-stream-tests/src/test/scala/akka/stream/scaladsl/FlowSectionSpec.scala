@@ -78,8 +78,8 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
       //FIXME: Flow has no simple toString anymore
       pending
       val n = "Uppercase reverser"
-      val f1 = Flow[String].map(_.toLowerCase())
-      val f2 = Flow[String].map(_.toUpperCase).map(_.reverse).named(n).map(_.toLowerCase())
+      val f1 = Flow[String].map(_.toLowerCase)
+      val f2 = Flow[String].map(_.toUpperCase).map(_.reverse).named(n).map(_.toLowerCase)
 
       f1.via(f2).toString should include(n)
     }

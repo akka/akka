@@ -212,7 +212,7 @@ class StreamLayoutSpec extends AkkaSpec {
 
     def getAllAtomic(module: Module): Set[Module] = {
       val (atomics, composites) = module.subModules.partition(_.isAtomic)
-      atomics ++ composites.map(getAllAtomic).flatten
+      atomics ++ composites.flatMap(getAllAtomic)
     }
 
     val allAtomic = getAllAtomic(topLevel)

@@ -340,8 +340,6 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
     }
 
     "properly full-close if requested" in assertAllStagesStopped {
-      import system.dispatcher
-
       val serverAddress = temporaryServerAddress()
       val writeButIgnoreRead: Flow[ByteString, ByteString, Unit] =
         Flow.wrap(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
@@ -362,8 +360,6 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
     }
 
     "Echo should work even if server is in full close mode" in {
-      import system.dispatcher
-
       val serverAddress = temporaryServerAddress()
 
       val binding =

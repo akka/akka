@@ -174,7 +174,7 @@ trait ActorPublisher[T] extends Actor {
    * otherwise `onNext` will throw `IllegalStateException`.
    */
   def onNext(element: T): Unit = lifecycleState match {
-    case Active | PreSubscriber ⇒
+    case Active | PreSubscriber | CompleteThenStop ⇒
       if (demand > 0) {
         demand -= 1
         tryOnNext(subscriber, element)
@@ -193,7 +193,7 @@ trait ActorPublisher[T] extends Actor {
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
    */
   def onComplete(): Unit = lifecycleState match {
-    case Active | PreSubscriber ⇒
+    case Active | PreSubscriber | CompleteThenStop ⇒
       lifecycleState = Completed
       if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
         try tryOnComplete(subscriber) finally subscriber = null
@@ -226,8 +226,8 @@ trait ActorPublisher[T] extends Actor {
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
    */
   def onError(cause: Throwable): Unit = lifecycleState match {
-    case Active | PreSubscriber ⇒
-      lifecycleState = ErrorEmitted(cause, false)
+    case Active | PreSubscriber | CompleteThenStop ⇒
+      lifecycleState = ErrorEmitted(cause, stop = false)
       if (subscriber ne null) // otherwise onError will be called when the subscription arrives
         try tryOnError(subscriber, cause) finally subscriber = null
     case _: ErrorEmitted ⇒

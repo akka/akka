@@ -8,7 +8,6 @@ import akka.actor._
 import akka.stream.ActorMaterializerSettings
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.collection.mutable
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -48,7 +47,7 @@ private[akka] object MultiStreamOutputProcessor {
     override def subreceive: SubReceive =
       throw new UnsupportedOperationException("Substream outputs are managed in a dedicated receive block")
 
-    def isAttached() = state.get().isInstanceOf[Attached]
+    def isAttached = state.get().isInstanceOf[Attached]
 
     def enqueueOutputDemand(demand: Long): Unit = {
       downstreamDemand += demand
@@ -188,8 +187,8 @@ private[akka] trait MultiStreamOutputProcessorLike extends Pump with StreamSubsc
       case _         ⇒ // ignore...
     }
     case SubstreamSubscriptionTimeout(key) ⇒ substreamOutputs.get(key) match {
-      case Some(sub) if !sub.isAttached() ⇒ subscriptionTimedOut(sub)
-      case _                              ⇒ // ignore...
+      case Some(sub) if !sub.isAttached ⇒ subscriptionTimedOut(sub)
+      case _                            ⇒ // ignore...
     }
     case SubstreamCancel(key) ⇒
       invalidateSubstreamOutput(key)

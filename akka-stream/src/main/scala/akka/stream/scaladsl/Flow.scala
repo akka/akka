@@ -214,9 +214,9 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     val outs = copy.shape.outlets
     new Flow(module
       .compose(copy, combine)
-      .wire(shape.outlet, ins(0))
+      .wire(shape.outlet, ins.head)
       .wire(outs(1), shape.inlet)
-      .replaceShape(FlowShape(ins(1), outs(0))))
+      .replaceShape(FlowShape(ins(1), outs.head)))
   }
 
   /**
@@ -365,7 +365,7 @@ case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) 
   def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
   override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
-    new RunnableGraph(module.withAttributes(attr).nest)
+    new RunnableGraph(module.withAttributes(attr).nest())
 
   override def named(name: String): RunnableGraph[Mat] = withAttributes(Attributes.name(name))
 

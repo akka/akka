@@ -28,7 +28,7 @@ object FlowMapAsyncSpec {
 
     override def onPush(elem: In, ctx: AsyncContext[Out, Try[Out]]) = {
       val future = f(elem)
-      val cb = ctx.getAsyncCallback()
+      val cb = ctx.getAsyncCallback
       future.onComplete(cb.invoke)
       ctx.holdUpstream()
     }
@@ -132,7 +132,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       }).to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectError.getMessage should be("err1")
+      c.expectError().getMessage should be("err1")
       latch.countDown()
     }
 
@@ -151,7 +151,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
         to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectError.getMessage should be("err2")
+      c.expectError().getMessage should be("err2")
       latch.countDown()
     }
 
@@ -216,7 +216,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       val p = Source(List("a", "b")).mapAsync(4)(elem ⇒ Future.successful(null)).to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectError.getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
+      c.expectError().getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
     }
 
     "resume when future is completed with null" in {
