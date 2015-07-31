@@ -3,8 +3,7 @@
  */
 package akka.stream.stage
 
-import akka.event.{ Logging, LogSource }
-import akka.stream.{ ActorMaterializer, Materializer, Attributes, Supervision }
+import akka.stream.{ Materializer, Attributes, Supervision }
 
 /**
  * General interface for stream transformation.
@@ -34,10 +33,10 @@ sealed trait Stage[-In, Out]
 private[stream] object AbstractStage {
   final val UpstreamBall = 1
   final val DownstreamBall = 2
-  final val BothBalls = UpstreamBall | DownstreamBall
-  final val BothBallsAndNoTerminationPending = UpstreamBall | DownstreamBall | NoTerminationPending
   final val PrecedingWasPull = 0x4000
   final val NoTerminationPending = 0x8000
+  final val BothBalls = UpstreamBall | DownstreamBall
+  final val BothBallsAndNoTerminationPending = UpstreamBall | DownstreamBall | NoTerminationPending
 }
 
 abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out], LifeCtx <: LifecycleContext] extends Stage[In, Out] {
@@ -655,7 +654,7 @@ trait AsyncContext[Out, Ext] extends DetachedContext[Out] {
    *
    * This object can be cached and reused within the same [[AsyncStage]].
    */
-  def getAsyncCallback(): AsyncCallback[Ext]
+  def getAsyncCallback: AsyncCallback[Ext]
   /**
    * In response to an asynchronous notification an [[AsyncStage]] may choose
    * to neither push nor pull nor terminate, which is represented as this

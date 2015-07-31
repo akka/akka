@@ -27,7 +27,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
     "yield the first value" in assertAllStagesStopped {
       val p = TestPublisher.manualProbe[Int]()
       val f: Future[Int] = Source(p).map(identity).runWith(Sink.head)
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       proc.expectRequest()
       proc.sendNext(42)
       Await.result(f, 100.millis) should be(42)
@@ -41,7 +41,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
       val (subscriber, future) = s.toMat(f)(Keep.both).run()
 
       p.subscribe(subscriber)
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       proc.expectRequest()
       proc.sendNext(42)
       Await.result(future, 100.millis) should be(42)
@@ -51,7 +51,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
     "yield the first error" in assertAllStagesStopped {
       val p = TestPublisher.manualProbe[Int]()
       val f = Source(p).runWith(Sink.head)
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       proc.expectRequest()
       val ex = new RuntimeException("ex")
       proc.sendError(ex)
@@ -62,12 +62,12 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
     "yield NoSuchElementExcption for empty stream" in assertAllStagesStopped {
       val p = TestPublisher.manualProbe[Int]()
       val f = Source(p).runWith(Sink.head)
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       proc.expectRequest()
       proc.sendComplete()
       Await.ready(f, 100.millis)
       f.value.get match {
-        case Failure(e: NoSuchElementException) ⇒ e.getMessage() should be("empty stream")
+        case Failure(e: NoSuchElementException) ⇒ e.getMessage should be("empty stream")
         case x                                  ⇒ fail("expected NoSuchElementException, got " + x)
       }
     }

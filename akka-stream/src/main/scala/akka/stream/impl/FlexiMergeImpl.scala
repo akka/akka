@@ -42,9 +42,9 @@ private[akka] class FlexiMergeImpl[T, S <: Shape](
   }
 
   override protected val inputBunch = new FanIn.InputBunch(inputCount, settings.maxInputBufferSize, this) {
-    override def onError(input: Int, e: Throwable): Unit = {
+    override def onError(input: Int, t: Throwable): Unit = {
       changeBehavior(
-        try completion.onUpstreamFailure(ctx, inputMapping(input), e)
+        try completion.onUpstreamFailure(ctx, inputMapping(input), t)
         catch {
           case NonFatal(e) ⇒ fail(e); mergeLogic.SameState
         })

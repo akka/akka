@@ -21,7 +21,7 @@ private[akka] object OneBoundedInterpreter {
   /** INTERNAL API */
   private[akka] sealed trait InitializationStatus
   /** INTERNAL API */
-  private[akka] final case object InitializationSuccessful extends InitializationStatus
+  private[akka] case object InitializationSuccessful extends InitializationStatus
   /** INTERNAL API */
   private[akka] final case class InitializationFailed(failures: immutable.Seq[InitializationFailure]) extends InitializationStatus {
     // exceptions are reverse ordered here, below methods help to avoid confusion when used from the outside
@@ -197,7 +197,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
   private var lastOpFailing: Int = -1
 
   private def pipeName(op: UntypedOp): String = {
-    val o = (op: AbstractStage[_, _, _, _, _, _])
+    val o = op: AbstractStage[_, _, _, _, _, _]
     (o match {
       case Finished               ⇒ "finished"
       case _: BoundaryStage       ⇒ "boundary"
@@ -219,7 +219,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
   private def calculateJumpBacks: Array[Int] = {
     val table = Array.ofDim[Int](pipeline.length)
     var nextJumpBack = -1
-    for (pos ← 0 until pipeline.length) {
+    for (pos ← pipeline.indices) {
       table(pos) = nextJumpBack
       if (!pipeline(pos).isInstanceOf[PushStage[_, _]]) nextJumpBack = pos
     }
@@ -310,7 +310,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
       null
     }
 
-    override def getAsyncCallback(): AsyncCallback[Any] = {
+    override def getAsyncCallback: AsyncCallback[Any] = {
       val current = currentOp.asInstanceOf[AsyncStage[Any, Any, Any]]
       val context = current.context // avoid concurrent access (to avoid @volatile)
       new AsyncCallback[Any] {

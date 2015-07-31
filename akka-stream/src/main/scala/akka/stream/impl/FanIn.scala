@@ -9,8 +9,6 @@ import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
 import akka.stream.scaladsl.FlexiMerge.MergeLogic
 import org.reactivestreams.{ Subscription, Subscriber }
 
-import scala.collection.immutable
-
 /**
  * INTERNAL API
  */
@@ -105,7 +103,7 @@ private[akka] object FanIn {
     def cancel(input: Int) =
       if (!cancelled(input)) {
         inputs(input).cancel()
-        cancelled(input, true)
+        cancelled(input, on = true)
         unmarkInput(input)
       }
 
@@ -117,7 +115,7 @@ private[akka] object FanIn {
       if (!marked(input)) {
         if (depleted(input)) markedDepleted += 1
         if (pending(input)) markedPending += 1
-        marked(input, true)
+        marked(input, on = true)
         markCount += 1
       }
     }
@@ -126,7 +124,7 @@ private[akka] object FanIn {
       if (marked(input)) {
         if (depleted(input)) markedDepleted -= 1
         if (pending(input)) markedPending -= 1
-        marked(input, false)
+        marked(input, on = false)
         markCount -= 1
       }
     }
@@ -171,11 +169,11 @@ private[akka] object FanIn {
       val elem = input.dequeueInputElement()
       if (!input.inputsAvailable) {
         if (marked(id)) markedPending -= 1
-        pending(id, false)
+        pending(id, on = false)
       }
       if (input.inputsDepleted) {
         if (marked(id)) markedDepleted += 1
-        depleted(id, true)
+        depleted(id, on = true)
         onDepleted(id)
       }
       elem
@@ -202,7 +200,7 @@ private[akka] object FanIn {
     }
 
     val AnyOfMarkedInputs = new TransferState {
-      override def isCompleted: Boolean = (markedDepleted == markCount && markedPending == 0)
+      override def isCompleted: Boolean = markedDepleted == markCount && markedPending == 0
       override def isReady: Boolean = markedPending > 0
     }
 
@@ -222,15 +220,15 @@ private[akka] object FanIn {
         inputs(id).subreceive(ActorSubscriber.OnSubscribe(subscription))
       case OnNext(id, elem) ⇒
         if (marked(id) && !pending(id)) markedPending += 1
-        pending(id, true)
+        pending(id, on = true)
         inputs(id).subreceive(ActorSubscriberMessage.OnNext(elem))
       case OnComplete(id) ⇒
         if (!pending(id)) {
           if (marked(id) && !depleted(id)) markedDepleted += 1
-          depleted(id, true)
+          depleted(id, on = true)
           onDepleted(id)
         }
-        completed(id, true)
+        completed(id, on = true)
         inputs(id).subreceive(ActorSubscriberMessage.OnComplete)
       case OnError(id, e) ⇒
         onError(id, e)

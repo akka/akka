@@ -3,8 +3,6 @@
  */
 package akka.stream.javadsl;
 
-import akka.actor.ActorRef;
-import akka.dispatch.japi;
 import akka.japi.Pair;
 import akka.pattern.Patterns;
 import akka.japi.tuple.Tuple4;
@@ -63,7 +61,7 @@ public class FlowGraphTest extends StreamTest {
     final Flow<String, String, BoxedUnit> f2 =
         Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f2");
     @SuppressWarnings("unused")
-    final Flow<String, String, BoxedUnit> f3 = 
+    final Flow<String, String, BoxedUnit> f3 =
         Flow.of(String.class).transform(FlowGraphTest.this.<String> op()).named("f3");
 
     final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c"));
@@ -282,6 +280,7 @@ public class FlowGraphTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMatValue() throws Exception {
+    @SuppressWarnings("unused")
     final Source<Integer, BoxedUnit> in1 = Source.single(1);
     final TestProbe probe = TestProbe.apply(system);
 

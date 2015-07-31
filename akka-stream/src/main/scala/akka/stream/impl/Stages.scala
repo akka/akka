@@ -3,14 +3,13 @@
  */
 package akka.stream.impl
 
-import akka.event.{ LoggingAdapter, Logging }
+import akka.event.LoggingAdapter
 import akka.stream.impl.SplitDecision.SplitDecision
 import akka.stream.impl.StreamLayout._
 import akka.stream.{ OverflowStrategy, TimerTransformer, Attributes }
 import akka.stream.Attributes._
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
-import akka.event.Logging.simpleName
 import scala.collection.immutable
 import scala.concurrent.Future
 
