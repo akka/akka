@@ -122,7 +122,7 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
   }
 
   override def postStop(): Unit = {
-    tickTask.foreach(_.cancel)
+    tickTask.foreach(_.cancel())
     cancelled.set(true)
     if (exposedPublisher ne null)
       exposedPublisher.shutdown(ActorPublisher.SomeNormalShutdownReason)

@@ -121,7 +121,7 @@ object SslTls {
     override def withAttributes(att: Attributes): Module = copy(attributes = att)
     override def carbonCopy: Module = {
       val mod = TlsModule(attributes, sslContext, firstSession, role, closing, hostInfo)
-      if (plainIn == shape.inlets(0)) mod
+      if (plainIn == shape.inlets.head) mod
       else mod.replaceShape(mod.shape.asInstanceOf[BidiShape[_, _, _, _]].reversed)
     }
 
@@ -158,7 +158,7 @@ object SslTlsPlacebo {
     scaladsl.BidiFlow() { implicit b ⇒
       // this constructs a session for (invalid) protocol SSL_NULL_WITH_NULL_NULL
       val session = SSLContext.getDefault.createSSLEngine.getSession
-      val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(b) ⇒ b })
+      val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(bytes) ⇒ bytes })
       val bottom = b.add(scaladsl.Flow[ByteString].map(SessionBytes(session, _)))
       BidiShape(top, bottom)
     }

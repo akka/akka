@@ -39,11 +39,11 @@ class FlowForeachSpec extends AkkaSpec {
       Source(p).runForeach(testActor ! _) onFailure {
         case ex ⇒ testActor ! ex
       }
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       proc.expectRequest()
-      val ex = new RuntimeException("ex") with NoStackTrace
-      proc.sendError(ex)
-      expectMsg(ex)
+      val rte = new RuntimeException("ex") with NoStackTrace
+      proc.sendError(rte)
+      expectMsg(rte)
     }
 
     "complete future with failure when function throws" in assertAllStagesStopped {

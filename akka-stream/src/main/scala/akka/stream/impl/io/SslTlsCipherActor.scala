@@ -4,8 +4,6 @@
 package akka.stream.impl.io
 
 import java.nio.ByteBuffer
-import java.security.Principal
-import java.security.cert.Certificate
 import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
@@ -16,13 +14,8 @@ import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
 import akka.stream.impl._
 import akka.util.ByteString
-import akka.util.ByteStringBuilder
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
 import scala.annotation.tailrec
-import scala.collection.immutable
 import akka.stream.io._
-import akka.event.LoggingReceive
 
 /**
  * INTERNAL API.
@@ -32,11 +25,11 @@ private[akka] object SslTlsCipherActor {
   def props(settings: ActorMaterializerSettings,
             sslContext: SSLContext,
             firstSession: NegotiateNewSession,
-            tracing: Boolean,
             role: Role,
             closing: Closing,
-            hostInfo: Option[(String, Int)]): Props =
-    Props(new SslTlsCipherActor(settings, sslContext, firstSession, tracing, role, closing, hostInfo)).withDeploy(Deploy.local)
+            hostInfo: Option[(String, Int)],
+            tracing: Boolean = false): Props =
+    Props(new SslTlsCipherActor(settings, sslContext, firstSession, role, closing, hostInfo, tracing)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
   final val TransportOut = 0
@@ -49,8 +42,8 @@ private[akka] object SslTlsCipherActor {
  * INTERNAL API.
  */
 private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslContext: SSLContext,
-                                      firstSession: NegotiateNewSession, tracing: Boolean,
-                                      role: Role, closing: Closing, hostInfo: Option[(String, Int)])
+                                      firstSession: NegotiateNewSession, role: Role, closing: Closing,
+                                      hostInfo: Option[(String, Int)], tracing: Boolean)
   extends Actor with ActorLogging with Pump {
 
   import SslTlsCipherActor._
@@ -113,7 +106,7 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
      * not know that we are runnable.
      */
     def putBack(b: ByteBuffer): Unit =
-      if (b.hasRemaining()) {
+      if (b.hasRemaining) {
         if (tracing) log.debug(s"putting back ${b.remaining} bytes into $name")
         val bs = ByteString(b)
         if (bs.nonEmpty) buffer = bs ++ buffer
@@ -156,12 +149,10 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
     e
   }
   var currentSession = engine.getSession
-  var currentSessionParameters = firstSession
-  applySessionParameters()
+  applySessionParameters(firstSession)
 
-  def applySessionParameters(): Unit = {
-    val csp = currentSessionParameters
-    import csp._
+  def applySessionParameters(params: NegotiateNewSession): Unit = {
+    import params._
     enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
     enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))
     clientAuth match {
@@ -175,11 +166,10 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
     lastHandshakeStatus = engine.getHandshakeStatus
   }
 
-  def setNewSessionParameters(n: NegotiateNewSession): Unit = {
-    if (tracing) log.debug(s"applying $n")
+  def setNewSessionParameters(params: NegotiateNewSession): Unit = {
+    if (tracing) log.debug(s"applying $params")
     currentSession.invalidate()
-    currentSessionParameters = n
-    applySessionParameters()
+    applySessionParameters(params)
     corkUser = true
   }
 
@@ -280,7 +270,7 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
   }
 
   def completeOrFlush(): Unit =
-    if (engine.isOutboundDone()) nextPhase(completedPhase)
+    if (engine.isOutboundDone) nextPhase(completedPhase)
     else nextPhase(flushingOutbound)
 
   private def doInbound(isOutboundClosed: Boolean, inboundState: TransferState): Boolean =
@@ -370,7 +360,7 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
         userInChoppingBlock.putBack(userInBuffer)
       case CLOSED ⇒
         flushToTransport()
-        if (engine.isInboundDone()) nextPhase(completedPhase)
+        if (engine.isInboundDone) nextPhase(completedPhase)
         else nextPhase(awaitingClose)
       case s ⇒ fail(new IllegalStateException(s"unexpected status $s in doWrap()"))
     }
@@ -392,12 +382,12 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
             handshakeFinished()
             transportInChoppingBlock.putBack(transportInBuffer)
           case _ ⇒
-            if (transportInBuffer.hasRemaining()) doUnwrap()
+            if (transportInBuffer.hasRemaining) doUnwrap()
             else flushToUser()
         }
       case CLOSED ⇒
         flushToUser()
-        if (engine.isOutboundDone()) nextPhase(completedPhase)
+        if (engine.isOutboundDone) nextPhase(completedPhase)
         else nextPhase(flushingOutbound)
       case BUFFER_UNDERFLOW ⇒
         flushToUser()

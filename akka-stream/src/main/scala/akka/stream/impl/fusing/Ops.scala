@@ -6,7 +6,6 @@ package akka.stream.impl.fusing
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.stream.Attributes.LogLevels
-import akka.stream.Supervision.Resume
 import akka.stream.impl.{ FixedSizeBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
@@ -68,7 +67,7 @@ private[akka] final case class DropWhile[T](p: T ⇒ Boolean, decider: Supervisi
   override def decide(t: Throwable): Supervision.Directive = decider(t)
 }
 
-private[akka] final object Collect {
+private[akka] object Collect {
   // Cached function that can be used with PartialFunction.applyOrElse to ensure that A) the guard is only applied once,
   // and the caller can check the returned value with Collect.notApplied to query whether the PF was applied or not.
   // Prior art: https://github.com/scala/scala/blob/v2.11.4/src/library/scala/collection/immutable/List.scala#L458
@@ -336,12 +335,12 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
 
   override def onPull(ctx: DetachedContext[T]): DownstreamDirective = {
     if (ctx.isFinishing) {
-      val elem = buffer.dequeue().asInstanceOf[T]
+      val elem = buffer.dequeue()
       if (buffer.isEmpty) ctx.pushAndFinish(elem)
       else ctx.push(elem)
-    } else if (ctx.isHoldingUpstream) ctx.pushAndPull(buffer.dequeue().asInstanceOf[T])
+    } else if (ctx.isHoldingUpstream) ctx.pushAndPull(buffer.dequeue())
     else if (buffer.isEmpty) ctx.holdDownstream()
-    else ctx.push(buffer.dequeue().asInstanceOf[T])
+    else ctx.push(buffer.dequeue())
   }
 
   override def onUpstreamFinish(ctx: DetachedContext[T]): TerminationDirective =
@@ -350,37 +349,31 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
 
   val enqueueAction: (DetachedContext[T], T) ⇒ UpstreamDirective = {
     overflowStrategy match {
-      case DropHead ⇒ { (ctx, elem) ⇒
+      case DropHead ⇒ (ctx, elem) ⇒
         if (buffer.isFull) buffer.dropHead()
         buffer.enqueue(elem)
         ctx.pull()
-      }
-      case DropTail ⇒ { (ctx, elem) ⇒
+        case DropTail ⇒ (ctx, elem) ⇒
         if (buffer.isFull) buffer.dropTail()
         buffer.enqueue(elem)
         ctx.pull()
-      }
-      case DropBuffer ⇒ { (ctx, elem) ⇒
+        case DropBuffer ⇒ (ctx, elem) ⇒
         if (buffer.isFull) buffer.clear()
         buffer.enqueue(elem)
         ctx.pull()
-      }
-      case DropNew ⇒ { (ctx, elem) ⇒
+        case DropNew ⇒ (ctx, elem) ⇒
         if (!buffer.isFull) buffer.enqueue(elem)
         ctx.pull()
-      }
-      case Backpressure ⇒ { (ctx, elem) ⇒
+        case Backpressure ⇒ (ctx, elem) ⇒
         buffer.enqueue(elem)
         if (buffer.isFull) ctx.holdUpstream()
         else ctx.pull()
-      }
-      case Fail ⇒ { (ctx, elem) ⇒
+        case Fail ⇒ (ctx, elem) ⇒
         if (buffer.isFull) ctx.fail(new Fail.BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
         else {
           buffer.enqueue(elem)
           ctx.pull()
         }
-      }
     }
   }
 }
@@ -478,9 +471,9 @@ private[akka] final case class Expand[In, Out, Seed](seed: In ⇒ Seed, extrapol
     else ctx.absorbTermination()
   }
 
-  final override def decide(t: Throwable): Supervision.Directive = Supervision.Stop
+  override def decide(t: Throwable): Supervision.Directive = Supervision.Stop
 
-  final override def restart(): Expand[In, Out, Seed] =
+  override def restart(): Expand[In, Out, Seed] =
     throw new UnsupportedOperationException("Expand doesn't support restart")
 }
 
@@ -505,7 +498,7 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
   private val elemsInFlight = FixedSizeBuffer[Try[Out]](parallelism)
 
   override def preStart(ctx: AsyncContext[Out, Notification]): Unit = {
-    callback = ctx.getAsyncCallback()
+    callback = ctx.getAsyncCallback
   }
 
   override def decide(ex: Throwable) = decider(ex)
@@ -554,7 +547,7 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
           else ctx.ignore()
         } else ctx.fail(ex)
       case (idx, s: Success[_]) ⇒
-        val ex = try {
+        val exception = try {
           ReactiveStreamsCompliance.requireNonNullElement(s.value)
           elemsInFlight.put(idx, s)
           null: Exception
@@ -565,7 +558,7 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
               null: Exception
             } else ex
         }
-        if (ex != null) ctx.fail(ex)
+        if (exception != null) ctx.fail(exception)
         else if (ctx.isHoldingDownstream) rec()
         else ctx.ignore()
     }
@@ -589,7 +582,7 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
   private def todo = inFlight + buffer.used
 
   override def preStart(ctx: AsyncContext[Out, Try[Out]]): Unit =
-    callback = ctx.getAsyncCallback()
+    callback = ctx.getAsyncCallback
 
   override def decide(ex: Throwable) = decider(ex)
 

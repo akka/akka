@@ -173,7 +173,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
             val element = buffer.read(head)
             head.dispatch(element)
             head.totalDemand -= 1
-            dispatch(tail, true)
+            dispatch(tail, sent = true)
           } else dispatch(tail, sent)
         case _ ⇒ sent
       }

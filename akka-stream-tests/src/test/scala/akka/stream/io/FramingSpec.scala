@@ -67,7 +67,7 @@ class FramingSpec extends AkkaSpec {
         .named("lineFraming")
 
     def completeTestSequences(delimiter: ByteString): immutable.Iterable[ByteString] =
-      for (prefix ← 0 until delimiter.size; s ← baseTestSequences)
+      for (prefix ← delimiter.indices; s ← baseTestSequences)
         yield delimiter.take(prefix) ++ s
 
     "work with various delimiters and test sequences" in {
