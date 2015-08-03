@@ -1187,10 +1187,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
     }
     "not call the callback hook when onPersistSuccess throws an exception" in {
       val persistentActor = namedPersistentActor[ExceptionInHookAfterPersistActor]
-      val listener = TestProbe()
-      system.eventStream.subscribe(listener.ref, classOf[String])
       persistentActor ! "a"
-      expectNoMsg(100.millis)
     }
     "be extendible by hooking into onPersisted, which is called after persistAsync" in {
       val persistentActor = namedPersistentActor[PublishAfterPersistAsyncActor]
