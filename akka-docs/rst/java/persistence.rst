@@ -324,9 +324,9 @@ Success
 
 When persistence of an event succeeded, ``onPersistSuccess`` will be invoked (doing nothing by default).
 With this hook it is possible to define a default behaviour when a message is persisted. This can for example be useful
-for broadcasting the published event. The ``onPersistSuccess`` hook will be called with the persisted event right before the
-callback defined by the caller is executed. Note that the callback is not executed when the ``onPersistSuccess`` throws an
-exception.
+for publishing the persisted event onto an eventStream or other pub-sub like bus. The ``onPersistSuccess`` hook will be
+called with the persisted event right before the callback defined by the caller is executed. Note that the callback is
+not executed when the ``onPersistSuccess`` throws an exception.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#onPersistSuccess-hook
 
