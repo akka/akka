@@ -34,8 +34,9 @@ private[akka] object SslTlsCipherActor {
             firstSession: NegotiateNewSession,
             tracing: Boolean,
             role: Role,
-            closing: Closing): Props =
-    Props(new SslTlsCipherActor(settings, sslContext, firstSession, tracing, role, closing)).withDeploy(Deploy.local)
+            closing: Closing,
+            hostInfo: Option[(String, Int)]): Props =
+    Props(new SslTlsCipherActor(settings, sslContext, firstSession, tracing, role, closing, hostInfo)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
   final val TransportOut = 0
@@ -49,7 +50,7 @@ private[akka] object SslTlsCipherActor {
  */
 private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslContext: SSLContext,
                                       firstSession: NegotiateNewSession, tracing: Boolean,
-                                      role: Role, closing: Closing)
+                                      role: Role, closing: Closing, hostInfo: Option[(String, Int)])
   extends Actor with ActorLogging with Pump {
 
   import SslTlsCipherActor._
@@ -146,7 +147,11 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
   transportInChoppingBlock.prepare(transportInBuffer)
 
   val engine: SSLEngine = {
-    val e = sslContext.createSSLEngine()
+    val e = hostInfo match {
+      case Some((hostname, port)) ⇒ sslContext.createSSLEngine(hostname, port)
+      case None                   ⇒ sslContext.createSSLEngine()
+    }
+
     e.setUseClientMode(role == Client)
     e
   }
