@@ -85,7 +85,8 @@ object AkkaBuild extends Build {
       test in Test in httpTestkit,
       test in Test in httpTests, test in Test in httpTestsJava8,
       test in Test in docsDev,
-      compile in Compile in benchJmh
+      compile in Compile in benchJmh,
+      compile in Compile in benchJmhDev
       ).dependOn
     ),
     aggregate = Seq(streamAndHttp) // FIXME DURING MERGE INTO release-2.3
@@ -203,6 +204,15 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, persistence, testkit, stream, http, httpCore).map(_ % "compile;compile->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.testkit ++ Dependencies.Compile.metricsAll,
+      publishArtifact in Compile := false
+    ) ++ settings ++ jmhSettings
+  )
+
+  lazy val benchJmhDev = Project(
+    id = "akka-bench-jmh-dev",
+    base = file("akka-bench-jmh-dev"),
+    dependencies = Seq(stream, http, httpCore),
+    settings = defaultSettings ++ Seq(
       publishArtifact in Compile := false
     ) ++ settings ++ jmhSettings
   )
