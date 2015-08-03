@@ -1177,7 +1177,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(List("b-1", "b-2"))
     }
 
-    "be extendible by hooking into onPersisted, which is called after persist" in {
+    "be extensible by hooking into onPersisted, which is called after persist" in {
       val persistentActor = namedPersistentActor[PublishAfterPersistActor]
       val listener = TestProbe()
       system.eventStream.subscribe(listener.ref, classOf[String])
@@ -1189,7 +1189,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       val persistentActor = namedPersistentActor[ExceptionInHookAfterPersistActor]
       persistentActor ! "a"
     }
-    "be extendible by hooking into onPersisted, which is called after persistAsync" in {
+    "be extensible by hooking into onPersisted, which is called after persistAsync" in {
       val persistentActor = namedPersistentActor[PublishAfterPersistAsyncActor]
       val listener = TestProbe()
       system.eventStream.subscribe(listener.ref, classOf[String])
@@ -1197,7 +1197,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(123)
       listener.expectMsg("message: 123")
     }
-    "be extendible by hooking into onPersisted, which is called after persistAll" in {
+    "be extensible by hooking into onPersisted, which is called after persistAll" in {
       val persistentActor = namedPersistentActor[PublishAfterPersistAllActor]
       val listener = TestProbe()
       system.eventStream.subscribe(listener.ref, classOf[String])
@@ -1207,7 +1207,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       listener.expectMsg("message: 654")
       listener.expectMsg("message: 876")
     }
-    "be extendible by hooking into onPersisted, which is called after persistAllAsync" in {
+    "be extensible by hooking into onPersisted, which is called after persistAllAsync" in {
       val persistentActor = namedPersistentActor[PublishAfterPersistAllAsyncActor]
       val listener = TestProbe()
       system.eventStream.subscribe(listener.ref, classOf[String])
