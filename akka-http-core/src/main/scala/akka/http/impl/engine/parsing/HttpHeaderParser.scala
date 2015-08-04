@@ -10,7 +10,7 @@ import scala.annotation.tailrec
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.http.impl.util._
-import akka.http.scaladsl.model.{ IllegalHeaderException, StatusCodes, HttpHeader, ErrorInfo }
+import akka.http.scaladsl.model.{ IllegalHeaderException, StatusCodes, HttpHeader, ErrorInfo, Uri }
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.impl.model.parser.HeaderParser
 import akka.http.impl.model.parser.CharacterClasses._
@@ -376,7 +376,7 @@ private[engine] final class HttpHeaderParser private (
 private[http] object HttpHeaderParser {
   import SpecializedHeaderValueParsers._
 
-  trait Settings {
+  trait Settings extends HeaderParser.Settings {
     def maxHeaderNameLength: Int
     def maxHeaderValueLength: Int
     def headerValueCacheLimit(headerName: String): Int
@@ -410,7 +410,7 @@ private[http] object HttpHeaderParser {
   def prime(parser: HttpHeaderParser): HttpHeaderParser = {
     val valueParsers: Seq[HeaderValueParser] =
       HeaderParser.ruleNames.map { name ⇒
-        new ModelledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name))
+        new ModelledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name), parser.settings)
       }(collection.breakOut)
     def insertInGoodOrder(items: Seq[Any])(startIx: Int = 0, endIx: Int = items.size): Unit =
       if (endIx - startIx > 0) {
@@ -445,13 +445,13 @@ private[http] object HttpHeaderParser {
     def cachingEnabled = maxValueCount > 0
   }
 
-  class ModelledHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int)
+  class ModelledHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int, settings: HeaderParser.Settings)
     extends HeaderValueParser(headerName, maxValueCount) {
     def apply(input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
       // TODO: optimize by running the header value parser directly on the input ByteString (rather than an extracted String)
       val (headerValue, endIx) = scanHeaderValue(input, valueStart, valueStart + maxHeaderValueLength)()
       val trimmedHeaderValue = headerValue.trim
-      val header = HeaderParser.parseFull(headerName, trimmedHeaderValue) match {
+      val header = HeaderParser.parseFull(headerName, trimmedHeaderValue, settings) match {
         case Right(h) ⇒ h
         case Left(error) ⇒
           onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header"))

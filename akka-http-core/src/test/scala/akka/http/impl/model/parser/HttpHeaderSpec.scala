@@ -574,6 +574,12 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     "resolve obs-fold occurrences" in {
       parse("Foo", "b\r\n\ta \r\n r") shouldEqual ParsingResult.Ok(RawHeader("Foo", "b a r"), Nil)
     }
+
+    "parse with custom uri parsing mode" in {
+      val targetUri = Uri("http://example.org/?abc=def=ghi", Uri.ParsingMode.RelaxedWithRawQuery)
+      HeaderParser.parseFull("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.RelaxedWithRawQuery)) shouldEqual
+        Right(Location(targetUri))
+    }
   }
 
   implicit class TestLine(line: String) {
