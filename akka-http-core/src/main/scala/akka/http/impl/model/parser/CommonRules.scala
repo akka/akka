@@ -420,5 +420,8 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
       }
     }
   }
+
+  def newUriParser(input: ParserInput): UriParser
+  def uriReference: Rule1[Uri] = rule { runSubParser(newUriParser(_).`URI-reference-pushed`) }
 }
 
