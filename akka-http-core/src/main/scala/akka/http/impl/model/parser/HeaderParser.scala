@@ -13,7 +13,7 @@ import akka.http.scaladsl.model._
 /**
  * INTERNAL API.
  */
-private[http] class HeaderParser(val input: ParserInput) extends Parser with DynamicRuleHandler[HeaderParser, HttpHeader :: HNil]
+private[http] class HeaderParser(val input: ParserInput, settings: HeaderParser.Settings = HeaderParser.DefaultSettings) extends Parser with DynamicRuleHandler[HeaderParser, HttpHeader :: HNil]
   with CommonRules
   with AcceptCharsetHeader
   with AcceptEncodingHeader
@@ -59,6 +59,8 @@ private[http] class HeaderParser(val input: ParserInput) extends Parser with Dyn
     case NonFatal(e)               ⇒ Left(ErrorInfo.fromCompoundString(e.getMessage))
   }
   def ruleNotFound(ruleName: String): Result = throw HeaderParser.RuleNotFoundException
+
+  def newUriParser(input: ParserInput): UriParser = new UriParser(input, uriParsingMode = settings.uriParsingMode)
 }
 
 /**
@@ -67,10 +69,10 @@ private[http] class HeaderParser(val input: ParserInput) extends Parser with Dyn
 private[http] object HeaderParser {
   object RuleNotFoundException extends SingletonException
 
-  def parseFull(headerName: String, value: String): HeaderParser#Result = {
+  def parseFull(headerName: String, value: String, settings: Settings = DefaultSettings): HeaderParser#Result = {
     import akka.parboiled2.EOI
     val v = value + EOI // this makes sure the parser isn't broken even if there's no trailing garbage in this value
-    val parser = new HeaderParser(v)
+    val parser = new HeaderParser(v, settings)
     dispatch(parser, headerName) match {
       case r @ Right(_) if parser.cursor == v.length ⇒ r
       case r @ Right(_) ⇒
@@ -136,4 +138,15 @@ private[http] object HeaderParser {
     "user-agent",
     "www-authenticate",
     "x-forwarded-for")
+
+  trait Settings {
+    def uriParsingMode: Uri.ParsingMode
+  }
+  def Settings(uriParsingMode: Uri.ParsingMode): Settings = {
+    val _uriParsingMode = uriParsingMode
+    new Settings {
+      def uriParsingMode: Uri.ParsingMode = _uriParsingMode
+    }
+  }
+  val DefaultSettings: Settings = Settings(Uri.ParsingMode.Relaxed)
 }
