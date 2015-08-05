@@ -523,9 +523,9 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     eventBatch = Nil
   }
 
-  private def peekApplyHandler(payload: Any): Unit = {
+  private def applyHandlerOn(payload: Any, handler: Any ⇒ Unit): Unit = {
     val batchSizeBeforeApply = eventBatch.size
-    try pendingInvocations.peek().handler(payload)
+    try handler(payload)
     finally {
       val batchSizeAfterApply = eventBatch.size
 
@@ -545,7 +545,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         if (id == instanceId) {
           updateLastSequenceNr(p)
           try {
-            peekApplyHandler(p.payload)
+            applyHandlerOn(p.payload, onPersistSuccess)
+            applyHandlerOn(p.payload, pendingInvocations.peek().handler)
             onWriteMessageComplete(err = false)
           } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
         }
@@ -583,6 +584,12 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     def onWriteMessageComplete(err: Boolean): Unit =
       pendingInvocations.pop()
   }
+
+  /**
+   * Hook to be able to extend the PersistentActor with behaviour when a message is persisted.
+   * @param msg The message that was persisted to the journal
+   */
+  def onPersistSuccess(msg: Any): Unit = {}
 
   /**
    * Command processing state. If event persistence is pending after processing a

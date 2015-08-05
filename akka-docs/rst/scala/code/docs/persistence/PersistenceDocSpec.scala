@@ -223,6 +223,26 @@ object PersistenceDocSpec {
     //#persist-async
   }
 
+  object PersistHook {
+    class MyPersistentActor extends PersistentActor {
+      override def persistenceId = "my-stable-persistence-id"
+
+      override def receiveRecover: Receive = {
+        case _ => // handle recovery here
+      }
+
+      override def receiveCommand: Receive = {
+        case _ =>
+      }
+
+      //#onPersistSuccess-hook
+      override def onPersistSuccess(msg: Any): Unit = {
+        context.system.eventStream.publish(s"message: $msg")
+      }
+      //#onPersistSuccess-hook
+    }
+  }
+
   object Defer {
 
     //#defer

@@ -327,6 +327,31 @@ public class PersistenceDocTest {
         }
     };
 
+    static Object o91 = new Object() {
+        class MyPersistentActor extends UntypedPersistentActor {
+
+            @Override
+            public String persistenceId() {
+                return "persistence-id";
+            }
+
+            //#onPersistSuccess-hook
+            @Override
+            public void onPersistSuccess(Object event) {
+                getContext().system().eventStream().publish(event);
+            }
+            //#onPersistSuccess-hook
+            @Override
+            public void onReceiveRecover(Object msg) throws Exception {
+
+            }
+            @Override
+            public void onReceiveCommand(Object msg) throws Exception {
+
+            }
+        }
+    };
+
     static Object o10 = new Object() {
         //#defer
         class MyPersistentActor extends UntypedPersistentActor {
