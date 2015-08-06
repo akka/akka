@@ -27,11 +27,10 @@ class BasicRouteSpecs extends RoutingSpec {
       } ~> check { rejections shouldEqual Seq(MethodRejection(GET), MethodRejection(PUT)) }
     }
     "clear rejections that have already been 'overcome' by previous directives" in {
-      pending
-      /*Put() ~> {
+      Put() ~> {
         put { parameter('yeah) { echoComplete } } ~
           get { completeOk }
-      } ~> check { rejection shouldEqual MissingQueryParamRejection("yeah") }*/
+      } ~> check { rejection shouldEqual MissingQueryParamRejection("yeah") }
     }
   }
 

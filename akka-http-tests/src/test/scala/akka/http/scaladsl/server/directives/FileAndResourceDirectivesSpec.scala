@@ -20,7 +20,7 @@ import akka.http.scaladsl.TestUtils.writeAllText
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
   override def testConfigSource =
-    """akka.http.scaladsl.routing {
+    """akka.http.routing {
       |  file-chunking-threshold-size = 16
       |  file-chunking-chunk-size = 8
       |  range-coalescing-threshold = 1
@@ -72,7 +72,6 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
 
     "return multiple ranges from a file at once" in {
-      pending // FIXME: reactivate
       val file = File.createTempFile("partialTest", null)
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
