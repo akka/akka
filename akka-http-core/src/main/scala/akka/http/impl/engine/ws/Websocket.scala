@@ -6,9 +6,11 @@ package akka.http.impl.engine.ws
 
 import java.security.SecureRandom
 
+import akka.util.ByteString
+
 import scala.concurrent.duration._
 
-import akka.stream.{ Attributes, FanOutShape2, FanInShape3, Inlet }
+import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import FlexiRoute.{ DemandFrom, DemandFromAny, RouteLogic }
@@ -19,13 +21,40 @@ import akka.http.scaladsl.model.ws._
 
 /**
  * INTERNAL API
+ *
+ * Defines components of the websocket stack.
  */
 private[http] object Websocket {
   import FrameHandler._
 
-  def handleMessages[T](messageHandler: Flow[Message, Message, T],
-                        serverSide: Boolean = true,
-                        closeTimeout: FiniteDuration = 3.seconds): Flow[FrameEvent, FrameEvent, Unit] = {
+  /** The lowest layer that implements the binary protocol */
+  def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, Unit] =
+    BidiFlow.wrap(
+      Flow[ByteString].transform(() ⇒ new FrameEventParser),
+      Flow[FrameEvent].transform(() ⇒ new FrameEventRenderer))(Keep.none)
+      .named("ws-framing")
+
+  /** The layer that handles masking using the rules defined in the specification */
+  def masking(serverSide: Boolean): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, Unit] =
+    Masking(serverSide, () ⇒ new SecureRandom())
+      .named("ws-masking")
+
+  /**
+   * The layer that implements all low-level frame handling, like handling control frames, collecting messages
+   * from frames, decoding text messages, close handling, etc.
+   */
+  def frameHandling(serverSide: Boolean = true,
+                    closeTimeout: FiniteDuration): BidiFlow[FrameEvent, FrameHandler.Output, FrameOutHandler.Input, FrameStart, Unit] =
+    BidiFlow.wrap(
+      FrameHandler.create(server = serverSide),
+      FrameOutHandler.create(serverSide, closeTimeout))(Keep.none)
+      .named("ws-frame-handling")
+
+  /**
+   * The layer that provides the high-level user facing API on top of frame handling.
+   */
+  def messageAPI(serverSide: Boolean,
+                 closeTimeout: FiniteDuration): BidiFlow[FrameHandler.Output, Message, Message, FrameOutHandler.Input, Unit] = {
     /** Completes this branch of the flow if no more messages are expected and converts close codes into errors */
     class PrepareForUserHandler extends PushStage[MessagePart, MessagePart] {
       var inMessage = false
@@ -91,18 +120,6 @@ private[http] object Websocket {
       }
     }
 
-    lazy val userFlow =
-      Flow[MessagePart]
-        .transform(() ⇒ new PrepareForUserHandler)
-        .splitWhen(_.isMessageEnd) // FIXME using splitAfter from #16885 would simplify protocol a lot
-        .map(_.collect {
-          case m: MessageDataPart ⇒ m
-        })
-        .via(collectMessage)
-        .via(messageHandler)
-        .via(MessageToFrameRenderer.create(serverSide))
-        .transform(() ⇒ new LiftCompletions)
-
     /**
      * Distributes output from the FrameHandler into bypass and userFlow.
      */
@@ -158,26 +175,55 @@ private[http] object Websocket {
         }
     }
 
-    lazy val bypassAndUserHandler: Flow[Either[BypassEvent, MessagePart], AnyRef, Unit] =
-      Flow(BypassRouter, Source(closeTimeout, closeTimeout, Tick), BypassMerge)((_, _, _) ⇒ ()) { implicit b ⇒
-        (split, tick, merge) ⇒
-          import FlowGraph.Implicits._
+    def prepareMessages: Flow[MessagePart, Message, Unit] =
+      Flow[MessagePart]
+        .transform(() ⇒ new PrepareForUserHandler)
+        .splitWhen(_.isMessageEnd) // FIXME using splitAfter from #16885 would simplify protocol a lot
+        .map(_.collect {
+          case m: MessageDataPart ⇒ m
+        })
+        .via(collectMessage)
+        .named("ws-prepare-messages")
 
-          split.out0 ~> merge.in0
-          split.out1 ~> userFlow ~> merge.in1
-          tick.outlet ~> merge.in2
+    def renderMessages: Flow[Message, FrameStart, Unit] =
+      MessageToFrameRenderer.create(serverSide)
+        .named("ws-render-messages")
 
-          (split.in, merge.out)
-      }
+    BidiFlow() { implicit b ⇒
+      import FlowGraph.Implicits._
 
-    Flow[FrameEvent]
-      .via(Masking.unmaskIf(serverSide))
-      .via(FrameHandler.create(server = serverSide))
-      .mapConcat(x ⇒ x :: x :: Nil) // FIXME: #17004
-      .via(bypassAndUserHandler)
-      .transform(() ⇒ new FrameOutHandler(serverSide, closeTimeout))
-      .via(Masking.maskIf(!serverSide, () ⇒ new SecureRandom()))
+      val routePreparation = b.add(Flow[FrameHandler.Output].mapConcat(x ⇒ x :: x :: Nil))
+      val split = b.add(BypassRouter)
+      val tick = Source(closeTimeout, closeTimeout, Tick)
+      val merge = b.add(BypassMerge)
+      val messagePreparation = b.add(prepareMessages)
+      val messageRendering = b.add(renderMessages.transform(() ⇒ new LiftCompletions))
+
+      routePreparation.outlet ~> split.in
+
+      // user handler
+      split.out1 ~> messagePreparation
+      messageRendering.outlet ~> merge.in1
+
+      // bypass
+      split.out0 ~> merge.in0
+
+      // timeout support
+      tick ~> merge.in2
+
+      BidiShape(
+        routePreparation.inlet,
+        messagePreparation.outlet,
+        messageRendering.inlet,
+        merge.out)
+    }.named("ws-message-api")
   }
+
+  def stack(serverSide: Boolean = true,
+            closeTimeout: FiniteDuration = 3.seconds): BidiFlow[FrameEvent, Message, Message, FrameEvent, Unit] =
+    masking(serverSide) atop
+      frameHandling(serverSide, closeTimeout) atop
+      messageAPI(serverSide, closeTimeout)
 
   object Tick
   case object SwitchToWebsocketToken

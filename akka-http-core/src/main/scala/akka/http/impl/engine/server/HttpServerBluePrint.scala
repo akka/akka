@@ -298,11 +298,7 @@ private[http] object HttpServerBluePrint {
     val sink = StreamUtils.oneTimePublisherSink[FrameEvent](sinkCell, "frameHandler.in")
     val source = StreamUtils.oneTimeSubscriberSource[FrameEvent](sourceCell, "frameHandler.out")
 
-    val flow =
-      Flow[ByteString]
-        .transform[FrameEvent](() ⇒ new FrameEventParser)
-        .via(Flow.wrap(sink, source)(Keep.none))
-        .transform(() ⇒ new FrameEventRenderer)
+    val flow = Websocket.framing.join(Flow.wrap(sink, source)(Keep.none))
 
     new WebsocketSetup {
       def websocketFlow: Flow[ByteString, ByteString, Any] = flow
