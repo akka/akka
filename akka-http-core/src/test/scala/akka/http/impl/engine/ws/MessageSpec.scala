@@ -782,7 +782,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     Source(netIn)
       .via(printEvent("netIn"))
       .transform(() ⇒ new FrameEventParser)
-      .via(Websocket.handleMessages(messageHandler, serverSide, closeTimeout = closeTimeout))
+      .via(Websocket.stack(serverSide, closeTimeout = closeTimeout).join(messageHandler))
       .via(printEvent("frameRendererIn"))
       .transform(() ⇒ new FrameEventRenderer)
       .via(printEvent("frameRendererOut"))
