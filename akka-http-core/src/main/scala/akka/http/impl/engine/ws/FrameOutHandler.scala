@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.ws
 
+import akka.stream.scaladsl.Flow
+
 import scala.concurrent.duration.FiniteDuration
 
 import akka.stream.stage._
@@ -16,7 +18,7 @@ import Websocket.Tick
  *
  * INTERNAL API
  */
-private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDuration) extends StatefulStage[AnyRef, FrameStart] {
+private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDuration) extends StatefulStage[FrameOutHandler.Input, FrameStart] {
   def initial: StageState[AnyRef, FrameStart] = Idle
   def closeTimeout: Timestamp = Timestamp.now + _closeTimeout
 
@@ -129,4 +131,11 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
       ctx.absorbTermination()
     case _ ⇒ super.onUpstreamFailure(cause, ctx)
   }
+}
+
+private[http] object FrameOutHandler {
+  type Input = AnyRef
+
+  def create(serverSide: Boolean, closeTimeout: FiniteDuration): Flow[Input, FrameStart, Unit] =
+    Flow[Input].transform(() ⇒ new FrameOutHandler(serverSide, closeTimeout))
 }
