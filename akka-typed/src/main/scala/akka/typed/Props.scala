@@ -5,6 +5,7 @@ package akka.typed
 
 import akka.actor.Deploy
 import akka.routing.RouterConfig
+import akka.japi.Creator
 
 /**
  * Props describe how to dress up a [[Behavior]] so that it can become an Actor.
@@ -52,4 +53,6 @@ object Props {
       case _ ⇒ throw new AssertionError("typed.Actor args must be right")
     }
   }
+
+  def create[T](block: Creator[Behavior[T]]) = apply(block.create())
 }

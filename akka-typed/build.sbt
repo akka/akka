@@ -6,3 +6,9 @@ AkkaBuild.defaultSettings
 AkkaBuild.experimentalSettings
 
 Formatting.formatSettings
+
+Unidoc.scaladocSettings
+
+Unidoc.javadocSettings
+
+Dependencies.typed

@@ -166,16 +166,16 @@ class StubbedActorContext[T](
   override val props: Props[T])(
     override implicit val system: ActorSystem[Nothing]) extends ActorContext[T] {
 
-  val inbox = Inbox.sync[T](name)
+  val inbox = Inbox[T](name)
   override val self = inbox.ref
 
-  private var _children = TreeMap.empty[String, Inbox.SyncInbox[_]]
+  private var _children = TreeMap.empty[String, Inbox[_]]
   private val childName = Iterator from 1 map (Helpers.base64(_))
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ref)
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
   override def spawnAnonymous[U](props: Props[U]): ActorRef[U] = {
-    val i = Inbox.sync[U](childName.next())
+    val i = Inbox[U](childName.next())
     _children += i.ref.untypedRef.path.name -> i
     i.ref
   }
@@ -183,12 +183,12 @@ class StubbedActorContext[T](
     _children get name match {
       case Some(_) ⇒ throw new untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
-        val i = Inbox.sync[U](name)
+        val i = Inbox[U](name)
         _children += name -> i
         i.ref
     }
   override def actorOf(props: untyped.Props): untyped.ActorRef = {
-    val i = Inbox.sync[Any](childName.next())
+    val i = Inbox[Any](childName.next())
     _children += i.ref.untypedRef.path.name -> i
     i.ref.untypedRef
   }
@@ -196,7 +196,7 @@ class StubbedActorContext[T](
     _children get name match {
       case Some(_) ⇒ throw new untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
-        val i = Inbox.sync[Any](name)
+        val i = Inbox[Any](name)
         _children += name -> i
         i.ref.untypedRef
     }
@@ -220,7 +220,7 @@ class StubbedActorContext[T](
   implicit def executionContext: ExecutionContextExecutor = system.executionContext
   def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = ???
 
-  def getInbox[U](name: String): Inbox.SyncInbox[U] = _children(name).asInstanceOf[Inbox.SyncInbox[U]]
+  def getInbox[U](name: String): Inbox[U] = _children(name).asInstanceOf[Inbox[U]]
   def removeInbox(name: String): Unit = _children -= name
 }
 

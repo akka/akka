@@ -253,7 +253,7 @@ object ScalaDSL {
    * sides of [[And]] and [[Or]] combinators.
    */
   final case class SynchronousSelf[T](f: ActorRef[T] ⇒ Behavior[T]) extends Behavior[T] {
-    private val inbox = Inbox.sync[T]("syncbox")
+    private val inbox = Inbox[T]("syncbox")
     private var _behavior = f(inbox.ref)
     private def behavior = _behavior
     private def setBehavior(ctx: ActorContext[T], b: Behavior[T]): Unit =
