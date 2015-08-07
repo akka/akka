@@ -210,7 +210,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   def clientLayer(hostHeader: Host,
                   settings: ClientConnectionSettings,
                   log: LoggingAdapter = system.log): ClientLayer =
-    BidiFlow.wrap(OutgoingConnectionBlueprint(hostHeader, settings, log))
+    OutgoingConnectionBlueprint(hostHeader, settings, log)
 
   /**
    * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
@@ -497,6 +497,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   //#client-layer
   /**
+   * The type of the client-side HTTP layer as a stand-alone BidiFlow
    * that can be put atop the TCP layer to form an HTTP client.
    *
    * {{{
