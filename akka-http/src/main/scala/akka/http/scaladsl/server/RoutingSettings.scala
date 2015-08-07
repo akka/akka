@@ -10,6 +10,8 @@ import akka.http.impl.util._
 
 case class RoutingSettings(
   verboseErrorMessages: Boolean,
+  fileChunkingThresholdSize: Long,
+  fileChunkingChunkSize: Int,
   fileGetConditional: Boolean,
   renderVanityFooter: Boolean,
   rangeCountLimit: Int,
@@ -20,6 +22,8 @@ case class RoutingSettings(
 object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.routing") {
   def fromSubConfig(c: Config) = apply(
     c getBoolean "verbose-error-messages",
+    c getBytes "file-chunking-threshold-size",
+    c getIntBytes "file-chunking-chunk-size",
     c getBoolean "file-get-conditional",
     c getBoolean "render-vanity-footer",
     c getInt "range-count-limit",
