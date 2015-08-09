@@ -335,4 +335,10 @@ private[akka] class OutboundTcpStreamActor(processorPromise: Promise[Processor[B
       processorPromise.failure(ex)
       fail(ex)
   }
+
+  override def fail(e: Throwable): Unit = {
+    processorPromise.tryFailure(e)
+    localAddressPromise.tryFailure(e)
+    super.fail(e)
+  }
 }
