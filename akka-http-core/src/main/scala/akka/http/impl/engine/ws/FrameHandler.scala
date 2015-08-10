@@ -18,11 +18,12 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[http] object FrameHandler {
-  def create(server: Boolean): Flow[FrameEvent, Either[BypassEvent, MessagePart], Unit] =
+  type Output = Either[BypassEvent, MessagePart]
+  def create(server: Boolean): Flow[FrameEvent, Output, Unit] =
     Flow[FrameEvent].transform(() ⇒ new HandlerStage(server))
 
-  class HandlerStage(server: Boolean) extends StatefulStage[FrameEvent, Either[BypassEvent, MessagePart]] {
-    type Ctx = Context[Either[BypassEvent, MessagePart]]
+  class HandlerStage(server: Boolean) extends StatefulStage[FrameEvent, Output] {
+    type Ctx = Context[Output]
     def initial: State = Idle
 
     object Idle extends StateWithControlFrameHandling {
@@ -129,7 +130,7 @@ private[http] object FrameHandler {
           Right(ActivelyCloseWithCode(Some(closeCode), reason))), ctx, CloseAfterPeerClosed)
 
     object CloseAfterPeerClosed extends State {
-      def onPush(elem: FrameEvent, ctx: Context[Either[BypassEvent, MessagePart]]): SyncDirective =
+      def onPush(elem: FrameEvent, ctx: Context[Output]): SyncDirective =
         elem match {
           case FrameStart(FrameHeader(Opcode.Close, _, length, _, _, _, _), data) ⇒
             become(WaitForPeerTcpClose)
@@ -139,7 +140,7 @@ private[http] object FrameHandler {
         }
     }
     object WaitForPeerTcpClose extends State {
-      def onPush(elem: FrameEvent, ctx: Context[Either[BypassEvent, MessagePart]]): SyncDirective =
+      def onPush(elem: FrameEvent, ctx: Context[Output]): SyncDirective =
         ctx.pull() // ignore
     }
 
