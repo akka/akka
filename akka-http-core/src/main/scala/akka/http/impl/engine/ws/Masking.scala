@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.ws
 
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ Keep, BidiFlow, Flow }
 import akka.stream.stage.{ SyncDirective, Context, StageState, StatefulStage }
 
 import scala.util.Random
@@ -15,6 +15,9 @@ import scala.util.Random
  * INTERNAL API
  */
 private[http] object Masking {
+  def apply(serverSide: Boolean, maskRandom: () ⇒ Random): BidiFlow[ /* net in */ FrameEvent, /* app out */ FrameEvent, /* app in */ FrameEvent, /* net out */ FrameEvent, Unit] =
+    BidiFlow.wrap(unmaskIf(serverSide), maskIf(!serverSide, maskRandom))(Keep.none)
+
   def maskIf(condition: Boolean, maskRandom: () ⇒ Random): Flow[FrameEvent, FrameEvent, Unit] =
     if (condition) Flow[FrameEvent].transform(() ⇒ new Masking(maskRandom())) // new random per materialization
     else Flow[FrameEvent]

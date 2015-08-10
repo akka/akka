@@ -307,8 +307,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           // split up the code point
           val half1 = gclef.take(1)
           val half2 = gclef.drop(1)
-          println(half1(0).toInt.toHexString)
-          println(half2(0).toInt.toHexString)
 
           val pub = TestPublisher.manualProbe[String]()
           val msg = TextMessage(Source(pub))
@@ -784,7 +782,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     Source(netIn)
       .via(printEvent("netIn"))
       .transform(() ⇒ new FrameEventParser)
-      .via(Websocket.handleMessages(messageHandler, serverSide, closeTimeout = closeTimeout))
+      .via(Websocket.stack(serverSide, closeTimeout = closeTimeout).join(messageHandler))
       .via(printEvent("frameRendererIn"))
       .transform(() ⇒ new FrameEventRenderer)
       .via(printEvent("frameRendererOut"))

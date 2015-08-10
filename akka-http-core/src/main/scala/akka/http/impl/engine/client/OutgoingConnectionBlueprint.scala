@@ -13,6 +13,7 @@ import akka.event.LoggingAdapter
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.ClientConnectionSettings
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.{ IllegalResponseException, HttpMethod, HttpRequest, HttpResponse }
 import akka.http.impl.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
@@ -23,9 +24,6 @@ import akka.http.impl.util._
  * INTERNAL API
  */
 private[http] object OutgoingConnectionBlueprint {
-
-  type ClientShape = BidiShape[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse]
-
   /*
     Stream Setup
     ============
@@ -45,7 +43,7 @@ private[http] object OutgoingConnectionBlueprint {
   */
   def apply(hostHeader: Host,
             settings: ClientConnectionSettings,
-            log: LoggingAdapter): Graph[ClientShape, Unit] = {
+            log: LoggingAdapter): Http.ClientLayer = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -59,7 +57,7 @@ private[http] object OutgoingConnectionBlueprint {
 
     val requestRendering: Flow[HttpRequest, ByteString, Unit] = Flow[HttpRequest]
       .map(RequestRenderingContext(_, hostHeader))
-      .via(Flow[RequestRenderingContext].transform(() ⇒ requestRendererFactory.newRenderer).named("renderer"))
+      .via(Flow[RequestRenderingContext].map(requestRendererFactory.renderToSource).named("renderer"))
       .flatten(FlattenStrategy.concat)
 
     val methodBypass = Flow[HttpRequest].map(_.method)
@@ -76,7 +74,7 @@ private[http] object OutgoingConnectionBlueprint {
         case (MessageStartError(_, info), _) ⇒ throw IllegalResponseException(info)
       }
 
-    FlowGraph.partial() { implicit b ⇒
+    BidiFlow() { implicit b ⇒
       import FlowGraph.Implicits._
       val methodBypassFanout = b.add(Broadcast[HttpRequest](2, eagerCancel = true))
       val responseParsingMerge = b.add(new ResponseParsingMerge(rootParser))
