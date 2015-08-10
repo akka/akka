@@ -46,7 +46,7 @@ class ReplicatedCacheSpec extends MultiNodeSpec(ReplicatedCacheSpec) with STMult
   }
 
   "Demo of a replicated cache" must {
-    "join cluster" in within(10.seconds) {
+    "join cluster" in within(20.seconds) {
       join(node1, node1)
       join(node2, node1)
       join(node3, node1)
