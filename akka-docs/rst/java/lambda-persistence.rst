@@ -600,16 +600,16 @@ configuration key. The method can be overridden by implementation classes to ret
 
 Persistent FSM
 ==============
-``AbstractPersistentFSMActor`` handles the incoming messages in an FSM like fashion.
+``AbstractPersistentFSM`` handles the incoming messages in an FSM like fashion.
 Its internal state is persisted as a sequence of changes, later referred to as domain events.
 Relationship between incoming messages, FSM's states and transitions, persistence of domain events is defined by a DSL.
 
 A Simple Example
 ----------------
-To demonstrate the features of the ``AbstractPersistentFSMActor``, consider an actor which represents a Web store customer.
+To demonstrate the features of the ``AbstractPersistentFSM``, consider an actor which represents a Web store customer.
 The contract of our "WebStoreCustomerFSMActor" is that it accepts the following commands:
 
-.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFsmActorTest.java#customer-commands
+.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java#customer-commands
 
 ``AddItem`` sent when the customer adds an item to a shopping cart
 ``Buy`` - when the customer finishes the purchase
@@ -618,7 +618,7 @@ The contract of our "WebStoreCustomerFSMActor" is that it accepts the following 
 
 The customer can be in one of the following states:
 
-.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFsmActorTest.java#customer-states
+.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java#customer-states
 
 ``LookingAround`` customer is browsing the site, but hasn't added anything to the shopping cart
 ``Shopping`` customer has recently added items to the shopping cart
@@ -627,29 +627,29 @@ The customer can be in one of the following states:
 
 .. note::
 
-  ``AbstractPersistentFSMActor`` states must inherit from ``PersistentFsmActor.FSMState`` and implement the
+  ``AbstractPersistentFSM`` states must inherit from ``PersistentFSM.FSMState`` and implement the
   ``String identifier()`` method. This is required in order to simplify the serialization of FSM states.
   String identifiers should be unique!
 
 Customer's actions are "recorded" as a sequence of "domain events", which are persisted. Those events are replayed on actor's
 start in order to restore the latest customer's state:
 
-.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFsmActorTest.java#customer-domain-events
+.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java#customer-domain-events
 
 Customer state data represents the items in customer's shopping cart:
 
-.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFsmActorTest.java#customer-states-data
+.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java#customer-states-data
 
 Here is how everything is wired together:
 
-.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFsmActorTest.java#customer-fsm-body
+.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java#customer-fsm-body
 
 .. note::
 
   State data can only be modified directly on initialization. Later it's modified only as a result of applying domain events.
   Override the ``applyEvent`` method to define how state data is affected by domain events, see the example below
 
-.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFsmActorTest.java#customer-apply-event
+.. includecode:: ../../../akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java#customer-apply-event
 
 Storage plugins
 ===============
