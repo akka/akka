@@ -19,33 +19,33 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import akka.persistence.fsm.FSM.CurrentState;
+import akka.persistence.fsm.PersistentFSM.CurrentState;
 import org.junit.Test;
 import scala.concurrent.duration.Duration;
 
-import static akka.persistence.fsm.AbstractPersistentFsmActorTest.WebStoreCustomerFSMActor.UserState;
-import static akka.persistence.fsm.AbstractPersistentFsmActorTest.WebStoreCustomerFSMActor.ShoppingCart;
-import static akka.persistence.fsm.AbstractPersistentFsmActorTest.WebStoreCustomerFSMActor.Item;
+import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.UserState;
+import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.ShoppingCart;
+import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.Item;
 
-import static akka.persistence.fsm.AbstractPersistentFsmActorTest.WebStoreCustomerFSMActor.GetCurrentCart;
-import static akka.persistence.fsm.AbstractPersistentFsmActorTest.WebStoreCustomerFSMActor.AddItem;
-import static akka.persistence.fsm.AbstractPersistentFsmActorTest.WebStoreCustomerFSMActor.Buy;
-import static akka.persistence.fsm.AbstractPersistentFsmActorTest.WebStoreCustomerFSMActor.Leave;
+import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.GetCurrentCart;
+import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.AddItem;
+import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.Buy;
+import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.Leave;
 
-import static akka.persistence.fsm.AbstractPersistentFsmActorTest.WebStoreCustomerFSMActor.PurchaseWasMade;
-import static akka.persistence.fsm.AbstractPersistentFsmActorTest.WebStoreCustomerFSMActor.ShoppingCardDiscarded;
+import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.PurchaseWasMade;
+import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.ShoppingCardDiscarded;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.hasItems;
 
-public class AbstractPersistentFsmActorTest {
+public class AbstractPersistentFSMTest {
     private static Option<String> none = Option.none();
     @ClassRule
     public static AkkaJUnitActorSystemResource actorSystemResource =
             new AkkaJUnitActorSystemResource("PersistentFSMJavaTest", PersistenceSpec.config(
-                    "leveldb", "AbstractPersistentFsmActorTest", "off", none.asScala()));
+                    "leveldb", "AbstractPersistentFSMTest", "off", none.asScala()));
 
     private final ActorSystem system = actorSystemResource.getSystem();
 
@@ -56,10 +56,10 @@ public class AbstractPersistentFsmActorTest {
     public void fsmFunctionalTest() throws Exception {
         new JavaTestKit(system) {{
             String persistenceId = generateId();
-            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, dummyReportActorRef));
+            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
 
             watch(fsmRef);
-            fsmRef.tell(new FSM.SubscribeTransitionCallBack(getRef()), getRef());
+            fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
             Item shirt = new Item("1", "Shirt", 59.99F);
             Item shoes = new Item("2", "Shoes", 89.99F);
@@ -76,13 +76,13 @@ public class AbstractPersistentFsmActorTest {
             fsmRef.tell(GetCurrentCart.INSTANCE, getRef());
             fsmRef.tell(Leave.INSTANCE, getRef());
 
-            CurrentState currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
+            CurrentState currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
             ShoppingCart shoppingCart = expectMsgClass(ShoppingCart.class);
             assertTrue(shoppingCart.getItems().isEmpty());
 
-            FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
+            PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
             shoppingCart = expectMsgClass(ShoppingCart.class);
@@ -94,7 +94,7 @@ public class AbstractPersistentFsmActorTest {
             shoppingCart = expectMsgClass(ShoppingCart.class);
             assertThat(shoppingCart.getItems(), hasItems(shirt, shoes, coat));
 
-            stateTransition = expectMsgClass(FSM.Transition.class);
+            stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.SHOPPING, UserState.PAID);
 
             shoppingCart = expectMsgClass(ShoppingCart.class);
@@ -109,25 +109,25 @@ public class AbstractPersistentFsmActorTest {
     public void fsmTimeoutTest() throws Exception {
         new JavaTestKit(system) {{
             String persistenceId = generateId();
-            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, dummyReportActorRef));
+            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
 
             watch(fsmRef);
-            fsmRef.tell(new FSM.SubscribeTransitionCallBack(getRef()), getRef());
+            fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
             Item shirt = new Item("1", "Shirt", 59.99F);
 
             fsmRef.tell(new AddItem(shirt), getRef());
 
-            CurrentState currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
+            CurrentState currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
-            FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
+            PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
             new Within(duration("0.9 seconds"), duration("1.9 seconds")) {
                 @Override
                 protected void run() {
-                    FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
+                    PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
                     assertTransition(stateTransition, fsmRef, UserState.SHOPPING, UserState.INACTIVE);
                 }
             };
@@ -145,10 +145,10 @@ public class AbstractPersistentFsmActorTest {
     public void testSuccessfulRecoveryWithCorrectStateData() {
         new JavaTestKit(system) {{
             String persistenceId = generateId();
-            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, dummyReportActorRef));
+            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
 
             watch(fsmRef);
-            fsmRef.tell(new FSM.SubscribeTransitionCallBack(getRef()), getRef());
+            fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
             Item shirt = new Item("1", "Shirt", 59.99F);
             Item shoes = new Item("2", "Shoes", 89.99F);
@@ -160,13 +160,13 @@ public class AbstractPersistentFsmActorTest {
             fsmRef.tell(new AddItem(shoes), getRef());
             fsmRef.tell(GetCurrentCart.INSTANCE, getRef());
 
-            CurrentState currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
+            CurrentState currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
             ShoppingCart shoppingCart = expectMsgClass(ShoppingCart.class);
             assertTrue(shoppingCart.getItems().isEmpty());
 
-            FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
+            PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
             shoppingCart = expectMsgClass(ShoppingCart.class);
@@ -178,9 +178,9 @@ public class AbstractPersistentFsmActorTest {
             fsmRef.tell(PoisonPill.getInstance(), ActorRef.noSender());
             expectTerminated(fsmRef);
 
-            ActorRef recoveredFsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, dummyReportActorRef));
+            ActorRef recoveredFsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
             watch(recoveredFsmRef);
-            recoveredFsmRef.tell(new FSM.SubscribeTransitionCallBack(getRef()), getRef());
+            recoveredFsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
             recoveredFsmRef.tell(GetCurrentCart.INSTANCE, getRef());
 
@@ -191,7 +191,7 @@ public class AbstractPersistentFsmActorTest {
             recoveredFsmRef.tell(GetCurrentCart.INSTANCE, getRef());
             recoveredFsmRef.tell(Leave.INSTANCE, getRef());
 
-            currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
+            currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.SHOPPING);
 
             shoppingCart = expectMsgClass(ShoppingCart.class);
@@ -200,7 +200,7 @@ public class AbstractPersistentFsmActorTest {
             shoppingCart = expectMsgClass(ShoppingCart.class);
             assertThat(shoppingCart.getItems(), hasItems(shirt, shoes, coat));
 
-            stateTransition = expectMsgClass(FSM.Transition.class);
+            stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, recoveredFsmRef, UserState.SHOPPING, UserState.PAID);
 
             shoppingCart = expectMsgClass(ShoppingCart.class);
@@ -216,10 +216,10 @@ public class AbstractPersistentFsmActorTest {
             String persistenceId = generateId();
 
             TestProbe reportActorProbe = new TestProbe(system);
-            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, reportActorProbe.ref()));
+            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, reportActorProbe.ref()));
 
             watch(fsmRef);
-            fsmRef.tell(new FSM.SubscribeTransitionCallBack(getRef()), getRef());
+            fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
             Item shirt = new Item("1", "Shirt", 59.99F);
             Item shoes = new Item("2", "Shoes", 89.99F);
@@ -231,13 +231,13 @@ public class AbstractPersistentFsmActorTest {
             fsmRef.tell(Buy.INSTANCE, getRef());
             fsmRef.tell(Leave.INSTANCE, getRef());
 
-            CurrentState currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
+            CurrentState currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
-            FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
+            PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
-            stateTransition = expectMsgClass(FSM.Transition.class);
+            stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.SHOPPING, UserState.PAID);
 
             PurchaseWasMade purchaseWasMade = reportActorProbe.expectMsgClass(PurchaseWasMade.class);
@@ -253,10 +253,10 @@ public class AbstractPersistentFsmActorTest {
             String persistenceId = generateId();
 
             TestProbe reportActorProbe = new TestProbe(system);
-            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, reportActorProbe.ref()));
+            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, reportActorProbe.ref()));
 
             watch(fsmRef);
-            fsmRef.tell(new FSM.SubscribeTransitionCallBack(getRef()), getRef());
+            fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
             Item shirt = new Item("1", "Shirt", 59.99F);
             Item shoes = new Item("2", "Shoes", 89.99F);
@@ -267,10 +267,10 @@ public class AbstractPersistentFsmActorTest {
             fsmRef.tell(new AddItem(coat), getRef());
             fsmRef.tell(Leave.INSTANCE, getRef());
 
-            CurrentState currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
+            CurrentState currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
-            FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
+            PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
             reportActorProbe.expectMsgClass(ShoppingCardDiscarded.class);
@@ -283,37 +283,37 @@ public class AbstractPersistentFsmActorTest {
     public void testCorrectStateTimeoutFollowingRecovery() {
         new JavaTestKit(system) {{
             String persistenceId = generateId();
-            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, dummyReportActorRef));
+            ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
 
             watch(fsmRef);
-            fsmRef.tell(new FSM.SubscribeTransitionCallBack(getRef()), getRef());
+            fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
             Item shirt = new Item("1", "Shirt", 59.99F);
 
             fsmRef.tell(new AddItem(shirt), getRef());
 
-            CurrentState currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
+            CurrentState currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
-            FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
+            PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
             expectNoMsg(duration("0.6seconds")); //randomly chosen delay, less than the timeout, before stopping the FSM
             fsmRef.tell(PoisonPill.getInstance(), ActorRef.noSender());
             expectTerminated(fsmRef);
 
-            final ActorRef recoveredFsmRef = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, dummyReportActorRef));
+            final ActorRef recoveredFsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
             watch(recoveredFsmRef);
-            recoveredFsmRef.tell(new FSM.SubscribeTransitionCallBack(getRef()), getRef());
+            recoveredFsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
 
-            currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
+            currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.SHOPPING);
 
             new Within(duration("0.9 seconds"), duration("1.9 seconds")) {
                 @Override
                 protected void run() {
-                    FSM.Transition stateTransition = expectMsgClass(FSM.Transition.class);
+                    PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
                     assertTransition(stateTransition, recoveredFsmRef, UserState.SHOPPING, UserState.INACTIVE);
                 }
             };
@@ -322,11 +322,11 @@ public class AbstractPersistentFsmActorTest {
             recoveredFsmRef.tell(PoisonPill.getInstance(), ActorRef.noSender());
             expectTerminated(recoveredFsmRef);
 
-            final ActorRef recoveredFsmRef2 = system.actorOf(WebStoreCustomerFSMActor.props(persistenceId, dummyReportActorRef));
+            final ActorRef recoveredFsmRef2 = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
             watch(recoveredFsmRef2);
-            recoveredFsmRef2.tell(new FSM.SubscribeTransitionCallBack(getRef()), getRef());
+            recoveredFsmRef2.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
-            currentState = expectMsgClass(akka.persistence.fsm.FSM.CurrentState.class);
+            currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.INACTIVE);
 
             new Within(duration("1.9 seconds"), duration("2.9 seconds")) {
@@ -339,7 +339,7 @@ public class AbstractPersistentFsmActorTest {
     }
 
 
-    private static <State, From extends State, To extends State> void assertTransition(FSM.Transition transition, ActorRef ref, From from, To to) {
+    private static <State, From extends State, To extends State> void assertTransition(PersistentFSM.Transition transition, ActorRef ref, From from, To to) {
         assertEquals(ref, transition.fsmRef());
         assertEquals(from, transition.from());
         assertEquals(to, transition.to());
@@ -350,11 +350,11 @@ public class AbstractPersistentFsmActorTest {
     }
 
 
-    public static class WebStoreCustomerFSMActor extends AbstractPersistentFsmActor<WebStoreCustomerFSMActor.UserState, WebStoreCustomerFSMActor.ShoppingCart, WebStoreCustomerFSMActor.DomainEvent> {
+    public static class WebStoreCustomerFSM extends AbstractPersistentFSM<WebStoreCustomerFSM.UserState, WebStoreCustomerFSM.ShoppingCart, WebStoreCustomerFSM.DomainEvent> {
 
         //State name
         //#customer-states
-        enum UserState implements PersistentFsmActor.FSMState {
+        enum UserState implements PersistentFSM.FSMState {
             LOOKING_AROUND("Looking Around"),
             SHOPPING("Shopping"),
             INACTIVE("Inactive"),
@@ -506,10 +506,10 @@ public class AbstractPersistentFsmActorTest {
         }
 
         public static Props props(String persistenceId, ActorRef reportActor) {
-            return Props.create(WebStoreCustomerFSMActor.class, persistenceId, reportActor);
+            return Props.create(WebStoreCustomerFSM.class, persistenceId, reportActor);
         }
 
-        public WebStoreCustomerFSMActor(String persistenceId, ActorRef reportActor) {
+        public WebStoreCustomerFSM(String persistenceId, ActorRef reportActor) {
             this.persistenceId = persistenceId;
 
             //#customer-fsm-body

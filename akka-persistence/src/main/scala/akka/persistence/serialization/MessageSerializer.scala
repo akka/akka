@@ -7,7 +7,7 @@ package akka.persistence.serialization
 import akka.actor.{ ActorPath, ExtendedActorSystem }
 import akka.persistence.AtLeastOnceDelivery._
 import akka.persistence._
-import akka.persistence.fsm.PersistentFsmActor.StateChangeEvent
+import akka.persistence.fsm.PersistentFSM.StateChangeEvent
 import akka.persistence.serialization.{ MessageFormats ⇒ mf }
 import akka.serialization._
 import com.google.protobuf._
@@ -23,7 +23,7 @@ import scala.language.existentials
 trait Message extends Serializable
 
 /**
- * Protobuf serializer for [[akka.persistence.PersistentRepr]], [[akka.persistence.AtLeastOnceDelivery]] and [[akka.persistence.fsm.PersistentFsmActor.StateChangeEvent]] messages.
+ * Protobuf serializer for [[akka.persistence.PersistentRepr]], [[akka.persistence.AtLeastOnceDelivery]] and [[akka.persistence.fsm.PersistentFSM.StateChangeEvent]] messages.
  */
 class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import PersistentRepr.Undefined

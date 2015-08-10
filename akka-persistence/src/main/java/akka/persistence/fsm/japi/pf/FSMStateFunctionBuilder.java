@@ -4,7 +4,8 @@
 
 package akka.persistence.fsm.japi.pf;
 
-import akka.persistence.fsm.FSM;
+import akka.persistence.fsm.PersistentFSM;
+import akka.persistence.fsm.PersistentFSMBase;
 import akka.japi.pf.FI;
 import akka.japi.pf.PFBuilder;
 import scala.PartialFunction;
@@ -23,8 +24,8 @@ import java.util.List;
 @SuppressWarnings("rawtypes")
 public class FSMStateFunctionBuilder<S, D, E> {
 
-  private PFBuilder<FSM.Event<D>, FSM.State<S, D, E>> builder =
-    new PFBuilder<FSM.Event<D>, FSM.State<S, D, E>>();
+  private PFBuilder<PersistentFSM.Event<D>, PersistentFSM.State<S, D, E>> builder =
+    new PFBuilder<PersistentFSM.Event<D>, PersistentFSM.State<S, D, E>>();
 
   /**
    * An erased processing of the event matcher. The compile time checks are enforced
@@ -47,10 +48,10 @@ public class FSMStateFunctionBuilder<S, D, E> {
                                                     final Object dataOrType,
                                                     final FI.TypedPredicate2 predicate,
                                                     final FI.Apply2 apply) {
-    builder.match(FSM.Event.class,
-      new FI.TypedPredicate<FSM.Event>() {
+    builder.match(PersistentFSM.Event.class,
+      new FI.TypedPredicate<PersistentFSM.Event>() {
         @Override
-        public boolean defined(FSM.Event e) {
+        public boolean defined(PersistentFSM.Event e) {
           boolean res = true;
           if (eventOrType != null) {
             if (eventOrType instanceof Class) {
@@ -78,10 +79,10 @@ public class FSMStateFunctionBuilder<S, D, E> {
           return res;
         }
       },
-      new FI.Apply<FSM.Event, FSM.State<S, D, E>>() {
-        public FSM.State<S, D, E> apply(FSM.Event e) throws Exception {
+      new FI.Apply<PersistentFSM.Event, PersistentFSM.State<S, D, E>>() {
+        public PersistentFSM.State<S, D, E> apply(PersistentFSM.Event e) throws Exception {
           @SuppressWarnings("unchecked")
-          FSM.State<S, D, E> res = (FSM.State<S, D, E>) apply.apply(e.event(), e.stateData());
+          PersistentFSM.State<S, D, E> res = (PersistentFSM.State<S, D, E>) apply.apply(e.event(), e.stateData());
           return res;
         }
       }
@@ -104,7 +105,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
   public final <P, Q> FSMStateFunctionBuilder<S, D, E> event(final Class<P> eventType,
                                                           final Class<Q> dataType,
                                                           final FI.TypedPredicate2<P, Q> predicate,
-                                                          final FI.Apply2<P, Q, FSM.State<S, D, E>> apply) {
+                                                          final FI.Apply2<P, Q, PersistentFSM.State<S, D, E>> apply) {
     erasedEvent(eventType, dataType, predicate, apply);
     return this;
   }
@@ -121,7 +122,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    */
   public <P, Q> FSMStateFunctionBuilder<S, D, E> event(final Class<P> eventType,
                                                     final Class<Q> dataType,
-                                                    final FI.Apply2<P, Q, FSM.State<S, D, E>> apply) {
+                                                    final FI.Apply2<P, Q, PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(eventType, dataType, null, apply);
   }
 
@@ -135,7 +136,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    */
   public <P> FSMStateFunctionBuilder<S, D, E> event(final Class<P> eventType,
                                                  final FI.TypedPredicate2<P, D> predicate,
-                                                 final FI.Apply2<P, D, FSM.State<S, D, E>> apply) {
+                                                 final FI.Apply2<P, D, PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(eventType, null, predicate, apply);
   }
 
@@ -147,7 +148,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    * @return the builder with the case statement added
    */
   public <P> FSMStateFunctionBuilder<S, D, E> event(final Class<P> eventType,
-                                                 final FI.Apply2<P, D, FSM.State<S, D, E>> apply) {
+                                                 final FI.Apply2<P, D, PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(eventType, null, null, apply);
   }
 
@@ -159,7 +160,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    * @return the builder with the case statement added
    */
   public FSMStateFunctionBuilder<S, D, E> event(final FI.TypedPredicate2<Object, D> predicate,
-                                             final FI.Apply2<Object, D, FSM.State<S, D, E>> apply) {
+                                             final FI.Apply2<Object, D, PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(null, null, predicate, apply);
   }
 
@@ -175,11 +176,11 @@ public class FSMStateFunctionBuilder<S, D, E> {
    */
   public <Q> FSMStateFunctionBuilder<S, D, E> event(final List<Object> eventMatches,
                                                  final Class<Q> dataType,
-                                                 final FI.Apply2<Object, Q, FSM.State<S, D, E>> apply) {
-    builder.match(FSM.Event.class,
-      new FI.TypedPredicate<FSM.Event>() {
+                                                 final FI.Apply2<Object, Q, PersistentFSM.State<S, D, E>> apply) {
+    builder.match(PersistentFSM.Event.class,
+      new FI.TypedPredicate<PersistentFSM.Event>() {
         @Override
-        public boolean defined(FSM.Event e) {
+        public boolean defined(PersistentFSM.Event e) {
           if (dataType != null && !dataType.isInstance(e.stateData()))
             return false;
 
@@ -198,8 +199,8 @@ public class FSMStateFunctionBuilder<S, D, E> {
           return emMatch;
         }
       },
-      new FI.Apply<FSM.Event, FSM.State<S, D, E>>() {
-        public FSM.State<S, D, E> apply(FSM.Event e) throws Exception {
+      new FI.Apply<PersistentFSM.Event, PersistentFSM.State<S, D, E>>() {
+        public PersistentFSM.State<S, D, E> apply(PersistentFSM.Event e) throws Exception {
           @SuppressWarnings("unchecked")
           Q q = (Q) e.stateData();
           return apply.apply(e.event(), q);
@@ -219,7 +220,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    * @return the builder with the case statement added
    */
   public FSMStateFunctionBuilder<S, D, E> event(final List<Object> eventMatches,
-                                             final FI.Apply2<Object, D, FSM.State<S, D, E>> apply) {
+                                             final FI.Apply2<Object, D, PersistentFSM.State<S, D, E>> apply) {
     return event(eventMatches, null, apply);
   }
 
@@ -234,7 +235,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    */
   public <P, Q> FSMStateFunctionBuilder<S, D, E> eventEquals(final P event,
                                                           final Class<Q> dataType,
-                                                          final FI.Apply2<P, Q, FSM.State<S, D, E>> apply) {
+                                                          final FI.Apply2<P, Q, PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(event, dataType, null, apply);
   }
 
@@ -246,7 +247,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    * @return the builder with the case statement added
    */
   public <P> FSMStateFunctionBuilder<S, D, E> eventEquals(final P event,
-                                                       final FI.Apply2<P, D, FSM.State<S, D, E>> apply) {
+                                                       final FI.Apply2<P, D, PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(event, null, null, apply);
   }
 
@@ -256,7 +257,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    * @param apply  an action to apply to the event and state data
    * @return the builder with the case statement added
    */
-  public FSMStateFunctionBuilder<S, D, E> anyEvent(final FI.Apply2<Object, D, FSM.State<S, D, E>> apply) {
+  public FSMStateFunctionBuilder<S, D, E> anyEvent(final FI.Apply2<Object, D, PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(null, null, null, apply);
   }
 
@@ -266,7 +267,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    *
    * @return  a PartialFunction for this builder.
    */
-  public PartialFunction<FSM.Event<D>, FSM.State<S, D, E>> build() {
+  public PartialFunction<PersistentFSM.Event<D>, PersistentFSM.State<S, D, E>> build() {
     return builder.build();
   }
 }
