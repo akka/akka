@@ -55,7 +55,7 @@ class ServiceRegistrySpec extends MultiNodeSpec(ServiceRegistrySpec) with STMult
   }
 
   "Demo of a replicated service registry" must {
-    "join cluster" in within(10.seconds) {
+    "join cluster" in within(20.seconds) {
       join(node1, node1)
       join(node2, node1)
       join(node3, node1)

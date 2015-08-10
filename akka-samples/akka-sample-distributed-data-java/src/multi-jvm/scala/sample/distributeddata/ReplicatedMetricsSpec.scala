@@ -46,7 +46,7 @@ class ReplicatedMetricsSpec extends MultiNodeSpec(ReplicatedMetricsSpec) with ST
   }
 
   "Demo of a replicated metrics" must {
-    "join cluster" in within(10.seconds) {
+    "join cluster" in within(20.seconds) {
       join(node1, node1)
       join(node2, node1)
       join(node3, node1)
