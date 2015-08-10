@@ -113,9 +113,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
    * [[Flow]] for processing all incoming connections.
    *
-   * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
-   * connections are being accepted at maximum rate, which, depending on the applications, might
-   * present a DoS risk!
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting.
    */
   def bindAndHandle(handler: Flow[HttpRequest, HttpResponse, _],
                     interface: String, port: Int,
@@ -128,9 +127,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
    * [[Flow]] for processing all incoming connections.
    *
-   * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
-   * connections are being accepted at maximum rate, which, depending on the applications, might
-   * present a DoS risk!
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting.
    */
   def bindAndHandle(handler: Flow[HttpRequest, HttpResponse, _],
                     interface: String, port: Int,
@@ -146,9 +144,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
    * [[Flow]] for processing all incoming connections.
    *
-   * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
-   * connections are being accepted at maximum rate, which, depending on the applications, might
-   * present a DoS risk!
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting.
    */
   def bindAndHandleSync(handler: Function[HttpRequest, HttpResponse],
                         interface: String, port: Int,
@@ -160,9 +157,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
    * [[Flow]] for processing all incoming connections.
    *
-   * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
-   * connections are being accepted at maximum rate, which, depending on the applications, might
-   * present a DoS risk!
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting.
    */
   def bindAndHandleSync(handler: Function[HttpRequest, HttpResponse],
                         interface: String, port: Int,
@@ -178,9 +174,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
    * [[Flow]] for processing all incoming connections.
    *
-   * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
-   * connections are being accepted at maximum rate, which, depending on the applications, might
-   * present a DoS risk!
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting.
    */
   def bindAndHandleAsync(handler: Function[HttpRequest, Future[HttpResponse]],
                          interface: String, port: Int,
@@ -192,9 +187,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
    * [[Flow]] for processing all incoming connections.
    *
-   * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
-   * connections are being accepted at maximum rate, which, depending on the applications, might
-   * present a DoS risk!
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting.
    */
   def bindAndHandleAsync(handler: Function[HttpRequest, Future[HttpResponse]],
                          interface: String, port: Int,
