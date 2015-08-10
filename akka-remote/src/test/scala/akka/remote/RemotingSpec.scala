@@ -520,7 +520,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val maxProtocolOverhead = 500 // Make sure we're still under size after the message is serialized, etc
       val big = byteStringOfSize(maxPayloadBytes - maxProtocolOverhead)
       verifySend(big) {
-        expectMsg(1.second, big)
+        expectMsg(3.seconds, big)
       }
     }
 
