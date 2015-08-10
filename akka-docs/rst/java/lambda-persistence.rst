@@ -485,6 +485,14 @@ If not specified, they default to ``SnapshotSelectionCriteria.latest()`` which s
 To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.none()``. A recovery where no
 saved snapshot matches the specified ``SnapshotSelectionCriteria`` will replay all journaled messages.
 
+.. note::
+  In order to use snapshots a default snapshot-store (``akka.persistence.snapshot-store.plugin``) must be configured,
+  or the persistent actor can pick a snapshot store explicitly by overriding ``String snapshotPluginId()``.
+
+  Since it is acceptable for some applications to not use any snapshotting, it is legal to not configure a snapshot store,
+  however Akka will log a warning message when this situation is detected and then continue to operate until
+  an actor tries to store a snapshot, at which point the the operation will fail (by replying with an ``SaveSnapshotFailure`` for example).
+
 Snapshot deletion
 -----------------
 

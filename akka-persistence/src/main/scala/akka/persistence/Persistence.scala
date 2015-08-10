@@ -136,6 +136,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   private def log: LoggingAdapter = Logging(system, getClass.getName)
 
   private val DefaultPluginDispatcherId = "akka.persistence.dispatchers.default-plugin-dispatcher"
+  private val NoSnapshotStorePluginId = "akka.persistence.no-snapshot-store"
 
   private val config = system.settings.config.getConfig("akka.persistence")
 
@@ -149,8 +150,13 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   // Lazy, so user is not forced to configure defaults when she is not using them.
   private lazy val defaultSnapshotPluginId = {
     val configPath = config.getString("snapshot-store.plugin")
-    require(!isEmpty(configPath), "default snapshot-store plugin is not configured, see 'reference.conf'")
-    configPath
+
+    if (isEmpty(configPath)) {
+      log.warning("No default snapshot store configured! " +
+        "To configure a default snapshot-store plugin set the `akka.persistence.snapshot-store.plugin` key. " +
+        "For details see 'reference.conf'")
+      NoSnapshotStorePluginId
+    } else configPath
   }
 
   val settings = new PersistenceSettings(config)
