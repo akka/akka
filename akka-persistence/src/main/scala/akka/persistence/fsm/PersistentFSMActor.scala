@@ -4,25 +4,27 @@
 
 package akka.persistence.fsm
 
-import akka.actor.ActorLogging
-import akka.persistence.fsm.PersistentFsmActor.FSMState
+import akka.actor._
+import akka.persistence.fsm.PersistentFSM.{ State, FSMState }
 import akka.persistence.serialization.Message
 import akka.persistence.{ PersistentActor, RecoveryCompleted }
 
+import scala.annotation.varargs
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.reflect.ClassTag
 
 /**
- * FSM actor implementation with persistent state
+ * A FSM implementation with persistent state.
  *
  * Supports the usual [[akka.actor.FSM]] functionality with additional persistence features.
  * State and State Data are persisted on every state change.
- * FSM is identified by 'persistenceId' value.
- * Persistence execution order is: persist -&gt; wait for ack -&gt; apply state. Incoming messages are deferred until the state is applied.
+ * `PersistentFSM` is identified by 'persistenceId' value.
+ * Persistence execution order is: persist -&gt; wait for ack -&gt; apply state.
+ * Incoming messages are deferred until the state is applied.
  */
-trait PersistentFsmActor[S <: FSMState, D, E] extends PersistentActor with FSM[S, D, E] with ActorLogging {
-  import akka.persistence.fsm.PersistentFsmActor._
+trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with PersistentFSMBase[S, D, E] with ActorLogging {
+  import akka.persistence.fsm.PersistentFSM._
 
   /**
    * Enables to pass a ClassTag of a domain event base type from the implementing class
@@ -60,7 +62,7 @@ trait PersistentFsmActor[S <: FSMState, D, E] extends PersistentActor with FSM[S
    * After recovery events are handled as in usual FSM actor
    */
   override def receiveCommand: Receive = {
-    super[FSM].receive
+    super[PersistentFSMBase].receive
   }
 
   /**
@@ -90,7 +92,7 @@ trait PersistentFsmActor[S <: FSMState, D, E] extends PersistentActor with FSM[S
   }
 }
 
-object PersistentFsmActor {
+object PersistentFSM {
   /**
    * Base persistent event class
    */
@@ -110,6 +112,201 @@ object PersistentFsmActor {
   trait FSMState {
     def identifier: String
   }
+
+  /**
+   * A partial function value which does not match anything and can be used to
+   * “reset” `whenUnhandled` and `onTermination` handlers.
+   *
+   * {{{
+   * onTermination(FSM.NullFunction)
+   * }}}
+   */
+  object NullFunction extends PartialFunction[Any, Nothing] {
+    def isDefinedAt(o: Any) = false
+    def apply(o: Any) = sys.error("undefined")
+  }
+
+  /**
+   * Message type which is sent directly to the subscribed actor in
+   * [[akka.actor.FSM.SubscribeTransitionCallBack]] before sending any
+   * [[akka.actor.FSM.Transition]] messages.
+   */
+  final case class CurrentState[S](fsmRef: ActorRef, state: S, timeout: Option[FiniteDuration])
+
+  /**
+   * Message type which is used to communicate transitions between states to
+   * all subscribed listeners (use [[akka.actor.FSM.SubscribeTransitionCallBack]]).
+   */
+  final case class Transition[S](fsmRef: ActorRef, from: S, to: S, timeout: Option[FiniteDuration])
+
+  /**
+   * Send this to an [[akka.actor.FSM]] to request first the [[PersistentFSM.CurrentState]]
+   * and then a series of [[PersistentFSM.Transition]] updates. Cancel the subscription
+   * using [[PersistentFSM.UnsubscribeTransitionCallBack]].
+   */
+  final case class SubscribeTransitionCallBack(actorRef: ActorRef)
+
+  /**
+   * Unsubscribe from [[akka.actor.FSM.Transition]] notifications which was
+   * effected by sending the corresponding [[akka.actor.FSM.SubscribeTransitionCallBack]].
+   */
+  final case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
+
+  /**
+   * Reason why this [[akka.actor.FSM]] is shutting down.
+   */
+  sealed trait Reason
+
+  /**
+   * Default reason if calling `stop()`.
+   */
+  case object Normal extends Reason
+
+  /**
+   * Reason given when someone was calling `system.stop(fsm)` from outside;
+   * also applies to `Stop` supervision directive.
+   */
+  case object Shutdown extends Reason
+
+  /**
+   * Signifies that the [[akka.actor.FSM]] is shutting itself down because of
+   * an error, e.g. if the state to transition into does not exist. You can use
+   * this to communicate a more precise cause to the `onTermination` block.
+   */
+  final case class Failure(cause: Any) extends Reason
+
+  /**
+   * This case object is received in case of a state timeout.
+   */
+  case object StateTimeout
+
+  /** INTERNAL API */
+  private[persistence] final case class TimeoutMarker(generation: Long)
+
+  /**
+   * INTERNAL API
+   */
+  // FIXME: what about the cancellable?
+  private[persistence] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
+    extends NoSerializationVerificationNeeded {
+    private var ref: Option[Cancellable] = _
+    private val scheduler = context.system.scheduler
+    private implicit val executionContext = context.dispatcher
+
+    def schedule(actor: ActorRef, timeout: FiniteDuration): Unit =
+      ref = Some(
+        if (repeat) scheduler.schedule(timeout, timeout, actor, this)
+        else scheduler.scheduleOnce(timeout, actor, this))
+
+    def cancel(): Unit =
+      if (ref.isDefined) {
+        ref.get.cancel()
+        ref = None
+      }
+  }
+
+  /**
+   * This extractor is just convenience for matching a (S, S) pair, including a
+   * reminder what the new state is.
+   */
+  object -> {
+    def unapply[S](in: (S, S)) = Some(in)
+  }
+
+  /**
+   * Log Entry of the [[akka.actor.LoggingFSM]], can be obtained by calling `getLog`.
+   */
+  final case class LogEntry[S, D](stateName: S, stateData: D, event: Any)
+
+  /**
+   * This captures all of the managed state of the [[akka.actor.FSM]]: the state
+   * name, the state data, possibly custom timeout, stop reason, replies
+   * accumulated while processing the last message, possibly domain event and handler
+   * to be executed after FSM moves to the new state (also triggered when staying in the same state)
+   */
+  final case class State[S, D, E](
+    stateName: S,
+    stateData: D,
+    timeout: Option[FiniteDuration] = None,
+    stopReason: Option[Reason] = None,
+    replies: List[Any] = Nil,
+    domainEvents: Seq[E] = Nil,
+    afterTransitionDo: D ⇒ Unit = { _: D ⇒ })(private[akka] val notifies: Boolean = true) {
+
+    /**
+     * Copy object and update values if needed.
+     */
+    private[akka] def copy(stateName: S = stateName, stateData: D = stateData, timeout: Option[FiniteDuration] = timeout, stopReason: Option[Reason] = stopReason, replies: List[Any] = replies, notifies: Boolean = notifies, domainEvents: Seq[E] = domainEvents, afterTransitionDo: D ⇒ Unit = afterTransitionDo): State[S, D, E] = {
+      State(stateName, stateData, timeout, stopReason, replies, domainEvents, afterTransitionDo)(notifies)
+    }
+
+    /**
+     * Modify state transition descriptor to include a state timeout for the
+     * next state. This timeout overrides any default timeout set for the next
+     * state.
+     *
+     * Use Duration.Inf to deactivate an existing timeout.
+     */
+    def forMax(timeout: Duration): State[S, D, E] = timeout match {
+      case f: FiniteDuration ⇒ copy(timeout = Some(f))
+      case _                 ⇒ copy(timeout = None)
+    }
+
+    /**
+     * Send reply to sender of the current message, if available.
+     *
+     * @return this state transition descriptor
+     */
+    def replying(replyValue: Any): State[S, D, E] = {
+      copy(replies = replyValue :: replies)
+    }
+
+    /**
+     * Modify state transition descriptor with new state data. The data will be
+     * set when transitioning to the new state.
+     */
+    private[akka] def using(@deprecatedName('nextStateDate) nextStateData: D): State[S, D, E] = {
+      copy(stateData = nextStateData)
+    }
+
+    /**
+     * INTERNAL API.
+     */
+    private[akka] def withStopReason(reason: Reason): State[S, D, E] = {
+      copy(stopReason = Some(reason))
+    }
+
+    private[akka] def withNotification(notifies: Boolean): State[S, D, E] = {
+      copy(notifies = notifies)
+    }
+
+    /**
+     * Specify domain events to be applied when transitioning to the new state.
+     */
+    @varargs def applying(events: E*): State[S, D, E] = {
+      copy(domainEvents = domainEvents ++ events)
+    }
+
+    /**
+     * Register a handler to be triggered after the state has been persisted successfully
+     */
+    def andThen(handler: D ⇒ Unit): State[S, D, E] = {
+      copy(afterTransitionDo = handler)
+    }
+  }
+
+  /**
+   * All messages sent to the [[akka.actor.FSM]] will be wrapped inside an
+   * `Event`, which allows pattern matching to extract both state and data.
+   */
+  final case class Event[D](event: Any, stateData: D) extends NoSerializationVerificationNeeded
+
+  /**
+   * Case class representing the state of the [[akka.actor.FSM]] whithin the
+   * `onTermination` block.
+   */
+  final case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D) extends NoSerializationVerificationNeeded
+
 }
 
 /**
@@ -119,7 +316,7 @@ object PersistentFsmActor {
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
-abstract class AbstractPersistentFsmActor[S <: FSMState, D, E] extends AbstractFSM[S, D, E] with PersistentFsmActor[S, D, E] {
+abstract class AbstractPersistentFSM[S <: FSMState, D, E] extends AbstractPersistentFSMBase[S, D, E] with PersistentFSM[S, D, E] {
   import java.util.function.Consumer
 
   /**
@@ -151,4 +348,7 @@ abstract class AbstractPersistentFsmActor[S <: FSMState, D, E] extends AbstractF
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
-abstract class AbstractPersistentLoggingFsmActor[S <: FSMState, D, E] extends AbstractLoggingFSM[S, D, E] with PersistentFsmActor[S, D, E]
+abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
+  extends AbstractPersistentFSMBase[S, D, E]
+  with LoggingPersistentFSM[S, D, E]
+  with PersistentFSM[S, D, E]

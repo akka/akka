@@ -4,7 +4,8 @@
 
 package akka.persistence.fsm.japi.pf;
 
-import akka.persistence.fsm.FSM;
+import akka.persistence.fsm.PersistentFSM;
+import akka.persistence.fsm.PersistentFSMBase;
 import akka.japi.pf.FI;
 import akka.japi.pf.UnitPFBuilder;
 import scala.PartialFunction;
@@ -20,8 +21,8 @@ import scala.runtime.BoxedUnit;
  */
 public class FSMStopBuilder<S, D> {
 
-  private UnitPFBuilder<FSM.StopEvent<S, D>> builder =
-    new UnitPFBuilder<FSM.StopEvent<S, D>>();
+  private UnitPFBuilder<PersistentFSM.StopEvent<S, D>> builder =
+    new UnitPFBuilder<>();
 
   /**
    * Add a case statement that matches on an {@link akka.actor.FSM.Reason}.
@@ -30,17 +31,17 @@ public class FSMStopBuilder<S, D> {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  public FSMStopBuilder<S, D> stop(final FSM.Reason reason,
+  public FSMStopBuilder<S, D> stop(final PersistentFSM.Reason reason,
                                    final FI.UnitApply2<S, D> apply) {
-    builder.match(FSM.StopEvent.class,
-      new FI.TypedPredicate<FSM.StopEvent>() {
+    builder.match(PersistentFSM.StopEvent.class,
+      new FI.TypedPredicate<PersistentFSM.StopEvent>() {
         @Override
-        public boolean defined(FSM.StopEvent e) {
+        public boolean defined(PersistentFSM.StopEvent e) {
           return reason.equals(e.reason());
         }
       },
-      new FI.UnitApply<FSM.StopEvent>() {
-        public void apply(FSM.StopEvent e) throws Exception {
+      new FI.UnitApply<PersistentFSM.StopEvent>() {
+        public void apply(PersistentFSM.StopEvent e) throws Exception {
           @SuppressWarnings("unchecked")
           S s = (S) e.currentState();
           @SuppressWarnings("unchecked")
@@ -61,7 +62,7 @@ public class FSMStopBuilder<S, D> {
    * @param <P>  the reason type to match on
    * @return the builder with the case statement added
    */
-  public <P extends FSM.Reason> FSMStopBuilder<S, D> stop(final Class<P> reasonType,
+  public <P extends PersistentFSM.Reason> FSMStopBuilder<S, D> stop(final Class<P> reasonType,
                                                           final FI.UnitApply3<P, S, D> apply) {
     return this.stop(reasonType,
       new FI.TypedPredicate<P>() {
@@ -81,13 +82,13 @@ public class FSMStopBuilder<S, D> {
    * @param <P>  the reason type to match on
    * @return the builder with the case statement added
    */
-  public <P extends FSM.Reason> FSMStopBuilder<S, D> stop(final Class<P> reasonType,
+  public <P extends PersistentFSM.Reason> FSMStopBuilder<S, D> stop(final Class<P> reasonType,
                                                           final FI.TypedPredicate<P> predicate,
                                                           final FI.UnitApply3<P, S, D> apply) {
-    builder.match(FSM.StopEvent.class,
-      new FI.TypedPredicate<FSM.StopEvent>() {
+    builder.match(PersistentFSM.StopEvent.class,
+      new FI.TypedPredicate<PersistentFSM.StopEvent>() {
         @Override
-        public boolean defined(FSM.StopEvent e) {
+        public boolean defined(PersistentFSM.StopEvent e) {
           if (reasonType.isInstance(e.reason())) {
             @SuppressWarnings("unchecked")
             P p = (P) e.reason();
@@ -97,8 +98,8 @@ public class FSMStopBuilder<S, D> {
           }
         }
       },
-      new FI.UnitApply<FSM.StopEvent>() {
-        public void apply(FSM.StopEvent e) throws Exception {
+      new FI.UnitApply<PersistentFSM.StopEvent>() {
+        public void apply(PersistentFSM.StopEvent e) throws Exception {
           @SuppressWarnings("unchecked")
           P p = (P) e.reason();
           @SuppressWarnings("unchecked")
@@ -119,7 +120,7 @@ public class FSMStopBuilder<S, D> {
    *
    * @return  a PartialFunction for this builder.
    */
-  public PartialFunction<FSM.StopEvent<S, D>, BoxedUnit> build() {
+  public PartialFunction<PersistentFSM.StopEvent<S, D>, BoxedUnit> build() {
     return builder.build();
   }
 }

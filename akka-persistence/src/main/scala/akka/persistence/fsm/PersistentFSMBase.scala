@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.persistence.fsm
 
@@ -7,211 +7,9 @@ import akka.actor._
 import akka.japi.pf.{ UnitPFBuilder, UnitMatch, FSMTransitionHandlerBuilder }
 
 import language.implicitConversions
-import scala.annotation.varargs
-import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
 import scala.concurrent.duration.FiniteDuration
-
-object FSM {
-
-  /**
-   * A partial function value which does not match anything and can be used to
-   * “reset” `whenUnhandled` and `onTermination` handlers.
-   *
-   * {{{
-   * onTermination(FSM.NullFunction)
-   * }}}
-   */
-  object NullFunction extends PartialFunction[Any, Nothing] {
-    def isDefinedAt(o: Any) = false
-    def apply(o: Any) = sys.error("undefined")
-  }
-
-  /**
-   * Message type which is sent directly to the subscribed actor in
-   * [[akka.actor.FSM.SubscribeTransitionCallBack]] before sending any
-   * [[akka.actor.FSM.Transition]] messages.
-   */
-  final case class CurrentState[S](fsmRef: ActorRef, state: S, timeout: Option[FiniteDuration] = None)
-
-  /**
-   * Message type which is used to communicate transitions between states to
-   * all subscribed listeners (use [[akka.actor.FSM.SubscribeTransitionCallBack]]).
-   */
-  final case class Transition[S](fsmRef: ActorRef, from: S, to: S, timeout: Option[FiniteDuration] = None)
-
-  /**
-   * Send this to an [[akka.actor.FSM]] to request first the [[FSM.CurrentState]]
-   * and then a series of [[FSM.Transition]] updates. Cancel the subscription
-   * using [[FSM.UnsubscribeTransitionCallBack]].
-   */
-  final case class SubscribeTransitionCallBack(actorRef: ActorRef)
-
-  /**
-   * Unsubscribe from [[akka.actor.FSM.Transition]] notifications which was
-   * effected by sending the corresponding [[akka.actor.FSM.SubscribeTransitionCallBack]].
-   */
-  final case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
-
-  /**
-   * Reason why this [[akka.actor.FSM]] is shutting down.
-   */
-  sealed trait Reason
-
-  /**
-   * Default reason if calling `stop()`.
-   */
-  case object Normal extends Reason
-
-  /**
-   * Reason given when someone was calling `system.stop(fsm)` from outside;
-   * also applies to `Stop` supervision directive.
-   */
-  case object Shutdown extends Reason
-
-  /**
-   * Signifies that the [[akka.actor.FSM]] is shutting itself down because of
-   * an error, e.g. if the state to transition into does not exist. You can use
-   * this to communicate a more precise cause to the `onTermination` block.
-   */
-  final case class Failure(cause: Any) extends Reason
-
-  /**
-   * This case object is received in case of a state timeout.
-   */
-  case object StateTimeout
-
-  /**
-   * INTERNAL API
-   */
-  private final case class TimeoutMarker(generation: Long)
-
-  /**
-   * INTERNAL API
-   */
-  // FIXME: what about the cancellable?
-  private[akka] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
-    extends NoSerializationVerificationNeeded {
-    private var ref: Option[Cancellable] = _
-    private val scheduler = context.system.scheduler
-    private implicit val executionContext = context.dispatcher
-
-    def schedule(actor: ActorRef, timeout: FiniteDuration): Unit =
-      ref = Some(
-        if (repeat) scheduler.schedule(timeout, timeout, actor, this)
-        else scheduler.scheduleOnce(timeout, actor, this))
-
-    def cancel(): Unit =
-      if (ref.isDefined) {
-        ref.get.cancel()
-        ref = None
-      }
-  }
-
-  /**
-   * This extractor is just convenience for matching a (S, S) pair, including a
-   * reminder what the new state is.
-   */
-  object -> {
-    def unapply[S](in: (S, S)) = Some(in)
-  }
-
-  /**
-   * Log Entry of the [[akka.actor.LoggingFSM]], can be obtained by calling `getLog`.
-   */
-  final case class LogEntry[S, D](stateName: S, stateData: D, event: Any)
-
-  /**
-   * This captures all of the managed state of the [[akka.actor.FSM]]: the state
-   * name, the state data, possibly custom timeout, stop reason, replies
-   * accumulated while processing the last message, possibly domain event and handler
-   * to be executed after FSM moves to the new state (also triggered when staying in the same state)
-   */
-  final case class State[S, D, E](
-    stateName: S,
-    stateData: D,
-    timeout: Option[FiniteDuration] = None,
-    stopReason: Option[Reason] = None,
-    replies: List[Any] = Nil,
-    domainEvents: Seq[E] = Nil,
-    afterTransitionDo: D ⇒ Unit = { _: D ⇒ })(private[akka] val notifies: Boolean = true) {
-
-    /**
-     * Copy object and update values if needed.
-     */
-    private[akka] def copy(stateName: S = stateName, stateData: D = stateData, timeout: Option[FiniteDuration] = timeout, stopReason: Option[Reason] = stopReason, replies: List[Any] = replies, notifies: Boolean = notifies, domainEvents: Seq[E] = domainEvents, afterTransitionDo: D ⇒ Unit = afterTransitionDo): State[S, D, E] = {
-      State(stateName, stateData, timeout, stopReason, replies, domainEvents, afterTransitionDo)(notifies)
-    }
-
-    /**
-     * Modify state transition descriptor to include a state timeout for the
-     * next state. This timeout overrides any default timeout set for the next
-     * state.
-     *
-     * Use Duration.Inf to deactivate an existing timeout.
-     */
-    def forMax(timeout: Duration): State[S, D, E] = timeout match {
-      case f: FiniteDuration ⇒ copy(timeout = Some(f))
-      case _                 ⇒ copy(timeout = None)
-    }
-
-    /**
-     * Send reply to sender of the current message, if available.
-     *
-     * @return this state transition descriptor
-     */
-    def replying(replyValue: Any): State[S, D, E] = {
-      copy(replies = replyValue :: replies)
-    }
-
-    /**
-     * Modify state transition descriptor with new state data. The data will be
-     * set when transitioning to the new state.
-     */
-    private[akka] def using(@deprecatedName('nextStateDate) nextStateData: D): State[S, D, E] = {
-      copy(stateData = nextStateData)
-    }
-
-    /**
-     * INTERNAL API.
-     */
-    private[akka] def withStopReason(reason: Reason): State[S, D, E] = {
-      copy(stopReason = Some(reason))
-    }
-
-    private[akka] def withNotification(notifies: Boolean): State[S, D, E] = {
-      copy(notifies = notifies)
-    }
-
-    /**
-     * Specify domain events to be applied when transitioning to the new state.
-     */
-    @varargs def applying(events: E*): State[S, D, E] = {
-      copy(domainEvents = domainEvents ++ events)
-    }
-
-    /**
-     * Register a handler to be triggered after the state has been persisted successfully
-     */
-    def andThen(handler: D ⇒ Unit): State[S, D, E] = {
-      copy(afterTransitionDo = handler)
-    }
-  }
-
-  /**
-   * All messages sent to the [[akka.actor.FSM]] will be wrapped inside an
-   * `Event`, which allows pattern matching to extract both state and data.
-   */
-  final case class Event[D](event: Any, stateData: D) extends NoSerializationVerificationNeeded
-
-  /**
-   * Case class representing the state of the [[akka.actor.FSM]] whithin the
-   * `onTermination` block.
-   */
-  final case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D) extends NoSerializationVerificationNeeded
-
-}
 
 /**
  * Finite State Machine actor trait. Use as follows:
@@ -292,13 +90,13 @@ object FSM {
  *   isTimerActive("tock")
  * </pre>
  */
-trait FSM[S, D, E] extends Actor with Listeners with ActorLogging {
+trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging {
 
-  import akka.persistence.fsm.FSM._
+  import akka.persistence.fsm.PersistentFSM._
 
-  type State = FSM.State[S, D, E]
-  type Event = FSM.Event[D]
-  type StopEvent = FSM.StopEvent[S, D]
+  type State = PersistentFSM.State[S, D, E]
+  type Event = PersistentFSM.Event[D]
+  type StopEvent = PersistentFSM.StopEvent[S, D]
   type StateFunction = scala.PartialFunction[Event, State]
   type Timeout = Option[FiniteDuration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
@@ -306,19 +104,19 @@ trait FSM[S, D, E] extends Actor with Listeners with ActorLogging {
   /*
    * “import” so that these are visible without an import
    */
-  val Event: FSM.Event.type = FSM.Event
-  val StopEvent: FSM.StopEvent.type = FSM.StopEvent
+  val Event: PersistentFSM.Event.type = PersistentFSM.Event
+  val StopEvent: PersistentFSM.StopEvent.type = PersistentFSM.StopEvent
 
   /**
    * This extractor is just convenience for matching a (S, S) pair, including a
    * reminder what the new state is.
    */
-  val -> = FSM.->
+  val -> = PersistentFSM.->
 
   /**
    * This case object is received in case of a state timeout.
    */
-  val StateTimeout = FSM.StateTimeout
+  val StateTimeout = PersistentFSM.StateTimeout
 
   /**
    * ****************************************
@@ -349,7 +147,7 @@ trait FSM[S, D, E] extends Actor with Listeners with ActorLogging {
    * @param timeout state timeout for the initial state, overriding the default timeout for that state
    */
   final def startWith(stateName: S, stateData: D, timeout: Timeout = None): Unit =
-    currentState = FSM.State(stateName, stateData, timeout)()
+    currentState = PersistentFSM.State(stateName, stateData, timeout)()
 
   /**
    * Produce transition to other state.
@@ -361,7 +159,7 @@ trait FSM[S, D, E] extends Actor with Listeners with ActorLogging {
    * @param nextStateName state designator for the next state
    * @return state transition descriptor
    */
-  final def goto(nextStateName: S): State = FSM.State(nextStateName, currentState.stateData)()
+  final def goto(nextStateName: S): State = PersistentFSM.State(nextStateName, currentState.stateData)()
 
   /**
    * Produce "empty" transition descriptor.
@@ -675,7 +473,7 @@ trait FSM[S, D, E] extends Actor with Listeners with ActorLogging {
       if (currentState.stateName != nextState.stateName || nextState.notifies) {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
-        gossip(Transition(self, currentState.stateName, nextState.stateName))
+        gossip(Transition(self, currentState.stateName, nextState.stateName, nextState.timeout))
         this.nextState = null
       }
       currentState = nextState
@@ -722,7 +520,7 @@ trait FSM[S, D, E] extends Actor with Listeners with ActorLogging {
   }
 
   /**
-   * By default [[FSM.Failure]] is logged at error level and other reason
+   * By default [[PersistentFSM.Failure]] is logged at error level and other reason
    * types are not logged. It is possible to override this behavior.
    */
   protected def logTermination(reason: Reason): Unit = reason match {
@@ -738,9 +536,9 @@ trait FSM[S, D, E] extends Actor with Listeners with ActorLogging {
  *
  * @since 1.2
  */
-trait LoggingFSM[S, D, E] extends FSM[S, D, E] { this: Actor ⇒
+trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: Actor ⇒
 
-  import akka.persistence.fsm.FSM._
+  import akka.persistence.fsm.PersistentFSM._
 
   def logDepth: Int = 0
 
@@ -807,7 +605,7 @@ trait LoggingFSM[S, D, E] extends FSM[S, D, E] { this: Actor ⇒
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
-object AbstractFSM {
+object AbstractPersistentFSMBase {
   /**
    * A partial function value which does not match anything and can be used to
    * “reset” `whenUnhandled` and `onTermination` handlers.
@@ -816,7 +614,7 @@ object AbstractFSM {
    * onTermination(FSM.NullFunction())
    * }}}
    */
-  def NullFunction[S, D]: PartialFunction[S, D] = FSM.NullFunction
+  def NullFunction[S, D]: PartialFunction[S, D] = PersistentFSM.NullFunction
 }
 
 /**
@@ -826,12 +624,12 @@ object AbstractFSM {
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
-abstract class AbstractFSM[S, D, E] extends FSM[S, D, E] {
+abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D, E] {
   import akka.persistence.fsm.japi.pf.FSMStateFunctionBuilder
   import akka.persistence.fsm.japi.pf.FSMStopBuilder
   import akka.japi.pf.FI._
   import java.util.{ List ⇒ JList }
-  import FSM._
+  import PersistentFSM._
 
   /**
    * Insert a new StateFunction at the end of the processing chain for the
@@ -1083,7 +881,7 @@ abstract class AbstractFSM[S, D, E] extends FSM[S, D, E] {
   /**
    * Create an [[akka.japi.pf.FSMStopBuilder]] with the first case statement set.
    *
-   * A case statement that matches on an [[FSM.Reason]].
+   * A case statement that matches on an [[PersistentFSM.Reason]].
    *
    * @param reason  the reason for the termination
    * @param apply  an action to apply to the event and state data if there is a match
@@ -1161,20 +959,11 @@ abstract class AbstractFSM[S, D, E] extends FSM[S, D, E] {
   /**
    * Default reason if calling `stop()`.
    */
-  val Normal: FSM.Reason = FSM.Normal
+  val Normal: PersistentFSM.Reason = PersistentFSM.Normal
 
   /**
    * Reason given when someone was calling `system.stop(fsm)` from outside;
    * also applies to `Stop` supervision directive.
    */
-  val Shutdown: FSM.Reason = FSM.Shutdown
+  val Shutdown: PersistentFSM.Reason = PersistentFSM.Shutdown
 }
-
-/**
- * Java API: compatible with lambda expressions
- *
- * Finite State Machine actor abstract base class.
- *
- * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
- */
-abstract class AbstractLoggingFSM[S, D, E] extends AbstractFSM[S, D, E] with LoggingFSM[S, D, E]
