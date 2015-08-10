@@ -18,12 +18,22 @@ trait FormFieldDirectives extends ToNameReceptacleEnhancements {
   /**
    * Extracts an HTTP form field from the request.
    * Rejects the request if the defined form field matcher(s) don't match.
+   *
+   * Due to a bug in Scala 2.10, invocations of this method sometimes fail to compile with an
+   * "too many arguments for method formField" or "type mismatch" error.
+   *
+   * As a workaround add an `import FormFieldDirectives.FieldMagnet` or use Scala 2.11.x.
    */
   def formField(pdm: FieldMagnet): pdm.Out = pdm()
 
   /**
    * Extracts a number of HTTP form field from the request.
    * Rejects the request if the defined form field matcher(s) don't match.
+   *
+   * Due to a bug in Scala 2.10, invocations of this method sometimes fail to compile with an
+   * "too many arguments for method formFields" or "type mismatch" error.
+   *
+   * As a workaround add an `import FormFieldDirectives.FieldMagnet` or use Scala 2.11.x.
    */
   def formFields(pdm: FieldMagnet): pdm.Out = pdm()
 
