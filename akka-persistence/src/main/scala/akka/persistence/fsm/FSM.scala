@@ -33,13 +33,13 @@ object FSM {
    * [[akka.actor.FSM.SubscribeTransitionCallBack]] before sending any
    * [[akka.actor.FSM.Transition]] messages.
    */
-  final case class CurrentState[S](fsmRef: ActorRef, state: S)
+  final case class CurrentState[S](fsmRef: ActorRef, state: S, timeout: Option[FiniteDuration] = None)
 
   /**
    * Message type which is used to communicate transitions between states to
    * all subscribed listeners (use [[akka.actor.FSM.SubscribeTransitionCallBack]]).
    */
-  final case class Transition[S](fsmRef: ActorRef, from: S, to: S)
+  final case class Transition[S](fsmRef: ActorRef, from: S, to: S, timeout: Option[FiniteDuration] = None)
 
   /**
    * Send this to an [[akka.actor.FSM]] to request first the [[FSM.CurrentState]]
@@ -622,24 +622,23 @@ trait FSM[S, D, E] extends Actor with Listeners with ActorLogging {
       // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
-      actorRef ! CurrentState(self, currentState.stateName)
+      actorRef ! CurrentState(self, currentState.stateName, currentState.timeout)
     case Listen(actorRef) ⇒
       // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
-      actorRef ! CurrentState(self, currentState.stateName)
+      actorRef ! CurrentState(self, currentState.stateName, currentState.timeout)
     case UnsubscribeTransitionCallBack(actorRef) ⇒
       listeners.remove(actorRef)
     case Deafen(actorRef) ⇒
       listeners.remove(actorRef)
-    case value ⇒ {
+    case value ⇒
       if (timeoutFuture.isDefined) {
         timeoutFuture.get.cancel()
         timeoutFuture = None
       }
       generation += 1
       processMsg(value, sender())
-    }
   }
 
   private def processMsg(value: Any, source: AnyRef): Unit = {

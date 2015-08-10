@@ -195,7 +195,7 @@ abstract class PersistentFSMActorSpec(config: Config) extends PersistenceSpec(co
       expectMsg(CurrentState(fsmRef, LookingAround))
       expectMsg(Transition(fsmRef, LookingAround, Shopping))
 
-      expectNoMsg(0.6 seconds) //randomly chosen delay, less than the timeout, before stopping the FSM
+      expectNoMsg(0.6 seconds) // arbitrarily chosen delay, less than the timeout, before stopping the FSM
       fsmRef ! PoisonPill
       expectTerminated(fsmRef)
 
@@ -203,13 +203,13 @@ abstract class PersistentFSMActorSpec(config: Config) extends PersistenceSpec(co
       watch(recoveredFsmRef)
       recoveredFsmRef ! SubscribeTransitionCallBack(testActor)
 
-      expectMsg(CurrentState(recoveredFsmRef, Shopping))
+      expectMsg(CurrentState(recoveredFsmRef, Shopping, Some(1 second)))
 
       within(0.9 seconds, 1.9 seconds) {
         expectMsg(Transition(recoveredFsmRef, Shopping, Inactive))
       }
 
-      expectNoMsg(0.9 seconds) //randomly chosen delay, less than the timeout, before stopping the FSM
+      expectNoMsg(0.6 seconds) // arbitrarily chosen delay, less than the timeout, before stopping the FSM
       recoveredFsmRef ! PoisonPill
       expectTerminated(recoveredFsmRef)
 
@@ -217,11 +217,8 @@ abstract class PersistentFSMActorSpec(config: Config) extends PersistenceSpec(co
       watch(recoveredFsmRef)
       recoveredFsmRef ! SubscribeTransitionCallBack(testActor)
 
-      expectMsg(CurrentState(recoveredFsmRef, Inactive))
-
-      within(1.9 seconds, 2.9 seconds) {
-        expectTerminated(recoveredFsmRef)
-      }
+      expectMsg(CurrentState(recoveredFsmRef, Inactive, Some(2 seconds)))
+      expectTerminated(recoveredFsmRef)
     }
 
     "not trigger onTransition for stay()" taggedAs TimingTest in {
