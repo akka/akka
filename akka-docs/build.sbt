@@ -5,6 +5,8 @@ import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport._
 import com.typesafe.tools.mima.plugin.MimaKeys
 
+enablePlugins(ScaladocNoVerificationOfDiagrams)
+
 AkkaBuild.defaultSettings
 
 Formatting.docFormatSettings
