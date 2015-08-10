@@ -74,9 +74,8 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
    * [[Flow]] for processing all incoming connections.
    *
-   * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
-   * connections are being accepted at maximum rate, which, depending on the applications, might
-   * present a DoS risk!
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting.
    */
   def bindAndHandle(handler: Flow[HttpRequest, HttpResponse, Any],
                     interface: String, port: Int = -1,
@@ -113,9 +112,8 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
    * [[Flow]] for processing all incoming connections.
    *
-   * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
-   * connections are being accepted at maximum rate, which, depending on the applications, might
-   * present a DoS risk!
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting.
    */
   def bindAndHandleSync(handler: HttpRequest ⇒ HttpResponse,
                         interface: String, port: Int = -1,
@@ -128,9 +126,8 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
    * [[Flow]] for processing all incoming connections.
    *
-   * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
-   * connections are being accepted at maximum rate, which, depending on the applications, might
-   * present a DoS risk!
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting.
    */
   def bindAndHandleAsync(handler: HttpRequest ⇒ Future[HttpResponse],
                          interface: String, port: Int = -1,
@@ -156,7 +153,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   def serverLayer(settings: ServerSettings,
                   remoteAddress: Option[InetSocketAddress] = None,
                   log: LoggingAdapter = system.log)(implicit mat: Materializer): ServerLayer =
-    BidiFlow.wrap(HttpServerBluePrint(settings, remoteAddress, log))
+    HttpServerBluePrint(settings, remoteAddress, log)
 
   /**
    * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
@@ -210,7 +207,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   def clientLayer(hostHeader: Host,
                   settings: ClientConnectionSettings,
                   log: LoggingAdapter = system.log): ClientLayer =
-    BidiFlow.wrap(OutgoingConnectionBlueprint(hostHeader, settings, log))
+    OutgoingConnectionBlueprint(hostHeader, settings, log)
 
   /**
    * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
@@ -493,7 +490,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   //#server-layer
   /**
-   * The type of the server-side HTTP layer as a stand-alone BidiStage
+   * The type of the server-side HTTP layer as a stand-alone BidiFlow
    * that can be put atop the TCP layer to form an HTTP server.
    *
    * {{{
@@ -509,7 +506,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   //#client-layer
   /**
-   * The type of the client-side HTTP layer as a stand-alone BidiStage
+   * The type of the client-side HTTP layer as a stand-alone BidiFlow
    * that can be put atop the TCP layer to form an HTTP client.
    *
    * {{{
