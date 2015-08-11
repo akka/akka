@@ -41,12 +41,12 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
 
   // only check that all persistenceIds are equal when there's more than one in the Seq
   if (payload match {
-    case l: List[PersistentRepr]   => l.tail.nonEmpty
-    case v: Vector[PersistentRepr] => v.size > 1
-    case _                         => true // some other collection type, let's just check
+    case l: List[PersistentRepr]   ⇒ l.tail.nonEmpty
+    case v: Vector[PersistentRepr] ⇒ v.size > 1
+    case _                         ⇒ true // some other collection type, let's just check
   }) require(payload.forall(_.persistenceId == payload.head.persistenceId),
-      "AtomicWrite must contain messages for the same persistenceId, " +
-        s"yet different persistenceIds found: ${payload.map(_.persistenceId).toSet}")
+    "AtomicWrite must contain messages for the same persistenceId, " +
+      s"yet different persistenceIds found: ${payload.map(_.persistenceId).toSet}")
 
   def persistenceId = payload.head.persistenceId
   def lowestSequenceNr = payload.head.sequenceNr // this assumes they're gapless; they should be (it is only our code creating AWs)
