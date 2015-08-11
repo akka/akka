@@ -498,3 +498,20 @@ signal for a completed recovery was named ``ReplayMessagesSuccess``.
 This is now fixed, and all methods use the same "recovery" wording consistently across the entire API.
 The old ``ReplayMessagesSuccess`` is now called ``RecoverySuccess``, and an additional method called ``onRecoveryFailure``
 has been introduced.
+
+AtLeastOnceDelivery deliver signature
+-------------------------------------
+The signature of ``deliver`` changed slightly in order to allow both ``ActorSelection`` and ``ActorPath`` to be
+used with it.
+
+Previously:
+
+    def deliver(destination: ActorPath, deliveryIdToMessage: Long ⇒ Any): Unit
+
+Now:
+
+    def deliver(destination: ActorSelection)(deliveryIdToMessage: Long ⇒ Any): Unit
+    def deliver(destination: ActorPath)(deliveryIdToMessage: Long ⇒ Any): Unit
+
+The Java API remains unchanged and has simply gained the 2nd overload which allows ``ActorSelection`` to be
+passed in directly (without converting to ``ActorPath``).

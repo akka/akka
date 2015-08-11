@@ -4,7 +4,7 @@
 
 package docs.pattern
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ ActorSystem, Props }
 import akka.pattern.BackoffSupervisor
 import akka.testkit.TestActors.EchoActor
 
@@ -16,7 +16,7 @@ class BackoffSupervisorDocSpec {
 
     //#backoff
     val childProps = Props(classOf[EchoActor])
-    
+
     val supervisor = BackoffSupervisor.props(
       childProps,
       childName = "myEcho",
