@@ -1401,7 +1401,7 @@ object AkkaBuild extends Build {
             streamAndHttpImport("akka.http.*"),
             streamAndHttpImport("akka.parboiled2.*")))
 
-    val httpTestKit = exports(Seq("akka.http.scaladsl.testkit.*", "akka.http.javaadsl.testkit.*"),
+    val httpTestKit = exports(Seq("akka.http.scaladsl.testkit.*", "akka.http.javadsl.testkit.*"),
         imports = Seq(streamAndHttpImport("akka.stream.*"),
             streamAndHttpImport("akka.http.*")))
 
