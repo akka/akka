@@ -25,6 +25,7 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
     case WriteMessages(messages) ⇒
       // TODO it would be nice to DRY this with AsyncWriteJournal, but this is using
       //      AsyncWriteProxy message protocol
+      val atomicWriteCount = messages.count(_.isInstanceOf[AtomicWrite])
       val prepared = Try(preparePersistentBatch(messages))
       val writeResult = (prepared match {
         case Success(prep) ⇒
@@ -34,7 +35,7 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
           // exception from preparePersistentBatch => rejected
           Future.successful(messages.collect { case a: AtomicWrite ⇒ f })
       }).map { results ⇒
-        if (results.size != prepared.get.size)
+        if (results.nonEmpty && results.size != atomicWriteCount)
           throw new IllegalStateException("asyncWriteMessages returned invalid number of results. " +
             s"Expected [${prepared.get.size}], but got [${results.size}]")
         results
