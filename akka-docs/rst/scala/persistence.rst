@@ -745,8 +745,13 @@ A journal plugin can be activated with the following minimal configuration:
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#journal-plugin-config
 
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
-used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``
-for ``SyncWriteJournal`` plugins and ``akka.actor.default-dispatcher`` for ``AsyncWriteJournal`` plugins.
+used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
+
+The journal plugin instance is an actor so the methods corresponding to requests from persistent actors
+are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
+actors to achive parallelism. 
+
+Don't run journal tasks/futures on the system default dispatcher, since that might starve other tasks.
 
 Snapshot store plugin API
 -------------------------
@@ -761,6 +766,12 @@ A snapshot store plugin can be activated with the following minimal configuratio
 
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
 used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
+
+The snapshot store instance is an actor so the methods corresponding to requests from persistent actors
+are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
+actors to achive parallelism.
+
+Don't run snapshot store tasks/futures on the system default dispatcher, since that might starve other tasks.
 
 Plugin TCK
 ----------
