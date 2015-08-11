@@ -3,8 +3,6 @@ import com.typesafe.tools.mima.plugin.MimaKeys
 
 AkkaBuild.defaultSettings
 
-AkkaBuild.experimentalSettings
-
 Formatting.formatSettings
 
 OSGi.persistence

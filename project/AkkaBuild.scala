@@ -158,13 +158,13 @@ object AkkaBuild extends Build {
   )
 
   lazy val persistence = Project(
-    id = "akka-persistence-experimental",
+    id = "akka-persistence",
     base = file("akka-persistence"),
     dependencies = Seq(actor, remote % "test->test", testkit % "test->test")
   )
 
   lazy val persistenceTck = Project(
-    id = "akka-persistence-experimental-tck",
+    id = "akka-persistence-tck",
     base = file("akka-persistence-tck"),
     dependencies = Seq(persistence % "compile;provided->provided;test->test", testkit % "compile;test->test")
   )

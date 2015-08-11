@@ -36,7 +36,7 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-persistence-experimental_${scala.dep.version}</artifactId>
+            <artifactId>akka-persistence_${scala.dep.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>com.typesafe</groupId>

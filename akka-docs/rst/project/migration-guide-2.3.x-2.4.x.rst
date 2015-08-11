@@ -300,7 +300,27 @@ For the synchronous case you can return the result via ``scala.concurrent.Future
 Akka Persistence
 ================
 
-Mendatory persistenceId
+Experimental removed
+--------------------
+
+The artifact name has changed from ``akka-persistence-experimental`` to ``akka-persistence``.
+
+New sbt dependency::
+
+  "com.typesafe.akka" %% "akka-persistence" % "@version@" @crossString@
+
+New Maven dependency::
+
+  <dependency>
+    <groupId>com.typesafe.akka</groupId>
+    <artifactId>akka-persistence_@binVersion@</artifactId>
+    <version>@version@</version>
+  </dependency>
+
+The artefact name of the Persistent TCK has changed from ``akka-persistence-tck-experimental`` (``akka-persistence-experimental-tck``) to
+``akka-persistence-tck``.
+
+Mandatory persistenceId
 -----------------------
 
 It is now mandatory to define the ``persistenceId`` in subclasses of ``PersistentActor``, ``UntypedPersistentActor``
