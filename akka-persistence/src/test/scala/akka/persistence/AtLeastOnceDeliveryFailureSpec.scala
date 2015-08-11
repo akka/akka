@@ -104,7 +104,7 @@ object AtLeastOnceDeliveryFailureSpec {
     def updateState(evt: Evt): Unit = evt match {
       case MsgSent(i) ⇒
         add(i)
-        deliver(destination.path, deliveryId ⇒ Msg(deliveryId, i))
+        deliver(destination.path)(deliveryId ⇒ Msg(deliveryId, i))
 
       case MsgConfirmed(deliveryId, i) ⇒
         confirmDelivery(deliveryId)
