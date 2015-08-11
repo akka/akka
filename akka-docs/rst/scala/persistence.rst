@@ -13,37 +13,18 @@ changes to these actors from which they can rebuild internal state. This can be 
 or starting from a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
 communication with at-least-once message delivery semantics.
 
-.. warning::
-
-  This module is marked as **“experimental”** as of its introduction in Akka 2.3.0. We will continue to
-  improve this API based on our users’ feedback, which implies that while we try to keep incompatible
-  changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
-  contents of the ``akka.persistence`` package.
-
 Akka persistence is inspired by and the official replacement of the `eventsourced`_ library. It follows the same
 concepts and architecture of `eventsourced`_ but significantly differs on API and implementation level. See also
 :ref:`migration-eventsourced-2.3`
 
 .. _eventsourced: https://github.com/eligosource/eventsourced
 
-Changes in Akka 2.3.4
-=====================
-
-In Akka 2.3.4 several of the concepts of the earlier versions were collapsed and simplified.
-In essence; ``Processor`` and ``EventsourcedProcessor`` are replaced by ``PersistentActor``. ``Channel``
-and ``PersistentChannel`` are replaced by ``AtLeastOnceDelivery``. ``View`` is replaced by ``PersistentView``.
-
-See full details of the changes in the :ref:`migration-guide-persistence-experimental-2.3.x-2.4.x`.
-The old classes are still included, and deprecated, for a while to make the transition smooth.
-In case you need the old documentation it is located `here <http://doc.akka.io/docs/akka/2.3.3/scala/persistence.html>`_.
-
-
 Dependencies
 ============
 
 Akka persistence is a separate jar file. Make sure that you have the following dependency in your project::
 
-  "com.typesafe.akka" %% "akka-persistence-experimental" % "@version@" @crossString@
+  "com.typesafe.akka" %% "akka-persistence" % "@version@" @crossString@
 
 Akka persistence extension comes with few built-in persistence plugins, including 
 in-memory heap based journal, local file-system based snapshot-store and LevelDB based journal.
