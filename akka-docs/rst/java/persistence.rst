@@ -17,29 +17,11 @@ communication with at-least-once message delivery semantics.
 
   Java 8 lambda expressions are also supported. (See section :ref:`persistence-lambda-java`)
 
-.. warning::
-
-  This module is marked as **“experimental”** as of its introduction in Akka 2.3.0. We will continue to
-  improve this API based on our users’ feedback, which implies that while we try to keep incompatible
-  changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
-  contents of the ``akka.persistence`` package.
-
 Akka persistence is inspired by and the official replacement of the `eventsourced`_ library. It follows the same
 concepts and architecture of `eventsourced`_ but significantly differs on API and implementation level. See also
 :ref:`migration-eventsourced-2.3`
 
 .. _eventsourced: https://github.com/eligosource/eventsourced
-
-Changes in Akka 2.3.4
-=====================
-
-In Akka 2.3.4 several of the concepts of the earlier versions were collapsed and simplified.
-In essence; ``Processor`` and ``EventsourcedProcessor`` are replaced by ``PersistentActor``. ``Channel``
-and ``PersistentChannel`` are replaced by ``AtLeastOnceDelivery``. ``View`` is replaced by ``PersistentView``.
-
-See full details of the changes in the :ref:`migration-guide-persistence-experimental-2.3.x-2.4.x`.
-The old classes are still included, and deprecated, for a while to make the transition smooth.
-In case you need the old documentation it is located `here <http://doc.akka.io/docs/akka/2.3.3/java/persistence.html>`_.
 
 Dependencies
 ============
@@ -48,7 +30,7 @@ Akka persistence is a separate jar file. Make sure that you have the following d
 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-persistence-experimental_@binVersion@</artifactId>
+    <artifactId>akka-persistence_@binVersion@</artifactId>
     <version>@version@</version>
   </dependency>
 

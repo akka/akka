@@ -9,6 +9,6 @@ javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target
 javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-Xdoclint:none")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-persistence-experimental" % "2.4-SNAPSHOT"
+  "com.typesafe.akka" %% "akka-persistence" % "2.4-SNAPSHOT"
 )
 
