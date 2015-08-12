@@ -5,11 +5,12 @@
 
 package akka.persistence.snapshot
 
+import scala.concurrent.duration._
 import scala.concurrent.Future
-
 import akka.actor._
 import akka.pattern.pipe
 import akka.persistence._
+import akka.pattern.CircuitBreaker
 
 /**
  * Abstract snapshot store.
@@ -21,11 +22,24 @@ trait SnapshotStore extends Actor with ActorLogging {
   private val extension = Persistence(context.system)
   private val publish = extension.settings.internal.publishPluginCommands
 
+  private val breaker = {
+    val cfg = context.system.settings.config
+    val cbConfig =
+      if (cfg.hasPath(self.path.name + ".circuit-breaker"))
+        cfg.getConfig(self.path.name + ".circuit-breaker")
+          .withFallback(cfg.getConfig("akka.persistence.default-circuit-breaker"))
+      else cfg.getConfig("akka.persistence.default-circuit-breaker")
+    val maxFailures = cbConfig.getInt("max-failures")
+    val callTimeout = cbConfig.getDuration("call-timeout", MILLISECONDS).millis
+    val resetTimeout = cbConfig.getDuration("reset-timeout", MILLISECONDS).millis
+    CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout)
+  }
+
   final def receive = receiveSnapshotStore.orElse[Any, Unit](receivePluginInternal)
 
   final val receiveSnapshotStore: Actor.Receive = {
     case LoadSnapshot(persistenceId, criteria, toSequenceNr) ⇒
-      loadAsync(persistenceId, criteria.limit(toSequenceNr)) map {
+      breaker.withCircuitBreaker(loadAsync(persistenceId, criteria.limit(toSequenceNr))) map {
         sso ⇒ LoadSnapshotResult(sso, toSequenceNr)
       } recover {
         case e ⇒ LoadSnapshotResult(None, toSequenceNr)
@@ -33,7 +47,7 @@ trait SnapshotStore extends Actor with ActorLogging {
 
     case SaveSnapshot(metadata, snapshot) ⇒
       val md = metadata.copy(timestamp = System.currentTimeMillis)
-      saveAsync(md, snapshot) map {
+      breaker.withCircuitBreaker(saveAsync(md, snapshot)) map {
         _ ⇒ SaveSnapshotSuccess(md)
       } recover {
         case e ⇒ SaveSnapshotFailure(metadata, e)
@@ -44,11 +58,11 @@ trait SnapshotStore extends Actor with ActorLogging {
     case evt @ SaveSnapshotFailure(metadata, _) ⇒
       try {
         tryReceivePluginInternal(evt)
-        deleteAsync(metadata)
+        breaker.withCircuitBreaker(deleteAsync(metadata))
       } finally senderPersistentActor() ! evt // sender is persistentActor
 
     case d @ DeleteSnapshot(metadata) ⇒
-      deleteAsync(metadata).map {
+      breaker.withCircuitBreaker(deleteAsync(metadata)).map {
         case _ ⇒ DeleteSnapshotSuccess(metadata)
       }.recover {
         case e ⇒ DeleteSnapshotFailure(metadata, e)
@@ -62,7 +76,7 @@ trait SnapshotStore extends Actor with ActorLogging {
       try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
 
     case d @ DeleteSnapshots(persistenceId, criteria) ⇒
-      deleteAsync(persistenceId, criteria).map {
+      breaker.withCircuitBreaker(deleteAsync(persistenceId, criteria)).map {
         case _ ⇒ DeleteSnapshotsSuccess(criteria)
       }.recover {
         case e ⇒ DeleteSnapshotsFailure(criteria, e)
@@ -87,6 +101,8 @@ trait SnapshotStore extends Actor with ActorLogging {
   /**
    * Plugin API: asynchronously loads a snapshot.
    *
+   * This call is protected with a circuit-breaker.
+   *
    * @param persistenceId id of the persistent actor.
    * @param criteria selection criteria for loading.
    */
@@ -94,6 +110,8 @@ trait SnapshotStore extends Actor with ActorLogging {
 
   /**
    * Plugin API: asynchronously saves a snapshot.
+   *
+   * This call is protected with a circuit-breaker.
    *
    * @param metadata snapshot metadata.
    * @param snapshot snapshot.
@@ -103,13 +121,16 @@ trait SnapshotStore extends Actor with ActorLogging {
   /**
    * Plugin API: deletes the snapshot identified by `metadata`.
    *
+   * This call is protected with a circuit-breaker.
+   *
    * @param metadata snapshot metadata.
    */
-
   def deleteAsync(metadata: SnapshotMetadata): Future[Unit]
 
   /**
    * Plugin API: deletes all snapshots matching `criteria`.
+   *
+   * This call is protected with a circuit-breaker.
    *
    * @param persistenceId id of the persistent actor.
    * @param criteria selection criteria for deleting.
