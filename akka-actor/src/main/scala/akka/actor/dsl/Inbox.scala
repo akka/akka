@@ -116,8 +116,7 @@ trait Inbox { this: ActorDSL.type ⇒
           val toKick = overdue.next()
           toKick.client ! Status.Failure(new TimeoutException("deadline passed"))
         }
-        // TODO: this wants to lose the `Queue.empty ++=` part when SI-6208 is fixed
-        clients = Queue.empty ++= clients.filterNot(pred)
+        clients = clients.filterNot(pred)
         clientsByTimeout = clientsByTimeout.from(Get(now))
       case msg ⇒
         if (clients.isEmpty) enqueueMessage(msg)
