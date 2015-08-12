@@ -119,4 +119,6 @@ object Dependencies {
   val docs = l ++= Seq(Test.scalatest.value, Test.junit, Test.junitIntf, Docs.sprayJson, Docs.gson)
 
   val contrib = l ++= Seq(Test.junitIntf, Test.commonsIo)
+  
+  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 }
