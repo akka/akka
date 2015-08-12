@@ -19,6 +19,10 @@ object Dependencies {
 
   object Compile {
     // Compile
+
+    // Akka Streams // FIXME: change to project dependency once merged before 2.4.0
+    val akkaStream = "com.typesafe.akka" %% "akka-stream-experimental" % "1.0"
+
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.4" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
@@ -107,6 +111,8 @@ object Dependencies {
   val agent = l ++= Seq(scalaStm.value, Test.scalatest.value, Test.junit)
 
   val persistence = l ++= Seq(protobuf, Provided.levelDB, Provided.levelDBNative, Test.scalatest.value, Test.junit, Test.commonsIo, Test.scalaXml)
+
+  val persistenceQuery = l ++= Seq(akkaStream, Test.scalatest.value, Test.junit, Test.commonsIo)
 
   val persistenceTck = l ++= Seq(Test.scalatest.value.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
 

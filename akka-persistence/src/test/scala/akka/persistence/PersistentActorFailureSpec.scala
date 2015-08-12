@@ -204,7 +204,7 @@ class PersistentActorFailureSpec extends PersistenceSpec(PersistenceSpec.config(
       expectMsg("Failure: wrong-1")
       expectTerminated(persistentActor)
     }
-    "call onPersistFailure and stop if persistAsync fails xoxo" in {
+    "call onPersistFailure and stop if persistAsync fails" in {
       system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[AsyncPersistPersistentActor], name)
       val persistentActor = expectMsgType[ActorRef]
       persistentActor ! Cmd("a")

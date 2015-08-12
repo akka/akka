@@ -49,7 +49,7 @@ Architecture
 * *AtLeastOnceDelivery*: To send messages with at-least-once delivery semantics to destinations, also in
   case of sender and receiver JVM crashes.
 
-* *Journal*: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
+* *AsyncWriteJournal*: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
   are journaled and which are received by the persistent actor without being journaled. The storage backend of a journal is pluggable. 
   Persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem, 
   and replicated journals are available as `Community plugins`_.
@@ -618,7 +618,6 @@ Event Adapters help in situations where:
 - **Journal Specialized Data Types** – exposing data types understood by the underlying Journal, for example for data stores which
   understand JSON it is possible to write an EventAdapter ``toJournal:Any=>JSON`` such that the Journal can *directly* store the
   json instead of serializing the object to its binary representation.
-
 
 Implementing an EventAdapter is rather stright forward:
 
