@@ -51,7 +51,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   private val writerUuid = UUID.randomUUID.toString
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
-  private val maxMessageBatchSize = extension.settings.journal.maxMessageBatchSize
+  private val maxMessageBatchSize = extension.journalConfigFor(journalPluginId).getInt("max-message-batch-size")
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
