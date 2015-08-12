@@ -7,3 +7,5 @@ disablePlugins(Unidoc)
 AkkaBuild.defaultSettings
 
 AkkaBuild.dontPublishSettings
+
+Dependencies.benchJmh
