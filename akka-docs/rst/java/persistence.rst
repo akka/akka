@@ -65,7 +65,7 @@ Architecture
 * *UntypedPersistentActorAtLeastOnceDelivery*: To send messages with at-least-once delivery semantics to destinations, also in
   case of sender and receiver JVM crashes.
 
-* *Journal*: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
+* *AsyncWriteJournal*: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
   are journaled and which are received by the persistent actor without being journaled. The storage backend of a journal is pluggable. 
   Persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem, 
   and replicated journals are available as `Community plugins`_.
@@ -610,7 +610,7 @@ completely.
 
 Event Adapters help in situations where:
 
-- **Version Migration** – existing events stored in *Version 1* should be "upcasted" to a new *Version 2* representation,
+- **Version Migrations** – existing events stored in *Version 1* should be "upcasted" to a new *Version 2* representation,
   and the process of doing so involves actual code, not just changes on the serialization layer. For these scenarios
   the ``toJournal`` function is usually an identity function, however the ``fromJournal`` is implemented as
   ``v1.Event=>v2.Event``, performing the neccessary mapping inside the fromJournal method.

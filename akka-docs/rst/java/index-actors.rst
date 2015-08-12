@@ -12,4 +12,5 @@ Actors
    routing
    fsm
    persistence
+   persistence-query
    testing
