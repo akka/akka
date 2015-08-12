@@ -330,6 +330,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   def registerOnMemberUp(callback: Runnable): Unit =
     clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
+
   /**
    * The supplied thunk will be run, once, when current cluster member is `Removed`.
    * and if the cluster have been shutdown,that thunk will run on the caller thread immediately.
