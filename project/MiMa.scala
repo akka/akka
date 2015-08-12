@@ -50,7 +50,7 @@ object MiMa extends AutoPlugin {
       // Changes in akka-stream-experimental are not binary compatible - still source compatible (2.3.3 -> 2.3.4)
       // Adding `PersistentActor.persistAsync`
       // Adding `PersistentActor.defer`
-      // Changes in akka-persistence-experimental in #13944
+      // Changes in akka-persistence in #13944
       // Changes in private LevelDB Store by #13962
       // Renamed `processorId` to `persistenceId`
       ProblemFilters.excludePackage("akka.persistence"),

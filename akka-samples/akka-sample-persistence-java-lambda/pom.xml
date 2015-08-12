@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-persistence-experimental_2.11</artifactId>
+            <artifactId>akka-persistence_2.11</artifactId>
             <version>2.4-SNAPSHOT</version>
         </dependency>
         <dependency>
