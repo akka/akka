@@ -361,6 +361,10 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
     override def recoveryRunning: Boolean = false
 
     override def stateReceive(receive: Receive, message: Any): Unit = message match {
+      case ReplayedMessage(p) ⇒
+        // we can get ReplayedMessage here if it was stashed by user during replay
+        // unwrap the payload
+        PersistentView.super.aroundReceive(receive, p.payload)
       case ScheduledUpdate(replayMax)     ⇒ changeStateToReplayStarted(await = false, replayMax)
       case Update(awaitUpdate, replayMax) ⇒ changeStateToReplayStarted(awaitUpdate, replayMax)
       case other                          ⇒ PersistentView.super.aroundReceive(receive, other)

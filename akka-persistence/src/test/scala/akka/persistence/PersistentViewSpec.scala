@@ -111,6 +111,21 @@ object PersistentViewSpec {
     }
   }
 
+  private class StashingPersistentView(name: String, probe: ActorRef) extends PersistentView {
+    override def persistenceId = name
+    override def viewId = name + "-view"
+
+    def receive = {
+      case "other" ⇒ stash()
+      case "unstash" ⇒
+        unstashAll()
+        context.become {
+          case msg ⇒ probe ! s"$msg-${lastSequenceNr}"
+        }
+      case msg ⇒ stash()
+    }
+  }
+
   private class PersistentOrNotTestPersistentView(name: String, probe: ActorRef) extends PersistentView {
     override val persistenceId: String = name
     override val viewId: String = name + "-view"
@@ -320,6 +335,14 @@ abstract class PersistentViewSpec(config: Config) extends PersistenceSpec(config
       persistentActor ! "c"
       viewProbe.expectMsg("replicated-b-2")
       viewProbe.expectMsg("replicated-c-3")
+    }
+    "support stash" in {
+      view = system.actorOf(Props(classOf[StashingPersistentView], name, viewProbe.ref))
+      view ! "other"
+      view ! "unstash"
+      viewProbe.expectMsg("a-2") // note that the lastSequenceNumber is 2, since we have replayed b-2
+      viewProbe.expectMsg("b-2")
+      viewProbe.expectMsg("other-2")
     }
   }
 }
