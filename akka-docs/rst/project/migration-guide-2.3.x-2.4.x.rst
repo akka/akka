@@ -386,6 +386,12 @@ have explicitly relied on this behaviour, however if you find yourself with an a
 should rewrite it to explicitly store the ``ActorPath`` of where such replies during replay may have to be sent to,
 instead of relying on the sender reference during replay.
 
+max-message-batch-size config
+-----------------------------
+
+Configuration property ``akka.persistence.journal.max-message-batch-size`` has been moved into the plugin configuration
+section, to allow different values for different journal plugins. See ``reference.conf``.
+
 Persistence Plugin APIs
 =======================
 
