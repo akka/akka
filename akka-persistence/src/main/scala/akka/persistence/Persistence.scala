@@ -188,13 +188,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       case Some(extensionId) ⇒
         extensionId(system).adapters
       case None ⇒
-        val extensionId = new ExtensionId[PluginHolder] {
-          override def createExtension(system: ExtendedActorSystem): PluginHolder = {
-            val plugin = createPlugin(configPath)(journalDispatchSelector)
-            val adapters = createAdapters(configPath)
-            PluginHolder(plugin, adapters)
-          }
-        }
+        val extensionId = new PluginHolderExtensionId(configPath)
         journalPluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
         adaptersFor(journalPluginId) // Recursive invocation.
     }
@@ -226,13 +220,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       case Some(extensionId) ⇒
         extensionId(system).actor
       case None ⇒
-        val extensionId = new ExtensionId[PluginHolder] {
-          override def createExtension(system: ExtendedActorSystem): PluginHolder = {
-            val plugin = createPlugin(configPath)(journalDispatchSelector)
-            val adapters = createAdapters(configPath)
-            PluginHolder(plugin, adapters)
-          }
-        }
+        val extensionId = new PluginHolderExtensionId(configPath)
         journalPluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
         journalFor(journalPluginId) // Recursive invocation.
     }
@@ -251,13 +239,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       case Some(extensionId) ⇒
         extensionId(system).actor
       case None ⇒
-        val extensionId = new ExtensionId[PluginHolder] {
-          override def createExtension(system: ExtendedActorSystem): PluginHolder = {
-            val plugin = createPlugin(configPath)(snapshotDispatchSelector)
-            val adapters = createAdapters(configPath)
-            PluginHolder(plugin, adapters)
-          }
-        }
+        val extensionId = new PluginHolderExtensionId(configPath)
         snapshotPluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
         snapshotStoreFor(snapshotPluginId) // Recursive invocation.
     }
@@ -287,5 +269,13 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   def persistenceId(persistentActor: ActorRef): String = id(persistentActor)
 
   private def id(ref: ActorRef) = ref.path.toStringWithoutAddress
+
+  private class PluginHolderExtensionId(configPath: String) extends ExtensionId[PluginHolder] {
+    override def createExtension(system: ExtendedActorSystem): PluginHolder = {
+      val plugin = createPlugin(configPath)(journalDispatchSelector)
+      val adapters = createAdapters(configPath)
+      PluginHolder(plugin, adapters)
+    }
+  }
 
 }

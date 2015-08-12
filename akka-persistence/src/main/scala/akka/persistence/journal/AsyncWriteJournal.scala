@@ -5,14 +5,15 @@
 
 package akka.persistence.journal
 
+import scala.concurrent.duration._
 import akka.actor._
 import akka.pattern.pipe
 import akka.persistence._
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
+import akka.pattern.CircuitBreaker
 
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.
@@ -28,6 +29,19 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   private val resequencer = context.actorOf(Props[Resequencer]())
   private var resequencerCounter = 1L
 
+  private val breaker = {
+    val cfg = context.system.settings.config
+    val cbConfig =
+      if (cfg.hasPath(self.path.name + ".circuit-breaker"))
+        cfg.getConfig(self.path.name + ".circuit-breaker")
+          .withFallback(cfg.getConfig("akka.persistence.default-circuit-breaker"))
+      else cfg.getConfig("akka.persistence.default-circuit-breaker")
+    val maxFailures = cbConfig.getInt("max-failures")
+    val callTimeout = cbConfig.getDuration("call-timeout", MILLISECONDS).millis
+    val resetTimeout = cbConfig.getDuration("reset-timeout", MILLISECONDS).millis
+    CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout)
+  }
+
   final def receive = receiveWriteJournal.orElse[Any, Unit](receivePluginInternal)
 
   final val receiveWriteJournal: Actor.Receive = {
@@ -39,8 +53,9 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       val prepared = Try(preparePersistentBatch(messages))
       val writeResult = (prepared match {
         case Success(prep) ⇒
-          // in case the asyncWriteMessages throws
-          try asyncWriteMessages(prep) catch { case NonFatal(e) ⇒ Future.failed(e) }
+          // try in case the asyncWriteMessages throws
+          try breaker.withCircuitBreaker(asyncWriteMessages(prep))
+          catch { case NonFatal(e) ⇒ Future.failed(e) }
         case f @ Failure(_) ⇒
           // exception from preparePersistentBatch => rejected
           Future.successful(messages.collect { case a: AtomicWrite ⇒ f })
@@ -96,30 +111,32 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
 
     case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor) ⇒
 
-      asyncReadHighestSequenceNr(persistenceId, fromSequenceNr).flatMap { highSeqNr ⇒
-        val toSeqNr = math.min(toSequenceNr, highSeqNr)
-        if (highSeqNr == 0L || fromSequenceNr > toSeqNr)
-          Future.successful(highSeqNr)
-        else {
-          // Send replayed messages and replay result to persistentActor directly. No need
-          // to resequence replayed messages relative to written and looped messages.
-          asyncReplayMessages(persistenceId, fromSequenceNr, toSeqNr, max) { p ⇒
-            if (!p.deleted) // old records from 2.3 may still have the deleted flag
-              adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
-                persistentActor.tell(ReplayedMessage(adaptedPersistentRepr), Actor.noSender)
-              }
-          }.map(_ ⇒ highSeqNr)
+      breaker.withCircuitBreaker(asyncReadHighestSequenceNr(persistenceId, fromSequenceNr))
+        .flatMap { highSeqNr ⇒
+          val toSeqNr = math.min(toSequenceNr, highSeqNr)
+          if (highSeqNr == 0L || fromSequenceNr > toSeqNr)
+            Future.successful(highSeqNr)
+          else {
+            // Send replayed messages and replay result to persistentActor directly. No need
+            // to resequence replayed messages relative to written and looped messages.
+            // not possible to use circuit breaker here
+            asyncReplayMessages(persistenceId, fromSequenceNr, toSeqNr, max) { p ⇒
+              if (!p.deleted) // old records from 2.3 may still have the deleted flag
+                adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
+                  persistentActor.tell(ReplayedMessage(adaptedPersistentRepr), Actor.noSender)
+                }
+            }.map(_ ⇒ highSeqNr)
+          }
+        }.map {
+          highSeqNr ⇒ RecoverySuccess(highSeqNr)
+        }.recover {
+          case e ⇒ ReplayMessagesFailure(e)
+        }.pipeTo(persistentActor).onSuccess {
+          case _ if publish ⇒ context.system.eventStream.publish(r)
         }
-      }.map {
-        highSeqNr ⇒ RecoverySuccess(highSeqNr)
-      }.recover {
-        case e ⇒ ReplayMessagesFailure(e)
-      }.pipeTo(persistentActor).onSuccess {
-        case _ if publish ⇒ context.system.eventStream.publish(r)
-      }
 
     case d @ DeleteMessagesTo(persistenceId, toSequenceNr, persistentActor) ⇒
-      asyncDeleteMessagesTo(persistenceId, toSequenceNr) map {
+      breaker.withCircuitBreaker(asyncDeleteMessagesTo(persistenceId, toSequenceNr)) map {
         case _ ⇒ DeleteMessagesSuccess(toSequenceNr)
       } recover {
         case e ⇒ DeleteMessagesFailure(e, toSequenceNr)
@@ -173,12 +190,16 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    *
    * It is possible but not mandatory to reduce number of allocations by returning
    * `Future.successful(Nil)` for the happy path, i.e. when no messages are rejected.
+   *
+   * This call is protected with a circuit-breaker.
    */
   def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]]
 
   /**
    * Plugin API: asynchronously deletes all persistent messages up to `toSequenceNr`
    * (inclusive).
+   *
+   * This call is protected with a circuit-breaker.
    */
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit]
 
@@ -187,6 +208,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    *
    * Allows plugin implementers to use `f pipeTo self` and
    * handle additional messages for implementing advanced features
+   *
    */
   def receivePluginInternal: Actor.Receive = Actor.emptyBehavior
   //#journal-plugin-api
