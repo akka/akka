@@ -5,7 +5,7 @@
 package akka.persistence.fsm
 
 import akka.actor._
-import akka.persistence.PersistenceSpec
+import akka.persistence.{PersistentActor, RecoveryCompleted, PersistenceSpec}
 import akka.persistence.fsm.PersistentFSM._
 import akka.testkit._
 import com.typesafe.config.Config
@@ -119,7 +119,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       recoveredFsmRef ! GetCurrentCart
       recoveredFsmRef ! Leave
 
-      expectMsg(CurrentState(recoveredFsmRef, Shopping, None))
+      expectMsg(CurrentState(recoveredFsmRef, Shopping, Some(1 second)))
       expectMsg(NonEmptyShoppingCart(List(shirt, shoes)))
 
       expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
@@ -230,6 +230,56 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
       fsmRef ! "stay" // causes stay()
       probe.expectNoMsg(3.seconds)
+    }
+
+    "not persist state change event when staying in the same state" in {
+      val persistenceId = name
+
+      val fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef))
+      watch(fsmRef)
+
+      val shirt = Item("1", "Shirt", 59.99F)
+      val shoes = Item("2", "Shoes", 89.99F)
+      val coat = Item("3", "Coat", 119.99F)
+
+      fsmRef ! GetCurrentCart
+      fsmRef ! AddItem(shirt)
+      fsmRef ! GetCurrentCart
+      fsmRef ! AddItem(shoes)
+      fsmRef ! GetCurrentCart
+      fsmRef ! AddItem(coat)
+      fsmRef ! GetCurrentCart
+      fsmRef ! Buy
+      fsmRef ! GetCurrentCart
+      fsmRef ! Leave
+
+      expectMsg(EmptyShoppingCart)
+
+      expectMsg(NonEmptyShoppingCart(List(shirt)))
+      expectMsg(NonEmptyShoppingCart(List(shirt, shoes)))
+      expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
+
+      expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
+
+      expectTerminated(fsmRef)
+
+      val persistentEventsStreamer = system.actorOf(PersistentEventsStreamer.props(persistenceId, testActor))
+
+      expectMsg(ItemAdded(Item("1", "Shirt", 59.99F)))
+      expectMsgType[StateChangeEvent]   //because a timeout is defined, State Change is persisted
+
+      expectMsg(ItemAdded(Item("2", "Shoes", 89.99F)))
+      expectMsgType[StateChangeEvent]   //because a timeout is defined, State Change is persisted
+
+      expectMsg(ItemAdded(Item("3", "Coat", 119.99F)))
+      expectMsgType[StateChangeEvent]   //because a timeout is defined, State Change is persisted
+
+      expectMsg(OrderExecuted)
+      expectMsgType[StateChangeEvent]
+
+      watch(persistentEventsStreamer)
+      persistentEventsStreamer ! PoisonPill
+      expectTerminated(persistentEventsStreamer)
     }
   }
 
@@ -380,6 +430,24 @@ object PersistentFSMSpec {
   object WebStoreCustomerFSM {
     def props(persistenceId: String, reportActor: ActorRef) =
       Props(new WebStoreCustomerFSM(persistenceId, reportActor))
+  }
+  
+  class PersistentEventsStreamer(id: String, client: ActorRef) extends PersistentActor {
+    override val persistenceId: String = id
+
+    def receiveRecover = {
+      case RecoveryCompleted  ⇒ // do nothing
+      case persistentEvent    ⇒ client ! persistentEvent
+    }
+
+    def receiveCommand = {
+      case _ ⇒ // do nothing
+    }
+  }
+
+  object PersistentEventsStreamer {
+    def props(persistenceId: String, client: ActorRef) =
+      Props(new PersistentEventsStreamer(persistenceId, client))
   }
 }
 
