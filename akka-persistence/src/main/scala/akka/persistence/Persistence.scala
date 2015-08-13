@@ -161,12 +161,6 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   val settings = new PersistenceSettings(config)
 
-  private def journalDispatchSelector(klaz: Class[_]): String =
-    if (classOf[AsyncWriteJournal].isAssignableFrom(klaz)) Dispatchers.DefaultDispatcherId else DefaultPluginDispatcherId // TODO sure this is not inverted?
-
-  private def snapshotDispatchSelector(klaz: Class[_]): String =
-    DefaultPluginDispatcherId
-
   /** Check for default or missing identity. */
   private def isEmpty(text: String) = text == null || text.length == 0
 
@@ -247,7 +241,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     }
   }
 
-  private def createPlugin(configPath: String)(dispatcherSelector: Class[_] ⇒ String) = {
+  private def createPlugin(configPath: String): ActorRef = {
     require(!isEmpty(configPath) && system.settings.config.hasPath(configPath),
       s"'reference.conf' is missing persistence plugin config path: '$configPath'")
     val pluginActorName = configPath
@@ -256,7 +250,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     log.debug(s"Create plugin: $pluginActorName $pluginClassName")
     val pluginClass = system.dynamicAccess.getClassFor[Any](pluginClassName).get
     val pluginInjectConfig = if (pluginConfig.hasPath("inject-config")) pluginConfig.getBoolean("inject-config") else false
-    val pluginDispatcherId = if (pluginConfig.hasPath("plugin-dispatcher")) pluginConfig.getString("plugin-dispatcher") else dispatcherSelector(pluginClass)
+    val pluginDispatcherId = if (pluginConfig.hasPath("plugin-dispatcher")) pluginConfig.getString("plugin-dispatcher") else DefaultPluginDispatcherId
     val pluginActorArgs = if (pluginInjectConfig) List(pluginConfig) else Nil
     val pluginActorProps = Props(Deploy(dispatcher = pluginDispatcherId), pluginClass, pluginActorArgs)
     system.systemActorOf(pluginActorProps, pluginActorName)
@@ -274,7 +268,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   private class PluginHolderExtensionId(configPath: String) extends ExtensionId[PluginHolder] {
     override def createExtension(system: ExtendedActorSystem): PluginHolder = {
-      val plugin = createPlugin(configPath)(journalDispatchSelector)
+      val plugin = createPlugin(configPath)
       val adapters = createAdapters(configPath)
       PluginHolder(plugin, adapters)
     }
