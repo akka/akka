@@ -77,8 +77,8 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config) {
       snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest.copy(maxTimestamp = metadata(2).timestamp), 13), senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(2), s"s-3")), 13))
     }
-    "delete a single snapshot identified by snapshot metadata" in {
-      val md = metadata(2)
+    "delete a single snapshot identified by sequenceNr in snapshot metadata" in {
+      val md = metadata(2).copy(timestamp = 0L) // don't care about timestamp for delete of single snap
       val cmd = DeleteSnapshot(md)
       val sub = TestProbe()
 
@@ -87,7 +87,7 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config) {
       sub.expectMsg(cmd)
       senderProbe.expectMsg(DeleteSnapshotSuccess(md))
 
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr, md.timestamp), Long.MaxValue), senderProbe.ref)
+      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr), Long.MaxValue), senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(1), s"s-2")), Long.MaxValue))
     }
     "delete all snapshots matching upper sequence number and timestamp bounds" in {
@@ -105,6 +105,17 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config) {
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
       snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(metadata(3).sequenceNr, metadata(3).timestamp), Long.MaxValue), senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(3), s"s-4")), Long.MaxValue))
+    }
+    "save and overwrite snapshot with same sequence number" in {
+      val md = metadata(4)
+      snapshotStore.tell(SaveSnapshot(md, s"s-5-modified"), senderProbe.ref)
+      val md2 = senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md2) ⇒ md2 }
+      md2.sequenceNr should be(md.sequenceNr)
+      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr), Long.MaxValue), senderProbe.ref)
+      val result = senderProbe.expectMsgType[LoadSnapshotResult]
+      result.snapshot.get.snapshot should be("s-5-modified")
+      result.snapshot.get.metadata.sequenceNr should be(md.sequenceNr)
+      // metadata timestamp may have been changed
     }
   }
 }
