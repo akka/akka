@@ -24,6 +24,8 @@ import scala.reflect.ClassTag
  * Persistence execution order is: persist -&gt; wait for ack -&gt; apply state.
  * Incoming messages are deferred until the state is applied.
  * State Data is constructed based on domain events, according to user's implementation of applyEvent function.
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with PersistentFSMBase[S, D, E] with ActorLogging {
   import akka.persistence.fsm.PersistentFSM._

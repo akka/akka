@@ -19,11 +19,11 @@ prior deprecation.
 .. toctree::
    :maxdepth: 1
 
-   ../scala/persistence
-   ../scala/persistence-schema-evolution
    ../dev/multi-node-testing
    ../java/lambda-actors
    ../java/lambda-fsm
+   ../scala/persistence-query
+   ../scala/typed
 
 Another reason for marking a module as experimental is that it's too early
 to tell if the module has a maintainer that can take the responsibility
