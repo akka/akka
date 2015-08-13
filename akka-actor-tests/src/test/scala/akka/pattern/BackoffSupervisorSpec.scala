@@ -2,9 +2,7 @@
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.persistence
-
-import akka.pattern.BackoffSupervisor
+package akka.pattern
 
 import scala.concurrent.duration._
 import akka.actor._
