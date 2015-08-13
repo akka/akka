@@ -16,11 +16,14 @@ import akka.http.scaladsl.HttpsContext
  */
 object ExampleHttpContexts {
   val exampleServerContext = {
+    // never put passwords into code!
+    val password = "abcdef".toCharArray
+
     val ks = KeyStore.getInstance("PKCS12")
-    ks.load(resourceStream("keys/server.p12"), "abcdef".toCharArray)
+    ks.load(resourceStream("keys/server.p12"), password)
 
     val keyManagerFactory = KeyManagerFactory.getInstance("SunX509")
-    keyManagerFactory.init(ks, "abcdef".toCharArray)
+    keyManagerFactory.init(ks, password)
 
     val context = SSLContext.getInstance("TLS")
     context.init(keyManagerFactory.getKeyManagers, null, new SecureRandom)
@@ -30,6 +33,7 @@ object ExampleHttpContexts {
   val exampleClientContext = {
     val certStore = KeyStore.getInstance(KeyStore.getDefaultType)
     certStore.load(null, null)
+    // only do this if you want to accept a custom root CA. Understand what you are doing!
     certStore.setCertificateEntry("ca", loadX509Certificate("keys/rootCA.crt"))
 
     val certManagerFactory = TrustManagerFactory.getInstance("SunX509")
