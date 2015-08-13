@@ -7,7 +7,6 @@ package akka.persistence
 import akka.actor._
 import akka.event.Logging
 import akka.event.Logging.Warning
-import akka.persistence.JournalProtocol.DeleteMessagesFailure
 import akka.persistence.journal.inmem.InmemJournal
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
 
