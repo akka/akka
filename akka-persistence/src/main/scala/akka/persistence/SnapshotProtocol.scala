@@ -83,13 +83,24 @@ final case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
 /**
  * Selection criteria for loading and deleting snapshots.
  *
- * @param maxSequenceNr upper bound for a selected snapshot's sequence number. Default is no upper bound.
- * @param maxTimestamp upper bound for a selected snapshot's timestamp. Default is no upper bound.
+ * @param maxSequenceNr upper bound for a selected snapshot's sequence number. Default is no upper bound,
+ *   i.e. `Long.MaxValue`
+ * @param maxTimestamp upper bound for a selected snapshot's timestamp. Default is no upper bound,
+ *   i.e. `Long.MaxValue`
+ * @param minSequenceNr lower bound for a selected snapshot's sequence number. Default is no lower bound,
+ *   i.e. `0L`
+ * @param minTimestamp lower bound for a selected snapshot's timestamp. Default is no lower bound,
+ *   i.e. `0L`
  *
  * @see [[Recovery]]
  */
 @SerialVersionUID(1L)
-final case class SnapshotSelectionCriteria(maxSequenceNr: Long = Long.MaxValue, maxTimestamp: Long = Long.MaxValue) {
+final case class SnapshotSelectionCriteria(
+  maxSequenceNr: Long = Long.MaxValue,
+  maxTimestamp: Long = Long.MaxValue,
+  minSequenceNr: Long = 0L,
+  minTimestamp: Long = 0L) {
+
   /**
    * INTERNAL API.
    */
@@ -100,7 +111,8 @@ final case class SnapshotSelectionCriteria(maxSequenceNr: Long = Long.MaxValue, 
    * INTERNAL API.
    */
   private[persistence] def matches(metadata: SnapshotMetadata): Boolean =
-    metadata.sequenceNr <= maxSequenceNr && metadata.timestamp <= maxTimestamp
+    metadata.sequenceNr <= maxSequenceNr && metadata.timestamp <= maxTimestamp &&
+      metadata.sequenceNr >= minSequenceNr && metadata.timestamp >= minTimestamp
 }
 
 object SnapshotSelectionCriteria {
@@ -119,6 +131,13 @@ object SnapshotSelectionCriteria {
    */
   def create(maxSequenceNr: Long, maxTimestamp: Long) =
     SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp)
+
+  /**
+   * Java API.
+   */
+  def create(maxSequenceNr: Long, maxTimestamp: Long,
+             minSequenceNr: Long, minTimestamp: Long) =
+    SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, minSequenceNr, minTimestamp)
 
   /**
    * Java API.
