@@ -390,7 +390,8 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   /**
    * Permanently deletes all persistent messages with sequence numbers less than or equal `toSequenceNr`.
    *
-   * If the delete fails an [[akka.persistence.JournalProtocol.DeleteMessagesFailure]] will be sent to the actor.
+   * If the delete is successful a [[DeleteMessagesSuccess]] will be sent to the actor.
+   * If the delete fails a [[DeleteMessagesFailure]] will be sent to the actor.
    *
    * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
    */

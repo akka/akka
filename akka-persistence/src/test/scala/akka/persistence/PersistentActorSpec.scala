@@ -7,7 +7,6 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
-import akka.persistence.JournalProtocol.DeleteMessagesSuccess
 import akka.testkit.{ ImplicitSender, TestLatch, TestProbe }
 import com.typesafe.config.Config
 
