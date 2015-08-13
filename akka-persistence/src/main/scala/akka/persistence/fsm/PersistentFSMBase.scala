@@ -89,6 +89,8 @@ import scala.concurrent.duration.FiniteDuration
  *   cancelTimer("tock")
  *   isTimerActive("tock")
  * </pre>
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging {
 
@@ -534,7 +536,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
  * Stackable trait for [[akka.actor.FSM]] which adds a rolling event log and
  * debug logging capabilities (analogous to [[akka.event.LoggingReceive]]).
  *
- * @since 1.2
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: Actor ⇒
 
