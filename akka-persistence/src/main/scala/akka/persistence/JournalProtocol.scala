@@ -23,18 +23,6 @@ private[persistence] object JournalProtocol {
   sealed trait Response extends Message
 
   /**
-   * Reply message to a successful [[DeleteMessagesTo]] request.
-   */
-  final case class DeleteMessagesSuccess(toSequenceNr: Long)
-    extends Response
-
-  /**
-   * Reply message to a failed [[DeleteMessagesTo]] request.
-   */
-  final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
-    extends Response
-
-  /**
    * Request to delete all persistent messages with sequence numbers up to `toSequenceNr`
    * (inclusive).
    */

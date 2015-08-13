@@ -22,6 +22,16 @@ case object RecoveryCompleted extends RecoveryCompleted {
 }
 
 /**
+ * Reply message to a successful [[Eventsourced#deleteMessages]] request.
+ */
+final case class DeleteMessagesSuccess(toSequenceNr: Long)
+
+/**
+ * Reply message to a failed [[Eventsourced#deleteMessages]] request.
+ */
+final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
+
+/**
  * Recovery mode configuration object to be returned in [[PersistentActor#recovery]].
  *
  * By default recovers from latest snapshot replays through to the last available event (last sequenceId).
