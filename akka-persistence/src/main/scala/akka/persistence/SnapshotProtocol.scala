@@ -16,6 +16,16 @@ package akka.persistence
 final case class SnapshotMetadata(persistenceId: String, sequenceNr: Long, timestamp: Long = 0L)
 //#snapshot-metadata
 
+object SnapshotMetadata {
+  implicit val ordering: Ordering[SnapshotMetadata] = Ordering.fromLessThan[SnapshotMetadata] { (a, b) ⇒
+    if (a eq b) false
+    else if (a.persistenceId != b.persistenceId) a.persistenceId.compareTo(b.persistenceId) < 0
+    else if (a.sequenceNr != b.sequenceNr) a.sequenceNr < b.sequenceNr
+    else if (a.timestamp != b.timestamp) a.timestamp < b.timestamp
+    else false
+  }
+}
+
 /**
  * Sent to a [[PersistentActor]] after successful saving of a snapshot.
  *
