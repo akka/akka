@@ -7,19 +7,20 @@ package akka.http.javadsl.testkit
 import akka.actor.ActorSystem
 import akka.http.javadsl.server._
 import akka.http.scaladsl.model.HttpResponse
-import akka.stream.ActorMaterializer
+import akka.stream.{ Materializer, ActorMaterializer }
 import org.junit.rules.ExternalResource
 import org.junit.{ Assert, Rule }
 
 import scala.concurrent.duration._
 
 /**
- * A RouteTest that uses JUnit assertions.
+ * A RouteTest that uses JUnit assertions. ActorSystem and Materializer are provided as an [[ExternalResource]]
+ * and their lifetime is automatically managed.
  */
 abstract class JUnitRouteTestBase extends RouteTest {
   protected def systemResource: ActorSystemResource
   implicit def system: ActorSystem = systemResource.system
-  implicit def materializer: ActorMaterializer = systemResource.materializer
+  implicit def materializer: Materializer = systemResource.materializer
 
   protected def createTestResponse(response: HttpResponse): TestResponse =
     new TestResponse(response, awaitDuration)(system.dispatcher, materializer) {
@@ -32,7 +33,7 @@ abstract class JUnitRouteTestBase extends RouteTest {
       protected def assertTrue(predicate: Boolean, message: String): Unit =
         Assert.assertTrue(message, predicate)
 
-      protected def fail(message: String): Nothing = {
+      protected def fail(message: String): Unit = {
         Assert.fail(message)
         throw new IllegalStateException("Assertion should have failed")
       }
