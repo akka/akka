@@ -25,6 +25,7 @@ import scala.util._
  * Local filesystem backed snapshot store.
  */
 private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLogging {
+
   private val FilenamePattern = """^snapshot-(.+)-(\d+)-(\d+)""".r
 
   import akka.util.Helpers._
@@ -82,7 +83,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
 
   private def snapshotFiles(metadata: SnapshotMetadata): immutable.Seq[File] = {
     // pick all files for this persistenceId and sequenceNr, old journals could have created multiple entries with appended timestamps
-    snapshotDir.listFiles(new SnapshotSeqNrFilenameFilter(metadata.persistenceId, metadata.sequenceNr)).toVector
+    snapshotDir.listFiles(new SnapshotSeqNrFilenameFilter(metadata.persistenceId, metadata.sequenceNr, metadata.timestamp)).toVector
   }
 
   @scala.annotation.tailrec
@@ -156,13 +157,14 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     }
   }
 
-  private final class SnapshotSeqNrFilenameFilter(persistenceId: String, sequenceNr: Long) extends FilenameFilter {
-    private final def matches(pid: String, snr: String): Boolean =
-      pid.equals(URLEncoder.encode(persistenceId)) && Try(snr.toLong == sequenceNr).getOrElse(false)
+  private final class SnapshotSeqNrFilenameFilter(persistenceId: String, sequenceNr: Long, timestamp: Long) extends FilenameFilter {
+    private final def matches(pid: String, snr: String, tms: String): Boolean = {
+      pid.equals(URLEncoder.encode(persistenceId)) && Try(snr.toLong == sequenceNr).getOrElse(false) && Try(tms.toLong <= timestamp).getOrElse(false)
+    }
 
     def accept(dir: File, name: String): Boolean =
       name match {
-        case FilenamePattern(pid, snr, tms) ⇒ matches(pid, snr)
+        case FilenamePattern(pid, snr, tms) ⇒ matches(pid, snr, tms)
         case _                              ⇒ false
       }
 
