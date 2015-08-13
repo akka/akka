@@ -135,7 +135,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     eventPublisher.notifyListeners(RemotingErrorEvent(new RemoteTransportException(msg, cause)))
 
   override def shutdown(): Future[Unit] = {
-    import scala.concurrent.ExecutionContext.Implicits.global
     endpointManager match {
       case Some(manager) ⇒
         implicit val timeout = ShutdownTimeout
@@ -145,6 +144,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
           endpointManager = None
         }
 
+        import system.dispatcher
         (manager ? ShutdownAndFlush).mapTo[Boolean].andThen {
           case Success(flushSuccessful) ⇒
             if (!flushSuccessful)
