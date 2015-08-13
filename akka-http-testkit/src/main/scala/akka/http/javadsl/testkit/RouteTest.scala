@@ -7,7 +7,7 @@ package akka.http.javadsl.testkit
 import scala.annotation.varargs
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.http.scaladsl.server
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.server.{ HttpApp, AllDirectives, Route, Directives }
@@ -19,9 +19,17 @@ import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.impl.util._
 
+/**
+ * A base class to create route tests for testing libraries. An implementation needs to provide
+ * code to provide and shutdown an [[ActorSystem]], [[Materializer]], and [[ExecutionContext]].
+ * Also an implementation should provide instances of [[TestResponse]] to define the assertion
+ * facilities of the testing library.
+ *
+ * See `JUnitRouteTest` for an example of a concrete implementation.
+ */
 abstract class RouteTest extends AllDirectives {
   implicit def system: ActorSystem
-  implicit def materializer: ActorMaterializer
+  implicit def materializer: Materializer
   implicit def executionContext: ExecutionContext = system.dispatcher
 
   protected def awaitDuration: FiniteDuration = 500.millis
@@ -53,7 +61,7 @@ abstract class RouteTest extends AllDirectives {
   /**
    * Creates a [[TestRoute]] for the main route of an [[HttpApp]].
    */
-  def testAppRoute(app: HttpApp): TestRoute = testRoute(app.createRoute)
+  def testAppRoute(app: HttpApp): TestRoute = testRoute(app.createRoute())
 
   protected def createTestResponse(response: HttpResponse): TestResponse
 }
