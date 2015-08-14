@@ -532,6 +532,8 @@ to reply to the original sender, by using ``sender() ! replyMsg``.
 If invoked from an instance that is **not** an Actor the sender will be
 :obj:`deadLetters` actor reference by default.
 
+.. _actors-ask-scala:
+
 Ask: Send-And-Receive-Future
 ----------------------------
 

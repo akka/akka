@@ -381,6 +381,25 @@ restarts of the persistent actor.
 Views
 =====
 
+.. warning::
+
+  ``AbstractPersistentView`` is deprecated. Use :ref:`persistence-query-java` instead. The corresponding
+  query type is ``EventsByPersistenceId``. There are several alternatives for connecting the ``Source``
+  to an actor corresponding to a previous ``UntypedPersistentView`` actor:
+  
+  * `Sink.actorRef`_ is simple, but has the disadvantage that there is no back-pressure signal from the 
+    destination actor, i.e. if the actor is not consuming the messages fast enough the mailbox of the actor will grow
+  * `mapAsync`_ combined with :ref:`actors-ask-lambda` is almost as simple with the advantage of back-pressure
+    being propagated all the way
+  * `ActorSubscriber`_ in case you need more fine grained control
+  
+  The consuming actor may be a plain ``AbstractActor`` or an ``AbstractPersistentActor`` if it needs to store its
+  own state (e.g. fromSequenceNr offset).
+
+.. _Sink.actorRef: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/java/stream-integrations.html#Sink_actorRef
+.. _mapAsync: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/stages-overview.html#Asynchronous_processing_stages
+.. _ActorSubscriber: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/java/stream-integrations.html#ActorSubscriber
+
 Persistent views can be implemented by extending the ``AbstractView`` abstract class, implement the ``persistenceId`` method
 and setting the “initial behavior” in the constructor by calling the :meth:`receive` method.
 
@@ -636,6 +655,13 @@ Persistent FSM
 ``AbstractPersistentFSM`` handles the incoming messages in an FSM like fashion.
 Its internal state is persisted as a sequence of changes, later referred to as domain events.
 Relationship between incoming messages, FSM's states and transitions, persistence of domain events is defined by a DSL.
+
+.. warning::
+
+  ``AbstractPersistentFSM`` is marked as **“experimental”** as of its introduction in Akka 2.4.0. We will continue to
+  improve this API based on our users’ feedback, which implies that while we try to keep incompatible
+  changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
+  contents of the `classes related to ``AbstractPersistentFSM``.
 
 A Simple Example
 ----------------
