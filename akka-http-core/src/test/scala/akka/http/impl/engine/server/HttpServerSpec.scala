@@ -661,6 +661,32 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       expectRequest shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
     }
 
+    "use default-host-header for HTTP/1.0 requests" in new TestSetup {
+      send("""GET /abc HTTP/1.0
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      expectRequest shouldEqual HttpRequest(uri = "http://example.com/abc", protocol = HttpProtocols.`HTTP/1.0`)
+
+      override def settings: ServerSettings = super.settings.copy(defaultHostHeader = Host("example.com"))
+    }
+    "fail an HTTP/1.0 request with 400 if no default-host-header is set" in new TestSetup {
+      send("""GET /abc HTTP/1.0
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      netOutSub.request(1)
+      wipeDate(netOut.expectNext().utf8String) shouldEqual
+        """|HTTP/1.1 400 Bad Request
+           |Server: akka-http/test
+           |Date: XXXX
+           |Connection: close
+           |Content-Type: text/plain; charset=UTF-8
+           |Content-Length: 41
+           |
+           |Request is missing required `Host` header""".stripMarginWithNewline("\r\n")
+    }
+
     "support remote-address-header" in new TestSetup {
       lazy val theAddress = InetAddress.getByName("127.5.2.1")
 
