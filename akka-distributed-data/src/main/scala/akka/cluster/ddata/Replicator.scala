@@ -857,9 +857,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val localValue = getData(key.id)
     Try {
       localValue match {
-        case Some(DataEnvelope(DeletedData, _))         ⇒ throw new DataDeleted(key)
-        case Some(envelope @ DataEnvelope(existing, _)) ⇒ modify(Some(existing))
-        case None                                       ⇒ modify(None)
+        case Some(DataEnvelope(DeletedData, _)) ⇒ throw new DataDeleted(key)
+        case Some(envelope @ DataEnvelope(existing, _)) ⇒
+          existing.merge(modify(Some(existing)).asInstanceOf[existing.T])
+        case None ⇒ modify(None)
       }
     } match {
       case Success(newData) ⇒
