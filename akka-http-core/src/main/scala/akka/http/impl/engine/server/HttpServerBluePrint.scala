@@ -77,9 +77,12 @@ private[http] object HttpServerBluePrint {
           case (_, src) ⇒ src.runWith(Sink.ignore)
         }.collect {
           case r: HttpRequest ⇒ r
-        }.buffer(1, OverflowStrategy.backpressure)
-    // FIXME #16583 it is unclear why this is needed, some element probably does not propagate demand eagerly enough
-    // the failing test would be HttpServerSpec
+        }
+        // FIXME #16583 / #18170
+        // `buffer` is needed because of current behavior of collect which will queue completion
+        // behind an ignored (= not collected) element if there is no demand.
+        // `buffer` will ensure demand and therefore make sure that completion is reported eagerly.
+        .buffer(1, OverflowStrategy.backpressure)
 
     // we need to make sure that only one element per incoming request is queueing up in front of
     // the bypassMerge.bypassInput. Otherwise the rising backpressure against the bypassFanout
