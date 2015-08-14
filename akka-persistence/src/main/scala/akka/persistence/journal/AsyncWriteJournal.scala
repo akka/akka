@@ -14,6 +14,7 @@ import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 import akka.pattern.CircuitBreaker
+import java.util.Locale
 
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.
@@ -25,22 +26,30 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
 
   private val extension = Persistence(context.system)
   private val publish = extension.settings.internal.publishPluginCommands
+  private val config = extension.configFor(self)
+
+  private val breaker = {
+    val maxFailures = config.getInt("circuit-breaker.max-failures")
+    val callTimeout = config.getDuration("circuit-breaker.call-timeout", MILLISECONDS).millis
+    val resetTimeout = config.getDuration("circuit-breaker.reset-timeout", MILLISECONDS).millis
+    CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout)
+  }
+
+  private val replayFilterMode: ReplayFilter.Mode =
+    config.getString("replay-filter.mode").toLowerCase(Locale.ROOT) match {
+      case "off"                   ⇒ ReplayFilter.Disabled
+      case "repair-by-discard-old" ⇒ ReplayFilter.RepairByDiscardOld
+      case "fail"                  ⇒ ReplayFilter.Fail
+      case "warn"                  ⇒ ReplayFilter.Warn
+      case other ⇒ throw new IllegalArgumentException(
+        s"invalid replay-filter.mode [$other], supported values [off, repair, fail, warn]")
+    }
+  private def isReplayFilterEnabled: Boolean = replayFilterMode != ReplayFilter.Disabled
+  private val replayFilterWindowSize: Int = config.getInt("replay-filter.window-size")
+  private val replayFilterMaxOldWriters: Int = config.getInt("replay-filter.max-old-writers")
 
   private val resequencer = context.actorOf(Props[Resequencer]())
   private var resequencerCounter = 1L
-
-  private val breaker = {
-    val cfg = context.system.settings.config
-    val cbConfig =
-      if (cfg.hasPath(self.path.name + ".circuit-breaker"))
-        cfg.getConfig(self.path.name + ".circuit-breaker")
-          .withFallback(cfg.getConfig("akka.persistence.default-circuit-breaker"))
-      else cfg.getConfig("akka.persistence.default-circuit-breaker")
-    val maxFailures = cbConfig.getInt("max-failures")
-    val callTimeout = cbConfig.getDuration("call-timeout", MILLISECONDS).millis
-    val resetTimeout = cbConfig.getDuration("reset-timeout", MILLISECONDS).millis
-    CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout)
-  }
 
   final def receive = receiveWriteJournal.orElse[Any, Unit](receivePluginInternal)
 
@@ -110,6 +119,10 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       }
 
     case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor) ⇒
+      val replyTo =
+        if (isReplayFilterEnabled) context.actorOf(ReplayFilter.props(persistentActor, replayFilterMode,
+          replayFilterWindowSize, replayFilterMaxOldWriters))
+        else persistentActor
 
       breaker.withCircuitBreaker(asyncReadHighestSequenceNr(persistenceId, fromSequenceNr))
         .flatMap { highSeqNr ⇒
@@ -123,7 +136,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
             asyncReplayMessages(persistenceId, fromSequenceNr, toSeqNr, max) { p ⇒
               if (!p.deleted) // old records from 2.3 may still have the deleted flag
                 adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
-                  persistentActor.tell(ReplayedMessage(adaptedPersistentRepr), Actor.noSender)
+                  replyTo.tell(ReplayedMessage(adaptedPersistentRepr), Actor.noSender)
                 }
             }.map(_ ⇒ highSeqNr)
           }
@@ -131,7 +144,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           highSeqNr ⇒ RecoverySuccess(highSeqNr)
         }.recover {
           case e ⇒ ReplayMessagesFailure(e)
-        }.pipeTo(persistentActor).onSuccess {
+        }.pipeTo(replyTo).onSuccess {
           case _ if publish ⇒ context.system.eventStream.publish(r)
         }
 
