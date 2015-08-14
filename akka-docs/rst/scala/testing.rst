@@ -59,6 +59,7 @@ section below.
   to ask the Actor to reply with the state you want to run assertions against),
   instead of using ``TestActorRef`` whenever possible.
 
+.. warning::
   Due to the synchronous nature of ``TestActorRef`` it will **not** work with some support
   traits that Akka provides as they require asynchronous behaviours to function properly.
   Examples of traits that do not mix well with test actor refs are :ref:`PersistentActor <event-sourcing>`
@@ -159,6 +160,8 @@ suits your test needs:
 Feel free to experiment with the possibilities, and if you find useful
 patterns, don't hesitate to let the Akka forums know about them! Who knows,
 common operations might even be worked into nice DSLs.
+
+.. _async-integration-testing-scala:
 
 Asynchronous Integration Testing with :class:`TestKit`
 ======================================================
