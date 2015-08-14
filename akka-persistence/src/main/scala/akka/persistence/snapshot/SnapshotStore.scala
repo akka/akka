@@ -23,15 +23,10 @@ trait SnapshotStore extends Actor with ActorLogging {
   private val publish = extension.settings.internal.publishPluginCommands
 
   private val breaker = {
-    val cfg = context.system.settings.config
-    val cbConfig =
-      if (cfg.hasPath(self.path.name + ".circuit-breaker"))
-        cfg.getConfig(self.path.name + ".circuit-breaker")
-          .withFallback(cfg.getConfig("akka.persistence.default-circuit-breaker"))
-      else cfg.getConfig("akka.persistence.default-circuit-breaker")
-    val maxFailures = cbConfig.getInt("max-failures")
-    val callTimeout = cbConfig.getDuration("call-timeout", MILLISECONDS).millis
-    val resetTimeout = cbConfig.getDuration("reset-timeout", MILLISECONDS).millis
+    val cfg = extension.configFor(self)
+    val maxFailures = cfg.getInt("circuit-breaker.max-failures")
+    val callTimeout = cfg.getDuration("circuit-breaker.call-timeout", MILLISECONDS).millis
+    val resetTimeout = cfg.getDuration("circuit-breaker.reset-timeout", MILLISECONDS).millis
     CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout)
   }
 
