@@ -40,7 +40,7 @@ function fail {
 function logStatusUrl {
   local prop="uuid"
   local temp=`echo $json | sed 's/\\\\\//\//g' | sed 's/[{}]//g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | sed 's/\"\:\"/\|/g' | sed 's/[\,]/ /g' | sed 's/\"//g' | grep -w $prop`
-  echolog "Check status of $name at: https://typesafe.com/activator/template/status/${temp##*|}"
+  echolog "Check status of $name at: https://www.typesafe.com/activator/template/status/${temp##*|}"
 }
 
 # print usage info
@@ -88,7 +88,7 @@ names=`find akka-samples -name "activator.properties" -depth 2 | awk -F"/" '{pri
 
 for name in $names; do
   echolog "Publishing $name"
-  json=$(curl --data-urlencode "url=http://downloads.typesafe.com/akka/$name-$version.zip" --user "$user:$pwd" --progress-bar https://typesafe.com/activator/template/publish)
+  json=$(curl --data-urlencode "url=http://downloads.typesafe.com/akka/$name-$version.zip" --user "$user:$pwd" --progress-bar https://www.typesafe.com/activator/template/publish)
   logStatusUrl
 done
 
