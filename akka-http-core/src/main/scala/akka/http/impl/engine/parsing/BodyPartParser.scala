@@ -270,7 +270,8 @@ private[http] object BodyPartParser {
     maxHeaderValueLength: Int,
     maxHeaderCount: Int,
     illegalHeaderWarnings: Boolean,
-    headerValueCacheLimit: Int) extends HttpHeaderParser.Settings {
+    headerValueCacheLimit: Int,
+    uriParsingMode: Uri.ParsingMode) extends HttpHeaderParser.Settings {
     require(maxHeaderNameLength > 0, "maxHeaderNameLength must be > 0")
     require(maxHeaderValueLength > 0, "maxHeaderValueLength must be > 0")
     require(maxHeaderCount > 0, "maxHeaderCount must be > 0")
@@ -284,5 +285,6 @@ private[http] object BodyPartParser {
     maxHeaderValueLength = 8192,
     maxHeaderCount = 64,
     illegalHeaderWarnings = true,
-    headerValueCacheLimit = 8)
+    headerValueCacheLimit = 8,
+    uriParsingMode = Uri.ParsingMode.Relaxed)
 }

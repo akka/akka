@@ -4,8 +4,9 @@
 
 package akka.http.scaladsl.model.headers
 
-import akka.http.scaladsl.model._
 import org.scalatest.{ FreeSpec, MustMatchers }
+
+import akka.http.scaladsl.model._
 
 class HeaderSpec extends FreeSpec with MustMatchers {
   "ModeledCompanion should" - {
