@@ -902,6 +902,14 @@ or
 
 in your Akka configuration. The LevelDB Java port is for testing purposes only.
 
+.. warning::
+  It is not possible to test persistence provided classes (i.e. :ref:`PersistentActor <event-sourcing-scala>`
+  and :ref:`AtLeastOnceDelivery <at-least-once-delivery-scala>`) using ``TestActorRef`` due to its *synchronous* nature.
+  These traits need to be able to perform asynchronous tasks in the background in order to handle internal persistence
+  related events.
+
+  When testing Persistence based projects always rely on :ref:`asynchronous messaging using the TestKit <async-integration-testing-scala>`.
+
 Configuration
 =============
 
