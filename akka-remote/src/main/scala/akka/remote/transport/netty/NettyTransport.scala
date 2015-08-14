@@ -365,7 +365,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   private def setupBootstrap[B <: Bootstrap](bootstrap: B, pipelineFactory: ChannelPipelineFactory): B = {
     bootstrap.setPipelineFactory(pipelineFactory)
     bootstrap.setOption("backlog", settings.Backlog)
-    bootstrap.setOption("tcpNoDelay", settings.TcpNodelay)
+    bootstrap.setOption("child.tcpNoDelay", settings.TcpNodelay)
     bootstrap.setOption("child.keepAlive", settings.TcpKeepalive)
     bootstrap.setOption("reuseAddress", settings.TcpReuseAddr)
     if (isDatagram) bootstrap.setOption("receiveBufferSizePredictorFactory", new FixedReceiveBufferSizePredictorFactory(ReceiveBufferSize.get))
