@@ -1,8 +1,9 @@
 package akka.contrib.pattern
 
-import akka.testkit.{ ImplicitSender, AkkaSpec }
 import akka.actor.{ Actor, Props }
-import scala.concurrent.duration._
+import akka.persistence.{ PersistentActor }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 object ReceivePipelineSpec {
 
@@ -117,7 +118,48 @@ class ReceivePipelineSpec extends AkkaSpec with ImplicitSender {
       innerOuterReplier ! 6
       expectMsg(IntList(List(16, 17, 18)))
     }
+  }
 
+}
+
+object PersistentReceivePipelineSpec {
+  class PersistentReplierActor extends PersistentActor with ReceivePipeline {
+    override def persistenceId: String = "p-1"
+
+    def becomeAndReply: Actor.Receive = {
+      case "become" ⇒ context.become(justReply)
+      case m        ⇒ sender ! m
+    }
+    def justReply: Actor.Receive = {
+      case m ⇒ sender ! m
+    }
+
+    override def receiveCommand: Receive = becomeAndReply
+    override def receiveRecover: Receive = {
+      case _ ⇒ // ...
+    }
+  }
+
+}
+class PersistentReceivePipelineSpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
+  import ReceivePipelineSpec._
+  import PersistentReceivePipelineSpec._
+
+  def this() {
+    this(ConfigFactory.parseString(
+      s"""
+        |akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+        |akka.persistence.journal.leveldb.dir = "target/journal-${getClass.getSimpleName}"
+      """.stripMargin))
+  }
+
+  "A PersistentActor with ReceivePipeline" must {
+    "support any number of interceptors" in {
+      val replier = system.actorOf(Props(
+        new PersistentReplierActor with ListBuilderInterceptor with AdderInterceptor with ToStringInterceptor))
+      replier ! 8
+      expectMsg("List(18, 19, 20)")
+    }
   }
 
 }
