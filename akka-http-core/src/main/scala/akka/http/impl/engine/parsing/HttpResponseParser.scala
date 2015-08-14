@@ -95,7 +95,9 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
         case None ⇒ clh match {
           case Some(`Content-Length`(contentLength)) ⇒
             if (contentLength > maxContentLength)
-              failMessageStart(s"Response Content-Length $contentLength exceeds the configured limit of $maxContentLength")
+              failMessageStart(
+                summary = s"Response Content-Length of $contentLength bytes exceeds the configured limit of $maxContentLength bytes",
+                detail = "Consider increasing the value of akka.http.client.parsing.max-content-length")
             else if (contentLength == 0) finishEmptyResponse()
             else if (contentLength < input.size - bodyStart) {
               val cl = contentLength.toInt
@@ -113,7 +115,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
               HttpEntity.CloseDelimited(contentType(cth), data)
             }
             setCompletionHandling(HttpMessageParser.CompletionOk)
-            parseToCloseBody(input, bodyStart)
+            parseToCloseBody(input, bodyStart, totalBytesRead = 0)
         }
 
         case Some(te) ⇒
@@ -121,7 +123,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
           if (te.isChunked) {
             if (clh.isEmpty) {
               emitResponseStart(chunkedEntity(cth), completedHeaders)
-              parseChunk(input, bodyStart, closeAfterResponseCompletion)
+              parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
             } else failMessageStart("A chunked response must not contain a Content-Length header.")
           } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
             expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
@@ -130,9 +132,24 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
   }
 
   // currently we do not check for `settings.maxContentLength` overflow
-  def parseToCloseBody(input: ByteString, bodyStart: Int): StateResult = {
-    if (input.length > bodyStart)
-      emit(EntityPart(input.drop(bodyStart).compact))
-    continue(parseToCloseBody)
+  def parseToCloseBody(input: ByteString, bodyStart: Int, totalBytesRead: Long): StateResult = {
+    val newTotalBytes = totalBytesRead + math.max(0, input.length - bodyStart)
+    if (newTotalBytes > settings.maxContentLength)
+      failEntityStream(
+        summary = s"Aggregated data length of close-delimited response entity of $newTotalBytes " +
+          s"bytes exceeds the configured limit of $maxContentLength bytes",
+        detail = "Consider increasing the value of akka.http.client.parsing.max-content-length")
+    else {
+      if (input.length > bodyStart)
+        emit(EntityPart(input.drop(bodyStart).compact))
+      continue(parseToCloseBody(_, _, newTotalBytes))
+    }
   }
+
+  def failWithChunkedEntityTooLong(totalBytesRead: Long): StateResult =
+    failEntityStream(
+      summary = s"Aggregated data length of chunked response entity of $totalBytesRead " +
+        s"bytes exceeds the configured limit of $maxContentLength bytes",
+      detail = "Consider increasing the value of akka.http.client.parsing.max-content-length")
+
 }
