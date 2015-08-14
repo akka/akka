@@ -103,11 +103,13 @@ bytes to different objects.
 Then you only need to fill in the blanks, bind it to a name in your :ref:`configuration` and then
 list which classes that should be serialized using it.
 
+.. _string-manifest-serializer-scala:
+
 Serializer with String Manifest
 -------------------------------
 
 The ``Serializer`` illustrated above supports a class based manifest (type hint).
-For serialization of data that need to evolve over time the `SerializerWithStringManifest`
+For serialization of data that need to evolve over time the ``SerializerWithStringManifest``
 is recommended instead of ``Serializer`` because the manifest (type hint) is a ``String``
 instead of a ``Class``. That means that the class can be moved/removed and the serializer
 can still deserialize old data by matching  on the ``String``. This is especially useful
