@@ -18,11 +18,12 @@ interface AsyncWritePlugin {
    *
    * The batch is only for performance reasons, i.e. all messages don't have to
    * be written atomically. Higher throughput can typically be achieved by using
-   * batch inserts of many records compared inserting records one-by-one, but
+   * batch inserts of many records compared to inserting records one-by-one, but
    * this aspect depends on the underlying data store and a journal
-   * implementation can implement it as efficient as possible with the
-   * assumption that the messages of the batch are unrelated.
-   *
+   * implementation can implement it as efficient as possible. Journals should
+   * aim to persist events in-order for a given `persistenceId` as otherwise in
+   * case of a failure, the persistent state may be end up being inconsistent.
+   * 
    * Each `AtomicWrite` message contains the single `PersistentRepr` that
    * corresponds to the event that was passed to the `persist` method of the
    * `PersistentActor`, or it contains several `PersistentRepr` that corresponds
