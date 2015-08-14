@@ -89,3 +89,18 @@ the messages with empty cases or just not calling the inner interceptor received
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReceivePipelineSpec.scala#unhandled
 
+Using Receive Pipelines with Persistence
+----------------------------------------
+
+When using ``ReceivePipeline`` together with :ref:`PersistentActor<persistence-scala>` make sure to
+mix-in the traits in the following order for them to properly co-operate::
+
+    class ExampleActor extends PersistentActor with ReceivePipeline {
+      /* ... */
+    }
+
+The order is important here because of how both traits use internal "around" methods to implement their features,
+and if mixed-in the other way around it would not work as expected. If you want to learn more about how exactly this
+works, you can read up on Scala's `type linearization mechanism`_;
+
+.. _type linearization mechanism: http://ktoso.github.io/scala-types-of-types/#type-linearization-vs-the-diamond-problem
