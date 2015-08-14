@@ -106,6 +106,20 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config) {
       snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(metadata(3).sequenceNr, metadata(3).timestamp), Long.MaxValue), senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(3), s"s-4")), Long.MaxValue))
     }
+    "not delete snapshots with non-matching upper timestamp bounds" in {
+      val md = metadata(3)
+      val criteria = SnapshotSelectionCriteria(md.sequenceNr, md.timestamp - 1)
+      val cmd = DeleteSnapshots(pid, criteria)
+      val sub = TestProbe()
+
+      subscribe[DeleteSnapshots](sub.ref)
+      snapshotStore.tell(cmd, senderProbe.ref)
+      sub.expectMsg(cmd)
+      senderProbe.expectMsg(DeleteSnapshotsSuccess(criteria))
+
+      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(metadata(3).sequenceNr, metadata(3).timestamp), Long.MaxValue), senderProbe.ref)
+      senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(3), s"s-4")), Long.MaxValue))
+    }
     "save and overwrite snapshot with same sequence number" in {
       val md = metadata(4)
       snapshotStore.tell(SaveSnapshot(md, s"s-5-modified"), senderProbe.ref)

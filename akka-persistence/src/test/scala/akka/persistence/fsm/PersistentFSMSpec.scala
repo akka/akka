@@ -5,7 +5,7 @@
 package akka.persistence.fsm
 
 import akka.actor._
-import akka.persistence.{PersistentActor, RecoveryCompleted, PersistenceSpec}
+import akka.persistence.{ PersistentActor, RecoveryCompleted, PersistenceSpec }
 import akka.persistence.fsm.PersistentFSM._
 import akka.testkit._
 import com.typesafe.config.Config
@@ -266,13 +266,13 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       val persistentEventsStreamer = system.actorOf(PersistentEventsStreamer.props(persistenceId, testActor))
 
       expectMsg(ItemAdded(Item("1", "Shirt", 59.99F)))
-      expectMsgType[StateChangeEvent]   //because a timeout is defined, State Change is persisted
+      expectMsgType[StateChangeEvent] //because a timeout is defined, State Change is persisted
 
       expectMsg(ItemAdded(Item("2", "Shoes", 89.99F)))
-      expectMsgType[StateChangeEvent]   //because a timeout is defined, State Change is persisted
+      expectMsgType[StateChangeEvent] //because a timeout is defined, State Change is persisted
 
       expectMsg(ItemAdded(Item("3", "Coat", 119.99F)))
-      expectMsgType[StateChangeEvent]   //because a timeout is defined, State Change is persisted
+      expectMsgType[StateChangeEvent] //because a timeout is defined, State Change is persisted
 
       expectMsg(OrderExecuted)
       expectMsgType[StateChangeEvent]
@@ -431,13 +431,13 @@ object PersistentFSMSpec {
     def props(persistenceId: String, reportActor: ActorRef) =
       Props(new WebStoreCustomerFSM(persistenceId, reportActor))
   }
-  
+
   class PersistentEventsStreamer(id: String, client: ActorRef) extends PersistentActor {
     override val persistenceId: String = id
 
     def receiveRecover = {
-      case RecoveryCompleted  ⇒ // do nothing
-      case persistentEvent    ⇒ client ! persistentEvent
+      case RecoveryCompleted ⇒ // do nothing
+      case persistentEvent   ⇒ client ! persistentEvent
     }
 
     def receiveCommand = {
