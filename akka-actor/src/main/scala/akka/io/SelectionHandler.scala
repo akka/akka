@@ -72,8 +72,8 @@ private[io] object SelectionHandler {
 
   case object ChannelConnectable
   case object ChannelAcceptable
-  case object ChannelReadable
-  case object ChannelWritable
+  case object ChannelReadable extends DeadLetterSuppression
+  case object ChannelWritable extends DeadLetterSuppression
 
   private[io] abstract class SelectorBasedManager(selectorSettings: SelectionHandlerSettings, nrOfSelectors: Int) extends Actor {
 
