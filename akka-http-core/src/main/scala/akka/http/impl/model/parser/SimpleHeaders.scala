@@ -121,7 +121,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   // Also: an empty hostnames with a non-empty port value (as in `Host: :8080`) are *allowed*,
   // see http://trac.tools.ietf.org/wg/httpbis/trac/ticket/92
   def host = rule {
-    runSubParser(new UriParser(_).`hostAndPort-pushed`) ~ EOI ~> (Host(_, _))
+    runSubParser(newUriParser(_).`hostAndPort-pushed`) ~ EOI ~> (Host(_, _))
   }
 
   // http://tools.ietf.org/html/rfc7232#section-3.1
@@ -150,7 +150,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://tools.ietf.org/html/rfc7231#section-7.1.2
   def location = rule {
-    runSubParser(new UriParser(_).`URI-reference-pushed`) ~ EOI ~> (Location(_))
+    uriReference ~ EOI ~> (Location(_))
   }
 
   // http://tools.ietf.org/html/rfc6454#section-7
@@ -171,7 +171,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   def referer = rule {
     // we are bit more relaxed than the spec here by also parsing a potential fragment
     // but catch it in the `Referer` instance validation (with a `require` in the constructor)
-    runSubParser(new UriParser(_).`URI-reference-pushed`) ~ EOI ~> (Referer(_))
+    uriReference ~ EOI ~> (Referer(_))
   }
 
   // http://tools.ietf.org/html/rfc7231#section-7.4.2

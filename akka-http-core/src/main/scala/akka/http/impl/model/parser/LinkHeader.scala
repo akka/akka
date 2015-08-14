@@ -49,7 +49,7 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
   ////////////////////////////// helpers ///////////////////////////////////
 
   def UriReference(terminationChar: Char) = rule {
-    capture(oneOrMore(!terminationChar ~ VCHAR)) ~> (new UriParser(_).parseUriReference())
+    capture(oneOrMore(!terminationChar ~ VCHAR)) ~> (newUriParser(_).parseUriReference())
   }
 
   def URI = rule {
