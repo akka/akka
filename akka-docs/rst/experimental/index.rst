@@ -20,6 +20,7 @@ prior deprecation.
    :maxdepth: 1
 
    ../scala/persistence
+   ../scala/persistence-schema-evolution
    ../dev/multi-node-testing
    ../java/lambda-actors
    ../java/lambda-fsm
