@@ -400,6 +400,54 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |""" should parseToError(400: StatusCode, ErrorInfo("`Content-Length` header value must not exceed 63-bit integer range"))
         }
 
+        "with entity length > max-content-length" - {
+          "for Default entity" in new Test {
+            """PUT /resource/yes HTTP/1.1
+            |Content-length: 101
+            |Host: x
+            |
+            |""" should parseToError(413: StatusCode,
+              ErrorInfo("Request Content-Length of 101 bytes exceeds the configured limit of 100 bytes",
+                "Consider increasing the value of akka.http.server.parsing.max-content-length"))
+
+            override protected def parserSettings: ParserSettings = super.parserSettings.copy(maxContentLength = 100)
+          }
+
+          "for Chunked entity" in new Test {
+            def request(dataElements: ByteString*) = HttpRequest(PUT, "/", List(Host("x")),
+              HttpEntity.Chunked(`application/octet-stream`, source(dataElements.map(ChunkStreamPart(_)): _*)))
+
+            Seq(
+              """PUT / HTTP/1.1
+            |Transfer-Encoding: chunked
+            |Host: x
+            |
+            |65
+            |abc""") should generalMultiParseTo(Right(request()),
+                Left(
+                  EntityStreamError(
+                    ErrorInfo("Aggregated data length of chunked request entity of 101 bytes exceeds the configured limit of 100 bytes",
+                      "Consider increasing the value of akka.http.server.parsing.max-content-length"))))
+
+            Seq(
+              """PUT / HTTP/1.1
+              |Transfer-Encoding: chunked
+              |Host: x
+              |
+              |1
+              |a
+              |""",
+              """64
+               |a""") should generalMultiParseTo(Right(request(ByteString("a"))),
+                Left(EntityStreamError(
+                  ErrorInfo("Aggregated data length of chunked request entity of 101 bytes exceeds the configured limit of 100 bytes",
+                    "Consider increasing the value of akka.http.server.parsing.max-content-length"))))
+
+            override protected def parserSettings: ParserSettings = super.parserSettings.copy(maxContentLength =
+              100)
+          }
+        }
+
         "with an illegal entity" in new Test {
           """HEAD /resource/yes HTTP/1.1
             |Content-length: 3
