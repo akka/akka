@@ -27,7 +27,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.6.2")
 
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.0")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.3")
 
 // stats reporting
 libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
