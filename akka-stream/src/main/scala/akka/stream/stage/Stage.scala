@@ -3,8 +3,11 @@
  */
 package akka.stream.stage
 
+import akka.actor.Cancellable
 import akka.event.{ Logging, LogSource }
 import akka.stream.{ ActorMaterializer, Materializer, Attributes, Supervision }
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * General interface for stream transformation.
@@ -656,6 +659,9 @@ trait AsyncContext[Out, Ext] extends DetachedContext[Out] {
    * This object can be cached and reused within the same [[AsyncStage]].
    */
   def getAsyncCallback(): AsyncCallback[Ext]
+
+  def scheduleOnce(delay: FiniteDuration, signal: Ext): Cancellable
+
   /**
    * In response to an asynchronous notification an [[AsyncStage]] may choose
    * to neither push nor pull nor terminate, which is represented as this

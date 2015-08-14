@@ -3,13 +3,15 @@
  */
 package akka.stream.impl.fusing
 
+import akka.actor.Cancellable
 import akka.event.LoggingAdapter
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.stage._
-import akka.stream.{ Materializer, Attributes, Supervision }
+import akka.stream.{ ActorMaterializer, Attributes, Materializer, Supervision }
 
 import scala.annotation.{ switch, tailrec }
 import scala.collection.{ breakOut, immutable }
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
 /**
@@ -316,6 +318,14 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
       new AsyncCallback[Any] {
         override def invoke(evt: Any): Unit = onAsyncInput(current, context, evt)
       }
+    }
+
+    override def scheduleOnce(delay: FiniteDuration, signal: Any): Cancellable = {
+      val system = ActorMaterializer.downcast(materializer).system // TODO how to avoid this? Each materializer must be able to "schedule"?
+      val callback = getAsyncCallback()
+      system.scheduler.scheduleOnce(delay, new Runnable {
+        def run(): Unit = callback.invoke(signal)
+      })(system.dispatcher)
     }
 
     override def ignore(): AsyncDirective = {
