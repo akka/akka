@@ -55,10 +55,23 @@ private[http] object HttpServerBluePrint {
       }.withDeploy(Deploy.local)
     }, errorMsg = "Http.serverLayer is currently not reusable. You need to create a new instance for each materialization.")
 
+    def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
+      case start: RequestStart ⇒
+        try {
+          val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, securedConnection = false, defaultHostHeader)
+          start.copy(uri = effectiveUri)
+        } catch {
+          case e: IllegalUriException ⇒
+            MessageStartError(StatusCodes.BadRequest, ErrorInfo("Request is missing required `Host` header", e.getMessage))
+        }
+      case x ⇒ x
+    }
+
     val requestParsingFlow = Flow[ByteString].transform(() ⇒
       // each connection uses a single (private) request parser instance for all its requests
       // which builds a cache of all header instances seen on that connection
       rootParser.createShallowCopy(() ⇒ oneHundredContinueRef).stage).named("rootParser")
+      .map(establishAbsoluteUri)
 
     val requestPreparation =
       Flow[RequestOutput]
@@ -66,14 +79,13 @@ private[http] object HttpServerBluePrint {
         .via(headAndTailFlow)
         .map {
           case (RequestStart(method, uri, protocol, hdrs, createEntity, _, _), entityParts) ⇒
-            val effectiveUri = HttpRequest.effectiveUri(uri, hdrs, securedConnection = false, defaultHostHeader)
             val effectiveMethod = if (method == HttpMethods.HEAD && transparentHeadRequests) HttpMethods.GET else method
             val effectiveHeaders =
               if (settings.remoteAddressHeader && remoteAddress.isDefined)
                 headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
               else hdrs
 
-            HttpRequest(effectiveMethod, effectiveUri, effectiveHeaders, createEntity(entityParts), protocol)
+            HttpRequest(effectiveMethod, uri, effectiveHeaders, createEntity(entityParts), protocol)
           case (_, src) ⇒ src.runWith(Sink.ignore)
         }.collect {
           case r: HttpRequest ⇒ r
