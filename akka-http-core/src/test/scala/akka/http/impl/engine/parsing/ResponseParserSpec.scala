@@ -215,6 +215,71 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         Seq("HTTP/1.1 204 12345678", "90123456789012\r\n") should generalMultiParseTo(Left(
           MessageStartError(400: StatusCode, ErrorInfo("Response reason phrase exceeds the configured limit of 21 characters"))))
       }
+
+      "with entity length > max-content-length" - {
+        def response(dataElements: ByteString*) = HttpResponse(200, Nil,
+          HttpEntity.Chunked(`application/octet-stream`, Source(dataElements.map(ChunkStreamPart(_)).toVector)))
+
+        "for Default entity" in new Test {
+          Seq("""HTTP/1.1 200 OK
+              |Content-length: 101
+              |
+              |""") should generalMultiParseTo(Left(
+            MessageStartError(400: StatusCode,
+              ErrorInfo(
+                "Response Content-Length of 101 bytes exceeds the configured limit of 100 bytes",
+                "Consider increasing the value of akka.http.client.parsing.max-content-length"))))
+
+          override protected def parserSettings: ParserSettings = super.parserSettings.copy(maxContentLength = 100)
+        }
+
+        "for CloseDelimited entity" in new Test {
+          Seq(
+            """HTTP/1.1 200 OK
+            |
+            |abcdef""") should generalMultiParseTo(Right(response()),
+              Left(EntityStreamError(
+                ErrorInfo("Aggregated data length of close-delimited response entity of 6 bytes exceeds the configured limit of 5 bytes",
+                  "Consider increasing the value of akka.http.client.parsing.max-content-length"))))
+
+          Seq(
+            """HTTP/1.1 200 OK
+              |
+              |a""", "bcdef") should generalMultiParseTo(Right(response(ByteString("a"))),
+              Left(EntityStreamError(
+                ErrorInfo("Aggregated data length of close-delimited response entity of 6 bytes exceeds the configured limit of 5 bytes",
+                  "Consider increasing the value of akka.http.client.parsing.max-content-length"))))
+
+          override protected def parserSettings: ParserSettings = super.parserSettings.copy(maxContentLength = 5)
+        }
+
+        "for Chunked entity" in new Test {
+          Seq(
+            """HTTP/1.1 200 OK
+              |Transfer-Encoding: chunked
+              |
+              |65
+              |abc""") should generalMultiParseTo(Right(response()),
+              Left(EntityStreamError(
+                ErrorInfo("Aggregated data length of chunked response entity of 101 bytes exceeds the configured limit of 100 bytes",
+                  "Consider increasing the value of akka.http.client.parsing.max-content-length"))))
+
+          Seq(
+            """HTTP/1.1 200 OK
+            |Transfer-Encoding: chunked
+            |
+            |1
+            |a
+            |""",
+            """64
+            |a""") should generalMultiParseTo(Right(response(ByteString("a"))),
+              Left(EntityStreamError(
+                ErrorInfo("Aggregated data length of chunked response entity of 101 bytes exceeds the configured limit of 100 bytes",
+                  "Consider increasing the value of akka.http.client.parsing.max-content-length"))))
+
+          override protected def parserSettings: ParserSettings = super.parserSettings.copy(maxContentLength = 100)
+        }
+      }
     }
   }
 
@@ -284,7 +349,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           Await.result(future, 500.millis)
         }
 
-    def parserSettings: ParserSettings = ParserSettings(system)
+    protected def parserSettings: ParserSettings = ParserSettings(system)
 
     def newParserStage(requestMethod: HttpMethod = GET) = {
       val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings)())
