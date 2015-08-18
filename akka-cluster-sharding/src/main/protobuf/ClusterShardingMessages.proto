@@ -1,0 +1,50 @@
+/**
+ * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.cluster.sharding.protobuf.msg";
+option optimize_for = SPEED;
+
+message CoordinatorState {
+
+  message ShardEntry {
+    required string shardId = 1;
+    required string regionRef = 2;
+  }
+  
+  repeated ShardEntry shards = 1;
+  repeated string regions = 2;
+  repeated string regionProxies = 3;
+  repeated string unallocatedShards = 4; 
+}
+
+message ActorRefMessage {
+  required string ref = 1;
+}
+
+message ShardIdMessage {
+  required string shard = 1;
+}
+
+message ShardHomeAllocated {
+  required string shard = 1;
+  required string region = 2;
+}
+
+message ShardHome {
+  required string shard = 1;
+  required string region = 2;
+}
+
+message EntityState {
+  repeated string entities = 1;
+}
+
+message EntityStarted {
+  required string entityId = 1;
+}
+
+message EntityStopped {
+  required string entityId = 1;
+}
+

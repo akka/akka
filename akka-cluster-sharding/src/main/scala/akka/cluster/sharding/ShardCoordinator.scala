@@ -159,11 +159,11 @@ object ShardCoordinator {
     /**
      * Messages sent to the coordinator
      */
-    sealed trait CoordinatorCommand
+    sealed trait CoordinatorCommand extends ClusterShardingSerializable
     /**
      * Messages sent from the coordinator
      */
-    sealed trait CoordinatorMessage
+    sealed trait CoordinatorMessage extends ClusterShardingSerializable
     /**
      * `ShardRegion` registers to `ShardCoordinator`, until it receives [[RegisterAck]].
      */
@@ -219,23 +219,12 @@ object ShardCoordinator {
     @SerialVersionUID(1L) final case class ShardStopped(shard: ShardId) extends CoordinatorCommand
 
     /**
-     * Result of `allocateShard` is piped to self with this message.
-     */
-    @SerialVersionUID(1L) final case class AllocateShardResult(
-      shard: ShardId, shardRegion: Option[ActorRef], getShardHomeSender: ActorRef) extends CoordinatorCommand
-
-    /**
-     * Result of `rebalance` is piped to self with this message.
-     */
-    @SerialVersionUID(1L) final case class RebalanceResult(shards: Set[ShardId]) extends CoordinatorCommand
-
-    /**
      * `ShardRegion` requests full handoff to be able to shutdown gracefully.
      */
     @SerialVersionUID(1L) final case class GracefulShutdownReq(shardRegion: ActorRef) extends CoordinatorCommand
 
     // DomainEvents for the persistent state of the event sourced ShardCoordinator
-    sealed trait DomainEvent
+    sealed trait DomainEvent extends ClusterShardingSerializable
     @SerialVersionUID(1L) final case class ShardRegionRegistered(region: ActorRef) extends DomainEvent
     @SerialVersionUID(1L) final case class ShardRegionProxyRegistered(regionProxy: ActorRef) extends DomainEvent
     @SerialVersionUID(1L) final case class ShardRegionTerminated(region: ActorRef) extends DomainEvent
@@ -250,13 +239,13 @@ object ShardCoordinator {
     /**
      * Persistent state of the event sourced ShardCoordinator.
      */
-    @SerialVersionUID(1L) final case class State private (
+    @SerialVersionUID(1L) final case class State private[akka] (
       // region for each shard
       shards: Map[ShardId, ActorRef] = Map.empty,
       // shards for each region
       regions: Map[ActorRef, Vector[ShardId]] = Map.empty,
       regionProxies: Set[ActorRef] = Set.empty,
-      unallocatedShards: Set[ShardId] = Set.empty) {
+      unallocatedShards: Set[ShardId] = Set.empty) extends ClusterShardingSerializable {
 
       def updated(event: DomainEvent): State = event match {
         case ShardRegionRegistered(region) ⇒
@@ -308,6 +297,17 @@ object ShardCoordinator {
   private final case class ResendShardHost(shard: ShardId, region: ActorRef)
 
   private final case class DelayedShardRegionTerminated(region: ActorRef)
+
+  /**
+   * Result of `allocateShard` is piped to self with this message.
+   */
+  private final case class AllocateShardResult(
+    shard: ShardId, shardRegion: Option[ActorRef], getShardHomeSender: ActorRef)
+
+  /**
+   * Result of `rebalance` is piped to self with this message.
+   */
+  private final case class RebalanceResult(shards: Set[ShardId])
 
   /**
    * INTERNAL API. Rebalancing process is performed by this actor.
