@@ -171,7 +171,10 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
   @transient
   private[this] var _cachedActorClass: Class[_ <: Actor] = _
 
-  private[this] def producer: IndirectActorProducer = {
+  /**
+   * INTERNAL API
+   */
+  private[akka] def producer: IndirectActorProducer = {
     if (_producer eq null)
       _producer = IndirectActorProducer(clazz, args)
 
