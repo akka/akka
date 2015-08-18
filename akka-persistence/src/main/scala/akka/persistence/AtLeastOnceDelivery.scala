@@ -7,7 +7,7 @@ import scala.annotation.tailrec
 import scala.collection.breakOut
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.{ ActorSelection, Actor, ActorPath }
+import akka.actor.{ ActorSelection, Actor, ActorPath, NotInfluenceReceiveTimeout }
 import akka.persistence.serialization.Message
 
 object AtLeastOnceDelivery {
@@ -67,7 +67,7 @@ object AtLeastOnceDelivery {
    */
   private[akka] object Internal {
     case class Delivery(destination: ActorPath, message: Any, timestamp: Long, attempt: Int)
-    case object RedeliveryTick
+    case object RedeliveryTick extends NotInfluenceReceiveTimeout
   }
 
 }
