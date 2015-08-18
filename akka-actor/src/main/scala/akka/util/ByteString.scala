@@ -409,6 +409,14 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def indexWhere(p: Byte ⇒ Boolean): Int = iterator.indexWhere(p)
   override def indexOf[B >: Byte](elem: B): Int = iterator.indexOf(elem)
 
+  override def toString(): String = {
+    val maxSize = 100
+    if (size > maxSize)
+      take(maxSize).toString + s"... and [${size - maxSize}] more"
+    else
+      super.toString
+  }
+
   /**
    * Java API: copy this ByteString into a fresh byte array
    *
