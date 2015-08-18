@@ -763,6 +763,9 @@ The journal plugin instance is an actor so the methods corresponding to requests
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
 actors to achive parallelism. 
 
+The journal plugin class must have a constructor without parameters or constructor with one ``com.typesafe.config.Config``
+parameter. The plugin section of the actor system's config will be passed in the config constructor parameter.
+
 Don't run journal tasks/futures on the system default dispatcher, since that might starve other tasks. 
 
 Snapshot store plugin API
@@ -782,6 +785,9 @@ used for the plugin actor. If not specified, it defaults to ``akka.persistence.d
 The snapshot store instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
 actors to achive parallelism.
+
+The snapshot store plugin class must have a constructor without parameters or constructor with one ``com.typesafe.config.Config``
+parameter. The plugin section of the actor system's config will be passed in the config constructor parameter.
 
 Don't run snapshot store tasks/futures on the system default dispatcher, since that might starve other tasks.
 
