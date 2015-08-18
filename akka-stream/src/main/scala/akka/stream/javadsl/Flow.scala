@@ -5,18 +5,16 @@ package akka.stream.javadsl
 
 import akka.event.LoggingAdapter
 import akka.stream._
-import akka.japi.{ Util, Pair }
+import akka.japi.Pair
 import akka.japi.function
-import akka.stream.impl.Stages.Recover
 import akka.stream.scaladsl
-import akka.stream.scaladsl.{ Keep, Sink, Source }
-import org.reactivestreams.{ Subscription, Publisher, Subscriber, Processor }
+import org.reactivestreams.Processor
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.stage.Stage
-import akka.stream.impl.{ Stages, StreamLayout }
+import akka.stream.impl.StreamLayout
 
 object Flow {
 

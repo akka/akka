@@ -150,12 +150,14 @@ object Balance {
   /**
    * Create a new `Balance` vertex with the specified input type.
    */
-  def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount, false)
+  def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] =
+    create(outputCount, waitForAllDownstreams = false)
 
   /**
    * Create a new `Balance` vertex with the specified input type.
    */
-  def create[T](clazz: Class[T], outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount)
+  def create[T](clazz: Class[T], outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] =
+    create(outputCount)
 
   /**
    * Create a new `Balance` vertex with the specified input type.

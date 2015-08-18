@@ -4,10 +4,7 @@
 package akka.stream.javadsl
 
 import akka.japi.function
-import akka.stream.scaladsl
 import akka.japi.Pair
-
-import scala.runtime.BoxedUnit
 
 object Keep {
   private val _left = new function.Function2[Any, Any, Any] with ((Any, Any) ⇒ Any) { def apply(l: Any, r: Any) = l }
