@@ -25,6 +25,7 @@ import scala.collection.immutable
  * current operating environment.
  * @author Daniel Dyer
  */
+@deprecated("Use another seed generator instead", "2.4")
 object InternetSeedGenerator {
   /**
    * @return The singleton instance of this class.
