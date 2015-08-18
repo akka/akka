@@ -41,6 +41,7 @@ import com.typesafe.config.Config
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Deploy
 import akka.dispatch.Dispatchers
+import akka.actor.DeadLetterSuppression
 
 object DistributedPubSubSettings {
   /**
@@ -234,8 +235,10 @@ object DistributedPubSubMediator {
 
     @SerialVersionUID(1L)
     final case class Status(versions: Map[Address, Long]) extends DistributedPubSubMessage
+      with DeadLetterSuppression
     @SerialVersionUID(1L)
     final case class Delta(buckets: immutable.Iterable[Bucket]) extends DistributedPubSubMessage
+      with DeadLetterSuppression
 
     case object GossipTick
 

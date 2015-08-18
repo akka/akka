@@ -15,6 +15,7 @@ import scala.collection.immutable
 import akka.cluster.MemberStatus
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.Terminated
+import akka.actor.DeadLetterSuppression
 
 /**
  *  Runtime collection management commands.
@@ -109,6 +110,7 @@ private[metrics] trait ClusterMetricsMessage extends Serializable
  */
 @SerialVersionUID(1L)
 private[metrics] final case class MetricsGossipEnvelope(from: Address, gossip: MetricsGossip, reply: Boolean) extends ClusterMetricsMessage
+  with DeadLetterSuppression
 
 /**
  * INTERNAL API.
