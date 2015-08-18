@@ -36,7 +36,9 @@ private[akka] object Shard {
   /**
    * A case class which represents a state change for the Shard
    */
-  sealed trait StateChange { val entityId: EntityId }
+  sealed trait StateChange extends ClusterShardingSerializable {
+    val entityId: EntityId
+  }
 
   /**
    * `State` change for starting an entity in this `Shard`
@@ -55,8 +57,8 @@ private[akka] object Shard {
   /**
    * Persistent state of the Shard.
    */
-  @SerialVersionUID(1L) final case class State private (
-    entities: Set[EntityId] = Set.empty)
+  @SerialVersionUID(1L) final case class State private[akka] (
+    entities: Set[EntityId] = Set.empty) extends ClusterShardingSerializable
 
   /**
    * Factory method for the [[akka.actor.Props]] of the [[Shard]] actor.
