@@ -10,6 +10,9 @@ import akka.actor.{ Props, Actor }
 import akka.pattern.ask
 import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
 import akka.actor.ActorSystem
+import akka.actor.Status
+import java.util.concurrent.TimeoutException
+import akka.testkit.TestProbe
 
 object ScatterGatherFirstCompletedSpec {
   class TestActor extends Actor {
@@ -82,6 +85,17 @@ class ScatterGatherFirstCompletedSpec extends AkkaSpec with DefaultTimeout with 
       routedActor ! Broadcast(Stop(Some(1)))
       Await.ready(shutdownLatch, TestLatch.DefaultTimeout)
       Await.result(routedActor ? Broadcast(0), timeout.duration) should ===(14)
+    }
+
+  }
+
+  "Scatter-gather pool" must {
+
+    "without routees should reply immediately" in {
+      val probe = TestProbe()
+      val router = system.actorOf(ScatterGatherFirstCompletedPool(nrOfInstances = 0, within = 5.seconds).props(Props.empty))
+      router.tell("hello", probe.ref)
+      probe.expectMsgType[Status.Failure](2.seconds).cause.getClass should be(classOf[TimeoutException])
     }
 
   }
