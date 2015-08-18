@@ -5,13 +5,12 @@ package akka.stream.impl.io
 
 import java.net.InetSocketAddress
 import akka.io.{ IO, Tcp }
-import akka.stream.impl.io.StreamTcpManager.ExposedProcessor
 import scala.concurrent.Promise
 import akka.actor._
 import akka.util.ByteString
 import akka.io.Tcp._
-import akka.stream.{ AbruptTerminationException, StreamSubscriptionTimeoutSettings, ActorMaterializerSettings, StreamTcpException }
-import org.reactivestreams.{ Publisher, Processor }
+import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, StreamTcpException }
+import org.reactivestreams.Processor
 import akka.stream.impl._
 
 import scala.util.control.NoStackTrace
@@ -248,7 +247,7 @@ private[akka] abstract class TcpStreamActor(val settings: ActorMaterializerSetti
     case SubscriptionTimeout ⇒
       val millis = settings.subscriptionTimeoutSettings.timeout.toMillis
       if (!primaryOutputs.isSubscribed) {
-        fail(new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline (${millis}) ms") with NoStackTrace)
+        fail(new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline ($millis) ms") with NoStackTrace)
         context.stop(self)
       }
   }
@@ -305,7 +304,6 @@ private[akka] class OutboundTcpStreamActor(processorPromise: Promise[Processor[B
                                            _halfClose: Boolean,
                                            val connectCmd: Connect, _settings: ActorMaterializerSettings)
   extends TcpStreamActor(_settings, _halfClose) {
-  import TcpStreamActor._
   import context.system
 
   val initSteps = new SubReceive(waitingExposedProcessor)

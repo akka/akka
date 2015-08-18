@@ -168,8 +168,8 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
       ref ! Err("wrong")
-      s.expectSubscription
-      s.expectError.getMessage should be("wrong")
+      s.expectSubscription()
+      s.expectError().getMessage should be("wrong")
     }
 
     "not terminate after signalling onError" in {
@@ -177,10 +177,10 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      s.expectSubscription
+      s.expectSubscription()
       probe.watch(ref)
       ref ! Err("wrong")
-      s.expectError.getMessage should be("wrong")
+      s.expectError().getMessage should be("wrong")
       probe.expectNoMsg(200.millis)
     }
 
@@ -189,10 +189,10 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      s.expectSubscription
+      s.expectSubscription()
       probe.watch(ref)
       ref ! ErrThenStop("wrong")
-      s.expectError.getMessage should be("wrong")
+      s.expectError().getMessage should be("wrong")
       probe.expectTerminated(ref, 3.seconds)
     }
 
@@ -202,7 +202,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       ref ! Err("early err")
       val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      s.expectSubscriptionAndError.getMessage should be("early err")
+      s.expectSubscriptionAndError().getMessage should be("early err")
     }
 
     "drop onNext elements after cancel" in {
@@ -246,7 +246,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       ref ! Produce("elem-1")
       ref ! Complete
       s.expectNext("elem-1")
-      s.expectComplete
+      s.expectComplete()
     }
 
     "not terminate after signalling onComplete" in {
@@ -254,14 +254,14 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
       sub.request(3)
       probe.expectMsg(TotalDemand(3))
       probe.watch(ref)
       ref ! Produce("elem-1")
       ref ! Complete
       s.expectNext("elem-1")
-      s.expectComplete
+      s.expectComplete()
       probe.expectNoMsg(200.millis)
     }
 
@@ -270,14 +270,14 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
       sub.request(3)
       probe.expectMsg(TotalDemand(3))
       probe.watch(ref)
       ref ! Produce("elem-1")
       ref ! CompleteThenStop
       s.expectNext("elem-1")
-      s.expectComplete
+      s.expectComplete()
       probe.expectTerminated(ref, 3.seconds)
     }
 
@@ -287,7 +287,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       ref ! Complete
       val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      s.expectSubscriptionAndComplete
+      s.expectSubscriptionAndComplete()
     }
 
     "only allow one subscriber" in {
@@ -295,10 +295,10 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      s.expectSubscription
+      s.expectSubscription()
       val s2 = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s2)
-      s2.expectSubscriptionAndError.getClass should be(classOf[IllegalStateException])
+      s2.expectSubscriptionAndError().getClass should be(classOf[IllegalStateException])
     }
 
     "signal onCompete when actor is stopped" in {
@@ -306,9 +306,9 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val s = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      s.expectSubscription
+      s.expectSubscription()
       ref ! PoisonPill
-      s.expectComplete
+      s.expectComplete()
     }
 
     "work together with Flow and ActorSubscriber" in {

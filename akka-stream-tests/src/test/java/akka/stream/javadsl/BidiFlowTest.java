@@ -263,7 +263,7 @@ public class BidiFlowTest extends StreamTest {
     final Future<List<Long>> r = result.second();
     assertEquals((Integer) 1, Await.result(l, oneSec));
     assertEquals((Integer) 42, Await.result(m, oneSec));
-    final Long[] rr = Await.result(r, oneSec).toArray(new Long[0]);
+    final Long[] rr = Await.result(r, oneSec).toArray(new Long[2]);
     Arrays.sort(rr);
     assertArrayEquals(new Long[] { 3L, 12L }, rr);
   }

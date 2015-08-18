@@ -15,12 +15,9 @@ import akka.stream.impl.Junctions._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.ActorInterpreter
 import akka.stream.impl.io.SslTlsCipherActor
-import akka.stream.scaladsl._
 import akka.stream._
-import akka.stream.io._
 import akka.stream.io.SslTls.TlsModule
 import akka.stream.stage.Stage
-import akka.util.ByteString
 import org.reactivestreams._
 
 import scala.concurrent.{ Await, ExecutionContextExecutor }
@@ -28,17 +25,14 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
 /**
  * INTERNAL API
  */
-private[akka] case class ActorMaterializerImpl(
-  val system: ActorSystem,
-  override val settings: ActorMaterializerSettings,
-  dispatchers: Dispatchers,
-  val supervisor: ActorRef,
-  val haveShutDown: AtomicBoolean,
-  flowNameCounter: AtomicLong,
-  namePrefix: String,
-  optimizations: Optimizations)
-  extends ActorMaterializer {
-  import ActorMaterializerImpl._
+private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
+                                               override val settings: ActorMaterializerSettings,
+                                               dispatchers: Dispatchers,
+                                               val supervisor: ActorRef,
+                                               val haveShutDown: AtomicBoolean,
+                                               flowNameCounter: AtomicLong,
+                                               namePrefix: String,
+                                               optimizations: Optimizations) extends ActorMaterializer {
   import akka.stream.impl.Stages._
 
   override def shutdown(): Unit =
@@ -103,7 +97,7 @@ private[akka] case class ActorMaterializerImpl(
           case tls: TlsModule ⇒ // TODO solve this so TlsModule doesn't need special treatment here
             val es = effectiveSettings(effectiveAttributes)
             val props =
-              SslTlsCipherActor.props(es, tls.sslContext, tls.firstSession, tracing = false, tls.role, tls.closing, tls.hostInfo)
+              SslTlsCipherActor.props(es, tls.sslContext, tls.firstSession, tls.role, tls.closing, tls.hostInfo)
             val impl = actorOf(props, stageName(effectiveAttributes), es.dispatcher)
             def factory(id: Int) = new ActorPublisher[Any](impl) {
               override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
@@ -174,10 +168,10 @@ private[akka] case class ActorMaterializerImpl(
                 (FlexiRoute.props(effectiveSettings, r.shape, flexi), r.shape.inlets.head: InPort, r.shape.outlets)
 
               case BroadcastModule(shape, eagerCancel, _) ⇒
-                (Broadcast.props(effectiveSettings, eagerCancel, shape.outArray.size), shape.in, shape.outArray.toSeq)
+                (Broadcast.props(effectiveSettings, eagerCancel, shape.outArray.length), shape.in, shape.outArray.toSeq)
 
               case BalanceModule(shape, waitForDownstreams, _) ⇒
-                (Balance.props(effectiveSettings, shape.outArray.size, waitForDownstreams), shape.in, shape.outArray.toSeq)
+                (Balance.props(effectiveSettings, shape.outArray.length, waitForDownstreams), shape.in, shape.outArray.toSeq)
 
               case unzip: UnzipWithModule ⇒
                 (unzip.props(effectiveSettings), unzip.inPorts.head, unzip.shape.outlets)
@@ -237,7 +231,7 @@ private[akka] case class ActorMaterializerImpl(
  */
 private[akka] object FlowNameCounter extends ExtensionId[FlowNameCounter] with ExtensionIdProvider {
   override def get(system: ActorSystem): FlowNameCounter = super.get(system)
-  override def lookup = FlowNameCounter
+  override def lookup() = FlowNameCounter
   override def createExtension(system: ExtendedActorSystem): FlowNameCounter = new FlowNameCounter
 }
 
@@ -259,13 +253,13 @@ private[akka] object StreamSupervisor {
     extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
   /** Testing purpose */
-  final case object GetChildren
+  case object GetChildren
   /** Testing purpose */
   final case class Children(children: Set[ActorRef])
   /** Testing purpose */
-  final case object StopChildren
+  case object StopChildren
   /** Testing purpose */
-  final case object StoppedChildren
+  case object StoppedChildren
 }
 
 private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
@@ -291,7 +285,6 @@ private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveSh
  */
 private[akka] object ActorProcessorFactory {
   import akka.stream.impl.Stages._
-  import ActorMaterializerImpl._
 
   def props(materializer: ActorMaterializer, op: StageModule, parentAttributes: Attributes): (Props, Any) = {
     val att = parentAttributes and op.attributes
@@ -309,17 +302,17 @@ private[akka] object ActorProcessorFactory {
       case Collect(pf, _)             ⇒ interp(fusing.Collect(pf, settings.supervisionDecider))
       case Scan(z, f, _)              ⇒ interp(fusing.Scan(z, f, settings.supervisionDecider))
       case Fold(z, f, _)              ⇒ interp(fusing.Fold(z, f, settings.supervisionDecider))
-      case Recover(pf, _)             ⇒ (ActorInterpreter.props(settings, List(fusing.Recover(pf)), materializer, att), ())
-      case Scan(z, f, _)              ⇒ (ActorInterpreter.props(settings, List(fusing.Scan(z, f, settings.supervisionDecider)), materializer, att), ())
-      case Expand(s, f, _)            ⇒ (ActorInterpreter.props(settings, List(fusing.Expand(s, f)), materializer, att), ())
-      case Conflate(s, f, _)          ⇒ (ActorInterpreter.props(settings, List(fusing.Conflate(s, f, settings.supervisionDecider)), materializer, att), ())
-      case Buffer(n, s, _)            ⇒ (ActorInterpreter.props(settings, List(fusing.Buffer(n, s)), materializer, att), ())
-      case MapConcat(f, _)            ⇒ (ActorInterpreter.props(settings, List(fusing.MapConcat(f, settings.supervisionDecider)), materializer, att), ())
-      case MapAsync(p, f, _)          ⇒ (ActorInterpreter.props(settings, List(fusing.MapAsync(p, f, settings.supervisionDecider)), materializer, att), ())
-      case MapAsyncUnordered(p, f, _) ⇒ (ActorInterpreter.props(settings, List(fusing.MapAsyncUnordered(p, f, settings.supervisionDecider)), materializer, att), ())
-      case Grouped(n, _)              ⇒ (ActorInterpreter.props(settings, List(fusing.Grouped(n)), materializer, att), ())
-      case Sliding(n, step, _)        ⇒ (ActorInterpreter.props(settings, List(fusing.Sliding(n, step)), materializer, att), ())
-      case Log(n, e, l, _)            ⇒ (ActorInterpreter.props(settings, List(fusing.Log(n, e, l)), materializer, att), ())
+      case Recover(pf, _)             ⇒ interp(fusing.Recover(pf))
+      case Scan(z, f, _)              ⇒ interp(fusing.Scan(z, f, settings.supervisionDecider))
+      case Expand(s, f, _)            ⇒ interp(fusing.Expand(s, f))
+      case Conflate(s, f, _)          ⇒ interp(fusing.Conflate(s, f, settings.supervisionDecider))
+      case Buffer(n, s, _)            ⇒ interp(fusing.Buffer(n, s))
+      case MapConcat(f, _)            ⇒ interp(fusing.MapConcat(f, settings.supervisionDecider))
+      case MapAsync(p, f, _)          ⇒ interp(fusing.MapAsync(p, f, settings.supervisionDecider))
+      case MapAsyncUnordered(p, f, _) ⇒ interp(fusing.MapAsyncUnordered(p, f, settings.supervisionDecider))
+      case Grouped(n, _)              ⇒ interp(fusing.Grouped(n))
+      case Sliding(n, step, _)        ⇒ interp(fusing.Sliding(n, step))
+      case Log(n, e, l, _)            ⇒ interp(fusing.Log(n, e, l))
       case GroupBy(f, _)              ⇒ (GroupByProcessorImpl.props(settings, f), ())
       case PrefixAndTail(n, _)        ⇒ (PrefixAndTailImpl.props(settings, n), ())
       case Split(d, _)                ⇒ (SplitWhereProcessorImpl.props(settings, d), ())

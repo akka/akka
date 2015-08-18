@@ -3,7 +3,6 @@
  */
 package akka.stream.impl
 
-import java.util.LinkedList
 import akka.stream.ActorMaterializerSettings
 import akka.stream.TimerTransformer
 import scala.util.control.NonFatal
@@ -46,7 +45,7 @@ private[akka] class TimerTransformerProcessorsImpl(
   }
 
   val schedulerInputs: Inputs = new DefaultInputTransferStates {
-    val queue = new LinkedList[Any]
+    val queue = new java.util.LinkedList[Any]
 
     override def dequeueInputElement(): Any = queue.removeFirst()
 
@@ -76,6 +75,11 @@ private[akka] class TimerTransformerProcessorsImpl(
     def isCompleted = false
   }
 
+  private val terminate = TransferPhase(Always) { () ⇒
+    emits = transformer.onTermination(errorEvent)
+    emitAndThen(completedPhase)
+  }
+
   private val running: TransferPhase = TransferPhase(RunningCondition) { () ⇒
     if (primaryInputs.inputsDepleted || (transformer.isComplete && !schedulerInputs.inputsAvailable)) {
       nextPhase(terminate)
@@ -87,11 +91,6 @@ private[akka] class TimerTransformerProcessorsImpl(
       if (transformer.isComplete) emitAndThen(terminate)
       else emitAndThen(running)
     }
-  }
-
-  private val terminate = TransferPhase(Always) { () ⇒
-    emits = transformer.onTermination(errorEvent)
-    emitAndThen(completedPhase)
   }
 
   override def toString: String = s"Transformer(emits=$emits, transformer=$transformer)"

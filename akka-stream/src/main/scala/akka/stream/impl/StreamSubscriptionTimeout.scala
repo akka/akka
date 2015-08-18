@@ -15,7 +15,7 @@ object StreamSubscriptionTimeoutSupport {
   /**
    * A subscriber who calls `cancel` directly from `onSubscribe` and ignores all other callbacks.
    */
-  final case object CancelingSubscriber extends Subscriber[Any] {
+  case object CancelingSubscriber extends Subscriber[Any] {
     override def onSubscribe(s: Subscription): Unit = {
       ReactiveStreamsCompliance.requireNonNullSubscription(s)
       s.cancel()
@@ -37,7 +37,7 @@ object StreamSubscriptionTimeoutSupport {
    * Subscription timeout which does not start any scheduled events and always returns `true`.
    * This specialized implementation is to be used for "noop" timeout mode.
    */
-  final case object NoopSubscriptionTimeout extends Cancellable {
+  case object NoopSubscriptionTimeout extends Cancellable {
     override def cancel() = true
     override def isCancelled = true
   }
@@ -79,11 +79,11 @@ private[akka] trait StreamSubscriptionTimeoutSupport {
     target match {
       case p: Processor[_, _] ⇒
         log.debug("Cancelling {} Processor's publisher and subscriber sides (after {} ms)", p, millis)
-        handleSubscriptionTimeout(target, new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline (${millis}) ms") with NoStackTrace)
+        handleSubscriptionTimeout(target, new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline ($millis) ms") with NoStackTrace)
 
       case p: Publisher[_] ⇒
         log.debug("Cancelling {} (after: {} ms)", p, millis)
-        handleSubscriptionTimeout(target, new SubscriptionTimeoutException(s"Publisher (${p}) you are trying to subscribe to has been shut-down " +
+        handleSubscriptionTimeout(target, new SubscriptionTimeoutException(s"Publisher ($p) you are trying to subscribe to has been shut-down " +
           s"because exceeding it's subscription-timeout.") with NoStackTrace)
     }
   }

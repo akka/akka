@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.{ AtomicInteger, AtomicBoolean, AtomicReference }
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference }
 import akka.stream.impl.MaterializerSession.MaterializationPanic
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.scaladsl.Keep
@@ -58,7 +58,8 @@ private[akka] object StreamLayout {
     if (downs != ups2) problems ::= s"inconsistent maps: ups ${pairs(ups2 -- inter)} downs ${pairs(downs -- inter)}"
     val (allIn, dupIn, allOut, dupOut) =
       subModules.foldLeft((Set.empty[InPort], Set.empty[InPort], Set.empty[OutPort], Set.empty[OutPort])) {
-        case ((ai, di, ao, doo), m) ⇒ (ai ++ m.inPorts, di ++ ai.intersect(m.inPorts), ao ++ m.outPorts, doo ++ ao.intersect(m.outPorts))
+        case ((ai, di, ao, doo), sm) ⇒
+          (ai ++ sm.inPorts, di ++ ai.intersect(sm.inPorts), ao ++ sm.outPorts, doo ++ ao.intersect(sm.outPorts))
       }
     if (dupIn.nonEmpty) problems ::= s"duplicate ports in submodules ${ins(dupIn)}"
     if (dupOut.nonEmpty) problems ::= s"duplicate ports in submodules ${outs(dupOut)}"
@@ -73,7 +74,7 @@ private[akka] object StreamLayout {
       n match {
         case Ignore                  ⇒ Set.empty
         case Transform(f, dep)       ⇒ atomics(dep)
-        case Atomic(m)               ⇒ Set(m)
+        case Atomic(module)          ⇒ Set(module)
         case Combine(f, left, right) ⇒ atomics(left) ++ atomics(right)
       }
     val atomic = atomics(materializedValueComputation)
