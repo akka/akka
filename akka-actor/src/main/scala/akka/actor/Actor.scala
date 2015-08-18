@@ -127,6 +127,11 @@ case object ReceiveTimeout extends ReceiveTimeout {
 }
 
 /**
+ * Marker trait to indicate that a message should not reset the receive timeout.
+ */
+trait NotInfluenceReceiveTimeout
+
+/**
  * IllegalActorStateException is thrown when a core invariant in the Actor implementation has been violated.
  * For instance, if you try to create an Actor that doesn't extend Actor.
  */
