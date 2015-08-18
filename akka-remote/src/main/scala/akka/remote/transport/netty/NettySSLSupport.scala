@@ -67,8 +67,12 @@ private[akka] object NettySSLSupport {
 
   def initializeCustomSecureRandom(rngName: Option[String], log: LoggingAdapter): SecureRandom = {
     val rng = rngName match {
-      case Some(r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG" | "AES128CounterInetRNG" | "AES256CounterInetRNG")) ⇒
+      case Some(r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG")) ⇒
         log.debug("SSL random number generator set to: {}", r)
+        SecureRandom.getInstance(r, AkkaProvider)
+      case Some(r @ ("AES128CounterInetRNG" | "AES256CounterInetRNG")) ⇒
+        log.warning("SSL random number generator {} is deprecated, " +
+          "use AES128CounterSecureRNG or AES256CounterSecureRNG instead", r)
         SecureRandom.getInstance(r, AkkaProvider)
       case Some(s @ ("SHA1PRNG" | "NativePRNG")) ⇒
         log.debug("SSL random number generator set to: " + s)
@@ -76,7 +80,7 @@ private[akka] object NettySSLSupport {
         // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
         SecureRandom.getInstance(s)
       case Some(unknown) ⇒
-        log.debug("Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
+        log.warning("Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
         new SecureRandom
       case None ⇒
         log.debug("SSLRandomNumberGenerator not specified, falling back to SecureRandom")

@@ -167,6 +167,12 @@ Secure Cookies
 
 `Secure cookies` feature was deprecated.
 
+AES128CounterInetRNG and AES256CounterInetRNG are Deprecated
+============================================================
+
+Use ``AES128CounterSecureRNG`` or ``AES256CounterSecureRNG`` as 
+``akka.remote.netty.ssl.security.random-number-generator``. 
+
 Microkernel is Deprecated
 =========================
 
