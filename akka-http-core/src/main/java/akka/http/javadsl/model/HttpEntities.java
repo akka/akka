@@ -7,9 +7,10 @@ package akka.http.javadsl.model;
 import java.io.File;
 
 import akka.http.impl.util.JavaAccessors;
+import akka.http.scaladsl.model.*;
+import akka.http.scaladsl.model.HttpEntity;
 import akka.util.ByteString;
 import akka.stream.javadsl.Source;
-import akka.http.scaladsl.model.HttpEntity$;
 
 /** Constructors for HttpEntity instances */
 public final class HttpEntities {
@@ -49,6 +50,10 @@ public final class HttpEntities {
 
     public static HttpEntityDefault create(ContentType contentType, long contentLength, Source<ByteString, Object> data) {
         return new akka.http.scaladsl.model.HttpEntity.Default((akka.http.scaladsl.model.ContentType) contentType, contentLength, data.asScala());
+    }
+
+    public static HttpEntity.Chunked create(ContentType contentType, Source<ByteString, Object> data) {
+        return HttpEntity.Chunked$.MODULE$.fromData((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
     }
 
     public static HttpEntityCloseDelimited createCloseDelimited(ContentType contentType, Source<ByteString, Object> data) {

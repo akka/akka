@@ -160,8 +160,11 @@ object HttpEntity {
     if (bytes.length == 0) empty(contentType) else apply(contentType, ByteString(bytes))
   def apply(contentType: ContentType, data: ByteString): Strict =
     if (data.isEmpty) empty(contentType) else Strict(contentType, data)
+
   def apply(contentType: ContentType, contentLength: Long, data: Source[ByteString, Any]): UniversalEntity =
     if (contentLength == 0) empty(contentType) else Default(contentType, contentLength, data)
+  def apply(contentType: ContentType, data: Source[ByteString, Any]): Chunked =
+    Chunked.fromData(contentType, data)
 
   def apply(contentType: ContentType, file: File, chunkSize: Int = SynchronousFileSource.DefaultChunkSize): UniversalEntity = {
     val fileLength = file.length
