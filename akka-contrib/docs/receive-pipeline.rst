@@ -2,8 +2,8 @@
 
 Receive Pipeline Pattern
 ========================
-Receive Pipeline Pattern lets you define general interceptors for your messages
-and plug any arbitrary amount of them to your Actors.
+The Receive Pipeline Pattern lets you define general interceptors for your messages
+and plug an arbitrary amount of them into your Actors.
 It's useful for defining cross aspects to be applied to all or many of your Actors.
 
 Some Possible Use Cases
@@ -16,33 +16,44 @@ Some Possible Use Cases
 
 Interceptors
 ------------
-So how does an interceptor look? Well, Interceptors are defined by decorator functions
-of type :class:`Receive => Receive`, where it gets the inner :class:`Receive` by parameter and
-returns a new :class:`Receive` with the decoration applied.
-Most of the times your decorators will be defined as a regular :class:`Receive` with cases
-for the messages of your interest and at some point delegate on the inner :class:`Receive`
-you get by parameter. We will talk about ignored and unhandled messages later.
+Multiple interceptors can be added to actors that mixin the :class:`ReceivePipeline` trait. 
+These interceptors internally define layers of decorators around the actor's behavior. The first interceptor
+defines an outer decorator which delegates to a decorator corresponding to the second interceptor and so on, 
+until the last interceptor which defines a decorator for the actor's :class:`Receive`. 
+
+The first or outermost interceptor receives messages sent to the actor. 
+
+For each message received by an interceptor, the interceptor will typically perform some 
+processing based on the message and decide whether 
+or not to pass the received message (or some other message) to the next interceptor.
+
+An :class:`Interceptor` is a type alias for
+:class:`PartialFunction[Any, Delegation]`. The :class:`Any` input is the message
+it receives from the previous interceptor (or, in the case of the first interceptor,
+the message that was sent to the actor).    
+The :class:`Delegation` return type is used to control what (if any) 
+message is passed on to the next interceptor.
 
 A simple example
 ----------------
-We have the simplest :class:`Receive` possible, it just prints any type of message, and we decorate
-it to create an interceptor that increments :class:`Int` messages and delegates the result to the
-inner (printer) :class:`Receive`.
+To pass a transformed message to the actor 
+(or next inner interceptor) an interceptor can return :class:`Inner(newMsg)` where :class:`newMsg` is the transformed message.
 
-.. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReceivePipelineSpec.scala#interceptor
+The following interceptor shows this. It intercepts :class:`Int` messages, 
+adds one to them and passes on the incremented value to the next interceptor. 
+
+.. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReceivePipelineSpec.scala#interceptor-sample1
 
 Building the Pipeline
 ---------------------
-So we're done defining decorators which will create the interceptors. Now we will see
-how to plug them into the Actors to construct the pipeline.
-
-To give your Actor the ability to pipeline the receive, you'll need to mixin with the
+To give your Actor the ability to pipeline received messages in this way, you'll need to mixin with the
 :class:`ReceivePipeline` trait. It has two methods for controlling the pipeline, :class:`pipelineOuter`
-and :class:`pipelineInner`, both receiving a decorator function. The first one adds the interceptor at the
+and :class:`pipelineInner`, both receiving an :class:`Interceptor`. 
+The first one adds the interceptor at the
 beginning of the pipeline and the second one adds it at the end, just before the current
 Actor's behavior.
 
-In this example we mixin our Actor with :class:`ReceivePipeline` trait and
+In this example we mixin our Actor with the :class:`ReceivePipeline` trait and
 we add :class:`Increment` and :class:`Double` interceptors with :class:`pipelineInner`.
 They will be applied in this very order.
 
@@ -62,21 +73,23 @@ Let's see it in an example. We have the following model:
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReceivePipelineSpec.scala#mixin-model
 
-And this two interceptors defined each one in its own trait. The first one intercepts any messages having
+and these two interceptors defined, each one in its own trait: 
+
+.. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReceivePipelineSpec.scala#mixin-interceptors
+
+The first one intercepts any messages having
 an internationalized text and replaces it with the resolved text before resuming with the chain. The second one
 intercepts any message with an author defined and prints it before resuming the chain with the message unchanged.
 But since :class:`I18n` adds the interceptor with :class:`pipelineInner` and :class:`Audit` adds it with
 :class:`pipelineOuter`, the audit will happen before the internationalization.
 
-.. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReceivePipelineSpec.scala#mixin-interceptors
-
-So if we mixin both interceptors in our Actor, we will see the following output for these example messages.
+So if we mixin both interceptors in our Actor, we will see the following output for these example messages:
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReceivePipelineSpec.scala#mixin-actor
 
 Unhandled Messages
 ------------------
-With all that behaviors chaining occurring on, what happens to unhandled messages? Let me explain it with
+With all that behaviors chaining occurring, what happens to unhandled messages? Let me explain it with
 a simple rule.
 
 .. note::
@@ -84,10 +97,27 @@ a simple rule.
   of the interceptors handles a message, the current Actor's behavior will receive it, and if the
   behavior doesn't handle it either, it will be treated as usual with the unhandled method.
 
-But some times it is desired for interceptors to break the chain. You can do it by explicitly ignoring
-the messages with empty cases or just not calling the inner interceptor received by parameter.
+But sometimes it is desired for interceptors to break the chain. You can do it by explicitly indicating 
+that the message has been completely handled by the interceptor by returning 
+:class:`HandledCompletely`.
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReceivePipelineSpec.scala#unhandled
+
+Processing after delegation
+---------------------------
+But what if you want to perform some action after the actor has processed the message (for example to 
+measure the message processing time)?
+
+In order to support such use cases, the :class:`Inner` return type has a method :class:`andAfter` which accepts 
+a code block that can perform some action after the message has been processed by subsequent inner interceptors.
+
+The following is a simple interceptor that times message processing:
+
+.. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReceivePipelineSpec.scala#interceptor-after
+
+.. note::
+  The :class:`andAfter` code blocks are run on return from handling the message with the next inner handler and 
+  on the same thread. It is therefore safe for the :class:`andAfter` logic to close over the interceptor's state.
 
 Using Receive Pipelines with Persistence
 ----------------------------------------
