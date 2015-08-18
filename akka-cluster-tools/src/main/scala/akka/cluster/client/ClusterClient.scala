@@ -524,7 +524,7 @@ object ClusterReceptionist {
       def receive = {
         case Ping           ⇒ // keep alive from client
         case ReceiveTimeout ⇒ context stop self
-        case msg            ⇒ client forward msg
+        case msg            ⇒ client.tell(msg, Actor.noSender)
       }
     }
   }
@@ -546,10 +546,11 @@ object ClusterReceptionist {
  *
  * Response messages from the destination actor are tunneled via the receptionist
  * to avoid inbound connections from other cluster nodes to the client, i.e.
- * the `sender`, as seen by the destination actor, is not the client itself.
- * The `sender` of the response messages, as seen by the client, is preserved
- * as the original sender, so the client can choose to send subsequent messages
- * directly to the actor in the cluster.
+ * the `sender()`, as seen by the destination actor, is not the client itself.
+ * The `sender()` of the response messages, as seen by the client, is `deadLetters`
+ * since the client should normally send subsequent messages via the `ClusterClient`.
+ * It is possible to pass the the original sender inside the reply messages if
+ * the client is supposed to communicate directly to the actor in the cluster.
  *
  */
 final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterReceptionistSettings)
