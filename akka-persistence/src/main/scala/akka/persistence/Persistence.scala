@@ -14,6 +14,8 @@ import com.typesafe.config.Config
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import java.util.Locale
+import akka.util.Reflect
+import scala.util.control.NonFatal
 
 /**
  * Persistence configuration.
@@ -254,9 +256,11 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     val pluginClassName = pluginConfig.getString("class")
     log.debug(s"Create plugin: $pluginActorName $pluginClassName")
     val pluginClass = system.dynamicAccess.getClassFor[Any](pluginClassName).get
-    val pluginInjectConfig = pluginConfig.getBoolean("inject-config")
     val pluginDispatcherId = pluginConfig.getString("plugin-dispatcher")
-    val pluginActorArgs = if (pluginInjectConfig) List(pluginConfig) else Nil
+    val pluginActorArgs = try {
+      Reflect.findConstructor(pluginClass, List(pluginConfig)) // will throw if not found
+      List(pluginConfig)
+    } catch { case NonFatal(_) ⇒ Nil } // otherwise use empty constructor
     val pluginActorProps = Props(Deploy(dispatcher = pluginDispatcherId), pluginClass, pluginActorArgs)
     system.systemActorOf(pluginActorProps, pluginActorName)
   }

@@ -29,17 +29,13 @@ object PersistenceMultiDocSpec {
     class = "akka.persistence.chronicle.ChronicleSyncJournal"
     # Custom setting specific for the journal `ChronicleSyncJournal`.
     folder = ${user.dir}/store/journal
-    # Standard persistence extension property: plugin actor uses config injection.
-    inject-config = true
-  } 
+  }
   # Configuration entry for the custom snapshot store plugin, see `snapshotPluginId`.
   akka.persistence.chronicle.snapshot-store {
     # Standard persistence extension property: provider FQCN.
     class = "akka.persistence.chronicle.ChronicleSnapshotStore"
     # Custom setting specific for the snapshot store `ChronicleSnapshotStore`.
     folder = ${user.dir}/store/snapshot
-    # Standard persistence extension property: plugin actor uses config injection.
-    inject-config = true
   }
   //#override-config
   """
