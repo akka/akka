@@ -21,6 +21,8 @@ import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
 import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
+import scala.concurrent.Future
+import java.util.concurrent.TimeoutException
 
 /**
  * Broadcasts the message to all routees, and replies with the first response.
@@ -31,8 +33,7 @@ import akka.actor.ActorSystem
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedRoutingLogic(within: FiniteDuration) extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =
-    if (routees.isEmpty) NoRoutee
-    else ScatterGatherFirstCompletedRoutees(routees, within)
+    ScatterGatherFirstCompletedRoutees(routees, within)
 }
 
 /**
@@ -42,20 +43,25 @@ final case class ScatterGatherFirstCompletedRoutingLogic(within: FiniteDuration)
 private[akka] final case class ScatterGatherFirstCompletedRoutees(
   routees: immutable.IndexedSeq[Routee], within: FiniteDuration) extends Routee {
 
-  override def send(message: Any, sender: ActorRef): Unit = {
-    implicit val ec = ExecutionContexts.sameThreadExecutionContext
-    implicit val timeout = Timeout(within)
-    val promise = Promise[Any]()
-    routees.foreach {
-      case ActorRefRoutee(ref) ⇒
-        promise.tryCompleteWith(ref.ask(message))
-      case ActorSelectionRoutee(sel) ⇒
-        promise.tryCompleteWith(sel.ask(message))
-      case _ ⇒
-    }
+  override def send(message: Any, sender: ActorRef): Unit =
+    if (routees.isEmpty) {
+      implicit val ec = ExecutionContexts.sameThreadExecutionContext
+      val reply = Future.failed(new TimeoutException("Timeout due to no routees"))
+      reply.pipeTo(sender)
+    } else {
+      implicit val ec = ExecutionContexts.sameThreadExecutionContext
+      implicit val timeout = Timeout(within)
+      val promise = Promise[Any]()
+      routees.foreach {
+        case ActorRefRoutee(ref) ⇒
+          promise.tryCompleteWith(ref.ask(message))
+        case ActorSelectionRoutee(sel) ⇒
+          promise.tryCompleteWith(sel.ask(message))
+        case _ ⇒
+      }
 
-    promise.future.pipeTo(sender)
-  }
+      promise.future.pipeTo(sender)
+    }
 }
 
 /**
