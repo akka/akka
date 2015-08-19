@@ -15,18 +15,18 @@ import akka.testkit.AkkaSpec
 import akka.util.Timeout
 import docs.persistence.query.PersistenceQueryDocSpec.{ DummyStore, TheOneWhoWritesToQueryJournal }
 import org.reactivestreams.Subscriber
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import com.typesafe.config.Config
 
 object PersistenceQueryDocSpec {
 
   implicit val timeout = Timeout(3.seconds)
 
   //#my-read-journal
-  class MyReadJournal(system: ExtendedActorSystem) extends ReadJournal {
+  class MyReadJournal(system: ExtendedActorSystem, config: Config) extends ReadJournal {
 
     private val defaulRefreshInterval = 3.seconds
 
@@ -79,6 +79,7 @@ object PersistenceQueryDocSpec {
     // Using an example (Reactive Streams) Database driver
     readJournal
       .query(EventsByPersistenceId("user-1337"))
+      .map(envelope => envelope.event)
       .map(convertToReadSideTypes) // convert to datatype
       .grouped(20) // batch inserts into groups of 20
       .runWith(Sink(dbBatchWriter)) // write batches to read-side database
@@ -98,7 +99,7 @@ object PersistenceQueryDocSpec {
     }
 
     def updateState(state: ComplexState, msg: Any): ComplexState = {
-      // some complicated aggregation logic here ... 
+      // some complicated aggregation logic here ...
       state
     }
   }
@@ -124,7 +125,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     PersistenceQuery(system).readJournalFor("akka.persistence.query.noop-read-journal")
 
   // issue query to journal
-  val source: Source[Any, Unit] =
+  val source: Source[EventEnvelope, Unit] =
     readJournal.query(EventsByPersistenceId("user-1337", 0, Long.MaxValue))
 
   // materialize stream, consuming events
