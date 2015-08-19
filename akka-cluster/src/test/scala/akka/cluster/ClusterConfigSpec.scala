@@ -34,7 +34,7 @@ class ClusterConfigSpec extends AkkaSpec {
       GossipTimeToLive should ===(2 seconds)
       HeartbeatInterval should ===(1 second)
       MonitoredByNrOfMembers should ===(5)
-      HeartbeatExpectedResponseAfter should ===(5 seconds)
+      HeartbeatExpectedResponseAfter should ===(1 seconds)
       LeaderActionsInterval should ===(1 second)
       UnreachableNodesReaperInterval should ===(1 second)
       PublishStatsInterval should ===(Duration.Undefined)
