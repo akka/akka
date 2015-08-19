@@ -75,7 +75,7 @@ object Dependencies {
 
     object Provided {
       // TODO remove from "test" config
-      val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.5-rev001"     %     "optional;provided;test" // ApacheV2
+      val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.6-rev002"     %     "optional;provided;test" // ApacheV2
       
       val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"    %  "optional;provided"     // New BSD
