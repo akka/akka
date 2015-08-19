@@ -59,7 +59,7 @@ class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long
   }
 
   def idle: Receive = {
-    case Continue | _: LeveldbJournal.ChangedPersistenceId ⇒
+    case Continue | _: LeveldbJournal.EventAppended ⇒
       if (timeForReplay)
         replay()
 
@@ -122,7 +122,7 @@ class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long
       case _: Request ⇒
         deliverBuf()
 
-      case Continue | _: LeveldbJournal.ChangedPersistenceId ⇒ // skip during replay
+      case Continue | _: LeveldbJournal.EventAppended ⇒ // skip during replay
 
       case Cancel ⇒
         context.stop(self)

@@ -16,6 +16,7 @@ import akka.persistence.query.NoRefresh
 import akka.persistence.query.RefreshInterval
 import com.typesafe.config.Config
 import akka.persistence.query.EventEnvelope
+import akka.persistence.query.AllPersistenceIds
 
 object LeveldbReadJournal {
   final val Identifier = "akka.persistence.query.journal.leveldb"
@@ -31,12 +32,21 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends sc
 
   override def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M] = q match {
     case EventsByPersistenceId(pid, from, to) ⇒ eventsByPersistenceId(pid, from, to, hints)
+    case AllPersistenceIds                    ⇒ allPersistenceIds(hints)
     case unknown                              ⇒ unsupportedQueryType(unknown)
   }
 
   def eventsByPersistenceId(persistenceId: String, fromSeqNr: Long, toSeqNr: Long, hints: Seq[Hint]): Source[EventEnvelope, Unit] = {
     Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSeqNr, toSeqNr,
       refreshInterval(hints), maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ ())
+      .named("eventsByPersistenceId-" + persistenceId)
+  }
+
+  def allPersistenceIds(hints: Seq[Hint]): Source[String, Unit] = {
+    val liveQuery = refreshInterval(hints).isDefined
+    Source.actorPublisher[String](AllPersistenceIdsPublisher.props(liveQuery, maxBufSize, writeJournalPluginId))
+      .mapMaterializedValue(_ ⇒ ())
+      .named("allPersistenceIds")
   }
 
   private def refreshInterval(hints: Seq[Hint]): Option[FiniteDuration] =
