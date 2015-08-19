@@ -54,7 +54,7 @@ public class RecipeParseLines extends RecipeTest {
       .map(b -> b.utf8String());
     //#parse-lines
 
-    Await.result(lines.grouped(10).runWith(Sink.head(), mat), new FiniteDuration(1, TimeUnit.SECONDS));
+    Await.result(lines.runWith(Sink.toList(mat.executionContext), mat), new FiniteDuration(1, TimeUnit.SECONDS));
   }
 
 }

@@ -50,7 +50,7 @@ public class RecipeFlattenList extends RecipeTest {
         Source<Message, BoxedUnit> flattened = myData.mapConcat(i -> i);
         //#flattening-lists
 
-        List<Message> got = Await.result(flattened.grouped(10).runWith(Sink.head(), mat),
+        List<Message> got = Await.result(flattened.runWith(Sink.toList(mat.executionContext), mat),
           new FiniteDuration(1, TimeUnit.SECONDS));
         assertEquals(got.get(0), new Message("1"));
         assertEquals(got.get(1), new Message("2"));

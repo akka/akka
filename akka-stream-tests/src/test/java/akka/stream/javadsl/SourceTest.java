@@ -331,7 +331,7 @@ public class SourceTest extends StreamTest {
       probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(1, 2, 3), result.first());
 
-    Future<List<Integer>> tailFuture = result.second().grouped(4).runWith(Sink.<List<Integer>>head(), materializer);
+    Future<List<Integer>> tailFuture = result.second().runWith(Sink.<Integer>toList(ec), materializer);
     List<Integer> tailResult = Await.result(tailFuture, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(4, 5, 6), tailResult);
   }

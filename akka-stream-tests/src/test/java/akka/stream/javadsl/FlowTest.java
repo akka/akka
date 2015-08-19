@@ -351,7 +351,7 @@ public class FlowTest extends StreamTest {
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
+    final Future<List<String>> all = Source.from(pub).runWith(Sink.<String>toList(ec), materializer);
 
     final List<String> result = Await.result(all, Duration.apply(200, TimeUnit.MILLISECONDS));
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
@@ -418,7 +418,7 @@ public class FlowTest extends StreamTest {
         probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(1, 2, 3), result.first());
 
-    Future<List<Integer>> tailFuture = result.second().grouped(4).runWith(Sink.<List<Integer>>head(), materializer);
+    Future<List<Integer>> tailFuture = result.second().runWith(Sink.<Integer>toList(ec), materializer);
     List<Integer> tailResult = Await.result(tailFuture, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(4, 5, 6), tailResult);
   }

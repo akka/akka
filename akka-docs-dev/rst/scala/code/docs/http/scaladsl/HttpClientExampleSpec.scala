@@ -20,6 +20,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
+    import system.dispatcher
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection("akka.io")
@@ -42,6 +43,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
+    import system.dispatcher
 
     // construct a pool client flow with context type `Int`
     val poolClientFlow = Http().cachedHostConnectionPool[Int]("akka.io")

@@ -27,6 +27,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     akka.io.tcp.trace-logging = off
     akka.io.tcp.windows-connection-abort-workaround-enabled=auto""") with ScalaFutures {
   implicit val materializer = ActorMaterializer()
+  import materializer.executionContext
   val timeout = Timeout(Span(3, Seconds))
 
   "The client implementation" should {

@@ -158,7 +158,7 @@ public class BidiFlowTest extends StreamTest {
             return ByteString.fromString("Hello " + arg);
           }
         }));
-    final Future<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
+    final Future<List<String>> result = Source.from(list).via(f).runWith(Sink.<String>toList(ec), materializer);
     assertEquals(Arrays.asList("Hello 3", "Hello 4", "Hello 5"), Await.result(result, oneSec));
   }
 
@@ -171,7 +171,7 @@ public class BidiFlowTest extends StreamTest {
           }
         }).join(bidi);
     final List<ByteString> inputs = Arrays.asList(ByteString.fromString("1"), ByteString.fromString("2"));
-    final Future<List<Long>> result = Source.from(inputs).via(f).grouped(10).runWith(Sink.<List<Long>> head(), materializer);
+    final Future<List<Long>> result = Source.from(inputs).via(f).runWith(Sink.<Long>toList(ec), materializer);
     assertEquals(Arrays.asList(3L, 4L), Await.result(result, oneSec));
   }
 
@@ -183,7 +183,7 @@ public class BidiFlowTest extends StreamTest {
             return arg.toString();
           }
         }));
-    final Future<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
+    final Future<List<String>> result = Source.from(list).via(f).runWith(Sink.<String>toList(ec), materializer);
     assertEquals(Arrays.asList("5", "6", "7"), Await.result(result, oneSec));
   }
 
@@ -195,7 +195,7 @@ public class BidiFlowTest extends StreamTest {
             return arg.toString();
           }
         }).join(inverse.reversed()).join(bidi.reversed());
-    final Future<List<String>> result = Source.from(list).via(f).grouped(10).runWith(Sink.<List<String>> head(), materializer);
+    final Future<List<String>> result = Source.from(list).via(f).runWith(Sink.<String>toList(ec), materializer);
     assertEquals(Arrays.asList("5", "6", "7"), Await.result(result, oneSec));
   }
 

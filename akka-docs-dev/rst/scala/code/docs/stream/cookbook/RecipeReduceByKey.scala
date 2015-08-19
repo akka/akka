@@ -35,7 +35,7 @@ class RecipeReduceByKey extends RecipeSpec {
           .mapAsync(4)(identity)
       //#word-count
 
-      Await.result(counts.grouped(10).runWith(Sink.head), 3.seconds).toSet should be(Set(
+      Await.result(counts.runWith(Sink.toSeq), 3.seconds).toSet should be(Set(
         ("hello", 2),
         ("world", 1),
         ("and", 1),
@@ -72,7 +72,7 @@ class RecipeReduceByKey extends RecipeSpec {
 
       //#reduce-by-key-general
 
-      Await.result(wordCounts.grouped(10).runWith(Sink.head), 3.seconds).toSet should be(Set(
+      Await.result(wordCounts.runWith(Sink.toSeq), 3.seconds).toSet should be(Set(
         ("hello", 2),
         ("world", 1),
         ("and", 1),
