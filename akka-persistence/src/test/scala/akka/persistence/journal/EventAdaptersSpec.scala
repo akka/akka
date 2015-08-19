@@ -27,11 +27,15 @@ class EventAdaptersSpec extends AkkaSpec {
       |      example  = ${classOf[ExampleEventAdapter].getCanonicalName}
       |      marker   = ${classOf[MarkerInterfaceAdapter].getCanonicalName}
       |      precise  = ${classOf[PreciseAdapter].getCanonicalName}
+      |      reader  = ${classOf[ReaderAdapter].getCanonicalName}
+      |      writer  = ${classOf[WriterAdapter].getCanonicalName}
       |    }
       |    event-adapter-bindings = {
       |      "${classOf[EventMarkerInterface].getCanonicalName}" = marker
       |      "java.lang.String" = example
       |      "akka.persistence.journal.PreciseAdapterEvent" = precise
+      |      "akka.persistence.journal.ReadMeEvent" = reader
+      |      "akka.persistence.journal.WriteMeEvent" = writer
       |    }
       |  }
       |}
@@ -79,6 +83,22 @@ class EventAdaptersSpec extends AkkaSpec {
 
       ex.getMessage should include("java.lang.Integer was bound to undefined event-adapter: undefined-adapter")
     }
+
+    "allow implementing only the read-side (ReadEventAdapter)" in {
+      val adapters = EventAdapters(extendedActorSystem, inmemConfig)
+
+      // read-side only adapter
+      val r: EventAdapter = adapters.get(classOf[ReadMeEvent])
+      r.fromJournal(r.toJournal(ReadMeEvent()), "").events.head.toString should ===("from-ReadMeEvent()")
+    }
+
+    "allow implementing only the write-side (WriteEventAdapter)" in {
+      val adapters = EventAdapters(extendedActorSystem, inmemConfig)
+
+      // write-side only adapter
+      val w: EventAdapter = adapters.get(classOf[WriteMeEvent])
+      w.fromJournal(w.toJournal(WriteMeEvent()), "").events.head.toString should ===("to-WriteMeEvent()")
+    }
   }
 
 }
@@ -94,6 +114,18 @@ class ExampleEventAdapter extends BaseTestAdapter {
 class MarkerInterfaceAdapter extends BaseTestAdapter {
 }
 class PreciseAdapter extends BaseTestAdapter {
+}
+
+case class ReadMeEvent()
+class ReaderAdapter extends ReadEventAdapter {
+  override def fromJournal(event: Any, manifest: String): EventSeq =
+    EventSeq("from-" + event)
+}
+
+case class WriteMeEvent()
+class WriterAdapter extends WriteEventAdapter {
+  override def manifest(event: Any): String = ""
+  override def toJournal(event: Any): Any = "to-" + event
 }
 
 trait EventMarkerInterface

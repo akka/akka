@@ -15,7 +15,7 @@ import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardCoordinator
-import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
+import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages ⇒ sm }
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
