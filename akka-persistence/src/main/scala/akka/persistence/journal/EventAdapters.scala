@@ -79,7 +79,7 @@ private[akka] object EventAdapters {
 
     // A Map of handler from alias to implementation (i.e. class implementing akka.serialization.Serializer)
     // For example this defines a handler named 'country': `"country" -> com.example.comain.CountryTagsAdapter`
-    val handlers = for ((k: String, v: String) ← adapters) yield k -> instantiate[EventAdapter](v, system).get
+    val handlers = for ((k: String, v: String) ← adapters) yield k -> instantiateAdapter(v, system).get
 
     // bindings is a Seq of tuple representing the mapping from Class to handler.
     // It is primarily ordered by the most specific classes first, and secondly in the configured order.
@@ -94,6 +94,18 @@ private[akka] object EventAdapters {
     val backing = (new ConcurrentHashMap[Class[_], EventAdapter] /: bindings) { case (map, (c, s)) ⇒ map.put(c, s); map }
 
     new EventAdapters(backing, bindings, system.log)
+  }
+
+  def instantiateAdapter(adapterFQN: String, system: ExtendedActorSystem): Try[EventAdapter] = {
+    val clazz = system.dynamicAccess.getClassFor[Any](adapterFQN).get
+    if (classOf[EventAdapter] isAssignableFrom clazz)
+      instantiate[EventAdapter](adapterFQN, system)
+    else if (classOf[WriteEventAdapter] isAssignableFrom clazz)
+      instantiate[WriteEventAdapter](adapterFQN, system).map(NoopReadEventAdapter)
+    else if (classOf[ReadEventAdapter] isAssignableFrom clazz)
+      instantiate[ReadEventAdapter](adapterFQN, system).map(NoopWriteEventAdapter)
+    else
+      throw new IllegalArgumentException(s"Configured $adapterFQN does not implement any EventAdapter interface!")
   }
 
   /** INTERNAL API */
