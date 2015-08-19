@@ -542,4 +542,74 @@ public class LambdaPersistenceDocTest {
       //#view-update
     }
   };
+
+  static Object o14 = new Object() {
+    //#safe-shutdown
+    final class Shutdown {
+    }
+
+    class MyPersistentActor extends AbstractPersistentActor {
+      @Override
+      public String persistenceId() {
+        return "some-persistence-id";
+      }
+
+      @Override
+      public PartialFunction<Object, BoxedUnit> receiveCommand() {
+        return ReceiveBuilder
+          .match(Shutdown.class, shutdown -> {
+            context().stop(self());
+          })
+          .match(String.class, msg -> {
+            System.out.println(msg);
+            persist("handle-" + msg, e -> System.out.println(e));
+          })
+          .build();
+      }
+
+      @Override
+      public PartialFunction<Object, BoxedUnit> receiveRecover() {
+        return ReceiveBuilder.matchAny(any -> {}).build();
+      }
+
+    }
+    //#safe-shutdown
+
+
+    public void usage() {
+      final ActorSystem system = ActorSystem.create("example");
+      final ActorRef persistentActor = system.actorOf(Props.create(MyPersistentActor.class));
+      //#safe-shutdown-example-bad
+      // UN-SAFE, due to PersistentActor's command stashing:
+      persistentActor.tell("a", ActorRef.noSender());
+      persistentActor.tell("b", ActorRef.noSender());
+      persistentActor.tell(PoisonPill.getInstance(), ActorRef.noSender());
+      // order of received messages:
+      // a
+      //   # b arrives at mailbox, stashing;        internal-stash = [b]
+      //   # PoisonPill arrives at mailbox, stashing; internal-stash = [b, Shutdown]
+      // PoisonPill is an AutoReceivedMessage, is handled automatically
+      // !! stop !!
+      // Actor is stopped without handling `b` nor the `a` handler!
+      //#safe-shutdown-example-bad
+
+      //#safe-shutdown-example-good
+      // SAFE:
+      persistentActor.tell("a", ActorRef.noSender());
+      persistentActor.tell("b", ActorRef.noSender());
+      persistentActor.tell(new Shutdown(), ActorRef.noSender());
+      // order of received messages:
+      // a
+      //   # b arrives at mailbox, stashing;        internal-stash = [b]
+      //   # Shutdown arrives at mailbox, stashing; internal-stash = [b, Shutdown]
+      // handle-a
+      //   # unstashing;                            internal-stash = [Shutdown]
+      // b
+      // handle-b
+      //   # unstashing;                            internal-stash = []
+      // Shutdown
+      // -- stop --
+      //#safe-shutdown-example-good
+    }
+  };
 }
