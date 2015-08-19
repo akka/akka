@@ -54,14 +54,9 @@ collection itself, so we can just call ``mapConcat(l -> l)``.
 Draining a stream to a strict collection
 ----------------------------------------
 
-**Situation:** A finite sequence of elements is given as a stream, but a scala collection is needed instead.
+**Situation:** A finite sequence of elements is given as a stream, but a Java collection is needed instead.
 
-In this recipe we will use the ``grouped`` stream operation that groups incoming elements into a stream of limited
-size collections (it can be seen as the almost opposite version of the "Flattening a stream of sequences" recipe
-we showed before). By using a ``grouped(MAX_ALLOWED_SIZE)`` we create a stream of groups
-with maximum size of ``MaxAllowedSeqSize`` and then we take the first element of this stream by attaching a ``Sink.head()``. What we get is a
-:class:`Future` containing a sequence with all the elements of the original up to ``MAX_ALLOWED_SIZE`` size (further
-elements are dropped).
+The ``Sink.toList`` built-in sink can drain a finite stream into a Java collection.
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeToStrict.java#draining-to-list
 

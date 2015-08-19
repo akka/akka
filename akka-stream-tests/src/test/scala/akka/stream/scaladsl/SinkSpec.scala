@@ -3,6 +3,9 @@
  */
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.stream.testkit._
 import akka.stream.ActorMaterializer
 
@@ -10,6 +13,7 @@ class SinkSpec extends AkkaSpec {
   import FlowGraph.Implicits._
 
   implicit val mat = ActorMaterializer()
+  import mat.executionContext
 
   "A Sink" must {
 
@@ -91,4 +95,16 @@ class SinkSpec extends AkkaSpec {
 
   }
 
+  "Sink.toSeq" must {
+
+    "collect all elements when non-empty" in {
+      val f = Source(List(1, 2, 3)).runWith(Sink.toSeq)
+      Await.result(f, 100.millis) should be(List(1, 2, 3))
+    }
+
+    "collect all elements when empty" in {
+      val f = Source.empty.runWith(Sink.toSeq)
+      Await.result(f, 100.millis) should be(Nil)
+    }
+  }
 }

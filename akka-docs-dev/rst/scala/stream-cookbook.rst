@@ -56,12 +56,7 @@ Draining a stream to a strict collection
 
 **Situation:** A finite sequence of elements is given as a stream, but a scala collection is needed instead.
 
-In this recipe we will use the ``grouped`` stream operation that groups incoming elements into a stream of limited
-size collections (it can be seen as the almost opposite version of the "Flattening a stream of sequences" recipe
-we showed before). By using a ``grouped(MaxAllowedSeqSize)`` we create a stream of groups
-with maximum size of ``MaxAllowedSeqSize`` and then we take the first element of this stream by attaching a ``Sink.head``. What we get is a
-:class:`Future` containing a sequence with all the elements of the original up to ``MaxAllowedSeqSize`` size (further
-elements are dropped).
+The ``Sink.toSeq`` built-in sink can drain a finite stream into a scala collection.
 
 .. includecode:: code/docs/stream/cookbook/RecipeToStrict.scala#draining-to-seq
 

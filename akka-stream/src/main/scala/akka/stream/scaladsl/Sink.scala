@@ -13,6 +13,7 @@ import akka.stream.Attributes._
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage, SyncDirective }
 import org.reactivestreams.{ Publisher, Subscriber }
 
+import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
@@ -75,6 +76,16 @@ object Sink extends SinkApply {
    * A `Sink` that materializes into a `Future` of the first value received.
    */
   def head[T]: Sink[T, Future[T]] = new Sink(new HeadSink[T](DefaultAttributes.headSink, shape("HeadSink")))
+
+  /**
+   * A `Sink` that materializes into a `Future` of all elements in the stream
+   * as a strict collection.
+   * If the stream is inifite, this will never complete but it will consume
+   * all of your memory.
+   */
+  def toSeq[T](implicit ec: ExecutionContext): Sink[T, Future[immutable.Seq[T]]] =
+    Flow[T].grouped(Int.MaxValue).toMat(Sink.head)(Keep.right)
+      .mapMaterializedValue { _.recover { case _: NoSuchElementException ⇒ Nil } }
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].

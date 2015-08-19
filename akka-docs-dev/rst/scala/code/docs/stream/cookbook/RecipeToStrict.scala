@@ -12,11 +12,9 @@ class RecipeToStrict extends RecipeSpec {
 
     "work" in {
       val myData = Source(List("1", "2", "3"))
-      val MaxAllowedSeqSize = 100
 
       //#draining-to-seq
-      val strict: Future[immutable.Seq[Message]] =
-        myData.grouped(MaxAllowedSeqSize).runWith(Sink.head)
+      val strict: Future[immutable.Seq[Message]] = myData.runWith(Sink.toSeq)
       //#draining-to-seq
 
       Await.result(strict, 3.seconds) should be(List("1", "2", "3"))
