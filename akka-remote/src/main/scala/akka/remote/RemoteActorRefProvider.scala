@@ -365,7 +365,7 @@ private[akka] class RemoteActorRefProvider(
             rootPath, Nobody, props = None, deploy = None)
         } catch {
           case NonFatal(e) ⇒
-            log.error(e, "Error while resolving address [{}]", rootPath.address)
+            log.warning("Error while resolving address [{}] due to [{}]", rootPath.address, e.getMessage)
             new EmptyLocalActorRef(this, rootPath, eventStream)
         }
       }
