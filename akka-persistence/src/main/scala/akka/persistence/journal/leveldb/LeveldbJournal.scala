@@ -17,7 +17,30 @@ import akka.util.Helpers.ConfigOps
  *
  * Journal backed by a local LevelDB store. For production use.
  */
-private[persistence] class LeveldbJournal extends { val configPath = "akka.persistence.journal.leveldb" } with AsyncWriteJournal with LeveldbStore
+private[persistence] class LeveldbJournal extends { val configPath = "akka.persistence.journal.leveldb" } with AsyncWriteJournal with LeveldbStore {
+  import LeveldbJournal._
+
+  override def receivePluginInternal: Receive = {
+    case SubscribePersistenceId(persistenceId: String) ⇒
+      addPersistenceIdSubscriber(sender(), persistenceId)
+      context.watch(sender())
+    case Terminated(ref) ⇒
+      removeSubscriber(ref)
+  }
+}
+
+/**
+ * INTERNAL API.
+ */
+private[persistence] object LeveldbJournal {
+  /**
+   * Subscribe the `sender` to changes (append events) for a specific `persistenceId`.
+   * Used by query-side. The journal will send [[ChangedPersistenceId]] messages to
+   * the subscriber when `asyncWriteMessages` has been called.
+   */
+  case class SubscribePersistenceId(persistenceId: String)
+  case class ChangedPersistenceId(persistenceId: String) extends DeadLetterSuppression
+}
 
 /**
  * INTERNAL API.
@@ -27,6 +50,18 @@ private[persistence] class LeveldbJournal extends { val configPath = "akka.persi
 private[persistence] class SharedLeveldbJournal extends AsyncWriteProxy {
   val timeout: Timeout = context.system.settings.config.getMillisDuration(
     "akka.persistence.journal.leveldb-shared.timeout")
+
+  override def receivePluginInternal: Receive = {
+    case m: LeveldbJournal.SubscribePersistenceId ⇒
+      // forward subscriptions, they are used by query-side
+      store match {
+        case Some(s) ⇒ s.forward(m)
+        case None ⇒
+          log.error("Failed SubscribePersistenceId({}) request. " +
+            "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`", m.persistenceId)
+      }
+
+  }
 }
 
 object SharedLeveldbJournal {

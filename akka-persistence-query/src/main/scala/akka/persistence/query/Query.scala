@@ -37,7 +37,7 @@ abstract class AllPersistenceIds extends Query[String, Unit]
  * A plugin may optionally support this [[Query]].
  */
 final case class EventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue)
-  extends Query[Any, Unit]
+  extends Query[EventEnvelope, Unit]
 object EventsByPersistenceId {
   /** Java API */
   def create(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): EventsByPersistenceId =
