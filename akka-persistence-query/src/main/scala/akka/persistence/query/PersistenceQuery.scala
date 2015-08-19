@@ -4,12 +4,11 @@
 package akka.persistence.query
 
 import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor._
 import akka.event.Logging
-
 import scala.annotation.tailrec
 import scala.util.Failure
+import com.typesafe.config.Config
 
 /**
  * Persistence extension for queries.
@@ -75,13 +74,15 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
     // TODO remove duplication
     val scalaPlugin =
       if (classOf[scaladsl.ReadJournal].isAssignableFrom(pluginClass))
-        system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil)
+        system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
+          .orElse(system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil))
           .orElse(system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, Nil))
           .recoverWith {
             case ex: Exception ⇒ Failure.apply(new IllegalArgumentException(s"Unable to create read journal plugin instance for path [$configPath], class [$pluginClassName]!", ex))
           }
       else if (classOf[javadsl.ReadJournal].isAssignableFrom(pluginClass))
-        system.dynamicAccess.createInstanceFor[javadsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil)
+        system.dynamicAccess.createInstanceFor[javadsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
+          .orElse(system.dynamicAccess.createInstanceFor[javadsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil))
           .orElse(system.dynamicAccess.createInstanceFor[javadsl.ReadJournal](pluginClass, Nil))
           .map(jj ⇒ new scaladsl.ReadJournalAdapter(jj))
           .recoverWith {

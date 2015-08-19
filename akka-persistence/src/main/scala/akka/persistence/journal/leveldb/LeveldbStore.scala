@@ -6,6 +6,7 @@
 package akka.persistence.journal.leveldb
 
 import java.io.File
+import scala.collection.mutable
 import akka.actor._
 import akka.persistence._
 import akka.persistence.journal.{ WriteJournalBase, AsyncWriteTarget }
@@ -32,6 +33,8 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
   val leveldbDir = new File(config.getString("dir"))
   var leveldb: DB = _
 
+  private val persistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
+
   def leveldbFactory =
     if (nativeLeveldb) org.fusesource.leveldbjni.JniDBFactory.factory
     else org.iq80.leveldb.impl.Iq80DBFactory.factory
@@ -40,12 +43,19 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
 
   import Key._
 
-  def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
-    Future.fromTry(Try {
+  def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
+    var persistenceIds = Set.empty[String]
+    val result = Future.fromTry(Try {
       withBatch(batch ⇒ messages.map { a ⇒
-        Try(a.payload.foreach(message ⇒ addToMessageBatch(message, batch)))
+        Try {
+          a.payload.foreach(message ⇒ addToMessageBatch(message, batch))
+          persistenceIds += a.persistenceId
+        }
       })
     })
+    persistenceIds.foreach(notifyPersistenceIdChange)
+    result
+  }
 
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
     try Future.successful {
@@ -109,5 +119,22 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
     leveldb.close()
     super.postStop()
   }
+
+  protected def hasPersistenceIdSubscribers: Boolean = persistenceIdSubscribers.nonEmpty
+
+  protected def addPersistenceIdSubscriber(subscriber: ActorRef, persistenceId: String): Unit =
+    persistenceIdSubscribers.addBinding(persistenceId, subscriber)
+
+  protected def removeSubscriber(subscriber: ActorRef): Unit = {
+    val keys = persistenceIdSubscribers.collect { case (k, s) if s.contains(subscriber) ⇒ k }
+    keys.foreach { key ⇒ persistenceIdSubscribers.removeBinding(key, subscriber) }
+  }
+
+  private def notifyPersistenceIdChange(persistenceId: String): Unit =
+    if (persistenceIdSubscribers.contains(persistenceId)) {
+      val changed = LeveldbJournal.ChangedPersistenceId(persistenceId)
+      persistenceIdSubscribers(persistenceId).foreach(_ ! changed)
+    }
+
 }
 
