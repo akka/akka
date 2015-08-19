@@ -28,7 +28,7 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
 
   private var isInitialized = false
   private var isInitTimedOut = false
-  private var store: Option[ActorRef] = None
+  protected var store: Option[ActorRef] = None
   private val storeNotInitialized =
     Future.failed(new TimeoutException("Store not initialized. " +
       "Use `SharedLeveldbJournal.setStore(sharedStore, system)`"))

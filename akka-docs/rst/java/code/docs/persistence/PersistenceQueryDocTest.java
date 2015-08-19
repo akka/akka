@@ -6,6 +6,8 @@ package docs.persistence;
 
 import static akka.pattern.Patterns.ask;
 
+import com.typesafe.config.Config;
+
 import akka.actor.*;
 import akka.dispatch.Mapper;
 import akka.event.EventStreamSpec;
@@ -20,6 +22,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.Timeout;
+
 import docs.persistence.query.MyEventsByTagPublisher;
 import docs.persistence.query.PersistenceQueryDocSpec;
 import org.reactivestreams.Subscriber;
@@ -31,7 +34,6 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.Boxed;
 import scala.runtime.BoxedUnit;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,7 +49,7 @@ public class PersistenceQueryDocTest {
   class MyReadJournal implements ReadJournal {
     private final ExtendedActorSystem system;
 
-    public MyReadJournal(ExtendedActorSystem system) {
+    public MyReadJournal(ExtendedActorSystem system, Config config) {
       this.system = system;
     }
 
@@ -97,7 +99,7 @@ public class PersistenceQueryDocTest {
                       .getReadJournalFor("akka.persistence.query.noop-read-journal");
 
     // issue query to journal
-    Source<Object, BoxedUnit> source =
+    Source<EventEnvelope, BoxedUnit> source =
       readJournal.query(EventsByPersistenceId.create("user-1337", 0, Long.MAX_VALUE));
 
     // materialize stream, consuming events
@@ -239,6 +241,7 @@ public class PersistenceQueryDocTest {
     // Using an example (Reactive Streams) Database driver
     readJournal
       .query(EventsByPersistenceId.create("user-1337"))
+      .map(envelope -> envelope.event())
       .grouped(20) // batch inserts into groups of 20
       .runWith(Sink.create(dbBatchWriter), mat); // write batches to read-side database
     //#projection-into-different-store-rs
