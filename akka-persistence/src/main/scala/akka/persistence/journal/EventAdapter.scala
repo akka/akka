@@ -8,6 +8,7 @@ import scala.annotation.varargs
 import scala.collection.immutable
 
 /**
+ * An [[EventAdapter]] is both a [[WriteEventAdapter]] and a [[ReadEventAdapter]].
  * Facility to convert from and to specialised data models, as may be required by specialized persistence Journals.
  *
  * Typical use cases include (but are not limited to):
@@ -17,7 +18,19 @@ import scala.collection.immutable
  *   <li>adapting incoming events in any way before persisting them by the journal</li>
  * </ul>
  */
-abstract class EventAdapter {
+trait EventAdapter extends WriteEventAdapter with ReadEventAdapter
+
+/**
+ * Facility to convert to specialised data models, as may be required by specialized persistence Journals.
+ *
+ * Typical use cases include (but are not limited to):
+ * <ul>
+ *   <li>adding metadata, a.k.a. "tagging" - by wrapping objects into tagged counterparts</li>
+ *   <li>manually converting to the Journals storage format, such as JSON, BSON or any specialised binary format</li>
+ *   <li>splitting up large events into sequences of smaller ones</li>
+ * </ul>
+ */
+trait WriteEventAdapter {
   //#event-adapter-api
   /**
    * Return the manifest (type hint) that will be provided in the `fromJournal` method.
@@ -39,7 +52,21 @@ abstract class EventAdapter {
    * @return the adapted event object, possibly the same object if no adaptation was performed
    */
   def toJournal(event: Any): Any
+  //#event-adapter-api
+}
 
+/**
+ * Facility to convert from and to specialised data models, as may be required by specialized persistence Journals.
+ *
+ * Typical use cases include (but are not limited to):
+ * <ul>
+ *   <li>extracting events from "envelopes"</li>
+ *   <li>manually converting to the Journals storage format, such as JSON, BSON or any specialised binary format</li>
+ *   <li>adapting incoming events from a "data model" to the "domain model"</li>
+ * </ul>
+ */
+trait ReadEventAdapter {
+  //#event-adapter-api
   /**
    * Convert a event from its journal model to the applications domain model.
    *
@@ -54,7 +81,6 @@ abstract class EventAdapter {
    * @return sequence containing the adapted events (possibly zero) which will be delivered to the PersistentActor
    */
   def fromJournal(event: Any, manifest: String): EventSeq
-
   //#event-adapter-api
 }
 
@@ -89,4 +115,26 @@ final case object IdentityEventAdapter extends EventAdapter {
   override def toJournal(event: Any): Any = event
   override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single(event)
   override def manifest(event: Any): String = ""
+}
+
+/** INTERNAL API */
+private[akka] case class NoopWriteEventAdapter(private val readEventAdapter: ReadEventAdapter) extends EventAdapter {
+  // pass-through read
+  override def fromJournal(event: Any, manifest: String): EventSeq =
+    readEventAdapter.fromJournal(event, manifest)
+
+  // no-op write
+  override def manifest(event: Any): String = ""
+  override def toJournal(event: Any): Any = event
+}
+
+/** INTERNAL API */
+private[akka] case class NoopReadEventAdapter(private val writeEventAdapter: WriteEventAdapter) extends EventAdapter {
+  // pass-through write
+  override def manifest(event: Any): String = writeEventAdapter.manifest(event)
+  override def toJournal(event: Any): Any = writeEventAdapter.toJournal(event)
+
+  // no-op read
+  override def fromJournal(event: Any, manifest: String): EventSeq =
+    EventSeq(event)
 }
