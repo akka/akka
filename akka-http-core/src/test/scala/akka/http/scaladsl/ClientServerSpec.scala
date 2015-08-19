@@ -92,7 +92,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val b1 = Await.result(binding, 3.seconds)
 
       val (_, f) = Http().outgoingConnection(hostname, port)
-        .runWith(Source.single(HttpRequest(uri = "/abc")), Sink.head)
+        .runWith(Source.single(HttpRequest(uri = "/abc")), Sink.single)
 
       Await.result(f, 1.second)
       Await.result(b1.unbind(), 1.second)
@@ -121,7 +121,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       def runRequest(uri: Uri): Unit =
         Http().outgoingConnection(hostname, port)
-          .runWith(Source.single(HttpRequest(uri = uri)), Sink.head)
+          .runWith(Source.single(HttpRequest(uri = uri)), Sink.single)
 
       runRequest("/slow")
 
@@ -148,7 +148,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
         EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
           val (_, responseFuture) =
-            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
+            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.single)(materializer2)
           try Await.result(responseFuture, 5.second).status should ===(StatusCodes.InternalServerError)
           catch {
             case _: StreamTcpException ⇒
@@ -167,7 +167,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
         EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
           val (_, responseFuture) =
-            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
+            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.single)(materializer2)
           try Await.result(responseFuture, 5.seconds).status should ===(StatusCodes.InternalServerError)
           catch {
             case _: StreamTcpException ⇒

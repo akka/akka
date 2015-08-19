@@ -26,7 +26,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = "/"))
         .via(connectionFlow)
-        .runWith(Sink.head)
+        .runWith(Sink.single)
     //#outgoing-connection-example
   }
 
@@ -48,7 +48,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
     val responseFuture: Future[(Try[HttpResponse], Int)] =
       Source.single(HttpRequest(uri = "/") -> 42)
         .via(poolClientFlow)
-        .runWith(Sink.head)
+        .runWith(Sink.single)
     //#host-level-example
   }
 
