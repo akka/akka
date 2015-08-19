@@ -276,8 +276,9 @@ class UserEventsAdapter extends EventAdapter {
   override def fromJournal(event: Any, manifest: String): EventSeq = event match {
     case UserDetailsChanged(null, address) => EventSeq(UserAddressChanged(address))
     case UserDetailsChanged(name, null)    => EventSeq(UserNameChanged(name))
-    case UserDetailsChanged(name, address) => EventSeq(UserNameChanged(name),
-      UserAddressChanged(address))
+    case UserDetailsChanged(name, address) =>
+      EventSeq(UserNameChanged(name),
+        UserAddressChanged(address))
     case event: V2 => EventSeq(event)
   }
 

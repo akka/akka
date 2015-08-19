@@ -12,7 +12,7 @@ public class PersistenceEventAdapterDocTest {
   @SuppressWarnings("unused")
   static
   //#identity-event-adapter
-  class MyEventAdapter extends EventAdapter {
+  class MyEventAdapter implements EventAdapter {
     @Override
     public String manifest(Object event) {
       return ""; // if no manifest needed, return ""
