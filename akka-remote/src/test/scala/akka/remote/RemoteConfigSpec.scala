@@ -53,7 +53,7 @@ class RemoteConfigSpec extends AkkaSpec(
 
       WatchFailureDetectorImplementationClass should ===(classOf[PhiAccrualFailureDetector].getName)
       WatchHeartBeatInterval should ===(1 seconds)
-      WatchHeartbeatExpectedResponseAfter should ===(3 seconds)
+      WatchHeartbeatExpectedResponseAfter should ===(1 seconds)
       WatchUnreachableReaperInterval should ===(1 second)
       WatchFailureDetectorConfig.getDouble("threshold") should ===(10.0 +- 0.0001)
       WatchFailureDetectorConfig.getInt("max-sample-size") should ===(200)

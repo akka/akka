@@ -13,6 +13,7 @@ import java.util.concurrent.TimeoutException
 
 object ReceiveTimeoutSpec {
   case object Tick
+  case object TransperentTick extends NotInfluenceReceiveTimeout
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -87,6 +88,25 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       }))
 
       intercept[TimeoutException] { Await.ready(timeoutLatch, 1 second) }
+      system.stop(timeoutActor)
+    }
+
+    "get timeout while receiving NotInfluenceReceiveTimeout messages" in {
+      val timeoutLatch = TestLatch()
+
+      val timeoutActor = system.actorOf(Props(new Actor {
+        context.setReceiveTimeout(1 second)
+
+        def receive = {
+          case ReceiveTimeout  ⇒ timeoutLatch.open
+          case TransperentTick ⇒
+        }
+      }))
+
+      val ticks = system.scheduler.schedule(100.millis, 100.millis, timeoutActor, TransperentTick)(system.dispatcher)
+
+      Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
+      ticks.cancel()
       system.stop(timeoutActor)
     }
   }
