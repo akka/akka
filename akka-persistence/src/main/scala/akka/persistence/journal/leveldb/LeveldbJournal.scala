@@ -24,6 +24,9 @@ private[persistence] class LeveldbJournal extends { val configPath = "akka.persi
     case SubscribePersistenceId(persistenceId: String) ⇒
       addPersistenceIdSubscriber(sender(), persistenceId)
       context.watch(sender())
+    case SubscribeAllPersistenceIds ⇒
+      addAllPersistenceIdsSubscriber(sender())
+      context.watch(sender())
     case Terminated(ref) ⇒
       removeSubscriber(ref)
   }
@@ -33,13 +36,25 @@ private[persistence] class LeveldbJournal extends { val configPath = "akka.persi
  * INTERNAL API.
  */
 private[persistence] object LeveldbJournal {
+  sealed trait SubscriptionCommand
+
   /**
-   * Subscribe the `sender` to changes (append events) for a specific `persistenceId`.
-   * Used by query-side. The journal will send [[ChangedPersistenceId]] messages to
+   * Subscribe the `sender` to changes (appended events) for a specific `persistenceId`.
+   * Used by query-side. The journal will send [[EventAppended]] messages to
    * the subscriber when `asyncWriteMessages` has been called.
    */
-  case class SubscribePersistenceId(persistenceId: String)
-  case class ChangedPersistenceId(persistenceId: String) extends DeadLetterSuppression
+  case class SubscribePersistenceId(persistenceId: String) extends SubscriptionCommand
+  case class EventAppended(persistenceId: String) extends DeadLetterSuppression
+
+  /**
+   * Subscribe the `sender` to changes (appended events) for a specific `persistenceId`.
+   * Used by query-side. The journal will send one [[CurrentPersistenceIds]] to the
+   * subscriber followed by [[PersistenceIdAdded]] messages when new persistenceIds
+   * are created.
+   */
+  case object SubscribeAllPersistenceIds extends SubscriptionCommand
+  case class CurrentPersistenceIds(allPersistenceIds: Set[String]) extends DeadLetterSuppression
+  case class PersistenceIdAdded(persistenceId: String) extends DeadLetterSuppression
 }
 
 /**
@@ -52,13 +67,13 @@ private[persistence] class SharedLeveldbJournal extends AsyncWriteProxy {
     "akka.persistence.journal.leveldb-shared.timeout")
 
   override def receivePluginInternal: Receive = {
-    case m: LeveldbJournal.SubscribePersistenceId ⇒
+    case cmd: LeveldbJournal.SubscriptionCommand ⇒
       // forward subscriptions, they are used by query-side
       store match {
-        case Some(s) ⇒ s.forward(m)
+        case Some(s) ⇒ s.forward(cmd)
         case None ⇒
-          log.error("Failed SubscribePersistenceId({}) request. " +
-            "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`", m.persistenceId)
+          log.error("Failed {} request. " +
+            "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`", cmd)
       }
 
   }

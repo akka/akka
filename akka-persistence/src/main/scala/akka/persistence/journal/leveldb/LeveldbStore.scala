@@ -34,6 +34,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
   var leveldb: DB = _
 
   private val persistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
+  private var allPersistenceIdsSubscribers = Set.empty[ActorRef]
 
   def leveldbFactory =
     if (nativeLeveldb) org.fusesource.leveldbjni.JniDBFactory.factory
@@ -45,15 +46,22 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
 
   def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     var persistenceIds = Set.empty[String]
+    val hasSubscribers = hasPersistenceIdSubscribers
     val result = Future.fromTry(Try {
       withBatch(batch ⇒ messages.map { a ⇒
         Try {
           a.payload.foreach(message ⇒ addToMessageBatch(message, batch))
-          persistenceIds += a.persistenceId
+          if (hasSubscribers)
+            persistenceIds += a.persistenceId
         }
       })
     })
-    persistenceIds.foreach(notifyPersistenceIdChange)
+
+    if (hasSubscribers) {
+      persistenceIds.foreach { pid ⇒
+        notifyPersistenceIdChange(pid)
+      }
+    }
     result
   }
 
@@ -128,13 +136,29 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
   protected def removeSubscriber(subscriber: ActorRef): Unit = {
     val keys = persistenceIdSubscribers.collect { case (k, s) if s.contains(subscriber) ⇒ k }
     keys.foreach { key ⇒ persistenceIdSubscribers.removeBinding(key, subscriber) }
+
+    allPersistenceIdsSubscribers -= subscriber
+  }
+
+  protected def hasAllPersistenceIdsSubscribers: Boolean = allPersistenceIdsSubscribers.nonEmpty
+
+  protected def addAllPersistenceIdsSubscriber(subscriber: ActorRef): Unit = {
+    allPersistenceIdsSubscribers += subscriber
+    subscriber ! LeveldbJournal.CurrentPersistenceIds(allPersistenceIds)
   }
 
   private def notifyPersistenceIdChange(persistenceId: String): Unit =
     if (persistenceIdSubscribers.contains(persistenceId)) {
-      val changed = LeveldbJournal.ChangedPersistenceId(persistenceId)
+      val changed = LeveldbJournal.EventAppended(persistenceId)
       persistenceIdSubscribers(persistenceId).foreach(_ ! changed)
     }
+
+  override protected def newPersistenceIdAdded(id: String): Unit = {
+    if (hasAllPersistenceIdsSubscribers) {
+      val added = LeveldbJournal.PersistenceIdAdded(id)
+      allPersistenceIdsSubscribers.foreach(_ ! added)
+    }
+  }
 
 }
 
