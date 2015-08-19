@@ -72,7 +72,7 @@ Processors / PersistentActor
 
 **Akka Persistence:** ``PersistentActor``
 
-- Trait that adds journaling to actors (see :ref:`event-sourcing`) and used by applications for
+- Trait that adds journaling to actors (see :ref:`event-sourcing-scala`) and used by applications for
   *event sourcing* or *command sourcing*. Corresponds to ``Eventsourced`` processors in Eventsourced but is not a stackable trait.
 - Automatically recovers on start and re-start, by default. :ref:`recovery` can be customized or turned off by
   overriding actor life cycle hooks ``preStart`` and ``preRestart``. ``Processor`` takes care that new messages

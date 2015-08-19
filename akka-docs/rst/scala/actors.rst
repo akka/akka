@@ -426,7 +426,7 @@ result:
   It is always preferable to communicate with other Actors using their ActorRef
   instead of relying upon ActorSelection. Exceptions are
 
-    * sending messages using the :ref:`at-least-once-delivery` facility
+    * sending messages using the :ref:`at-least-once-delivery-scala` facility
     * initiating first contact with a remote system
 
   In all other cases ActorRefs can be provided during Actor creation or

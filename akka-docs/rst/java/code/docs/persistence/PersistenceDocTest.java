@@ -13,7 +13,6 @@ import akka.japi.Function;
 import akka.japi.Procedure;
 import akka.persistence.*;
 
-import scala.Option;
 import java.io.Serializable;
 
 public class PersistenceDocTest {
@@ -504,7 +503,7 @@ public class PersistenceDocTest {
         }
     };
 
-    static Object o13 = new Object() {
+    static Object o14 = new Object() {
         //#view
         class MyView extends UntypedPersistentView {
             @Override
@@ -532,6 +531,76 @@ public class PersistenceDocTest {
             final ActorRef view = system.actorOf(Props.create(MyView.class));
             view.tell(Update.create(true), null);
             //#view-update
+        }
+    };
+
+    static Object o13 = new Object() {
+        //#safe-shutdown
+        final class Shutdown {}
+
+        class MyPersistentActor extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() {
+                return "some-persistence-id";
+            }
+
+            @Override
+            public void onReceiveCommand(Object msg) throws Exception {
+                if (msg instanceof Shutdown) {
+                    context().stop(self());
+                } else if (msg instanceof String) {
+                    System.out.println(msg);
+                    persist("handle-" + msg, new Procedure<String>() {
+                        @Override
+                        public void apply(String param) throws Exception {
+                            System.out.println(param);
+                        }
+                    });
+                } else unhandled(msg);
+            }
+
+            @Override
+            public void onReceiveRecover(Object msg) throws Exception {
+                // handle recovery...
+            }
+        }
+        //#safe-shutdown
+
+
+        public void usage() {
+            final ActorSystem system = ActorSystem.create("example");
+            final ActorRef persistentActor = system.actorOf(Props.create(MyPersistentActor.class));
+            //#safe-shutdown-example-bad
+            // UN-SAFE, due to PersistentActor's command stashing:
+            persistentActor.tell("a", ActorRef.noSender());
+            persistentActor.tell("b", ActorRef.noSender());
+            persistentActor.tell(PoisonPill.getInstance(), ActorRef.noSender());
+            // order of received messages:
+            // a
+            //   # b arrives at mailbox, stashing;        internal-stash = [b]
+            //   # PoisonPill arrives at mailbox, stashing; internal-stash = [b, Shutdown]
+            // PoisonPill is an AutoReceivedMessage, is handled automatically
+            // !! stop !!
+            // Actor is stopped without handling `b` nor the `a` handler!
+            //#safe-shutdown-example-bad
+
+            //#safe-shutdown-example-good
+            // SAFE:
+            persistentActor.tell("a", ActorRef.noSender());
+            persistentActor.tell("b", ActorRef.noSender());
+            persistentActor.tell(new Shutdown(), ActorRef.noSender());
+            // order of received messages:
+            // a
+            //   # b arrives at mailbox, stashing;        internal-stash = [b]
+            //   # Shutdown arrives at mailbox, stashing; internal-stash = [b, Shutdown]
+            // handle-a
+            //   # unstashing;                            internal-stash = [Shutdown]
+            // b
+            // handle-b
+            //   # unstashing;                            internal-stash = []
+            // Shutdown
+            // -- stop --
+            //#safe-shutdown-example-good
         }
     };
 }
