@@ -67,6 +67,10 @@ trait ActorContext extends ActorRefFactory {
    *
    * Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
    * periods). Pass in `Duration.Undefined` to switch off this feature.
+   *
+   * Messages marked with [[NotInfluenceReceiveTimeout]] will not reset the timer. This can be useful when
+   * `ReceiveTimeout` should be fired by external inactivity but not influenced by internal activity,
+   * e.g. scheduled tick messages.
    */
   def setReceiveTimeout(timeout: Duration): Unit
 
@@ -479,18 +483,23 @@ private[akka] class ActorCell(
   }
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
-  final def invoke(messageHandle: Envelope): Unit = try {
-    currentMessage = messageHandle
-    cancelReceiveTimeout() // FIXME: leave this here???
-    messageHandle.message match {
-      case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-      case msg                      ⇒ receiveMessage(msg)
+  final def invoke(messageHandle: Envelope): Unit = {
+    val influenceReceiveTimeout = !messageHandle.message.isInstanceOf[NotInfluenceReceiveTimeout]
+    try {
+      currentMessage = messageHandle
+      if (influenceReceiveTimeout)
+        cancelReceiveTimeout()
+      messageHandle.message match {
+        case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
+        case msg                      ⇒ receiveMessage(msg)
+      }
+      currentMessage = null // reset current message after successful invocation
+    } catch handleNonFatalOrInterruptedException { e ⇒
+      handleInvokeFailure(Nil, e)
+    } finally {
+      if (influenceReceiveTimeout)
+        checkReceiveTimeout // Reschedule receive timeout
     }
-    currentMessage = null // reset current message after successful invocation
-  } catch handleNonFatalOrInterruptedException { e ⇒
-    handleInvokeFailure(Nil, e)
-  } finally {
-    checkReceiveTimeout // Reschedule receive timeout
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
