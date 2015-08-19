@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.model.headers
 
+import akka.http.impl.util._
 import org.scalatest.{ FreeSpec, MustMatchers }
 
 import akka.http.scaladsl.model._
@@ -25,7 +26,7 @@ class HeaderSpec extends FreeSpec with MustMatchers {
         summary mustEqual "Illegal HTTP header 'Last-Modified': Invalid input 'a', expected 'S', 'M', 'T', 'W', 'F' or '0' (line 1, column 1)"
         detail mustEqual
           """abc
-            |^""".stripMargin
+            |^""".stripMarginWithNewline("\n")
 
       }
     }
@@ -41,7 +42,7 @@ class HeaderSpec extends FreeSpec with MustMatchers {
         summary mustEqual "Illegal HTTP header 'Content-Type': Invalid input '/', expected tchar (line 1, column 13)"
         detail mustEqual
           """application//gnutar
-            |            ^""".stripMargin
+            |            ^""".stripMarginWithNewline("\n")
       }
     }
   }
@@ -56,7 +57,7 @@ class HeaderSpec extends FreeSpec with MustMatchers {
         summary mustEqual "Illegal HTTP header 'Content-Type': Invalid input ',', expected tchar, '\\r', WSP, ';' or 'EOI' (line 1, column 11)"
         detail mustEqual
           """text/plain, charset=UTF8
-            |          ^""".stripMargin
+            |          ^""".stripMarginWithNewline("\n")
       }
     }
   }
