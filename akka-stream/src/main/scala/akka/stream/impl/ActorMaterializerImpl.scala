@@ -13,7 +13,7 @@ import akka.stream.impl.GenJunctions.ZipWithModule
 import akka.stream.impl.GenJunctions.UnzipWithModule
 import akka.stream.impl.Junctions._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.fusing.ActorInterpreter
+import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphModule, ActorInterpreter }
 import akka.stream.impl.io.SslTlsCipherActor
 import akka.stream._
 import akka.stream.io.SslTls.TlsModule
@@ -111,6 +111,20 @@ private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
 
             assignPort(tls.plainIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.UserIn))
             assignPort(tls.cipherIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.TransportIn))
+
+          case graph: GraphModule ⇒
+            val calculatedSettings = effectiveSettings(effectiveAttributes)
+            val props = ActorGraphInterpreter.props(graph.assembly, graph.shape, calculatedSettings)
+            val impl = actorOf(props, stageName(effectiveAttributes), calculatedSettings.dispatcher)
+            for ((inlet, i) ← graph.shape.inlets.iterator.zipWithIndex) {
+              val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, i)
+              assignPort(inlet, subscriber)
+            }
+            for ((outlet, i) ← graph.shape.outlets.iterator.zipWithIndex) {
+              val publisher = new ActorPublisher[Any](impl) { override val wakeUpMsg = ActorGraphInterpreter.SubscribePending(i) }
+              impl ! ActorGraphInterpreter.ExposedPublisher(i, publisher)
+              assignPort(outlet, publisher)
+            }
 
           case junction: JunctionModule ⇒
             materializeJunction(junction, effectiveAttributes, effectiveSettings(effectiveAttributes))
