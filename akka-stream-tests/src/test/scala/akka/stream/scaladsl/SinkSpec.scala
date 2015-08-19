@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.Failure
 
 import akka.stream.testkit._
 import akka.stream.ActorMaterializer
@@ -105,6 +106,29 @@ class SinkSpec extends AkkaSpec {
     "collect all elements when empty" in {
       val f = Source.empty.runWith(Sink.toSeq)
       Await.result(f, 100.millis) should be(Nil)
+    }
+  }
+
+  "Sink.single" must {
+    "return the sole element if there is one" in {
+      val f = Source.single("test").runWith(Sink.single)
+      Await.result(f, 100.millis) should be("test")
+    }
+
+    "throw if no elements are returned" in {
+      val f = Source.empty.runWith(Sink.single)
+      Await.ready(f, 100.millis)
+      (f.value.get: @unchecked) match {
+        case Failure(e) ⇒ e.getMessage should include("empty stream")
+      }
+    }
+
+    "throw if two elements are returned" in {
+      val f = Source(List("a", "b")).runWith(Sink.single)
+      Await.ready(f, 100.millis)
+      (f.value.get: @unchecked) match {
+        case Failure(e) ⇒ e.getMessage should include("Expected exactly one element")
+      }
     }
   }
 }

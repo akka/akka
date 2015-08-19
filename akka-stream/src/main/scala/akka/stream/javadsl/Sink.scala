@@ -125,6 +125,15 @@ object Sink {
       .mapMaterializedValue { _.map { _.asJava }(ec) })
 
   /**
+   * A `Sink` that drains a stream and returns the sole element
+   * that the stream produced.
+   * If the stream did not produce exactly one element, a failed Future will be
+   * returned.
+   */
+  def single[In](ec: ExecutionContext): Sink[In, Future[In]] =
+    new Sink(scaladsl.Sink.single[In](ec))
+
+  /**
    * Sends the elements of the stream to the given `ActorRef`.
    * If the target actor terminates the stream will be cancelled.
    * When the stream is completed successfully the given `onCompleteMessage`

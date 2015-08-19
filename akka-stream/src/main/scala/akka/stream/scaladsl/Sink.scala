@@ -88,6 +88,22 @@ object Sink extends SinkApply {
       .mapMaterializedValue { _.recover { case _: NoSuchElementException ⇒ Nil } }
 
   /**
+   * A `Sink` that drains a stream and returns the sole element
+   * that the stream produced.
+   * If the stream did not produce exactly one element, a failed Future will be
+   * returned.
+   */
+  def single[T](implicit ec: ExecutionContext): Sink[T, Future[T]] =
+    Flow[T].grouped(2).toMat(Sink.head) { (_, firstTwo) ⇒
+      firstTwo.map {
+        // (Empty streams are alredy rejected by Sink.head.)
+        case Seq(element) ⇒ element
+        case _ ⇒ throw new IllegalStateException(
+          "Expected exactly one element from the stream, but there were at least two.")
+      }
+    }
+
+  /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
    * that can handle one [[org.reactivestreams.Subscriber]].
    */
