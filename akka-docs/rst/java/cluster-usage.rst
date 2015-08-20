@@ -467,8 +467,9 @@ actors to which the messages will be forwarded to by the router.
 Messages will be forwarded to the routees using :ref:`ActorSelection <actorSelection-java>`, so the same delivery semantics should be expected.
 It is possible to limit the lookup of routees to member nodes tagged with a certain role by specifying ``use-role``.
 
-``nr-of-instances`` defines total number of routees in the cluster. Setting ``nr-of-instances`` 
-to a high value will result in new routees added to the router when nodes join the cluster.
+``max-total-nr-of-instances`` defines total number of routees in the cluster. By default ``max-total-nr-of-instances`` 
+is set to a high value (10000) that will result in new routees added to the router when nodes join the cluster.
+Set it to a lower value if you want to limit total number of routees.
 
 The same type of router could also have been defined in code:
 
@@ -528,10 +529,10 @@ the configuration for a router looks like this:
 It is possible to limit the deployment of routees to member nodes tagged with a certain role by
 specifying ``use-role``.
 
-``nr-of-instances`` defines total number of routees in the cluster, but the number of routees
-per node, ``max-nr-of-instances-per-node``, will not be exceeded. Setting ``nr-of-instances``
-to a high value will result in creating and deploying additional routees when new nodes join
-the cluster.
+``max-total-nr-of-instances`` defines total number of routees in the cluster, but the number of routees
+per node, ``max-nr-of-instances-per-node``, will not be exceeded. By default ``max-total-nr-of-instances`` 
+is set to a high value (10000) that will result in new routees added to the router when nodes join the cluster.
+Set it to a lower value if you want to limit total number of routees.
 
 The same type of router could also have been defined in code:
 

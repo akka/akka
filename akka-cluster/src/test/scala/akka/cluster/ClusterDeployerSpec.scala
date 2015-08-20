@@ -18,18 +18,18 @@ object ClusterDeployerSpec {
       akka.actor.deployment {
         /user/service1 {
           router = round-robin-pool
-          nr-of-instances = 20
           cluster.enabled = on
           cluster.max-nr-of-instances-per-node = 3
+          cluster.max-total-nr-of-instances = 20
           cluster.allow-local-routees = off
         }
         /user/service2 {
           dispatcher = mydispatcher
           mailbox = mymailbox
           router = round-robin-group
-          nr-of-instances = 20
           routees.paths = ["/user/myservice"]
           cluster.enabled = on
+          cluster.max-total-nr-of-instances = 20
           cluster.allow-local-routees = off
         }
       }

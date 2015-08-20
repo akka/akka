@@ -56,7 +56,6 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
     akka.actor.deployment {
       /statsService/singleton/workerRouter {
           router = consistent-hashing-pool
-          nr-of-instances = 100
           cluster {
             enabled = on
             max-nr-of-instances-per-node = 3
