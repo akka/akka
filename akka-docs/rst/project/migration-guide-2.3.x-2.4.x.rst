@@ -147,6 +147,14 @@ In order to make cluster routers smarter about when they can start local routees
 In case you have implemented a custom Pool you will have to update the method's signature,
 however the implementation can remain the same if you don't need to rely on an ActorSystem in your logic.
 
+Group routers paths method now takes ActorSystem
+===============================================
+
+In order to make cluster routers smarter about when they can start local routees,
+``paths`` defined on ``Group`` now takes ``ActorSystem`` as an argument.
+In case you have implemented a custom Group you will have to update the method's signature,
+however the implementation can remain the same if you don't need to rely on an ActorSystem in your logic.
+
 Logger names use full class name 
 ================================
 Previously, few places in akka used "simple" logger names, such as ``Cluster`` or ``Remoting``.
