@@ -7,6 +7,8 @@ package docs.persistence
 import akka.actor._
 import akka.pattern.BackoffSupervisor
 import akka.persistence._
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Source, Sink, Flow}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
