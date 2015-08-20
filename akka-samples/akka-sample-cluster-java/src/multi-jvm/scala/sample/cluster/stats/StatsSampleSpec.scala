@@ -51,7 +51,6 @@ object StatsSampleSpecConfig extends MultiNodeConfig {
     akka.actor.deployment {
       /statsService/workerRouter {
           router = consistent-hashing-group
-          nr-of-instances = 100
           routees.paths = ["/user/statsWorker"]
           cluster {
             enabled = on
