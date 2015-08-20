@@ -23,7 +23,10 @@ private[akka] object AllPersistenceIdsPublisher {
   private case object Continue
 }
 
-class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int, writeJournalPluginId: String)
+/**
+ * INTERNAL API
+ */
+private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int, writeJournalPluginId: String)
   extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
   import AllPersistenceIdsPublisher._
 
