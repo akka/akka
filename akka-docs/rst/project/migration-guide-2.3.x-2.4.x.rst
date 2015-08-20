@@ -303,6 +303,17 @@ is now started as a ``system`` actor instead of a ``user`` actor, i.e. the defau
 the ``ClusterClient`` initial contacts has changed to
 ``"akka.tcp://system@hostname:port/system/receptionist"``.  
 
+ClusterClient sender
+====================
+
+In 2.3 the ``sender()`` of the response messages, as seen by the client, was the 
+actor in cluster.
+
+In 2.4 the ``sender()`` of the response messages, as seen by the client, is ``deadLetters``
+since the client should normally send subsequent messages via the ``ClusterClient``.
+It is possible to pass the the original sender inside the reply messages if
+the client is supposed to communicate directly to the actor in the cluster.
+
 Akka Persistence
 ================
 
