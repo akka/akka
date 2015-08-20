@@ -4,26 +4,18 @@
 
 package akka.dispatch
 
-import com.typesafe.config.{ ConfigFactory, Config }
-import akka.actor.{ Actor, DynamicAccess, ActorSystem }
-import akka.event.EventStream
-import java.util.concurrent.ConcurrentHashMap
-import akka.event.Logging.Warning
-import akka.ConfigurationException
-import scala.annotation.tailrec
 import java.lang.reflect.ParameterizedType
+import java.util.concurrent.ConcurrentHashMap
+
+import akka.ConfigurationException
+import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
+import akka.dispatch.sysmsg.{ EarliestFirstSystemMessageList, LatestFirstSystemMessageList, SystemMessage, SystemMessageList }
+import akka.event.EventStream
+import akka.event.Logging.Warning
 import akka.util.Reflect
-import akka.actor.Props
-import akka.actor.Deploy
-import scala.util.Try
-import scala.util.Failure
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.util.control.NonFatal
-import akka.actor.ActorRef
-import akka.actor.DeadLetter
-import akka.dispatch.sysmsg.SystemMessage
-import akka.dispatch.sysmsg.LatestFirstSystemMessageList
-import akka.dispatch.sysmsg.EarliestFirstSystemMessageList
-import akka.dispatch.sysmsg.SystemMessageList
 
 object Mailboxes {
   final val DefaultMailboxId = "akka.actor.default-mailbox"
@@ -96,6 +88,7 @@ private[akka] class Mailboxes(
 
   // don’t care if this happens twice
   private var mailboxSizeWarningIssued = false
+  private var mailboxNonZeroPushTimeoutWarningIssued = false
 
   def getMailboxRequirement(config: Config) = config.getString("mailbox-requirement") match {
     case NoMailboxRequirement ⇒ classOf[MessageQueue]
@@ -188,18 +181,32 @@ private[akka] class Mailboxes(
           case _ ⇒
             if (!settings.config.hasPath(id)) throw new ConfigurationException(s"Mailbox Type [${id}] not configured")
             val conf = config(id)
-            conf.getString("mailbox-type") match {
+
+            val mailboxType = conf.getString("mailbox-type") match {
               case "" ⇒ throw new ConfigurationException(s"The setting mailbox-type, defined in [$id] is empty")
               case fqcn ⇒
                 val args = List(classOf[ActorSystem.Settings] -> settings, classOf[Config] -> conf)
                 dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
                   case exception ⇒
                     throw new IllegalArgumentException(
-                      (s"Cannot instantiate MailboxType [$fqcn], defined in [$id], make sure it has a public" +
-                        " constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters"),
+                      s"Cannot instantiate MailboxType [$fqcn], defined in [$id], make sure it has a public" +
+                        " constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters",
                       exception)
                 }).get
             }
+
+            if (!mailboxNonZeroPushTimeoutWarningIssued) {
+              mailboxType match {
+                case m: ProducesPushTimeoutSemanticsMailbox if m.pushTimeOut.toNanos > 0L ⇒
+                  warn(s"Configured potentially-blocking mailbox [$id] configured with non-zero pushTimeOut (${m.pushTimeOut}), " +
+                    s"which can lead to blocking behaviour when sending messages to this mailbox. " +
+                    s"Avoid this by setting `$id.mailbox-push-timeout-time` to `0`.")
+                  mailboxNonZeroPushTimeoutWarningIssued = true
+                case _ ⇒ // good; nothing to see here, move along, sir.
+              }
+            }
+
+            mailboxType
         }
 
         mailboxTypeConfigurators.putIfAbsent(id, newConfigurator) match {
@@ -212,6 +219,9 @@ private[akka] class Mailboxes(
   }
 
   private val defaultMailboxConfig = settings.config.getConfig(DefaultMailboxId)
+
+  private final def warn(msg: String): Unit =
+    eventStream.publish(Warning("mailboxes", getClass, msg))
 
   //INTERNAL API
   private def config(id: String): Config = {
