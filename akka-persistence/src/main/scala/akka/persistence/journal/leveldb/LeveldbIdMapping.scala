@@ -29,6 +29,10 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â
     case Some(v) â‡’ v
   }
 
+  def isNewPersistenceId(id: String): Boolean = !idMap.contains(id)
+
+  def allPersistenceIds: Set[String] = idMap.keySet
+
   private def readIdMap(): Map[String, Int] = withIterator { iter â‡’
     iter.seek(keyToBytes(mappingKey(idOffset)))
     readIdMap(Map.empty, iter)
@@ -48,8 +52,11 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â
   private def writeIdMapping(id: String, numericId: Int): Int = {
     idMap = idMap + (id -> numericId)
     leveldb.put(keyToBytes(mappingKey(numericId)), id.getBytes(UTF_8))
+    newPersistenceIdAdded(id)
     numericId
   }
+
+  protected def newPersistenceIdAdded(id: String): Unit = ()
 
   override def preStart() {
     idMap = readIdMap()
