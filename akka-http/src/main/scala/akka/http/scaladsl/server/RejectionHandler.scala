@@ -205,6 +205,12 @@ object RejectionHandler {
         complete(BadRequest, "The request's Content-Encoding is not supported. Expected:\n" + supported)
       }
       .handle { case ExpectedWebsocketRequestRejection ⇒ complete(BadRequest, "Expected Websocket Upgrade request") }
+      .handleAll[UnsupportedWebsocketSubprotocolRejection] { rejections ⇒
+        val supported = rejections.map(_.supportedProtocol)
+        complete(HttpResponse(BadRequest,
+          entity = s"None of the websocket subprotocols offered in the request are supported. Supported are ${supported.map("'" + _ + "'").mkString(",")}.",
+          headers = `Sec-WebSocket-Protocol`(supported) :: Nil))
+      }
       .handle { case ValidationRejection(msg, _) ⇒ complete(BadRequest, msg) }
       .handle { case x ⇒ sys.error("Unhandled rejection: " + x) }
       .handleNotFound { complete(NotFound, "The requested resource could not be found.") }
