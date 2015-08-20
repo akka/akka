@@ -22,34 +22,7 @@ import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 
-object ClusterShardingFailureSpec extends MultiNodeConfig {
-  val controller = role("controller")
-  val first = role("first")
-  val second = role("second")
-
-  commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = INFO
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
-    akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = 0s
-    akka.cluster.down-removal-margin = 5s
-    akka.cluster.roles = ["backend"]
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
-    akka.persistence.journal.leveldb-shared {
-      timeout = 5s
-      store {
-        native = off
-        dir = "target/journal-ClusterShardingFailureSpec"
-      }
-    }
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingFailureSpec"
-    akka.cluster.sharding.coordinator-failure-backoff = 3s
-    akka.cluster.sharding.shard-failure-backoff = 3s
-    """))
-
-  testTransport(on = true)
-
+object ClusterShardingFailureSpec {
   case class Get(id: String)
   case class Add(id: String, i: Int)
   case class Value(id: String, n: Int)
@@ -75,12 +48,55 @@ object ClusterShardingFailureSpec extends MultiNodeConfig {
 
 }
 
-class ClusterShardingFailureMultiJvmNode1 extends ClusterShardingFailureSpec
-class ClusterShardingFailureMultiJvmNode2 extends ClusterShardingFailureSpec
-class ClusterShardingFailureMultiJvmNode3 extends ClusterShardingFailureSpec
+abstract class ClusterShardingFailureSpecConfig(val mode: String) extends MultiNodeConfig {
+  val controller = role("controller")
+  val first = role("first")
+  val second = role("second")
 
-class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpec) with STMultiNodeSpec with ImplicitSender {
+  commonConfig(ConfigFactory.parseString(s"""
+    akka.loglevel = INFO
+    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.remote.log-remote-lifecycle-events = off
+    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.down-removal-margin = 5s
+    akka.cluster.roles = ["backend"]
+    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
+    akka.persistence.journal.leveldb-shared {
+      timeout = 5s
+      store {
+        native = off
+        dir = "target/journal-ClusterShardingFailureSpec"
+      }
+    }
+    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingFailureSpec"
+    akka.cluster.sharding {
+      coordinator-failure-backoff = 3s
+      shard-failure-backoff = 3s
+      state-store-mode = "$mode"
+    }
+    """))
+
+  testTransport(on = true)
+}
+
+object PersistentClusterShardingFailureSpecConfig extends ClusterShardingFailureSpecConfig("persistence")
+object DDataClusterShardingFailureSpecConfig extends ClusterShardingFailureSpecConfig("ddata")
+
+class PersistentClusterShardingFailureSpec extends ClusterShardingFailureSpec(PersistentClusterShardingFailureSpecConfig)
+class DDataClusterShardingFailureSpec extends ClusterShardingFailureSpec(DDataClusterShardingFailureSpecConfig)
+
+class PersistentClusterShardingFailureMultiJvmNode1 extends PersistentClusterShardingFailureSpec
+class PersistentClusterShardingFailureMultiJvmNode2 extends PersistentClusterShardingFailureSpec
+class PersistentClusterShardingFailureMultiJvmNode3 extends PersistentClusterShardingFailureSpec
+
+class DDataClusterShardingFailureMultiJvmNode1 extends DDataClusterShardingFailureSpec
+class DDataClusterShardingFailureMultiJvmNode2 extends DDataClusterShardingFailureSpec
+class DDataClusterShardingFailureMultiJvmNode3 extends DDataClusterShardingFailureSpec
+
+abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
   import ClusterShardingFailureSpec._
+  import config._
 
   override def initialParticipants = roles.size
 
@@ -120,7 +136,7 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  "Cluster sharding with flaky journal" must {
+  s"Cluster sharding ($mode) with flaky journal" must {
 
     "setup shared journal" in {
       // start the Persistence extension
