@@ -5,12 +5,16 @@ package akka.persistence.journal.leveldb
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
-
 import akka.actor._
 import akka.persistence.Persistence
 import akka.persistence.journal._
 import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
+import akka.persistence.PersistentRepr
+import scala.concurrent.Future
+import akka.persistence.JournalProtocol.RecoverySuccess
+import akka.persistence.JournalProtocol.ReplayMessagesFailure
+import akka.pattern.pipe
 
 /**
  * INTERNAL API.
@@ -21,11 +25,35 @@ private[persistence] class LeveldbJournal extends { val configPath = "akka.persi
   import LeveldbJournal._
 
   override def receivePluginInternal: Receive = {
+    case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) ⇒
+      import context.dispatcher
+      asyncReadHighestSequenceNr(tagAsPersistenceId(tag), fromSequenceNr)
+        .flatMap { highSeqNr ⇒
+          val toSeqNr = math.min(toSequenceNr, highSeqNr)
+          if (highSeqNr == 0L || fromSequenceNr > toSeqNr)
+            Future.successful(highSeqNr)
+          else {
+            asyncReplayTaggedMessages(tag, fromSequenceNr, toSeqNr, max) {
+              case ReplayedTaggedMessage(p, tag, offset) ⇒
+                adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
+                  replyTo.tell(ReplayedTaggedMessage(adaptedPersistentRepr, tag, offset), Actor.noSender)
+                }
+            }.map(_ ⇒ highSeqNr)
+          }
+        }.map {
+          highSeqNr ⇒ RecoverySuccess(highSeqNr)
+        }.recover {
+          case e ⇒ ReplayMessagesFailure(e)
+        }.pipeTo(replyTo)
+
     case SubscribePersistenceId(persistenceId: String) ⇒
       addPersistenceIdSubscriber(sender(), persistenceId)
       context.watch(sender())
     case SubscribeAllPersistenceIds ⇒
       addAllPersistenceIdsSubscriber(sender())
+      context.watch(sender())
+    case SubscribeTag(tag: String) ⇒
+      addTagSubscriber(sender(), tag)
       context.watch(sender())
     case Terminated(ref) ⇒
       removeSubscriber(ref)
@@ -43,18 +71,31 @@ private[persistence] object LeveldbJournal {
    * Used by query-side. The journal will send [[EventAppended]] messages to
    * the subscriber when `asyncWriteMessages` has been called.
    */
-  case class SubscribePersistenceId(persistenceId: String) extends SubscriptionCommand
-  case class EventAppended(persistenceId: String) extends DeadLetterSuppression
+  final case class SubscribePersistenceId(persistenceId: String) extends SubscriptionCommand
+  final case class EventAppended(persistenceId: String) extends DeadLetterSuppression
 
   /**
-   * Subscribe the `sender` to changes (appended events) for a specific `persistenceId`.
+   * Subscribe the `sender` to current and new persistenceIds.
    * Used by query-side. The journal will send one [[CurrentPersistenceIds]] to the
    * subscriber followed by [[PersistenceIdAdded]] messages when new persistenceIds
    * are created.
    */
-  case object SubscribeAllPersistenceIds extends SubscriptionCommand
-  case class CurrentPersistenceIds(allPersistenceIds: Set[String]) extends DeadLetterSuppression
-  case class PersistenceIdAdded(persistenceId: String) extends DeadLetterSuppression
+  final case object SubscribeAllPersistenceIds extends SubscriptionCommand
+  final case class CurrentPersistenceIds(allPersistenceIds: Set[String]) extends DeadLetterSuppression
+  final case class PersistenceIdAdded(persistenceId: String) extends DeadLetterSuppression
+
+  /**
+   * Subscribe the `sender` to changes (appended events) for a specific `tag`.
+   * Used by query-side. The journal will send [[TaggedEventAppended]] messages to
+   * the subscriber when `asyncWriteMessages` has been called.
+   */
+  final case class SubscribeTag(tag: String) extends SubscriptionCommand
+  final case class TaggedEventAppended(tag: String) extends DeadLetterSuppression
+
+  final case class ReplayTaggedMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long,
+                                        tag: String, replyTo: ActorRef) extends SubscriptionCommand
+  final case class ReplayedTaggedMessage(persistent: PersistentRepr, tag: String, offset: Long)
+    extends DeadLetterSuppression with NoSerializationVerificationNeeded
 }
 
 /**
