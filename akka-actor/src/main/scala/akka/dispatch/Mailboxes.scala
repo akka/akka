@@ -4,30 +4,33 @@
 
 package akka.dispatch
 
-import com.typesafe.config.{ ConfigFactory, Config }
-import akka.actor.{ Actor, DynamicAccess, ActorSystem }
-import akka.event.EventStream
-import java.util.concurrent.ConcurrentHashMap
-import akka.event.Logging.Warning
-import akka.ConfigurationException
-import scala.annotation.tailrec
 import java.lang.reflect.ParameterizedType
+import java.util.concurrent.ConcurrentHashMap
+
+import akka.ConfigurationException
+import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
+import akka.dispatch.sysmsg.{ EarliestFirstSystemMessageList, LatestFirstSystemMessageList, SystemMessage, SystemMessageList }
+import akka.event.EventStream
+import akka.event.Logging.Warning
 import akka.util.Reflect
-import akka.actor.Props
-import akka.actor.Deploy
-import scala.util.Try
-import scala.util.Failure
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.util.control.NonFatal
-import akka.actor.ActorRef
-import akka.actor.DeadLetter
-import akka.dispatch.sysmsg.SystemMessage
-import akka.dispatch.sysmsg.LatestFirstSystemMessageList
-import akka.dispatch.sysmsg.EarliestFirstSystemMessageList
-import akka.dispatch.sysmsg.SystemMessageList
 
 object Mailboxes {
   final val DefaultMailboxId = "akka.actor.default-mailbox"
   final val NoMailboxRequirement = ""
+
+  /** INTERNAL API */
+  private[akka] final val DeprecatedMailboxClasses: Set[Class[_ <: akka.dispatch.MailboxType]] = Set(
+    classOf[BoundedMailbox],
+    classOf[BoundedPriorityMailbox],
+    classOf[UnboundedPriorityMailbox],
+    classOf[BoundedStablePriorityMailbox],
+    classOf[UnboundedStablePriorityMailbox],
+    classOf[UnboundedDequeBasedMailbox],
+    classOf[BoundedDequeBasedMailbox],
+    classOf[BoundedControlAwareMailbox])
 }
 
 private[akka] class Mailboxes(
@@ -96,6 +99,7 @@ private[akka] class Mailboxes(
 
   // don’t care if this happens twice
   private var mailboxSizeWarningIssued = false
+  private var mailboxBlockingWarningIssued = false
 
   def getMailboxRequirement(config: Config) = config.getString("mailbox-requirement") match {
     case NoMailboxRequirement ⇒ classOf[MessageQueue]
@@ -134,8 +138,7 @@ private[akka] class Mailboxes(
 
     // TODO remove in 2.3
     if (!hasMailboxType && !mailboxSizeWarningIssued && dispatcherConfig.hasPath("mailbox-size")) {
-      eventStream.publish(Warning("mailboxes", getClass,
-        s"ignoring setting 'mailbox-size' for dispatcher [$id], you need to specify 'mailbox-type=bounded'"))
+      warn(s"ignoring setting 'mailbox-size' for dispatcher [$id], you need to specify 'mailbox-type=bounded'")
       mailboxSizeWarningIssued = true
     }
 
@@ -157,7 +160,7 @@ private[akka] class Mailboxes(
     } else if (hasRequiredType(actorClass)) {
       try verifyRequirements(lookupByQueueType(getRequiredType(actorClass)))
       catch {
-        case NonFatal(thr) if (hasMailboxRequirement) ⇒ verifyRequirements(lookupByQueueType(mailboxRequirement))
+        case NonFatal(thr) if hasMailboxRequirement ⇒ verifyRequirements(lookupByQueueType(mailboxRequirement))
       }
     } else if (hasMailboxRequirement) {
       verifyRequirements(lookupByQueueType(mailboxRequirement))
@@ -184,7 +187,12 @@ private[akka] class Mailboxes(
         val newConfigurator = id match {
           // TODO RK remove these two for Akka 2.3
           case "unbounded" ⇒ UnboundedMailbox()
-          case "bounded"   ⇒ new BoundedMailbox(settings, config(id))
+          case "bounded" ⇒
+            if (!mailboxBlockingWarningIssued) {
+              warnDeprecatedMailbox("akka.dispatch.BoundedMailbox")
+              mailboxBlockingWarningIssued = true
+            }
+            new BoundedMailbox(settings, config(id))
           case _ ⇒
             if (!settings.config.hasPath(id)) throw new ConfigurationException(s"Mailbox Type [${id}] not configured")
             val conf = config(id)
@@ -192,13 +200,23 @@ private[akka] class Mailboxes(
               case "" ⇒ throw new ConfigurationException(s"The setting mailbox-type, defined in [$id] is empty")
               case fqcn ⇒
                 val args = List(classOf[ActorSystem.Settings] -> settings, classOf[Config] -> conf)
-                dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
+                val mailboxType = dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
                   case exception ⇒
                     throw new IllegalArgumentException(
-                      (s"Cannot instantiate MailboxType [$fqcn], defined in [$id], make sure it has a public" +
-                        " constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters"),
+                      s"Cannot instantiate MailboxType [$fqcn], defined in [$id], make sure it has a public" +
+                        " constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters",
                       exception)
                 }).get
+
+                if (!mailboxBlockingWarningIssued) {
+                  if (isDeprecated(mailboxType)) {
+                    // TODO we should log "at least once for each type of deprecated mailbox", that'd complicate things though, so maybe this is good enough
+                    warnDeprecatedMailbox(mailboxType.getClass.getCanonicalName)
+                    mailboxBlockingWarningIssued = true
+                  }
+                }
+
+                mailboxType
             }
         }
 
@@ -212,6 +230,17 @@ private[akka] class Mailboxes(
   }
 
   private val defaultMailboxConfig = settings.config.getConfig(DefaultMailboxId)
+
+  private final def isDeprecated(mailbox: MailboxType): Boolean =
+    Mailboxes.DeprecatedMailboxClasses.contains(mailbox.getClass)
+
+  private final def warnDeprecatedMailbox(mailboxName: String): Unit =
+    warn(s"Deprecated mailbox configured! The `$mailboxName` is deprecated because it relies on blocking, " +
+      "read http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/mailboxes.html#Builtin_Mailbox_Implementations " +
+      "to learn more about recommended mailboxes.") // version replaced with the right one during release
+
+  private final def warn(msg: String): Unit =
+    eventStream.publish(Warning("mailboxes", getClass, msg))
 
   //INTERNAL API
   private def config(id: String): Config = {

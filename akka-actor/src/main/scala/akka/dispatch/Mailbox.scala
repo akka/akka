@@ -3,21 +3,22 @@
  */
 package akka.dispatch
 
-import java.util.{ Comparator, PriorityQueue, Queue, Deque }
 import java.util.concurrent._
-import akka.AkkaException
-import akka.dispatch.sysmsg._
-import akka.actor.{ ActorCell, ActorRef, Cell, ActorSystem, InternalActorRef, DeadLetter }
-import akka.util.{ BoundedBlockingQueue, StablePriorityBlockingQueue, StablePriorityQueue, Unsafe }
-import akka.util.Helpers.ConfigOps
-import akka.event.Logging.Error
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.forkjoin.ForkJoinTask
-import scala.annotation.tailrec
-import scala.util.control.NonFatal
-import com.typesafe.config.Config
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import java.util.{ Comparator, Deque, PriorityQueue, Queue }
+
+import akka.actor.{ ActorCell, ActorRef, ActorSystem, DeadLetter, InternalActorRef }
+import akka.dispatch.sysmsg._
+import akka.event.Logging.Error
+import akka.util.Helpers.ConfigOps
+import akka.util.{ BoundedBlockingQueue, StablePriorityBlockingQueue, StablePriorityQueue, Unsafe }
+import com.typesafe.config.Config
+
+import scala.annotation.tailrec
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.forkjoin.ForkJoinTask
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -635,6 +636,7 @@ case class NonBlockingBoundedMailbox(val capacity: Int) extends MailboxType with
 /**
  * BoundedMailbox is the default bounded MailboxType used by Akka Actors.
  */
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 final case class BoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDuration)
   extends MailboxType with ProducesMessageQueue[BoundedMailbox.MessageQueue] {
 
@@ -648,7 +650,9 @@ final case class BoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDurati
     new BoundedMailbox.MessageQueue(capacity, pushTimeOut)
 }
 
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 object BoundedMailbox {
+  @deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
   class MessageQueue(capacity: Int, final val pushTimeOut: FiniteDuration)
     extends LinkedBlockingQueue[Envelope](capacity) with BoundedQueueBasedMessageQueue {
     final def queue: BlockingQueue[Envelope] = this
@@ -659,6 +663,7 @@ object BoundedMailbox {
  * UnboundedPriorityMailbox is an unbounded mailbox that allows for prioritization of its contents.
  * Extend this class and provide the Comparator in the constructor.
  */
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 class UnboundedPriorityMailbox(val cmp: Comparator[Envelope], val initialCapacity: Int)
   extends MailboxType with ProducesMessageQueue[UnboundedPriorityMailbox.MessageQueue] {
   def this(cmp: Comparator[Envelope]) = this(cmp, 11)
@@ -666,7 +671,9 @@ class UnboundedPriorityMailbox(val cmp: Comparator[Envelope], val initialCapacit
     new UnboundedPriorityMailbox.MessageQueue(initialCapacity, cmp)
 }
 
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 object UnboundedPriorityMailbox {
+  @deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
   class MessageQueue(initialCapacity: Int, cmp: Comparator[Envelope])
     extends PriorityBlockingQueue[Envelope](initialCapacity, cmp) with UnboundedQueueBasedMessageQueue {
     final def queue: Queue[Envelope] = this
@@ -677,6 +684,7 @@ object UnboundedPriorityMailbox {
  * BoundedPriorityMailbox is a bounded mailbox that allows for prioritization of its contents.
  * Extend this class and provide the Comparator in the constructor.
  */
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val capacity: Int, final val pushTimeOut: Duration)
   extends MailboxType with ProducesMessageQueue[BoundedPriorityMailbox.MessageQueue] {
 
@@ -687,7 +695,9 @@ class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val cap
     new BoundedPriorityMailbox.MessageQueue(capacity, cmp, pushTimeOut)
 }
 
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 object BoundedPriorityMailbox {
+  @deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
   class MessageQueue(capacity: Int, cmp: Comparator[Envelope], val pushTimeOut: Duration)
     extends BoundedBlockingQueue[Envelope](capacity, new PriorityQueue[Envelope](11, cmp))
     with BoundedQueueBasedMessageQueue {
@@ -700,6 +710,7 @@ object BoundedPriorityMailbox {
  * [[UnboundedPriorityMailbox]] it preserves ordering for messages of equal priority.
  * Extend this class and provide the Comparator in the constructor.
  */
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 class UnboundedStablePriorityMailbox(val cmp: Comparator[Envelope], val initialCapacity: Int)
   extends MailboxType with ProducesMessageQueue[UnboundedStablePriorityMailbox.MessageQueue] {
   def this(cmp: Comparator[Envelope]) = this(cmp, 11)
@@ -707,6 +718,7 @@ class UnboundedStablePriorityMailbox(val cmp: Comparator[Envelope], val initialC
     new UnboundedStablePriorityMailbox.MessageQueue(initialCapacity, cmp)
 }
 
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 object UnboundedStablePriorityMailbox {
   class MessageQueue(initialCapacity: Int, cmp: Comparator[Envelope])
     extends StablePriorityBlockingQueue[Envelope](initialCapacity, cmp) with UnboundedQueueBasedMessageQueue {
@@ -719,6 +731,7 @@ object UnboundedStablePriorityMailbox {
  * [[BoundedPriorityMailbox]] it preserves ordering for messages of equal priority.
  * Extend this class and provide the Comparator in the constructor.
  */
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 class BoundedStablePriorityMailbox( final val cmp: Comparator[Envelope], final val capacity: Int, final val pushTimeOut: Duration)
   extends MailboxType with ProducesMessageQueue[BoundedStablePriorityMailbox.MessageQueue] {
 
@@ -729,7 +742,9 @@ class BoundedStablePriorityMailbox( final val cmp: Comparator[Envelope], final v
     new BoundedStablePriorityMailbox.MessageQueue(capacity, cmp, pushTimeOut)
 }
 
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 object BoundedStablePriorityMailbox {
+  @deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
   class MessageQueue(capacity: Int, cmp: Comparator[Envelope], val pushTimeOut: Duration)
     extends BoundedBlockingQueue[Envelope](capacity, new StablePriorityQueue[Envelope](11, cmp))
     with BoundedQueueBasedMessageQueue {
@@ -738,8 +753,9 @@ object BoundedStablePriorityMailbox {
 }
 
 /**
- * UnboundedDequeBasedMailbox is an unbounded MailboxType, backed by a Deque.
+ * UnboundedDequeBasedMailbox is an unbounded MailboxType, backed by a (linked blocking) Deque.
  */
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 final case class UnboundedDequeBasedMailbox() extends MailboxType with ProducesMessageQueue[UnboundedDequeBasedMailbox.MessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
@@ -749,14 +765,16 @@ final case class UnboundedDequeBasedMailbox() extends MailboxType with ProducesM
 }
 
 object UnboundedDequeBasedMailbox {
+  @deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
   class MessageQueue extends LinkedBlockingDeque[Envelope] with UnboundedDequeBasedMessageQueue {
     final val queue = this
   }
 }
 
 /**
- * BoundedDequeBasedMailbox is an bounded MailboxType, backed by a Deque.
+ * BoundedDequeBasedMailbox is an bounded MailboxType, backed by a (linked blocking) Deque.
  */
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTimeOut: FiniteDuration)
   extends MailboxType with ProducesMessageQueue[BoundedDequeBasedMailbox.MessageQueue] {
 
@@ -770,7 +788,9 @@ case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTime
     new BoundedDequeBasedMailbox.MessageQueue(capacity, pushTimeOut)
 }
 
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 object BoundedDequeBasedMailbox {
+  @deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
   class MessageQueue(capacity: Int, val pushTimeOut: FiniteDuration)
     extends LinkedBlockingDeque[Envelope](capacity) with BoundedDequeBasedMessageQueue {
     final val queue = this
@@ -833,6 +853,7 @@ object UnboundedControlAwareMailbox {
  * BoundedControlAwareMailbox is a bounded MailboxType, that maintains two queues
  * to allow messages that extend [[akka.dispatch.ControlMessage]] to be delivered with priority.
  */
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 final case class BoundedControlAwareMailbox(capacity: Int, pushTimeOut: FiniteDuration) extends MailboxType with ProducesMessageQueue[BoundedControlAwareMailbox.MessageQueue] {
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
     config.getNanosDuration("mailbox-push-timeout-time"))
@@ -840,7 +861,9 @@ final case class BoundedControlAwareMailbox(capacity: Int, pushTimeOut: FiniteDu
   def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = new BoundedControlAwareMailbox.MessageQueue(capacity, pushTimeOut)
 }
 
+@deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
 object BoundedControlAwareMailbox {
+  @deprecated("Blocking mailbox implementations are deprecated, use its non-blocking counterpart instead.", since = "2.4.0")
   class MessageQueue(val capacity: Int, val pushTimeOut: FiniteDuration) extends BoundedControlAwareMessageQueueSemantics {
 
     private final val size = new AtomicInteger(0)
