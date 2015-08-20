@@ -417,9 +417,14 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testkit.MultiNodeSpec#Replacement.akka$remote$testkit$MultiNodeSpec$Replacement$$$outer"),
 
 
-      // method nrOfInstances(akka.actor.ActorSystem)Int in trait akka.routing.Pool does not have a correspondent in old version
+      // method nrOfInstances(akka.actor.ActorSystem) in trait akka.routing.Pool does not have a correspondent in old version
       // ok to exclude, since we don't call nrOfInstances(sys) for old implementations
       ProblemFilters.exclude[MissingMethodProblem]("akka.routing.Pool.nrOfInstances"),
+      
+      // method paths(akka.actor.ActorSystem) in trait akka.routing.Group does not have a correspondent in old version
+      // ok to exclude, since we don't call paths(sys) for old implementations
+      ProblemFilters.exclude[MissingMethodProblem]("akka.routing.Group.paths"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.routing.GroupBase.getPaths"),
 
       // removed deprecated
       ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorFactory"),

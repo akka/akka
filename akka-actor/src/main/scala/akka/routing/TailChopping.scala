@@ -222,6 +222,8 @@ final case class TailChoppingGroup(
   override def createRouter(system: ActorSystem): Router =
     new Router(TailChoppingRoutingLogic(system.scheduler, within, interval, system.dispatchers.lookup(routerDispatcher)))
 
+  override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
+
   /**
    * Setting the dispatcher to be used for the router head actor, which handles
    * router management messages

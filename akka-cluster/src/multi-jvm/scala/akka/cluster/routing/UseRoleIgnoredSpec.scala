@@ -9,6 +9,7 @@ import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.routing.GetRoutees
+import akka.routing.RoundRobinGroup
 import akka.routing.RoundRobinPool
 import akka.routing.Routees
 import akka.testkit.DefaultTimeout
@@ -87,10 +88,15 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       runOn(first) { info("first, roles: " + cluster.selfRoles) }
       runOn(second) { info("second, roles: " + cluster.selfRoles) }
       runOn(third) { info("third, roles: " + cluster.selfRoles) }
+
+      // routees for the group routers
+      system.actorOf(Props(classOf[SomeActor], GroupRoutee), "foo")
+      system.actorOf(Props(classOf[SomeActor], GroupRoutee), "bar")
+
       enterBarrier("after-1")
     }
 
-    "local: off, roles: off, 6 => 0,2,2" taggedAs LongRunningTest in {
+    "pool local: off, roles: off, 6 => 0,2,2" taggedAs LongRunningTest in {
 
       runOn(first) {
         val role = Some("b")
@@ -119,7 +125,36 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       enterBarrier("after-2")
     }
 
-    "local: on, role: b, 6 => 0,2,2" taggedAs LongRunningTest in {
+    "group local: off, roles: off, 6 => 0,2,2" taggedAs LongRunningTest in {
+
+      runOn(first) {
+        val role = Some("b")
+
+        val router = system.actorOf(ClusterRouterGroup(
+          RoundRobinGroup(paths = Nil),
+          ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
+            allowLocalRoutees = false, useRole = role)).props,
+          "router-2b")
+
+        awaitAssert(currentRoutees(router).size should ===(4))
+
+        val iterationCount = 10
+        for (i ← 0 until iterationCount) {
+          router ! s"hit-$i"
+        }
+
+        val replies = receiveReplies(GroupRoutee, iterationCount)
+
+        replies(first) should ===(0) // should not be deployed locally, does not have required role
+        replies(second) should be > 0
+        replies(third) should be > 0
+        replies.values.sum should ===(iterationCount)
+      }
+
+      enterBarrier("after-2b")
+    }
+
+    "pool local: on, role: b, 6 => 0,2,2" taggedAs LongRunningTest in {
 
       runOn(first) {
         val role = Some("b")
@@ -148,7 +183,36 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       enterBarrier("after-3")
     }
 
-    "local: on, role: a, 6 => 2,0,0" taggedAs LongRunningTest in {
+    "group local: on, role: b, 6 => 0,2,2" taggedAs LongRunningTest in {
+
+      runOn(first) {
+        val role = Some("b")
+
+        val router = system.actorOf(ClusterRouterGroup(
+          RoundRobinGroup(paths = Nil),
+          ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
+            allowLocalRoutees = true, useRole = role)).props,
+          "router-3b")
+
+        awaitAssert(currentRoutees(router).size should ===(4))
+
+        val iterationCount = 10
+        for (i ← 0 until iterationCount) {
+          router ! s"hit-$i"
+        }
+
+        val replies = receiveReplies(GroupRoutee, iterationCount)
+
+        replies(first) should ===(0) // should not be deployed locally, does not have required role
+        replies(second) should be > 0
+        replies(third) should be > 0
+        replies.values.sum should ===(iterationCount)
+      }
+
+      enterBarrier("after-3b")
+    }
+
+    "pool local: on, role: a, 6 => 2,0,0" taggedAs LongRunningTest in {
 
       runOn(first) {
         val role = Some("a")
@@ -177,7 +241,36 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       enterBarrier("after-4")
     }
 
-    "local: on, role: c, 6 => 2,2,2" taggedAs LongRunningTest in {
+    "group local: on, role: a, 6 => 2,0,0" taggedAs LongRunningTest in {
+
+      runOn(first) {
+        val role = Some("a")
+
+        val router = system.actorOf(ClusterRouterGroup(
+          RoundRobinGroup(paths = Nil),
+          ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
+            allowLocalRoutees = true, useRole = role)).props,
+          "router-4b")
+
+        awaitAssert(currentRoutees(router).size should ===(2))
+
+        val iterationCount = 10
+        for (i ← 0 until iterationCount) {
+          router ! s"hit-$i"
+        }
+
+        val replies = receiveReplies(GroupRoutee, iterationCount)
+
+        replies(first) should be > 0
+        replies(second) should ===(0)
+        replies(third) should ===(0)
+        replies.values.sum should ===(iterationCount)
+      }
+
+      enterBarrier("after-4b")
+    }
+
+    "pool local: on, role: c, 6 => 2,2,2" taggedAs LongRunningTest in {
 
       runOn(first) {
         val role = Some("c")
@@ -204,6 +297,35 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
       }
 
       enterBarrier("after-5")
+    }
+
+    "group local: on, role: c, 6 => 2,2,2" taggedAs LongRunningTest in {
+
+      runOn(first) {
+        val role = Some("c")
+
+        val router = system.actorOf(ClusterRouterGroup(
+          RoundRobinGroup(paths = Nil),
+          ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
+            allowLocalRoutees = true, useRole = role)).props,
+          "router-5b")
+
+        awaitAssert(currentRoutees(router).size should ===(6))
+
+        val iterationCount = 10
+        for (i ← 0 until iterationCount) {
+          router ! s"hit-$i"
+        }
+
+        val replies = receiveReplies(GroupRoutee, iterationCount)
+
+        replies(first) should be > 0
+        replies(second) should be > 0
+        replies(third) should be > 0
+        replies.values.sum should ===(iterationCount)
+      }
+
+      enterBarrier("after-5b")
     }
 
   }
