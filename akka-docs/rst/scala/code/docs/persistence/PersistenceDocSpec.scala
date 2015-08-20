@@ -4,7 +4,7 @@
 
 package docs.persistence
 
-import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+import akka.actor._
 import akka.pattern.BackoffSupervisor
 import akka.persistence._
 
@@ -102,7 +102,7 @@ object PersistenceDocSpec {
 
   object AtLeastOnce {
     //#at-least-once-example
-    import akka.actor.{ Actor, ActorPath, ActorSelection }
+    import akka.actor.{ Actor, ActorSelection }
     import akka.persistence.AtLeastOnceDelivery
 
     case class Msg(deliveryId: Long, s: String)
@@ -311,6 +311,107 @@ object PersistenceDocSpec {
     // b-inner-2
 
     //#nested-persist-persist-caller
+
+    class MyPersistAsyncActor extends PersistentActor {
+      override def persistenceId = "my-stable-persistence-id"
+
+      override def receiveRecover: Receive = {
+        case _ => // handle recovery here
+      }
+
+      //#nested-persistAsync-persistAsync
+      override def receiveCommand: Receive = {
+        case c: String =>
+          sender() ! c
+          persistAsync(c + "-outer-1") { outer ⇒
+            sender() ! outer
+            persistAsync(c + "-inner-1") { inner ⇒ sender() ! inner }
+          }
+          persistAsync(c + "-outer-2") { outer ⇒
+            sender() ! outer
+            persistAsync(c + "-inner-2") { inner ⇒ sender() ! inner }
+          }
+      }
+      //#nested-persistAsync-persistAsync
+    }
+
+    //#nested-persistAsync-persistAsync-caller
+    persistentActor ! "a"
+    persistentActor ! "b"
+
+    // order of received messages:
+    // a
+    // b
+    // a-outer-1
+    // a-outer-2
+    // b-outer-1
+    // b-outer-2
+    // a-inner-1
+    // a-inner-2
+    // b-inner-1
+    // b-inner-2
+
+    // which can be seen as the following causal relationship:
+    // a -> a-outer-1 -> a-outer-2 -> a-inner-1 -> a-inner-2
+    // b -> b-outer-1 -> b-outer-2 -> b-inner-1 -> b-inner-2
+
+    //#nested-persistAsync-persistAsync-caller
+  }
+
+  object AvoidPoisonPill {
+
+    //#safe-shutdown
+    /** Explicit shutdown message */
+    case object Shutdown
+
+    class SafePersistentActor extends PersistentActor {
+      override def persistenceId = "safe-actor"
+
+      override def receiveCommand: Receive = {
+        case c: String =>
+          println(c)
+          persist(s"handle-$c") { println(_) }
+        case Shutdown =>
+          context.stop(self)
+      }
+
+      override def receiveRecover: Receive = {
+        case _ => // handle recovery here
+      }
+    }
+    //#safe-shutdown
+
+    //#safe-shutdown-example-bad
+    // UN-SAFE, due to PersistentActor's command stashing:
+    persistentActor ! "a"
+    persistentActor ! "b"
+    persistentActor ! PoisonPill
+    // order of received messages:
+    // a
+    //   # b arrives at mailbox, stashing;        internal-stash = [b]
+    //   # PoisonPill arrives at mailbox, stashing; internal-stash = [b, Shutdown]
+    // PoisonPill is an AutoReceivedMessage, is handled automatically
+    // !! stop !!
+    // Actor is stopped without handling `b` nor the `a` handler!
+    //#safe-shutdown-example-bad
+
+    //#safe-shutdown-example-good
+    // SAFE:
+    persistentActor ! "a"
+    persistentActor ! "b"
+    persistentActor ! Shutdown
+    // order of received messages:
+    // a
+    //   # b arrives at mailbox, stashing;        internal-stash = [b]
+    //   # Shutdown arrives at mailbox, stashing; internal-stash = [b, Shutdown]
+    // handle-a
+    //   # unstashing;                            internal-stash = [Shutdown]
+    // b
+    // handle-b
+    //   # unstashing;                            internal-stash = []
+    // Shutdown
+    // -- stop --
+    //#safe-shutdown-example-good
 
     class MyPersistAsyncActor extends PersistentActor {
       override def persistenceId = "my-stable-persistence-id"

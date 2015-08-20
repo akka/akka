@@ -291,13 +291,13 @@ delivery is an explicit ACK–RETRY protocol. In its simplest form this requires
 
 The third becomes necessary by virtue of the acknowledgements not being guaranteed
 to arrive either. An ACK-RETRY protocol with business-level acknowledgements is
-supported by :ref:`at-least-once-delivery` of the Akka Persistence module. Duplicates can be
-detected by tracking the identifiers of messages sent via :ref:`at-least-once-delivery`.
+supported by :ref:`at-least-once-delivery-scala` of the Akka Persistence module. Duplicates can be
+detected by tracking the identifiers of messages sent via :ref:`at-least-once-delivery-scala`.
 Another way of implementing the third part would be to make processing the messages
 idempotent on the level of the business logic.
 
 Another example of implementing all three requirements is shown at
-:ref:`reliable-proxy` (which is now superseded by :ref:`at-least-once-delivery`).
+:ref:`reliable-proxy` (which is now superseded by :ref:`at-least-once-delivery-scala`).
 
 Event Sourcing
 --------------
@@ -313,7 +313,7 @@ components may consume the event stream as a means to replicate the component’
 state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
 easily be reconstructed by replaying the event stream (usually employing
-snapshots to speed up the process). :ref:`event-sourcing` is supported by
+snapshots to speed up the process). :ref:`event-sourcing-scala` is supported by
 Akka Persistence.
 
 Mailbox with Explicit Acknowledgement
