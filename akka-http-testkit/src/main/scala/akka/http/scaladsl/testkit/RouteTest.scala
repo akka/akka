@@ -17,10 +17,10 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model._
-import headers.Host
+import akka.http.scaladsl.model.headers.{ Upgrade, `Sec-WebSocket-Protocol`, Host }
 import FastFuture._
 
-trait RouteTest extends RequestBuilding with RouteTestResultComponent with MarshallingTestUtils {
+trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTestResultComponent with MarshallingTestUtils {
   this: TestFrameworkInterface ⇒
 
   /** Override to supply a custom ActorSystem */
@@ -86,6 +86,21 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent with Marsh
   def rejection: Rejection = {
     val r = rejections
     if (r.size == 1) r.head else failTest("Expected a single rejection but got %s (%s)".format(r.size, r))
+  }
+
+  def isWebsocketUpgrade: Boolean =
+    status == StatusCodes.SwitchingProtocols && header[Upgrade].exists(_.hasWebsocket)
+
+  /**
+   * Asserts that the received response is a Websocket upgrade response and the extracts
+   * the chosen subprotocol and passes it to the handler.
+   */
+  def expectWebsocketUpgradeWithProtocol(body: String ⇒ Unit): Unit = {
+    if (!isWebsocketUpgrade) failTest("Response was no Websocket Upgrade response")
+    header[`Sec-WebSocket-Protocol`] match {
+      case Some(`Sec-WebSocket-Protocol`(Seq(protocol))) ⇒ body(protocol)
+      case _ ⇒ failTest("No Websocket protocol found in response.")
+    }
   }
 
   /**
