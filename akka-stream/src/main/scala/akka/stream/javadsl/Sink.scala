@@ -9,6 +9,7 @@ import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
@@ -146,6 +147,20 @@ object Sink {
     val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
     new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num ⇒ strategy.apply(num)))
   }
+
+  /**
+   * Creates a `Sink` that is materialized as an [[akka.stream.SinkQueue]].
+   * [[akka.stream.SinkQueue.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
+   * `Future` completes when element is available.
+   *
+   * `Sink` will request at most `bufferSize` number of elements from
+   * upstream and then stop back pressure.
+   *
+   * @param bufferSize The size of the buffer in element count
+   * @param timeout Timeout for ``SinkQueue.pull():Future[Option[T] ]``
+   */
+  def queue[T](bufferSize: Int, timeout: FiniteDuration): Sink[T, SinkQueue[T]] =
+    new Sink(scaladsl.Sink.queue(bufferSize, timeout))
 
 }
 

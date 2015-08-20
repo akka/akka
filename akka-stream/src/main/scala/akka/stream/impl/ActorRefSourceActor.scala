@@ -27,15 +27,9 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
   import akka.stream.OverflowStrategy._
 
   // when bufferSize is 0 there the buffer is not used
-  private val buffer = if (bufferSize == 0) null else FixedSizeBuffer[Any](bufferSize)
+  protected val buffer = if (bufferSize == 0) null else FixedSizeBuffer[Any](bufferSize)
 
-  def receive = {
-    case _: Request ⇒
-      // totalDemand is tracked by super
-      if (bufferSize != 0)
-        while (totalDemand > 0L && !buffer.isEmpty)
-          onNext(buffer.dequeue())
-
+  def receive = ({
     case Cancel ⇒
       context.stop(self)
 
@@ -46,6 +40,17 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
     case Status.Failure(cause) if isActive ⇒
       onErrorThenStop(cause)
 
+  }: Receive).orElse(requestElem).orElse(receiveElem)
+
+  def requestElem: Receive = {
+    case _: Request ⇒
+      // totalDemand is tracked by super
+      if (bufferSize != 0)
+        while (totalDemand > 0L && !buffer.isEmpty)
+          onNext(buffer.dequeue())
+  }
+
+  def receiveElem: Receive = {
     case elem if isActive ⇒
       if (totalDemand > 0L)
         onNext(elem)
