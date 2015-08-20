@@ -52,7 +52,7 @@ object AkkaBuild extends Build {
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       }
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, 
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed)
   )
@@ -62,7 +62,7 @@ object AkkaBuild extends Build {
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM)
     // samples don't work with dbuild right now
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, 
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, persistence, persistenceQuery, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed)
   ).disablePlugins(ValidatePullRequest)
@@ -136,9 +136,9 @@ object AkkaBuild extends Build {
     id = "akka-cluster-sharding",
     base = file("akka-cluster-sharding"),
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
-        persistence % "compile;test->provided", clusterTools)
+        persistence % "compile;test->provided", distributedData % "compile;test->provided", clusterTools)
   ) configs (MultiJvm)
-  
+
   lazy val distributedData = Project(
     id = "akka-distributed-data-experimental",
     base = file("akka-distributed-data"),
@@ -244,7 +244,7 @@ object AkkaBuild extends Build {
   lazy val sampleRemoteScala = Sample.project("akka-sample-remote-scala")
 
   lazy val sampleSupervisionJavaLambda = Sample.project("akka-sample-supervision-java-lambda")
-  
+
   lazy val sampleDistributedDataScala = Sample.project("akka-sample-distributed-data-scala")
   lazy val sampleDistributedDataJava = Sample.project("akka-sample-distributed-data-java")
 

@@ -176,6 +176,18 @@ unused shards due to the round-trip to the coordinator. Rebalancing of shards ma
 also add latency. This should be considered when designing the application specific
 shard resolution, e.g. to avoid too fine grained shards.
 
+Distributed Data Mode
+---------------------
+
+Instead of using ``akka-persistence`` is possible to use ``akka-distributed-data`` module. In such case
+state of the ``ShardCoordinator`` will be replicated inside a cluster by the ``akka-distributed-data``
+module with the ``WriteMajority`` consistency. This mode could be enabled by setting up
+``akka.cluster.sharding.state-store-mode`` as ``ddata``.
+It make possible to remove ``akka-persistence`` dependency from a project if this dependency
+has not using in user code and ``remember-entities`` is ``off``.
+Note that option also could lead to the shards duplication in case of a cluster fragmentation
+due to a broken replication between nodes.
+
 Proxy Only Mode
 ---------------
 

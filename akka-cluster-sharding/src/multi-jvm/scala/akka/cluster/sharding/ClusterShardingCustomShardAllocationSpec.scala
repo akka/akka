@@ -26,26 +26,7 @@ import scala.concurrent.Future
 import akka.util.Timeout
 import akka.pattern.ask
 
-object ClusterShardingCustomShardAllocationSpec extends MultiNodeConfig {
-  val first = role("first")
-  val second = role("second")
-
-  commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = INFO
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
-    akka.remote.log-remote-lifecycle-events = off
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
-    akka.persistence.journal.leveldb-shared {
-      timeout = 5s
-      store {
-        native = off
-        dir = "target/journal-ClusterShardingCustomShardAllocationSpec"
-      }
-    }
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingCustomShardAllocationSpec"
-    """))
-
+object ClusterShardingCustomShardAllocationSpec {
   class Entity extends Actor {
     def receive = {
       case id: Int ⇒ sender() ! id
@@ -98,11 +79,43 @@ object ClusterShardingCustomShardAllocationSpec extends MultiNodeConfig {
 
 }
 
-class ClusterShardingCustomShardAllocationMultiJvmNode1 extends ClusterShardingCustomShardAllocationSpec
-class ClusterShardingCustomShardAllocationMultiJvmNode2 extends ClusterShardingCustomShardAllocationSpec
+abstract class ClusterShardingCustomShardAllocationSpecConfig(val mode: String) extends MultiNodeConfig {
+  val first = role("first")
+  val second = role("second")
 
-class ClusterShardingCustomShardAllocationSpec extends MultiNodeSpec(ClusterShardingCustomShardAllocationSpec) with STMultiNodeSpec with ImplicitSender {
+  commonConfig(ConfigFactory.parseString(s"""
+    akka.loglevel = INFO
+    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.remote.log-remote-lifecycle-events = off
+    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
+    akka.persistence.journal.leveldb-shared {
+      timeout = 5s
+      store {
+        native = off
+        dir = "target/journal-ClusterShardingCustomShardAllocationSpec"
+      }
+    }
+    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingCustomShardAllocationSpec"
+    akka.cluster.sharding.state-store-mode = "$mode"
+    """))
+}
+
+object PersistentClusterShardingCustomShardAllocationSpecConfig extends ClusterShardingCustomShardAllocationSpecConfig("persistence")
+object DDataClusterShardingCustomShardAllocationSpecConfig extends ClusterShardingCustomShardAllocationSpecConfig("ddata")
+
+class PersistentClusterShardingCustomShardAllocationSpec extends ClusterShardingCustomShardAllocationSpec(PersistentClusterShardingCustomShardAllocationSpecConfig)
+class DDataClusterShardingCustomShardAllocationSpec extends ClusterShardingCustomShardAllocationSpec(DDataClusterShardingCustomShardAllocationSpecConfig)
+
+class PersistentClusterShardingCustomShardAllocationMultiJvmNode1 extends PersistentClusterShardingCustomShardAllocationSpec
+class PersistentClusterShardingCustomShardAllocationMultiJvmNode2 extends PersistentClusterShardingCustomShardAllocationSpec
+
+class DDataClusterShardingCustomShardAllocationMultiJvmNode1 extends DDataClusterShardingCustomShardAllocationSpec
+class DDataClusterShardingCustomShardAllocationMultiJvmNode2 extends DDataClusterShardingCustomShardAllocationSpec
+
+abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingCustomShardAllocationSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
   import ClusterShardingCustomShardAllocationSpec._
+  import config._
 
   override def initialParticipants = roles.size
 
@@ -146,7 +159,7 @@ class ClusterShardingCustomShardAllocationSpec extends MultiNodeSpec(ClusterShar
 
   lazy val allocator = system.actorOf(Props[Allocator], "allocator")
 
-  "Cluster sharding with custom allocation strategy" must {
+  s"Cluster sharding ($mode) with custom allocation strategy" must {
 
     "setup shared journal" in {
       // start the Persistence extension

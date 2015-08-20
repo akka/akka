@@ -26,30 +26,7 @@ import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
 
-object ClusterShardingLeavingSpec extends MultiNodeConfig {
-  val first = role("first")
-  val second = role("second")
-  val third = role("third")
-  val fourth = role("fourth")
-
-  commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = INFO
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
-    akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = 0s
-    akka.cluster.down-removal-margin = 5s
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
-    akka.persistence.journal.leveldb-shared {
-      timeout = 5s
-      store {
-        native = off
-        dir = "target/journal-ClusterShardingLeavingSpec"
-      }
-    }
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingLeavingSpec"
-    """))
-
+object ClusterShardingLeavingSpec {
   case class Ping(id: String)
 
   class Entity extends Actor {
@@ -76,16 +53,53 @@ object ClusterShardingLeavingSpec extends MultiNodeConfig {
   val extractShardId: ShardRegion.ExtractShardId = {
     case Ping(id: String) ⇒ id.charAt(0).toString
   }
-
 }
 
-class ClusterShardingLeavingMultiJvmNode1 extends ClusterShardingLeavingSpec
-class ClusterShardingLeavingMultiJvmNode2 extends ClusterShardingLeavingSpec
-class ClusterShardingLeavingMultiJvmNode3 extends ClusterShardingLeavingSpec
-class ClusterShardingLeavingMultiJvmNode4 extends ClusterShardingLeavingSpec
+abstract class ClusterShardingLeavingSpecConfig(val mode: String) extends MultiNodeConfig {
+  val first = role("first")
+  val second = role("second")
+  val third = role("third")
+  val fourth = role("fourth")
 
-class ClusterShardingLeavingSpec extends MultiNodeSpec(ClusterShardingLeavingSpec) with STMultiNodeSpec with ImplicitSender {
+  commonConfig(ConfigFactory.parseString(s"""
+    akka.loglevel = INFO
+    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.remote.log-remote-lifecycle-events = off
+    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.down-removal-margin = 5s
+    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
+    akka.persistence.journal.leveldb-shared {
+      timeout = 5s
+      store {
+        native = off
+        dir = "target/journal-ClusterShardingLeavingSpec"
+      }
+    }
+    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingLeavingSpec"
+    akka.cluster.sharding.state-store-mode = "$mode"
+    """))
+}
+
+object PersistentClusterShardingLeavingSpecConfig extends ClusterShardingLeavingSpecConfig("persistence")
+object DDataClusterShardingLeavingSpecConfig extends ClusterShardingLeavingSpecConfig("ddata")
+
+class PersistentClusterShardingLeavingSpec extends ClusterShardingLeavingSpec(PersistentClusterShardingLeavingSpecConfig)
+class DDataClusterShardingLeavingSpec extends ClusterShardingLeavingSpec(DDataClusterShardingLeavingSpecConfig)
+
+class PersistentClusterShardingLeavingMultiJvmNode1 extends PersistentClusterShardingLeavingSpec
+class PersistentClusterShardingLeavingMultiJvmNode2 extends PersistentClusterShardingLeavingSpec
+class PersistentClusterShardingLeavingMultiJvmNode3 extends PersistentClusterShardingLeavingSpec
+class PersistentClusterShardingLeavingMultiJvmNode4 extends PersistentClusterShardingLeavingSpec
+
+class DDataClusterShardingLeavingMultiJvmNode1 extends DDataClusterShardingLeavingSpec
+class DDataClusterShardingLeavingMultiJvmNode2 extends DDataClusterShardingLeavingSpec
+class DDataClusterShardingLeavingMultiJvmNode3 extends DDataClusterShardingLeavingSpec
+class DDataClusterShardingLeavingMultiJvmNode4 extends DDataClusterShardingLeavingSpec
+
+abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
   import ClusterShardingLeavingSpec._
+  import config._
 
   override def initialParticipants = roles.size
 
@@ -132,7 +146,7 @@ class ClusterShardingLeavingSpec extends MultiNodeSpec(ClusterShardingLeavingSpe
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  "Cluster sharding with leaving member" must {
+  s"Cluster sharding ($mode) with leaving member" must {
 
     "setup shared journal" in {
       // start the Persistence extension
