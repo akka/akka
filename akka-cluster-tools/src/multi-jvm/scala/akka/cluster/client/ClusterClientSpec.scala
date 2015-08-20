@@ -41,11 +41,13 @@ object ClusterClientSpec extends MultiNodeConfig {
 
   testTransport(on = true)
 
+  case class Reply(msg: Any, node: Address)
+
   class TestService(testActor: ActorRef) extends Actor {
     def receive = {
       case msg ⇒
         testActor forward msg
-        sender() ! msg + "-ack"
+        sender() ! Reply(msg + "-ack", Cluster(context.system).selfAddress)
     }
   }
 
@@ -116,7 +118,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         val c = system.actorOf(ClusterClient.props(
           ClusterClientSettings(system).withInitialContacts(initialContacts)), "client1")
         c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
-        expectMsg("hello-ack")
+        expectMsgType[Reply].msg should be("hello-ack")
         system.stop(c)
       }
       runOn(fourth) {
@@ -190,18 +192,18 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
           ClusterClientSettings(system).withInitialContacts(initialContacts)), "client2")
 
         c ! ClusterClient.Send("/user/service2", "bonjour", localAffinity = true)
-        expectMsg("bonjour-ack")
-        val lastSenderAddress = lastSender.path.address
-        val receptionistRoleName = roleName(lastSenderAddress) match {
+        val reply = expectMsgType[Reply]
+        reply.msg should be("bonjour-ack")
+        val receptionistRoleName = roleName(reply.node) match {
           case Some(r) ⇒ r
-          case None    ⇒ fail("unexpected missing roleName: " + lastSender.path.address)
+          case None    ⇒ fail("unexpected missing roleName: " + reply.node)
         }
         testConductor.exit(receptionistRoleName, 0).await
         remainingServerRoleNames -= receptionistRoleName
         within(remaining - 3.seconds) {
           awaitAssert {
             c ! ClusterClient.Send("/user/service2", "hi again", localAffinity = true)
-            expectMsg(1 second, "hi again-ack")
+            expectMsgType[Reply](1 second).msg should be("hi again-ack")
           }
         }
         system.stop(c)
@@ -220,11 +222,11 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
           ClusterClientSettings(system).withInitialContacts(initialContacts)), "client3")
 
         c ! ClusterClient.Send("/user/service2", "bonjour2", localAffinity = true)
-        expectMsg("bonjour2-ack")
-        val lastSenderAddress = lastSender.path.address
-        val receptionistRoleName = roleName(lastSenderAddress) match {
+        val reply = expectMsgType[Reply]
+        reply.msg should be("bonjour2-ack")
+        val receptionistRoleName = roleName(reply.node) match {
           case Some(r) ⇒ r
-          case None    ⇒ fail("unexpected missing roleName: " + lastSender.path.address)
+          case None    ⇒ fail("unexpected missing roleName: " + reply.node)
         }
         // shutdown all but the one that the client is connected to
         remainingServerRoleNames.foreach { r ⇒
@@ -244,9 +246,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         val expectedAddress = node(receptionistRoleName).address
         awaitAssert {
           c ! ClusterClient.Send("/user/service2", "bonjour3", localAffinity = true)
-          expectMsg(1 second, "bonjour3-ack")
-          val lastSenderAddress = lastSender.path.address
-          lastSenderAddress should be(expectedAddress)
+          val reply = expectMsgType[Reply](1 second)
+          reply.msg should be("bonjour3-ack")
+          reply.node should be(expectedAddress)
         }
         system.stop(c)
       }
