@@ -19,6 +19,7 @@ import akka.persistence.journal.leveldb.Tagged
 import akka.persistence.journal.EventSeq
 import akka.persistence.journal.EventAdapter
 import akka.persistence.query.EventEnvelope
+import akka.persistence.journal.WriteEventAdapter
 
 object EventsByTagSpec {
   val config = """
@@ -38,7 +39,7 @@ object EventsByTagSpec {
 
 }
 
-class ColorTagger extends EventAdapter {
+class ColorTagger extends WriteEventAdapter {
   val colors = Set("green", "black", "blue")
   override def toJournal(event: Any): Any = event match {
     case s: String ⇒
@@ -47,8 +48,6 @@ class ColorTagger extends EventAdapter {
       else Tagged(event, tags)
     case _ ⇒ event
   }
-
-  override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single(event)
 
   override def manifest(event: Any): String = ""
 }
