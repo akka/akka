@@ -14,6 +14,7 @@ Actors
    persistence
    persistence-schema-evolution
    persistence-query
+   persistence-query-leveldb
    testing
    actordsl
    typed-actors

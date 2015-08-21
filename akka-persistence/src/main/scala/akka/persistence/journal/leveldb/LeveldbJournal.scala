@@ -88,6 +88,8 @@ private[persistence] object LeveldbJournal {
    * Subscribe the `sender` to changes (appended events) for a specific `tag`.
    * Used by query-side. The journal will send [[TaggedEventAppended]] messages to
    * the subscriber when `asyncWriteMessages` has been called.
+   * Events are tagged by wrapping in [[akka.persistence.journal.leveldb.Tagged]]
+   * via an [[akka.persistence.journal.EventAdapter]].
    */
   final case class SubscribeTag(tag: String) extends SubscriptionCommand
   final case class TaggedEventAppended(tag: String) extends DeadLetterSuppression

@@ -331,7 +331,7 @@ It is possible to delete all messages (journaled by a single persistent actor) u
 persistent actors may call the ``deleteMessages`` method.
 
 Deleting messages in event sourcing based applications is typically either not used at all, or used in conjunction with
-:ref:`snapshotting <snapshots>`, i.e. after a snapshot has been successfully stored, a ``deleteMessagess(toSequenceNr)``
+:ref:`snapshotting <snapshots>`, i.e. after a snapshot has been successfully stored, a ``deleteMessages(toSequenceNr)``
 up until the sequence number of the data held by that snapshot can be issued, to safely delete the previous events,
 while still having access to the accumulated state during replays - by loading the snapshot.
 
