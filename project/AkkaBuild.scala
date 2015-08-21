@@ -135,8 +135,12 @@ object AkkaBuild extends Build {
   lazy val clusterSharding = Project(
     id = "akka-cluster-sharding",
     base = file("akka-cluster-sharding"),
+    // TODO akka-distributed-data dependency should be provided in pom.xml artifact.
+    //      If I only use "provided" here it works, but then we can't run tests.
+    //      Scope "test" is alright in the pom.xml, but would have been nicer with
+    //      provided.
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
-        persistence % "compile;test->provided", distributedData % "compile;test->provided", clusterTools)
+        persistence % "compile;test->provided", distributedData % "provided;test", clusterTools)
   ) configs (MultiJvm)
 
   lazy val distributedData = Project(
