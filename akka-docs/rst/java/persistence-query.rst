@@ -26,7 +26,11 @@ Dependencies
 
 Akka persistence query is a separate jar file. Make sure that you have the following dependency in your project::
 
-  "com.typesafe.akka" %% "akka-persistence-query-experimental" % "@version@" @crossString@
+  <dependency>
+    <groupId>com.typesafe.akka</groupId>
+    <artifactId>akka-persistence-query-experimental_@binVersion@</artifactId>
+    <version>@version@</version>
+  </dependency>
 
 Design overview
 ===============
@@ -200,6 +204,8 @@ Query plugins
 
 Query plugins are various (mostly community driven) :class:`ReadJournal` implementations for all kinds
 of available datastores. The complete list of available plugins is maintained on the Akka Persistence Query `Community Plugins`_ page.
+
+The plugin for LevelDB is described in :ref:`persistence-query-leveldb-java`.
 
 This section aims to provide tips and guide plugin developers through implementing a custom query plugin.
 Most users will not need to implement journals themselves, except if targeting a not yet supported datastore.
