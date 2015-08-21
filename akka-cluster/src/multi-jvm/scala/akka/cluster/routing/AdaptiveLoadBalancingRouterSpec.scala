@@ -70,10 +70,10 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
         /router4 = {
           router = adaptive-pool
           metrics-selector = "akka.cluster.routing.TestCustomMetricsSelector"
-          nr-of-instances = 10
           cluster {
             enabled = on
             max-nr-of-instances-per-node = 2
+            max-total-nr-of-instances = 10
           }
         }
       }

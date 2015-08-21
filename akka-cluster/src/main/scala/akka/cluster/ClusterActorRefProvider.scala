@@ -11,6 +11,7 @@ import akka.remote.{ RemoteActorRefProvider, RemoteDeployer }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing.{ Group, Pool }
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 /**
  * INTERNAL API
@@ -60,9 +61,19 @@ private[akka] class ClusterActorRefProvider(
  * Deployer of cluster aware routers.
  */
 private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess) extends RemoteDeployer(_settings, _pm) {
-  override def parseConfig(path: String, config: Config): Option[Deploy] = {
 
-    super.parseConfig(path, config) match {
+  override def parseConfig(path: String, config: Config): Option[Deploy] = {
+    // config is the user supplied section, no defaults
+    // amend it to use max-total-nr-of-instances as nr-of-instances if cluster.enabled and
+    // user has not specified nr-of-instances
+    val config2 =
+      if (config.hasPath("cluster.enabled") && config.getBoolean("cluster.enabled") && !config.hasPath("nr-of-instances")) {
+        val maxTotalNrOfInstances = config.withFallback(default).getInt("cluster.max-total-nr-of-instances")
+        ConfigFactory.parseString("nr-of-instances=" + maxTotalNrOfInstances)
+          .withFallback(config)
+      } else config
+
+    super.parseConfig(path, config2) match {
       case d @ Some(deploy) ⇒
         if (deploy.config.getBoolean("cluster.enabled")) {
           if (deploy.scope != NoScopeGiven)

@@ -32,7 +32,7 @@ import scala.collection.immutable
 object ClusterRouterGroupSettings {
   def fromConfig(config: Config): ClusterRouterGroupSettings =
     ClusterRouterGroupSettings(
-      totalInstances = config.getInt("nr-of-instances"),
+      totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       routeesPaths = immutableSeq(config.getStringList("routees.paths")),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
       useRole = ClusterRouterSettingsBase.useRoleOption(config.getString("cluster.use-role")))
@@ -69,7 +69,7 @@ final case class ClusterRouterGroupSettings(
 object ClusterRouterPoolSettings {
   def fromConfig(config: Config): ClusterRouterPoolSettings =
     ClusterRouterPoolSettings(
-      totalInstances = config.getInt("nr-of-instances"),
+      totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       maxInstancesPerNode = config.getInt("cluster.max-nr-of-instances-per-node"),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
       useRole = ClusterRouterSettingsBase.useRoleOption(config.getString("cluster.use-role")))
@@ -105,6 +105,18 @@ private[akka] object ClusterRouterSettingsBase {
     case null | "" ⇒ None
     case _         ⇒ Some(role)
   }
+
+  /**
+   * For backwards compatibility reasons, nr-of-instances
+   * has the same purpose as max-total-nr-of-instances for cluster
+   * aware routers and nr-of-instances (if defined by user) takes
+   * precedence over max-total-nr-of-instances.
+   */
+  def getMaxTotalNrOfInstances(config: Config): Int =
+    config.getInt("nr-of-instances") match {
+      case 1 | 0 ⇒ config.getInt("cluster.max-nr-of-instances-per-node")
+      case other ⇒ other
+    }
 }
 
 /**
