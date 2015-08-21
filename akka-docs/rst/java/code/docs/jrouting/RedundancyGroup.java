@@ -40,7 +40,7 @@ public class RedundancyGroup extends GroupBase {
   }
   
   @Override
-  public java.lang.Iterable<String> getPaths() {
+  public java.lang.Iterable<String> getPaths(ActorSystem system) {
     return paths;
   }
 

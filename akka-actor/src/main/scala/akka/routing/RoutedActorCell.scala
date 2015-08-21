@@ -109,7 +109,10 @@ private[akka] class RoutedActorCell(
         if (nrOfRoutees > 0)
           addRoutees(Vector.fill(nrOfRoutees)(pool.newRoutee(routeeProps, this)))
       case group: Group ⇒
-        val paths = group.paths
+        // must not use group.paths(system) for old (not re-compiled) custom routers
+        // for binary backwards compatibility reasons
+        val deprecatedPaths = group.paths
+        val paths = if (deprecatedPaths == null) group.paths(system) else deprecatedPaths
         if (paths.nonEmpty)
           addRoutees(paths.map(p ⇒ group.routeeFor(p, this))(collection.breakOut))
       case _ ⇒
