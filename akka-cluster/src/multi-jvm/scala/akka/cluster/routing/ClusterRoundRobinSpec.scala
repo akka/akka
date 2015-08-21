@@ -52,33 +52,33 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
       akka.actor.deployment {
         /router1 {
           router = round-robin-pool
-          nr-of-instances = 10
           cluster {
             enabled = on
             max-nr-of-instances-per-node = 2
+            max-total-nr-of-instances = 10
           }
         }
         /router3 {
           router = round-robin-pool
-          nr-of-instances = 10
           cluster {
             enabled = on
             max-nr-of-instances-per-node = 1
+            max-total-nr-of-instances = 10
             allow-local-routees = off
           }
         }
         /router4 {
           router = round-robin-group
-          nr-of-instances = 10
           routees.paths = ["/user/myserviceA", "/user/myserviceB"]
           cluster.enabled = on
+          cluster.max-total-nr-of-instances = 10
         }
         /router5 {
           router = round-robin-pool
-          nr-of-instances = 10
           cluster {
             enabled = on
             use-role = a
+            max-total-nr-of-instances = 10
           }
         }
       }

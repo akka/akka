@@ -21,6 +21,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.dispatch.Dispatchers
 import akka.japi.Util.immutableSeq
 import akka.routing._
+import akka.cluster.routing.ClusterRouterSettingsBase
 
 /**
  * Load balancing of messages to cluster nodes based on cluster metric data.
@@ -128,7 +129,7 @@ final case class AdaptiveLoadBalancingPool(
   extends Pool {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
-    this(nrOfInstances = config.getInt("nr-of-instances"),
+    this(nrOfInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
       usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
