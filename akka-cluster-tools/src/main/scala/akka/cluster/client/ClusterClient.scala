@@ -259,7 +259,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   def establishing: Actor.Receive = {
     case Contacts(contactPoints) ⇒
       if (contactPoints.nonEmpty) {
-        contacts = contactPoints
+        contacts = contactPoints.map(context.actorSelection)
         contacts foreach { _ ! Identify(None) }
       }
     case ActorIdentity(_, Some(receptionist)) ⇒
@@ -303,7 +303,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
     case Contacts(contactPoints) ⇒
       // refresh of contacts
       if (contactPoints.nonEmpty)
-        contacts = contactPoints
+        contacts = contactPoints.map(context.actorSelection)
     case _: ActorIdentity ⇒ // ok, from previous establish, already handled
   }
 
@@ -490,6 +490,11 @@ final class ClusterReceptionistSettings(
 
 }
 
+/**
+ * Marker trait for remote messages with special serializer.
+ */
+sealed trait ClusterClientMessage extends Serializable
+
 object ClusterReceptionist {
 
   /**
@@ -505,13 +510,13 @@ object ClusterReceptionist {
    */
   private[akka] object Internal {
     @SerialVersionUID(1L)
-    case object GetContacts extends DeadLetterSuppression
+    case object GetContacts extends ClusterClientMessage with DeadLetterSuppression
     @SerialVersionUID(1L)
-    final case class Contacts(contactPoints: immutable.IndexedSeq[ActorSelection])
+    final case class Contacts(contactPoints: immutable.IndexedSeq[String]) extends ClusterClientMessage
     @SerialVersionUID(1L)
-    case object Heartbeat extends DeadLetterSuppression
+    case object Heartbeat extends ClusterClientMessage with DeadLetterSuppression
     @SerialVersionUID(1L)
-    case object HeartbeatRsp extends DeadLetterSuppression
+    case object HeartbeatRsp extends ClusterClientMessage with DeadLetterSuppression
     @SerialVersionUID(1L)
     case object Ping extends DeadLetterSuppression
 
@@ -620,7 +625,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       // is the same from all nodes (most of the time) and it also
       // load balances the client connections among the nodes in the cluster.
       if (numberOfContacts >= nodes.size) {
-        sender() ! Contacts(nodes.map(a ⇒ context.actorSelection(self.path.toStringWithAddress(a)))(collection.breakOut))
+        sender() ! Contacts(nodes.map(a ⇒ self.path.toStringWithAddress(a))(collection.breakOut))
       } else {
         // using toStringWithAddress in case the client is local, normally it is not, and
         // toStringWithAddress will use the remote address of the client
@@ -630,7 +635,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
           if (first.size == numberOfContacts) first
           else first ++ nodes.take(numberOfContacts - first.size)
         }
-        sender() ! Contacts(slice.map(a ⇒ context.actorSelection(self.path.toStringWithAddress(a)))(collection.breakOut))
+        sender() ! Contacts(slice.map(a ⇒ self.path.toStringWithAddress(a))(collection.breakOut))
       }
 
     case state: CurrentClusterState ⇒
