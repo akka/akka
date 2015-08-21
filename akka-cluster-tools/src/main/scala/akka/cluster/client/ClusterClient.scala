@@ -524,12 +524,14 @@ object ClusterReceptionist {
      * Replies are tunneled via this actor, child of the receptionist, to avoid
      * inbound connections from other cluster nodes to the client.
      */
-    class ClientResponseTunnel(client: ActorRef, timeout: FiniteDuration) extends Actor {
+    class ClientResponseTunnel(client: ActorRef, timeout: FiniteDuration) extends Actor with ActorLogging {
       context.setReceiveTimeout(timeout)
       def receive = {
-        case Ping           ⇒ // keep alive from client
-        case ReceiveTimeout ⇒ context stop self
-        case msg            ⇒ client.tell(msg, Actor.noSender)
+        case Ping ⇒ // keep alive from client
+        case ReceiveTimeout ⇒
+          log.debug("ClientResponseTunnel for client [{}] stopped due to inactivity", client.path)
+          context stop self
+        case msg ⇒ client.tell(msg, Actor.noSender)
       }
     }
   }
@@ -618,6 +620,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       pubSubMediator.tell(msg, tunnel)
 
     case Heartbeat ⇒
+      log.debug("Heartbeat from client [{}]", sender().path)
       sender() ! HeartbeatRsp
 
     case GetContacts ⇒
@@ -625,7 +628,10 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       // is the same from all nodes (most of the time) and it also
       // load balances the client connections among the nodes in the cluster.
       if (numberOfContacts >= nodes.size) {
-        sender() ! Contacts(nodes.map(a ⇒ self.path.toStringWithAddress(a))(collection.breakOut))
+        val contacts = Contacts(nodes.map(a ⇒ self.path.toStringWithAddress(a))(collection.breakOut))
+        if (log.isDebugEnabled)
+          log.debug("Client [{}] gets contactPoints [{}] (all nodes)", sender().path, contacts.contactPoints.mkString(","))
+        sender() ! contacts
       } else {
         // using toStringWithAddress in case the client is local, normally it is not, and
         // toStringWithAddress will use the remote address of the client
@@ -635,7 +641,10 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
           if (first.size == numberOfContacts) first
           else first ++ nodes.take(numberOfContacts - first.size)
         }
-        sender() ! Contacts(slice.map(a ⇒ self.path.toStringWithAddress(a))(collection.breakOut))
+        val contacts = Contacts(slice.map(a ⇒ self.path.toStringWithAddress(a))(collection.breakOut))
+        if (log.isDebugEnabled)
+          log.debug("Client [{}] gets contactPoints [{}]", sender().path, contacts.contactPoints.mkString(","))
+        sender() ! contacts
       }
 
     case state: CurrentClusterState ⇒
