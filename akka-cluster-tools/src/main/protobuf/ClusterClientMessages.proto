@@ -1,0 +1,11 @@
+/**
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.cluster.client.protobuf.msg";
+option optimize_for = SPEED;
+
+message Contacts {
+  repeated string contactPoints = 1;
+}
+
