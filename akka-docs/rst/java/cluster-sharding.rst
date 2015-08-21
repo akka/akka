@@ -179,14 +179,22 @@ shard resolution, e.g. to avoid too fine grained shards.
 Distributed Data Mode
 ---------------------
 
-Instead of using ``akka-persistence`` is possible to use ``akka-distributed-data`` module. In such case
-state of the ``ShardCoordinator`` will be replicated inside a cluster by the ``akka-distributed-data``
-module with the ``WriteMajority`` consistency. This mode could be enabled by setting up
-``akka.cluster.sharding.state-store-mode`` as ``ddata``.
-It make possible to remove ``akka-persistence`` dependency from a project if this dependency
-has not using in user code and ``remember-entities`` is ``off``.
-Note that option also could lead to the shards duplication in case of a cluster fragmentation
-due to a broken replication between nodes.
+Instead of using :ref:`persistence-java` it is possible to use the :ref:`distributed_data_java` module
+as storage for the state of the sharding coordinator. In such case the state of the 
+``ShardCoordinator`` will be replicated inside a cluster by the Distributed Data module with
+``WriteMajority``/``ReadMajority`` consistency.
+
+This mode can be enabled by setting configuration property ``akka.cluster.sharding.state-store-mode``
+as ``ddata``. 
+
+You must explicitly add the ``akka-distributed-data-experimental`` dependency to your build if
+you use this mode. It is possible to remove ``akka-persistence`` dependency from a project if it
+is not used in user code and ``remember-entities`` is ``off``.
+
+.. warning::
+
+  The ``ddata`` mode is considered as **“experimental”** as of its introduction in Akka 2.4.0, since
+  it depends on the experimental Distributed Data module.
 
 Proxy Only Mode
 ---------------
