@@ -15,6 +15,7 @@ import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.Address
+import akka.actor.DeadLetterSuppression
 import akka.actor.FSM
 import akka.actor.Props
 import akka.actor.Terminated
@@ -147,7 +148,7 @@ object ClusterSingletonManager {
      * hand-over process. `HandOverInProgress` and `HandOverDone`
      * are expected replies.
      */
-    case object HandOverToMe extends ClusterSingletonMessage
+    case object HandOverToMe extends ClusterSingletonMessage with DeadLetterSuppression
     /**
      * Confirmation by the previous oldest that the hand
      * over process, shut down of the singleton actor, has
@@ -167,7 +168,7 @@ object ClusterSingletonManager {
      * oldest immediately, without knowing who was previous
      * oldest.
      */
-    case object TakeOverFromMe extends ClusterSingletonMessage
+    case object TakeOverFromMe extends ClusterSingletonMessage with DeadLetterSuppression
 
     final case class HandOverRetry(count: Int)
     final case class TakeOverRetry(count: Int)

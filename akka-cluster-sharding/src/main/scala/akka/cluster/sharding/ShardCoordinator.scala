@@ -27,6 +27,7 @@ import akka.cluster.ddata.LWWRegister
 import akka.cluster.ddata.Replicator._
 import akka.dispatch.ExecutionContexts
 import akka.pattern.pipe
+import akka.actor.DeadLetterSuppression
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -178,10 +179,14 @@ object ShardCoordinator {
      * `ShardRegion` registers to `ShardCoordinator`, until it receives [[RegisterAck]].
      */
     @SerialVersionUID(1L) final case class Register(shardRegion: ActorRef) extends CoordinatorCommand
+      with DeadLetterSuppression
+
     /**
      * `ShardRegion` in proxy only mode registers to `ShardCoordinator`, until it receives [[RegisterAck]].
      */
     @SerialVersionUID(1L) final case class RegisterProxy(shardRegionProxy: ActorRef) extends CoordinatorCommand
+      with DeadLetterSuppression
+
     /**
      * Acknowledgement from `ShardCoordinator` that [[Register]] or [[RegisterProxy]] was successful.
      */
@@ -191,6 +196,8 @@ object ShardCoordinator {
      * to the `ShardCoordinator`.
      */
     @SerialVersionUID(1L) final case class GetShardHome(shard: ShardId) extends CoordinatorCommand
+      with DeadLetterSuppression
+
     /**
      * `ShardCoordinator` replies with this message for [[GetShardHome]] requests.
      */
