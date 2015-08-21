@@ -77,11 +77,13 @@ import akka.routing.Router
 import akka.japi.Util.immutableSeq
 import com.typesafe.config.Config
 
-final case class RedundancyGroup(override val paths: immutable.Iterable[String], nbrCopies: Int) extends Group {
+final case class RedundancyGroup(routeePaths: immutable.Iterable[String], nbrCopies: Int) extends Group {
 
   def this(config: Config) = this(
-    paths = immutableSeq(config.getStringList("routees.paths")),
+    routeePaths = immutableSeq(config.getStringList("routees.paths")),
     nbrCopies = config.getInt("nbr-copies"))
+
+  override def paths(system: ActorSystem): immutable.Iterable[String] = routeePaths
 
   override def createRouter(system: ActorSystem): Router =
     new Router(new RedundancyRoutingLogic(nbrCopies))

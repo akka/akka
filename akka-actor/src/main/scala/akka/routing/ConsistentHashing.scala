@@ -364,6 +364,8 @@ final case class ConsistentHashingGroup(
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(paths = immutableSeq(routeePaths))
 
+  override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
+
   override def createRouter(system: ActorSystem): Router =
     new Router(ConsistentHashingRoutingLogic(system, virtualNodesFactor, hashMapping))
 

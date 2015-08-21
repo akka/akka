@@ -128,7 +128,14 @@ private[akka] trait ClusterRouterSettingsBase {
 @SerialVersionUID(1L)
 final case class ClusterRouterGroup(local: Group, settings: ClusterRouterGroupSettings) extends Group with ClusterRouterConfigBase {
 
-  override def paths: immutable.Iterable[String] = if (settings.allowLocalRoutees) settings.routeesPaths else Nil
+  override def paths(system: ActorSystem): immutable.Iterable[String] =
+    if (settings.allowLocalRoutees && settings.useRole.isDefined) {
+      if (Cluster(system).selfRoles.contains(settings.useRole.get)) {
+        settings.routeesPaths
+      } else Nil
+    } else if (settings.allowLocalRoutees && settings.useRole.isEmpty) {
+      settings.routeesPaths
+    } else Nil
 
   /**
    * INTERNAL API

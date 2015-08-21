@@ -201,7 +201,7 @@ final case class AdaptiveLoadBalancingPool(
 @SerialVersionUID(1L)
 final case class AdaptiveLoadBalancingGroup(
   metricsSelector: MetricsSelector = MixMetricsSelector,
-  paths: immutable.Iterable[String] = Nil,
+  override val paths: immutable.Iterable[String] = Nil,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends Group {
 
@@ -218,6 +218,8 @@ final case class AdaptiveLoadBalancingGroup(
    */
   def this(metricsSelector: MetricsSelector,
            routeesPaths: java.lang.Iterable[String]) = this(paths = immutableSeq(routeesPaths))
+
+  override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
 
   override def createRouter(system: ActorSystem): Router =
     new Router(AdaptiveLoadBalancingRoutingLogic(system, metricsSelector))
