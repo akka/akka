@@ -110,6 +110,9 @@ final class ClusterShardingSettings(
   val tuningParameters: ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
 
+  require(stateStoreMode == "persistence" || stateStoreMode == "ddata",
+    s"Unknown 'state-store-mode' [$stateStoreMode], valid values are 'persistence' or 'ddata'")
+
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))
 
   def withRole(role: Option[String]): ClusterShardingSettings = copy(role = role)
