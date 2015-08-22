@@ -226,7 +226,7 @@ abstract class SurviveNetworkInstabilitySpec
         cluster.join(first)
 
         // let them join and stabilize heartbeating
-        Thread.sleep(5000)
+        Thread.sleep(5000.millis.dilated.toMillis)
       }
 
       enterBarrier("joined-5")

@@ -7,6 +7,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.AkkaException
+import akka.event.Logging.Error.NoCause
+
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
@@ -54,7 +57,25 @@ trait Resizer {
    * This method is invoked only in the context of the Router actor.
    */
   def resize(currentRoutees: immutable.IndexedSeq[Routee]): Int
+
 }
+
+object Resizer {
+  def fromConfig(parentConfig: Config): Option[Resizer] = {
+    val defaultResizerConfig = parentConfig.getConfig("resizer")
+    val metricsBasedResizerConfig = parentConfig.getConfig("optimal-size-exploring-resizer")
+    (defaultResizerConfig.getBoolean("enabled"), metricsBasedResizerConfig.getBoolean("enabled")) match {
+      case (true, false)  ⇒ Some(DefaultResizer(defaultResizerConfig))
+      case (false, true)  ⇒ Some(OptimalSizeExploringResizer(metricsBasedResizerConfig))
+      case (false, false) ⇒ None
+      case (true, true) ⇒
+        throw new ResizerInitializationException(s"cannot enable both resizer and optimal-size-exploring-resizer", null)
+    }
+  }
+}
+
+@SerialVersionUID(1L)
+class ResizerInitializationException(message: String, cause: Throwable) extends AkkaException(message, cause)
 
 case object DefaultResizer {
 
@@ -273,11 +294,13 @@ private[akka] final class ResizablePoolCell(
       resizer.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true)) {
       super.sendMessage(Envelope(ResizablePoolActor.Resize, self, system))
     }
+
     super.sendMessage(envelope)
   }
 
   private[akka] def resize(initial: Boolean): Unit = {
     if (resizeInProgress.get || initial) try {
+      tryReportMessageCount()
       val requestedCapacity = resizer.resize(router.routees)
       if (requestedCapacity > 0) {
         val newRoutees = Vector.fill(requestedCapacity)(pool.newRoutee(routeeProps, this))
@@ -288,6 +311,16 @@ private[akka] final class ResizablePoolCell(
         removeRoutees(abandon, stopChild = true)
       }
     } finally resizeInProgress.set(false)
+  }
+
+  /**
+   * This approach is chosen for binary compatibility
+   */
+  private def tryReportMessageCount(): Unit = {
+    resizer match {
+      case r: OptimalSizeExploringResizer ⇒ r.reportMessageCount(router.routees, resizeCounter.get())
+      case _                              ⇒ //ignore
+    }
   }
 
 }
@@ -309,10 +342,12 @@ private[akka] class ResizablePoolActor(supervisorStrategy: SupervisorStrategy)
   val resizerCell = context match {
     case x: ResizablePoolCell ⇒ x
     case _ ⇒
-      throw ActorInitializationException("Router actor can only be used in RoutedActorRef, not in " + context.getClass)
+      throw ActorInitializationException("Resizable router actor can only be used when resizer is defined, not in " + context.getClass)
   }
 
   override def receive = ({
-    case Resize ⇒ resizerCell.resize(initial = false)
+    case Resize ⇒
+      resizerCell.resize(initial = false)
   }: Actor.Receive) orElse super.receive
+
 }
