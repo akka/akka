@@ -30,48 +30,63 @@ function showVersionWarning(version, akkaVersionsData, seriesInfo) {
   console.log("Current version info", seriesInfo);
 
   var isOutdated = !!seriesInfo.outdated;
-  var isLatestInSeries = version != seriesInfo.latest;
+  var isLatestInSeries = version == seriesInfo.latest;
+  var needsToShow = false;
 
   if (isOutdated) {
+    needsToShow = true;
     $floatyWarning.addClass("warning");
     var instead = akkaVersionsData[seriesInfo.instead].latest;
 
     console.log("Akka " + version + " is outdated. Suggesting 'latest' of ", seriesInfo.instead, "by 'instead' key.");
-    var unsupportedMessage = '<p>' +
-        '<span style="font-weight: bold">This version of Akka (' + version + ') has been end-of-lifed and is currently not supported! </span><br/>' +
-        'Please upgrade to <a href="' + insteadUrl(version, instead) + '">Akka ' + instead + '</a> or <a href="http://www.typesafe.com/products/typesafe-reactive-platform">Typesafe Reactive Platform</a> as soon as possible.' +
-        '</p>';
-    $floatyWarning.append(unsupportedMessage);
+    $floatyWarning
+        .append(
+            '<p>' +
+            '<span style="font-weight: bold">This version of Akka (' + version + ') has been end-of-lifed and is currently not supported! </span><br/>' +
+            'Please upgrade to <a href="' + insteadUrl(version, instead) + '">Akka ' + instead + '</a> or <a href="http://www.typesafe.com/products/typesafe-reactive-platform">Typesafe Reactive Platform</a> as soon as possible.' +
+            '</p>');
   }
 
-  if (isLatestInSeries) {
+  if (!isLatestInSeries) {
+    needsToShow = true;
     $floatyWarning
-        .append('<p>' +
+        .append(
+            '<p>' +
             'You are browsing the docs for Akka ' + version + ', ' +
             'however the latest release in this series is: ' +
             '<a href="' + targetUrl + '">' + seriesInfo.latest + '</a>. <br/>' +
             '</p>');
   }
 
-  // add bottom clicky link "to same page"
   if (isOutdated) {
-    $floatyWarning.append(
-        '<p>' +
-        '<a href="' + insteadUrl(version, instead) + '">Click here to go to the same page on the ' + akkaVersionsData[seriesInfo.instead].latest + ' version of the docs.</a>' +
-        '</p>')
-  } else if (isLatestInSeries && isOutdated) {
-    $floatyWarning.append(
-        '<p>' +
-        '<a href="' + targetUrl + '">Click here to go to the same page on the ' + seriesInfo.latest + ' version of the docs.</a>' +
-        '</p>')
+    $floatyWarning
+        .append(
+            '<p>' +
+            '<a href="' + insteadUrl(version, instead) + '">Click here to go to the same page on the ' + akkaVersionsData[seriesInfo.instead].latest + ' version of the docs.</a>' +
+            '</p>');
+  } else if (!isLatestInSeries) {
+    $floatyWarning
+        .append(
+            '<p>' +
+            '<a href="' + targetUrl + '">Click here to go to the same page on the ' + seriesInfo.latest + ' version of the docs.</a>' +
+            '</p>')
   }
 
-  $floatyWarning
-      .hide()
-      .prependTo("body")
-      .show()
-      .delay(10 * 1000)
-      .fadeOut()
+  if (needsToShow && !outdatedVersionWasAcked(version)) {
+    var $close = $('<span id="close-floaty-window">Close [X]</span>')
+        .click(function () {
+          ackOutdatedVersionForADay(version);
+          $floatyWarning.hide();
+        });
+
+    $floatyWarning
+        .hide()
+        .append($close)
+        .prependTo("body")
+        .show()
+        .delay(10 * 1000)
+        .fadeOut();
+  }
 }
 
 // e.g. "docs/akka/2.3.10/scala/persistence.html" => "2.3.10"
@@ -90,7 +105,37 @@ function browsedAkkaVersion() {
 
 function versionsJsonUri() {
   if (window.location.pathname.includes("stream-and-http"))
-    return "http://doc.akka.io/docs/akka-stream-and-http-experimental/versions.json"
+    return "http://doc.akka.io/docs/akka-stream-and-http-experimental/versions.json";
   else
     return "http://doc.akka.io/docs/akka/versions.json";
+}
+
+// --- ack outdated versions ---
+
+function ackOutdatedVersionCookieName(version) {
+  return "ack-outdated-" + version;
+}
+
+function ackOutdatedVersionForADay(version) {
+  function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires="+d.toUTCString();
+    document.cookie = cname + "=" + cvalue + "; " + expires;
+  }
+  setCookie(ackOutdatedVersionCookieName(version), 'true', 1)
+}
+function outdatedVersionWasAcked(version) {
+  function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+      var c = ca[i];
+      while (c.charAt(0)==' ') c = c.substring(1);
+      if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+    }
+    return "";
+  }
+
+  return getCookie(ackOutdatedVersionCookieName(version)) === 'true';
 }
