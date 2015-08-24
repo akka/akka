@@ -556,4 +556,37 @@ public class FlowTest extends StreamTest {
     Await.ready(future, Duration.apply(200, TimeUnit.MILLISECONDS));
   }
 
+  @Test
+  public void mustBeAbleToMaterializeIdentityWithJavaFlow() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final List<String> input = Arrays.asList("A", "B", "C");
+
+    Flow<String,String,?> otherFlow = Flow.of(String.class);
+
+    Flow<String,String,?> myFlow = Flow.of(String.class).via(otherFlow);
+    Source.from(input).via(myFlow).runWith(Sink.foreach(new Procedure<String>() { // Scala Future
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgAllOf("A","B","C");
+  }
+
+  @Test
+  public void mustBeAbleToMaterializeIdentityToJavaSink() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final List<String> input = Arrays.asList("A", "B", "C");
+    Flow<String,String,?> otherFlow = Flow.of(String.class);
+
+    Sink<String,BoxedUnit> sink = Flow.of(String.class).to(otherFlow.to(Sink.foreach(new Procedure<String>() { // Scala Future
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    })));
+
+    Source.from(input).to(sink).run(materializer);
+    probe.expectMsgAllOf("A","B","C");
+  }
+
 }
