@@ -120,6 +120,7 @@ trait SharedLeveldbPluginDocSpec {
 
   new AnyRef {
     import akka.actor._
+    //#shared-store-creation
     import akka.persistence.journal.leveldb.SharedLeveldbStore
 
     val store = system.actorOf(Props[SharedLeveldbStore], "store")
