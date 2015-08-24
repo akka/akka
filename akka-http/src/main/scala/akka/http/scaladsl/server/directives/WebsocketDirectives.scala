@@ -31,7 +31,7 @@ trait WebsocketDirectives {
   def extractOfferedWsProtocols: Directive1[immutable.Seq[String]] = extractUpgradeToWebsocket.map(_.requestedProtocols)
 
   /**
-   * Handles Websocket requests with the given handler and rejects other requests with a
+   * Handles Websocket requests with the given handler and rejects other requests with an
    * [[ExpectedWebsocketRequestRejection]].
    */
   def handleWebsocketMessages(handler: Flow[Message, Message, Any]): Route =
@@ -39,19 +39,19 @@ trait WebsocketDirectives {
 
   /**
    * Handles Websocket requests with the given handler if the given subprotocol is offered in the request and
-   * rejects other requests with a [[ExpectedWebsocketRequestRejection]] or a [[UnsupportedWebsocketSubprotocolRejection]].
+   * rejects other requests with an [[ExpectedWebsocketRequestRejection]] or an [[UnsupportedWebsocketSubprotocolRejection]].
    */
   def handleWebsocketMessagesForProtocol(handler: Flow[Message, Message, Any], subprotocol: String): Route =
     handleWebsocketMessagesForOptionalProtocol(handler, Some(subprotocol))
 
   /**
-   * Handles Websocket requests with the given handler and rejects other requests with a
+   * Handles Websocket requests with the given handler and rejects other requests with an
    * [[ExpectedWebsocketRequestRejection]].
    *
    * If the `subprotocol` parameter is None any Websocket request is accepted. If the `subprotocol` parameter is
    * `Some(protocol)` a Websocket request is only accepted if the list of subprotocols supported by the client (as
    * announced in the Websocket request) contains `protocol`. If the client did not offer the protocol in question
-   * the request is rejected with a [[UnsupportedWebsocketSubprotocolRejection]] rejection.
+   * the request is rejected with an [[UnsupportedWebsocketSubprotocolRejection]] rejection.
    *
    * To support several subprotocols you may chain several `handleWebsocketMessage` Routes.
    */
