@@ -8,7 +8,7 @@ import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import akka.util.ByteString
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.impl.util._
@@ -18,9 +18,12 @@ import akka.http.javadsl.server.Unmarshaller
 import akka.http.javadsl.model._
 
 /**
- * A wrapper for responses
+ * A wrapper for responses.
+ *
+ * To support the testkit API, a third-party testing library needs to implement this class and provide
+ * implementations for the abstract assertion methods.
  */
-abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: ActorMaterializer) {
+abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: Materializer) {
   /**
    * Returns the strictified entity of the response. It will be strictified on first access.
    */
@@ -75,7 +78,7 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
    */
   def header[T <: HttpHeader](clazz: Class[T]): T =
     response.header(ClassTag(clazz))
-      .getOrElse(fail(s"Expected header of type ${clazz.getSimpleName} but wasn't found."))
+      .getOrElse(doFail(s"Expected header of type ${clazz.getSimpleName} but wasn't found."))
 
   /**
    * Assert on the numeric status code.
@@ -150,7 +153,7 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
   }
 
   private[this] def extractFromResponse[T](f: HttpResponse ⇒ T): T =
-    if (response eq null) fail("Request didn't complete with response")
+    if (response eq null) doFail("Request didn't complete with response")
     else f(response)
 
   protected def assertEqualsKind(expected: AnyRef, actual: AnyRef, kind: String): TestResponse = {
@@ -162,7 +165,13 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
     this
   }
 
-  protected def fail(message: String): Nothing
+  // allows to `fail` as an expression
+  private def doFail(message: String): Nothing = {
+    fail(message)
+    throw new IllegalStateException("Shouldn't be reached")
+  }
+
+  protected def fail(message: String): Unit
   protected def assertEquals(expected: AnyRef, actual: AnyRef, message: String): Unit
   protected def assertEquals(expected: Int, actual: Int, message: String): Unit
   protected def assertTrue(predicate: Boolean, message: String): Unit
