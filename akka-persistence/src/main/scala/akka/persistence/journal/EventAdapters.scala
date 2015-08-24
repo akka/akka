@@ -7,7 +7,7 @@ package akka.persistence.journal
 import java.util
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.actor.ExtendedActorSystem
+import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.event.{ Logging, LoggingAdapter }
 import com.typesafe.config.Config
 
@@ -45,6 +45,11 @@ private[akka] class EventAdapters(
         }
       case value ⇒ value
     }
+  }
+
+  def combine(system: ActorSystem, adapter: EventAdapter, boundTo: immutable.Seq[Class[_]]): EventAdapters = {
+    val summedBindings = bindings ++ boundTo.map(_ -> adapter)
+    new EventAdapters(map, summedBindings, log)
   }
 
   override def toString =
@@ -86,7 +91,7 @@ private[akka] object EventAdapters {
     val bindings: immutable.Seq[ClassHandler] = {
       val bs = for ((k: FQN, as: BoundAdapters) ← adapterBindings)
         yield if (as.size == 1) (system.dynamicAccess.getClassFor[Any](k).get, handlers(as.head))
-      else (system.dynamicAccess.getClassFor[Any](k).get, CombinedReadEventAdapter(as.map(handlers)))
+      else (system.dynamicAccess.getClassFor[Any](k).get, CombinedEventAdapter(as.map(handlers)))
 
       sort(bs)
     }
@@ -109,7 +114,7 @@ private[akka] object EventAdapters {
   }
 
   /** INTERNAL API */
-  private[akka] case class CombinedReadEventAdapter(adapters: immutable.Seq[EventAdapter]) extends EventAdapter {
+  private[akka] case class CombinedEventAdapter(adapters: immutable.Seq[EventAdapter]) extends EventAdapter {
     private def onlyReadSideException = new IllegalStateException("CombinedReadEventAdapter must not be used when writing (creating manifests) events!")
     override def manifest(event: Any): String = throw onlyReadSideException
     override def toJournal(event: Any): Any = throw onlyReadSideException
@@ -165,4 +170,7 @@ private[akka] object EventAdapters {
 private[akka] case object IdentityEventAdapters extends EventAdapters(null, null, null) {
   override def get(clazz: Class[_]): EventAdapter = IdentityEventAdapter
   override def toString = Logging.simpleName(IdentityEventAdapters)
+  override def combine(system: ActorSystem, newAdapter: EventAdapter, newBindings: immutable.Seq[Class[_]]): EventAdapters =
+    new EventAdapters(new ConcurrentHashMap(), newBindings.map(_ -> newAdapter), system.log)
+
 }

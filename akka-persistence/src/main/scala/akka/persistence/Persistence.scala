@@ -5,16 +5,17 @@
 package akka.persistence
 
 import java.util.concurrent.atomic.AtomicReference
+
 import akka.actor._
-import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
-import akka.persistence.journal.{ AsyncWriteJournal, EventAdapters, IdentityEventAdapters, ReplayFilter }
+import akka.persistence.journal._
 import akka.util.Helpers.ConfigOps
-import com.typesafe.config.Config
-import scala.annotation.tailrec
-import scala.concurrent.duration._
-import java.util.Locale
 import akka.util.Reflect
+import com.typesafe.config.Config
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 /**
@@ -160,13 +161,70 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   private def isEmpty(text: String) = text == null || text.length == 0
 
   /** Discovered persistence journal and snapshot store plugins. */
-  private val journalPluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
-
-  /** Discovered persistence snapshot store plugins. */
-  private val snapshotPluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
+  private val pluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
 
   private val journalFallbackConfigPath = "akka.persistence.journal-plugin-fallback"
   private val snapshotStoreFallbackConfigPath = "akka.persistence.snapshot-store-plugin-fallback"
+
+  /**
+   * Register additional (user created) event adapter for given bindings.
+   *
+   * In order to achieve predictable event adaptation it is highly recommended to call this method only during
+   * set-up of your Persistence application, i.e. while no persistent events are being presisted or read.
+   * If an additional adapter is registered while events "in-flight" to being persisted or replayed, the adapter
+   * may not apply to all of them.
+   *
+   * The adapter will be registered with the journal of the given `journalId` or with all journals if no `journalId`,
+   * is provided (i.e. it is an empty string).
+   */
+  final def registerEventAdapter(eventAdapter: EventAdapter, bindings: immutable.Seq[Class[_]], journalId: String = ""): Unit = {
+    require(journalId ne null, "journalId must not be null!")
+
+    journalId match {
+      case "" ⇒
+        pluginExtensionId.get().keys.foreach(jid ⇒ registerEventAdapter(eventAdapter, bindings, jid))
+
+      case jid ⇒
+        val extensionIdMap = pluginExtensionId.get()
+        val holder = pluginHolderFor(jid, journalFallbackConfigPath)
+        val newHolder = holder.copy(adapters = holder.adapters.combine(system, eventAdapter, bindings))
+        val newExtensionIdMap = extensionIdMap.updated(jid, new ExtensionId[PluginHolder] {
+          override def createExtension(system: ExtendedActorSystem): PluginHolder = newHolder
+        })
+        if (!pluginExtensionId.compareAndSet(extensionIdMap, newExtensionIdMap))
+          registerEventAdapter(eventAdapter, bindings, journalId) // Recursive invocation.
+    }
+  }
+
+  /**
+   * Register additional (user created) read event adapter for given bindings.
+   * In case the given bindings match on the write-side and trigger this adapter, its behaviour will be as-if an identity function.
+   *
+   * In order to achieve predictable event adaptation it is highly recommended to call this method only during
+   * set-up of your Persistence application, i.e. while no persistent events are being presisted or read.
+   * If an additional adapter is registered while events "in-flight" to being persisted or replayed, the adapter
+   * may not apply to all of them.
+   *
+   * The adapter will be registered with the journal of the given `journalId` or with all journals if no `journalId`,
+   * is provided (i.e. it is an empty string).
+   */
+  final def registerReadEventAdapter(eventAdapter: ReadEventAdapter, bindings: immutable.Seq[Class[_]], journalId: String = ""): Unit =
+    registerEventAdapter(NoopWriteEventAdapter(eventAdapter), bindings, journalId)
+
+  /**
+   * Register additional (user created) write event adapter for given bindings.
+   * In case the given bindings match on the read-side and trigger this adapter, its behaviour will be as-if an identity function.
+   *
+   * In order to achieve predictable event adaptation it is highly recommended to call this method only during
+   * set-up of your Persistence application, i.e. while no persistent events are being presisted or read.
+   * If an additional adapter is registered while events "in-flight" to being persisted or replayed, the adapter
+   * may not apply to all of them.
+   *
+   * The adapter will be registered with the journal of the given `journalId` or with all journals if no `journalId`,
+   * is provided (i.e. it is an empty string).
+   */
+  final def registerWriteEventAdapter(eventAdapter: WriteEventAdapter, bindings: immutable.Seq[Class[_]], journalId: String = ""): Unit =
+    registerEventAdapter(NoopReadEventAdapter(eventAdapter), bindings, journalId)
 
   /**
    * Returns an [[akka.persistence.journal.EventAdapters]] object which serves as a per-journal collection of bound event adapters.
@@ -183,7 +241,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * Looks up [[akka.persistence.journal.EventAdapters]] by journal plugin's ActorRef.
    */
   private[akka] final def adaptersFor(journalPluginActor: ActorRef): EventAdapters = {
-    journalPluginExtensionId.get().values collectFirst {
+    pluginExtensionId.get().values collectFirst {
       case ext if ext(system).actor == journalPluginActor ⇒ ext(system).adapters
     } match {
       case Some(adapters) ⇒ adapters
@@ -207,7 +265,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * Looks up the plugin config by plugin's ActorRef.
    */
   private[akka] final def configFor(journalPluginActor: ActorRef): Config =
-    journalPluginExtensionId.get().values.collectFirst {
+    pluginExtensionId.get().values.collectFirst {
       case ext if ext(system).actor == journalPluginActor ⇒ ext(system).config
     } match {
       case Some(conf) ⇒ conf
@@ -240,13 +298,13 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   }
 
   @tailrec private def pluginHolderFor(configPath: String, fallbackPath: String): PluginHolder = {
-    val extensionIdMap = journalPluginExtensionId.get
+    val extensionIdMap = pluginExtensionId.get
     extensionIdMap.get(configPath) match {
       case Some(extensionId) ⇒
         extensionId(system)
       case None ⇒
         val extensionId = new PluginHolderExtensionId(configPath, fallbackPath)
-        journalPluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
+        pluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
         pluginHolderFor(configPath, fallbackPath) // Recursive invocation.
     }
   }
