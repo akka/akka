@@ -148,7 +148,7 @@ In case you have implemented a custom Pool you will have to update the method's 
 however the implementation can remain the same if you don't need to rely on an ActorSystem in your logic.
 
 Group routers paths method now takes ActorSystem
-===============================================
+================================================
 
 In order to make cluster routers smarter about when they can start local routees,
 ``paths`` defined on ``Group`` now takes ``ActorSystem`` as an argument.
