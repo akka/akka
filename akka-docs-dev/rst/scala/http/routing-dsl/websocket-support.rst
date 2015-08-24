@@ -103,7 +103,12 @@ was a WebSocket request. Otherwise, the directive rejects the request.
 
 Here's the above simple request handler rewritten as a route:
 
-.. includecode:: ../../code/docs/http/scaladsl/server/WebsocketExampleSpec.scala
-   :include: websocket-routing
+.. includecode2:: ../../code/docs/http/scaladsl/server/directives/WebsocketDirectivesExamplesSpec.scala
+   :snippet: greeter-service
+
+The example also includes code demonstrating the testkit support for Websocket services. It allows to create Websocket
+requests to run against a route using `WS` which can be used to provide a mock Websocket probe that allows manual
+testing of the Websocket handler's behavior if the request was accepted.
+
 
 .. _example: @github@/akka-docs-dev/rst/scala/code/docs/http/scaladsl/server/WebsocketExampleSpec.scala
