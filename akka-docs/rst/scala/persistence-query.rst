@@ -82,7 +82,7 @@ If your usage does not require a live stream, you can disable refreshing by usin
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#all-persistence-ids-snap
 
-``EventsByPersistenceId`` is a query equivalent to replaying a :ref:`PersistentActor <event-sourcing>`,
+``EventsByPersistenceId`` is a query equivalent to replaying a :ref:`PersistentActor <event-sourcing-scala>`,
 however, since it is a stream it is possible to keep it alive and watch for additional incoming events persisted by the
 persistent actor identified by the given ``persistenceId``. Most journals will have to revert to polling in order to achieve
 this, which can be configured using the ``RefreshInterval`` query hint:
@@ -134,7 +134,7 @@ specialised query object, as demonstrated in the sample below:
 
 Performance and denormalization
 ===============================
-When building systems using :ref:`event-sourcing` and CQRS (`Command & Query Responsibility Segragation`_) techniques
+When building systems using :ref:`event-sourcing-scala` and CQRS (`Command & Query Responsibility Segragation`_) techniques
 it is tremendously important to realise that the write-side has completely different needs from the read-side,
 and separating those concerns into datastores that are optimised for either side makes it possible to offer the best
 expirience for the write and read sides independently.
@@ -198,6 +198,8 @@ Query plugins
 
 Query plugins are various (mostly community driven) :class:`ReadJournal` implementations for all kinds
 of available datastores. The complete list of available plugins is maintained on the Akka Persistence Query `Community Plugins`_ page.
+
+The plugin for LevelDB is described in :ref:`persistence-query-leveldb-scala`.
 
 This section aims to provide tips and guide plugin developers through implementing a custom query plugin.
 Most users will not need to implement journals themselves, except if targeting a not yet supported datastore.

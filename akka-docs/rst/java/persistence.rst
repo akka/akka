@@ -334,7 +334,7 @@ It is possible to delete all messages (journaled by a single persistent actor) u
 persistent actors may call the ``deleteMessages`` method.
 
 Deleting messages in event sourcing based applications is typically either not used at all, or used in conjunction with
-:ref:`snapshotting <snapshots>`, i.e. after a snapshot has been successfully stored, a ``deleteMessagess(toSequenceNr)``
+:ref:`snapshotting <snapshots>`, i.e. after a snapshot has been successfully stored, a ``deleteMessages(toSequenceNr)``
 up until the sequence number of the data held by that snapshot can be issued, to safely delete the previous events,
 while still having access to the accumulated state during replays - by loading the snapshot.
 
@@ -378,6 +378,32 @@ restarts of the persistent actor.
   Check the documentation of the journal implementation you are using for details if/how it is using this technique.
 
 .. _Thundering herd problem: https://en.wikipedia.org/wiki/Thundering_herd_problem
+
+.. _safe-shutdown-java:
+
+Safely shutting down persistent actors
+--------------------------------------
+
+Special care should be given when when shutting down persistent actors from the outside.
+With normal Actors it is often acceptable to use the special :ref:`PoisonPill <poison-pill-java>` message
+to signal to an Actor that it should stop itself once it receives this message – in fact this message is handled
+automatically by Akka, leaving the target actor no way to refuse stopping itself when given a poison pill.
+
+This can be dangerous when used with :class:`PersistentActor` due to the fact that incoming commands are *stashed* while
+the persistent actor is awaiting confirmation from the Journal that events have been written when ``persist()`` was used.
+Since the incoming commands will be drained from the Actor's mailbox and put into it's internal stash while awaiting the
+confirmation (thus, before calling the persist handlers) the Actor **may receive and (auto)handle the PoisonPill
+before it processes the other messages which have been put into its stash**, causing a pre-mature shutdown of the Actor.
+
+.. warning::
+  Consider using explicit shut-down messages instead of :class:`PoisonPill` when working with persistent actors.
+
+The example below highlights how messages arrive in the Actor's mailbox and how they interact with it's internal stashing
+mechanism when ``persist()`` is used, notice the early stop behaviour that occurs when ``PoisonPill`` is used:
+
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#safe-shutdown
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#safe-shutdown-example-bad
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#safe-shutdown-example-good
 
 .. _persistent-views-java:
 

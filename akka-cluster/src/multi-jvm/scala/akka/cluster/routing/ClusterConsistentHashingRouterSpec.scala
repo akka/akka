@@ -40,10 +40,10 @@ object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
     withFallback(ConfigFactory.parseString(s"""
       common-router-settings = {
         router = consistent-hashing-pool
-        nr-of-instances = 10
         cluster {
           enabled = on
           max-nr-of-instances-per-node = 2
+          max-total-nr-of-instances = 10
         }
       }
 

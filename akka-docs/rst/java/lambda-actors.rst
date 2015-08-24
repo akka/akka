@@ -537,6 +537,8 @@ different one. Outside of an actor and if no reply is needed the second
 argument can be ``null``; if a reply is needed outside of an actor you can use
 the ask-pattern described next..
 
+.. _actors-ask-lambda:
+
 Ask: Send-And-Receive-Future
 ----------------------------
 

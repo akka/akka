@@ -188,6 +188,8 @@ final case class ScatterGatherFirstCompletedGroup(
   def this(routeePaths: java.lang.Iterable[String], within: FiniteDuration) =
     this(paths = immutableSeq(routeePaths), within = within)
 
+  override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
+
   override def createRouter(system: ActorSystem): Router = new Router(ScatterGatherFirstCompletedRoutingLogic(within))
 
   /**

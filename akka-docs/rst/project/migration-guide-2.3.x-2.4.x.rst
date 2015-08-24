@@ -147,6 +147,29 @@ In order to make cluster routers smarter about when they can start local routees
 In case you have implemented a custom Pool you will have to update the method's signature,
 however the implementation can remain the same if you don't need to rely on an ActorSystem in your logic.
 
+Group routers paths method now takes ActorSystem
+===============================================
+
+In order to make cluster routers smarter about when they can start local routees,
+``paths`` defined on ``Group`` now takes ``ActorSystem`` as an argument.
+In case you have implemented a custom Group you will have to update the method's signature,
+however the implementation can remain the same if you don't need to rely on an ActorSystem in your logic.
+
+Cluster aware router max-total-nr-of-instances
+==============================================
+
+In 2.3.x the deployment configuration property ``nr-of-instances`` was used for
+cluster aware routers to specify total number of routees in the cluster.
+This was confusing, especially since the default value is 1.
+
+In 2.4.x there is a new deployement property ``cluster.max-total-nr-of-instances`` that 
+defines total number of routees in the cluster. By default ``max-total-nr-of-instances`` 
+is set to a high value (10000) that will result in new routees added to the router when nodes join the cluster.
+Set it to a lower value if you want to limit total number of routees.
+
+For backwards compatibility reasons ``nr-of-instances`` is still used if defined by user,
+i.e. if defined it takes precedence over ``max-total-nr-of-instances``.
+
 Logger names use full class name 
 ================================
 Previously, few places in akka used "simple" logger names, such as ``Cluster`` or ``Remoting``.
@@ -302,6 +325,17 @@ The ``ClusterReceptionist`` actor that is started by the ``ClusterReceptionistEx
 is now started as a ``system`` actor instead of a ``user`` actor, i.e. the default path for
 the ``ClusterClient`` initial contacts has changed to
 ``"akka.tcp://system@hostname:port/system/receptionist"``.  
+
+ClusterClient sender
+====================
+
+In 2.3 the ``sender()`` of the response messages, as seen by the client, was the 
+actor in cluster.
+
+In 2.4 the ``sender()`` of the response messages, as seen by the client, is ``deadLetters``
+since the client should normally send subsequent messages via the ``ClusterClient``.
+It is possible to pass the the original sender inside the reply messages if
+the client is supposed to communicate directly to the actor in the cluster.
 
 Akka Persistence
 ================

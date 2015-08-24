@@ -139,7 +139,7 @@ final case class AdaptiveLoadBalancingPool(
   extends Pool {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
-    this(nrOfInstances = config.getInt("nr-of-instances"),
+    this(nrOfInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
       usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
@@ -213,7 +213,7 @@ final case class AdaptiveLoadBalancingPool(
 @deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 final case class AdaptiveLoadBalancingGroup(
   metricsSelector: MetricsSelector = MixMetricsSelector,
-  paths: immutable.Iterable[String] = Nil,
+  override val paths: immutable.Iterable[String] = Nil,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends Group {
 
@@ -230,6 +230,8 @@ final case class AdaptiveLoadBalancingGroup(
    */
   def this(metricsSelector: MetricsSelector,
            routeesPaths: java.lang.Iterable[String]) = this(paths = immutableSeq(routeesPaths))
+
+  override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
 
   override def createRouter(system: ActorSystem): Router =
     new Router(AdaptiveLoadBalancingRoutingLogic(system, metricsSelector))

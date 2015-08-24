@@ -34,7 +34,7 @@ To extend ``PersistentActor``::
       /*...*/
     }
 
-Read more about the persistent actor in the :ref:`documentation for Scala <event-sourcing>` and 
+Read more about the persistent actor in the :ref:`documentation for Scala <event-sourcing-scala>` and
 :ref:`documentation for Java <event-sourcing-java>`.
 
 Changed processorId to (abstract) persistenceId
@@ -183,7 +183,7 @@ acknowledgement from the channel is needed to guarantee safe hand-off. Therefore
 delivery is provided in a new ``AtLeastOnceDelivery`` trait that is mixed-in to the
 persistent actor on the sending side. 
 
-Read more about at-least-once delivery in the :ref:`documentation for Scala <at-least-once-delivery>` and 
+Read more about at-least-once delivery in the :ref:`documentation for Scala <at-least-once-delivery-scala>` and
 :ref:`documentation for Java <at-least-once-delivery-java>`.  
 
 Default persistence plugins

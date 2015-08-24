@@ -36,7 +36,9 @@ object ClusterShardingSettings {
       leastShardAllocationRebalanceThreshold =
         config.getInt("least-shard-allocation-strategy.rebalance-threshold"),
       leastShardAllocationMaxSimultaneousRebalance =
-        config.getInt("least-shard-allocation-strategy.max-simultaneous-rebalance"))
+        config.getInt("least-shard-allocation-strategy.max-simultaneous-rebalance"),
+      waitingForStateTimeout = config.getDuration("waiting-for-state-timeout", MILLISECONDS).millis,
+      updatingStateTimeout = config.getDuration("updating-state-timeout", MILLISECONDS).millis)
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -45,6 +47,7 @@ object ClusterShardingSettings {
       rememberEntities = config.getBoolean("remember-entities"),
       journalPluginId = config.getString("journal-plugin-id"),
       snapshotPluginId = config.getString("snapshot-plugin-id"),
+      stateStoreMode = config.getString("state-store-mode"),
       tuningParameters,
       coordinatorSingletonSettings)
   }
@@ -78,7 +81,9 @@ object ClusterShardingSettings {
     val rebalanceInterval: FiniteDuration,
     val snapshotAfter: Int,
     val leastShardAllocationRebalanceThreshold: Int,
-    val leastShardAllocationMaxSimultaneousRebalance: Int)
+    val leastShardAllocationMaxSimultaneousRebalance: Int,
+    val waitingForStateTimeout: FiniteDuration,
+    val updatingStateTimeout: FiniteDuration)
 }
 
 /**
@@ -101,8 +106,12 @@ final class ClusterShardingSettings(
   val rememberEntities: Boolean,
   val journalPluginId: String,
   val snapshotPluginId: String,
+  val stateStoreMode: String,
   val tuningParameters: ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
+
+  require(stateStoreMode == "persistence" || stateStoreMode == "ddata",
+    s"Unknown 'state-store-mode' [$stateStoreMode], valid values are 'persistence' or 'ddata'")
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))
 
@@ -127,6 +136,7 @@ final class ClusterShardingSettings(
                    rememberEntities: Boolean = rememberEntities,
                    journalPluginId: String = journalPluginId,
                    snapshotPluginId: String = snapshotPluginId,
+                   stateStoreMode: String = stateStoreMode,
                    tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
                    coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
@@ -134,6 +144,7 @@ final class ClusterShardingSettings(
       rememberEntities,
       journalPluginId,
       snapshotPluginId,
+      stateStoreMode,
       tuningParameters,
       coordinatorSingletonSettings)
 }

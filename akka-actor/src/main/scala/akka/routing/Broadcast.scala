@@ -120,7 +120,7 @@ final case class BroadcastPool(
  */
 @SerialVersionUID(1L)
 final case class BroadcastGroup(
-  paths: immutable.Iterable[String],
+  override val paths: immutable.Iterable[String],
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends Group {
 
@@ -133,6 +133,8 @@ final case class BroadcastGroup(
    *   sent with [[akka.actor.ActorSelection]] to these paths
    */
   def this(routeePaths: java.lang.Iterable[String]) = this(paths = immutableSeq(routeePaths))
+
+  override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
 
   override def createRouter(system: ActorSystem): Router = new Router(BroadcastRoutingLogic())
 

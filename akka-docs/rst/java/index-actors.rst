@@ -13,4 +13,5 @@ Actors
    fsm
    persistence
    persistence-query
+   persistence-query-leveldb
    testing

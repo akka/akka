@@ -19,14 +19,29 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore �
 
   private val idOffset = 10
   private var idMap: Map[String, Int] = Map.empty
+  private val idMapLock = new Object
 
   /**
    * Get the mapped numeric id for the specified persistent actor `id`. Creates and
    * stores a new mapping if necessary.
+   *
+   * This method is thread safe and it is allowed to call it from a another
+   * thread than the actor's thread. That is necessary for Future composition,
+   * e.g. `asyncReadHighestSequenceNr` followed by `asyncReplayMessages`.
    */
-  def numericId(id: String): Int = idMap.get(id) match {
-    case None    ⇒ writeIdMapping(id, idMap.size + idOffset)
-    case Some(v) ⇒ v
+  def numericId(id: String): Int = idMapLock.synchronized {
+    idMap.get(id) match {
+      case None    ⇒ writeIdMapping(id, idMap.size + idOffset)
+      case Some(v) ⇒ v
+    }
+  }
+
+  def isNewPersistenceId(id: String): Boolean = idMapLock.synchronized {
+    !idMap.contains(id)
+  }
+
+  def allPersistenceIds: Set[String] = idMapLock.synchronized {
+    idMap.keySet
   }
 
   private def readIdMap(): Map[String, Int] = withIterator { iter ⇒
@@ -48,8 +63,11 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore �
   private def writeIdMapping(id: String, numericId: Int): Int = {
     idMap = idMap + (id -> numericId)
     leveldb.put(keyToBytes(mappingKey(numericId)), id.getBytes(UTF_8))
+    newPersistenceIdAdded(id)
     numericId
   }
+
+  protected def newPersistenceIdAdded(id: String): Unit = ()
 
   override def preStart() {
     idMap = readIdMap()

@@ -21,6 +21,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.dispatch.Dispatchers
 import akka.japi.Util.immutableSeq
 import akka.routing._
+import akka.cluster.routing.ClusterRouterSettingsBase
 
 /**
  * Load balancing of messages to cluster nodes based on cluster metric data.
@@ -128,7 +129,7 @@ final case class AdaptiveLoadBalancingPool(
   extends Pool {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
-    this(nrOfInstances = config.getInt("nr-of-instances"),
+    this(nrOfInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
       usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
@@ -201,7 +202,7 @@ final case class AdaptiveLoadBalancingPool(
 @SerialVersionUID(1L)
 final case class AdaptiveLoadBalancingGroup(
   metricsSelector: MetricsSelector = MixMetricsSelector,
-  paths: immutable.Iterable[String] = Nil,
+  override val paths: immutable.Iterable[String] = Nil,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends Group {
 
@@ -218,6 +219,8 @@ final case class AdaptiveLoadBalancingGroup(
    */
   def this(metricsSelector: MetricsSelector,
            routeesPaths: java.lang.Iterable[String]) = this(paths = immutableSeq(routeesPaths))
+
+  override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
 
   override def createRouter(system: ActorSystem): Router =
     new Router(AdaptiveLoadBalancingRoutingLogic(system, metricsSelector))

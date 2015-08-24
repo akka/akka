@@ -128,9 +128,16 @@ private[akka] trait PoolOverrideUnsetConfig[T <: Pool] extends Pool {
  * Java API: Base class for custom router [[Group]]
  */
 abstract class GroupBase extends Group {
-  def getPaths: java.lang.Iterable[String]
+  @deprecated("Implement getPaths with ActorSystem parameter instead", "2.4")
+  def getPaths: java.lang.Iterable[String] = null
 
+  @deprecated("Use paths with ActorSystem parameter instead", "2.4")
   override final def paths: immutable.Iterable[String] = immutableSeq(getPaths)
+
+  def getPaths(system: ActorSystem): java.lang.Iterable[String]
+
+  override final def paths(system: ActorSystem): immutable.Iterable[String] =
+    immutableSeq(getPaths(system))
 }
 
 /**
@@ -140,7 +147,10 @@ abstract class GroupBase extends Group {
  */
 trait Group extends RouterConfig {
 
-  def paths: immutable.Iterable[String]
+  @deprecated("Implement paths with ActorSystem parameter instead", "2.4")
+  def paths: immutable.Iterable[String] = null
+
+  def paths(system: ActorSystem): immutable.Iterable[String]
 
   /**
    * [[akka.actor.Props]] for a group router based on the settings defined by

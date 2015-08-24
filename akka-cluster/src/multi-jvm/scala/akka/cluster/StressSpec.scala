@@ -141,7 +141,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.actor.deployment {
       /master-node-1/workers {
         router = round-robin-pool
-        nr-of-instances = 100
         cluster {
           enabled = on
           max-nr-of-instances-per-node = 1
@@ -150,7 +149,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       }
       /master-node-2/workers {
         router = round-robin-group
-        nr-of-instances = 100
         routees.paths = ["/user/worker"]
         cluster {
           enabled = on
@@ -159,7 +157,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       }
       /master-node-3/workers = {
         router = adaptive-pool
-        nr-of-instances = 100
         cluster {
           enabled = on
           max-nr-of-instances-per-node = 1
