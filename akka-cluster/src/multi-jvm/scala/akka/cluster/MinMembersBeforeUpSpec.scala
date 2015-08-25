@@ -26,6 +26,17 @@ object MinMembersBeforeUpMultiJvmSpec extends MultiNodeConfig {
     withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
+object MinMembersBeforeUpWithWeaklyUpMultiJvmSpec extends MultiNodeConfig {
+  val first = role("first")
+  val second = role("second")
+  val third = role("third")
+
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+      akka.cluster.min-nr-of-members = 3
+      akka.cluster.allow-weakly-up-members = on""")).
+    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+}
+
 object MinMembersOfRoleBeforeUpMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
@@ -46,6 +57,10 @@ class MinMembersBeforeUpMultiJvmNode1 extends MinMembersBeforeUpSpec
 class MinMembersBeforeUpMultiJvmNode2 extends MinMembersBeforeUpSpec
 class MinMembersBeforeUpMultiJvmNode3 extends MinMembersBeforeUpSpec
 
+class MinMembersBeforeUpWithWeaklyUpMultiJvmNode1 extends MinMembersBeforeUpSpec
+class MinMembersBeforeUpWithWeaklyUpMultiJvmNode2 extends MinMembersBeforeUpSpec
+class MinMembersBeforeUpWithWeaklyUpMultiJvmNode3 extends MinMembersBeforeUpSpec
+
 class MinMembersOfRoleBeforeUpMultiJvmNode1 extends MinMembersOfRoleBeforeUpSpec
 class MinMembersOfRoleBeforeUpMultiJvmNode2 extends MinMembersOfRoleBeforeUpSpec
 class MinMembersOfRoleBeforeUpMultiJvmNode3 extends MinMembersOfRoleBeforeUpSpec
@@ -58,6 +73,19 @@ abstract class MinMembersBeforeUpSpec extends MinMembersBeforeUpBase(MinMembersB
 
   "Cluster leader" must {
     "wait with moving members to UP until minimum number of members have joined" taggedAs LongRunningTest in {
+      testWaitMovingMembersToUp()
+    }
+  }
+}
+
+abstract class MinMembersBeforeUpWithWeaklyUpSpec extends MinMembersBeforeUpBase(MinMembersBeforeUpMultiJvmSpec) {
+
+  override def first: RoleName = MinMembersBeforeUpWithWeaklyUpMultiJvmSpec.first
+  override def second: RoleName = MinMembersBeforeUpWithWeaklyUpMultiJvmSpec.second
+  override def third: RoleName = MinMembersBeforeUpWithWeaklyUpMultiJvmSpec.third
+
+  "Cluster leader" must {
+    "wait with moving members to UP until minimum number of members have joined with weakly up enabled" taggedAs LongRunningTest in {
       testWaitMovingMembersToUp()
     }
   }

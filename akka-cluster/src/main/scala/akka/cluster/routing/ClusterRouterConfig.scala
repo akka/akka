@@ -382,7 +382,7 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
   }
 
   def isAvailable(m: Member): Boolean =
-    m.status == MemberStatus.Up &&
+    (m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp) &&
       satisfiesRole(m.roles) &&
       (settings.allowLocalRoutees || m.address != cluster.selfAddress)
 

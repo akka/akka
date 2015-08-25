@@ -169,6 +169,27 @@ leaving member will be shutdown after the leader has changed status of the membe
 automatically, but in case of network failures during this process it might still be necessary
 to set the node’s status to ``Down`` in order to complete the removal.
 
+WeaklyUp Members
+^^^^^^^^^^^^^^^^
+
+If a node is ``unreachable`` then gossip convergence is not possible and therefore any
+``leader`` actions are also not possible. However, we still might want new nodes to join
+the cluster in this scenario.
+
+With a configuration option you can allow this behavior::
+
+    akka.cluster.allow-weakly-up-members = on
+
+When ``allow-weakly-up-members`` is enabled and there is no gossip convergence,
+``Joining`` members will be promoted to ``WeaklyUp`` and they will become part of the
+cluster. Once gossip convergence is reached, the leader will move ``WeaklyUp``
+members to ``Up``.
+
+.. warning::
+
+  This feature is only available from Akka 2.4.0 and cannot be used if some of your
+  cluster members are running an older version of Akka.
+
 .. _cluster_subscriber_java:
 
 Subscribe to Cluster Events

@@ -122,6 +122,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   // TODO collapse to ClusterEvent._ after akka-cluster metrics is gone
   import ClusterEvent.MemberEvent
   import ClusterEvent.MemberUp
+  import ClusterEvent.MemberWeaklyUp
   import ClusterEvent.MemberRemoved
   import ClusterEvent.MemberExited
   import ClusterEvent.ReachabilityEvent
@@ -174,6 +175,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
     case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
     case state: CurrentClusterState ⇒ receiveState(state)
     case MemberUp(m)                ⇒ addMember(m)
+    case MemberWeaklyUp(m)          ⇒ addMember(m)
     case MemberRemoved(m, _)        ⇒ removeMember(m)
     case MemberExited(m)            ⇒ removeMember(m)
     case UnreachableMember(m)       ⇒ removeMember(m)
