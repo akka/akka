@@ -10,8 +10,8 @@ import akka.japi.{ Option ⇒ JOption }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
-final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRange) extends ValueRenderable {
-  def matches(contentType: ContentType) =
+final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRange) extends jm.ContentTypeRange with ValueRenderable {
+  def matches(contentType: jm.ContentType) =
     mediaRange.matches(contentType.mediaType) && charsetRange.matches(contentType.charset)
 
   def render[R <: Rendering](r: R): r.type = charsetRange match {
