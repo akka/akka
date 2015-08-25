@@ -19,22 +19,17 @@ import akka.http.scaladsl.TestUtils.writeAllText
 
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
-  override def testConfigSource =
-    """akka.http.routing {
-      |  file-chunking-threshold-size = 16
-      |  file-chunking-chunk-size = 8
-      |  range-coalescing-threshold = 1
-      |}""".stripMargin
+  override def testConfigSource = "akka.http.routing.range-coalescing-threshold = 1"
 
   "getFromFile" should {
     "reject non-GET requests" in {
-      Put() ~> getFromFile("some") ~> check { handled shouldEqual (false) }
+      Put() ~> getFromFile("some") ~> check { handled shouldEqual false }
     }
     "reject requests to non-existing files" in {
-      Get() ~> getFromFile("nonExistentFile") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromFile("nonExistentFile") ~> check { handled shouldEqual false }
     }
     "reject requests to directories" in {
-      Get() ~> getFromFile(Properties.javaHome) ~> check { handled shouldEqual (false) }
+      Get() ~> getFromFile(Properties.javaHome) ~> check { handled shouldEqual false }
     }
     "return the file content with the MediaType matching the file extension" in {
       val file = File.createTempFile("akka Http Test", ".PDF")
@@ -82,9 +77,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
           mediaType.withParams(Map.empty) shouldEqual `multipart/byteranges`
 
           val parts = responseAs[Multipart.ByteRanges].toStrict(1.second).awaitResult(3.seconds).strictParts
-          parts.size shouldEqual 2
-          parts(0).entity.data.utf8String shouldEqual "BCDEFGHIJK"
-          parts(1).entity.data.utf8String shouldEqual "QRSTUVWXYZ"
+          parts should contain theSameElementsAs List("BCDEFGHIJK", "QRSTUVWXYZ")
         }
       } finally file.delete
     }
@@ -92,22 +85,22 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
 
   "getFromResource" should {
     "reject non-GET requests" in {
-      Put() ~> getFromResource("some") ~> check { handled shouldEqual (false) }
+      Put() ~> getFromResource("some") ~> check { handled shouldEqual false }
     }
     "reject requests to non-existing resources" in {
-      Get() ~> getFromResource("nonExistingResource") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromResource("nonExistingResource") ~> check { handled shouldEqual false }
     }
     "reject requests to directory resources" in {
-      Get() ~> getFromResource("someDir") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromResource("someDir") ~> check { handled shouldEqual false }
     }
     "reject requests to directory resources with trailing slash" in {
-      Get() ~> getFromResource("someDir/") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromResource("someDir/") ~> check { handled shouldEqual false }
     }
     "reject requests to directory resources from an archive " in {
-      Get() ~> getFromResource("com/typesafe/config") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromResource("com/typesafe/config") ~> check { handled shouldEqual false }
     }
     "reject requests to directory resources from an archive with trailing slash" in {
-      Get() ~> getFromResource("com/typesafe/config/") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromResource("com/typesafe/config/") ~> check { handled shouldEqual false }
     }
     "return the resource from an archive with spaces and umlauts" in {
       // contained within lib/jar with späces.jar
@@ -151,7 +144,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
 
   "getFromResourceDirectory" should {
     "reject requests to non-existing resources" in {
-      Get("not/found") ~> getFromResourceDirectory("subDirectory") ~> check { handled shouldEqual (false) }
+      Get("not/found") ~> getFromResourceDirectory("subDirectory") ~> check { handled shouldEqual false }
     }
     val verify = check {
       mediaType shouldEqual `application/pdf`
@@ -173,22 +166,22 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "reject requests to directory resources" in {
-      Get() ~> getFromResourceDirectory("subDirectory") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromResourceDirectory("subDirectory") ~> check { handled shouldEqual false }
     }
     "reject requests to directory resources with trailing slash" in {
-      Get() ~> getFromResourceDirectory("subDirectory/") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromResourceDirectory("subDirectory/") ~> check { handled shouldEqual false }
     }
     "reject requests to sub directory resources" in {
-      Get("sub") ~> getFromResourceDirectory("someDir") ~> check { handled shouldEqual (false) }
+      Get("sub") ~> getFromResourceDirectory("someDir") ~> check { handled shouldEqual false }
     }
     "reject requests to sub directory resources with trailing slash" in {
-      Get("sub/") ~> getFromResourceDirectory("someDir") ~> check { handled shouldEqual (false) }
+      Get("sub/") ~> getFromResourceDirectory("someDir") ~> check { handled shouldEqual false }
     }
     "reject requests to directory resources from an archive" in {
-      Get() ~> getFromResourceDirectory("com/typesafe/config") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromResourceDirectory("com/typesafe/config") ~> check { handled shouldEqual false }
     }
     "reject requests to directory resources from an archive with trailing slash" in {
-      Get() ~> getFromResourceDirectory("com/typesafe/config/") ~> check { handled shouldEqual (false) }
+      Get() ~> getFromResourceDirectory("com/typesafe/config/") ~> check { handled shouldEqual false }
     }
   }
 
@@ -357,7 +350,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "reject requests to file resources" in {
-      Get() ~> listDirectoryContents(base + "subDirectory/empty.pdf") ~> check { handled shouldEqual (false) }
+      Get() ~> listDirectoryContents(base + "subDirectory/empty.pdf") ~> check { handled shouldEqual false }
     }
   }
 
