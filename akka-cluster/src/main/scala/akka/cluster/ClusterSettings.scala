@@ -75,6 +75,8 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     }
   }
 
+  val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
+
   val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")

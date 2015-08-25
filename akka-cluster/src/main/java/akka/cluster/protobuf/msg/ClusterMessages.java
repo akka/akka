@@ -138,6 +138,10 @@ public final class ClusterMessages {
      * <code>Removed = 5;</code>
      */
     Removed(5, 5),
+    /**
+     * <code>WeaklyUp = 6;</code>
+     */
+    WeaklyUp(6, 6),
     ;
 
     /**
@@ -164,6 +168,10 @@ public final class ClusterMessages {
      * <code>Removed = 5;</code>
      */
     public static final int Removed_VALUE = 5;
+    /**
+     * <code>WeaklyUp = 6;</code>
+     */
+    public static final int WeaklyUp_VALUE = 6;
 
 
     public final int getNumber() { return value; }
@@ -176,6 +184,7 @@ public final class ClusterMessages {
         case 3: return Exiting;
         case 4: return Down;
         case 5: return Removed;
+        case 6: return WeaklyUp;
         default: return null;
       }
     }
@@ -16783,10 +16792,11 @@ public final class ClusterMessages {
       "ort\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"7\n\rUniqueAdd" +
       "ress\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002" +
       " \002(\r*D\n\022ReachabilityStatus\022\r\n\tReachable\020" +
-      "\000\022\017\n\013Unreachable\020\001\022\016\n\nTerminated\020\002*T\n\014Me" +
+      "\000\022\017\n\013Unreachable\020\001\022\016\n\nTerminated\020\002*b\n\014Me" +
       "mberStatus\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leavi" +
       "ng\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005" +
-      "B\035\n\031akka.cluster.protobuf.msgH\001"
+      "\022\014\n\010WeaklyUp\020\006B\035\n\031akka.cluster.protobuf.",
+      "msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
