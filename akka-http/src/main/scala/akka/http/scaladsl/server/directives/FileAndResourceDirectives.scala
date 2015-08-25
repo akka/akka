@@ -10,14 +10,18 @@ import java.net.{ URI, URL }
 
 import akka.stream.ActorAttributes
 import akka.stream.io.{ InputStreamSource, SynchronousFileSource }
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 
 import scala.annotation.tailrec
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.marshalling.{ Marshaller, ToEntityMarshaller }
+import akka.http.scaladsl.marshalling.{ ToResponseMarshallable, Marshaller, ToEntityMarshaller }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
+
+import scala.concurrent.Future
 
 trait FileAndResourceDirectives {
   import CacheConditionDirectives._
@@ -53,9 +57,7 @@ trait FileAndResourceDirectives {
           withRangeSupport {
             extractSettings { settings ⇒
               complete {
-                HttpEntity.Default(contentType, file.length,
-                  SynchronousFileSource(file)
-                    .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
+                autoChunked(SynchronousFileSource(file), contentType, file.length, settings)
               }
             }
           }
@@ -70,6 +72,18 @@ trait FileAndResourceDirectives {
         val lastModifiedDateTime = DateTime(math.min(lastModified, System.currentTimeMillis))
         conditional(EntityTag(tag), lastModifiedDateTime)
       } else pass)
+
+  private def autoChunked(source: Source[ByteString, Future[Long]], contentType: ContentType, length: Long,
+                          settings: RoutingSettings): ToResponseMarshallable = {
+    import settings._
+    val src = source.withAttributes(ActorAttributes.dispatcher(fileIODispatcher))
+    if (length <= fileChunkingThresholdSize)
+      HttpEntity.Default(contentType, length, src)
+    else
+      HttpEntity.Chunked.fromData(contentType,
+        src.transform(() ⇒ StreamUtils.limitByteChunksStage(fileChunkingChunkSize)))
+
+  }
 
   /**
    * Completes GET requests with the content of the given class-path resource.
@@ -316,6 +330,7 @@ object DirectoryListing {
             .append(" " * (maxNameLen - name.length))
         def renderDirectory(file: File, name: String) =
           start(name + '/').append("        ").append(lastModified(file)).append('\n')
+
         def renderFile(file: File, name: String) = {
           val size = akka.http.impl.util.humanReadableByteCount(file.length, si = true)
           start(name).append("        ").append(lastModified(file))

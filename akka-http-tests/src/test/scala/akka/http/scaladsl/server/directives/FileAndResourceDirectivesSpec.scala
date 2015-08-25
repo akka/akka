@@ -6,6 +6,8 @@ package akka.http.scaladsl.server
 package directives
 
 import java.io.File
+import akka.stream.scaladsl.Sink
+
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Properties
@@ -62,10 +64,10 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "return a single range from a file" in {
       val file = File.createTempFile("partialTest", null)
       try {
-        writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
+        writeAllText("ABCDEFGHIJKLMNO", file)
         Get() ~> addHeader(Range(ByteRange(0, 10))) ~> getFromFile(file) ~> check {
           status shouldEqual StatusCodes.PartialContent
-          headers should contain(`Content-Range`(ContentRange(0, 10, 26)))
+          headers should contain(`Content-Range`(ContentRange(0, 10, 15)))
           responseAs[String] shouldEqual "ABCDEFGHIJK"
         }
       } finally file.delete
@@ -74,8 +76,8 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "return multiple ranges from a file at once" in {
       val file = File.createTempFile("partialTest", null)
       try {
-        writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
-        val rangeHeader = Range(ByteRange(1, 10), ByteRange.suffix(10))
+        writeAllText("ABCDEFGHIJKLMNO", file)
+        val rangeHeader = Range(ByteRange(1, 5), ByteRange.suffix(5))
         Get() ~> addHeader(rangeHeader) ~> getFromFile(file, ContentTypes.`text/plain`) ~> check {
           status shouldEqual StatusCodes.PartialContent
           header[`Content-Range`] shouldEqual None
@@ -83,8 +85,29 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
 
           val parts = responseAs[Multipart.ByteRanges].toStrict(1.second).awaitResult(3.seconds).strictParts
           parts.size shouldEqual 2
-          parts(0).entity.data.utf8String shouldEqual "BCDEFGHIJK"
-          parts(1).entity.data.utf8String shouldEqual "QRSTUVWXYZ"
+          parts(0).entity.data.utf8String shouldEqual "BCDEF"
+          parts(1).entity.data.utf8String shouldEqual "KLMNO"
+        }
+      } finally file.delete
+    }
+
+    "return a chunked response for files larger than the configured file-chunking-threshold-size" in {
+      val file = File.createTempFile("chuckTest", ".xml")
+      try {
+        writeAllText("<this could be XML if it were formatted correctly>", file)
+        Get() ~> getFromFile(file) ~> check {
+          mediaType === `text/xml`
+          definedCharset === Some(HttpCharsets.`UTF-8`)
+          header[`Last-Modified`] shouldEqual Some(`Last-Modified`(DateTime(file.lastModified)))
+
+          val chunks = responseEntity.asInstanceOf[HttpEntity.Chunked]
+            .chunks
+            .runWith(Sink.fold("") { (acc, c) ⇒
+              val s = c.data.decodeString("UTF-8")
+              if (acc.isEmpty) s else acc + "|" + s
+            })
+            .awaitResult(3.seconds)
+          chunks === "<this co|uld be X|ML if it| were fo|rmatted |correctl|y>"
         }
       } finally file.delete
     }
