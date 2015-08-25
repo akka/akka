@@ -168,7 +168,8 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     MemberStatus.Leaving -> cm.MemberStatus.Leaving_VALUE,
     MemberStatus.Exiting -> cm.MemberStatus.Exiting_VALUE,
     MemberStatus.Down -> cm.MemberStatus.Down_VALUE,
-    MemberStatus.Removed -> cm.MemberStatus.Removed_VALUE)
+    MemberStatus.Removed -> cm.MemberStatus.Removed_VALUE,
+    MemberStatus.WeaklyUp -> cm.MemberStatus.WeaklyUp_VALUE)
 
   private val memberStatusFromInt = memberStatusToInt.map { case (a, b) ⇒ (b, a) }
 

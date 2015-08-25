@@ -108,6 +108,8 @@ object Member {
       case (_, Exiting)         ⇒ true
       case (Joining, _)         ⇒ false
       case (_, Joining)         ⇒ true
+      case (WeaklyUp, _)        ⇒ false
+      case (_, WeaklyUp)        ⇒ true
       case _                    ⇒ ordering.compare(a, b) <= 0
     }
   }
@@ -140,17 +142,19 @@ object Member {
    * Picks the Member with the highest "priority" MemberStatus.
    */
   def highestPriorityOf(m1: Member, m2: Member): Member = (m1.status, m2.status) match {
-    case (Removed, _) ⇒ m1
-    case (_, Removed) ⇒ m2
-    case (Down, _)    ⇒ m1
-    case (_, Down)    ⇒ m2
-    case (Exiting, _) ⇒ m1
-    case (_, Exiting) ⇒ m2
-    case (Leaving, _) ⇒ m1
-    case (_, Leaving) ⇒ m2
-    case (Joining, _) ⇒ m2
-    case (_, Joining) ⇒ m1
-    case (Up, Up)     ⇒ m1
+    case (Removed, _)  ⇒ m1
+    case (_, Removed)  ⇒ m2
+    case (Down, _)     ⇒ m1
+    case (_, Down)     ⇒ m2
+    case (Exiting, _)  ⇒ m1
+    case (_, Exiting)  ⇒ m2
+    case (Leaving, _)  ⇒ m1
+    case (_, Leaving)  ⇒ m2
+    case (Joining, _)  ⇒ m2
+    case (_, Joining)  ⇒ m1
+    case (WeaklyUp, _) ⇒ m2
+    case (_, WeaklyUp) ⇒ m1
+    case (Up, Up)      ⇒ m1
   }
 
 }
@@ -164,6 +168,7 @@ abstract class MemberStatus
 
 object MemberStatus {
   @SerialVersionUID(1L) case object Joining extends MemberStatus
+  @SerialVersionUID(1L) case object WeaklyUp extends MemberStatus
   @SerialVersionUID(1L) case object Up extends MemberStatus
   @SerialVersionUID(1L) case object Leaving extends MemberStatus
   @SerialVersionUID(1L) case object Exiting extends MemberStatus
@@ -205,7 +210,8 @@ object MemberStatus {
    */
   private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
     Map(
-      Joining -> Set(Up, Down, Removed),
+      Joining -> Set(WeaklyUp, Up, Down, Removed),
+      WeaklyUp -> Set(Up, Down, Removed),
       Up -> Set(Leaving, Down, Removed),
       Leaving -> Set(Exiting, Down, Removed),
       Down -> Set(Removed),

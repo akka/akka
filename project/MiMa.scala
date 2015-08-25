@@ -540,7 +540,10 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Pair.toString"),
       
       // #17805
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.clearActorFields")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.clearActorFields"),
+      
+      // #13584 change in internal actor
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterCoreDaemon.akka$cluster$ClusterCoreDaemon$$isJoiningToUp$1")
 
      )
   }
