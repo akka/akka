@@ -156,6 +156,7 @@ private[http] object JavaMapping {
   implicit object DateTime extends Inherited[jm.DateTime, akka.http.scaladsl.model.DateTime]
 
   implicit object ContentType extends Inherited[jm.ContentType, sm.ContentType]
+  implicit object ContentTypeRange extends Inherited[jm.ContentTypeRange, sm.ContentTypeRange]
   implicit object Host extends Inherited[jm.Host, sm.Uri.Host]
   implicit object HttpCharset extends Inherited[jm.HttpCharset, sm.HttpCharset]
   implicit object HttpCharsetRange extends Inherited[jm.HttpCharsetRange, sm.HttpCharsetRange]
