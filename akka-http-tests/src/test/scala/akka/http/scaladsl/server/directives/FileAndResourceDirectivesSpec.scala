@@ -77,7 +77,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
           mediaType.withParams(Map.empty) shouldEqual `multipart/byteranges`
 
           val parts = responseAs[Multipart.ByteRanges].toStrict(1.second).awaitResult(3.seconds).strictParts
-          parts should contain theSameElementsAs List("BCDEFGHIJK", "QRSTUVWXYZ")
+          parts.map(_.entity.data.utf8String) should contain theSameElementsAs List("BCDEFGHIJK", "QRSTUVWXYZ")
         }
       } finally file.delete
     }
