@@ -97,7 +97,7 @@ trait RangeDirectives {
         case _                  ⇒ None
       }
 
-      def applyRanges(ranges: Seq[ByteRange]): Directive0 =
+      def applyRanges(ranges: immutable.Seq[ByteRange]): Directive0 =
         extractRequestContext.flatMap { ctx ⇒
           mapRouteResultWithPF {
             case Complete(HttpResponse(OK, headers, entity, protocol)) ⇒
