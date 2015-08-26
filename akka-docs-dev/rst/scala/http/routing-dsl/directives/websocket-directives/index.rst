@@ -7,3 +7,4 @@ WebsocketDirectives
    :maxdepth: 1
 
    handleWebsocketMessages
+   handleWebsocketMessagesForProtocol

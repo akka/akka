@@ -353,6 +353,11 @@ object TestSubscriber {
       subscription.cancel()
       this
     }
+
+    def requestNext(): T = {
+      subscription.request(1)
+      expectNext()
+    }
   }
 }
 
