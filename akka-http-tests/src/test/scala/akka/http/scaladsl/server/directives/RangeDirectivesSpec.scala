@@ -78,13 +78,13 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
     "reject an unsatisfiable single range" in {
       Get() ~> addHeader(Range(ByteRange(100, 200))) ~> completeWithRangedBytes(10) ~> check {
-        rejection shouldEqual UnsatisfiableRangeRejection(Seq(ByteRange(100, 200)), 10)
+        rejection shouldEqual UnsatisfiableRangeRejection(ByteRange(100, 200) :: Nil, 10)
       }
     }
 
     "reject an unsatisfiable single suffix range with length 0" in {
       Get() ~> addHeader(Range(ByteRange.suffix(0))) ~> completeWithRangedBytes(42) ~> check {
-        rejection shouldEqual UnsatisfiableRangeRejection(Seq(ByteRange.suffix(0)), 42)
+        rejection shouldEqual UnsatisfiableRangeRejection(ByteRange.suffix(0) :: Nil, 42)
       }
     }
 
