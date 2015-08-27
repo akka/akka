@@ -752,7 +752,12 @@ For this purpose you can define a separate dispatcher to be used for the cluster
     type = "Dispatcher"
     executor = "fork-join-executor"
     fork-join-executor {
-      parallelism-min = 2
-      parallelism-max = 4
+      parallelism-min = 5
+      parallelism-max = 5
     }
   }
+
+.. warning:: 
+
+   Don't use a dispatcher with less than 5 threads, because otherwise there is a risk of 
+   deadlock when initializing the Cluster extension. This limitation does not exist in in Akka 2.4.x.
