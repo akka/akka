@@ -4,7 +4,7 @@
 
 package akka.cluster.routing
 
-// TODO remove metrics 
+// TODO remove metrics
 
 import language.postfixOps
 import java.lang.management.ManagementFactory
@@ -40,12 +40,12 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
         // getMax can be undefined (-1)
         val max = math.max(heap.getMax, heap.getCommitted)
         val used = heap.getUsed
-        log.debug("used heap before: [{}] bytes, of max [{}]", used, heap.getMax)
+        log.info("used heap before: [{}] bytes, of max [{}]", used, heap.getMax)
         // allocate 70% of free space
         val allocateBytes = (0.7 * (max - used)).toInt
         val numberOfArrays = allocateBytes / 1024
         usedMemory = Array.ofDim(numberOfArrays, 248) // each 248 element Int array will use ~ 1 kB
-        log.debug("used heap after: [{}] bytes", ManagementFactory.getMemoryMXBean.getHeapMemoryUsage.getUsed)
+        log.info("used heap after: [{}] bytes", ManagementFactory.getMemoryMXBean.getHeapMemoryUsage.getUsed)
         sender() ! "done"
     }
   }
@@ -58,6 +58,7 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+      akka.failure-detector.acceptable-heartbeat-pause = 10s
       akka.cluster.metrics.collect-interval = 1s
       akka.cluster.metrics.gossip-interval = 1s
       akka.cluster.metrics.moving-average-half-life = 2s

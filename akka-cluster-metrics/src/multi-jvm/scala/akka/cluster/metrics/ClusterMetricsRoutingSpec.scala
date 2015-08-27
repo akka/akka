@@ -39,12 +39,12 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
         // getMax can be undefined (-1)
         val max = math.max(heap.getMax, heap.getCommitted)
         val used = heap.getUsed
-        log.debug("used heap before: [{}] bytes, of max [{}]", used, heap.getMax)
+        log.info("used heap before: [{}] bytes, of max [{}]", used, heap.getMax)
         // allocate 70% of free space
         val allocateBytes = (0.7 * (max - used)).toInt
         val numberOfArrays = allocateBytes / 1024
         usedMemory = Array.ofDim(numberOfArrays, 248) // each 248 element Int array will use ~ 1 kB
-        log.debug("used heap after: [{}] bytes", ManagementFactory.getMemoryMXBean.getHeapMemoryUsage.getUsed)
+        log.info("used heap after: [{}] bytes", ManagementFactory.getMemoryMXBean.getHeapMemoryUsage.getUsed)
         sender() ! "done"
     }
   }
@@ -72,6 +72,8 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
 
       # Enable metrics estension.
       akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
+
+      akka.failure-detector.acceptable-heartbeat-pause = 10s
 
       # Use rapid metrics collection.
       akka.cluster.metrics {
