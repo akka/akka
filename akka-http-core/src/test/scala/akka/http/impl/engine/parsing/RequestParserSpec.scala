@@ -241,7 +241,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           val parser = newParser
           val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
           val HttpEntity.Chunked(_, chunks) = result.head.right.get.req.entity
-          val strictChunks = chunks.grouped(100000).runWith(Sink.head).awaitResult(awaitAtMost)
+          val strictChunks = chunks.runWith(Sink.toSeq).awaitResult(awaitAtMost)
           strictChunks.size shouldEqual numChunks
         }
       }
@@ -531,7 +531,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         }
         .flatten(FlattenStrategy.concat)
         .map(strictEqualify)
-        .grouped(100000).runWith(Sink.head)
+        .runWith(Sink.toSeq)
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
@@ -544,7 +544,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart, Any]): Future[Seq[ChunkStreamPart]] =
-      data.grouped(100000).runWith(Sink.head)
+      data.runWith(Sink.toSeq)
         .fast.recover { case _: NoSuchElementException ⇒ Nil }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")

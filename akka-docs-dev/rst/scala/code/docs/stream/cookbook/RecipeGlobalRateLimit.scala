@@ -29,7 +29,6 @@ class RecipeGlobalRateLimit extends RecipeSpec {
       val tokenRefreshPeriod: FiniteDuration,
       val tokenRefreshAmount: Int) extends Actor {
       import Limiter._
-      import context.dispatcher
       import akka.actor.Status
 
       private var waitQueue = immutable.Queue.empty[ActorRef]
@@ -81,7 +80,6 @@ class RecipeGlobalRateLimit extends RecipeSpec {
         import akka.pattern.ask
         import akka.util.Timeout
         Flow[T].mapAsync(4)((element: T) => {
-          import system.dispatcher
           implicit val triggerTimeout = Timeout(maxAllowedWait)
           val limiterTriggerFuture = limiter ? Limiter.WantToPass
           limiterTriggerFuture.map((_) => element)

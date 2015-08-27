@@ -257,7 +257,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       val f = Source(1 to N).transform(() ⇒ new MapAsyncOne(i ⇒ {
         probe.ref ! i
         Future { Thread.sleep(10); probe.ref ! (i + 10); i * 2 }
-      })).grouped(N + 10).runWith(Sink.head)
+      })).runWith(Sink.toSeq)
       Await.result(f, 2.seconds) should ===((1 to N).map(_ * 2))
       probe.receiveN(2 * N) should ===((1 to N).flatMap(x ⇒ List(x, x + 10)))
       probe.expectNoMsg(100.millis)

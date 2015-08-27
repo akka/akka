@@ -37,6 +37,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val mat = ActorMaterializer(settings)
+  import mat.executionContext
 
   val identity: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ in.map(e ⇒ e)
   val identity2: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ identity(in)
@@ -317,12 +318,12 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val identity1 = Flow[Int].toProcessor
       val identity2 = Flow(() ⇒ identity1.run())
       Await.result(
-        Source(1 to 10).via(identity2).grouped(100).runWith(Sink.head),
+        Source(1 to 10).via(identity2).runWith(Sink.toSeq),
         3.seconds) should ===(1 to 10)
 
       // Reusable:
       Await.result(
-        Source(1 to 10).via(identity2).grouped(100).runWith(Sink.head),
+        Source(1 to 10).via(identity2).runWith(Sink.toSeq),
         3.seconds) should ===(1 to 10)
     }
   }

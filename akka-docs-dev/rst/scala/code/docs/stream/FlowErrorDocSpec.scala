@@ -69,6 +69,7 @@ class FlowErrorDocSpec extends AkkaSpec {
   "demonstrate restart section" in {
     //#restart-section
     implicit val mat = ActorMaterializer()
+    import mat.executionContext
     val decider: Supervision.Decider = {
       case _: IllegalArgumentException => Supervision.Restart
       case _                           => Supervision.Stop
@@ -80,7 +81,7 @@ class FlowErrorDocSpec extends AkkaSpec {
       }
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
     val source = Source(List(1, 3, -1, 5, 7)).via(flow)
-    val result = source.grouped(1000).runWith(Sink.head)
+    val result = source.runWith(Sink.toSeq)
     // the negative element cause the scan stage to be restarted,
     // i.e. start from 0 again
     // result here will be a Future completed with Success(Vector(0, 1, 4, 0, 5, 12))

@@ -27,6 +27,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     akka.io.tcp.trace-logging = off
     akka.io.tcp.windows-connection-abort-workaround-enabled=auto""") with ScalaFutures {
   implicit val materializer = ActorMaterializer()
+  import materializer.executionContext
   val timeout = Timeout(Span(3, Seconds))
 
   "The client implementation" should {
@@ -54,7 +55,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
   }
 
   def pipeline(clientContext: HttpsContext, hostname: String): HttpRequest ⇒ Future[HttpResponse] = req ⇒
-    Source.single(req).via(pipelineFlow(clientContext, hostname)).runWith(Sink.head)
+    Source.single(req).via(pipelineFlow(clientContext, hostname)).runWith(Sink.single)
 
   def pipelineFlow(clientContext: HttpsContext, hostname: String): Flow[HttpRequest, HttpResponse, Unit] = {
     val handler: HttpRequest ⇒ HttpResponse = _ ⇒ HttpResponse()

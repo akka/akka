@@ -75,7 +75,8 @@ sealed trait HttpEntity extends jm.HttpEntity {
       }
 
     // TODO timerTransform is meant to be replaced / rewritten, it's currently private[akka]; See https://github.com/akka/akka/issues/16393
-    dataBytes.via(Flow[ByteString].timerTransform(transformer).named("toStrict")).runWith(Sink.head)
+    import fm.executionContext
+    dataBytes.via(Flow[ByteString].timerTransform(transformer).named("toStrict")).runWith(Sink.single)
   }
 
   /**

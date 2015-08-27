@@ -9,6 +9,8 @@ import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
+import scala.collection.immutable
+import scala.collection.JavaConverters._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
@@ -100,6 +102,36 @@ object Sink {
    */
   def head[In](): Sink[In, Future[In]] =
     new Sink(scaladsl.Sink.head[In])
+
+  /**
+   * A `Sink` that materializes into a `Future` of all elements in the stream
+   * as a strict collection.
+   * If the stream is inifite, this will never complete but it will consume
+   * all of your memory.
+   *
+   * (This is the same as [[toSeq]], but with a more Java friendly name.)
+   */
+  def toList[In](ec: ExecutionContext): Sink[In, Future[java.util.List[In]]] =
+    toSeq(ec)
+
+  /**
+   * A `Sink` that materializes into a `Future` of all elements in the stream
+   * as a strict collection.
+   * If the stream is inifite, this will never complete but it will consume
+   * all of your memory.
+   */
+  def toSeq[In](ec: ExecutionContext): Sink[In, Future[java.util.List[In]]] =
+    new Sink(scaladsl.Sink.toSeq[In](ec)
+      .mapMaterializedValue { _.map { _.asJava }(ec) })
+
+  /**
+   * A `Sink` that drains a stream and returns the sole element
+   * that the stream produced.
+   * If the stream did not produce exactly one element, a failed Future will be
+   * returned.
+   */
+  def single[In](ec: ExecutionContext): Sink[In, Future[In]] =
+    new Sink(scaladsl.Sink.single[In](ec))
 
   /**
    * Sends the elements of the stream to the given `ActorRef`.

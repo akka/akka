@@ -92,7 +92,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val b1 = Await.result(binding, 3.seconds)
 
       val (_, f) = Http().outgoingConnection(hostname, port)
-        .runWith(Source.single(HttpRequest(uri = "/abc")), Sink.head)
+        .runWith(Source.single(HttpRequest(uri = "/abc")), Sink.single)
 
       Await.result(f, 1.second)
       Await.result(b1.unbind(), 1.second)
@@ -121,7 +121,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       def runRequest(uri: Uri): Unit =
         Http().outgoingConnection(hostname, port)
-          .runWith(Source.single(HttpRequest(uri = uri)), Sink.head)
+          .runWith(Source.single(HttpRequest(uri = uri)), Sink.single)
 
       runRequest("/slow")
 
@@ -148,7 +148,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
         EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
           val (_, responseFuture) =
-            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
+            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.single)(materializer2)
           try Await.result(responseFuture, 5.second).status should ===(StatusCodes.InternalServerError)
           catch {
             case _: StreamTcpException ⇒
@@ -167,7 +167,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
         EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
           val (_, responseFuture) =
-            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
+            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.single)(materializer2)
           try Await.result(responseFuture, 5.seconds).status should ===(StatusCodes.InternalServerError)
           catch {
             case _: StreamTcpException ⇒
@@ -229,7 +229,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         private val HttpRequest(POST, uri, List(Accept(Seq(MediaRanges.`*/*`)), Host(_, _), `User-Agent`(_)),
           Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext()
         uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-        Await.result(chunkStream.grouped(4).runWith(Sink.head), 100.millis) shouldEqual chunks
+        Await.result(chunkStream.runWith(Sink.toSeq), 100.millis) shouldEqual chunks
 
         val serverOutSub = serverOut.expectSubscription()
         serverOutSub.expectRequest()
@@ -239,7 +239,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         clientInSub.request(1)
         val HttpResponse(StatusCodes.PartialContent, List(Age(42), Server(_), Date(_)),
           Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
-        Await.result(chunkStream2.grouped(1000).runWith(Sink.head), 100.millis) shouldEqual chunks
+        Await.result(chunkStream2.runWith(Sink.toSeq), 100.millis) shouldEqual chunks
 
         clientOutSub.sendComplete()
         serverInSub.request(1) // work-around for #16552

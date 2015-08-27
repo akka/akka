@@ -20,6 +20,7 @@ class FlowScanSpec extends AkkaSpec {
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val materializer = ActorMaterializer(settings)
+  import materializer.executionContext
 
   "A Scan" must {
 
@@ -42,7 +43,7 @@ class FlowScanSpec extends AkkaSpec {
     }
 
     "emit values promptly" in {
-      val f = Source.single(1).concat(Source.lazyEmpty).scan(0)(_ + _).grouped(2).runWith(Sink.head)
+      val f = Source.single(1).concat(Source.lazyEmpty).scan(0)(_ + _).runWith(Sink.toSeq)
       Await.result(f, 1.second) should be(Seq(0, 1))
     }
 
@@ -52,7 +53,7 @@ class FlowScanSpec extends AkkaSpec {
         require(current > 0)
         old + current
       }.withAttributes(supervisionStrategy(Supervision.restartingDecider))
-      val f = Source(List(1, 3, -1, 5, 7)).via(scan).grouped(1000).runWith(Sink.head)
+      val f = Source(List(1, 3, -1, 5, 7)).via(scan).runWith(Sink.toSeq)
       Await.result(f, 1.second) should be(Seq(0, 1, 4, 0, 5, 12))
     }
   }

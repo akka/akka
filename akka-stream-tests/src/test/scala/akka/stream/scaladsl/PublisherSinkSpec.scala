@@ -14,6 +14,7 @@ import scala.concurrent.Await
 class PublisherSinkSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer()
+  import materializer.executionContext
 
   "A PublisherSink" must {
 
@@ -41,7 +42,7 @@ class PublisherSinkSpec extends AkkaSpec {
     "work with SubscriberSource" in {
       val (sub, pub) = Source.subscriber[Int].toMat(Sink.publisher)(Keep.both).run()
       Source(1 to 100).to(Sink(sub)).run()
-      Await.result(Source(pub).grouped(1000).runWith(Sink.head), 3.seconds) should ===(1 to 100)
+      Await.result(Source(pub).runWith(Sink.toSeq), 3.seconds) should ===(1 to 100)
     }
 
     "be able to use Publisher in materialized value transformation" in {

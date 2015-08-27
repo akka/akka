@@ -13,6 +13,7 @@ import akka.stream.Attributes._
 import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage, SyncDirective }
 import org.reactivestreams.{ Publisher, Subscriber }
 
+import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
@@ -75,6 +76,32 @@ object Sink extends SinkApply {
    * A `Sink` that materializes into a `Future` of the first value received.
    */
   def head[T]: Sink[T, Future[T]] = new Sink(new HeadSink[T](DefaultAttributes.headSink, shape("HeadSink")))
+
+  /**
+   * A `Sink` that materializes into a `Future` of all elements in the stream
+   * as a strict collection.
+   * If the stream is inifite, this will never complete but it will consume
+   * all of your memory.
+   */
+  def toSeq[T](implicit ec: ExecutionContext): Sink[T, Future[immutable.Seq[T]]] =
+    Flow[T].grouped(Int.MaxValue).toMat(Sink.head)(Keep.right)
+      .mapMaterializedValue { _.recover { case _: NoSuchElementException ⇒ Nil } }
+
+  /**
+   * A `Sink` that drains a stream and returns the sole element
+   * that the stream produced.
+   * If the stream did not produce exactly one element, a failed Future will be
+   * returned.
+   */
+  def single[T](implicit ec: ExecutionContext): Sink[T, Future[T]] =
+    Flow[T].grouped(2).toMat(Sink.head) { (_, firstTwo) ⇒
+      firstTwo.map {
+        // (Empty streams are alredy rejected by Sink.head.)
+        case Seq(element) ⇒ element
+        case _ ⇒ throw new IllegalStateException(
+          "Expected exactly one element from the stream, but there were at least two.")
+      }
+    }
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].

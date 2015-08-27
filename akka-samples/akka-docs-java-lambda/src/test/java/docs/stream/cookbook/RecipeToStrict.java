@@ -42,11 +42,9 @@ public class RecipeToStrict extends RecipeTest {
     new JavaTestKit(system) {
       {
         final Source<String, BoxedUnit> myData = Source.from(Arrays.asList("1", "2", "3"));
-        final int MAX_ALLOWED_SIZE = 100;
-
         //#draining-to-list
         final Future<List<String>> strings = myData
-          .grouped(MAX_ALLOWED_SIZE).runWith(Sink.head(), mat);
+          .runWith(Sink.toSeq(mat.executionContext), mat);
         //#draining-to-list
 
         Await.result(strings, new FiniteDuration(1, TimeUnit.SECONDS));
