@@ -111,7 +111,6 @@ abstract class ClusterShardingSpecConfig(val mode: String) extends MultiNodeConf
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
-    akka.cluster.down-removal-margin = 5s
     akka.cluster.roles = ["backend"]
     akka.cluster.distributed-data.gossip-interval = 1s
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"

@@ -39,6 +39,7 @@ class ClusterConfigSpec extends AkkaSpec {
       UnreachableNodesReaperInterval should ===(1 second)
       PublishStatsInterval should ===(Duration.Undefined)
       AutoDownUnreachableAfter should ===(Duration.Undefined)
+      DownRemovalMargin should ===(Duration.Zero)
       MinNrOfMembers should ===(1)
       MinNrOfMembersOfRole should ===(Map.empty[String, Int])
       Roles should ===(Set.empty[String])
