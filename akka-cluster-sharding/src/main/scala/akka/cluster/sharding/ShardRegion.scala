@@ -461,7 +461,7 @@ class ShardRegion(
   def register(): Unit = {
     coordinatorSelection.foreach(_ ! registrationMessage)
     if (shardBuffers.nonEmpty && retryCount >= 5)
-      log.warning("Trying to register to coordinator at [{}], but no acknoledgment. Total [{}] buffered messages.",
+      log.warning("Trying to register to coordinator at [{}], but no acknowledgement. Total [{}] buffered messages.",
         coordinatorSelection, totalBufferSize)
   }
 
