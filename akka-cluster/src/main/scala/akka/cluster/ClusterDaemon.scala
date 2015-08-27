@@ -156,16 +156,24 @@ private[cluster] object InternalClusterAction {
 private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Actor with ActorLogging
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
-  // Important - don't use Cluster(context.system) here because that would
+  // Important - don't use Cluster(context.system) in constructor because that would
   // cause deadlock. The Cluster extension is currently being created and is waiting
   // for response from GetClusterCoreRef in its constructor.
-  val coreSupervisor = context.actorOf(Props[ClusterCoreSupervisor].
-    withDispatcher(context.props.dispatcher), name = "core")
-  context.actorOf(Props[ClusterHeartbeatReceiver].
-    withDispatcher(context.props.dispatcher), name = "heartbeatReceiver")
+  // Child actors are therefore created when GetClusterCoreRef is received
+  var coreSupervisor: Option[ActorRef] = None
+
+  def createChildren(): Unit = {
+    coreSupervisor = Some(context.actorOf(Props[ClusterCoreSupervisor].
+      withDispatcher(context.props.dispatcher), name = "core"))
+    context.actorOf(Props[ClusterHeartbeatReceiver].
+      withDispatcher(context.props.dispatcher), name = "heartbeatReceiver")
+  }
 
   def receive = {
-    case msg: GetClusterCoreRef.type ⇒ coreSupervisor forward msg
+    case msg: GetClusterCoreRef.type ⇒
+      if (coreSupervisor.isEmpty)
+        createChildren()
+      coreSupervisor.foreach(_ forward msg)
     case AddOnMemberUpListener(code) ⇒
       context.actorOf(Props(classOf[OnMemberStatusChangedListener], code, Up).withDeploy(Deploy.local))
     case AddOnMemberRemovedListener(code) ⇒
@@ -191,12 +199,20 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 
-  val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
-    withDispatcher(context.props.dispatcher), name = "publisher")
-  val coreDaemon = context.watch(context.actorOf(Props(classOf[ClusterCoreDaemon], publisher).
-    withDispatcher(context.props.dispatcher), name = "daemon"))
+  // Important - don't use Cluster(context.system) in constructor because that would
+  // cause deadlock. The Cluster extension is currently being created and is waiting
+  // for response from GetClusterCoreRef in its constructor.
+  // Child actors are therefore created when GetClusterCoreRef is received
 
-  context.parent ! PublisherCreated(publisher)
+  var coreDaemon: Option[ActorRef] = None
+
+  def createChildren(): Unit = {
+    val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
+      withDispatcher(context.props.dispatcher), name = "publisher")
+    coreDaemon = Some(context.watch(context.actorOf(Props(classOf[ClusterCoreDaemon], publisher).
+      withDispatcher(context.props.dispatcher), name = "daemon")))
+    context.parent ! PublisherCreated(publisher)
+  }
 
   override val supervisorStrategy =
     OneForOneStrategy() {
@@ -209,7 +225,10 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
   override def postStop(): Unit = Cluster(context.system).shutdown()
 
   def receive = {
-    case InternalClusterAction.GetClusterCoreRef ⇒ sender() ! coreDaemon
+    case InternalClusterAction.GetClusterCoreRef ⇒
+      if (coreDaemon.isEmpty)
+        createChildren()
+      coreDaemon.foreach(sender() ! _)
   }
 }
 

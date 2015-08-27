@@ -22,7 +22,9 @@ import akka.actor.DeadLetterSuppression
 private[cluster] final class ClusterHeartbeatReceiver extends Actor with ActorLogging {
   import ClusterHeartbeatSender._
 
-  val selfHeartbeatRsp = HeartbeatRsp(Cluster(context.system).selfUniqueAddress)
+  // Important - don't use Cluster(context.system) in constructor because that would
+  // cause deadlock. See startup sequence in ClusterDaemon.
+  lazy val selfHeartbeatRsp = HeartbeatRsp(Cluster(context.system).selfUniqueAddress)
 
   def receive = {
     case Heartbeat(from) ⇒ sender() ! selfHeartbeatRsp
