@@ -88,7 +88,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
           block(key, i, replyTo)
           i += 1
         }
-        Await.ready(latch, 5.seconds + (1.second * factor))
+        Await.ready(latch, 10.seconds + (2.second * factor))
       }
       expectedAfterReplication.foreach { expected ⇒
         enterBarrier("repeat-" + key + "-before-awaitReplicated")
@@ -123,7 +123,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
 
   "Performance" must {
 
-    "setup cluster" in {
+    "setup cluster" taggedAs PerformanceTest in {
       roles.foreach { join(_, n1) }
 
       within(10.seconds) {
@@ -136,7 +136,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       enterBarrier("after-setup")
     }
 
-    "be great for ORSet Update WriteLocal" in {
+    "be great for ORSet Update WriteLocal" taggedAs PerformanceTest in {
       val keys = (1 to repeatCount).map(n ⇒ ORSetKey[Int]("A" + n))
       val n = 1000 * factor
       val expectedData = (0 until n).toSet
@@ -147,7 +147,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       enterBarrier("after-1")
     }
 
-    "be blazingly fast for ORSet Get ReadLocal" in {
+    "be blazingly fast for ORSet Get ReadLocal" taggedAs PerformanceTest in {
       val keys = (1 to repeatCount).map(n ⇒ ORSetKey[Int]("A" + n))
       repeat("Get ReadLocal", keys, 100000 * factor) { (key, i, replyTo) ⇒
         replicator.tell(Get(key, ReadLocal), replyTo)
@@ -155,7 +155,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       enterBarrier("after-2")
     }
 
-    "be good for ORSet Update WriteLocal and gossip replication" in {
+    "be good for ORSet Update WriteLocal and gossip replication" taggedAs PerformanceTest in {
       val keys = (1 to repeatCount).map(n ⇒ ORSetKey[Int]("B" + n))
       val n = 200 * factor
       val expected = Some((0 until n).toSet)
@@ -165,7 +165,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       enterBarrier("after-3")
     }
 
-    "be good for ORSet Update WriteLocal and gossip of existing keys" in {
+    "be good for ORSet Update WriteLocal and gossip of existing keys" taggedAs PerformanceTest in {
       val keys = (1 to repeatCount).map(n ⇒ ORSetKey[Int]("B" + n))
       val n = 200 * factor
       val expected = Some((0 until n).toSet ++ (0 until n).map(-_).toSet)
@@ -175,7 +175,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       enterBarrier("after-4")
     }
 
-    "be good for ORSet Update WriteTwo and gossip replication" in {
+    "be good for ORSet Update WriteTwo and gossip replication" taggedAs PerformanceTest in {
       val keys = (1 to repeatCount).map(n ⇒ ORSetKey[Int]("C" + n))
       val n = 200 * factor
       val expected = Some((0 until n).toSet)
@@ -186,7 +186,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       enterBarrier("after-5")
     }
 
-    "be awesome for GCounter Update WriteLocal" in {
+    "be awesome for GCounter Update WriteLocal" taggedAs PerformanceTest in {
       val startTime = System.nanoTime()
       val n = 1000 * factor
       val key = GCounterKey("D")
