@@ -135,6 +135,10 @@ strong {color: #1d3c52; }
 	line-height: 20px;
 }
 
+.admonition strong, .warning strong {
+  color: #ffffff;
+}
+
 .topic {
   background-image: none;
   background-color: #fdf5d9;
