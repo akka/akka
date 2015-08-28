@@ -27,7 +27,8 @@ private[persistence] class LeveldbJournal extends { val configPath = "akka.persi
   override def receivePluginInternal: Receive = {
     case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) ⇒
       import context.dispatcher
-      asyncReadHighestSequenceNr(tagAsPersistenceId(tag), fromSequenceNr)
+      val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)
+      asyncReadHighestSequenceNr(tagAsPersistenceId(tag), readHighestSequenceNrFrom)
         .flatMap { highSeqNr ⇒
           val toSeqNr = math.min(toSequenceNr, highSeqNr)
           if (highSeqNr == 0L || fromSequenceNr > toSeqNr)

@@ -56,7 +56,9 @@ trait AsyncRecovery {
    *
    * @param persistenceId persistent actor id.
    * @param fromSequenceNr hint where to start searching for the highest sequence
-   *                       number.
+   *                       number. When a persistent actor is recovering this
+   *                       `fromSequenceNr` will be the sequence number of the used
+   *                       snapshot or `0L` if no snapshot is used.
    */
   def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long]
   //#journal-plugin-api
