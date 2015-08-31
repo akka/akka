@@ -23,6 +23,14 @@ object MiMa extends AutoPlugin {
       case m: MemberProblem => m.ref.owner.fullName != name && m.ref.owner.fullName != (name + '$')
     }
   }
+  
+  case class FilterAnyProblemStartingWith(start: String) extends com.typesafe.tools.mima.core.ProblemFilter {
+    import com.typesafe.tools.mima.core._
+    override def apply(p: Problem): Boolean = p match {
+      case t: TemplateProblem => !t.ref.fullName.startsWith(start)
+      case m: MemberProblem => !m.ref.owner.fullName.startsWith(start)
+    }
+  }
 
   val mimaIgnoredProblems = {
       import com.typesafe.tools.mima.core._
@@ -550,7 +558,15 @@ object MiMa extends AutoPlugin {
       // internal changes introduced by #17253
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ClusterDaemon.coreSupervisor"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterCoreSupervisor.publisher"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ClusterCoreSupervisor.coreDaemon")
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ClusterCoreSupervisor.coreDaemon"),
+
+      // protofbuf embedding #13783
+      FilterAnyProblemStartingWith("akka.remote.WireFormats"),
+      FilterAnyProblemStartingWith("akka.remote.ContainerFormats"),
+      FilterAnyProblemStartingWith("akka.remote.serialization.DaemonMsgCreateSerializer"),
+      FilterAnyProblemStartingWith("akka.remote.testconductor.TestConductorProtocol"),
+      FilterAnyProblemStartingWith("akka.cluster.protobuf.msg.ClusterMessages"),
+      FilterAnyProblemStartingWith("akka.cluster.protobuf.ClusterMessageSerializer")
 
      )
   }
