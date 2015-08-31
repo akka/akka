@@ -87,7 +87,7 @@ object AkkaBuild extends Build {
   lazy val actorTests = Project(
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
-    dependencies = Seq(testkit % "compile;test->test", protobuf)
+    dependencies = Seq(testkit % "compile;test->test")
   )
 
   lazy val benchJmh = Project(

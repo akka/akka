@@ -70,6 +70,18 @@ The following, previously deprecated, features have been removed:
 
 * Java API TestKit.dilated, moved to JavaTestKit.dilated
 
+Protobuf Dependency
+===================
+
+The transitive dependency to Protobuf has been removed to make it possible to use any version
+of Protobuf for the application messages. If you use Protobuf in your application you need
+to add the following dependency with desired version number::
+
+    "com.google.protobuf" % "protobuf-java" % "2.5.0" 
+
+Internally Akka is using an embedded version of protobuf that corresponds to ``com.google.protobuf/protobuf-java``
+version 2.5.0. The package name of the embedded classes has been changed to ``akka.protobuf``.
+
 Added parameter validation to RootActorPath
 ===========================================
 Previously ``akka.actor.RootActorPath`` allowed passing in arbitrary strings into its name parameter,
