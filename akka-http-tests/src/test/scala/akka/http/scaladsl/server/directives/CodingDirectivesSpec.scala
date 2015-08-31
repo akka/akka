@@ -5,9 +5,10 @@
 package akka.http.scaladsl.server
 package directives
 
+import org.scalatest.Inside
 import org.scalatest.matchers.Matcher
 import akka.util.ByteString
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.coding._
@@ -17,10 +18,11 @@ import HttpCharsets._
 import HttpEncodings._
 import MediaTypes._
 import StatusCodes._
+import ContentTypes.`application/octet-stream`
 
 import scala.concurrent.duration._
 
-class CodingDirectivesSpec extends RoutingSpec {
+class CodingDirectivesSpec extends RoutingSpec with Inside {
 
   val echoRequestContent: Route = { ctx ⇒ ctx.complete(ctx.request.entity.dataBytes.utf8String) }
 
@@ -46,7 +48,51 @@ class CodingDirectivesSpec extends RoutingSpec {
       Post("/", "yes") ~> decodeRequestWith(NoCoding) { echoRequestContent } ~> check { responseAs[String] shouldEqual "yes" }
     }
     "leave request without content unchanged" in {
-      Post() ~> decodeRequestWith(Gzip) { completeOk } ~> check { response shouldEqual Ok }
+      Post() ~> decodeRequestWith(NoCoding) { completeOk } ~> check { response shouldEqual Ok }
+    }
+
+    val echoDecodedEntity =
+      decodeRequestWith(NoCoding) {
+        extractRequest { request ⇒
+          complete(HttpResponse(200, entity = request.entity))
+        }
+      }
+    "leave Strict request entity unchanged" in {
+      val data = ByteString(Array.fill[Byte](10000)(42.toByte))
+      val strictEntity = HttpEntity.Strict(`application/octet-stream`, data)
+
+      Post("/", strictEntity) ~> echoDecodedEntity ~> check {
+        responseEntity shouldEqual strictEntity
+      }
+    }
+    "leave Default request entity unchanged" in {
+      val chunks = Vector(ByteString("abc"), ByteString("def"), ByteString("ghi"))
+      val data = Source(chunks)
+
+      val defaultEntity = HttpEntity.Default(`application/octet-stream`, 9, data)
+
+      Post("/", defaultEntity) ~> echoDecodedEntity ~> check {
+        inside(responseEntity) {
+          case HttpEntity.Default(`application/octet-stream`, 9, dataChunks) ⇒
+            dataChunks.grouped(1000).runWith(Sink.head).awaitResult(1.second).toVector shouldEqual chunks
+        }
+      }
+    }
+    // CloseDelimited not support for requests
+    "leave Chunked request entity unchanged" in {
+      val chunks =
+        Vector(ByteString("abc"), ByteString("def"), ByteString("ghi"))
+          .map(ChunkStreamPart(_))
+      val data = Source(chunks)
+
+      val defaultEntity = HttpEntity.Chunked(`application/octet-stream`, data)
+
+      Post("/", defaultEntity) ~> echoDecodedEntity ~> check {
+        inside(responseEntity) {
+          case HttpEntity.Chunked(`application/octet-stream`, dataChunks) ⇒
+            dataChunks.grouped(1000).runWith(Sink.head).awaitResult(1.second).toVector shouldEqual chunks
+        }
+      }
     }
   }
 

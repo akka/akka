@@ -62,17 +62,19 @@ trait CodingDirectives {
    */
   def decodeRequestWith(decoder: Decoder): Directive0 = {
     def applyDecoder =
-      extractSettings flatMap { settings ⇒
-        val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
-        mapRequest { request ⇒
-          effectiveDecoder.decode(request).mapEntity(StreamUtils.mapEntityError {
-            case NonFatal(e) ⇒
-              IllegalRequestException(
-                StatusCodes.BadRequest,
-                ErrorInfo("The request's encoding is corrupt", e.getMessage))
-          })
+      if (decoder == NoCoding) pass
+      else
+        extractSettings flatMap { settings ⇒
+          val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
+          mapRequest { request ⇒
+            effectiveDecoder.decode(request).mapEntity(StreamUtils.mapEntityError {
+              case NonFatal(e) ⇒
+                IllegalRequestException(
+                  StatusCodes.BadRequest,
+                  ErrorInfo("The request's encoding is corrupt", e.getMessage))
+            })
+          }
         }
-      }
 
     requestEntityEmpty | (
       requestEncodedWith(decoder.encoding) &
