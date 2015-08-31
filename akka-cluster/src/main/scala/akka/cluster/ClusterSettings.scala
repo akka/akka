@@ -72,7 +72,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s")
   }
 
-  val AllowWeaklyUpMembers = cc.getBoolean("allow-weaklyup-members")
+  val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
 
   val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
   val MinNrOfMembers: Int = {
