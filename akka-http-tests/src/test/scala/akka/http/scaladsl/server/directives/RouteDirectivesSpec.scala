@@ -4,9 +4,11 @@
 
 package akka.http.scaladsl.server.directives
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.stream.scaladsl.Sink
 import org.scalatest.FreeSpec
 
-import scala.concurrent.Promise
+import scala.concurrent.{ Future, Promise }
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.server._
@@ -57,7 +59,7 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
           }
       }
     }
-    "allow easy handling of futured ToResponseMarshallers" in pending /*{
+    "allow easy handling of futured ToResponseMarshallers" in {
       trait RegistrationStatus
       case class Registered(name: String) extends RegistrationStatus
       case object AlreadyRegistered extends RegistrationStatus
@@ -76,8 +78,8 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
                 case Registered(_) ⇒ HttpEntity.Empty
                 case AlreadyRegistered ⇒
                   import spray.json.DefaultJsonProtocol._
-                  import spray.httpx.SprayJsonSupport._
-                  (StatusCodes.BadRequest, Map("error" -> "User already Registered"))
+                  import SprayJsonSupport._
+                  StatusCodes.BadRequest -> Map("error" -> "User already Registered")
               }
             }
           }
@@ -88,9 +90,9 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       }
       Get("/register/karl") ~> route ~> check {
         status shouldEqual StatusCodes.OK
-        entity shouldEqual HttpEntity.Empty
+        responseAs[String] shouldEqual ""
       }
-    }*/
+    }
     "do Content-Type negotiation for multi-marshallers" in pendingUntilFixed {
       val route = get & complete(Data("Ida", 83))
 
