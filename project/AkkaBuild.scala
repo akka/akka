@@ -1538,7 +1538,7 @@ object Dependencies {
     val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"       // ApacheV2
 
     // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.1"       // ApacheV2
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
 
     // For akka-http-jackson support
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.4.3"       // ApacheV2
