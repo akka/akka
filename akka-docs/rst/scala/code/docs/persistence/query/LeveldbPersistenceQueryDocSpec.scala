@@ -7,7 +7,7 @@ import akka.persistence.journal.{ EventAdapter, EventSeq }
 import akka.testkit.AkkaSpec
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.LeveldbReadJournal
-import akka.persistence.journal.leveldb.Tagged
+import akka.persistence.journal.Tagged
 import akka.persistence.query.EventsByPersistenceId
 import akka.stream.scaladsl.Source
 import akka.persistence.query.EventEnvelope
@@ -19,9 +19,9 @@ import scala.annotation.tailrec
 object LeveldbPersistenceQueryDocSpec {
   //#tagger
   import akka.persistence.journal.WriteEventAdapter
-  import akka.persistence.journal.leveldb.Tagged
+  import akka.persistence.journal.Tagged
 
-  class ColorTagger extends WriteEventAdapter {
+  class MyTaggingEventAdapter extends WriteEventAdapter {
     val colors = Set("green", "black", "blue")
     override def toJournal(event: Any): Any = event match {
       case s: String ⇒

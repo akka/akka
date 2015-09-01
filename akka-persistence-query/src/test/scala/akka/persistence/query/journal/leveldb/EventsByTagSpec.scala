@@ -15,7 +15,7 @@ import akka.testkit.TestKit
 import akka.persistence.query.NoRefresh
 import akka.testkit.AkkaSpec
 import akka.persistence.query.EventsByTag
-import akka.persistence.journal.leveldb.Tagged
+import akka.persistence.journal.Tagged
 import akka.persistence.journal.EventSeq
 import akka.persistence.journal.EventAdapter
 import akka.persistence.query.EventEnvelope

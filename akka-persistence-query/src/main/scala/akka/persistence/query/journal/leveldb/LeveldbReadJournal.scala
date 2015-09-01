@@ -115,7 +115,7 @@ object LeveldbReadJournal {
  * a given tag, e.g. all events of an Aggregate Root type.
  *
  * To tag events you create an [[akka.persistence.journal.EventAdapter]] that wraps the events
- * in a [[akka.persistence.journal.leveldb.Tagged]] with the given `tags`.
+ * in a [[akka.persistence.journal.Tagged]] with the given `tags`.
  *
  * You can retrieve a subset of all events by specifying `offset`, or use `0L` to retrieve all
  * events with a given tag. The `offset` corresponds to an ordered sequence number for
