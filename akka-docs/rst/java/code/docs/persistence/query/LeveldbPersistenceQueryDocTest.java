@@ -11,7 +11,7 @@ import scala.runtime.BoxedUnit;
 import akka.actor.ActorSystem;
 import akka.persistence.journal.WriteEventAdapter;
 import akka.persistence.journal.EventSeq;
-import akka.persistence.journal.leveldb.Tagged;
+import akka.persistence.journal.Tagged;
 import akka.persistence.query.AllPersistenceIds;
 import akka.persistence.query.EventEnvelope;
 import akka.persistence.query.EventsByPersistenceId;
@@ -67,7 +67,7 @@ public class LeveldbPersistenceQueryDocTest {
   
   static 
   //#tagger
-  public class MyEventAdapter implements WriteEventAdapter {
+  public class MyTaggingEventAdapter implements WriteEventAdapter {
 
     @Override
     public Object toJournal(Object event) {

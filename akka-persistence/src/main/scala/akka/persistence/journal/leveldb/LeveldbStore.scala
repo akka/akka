@@ -17,6 +17,7 @@ import scala.util._
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import akka.persistence.journal.AsyncWriteJournal
+import akka.persistence.journal.Tagged
 
 /**
  * INTERNAL API.

@@ -69,8 +69,10 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
       .build());
   }
 
-  public static Props props(Connection conn, String tag, Long offset, FiniteDuration refreshInterval) {
-    return Props.create(() -> new MyEventsByTagJavaPublisher(conn, tag, offset, refreshInterval));
+  public static Props props(Connection conn, String tag, Long offset, 
+      FiniteDuration refreshInterval) {
+    return Props.create(() -> 
+      new MyEventsByTagJavaPublisher(conn, tag, offset, refreshInterval));
   }
 
   @Override
@@ -102,7 +104,8 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
             final Long id = in.first();
             final byte[] bytes = in.second();
 
-            final PersistentRepr p = serialization.deserialize(bytes, PersistentRepr.class).get();
+            final PersistentRepr p = 
+                serialization.deserialize(bytes, PersistentRepr.class).get();
 
             return new EventEnvelope(id, p.persistenceId(), p.sequenceNr(), p.payload());
           }).collect(toList());
