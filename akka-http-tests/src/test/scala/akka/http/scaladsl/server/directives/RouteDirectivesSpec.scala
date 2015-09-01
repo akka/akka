@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.stream.scaladsl.Sink
 import org.scalatest.FreeSpec
 
@@ -17,6 +18,8 @@ import akka.http.impl.util._
 import headers._
 import StatusCodes._
 import MediaTypes._
+
+import scala.xml.NodeSeq
 
 class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
 
@@ -93,7 +96,7 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
         responseAs[String] shouldEqual ""
       }
     }
-    "do Content-Type negotiation for multi-marshallers" in pendingUntilFixed {
+    "do Content-Type negotiation for multi-marshallers" in {
       val route = get & complete(Data("Ida", 83))
 
       import akka.http.scaladsl.model.headers.Accept
@@ -107,10 +110,9 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       Get().withHeaders(Accept(MediaTypes.`text/xml`)) ~> route ~> check {
         responseAs[xml.NodeSeq] shouldEqual <data><name>Ida</name><age>83</age></data>
       }
-      pending
-      /*Get().withHeaders(Accept(MediaTypes.`text/plain`)) ~> HttpService.sealRoute(route) ~> check {
+      Get().withHeaders(Accept(MediaTypes.`text/plain`)) ~> Route.seal(route) ~> check {
         status shouldEqual StatusCodes.NotAcceptable
-      }*/
+      }
     }
   }
 
@@ -135,16 +137,17 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
 
   case class Data(name: String, age: Int)
   object Data {
-    //import spray.json.DefaultJsonProtocol._
-    //import spray.httpx.SprayJsonSupport._
+    import spray.json.DefaultJsonProtocol._
+    import SprayJsonSupport._
+    import ScalaXmlSupport._
 
-    val jsonMarshaller: ToEntityMarshaller[Data] = FIXME // jsonFormat2(Data.apply)
-    val xmlMarshaller: ToEntityMarshaller[Data] = FIXME
-    /*Marshaller.delegate[Data, xml.NodeSeq](MediaTypes.`text/xml`) { (data: Data) ⇒
-        <data><name>{ data.name }</name><age>{ data.age }</age></data>
-      }*/
+    val jsonMarshaller: ToEntityMarshaller[Data] = jsonFormat2(Data.apply)
 
-    implicit val dataMarshaller: ToResponseMarshaller[Data] = FIXME
-    //ToResponseMarshaller.oneOf(MediaTypes.`application/json`, MediaTypes.`text/xml`)(jsonMarshaller, xmlMarshaller)
+    val xmlMarshaller: ToEntityMarshaller[Data] = Marshaller.combined { (data: Data) ⇒
+      <data><name>{ data.name }</name><age>{ data.age }</age></data>
+    }
+
+    implicit val dataMarshaller: ToResponseMarshaller[Data] =
+      Marshaller.oneOf(jsonMarshaller, xmlMarshaller)
   }
 }
