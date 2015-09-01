@@ -1,16 +1,17 @@
 /**
  * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.persistence.journal.leveldb
+package akka.persistence.journal
 
-import java.util.ArrayList
 import scala.collection.JavaConverters._
 
 /**
- * The LevelDB journal supports tagging of events that are used
- * by the `EventsByTag` query. To specify the tags you create an
+ * The journal may support tagging of events that are used by the
+ * `EventsByTag` query and it may support specifying the tags via an
  * [[akka.persistence.journal.EventAdapter]] that wraps the events
- * in a `Tagged` with the given `tags`.
+ * in a `Tagged` with the given `tags`. The journal may support other
+ * ways of doing tagging. Please consult the documentation of the specific
+ * journal implementation for more information.
  *
  * The journal will unwrap the event and store the `payload`.
  */

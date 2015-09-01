@@ -21,7 +21,8 @@ interface SnapshotStorePlugin {
    * @param criteria
    *          selection criteria for loading.
    */
-  Future<Optional<SelectedSnapshot>> doLoadAsync(String persistenceId, SnapshotSelectionCriteria criteria);
+  Future<Optional<SelectedSnapshot>> doLoadAsync(String persistenceId, 
+      SnapshotSelectionCriteria criteria);
 
   /**
    * Java API, Plugin API: asynchronously saves a snapshot.
