@@ -247,6 +247,13 @@ The following code example demonstrates the buffer class corresponding to the me
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowStagesDocTest.java#detached
 
+.. warning::
+  If ``absorbTermination()`` is called on a :class:`DetachedStage` while it holds downstream (``isHoldingDownstream``
+  returns true) then ``onPull()`` will be called on the stage. This ensures that the stage does not end up in a
+  deadlocked case. Since at the point when the termination is absorbed there will be no way to get any callbacks because
+  the downstream is held, so the framework invokes onPull() to avoid this situation. This is similar to the termination
+  logic already shown for :class:`PushPullStage`.
+
 Custom graph processing junctions
 =================================
 
