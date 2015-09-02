@@ -173,9 +173,9 @@ With a configuration option you can allow this behavior::
     akka.cluster.allow-weakly-up-members = on
 
 When ``allow-weakly-up-members`` is enabled and there is no gossip convergence,
-``Joining`` members will be allowed to join and be part of the cluster. These nodes
-will be marked as ``WeaklyUp``. Once gossip convergence is reached, the leader
-will move ``WeaklyUp`` members to ``Up``.
+``Joining`` members will be promoted to ``WeaklyUp`` and they will become part of the
+cluster. Once gossip convergence is reached, the leader will move ``WeaklyUp``
+members to ``Up``.
 
 .. warning::
 
