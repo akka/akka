@@ -589,4 +589,28 @@ public class FlowTest extends StreamTest {
     probe.expectMsgAllOf("A","B","C");
   }
 
+  @Test
+  public void mustBeAbleToBroadcastEagerCancel() throws Exception {
+    final Sink<String, BoxedUnit> out1 = Sink.cancelled();
+    final Sink<String, ?> out2 = Sink.ignore();
+
+    final Sink<String, BoxedUnit> sink = Sink.factory().<String>create(new Function<FlowGraph.Builder<BoxedUnit>, Inlet<String>>() {
+      @Override
+      public Inlet<String> apply(Builder<BoxedUnit> b) throws Exception {
+        final UniformFanOutShape<String, String> broadcast = b.graph(Broadcast.<String>create(2, true));
+
+        b.from(broadcast.out(0)).to(out1);
+        b.from(broadcast.out(1)).to(out2);
+        return broadcast.in();
+      }
+    });
+
+    final JavaTestKit probe = new JavaTestKit(system);
+    Source<String, ActorRef> source = Source.actorRef(1, OverflowStrategy.dropNew());
+    final ActorRef actor = source.toMat(sink, Keep.<ActorRef, BoxedUnit>left()).run(materializer);
+    probe.watch(actor);
+    probe.expectTerminated(actor);
+  }
+
+
 }
