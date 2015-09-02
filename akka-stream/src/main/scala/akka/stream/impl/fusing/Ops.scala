@@ -151,7 +151,7 @@ private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Iterable[O
 /**
  * INTERNAL API
  */
-private[akka] final case class Take[T](count: Long) extends PushStage[T, T] {
+private[akka] final case class Take[T](count: Long) extends PushPullStage[T, T] {
   private var left: Long = count
 
   override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
@@ -160,6 +160,10 @@ private[akka] final case class Take[T](count: Long) extends PushStage[T, T] {
     else if (left == 0) ctx.pushAndFinish(elem)
     else ctx.finish() //Handle negative take counts
   }
+
+  override def onPull(ctx: Context[T]): SyncDirective =
+    if (left <= 0) ctx.finish()
+    else ctx.pull()
 }
 
 /**
