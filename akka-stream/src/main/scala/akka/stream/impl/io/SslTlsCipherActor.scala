@@ -299,6 +299,8 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
       } catch {
         case ex: SSLException ⇒
           if (tracing) log.debug(s"SSLException during doUnwrap: $ex")
+          fail(ex, closeTransport = false)
+          engine.closeInbound()
           completeOrFlush()
           false
       }
@@ -323,6 +325,7 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
       catch {
         case ex: SSLException ⇒
           if (tracing) log.debug(s"SSLException during doWrap: $ex")
+          fail(ex, closeTransport = false)
           completeOrFlush()
       }
     }
@@ -422,10 +425,13 @@ private[akka] class SslTlsCipherActor(settings: ActorMaterializerSettings, sslCo
 
   initialPhase(2, bidirectional)
 
-  protected def fail(e: Throwable): Unit = {
+  protected def fail(e: Throwable, closeTransport: Boolean=true): Unit = {
     if (tracing) log.debug("fail {} due to: {}", self, e.getMessage)
     inputBunch.cancel()
-    outputBunch.error(TransportOut, e)
+    if(closeTransport) {
+      log.debug("closing output")
+      outputBunch.error(TransportOut, e)
+    }
     outputBunch.error(UserOut, e)
     pump()
   }
