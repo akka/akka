@@ -170,6 +170,11 @@ In the second scenario the "event token" is somewhere upstream when the terminat
 Observe, that in both scenarios ``onPull()`` kicks off the continuation of the processing logic, the only difference is
 whether it is the downstream or the ``absorbTermination()`` call that calls the event handler.
 
+.. warning::
+  It is not allowed to call ``absorbTermination()`` from ``onDownstreamFinish()``. If the method is called anyway,
+  it will be logged at ``ERROR`` level, but no further action will be taken as at that point there is no active
+  downstream to propagate the error to. Cancellation in the upstream direction will continue undisturbed.
+
 Using PushStage
 ---------------
 
