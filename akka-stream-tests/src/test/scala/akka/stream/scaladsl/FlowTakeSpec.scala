@@ -3,6 +3,8 @@
  */
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 import akka.stream.ActorMaterializer
@@ -36,6 +38,11 @@ class FlowTakeSpec extends AkkaSpec with ScriptedTest {
       Source(List(1, 2, 3)).take(-1).to(Sink(probe)).run()
       probe.expectSubscription().request(10)
       probe.expectComplete()
+    }
+
+    "complete eagerly when zero or less is taken independently of upstream completion" in {
+      Await.result(Source.lazyEmpty.take(0).runWith(Sink.ignore), 3.second)
+      Await.result(Source.lazyEmpty.take(-1).runWith(Sink.ignore), 3.second)
     }
 
   }
