@@ -103,7 +103,7 @@ object Broadcast {
    * @param eagerCancel if true, broadcast cancels upstream if any of its downstreams cancel.
    */
   def create[T](outputCount: Int, eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], Unit] =
-    scaladsl.Broadcast(outputCount)
+    scaladsl.Broadcast(outputCount, eagerCancel = eagerCancel)
 
   /**
    * Create a new `Broadcast` vertex with the specified input type.
