@@ -3,19 +3,18 @@
  */
 package akka.stream.scaladsl
 
-import scala.language.higherKinds
-
 import akka.actor.{ ActorRef, Cancellable, Props }
-import akka.stream._
-
-import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
-import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.Stages.{ DefaultAttributes, MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl._
+import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
+import akka.stream.{ Outlet, SourceShape, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
+
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
+import scala.language.higherKinds
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -148,6 +147,25 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
+
+  /**
+   * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
+   */
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
+    Source.wrap(FlowGraph.partial() { implicit b ⇒
+      import FlowGraph.Implicits._
+      val c = b.add(strategy(rest.size + 2))
+      first ~> c.in(0)
+      second ~> c.in(1)
+
+      @tailrec def combineRest(idx: Int, i: Iterator[Source[T, _]]): SourceShape[U] =
+        if (i.hasNext) {
+          i.next() ~> c.in(idx)
+          combineRest(idx + 1, i)
+        } else SourceShape(c.out)
+
+      combineRest(2, rest.iterator)
+    })
 }
 
 object Source extends SourceApply {
@@ -363,5 +381,24 @@ object Source extends SourceApply {
     require(overflowStrategy != OverflowStrategy.Backpressure, "Backpressure overflowStrategy not supported")
     new Source(new ActorRefSource(bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
   }
+
+  /**
+   * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
+   */
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
+    Source.wrap(FlowGraph.partial() { implicit b ⇒
+      import FlowGraph.Implicits._
+      val c = b.add(strategy(rest.size + 2))
+      first ~> c.in(0)
+      second ~> c.in(1)
+
+      @tailrec def combineRest(idx: Int, i: Iterator[Source[T, _]]): SourceShape[U] =
+        if (i.hasNext) {
+          i.next() ~> c.in(idx)
+          combineRest(idx + 1, i)
+        } else SourceShape(c.out)
+
+      combineRest(2, rest.iterator)
+    })
 
 }

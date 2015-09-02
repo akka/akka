@@ -10,14 +10,15 @@ import akka.dispatch.Futures;
 import akka.dispatch.OnSuccess;
 import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
+import akka.japi.function.*;
+import akka.stream.Graph;
 import akka.stream.OverflowStrategy;
 import akka.stream.StreamTest;
+import akka.stream.UniformFanInShape;
 import akka.stream.stage.*;
-import akka.japi.function.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
 import akka.testkit.JavaTestKit;
-
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.Await;
@@ -26,11 +27,13 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
 import scala.util.Try;
+
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import static org.junit.Assert.assertEquals;
+
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
+import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("serial")
 public class SourceTest extends StreamTest {
@@ -548,12 +551,35 @@ public class SourceTest extends StreamTest {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
     }), materializer);
-
     final PublisherProbeSubscription<Integer> s = publisherProbe.expectSubscription();
     s.sendNext(0);
     probe.expectMsgEquals(0);
     s.sendNext(1);
     probe.expectMsgEquals(0);
+
+    Await.ready(future, Duration.apply(200, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  public void mustBeAbleToCombine() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<Integer, ?> source1 = Source.from(Arrays.asList(0, 1));
+    final Source<Integer, ?> source2 = Source.from(Arrays.asList(2, 3));
+
+    final Source<Integer, ?> source = Source.combine(source1, source2, new ArrayList(),
+            new Function<Integer, Graph<UniformFanInShape<Integer, Integer>, BoxedUnit>>() {
+              public Graph<UniformFanInShape<Integer, Integer>, BoxedUnit> apply(Integer elem) {
+                return Merge.create(elem);
+              }
+            });
+
+    final Future<BoxedUnit> future = source.runWith(Sink.foreach(new Procedure<Integer>() { // Scala Future
+      public void apply(Integer elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgAllOf(0, 1, 2, 3);
 
     Await.ready(future, Duration.apply(200, TimeUnit.MILLISECONDS));
   }

@@ -226,6 +226,15 @@ object Source {
       case s: Source[T, M] ⇒ s
       case other           ⇒ new Source(scaladsl.Source.wrap(other))
     }
+
+  /**
+   * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
+   */
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: java.util.List[Source[T, _]], strategy: function.Function[java.lang.Integer, Graph[UniformFanInShape[T, U], Unit]]): Source[U, Unit] = {
+    import scala.collection.JavaConverters._
+    val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
+    new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num ⇒ strategy.apply(num)))
+  }
 }
 
 /**
