@@ -117,6 +117,13 @@ object Marshaller
    */
   def opaque[A, B](marshal: A ⇒ B): Marshaller[A, B] =
     strict { value ⇒ Marshalling.Opaque(() ⇒ marshal(value)) }
+
+  /**
+   * Helper for creating a [[Marshaller]] combined of the provided `marshal` function
+   * and an implicit Marshaller which is able to produce the required final type.
+   */
+  def combined[A, B, C](marshal: A ⇒ B)(implicit m2: Marshaller[B, C]): Marshaller[A, C] =
+    Marshaller[A, C] { ec ⇒ a ⇒ m2.compose(marshal).apply(a)(ec) }
 }
 //#
 
