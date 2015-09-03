@@ -37,11 +37,6 @@ abstract class PiercingShouldKeepQuarantineSpec extends MultiNodeSpec(PiercingSh
 
   override def initialParticipants = roles.size
 
-  def identify(role: RoleName, actorName: String): ActorRef = {
-    system.actorSelection(node(role) / "user" / actorName) ! Identify(1)
-    expectMsgType[ActorIdentity].ref.get
-  }
-
   "While probing through the quarantine remoting" must {
 
     "not lose existing quarantine marker" taggedAs LongRunningTest in {

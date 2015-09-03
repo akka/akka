@@ -71,6 +71,9 @@ significantly inefficient.
 
 The predefined queries are:
 
+AllPersistenceIds
+^^^^^^^^^^^^^^^^^
+
 ``AllPersistenceIds`` which is designed to allow users to subscribe to a stream of all persistent ids in the system.
 By default this stream should be assumed to be a "live" stream, which means that the journal should keep emitting new
 persistence ids as they come into the system:
@@ -82,6 +85,9 @@ If your usage does not require a live stream, you can disable refreshing by usin
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#all-persistence-ids-snap
 
+EventsByPersistenceId
+^^^^^^^^^^^^^^^^^^^^^
+
 ``EventsByPersistenceId`` is a query equivalent to replaying a :ref:`PersistentActor <event-sourcing-scala>`,
 however, since it is a stream it is possible to keep it alive and watch for additional incoming events persisted by the
 persistent actor identified by the given ``persistenceId``. Most journals will have to revert to polling in order to achieve
@@ -89,11 +95,20 @@ this, which can be configured using the ``RefreshInterval`` query hint:
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#events-by-persistent-id-refresh
 
-``EventsByTag`` allows querying events regardles of which ``persistenceId`` they are associated with. This query is hard to
-implement in some journals or may need some additional preparation of the used data store to be executed efficiently,
-please refer to your read journal plugin's documentation to find out if and how it is supported. The goal of this query
-is to allow querying for all events which are "tagged" with a specific tag - again, how exactly this is implemented
-depends on the used journal.
+EventsByTag
+^^^^^^^^^^^
+
+``EventsByTag`` allows querying events regardless of which ``persistenceId`` they are associated with. This query is hard to
+implement in some journals or may need some additional preparation of the used data store to be executed efficiently.
+The goal of this query is to allow querying for all events which are "tagged" with a specific tag.
+That includes the use case to query all domain events of an Aggregate Root type.
+Please refer to your read journal plugin's documentation to find out if and how it is supported.
+
+Some journals may support tagging of events via an :ref:`event-adapters-scala` that wraps the events in a
+``akka.persistence.journal.Tagged`` with the given ``tags``. The journal may support other ways of doing tagging - again,
+how exactly this is implemented depends on the used journal. Here is an example of such a tagging event adapter:
+
+.. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala#tagger
 
 .. note::
   A very important thing to keep in mind when using queries spanning multiple persistenceIds, such as ``EventsByTag``
