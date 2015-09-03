@@ -451,6 +451,8 @@ trait FlowOps[+Out, +Mat] {
    * with failure and the supervision decision is [[akka.stream.Supervision.Resume]] or
    * [[akka.stream.Supervision.Restart]] the element is dropped and the stream continues.
    *
+   * The function `f` is always invoked on the elements in the order they arrive.
+   *
    * '''Emits when''' the Future returned by the provided function finishes for the next element in sequence
    *
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
@@ -480,6 +482,9 @@ trait FlowOps[+Out, +Mat] {
    * If the function `f` throws an exception or if the `Future` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision.Resume]] or
    * [[akka.stream.Supervision.Restart]] the element is dropped and the stream continues.
+   *
+   * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
+   * returned by `f` might be emitted in a different order).
    *
    * '''Emits when''' any of the Futures returned by the provided function complete
    *

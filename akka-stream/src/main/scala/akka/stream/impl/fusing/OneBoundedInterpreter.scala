@@ -530,6 +530,15 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
     override def incomingBall = DownstreamBall
 
     override def toString = "Cancelling"
+
+    override def absorbTermination(): TerminationDirective = {
+      val ex = new UnsupportedOperationException("It is not allowed to call absorbTermination() from onDownstreamFinish.")
+      // This MUST be logged here, since the downstream has cancelled, i.e. there is noone to send onError to, the
+      // stage is just about to finish so noone will catch it anyway just the interpreter
+      log.error(ex.getMessage)
+      throw ex // We still throw for correctness (although a finish() would also work here)
+    }
+
   }
 
   private final case class Failing(cause: Throwable) extends State {
