@@ -273,18 +273,31 @@ leader, also *auto-down* a node after a configured time of unreachability..
    follows from the fact that the ``unreachable`` node will likely see the rest of
    the cluster as ``unreachable``, become its own leader and form its own cluster.
 
+As mentioned before, if a node is ``unreachable`` then gossip convergence is not
+possible and therefore any ``leader`` actions are also not possible. By enabling
+``akka.cluster.allow-weakly-up-members`` it is possible to let new joining nodes be
+promoted while convergence is not yet reached. These ``Joining`` nodes will be
+promoted as ``WeaklyUp``. Once gossip convergence is reached, the leader will move
+``WeaklyUp`` members to ``Up``.
 
-State Diagram for the Member States
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+State Diagram for the Member States (``akka.cluster.allow-weakly-up-members=off``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: ../images/member-states.png
 
+State Diagram for the Member States (``akka.cluster.allow-weakly-up-members=on``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: ../images/member-states-weakly-up.png
 
 Member States
 ^^^^^^^^^^^^^
 
 - **joining**
     transient state when joining a cluster
+
+- **weakly up**
+    transient state while network split (only if ``akka.cluster.allow-weakly-up-members=on``)
 
 - **up**
     normal operating state
