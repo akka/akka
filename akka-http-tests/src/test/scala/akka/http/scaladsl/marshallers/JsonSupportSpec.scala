@@ -19,11 +19,11 @@ object Employee {
   val simple = Employee("Frank", "Smith", 42, 12345, false)
   val json = """{"fname":"Frank","name":"Smith","age":42,"id":12345,"boardMember":false}"""
 
-  val utf8 = Employee("Fränk", "Smi√", 42, 12345, false)
+  val utf8 = Employee("Fränk", "Çmi√", 42, 12345, false)
   val utf8json =
     """{
       |  "fname": "Fränk",
-      |  "name": "Smi√",
+      |  "name": "Çmi√",
       |  "age": 42,
       |  "id": 12345,
       |  "boardMember": false
