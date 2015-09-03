@@ -304,6 +304,8 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
   val remoteSystem = ActorSystem("remote", remote.withFallback(customSerializers))
   val localActor = system.actorOf(Props(classOf[LocalActor], port(remoteSystem)), "local")
 
+  val serialization = SerializationExtension(system)
+
   override protected def atStartup() {
     remoteSystem.actorOf(Props[RemoteActor], "remote")
   }
@@ -327,6 +329,13 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
       localActor ! AtomicWrite(List(p1, p2))
       expectMsg("p.a.")
       expectMsg("p.b.")
+    }
+
+    "serialize manifest provided by EventAdapter" in {
+      val p1 = PersistentRepr(MyPayload("a"), sender = testActor).withManifest("manifest")
+      val bytes = serialization.serialize(p1).get
+      val back = serialization.deserialize(bytes, classOf[PersistentRepr]).get
+      require(p1.manifest == back.manifest)
     }
   }
 }
