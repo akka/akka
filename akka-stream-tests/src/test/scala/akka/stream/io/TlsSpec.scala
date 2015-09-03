@@ -86,18 +86,6 @@ object TlsSpec {
     }
   }
 
-  // FIXME #17226 replace by .dropWhile when implemented
-  class DropWhile[T](p: T ⇒ Boolean) extends PushStage[T, T] {
-    private var open = false
-    override def onPush(elem: T, ctx: Context[T]) =
-      if (open) ctx.push(elem)
-      else if (p(elem)) ctx.pull()
-      else {
-        open = true
-        ctx.push(elem)
-      }
-  }
-
 }
 
 class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off") {
@@ -377,7 +365,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
             .collect { case SessionBytes(_, b) ⇒ b }
             .scan(ByteString.empty)(_ ++ _)
             .transform(() ⇒ new Timeout(6.seconds))
-            .transform(() ⇒ new DropWhile(_.size < scenario.output.size))
+            .dropWhile(_.size < scenario.output.size)
             .runWith(Sink.head)
 
         Await.result(f, 8.seconds).utf8String should be(scenario.output.utf8String)
