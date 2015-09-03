@@ -169,6 +169,10 @@ In the second scenario the "event token" is somewhere upstream when the terminat
 Observe, that in both scenarios ``onPull()`` kicks off the continuation of the processing logic, the only difference is
 whether it is the downstream or the ``absorbTermination()`` call that calls the event handler.
 
+.. warning::
+  It is not allowed to call ``absorbTermination()`` from ``onDownstreamFinish()``. If the method is called anyway,
+  it will be logged at ``ERROR`` level, but no further action will be taken as at that point there is no active
+  downstream to propagate the error to. Cancellation in the upstream direction will continue undisturbed.
 
 Using PushStage
 ---------------
@@ -242,6 +246,13 @@ gets its token back (one inbound token + one held token = two released tokens).
 The following code example demonstrates the buffer class corresponding to the message sequence chart we discussed.
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowStagesDocTest.java#detached
+
+.. warning::
+  If ``absorbTermination()`` is called on a :class:`DetachedStage` while it holds downstream (``isHoldingDownstream``
+  returns true) then ``onPull()`` will be called on the stage. This ensures that the stage does not end up in a
+  deadlocked case. Since at the point when the termination is absorbed there will be no way to get any callbacks because
+  the downstream is held, so the framework invokes onPull() to avoid this situation. This is similar to the termination
+  logic already shown for :class:`PushPullStage`.
 
 Custom graph processing junctions
 =================================
