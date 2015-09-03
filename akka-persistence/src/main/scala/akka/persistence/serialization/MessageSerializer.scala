@@ -130,6 +130,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
     if (persistent.persistenceId != Undefined) builder.setPersistenceId(persistent.persistenceId)
     if (persistent.sender != Actor.noSender) builder.setSender(Serialization.serializedActorPath(persistent.sender))
+    if (persistent.manifest != PersistentRepr.Undefined) builder.setManifest(persistent.manifest)
 
     builder.setPayload(persistentPayloadBuilder(persistent.payload.asInstanceOf[AnyRef]))
     builder.setSequenceNr(persistent.sequenceNr)
@@ -146,7 +147,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       serializer match {
         case ser2: SerializerWithStringManifest ⇒
           val manifest = ser2.manifest(payload)
-          if (manifest != "")
+          if (manifest != PersistentRepr.Undefined)
             builder.setPayloadManifest(ByteString.copyFromUtf8(manifest))
         case _ ⇒
           if (serializer.includeManifest)
