@@ -8,8 +8,8 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
-@BenchmarkMode(Array(Mode.SampleTime))
+@OutputTimeUnit(TimeUnit.SECONDS)
+@BenchmarkMode(Array(Mode.Throughput))
 class GraphBuilderBenchmark {
 
   @Param(Array("1", "10", "100", "1000"))

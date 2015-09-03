@@ -70,8 +70,8 @@ object MaterializationBenchmark {
 }
 
 @State(Scope.Benchmark)
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
-@BenchmarkMode(Array(Mode.SampleTime))
+@OutputTimeUnit(TimeUnit.SECONDS)
+@BenchmarkMode(Array(Mode.Throughput))
 class MaterializationBenchmark {
   import MaterializationBenchmark._
 

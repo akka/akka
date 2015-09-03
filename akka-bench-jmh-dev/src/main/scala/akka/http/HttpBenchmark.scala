@@ -20,8 +20,8 @@ import scala.util.Try
 import com.typesafe.config.ConfigFactory
 
 @State(Scope.Benchmark)
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
-@BenchmarkMode(Array(Mode.SampleTime))
+@OutputTimeUnit(TimeUnit.SECONDS)
+@BenchmarkMode(Array(Mode.Throughput))
 class HttpBenchmark {
 
   val config = ConfigFactory.parseString(
