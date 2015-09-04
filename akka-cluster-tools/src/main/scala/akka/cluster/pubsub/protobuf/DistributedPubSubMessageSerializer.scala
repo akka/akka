@@ -10,12 +10,11 @@ import akka.actor.{ ExtendedActorSystem, Address }
 import scala.Some
 import scala.collection.immutable
 import java.io.{ ByteArrayInputStream, ObjectOutputStream, ByteArrayOutputStream }
-import com.google.protobuf.ByteString
+import akka.protobuf.{ ByteString, MessageLite }
 import akka.util.ClassLoaderObjectInputStream
 import java.{ lang ⇒ jl }
 import java.util.zip.GZIPOutputStream
 import java.util.zip.GZIPInputStream
-import com.google.protobuf.MessageLite
 import scala.annotation.tailrec
 import akka.cluster.pubsub.protobuf.msg.{ DistributedPubSubMessages ⇒ dm }
 import scala.collection.JavaConverters._

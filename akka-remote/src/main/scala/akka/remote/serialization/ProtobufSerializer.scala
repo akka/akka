@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.remote.WireFormats.ActorRefData
 import akka.serialization.{ Serialization, BaseSerializer }
-import com.google.protobuf.Message
 
 import scala.annotation.tailrec
 
@@ -35,7 +34,9 @@ object ProtobufSerializer {
 }
 
 /**
- * This Serializer serializes `com.google.protobuf.Message`s
+ * This Serializer serializes `akka.protobuf.Message` and `com.google.protobuf.Message`
+ * It is using reflection to find the `parseFrom` and `toByteArray` methods to avoid
+ * dependency to `com.google.protobuf`.
  */
 class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
@@ -51,6 +52,7 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
   val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
 
   private val parsingMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
+  private val toByteArrayMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
 
   override def includeManifest: Boolean = true
 
@@ -72,14 +74,29 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
                 parsingMethod(unCachedParsingMethod)
           }
         }
-        parsingMethod().invoke(null, bytes).asInstanceOf[Message]
+        parsingMethod().invoke(null, bytes)
 
       case None ⇒ throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
     }
   }
 
-  override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case message: Message ⇒ message.toByteArray
-    case _                ⇒ throw new IllegalArgumentException(s"Can't serialize a non-protobuf message using protobuf [$obj]")
+  override def toBinary(obj: AnyRef): Array[Byte] = {
+    val clazz = obj.getClass
+    @tailrec
+    def toByteArrayMethod(method: Method = null): Method = {
+      val toByteArrayMethodBinding = toByteArrayMethodBindingRef.get()
+      toByteArrayMethodBinding.get(clazz) match {
+        case Some(cachedtoByteArrayMethod) ⇒ cachedtoByteArrayMethod
+        case None ⇒
+          val unCachedtoByteArrayMethod =
+            if (method eq null) clazz.getMethod("toByteArray")
+            else method
+          if (toByteArrayMethodBindingRef.compareAndSet(toByteArrayMethodBinding, toByteArrayMethodBinding.updated(clazz, unCachedtoByteArrayMethod)))
+            unCachedtoByteArrayMethod
+          else
+            toByteArrayMethod(unCachedtoByteArrayMethod)
+      }
+    }
+    toByteArrayMethod().invoke(obj).asInstanceOf[Array[Byte]]
   }
 }

@@ -20,7 +20,7 @@ import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
-import com.google.protobuf.MessageLite
+import akka.protobuf.MessageLite
 
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.

@@ -6,7 +6,7 @@ package akka.remote.serialization
 
 import akka.serialization.{ BaseSerializer, SerializationExtension }
 import java.io.Serializable
-import com.google.protobuf.ByteString
+import akka.protobuf.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.{ Actor, ActorRef, Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate

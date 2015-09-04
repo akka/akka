@@ -6,10 +6,10 @@ package akka.remote;
 public final class ProtobufProtocol {
   private ProtobufProtocol() {}
   public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
+      akka.protobuf.ExtensionRegistry registry) {
   }
   public interface MyMessageOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required uint64 id = 1;
     /**
@@ -33,7 +33,7 @@ public final class ProtobufProtocol {
     /**
      * <code>required string name = 2;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getNameBytes();
 
     // required bool status = 3;
@@ -50,14 +50,14 @@ public final class ProtobufProtocol {
    * Protobuf type {@code MyMessage}
    */
   public static final class MyMessage extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements MyMessageOrBuilder {
     // Use MyMessage.newBuilder() to construct.
-    private MyMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private MyMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private MyMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private MyMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final MyMessage defaultInstance;
     public static MyMessage getDefaultInstance() {
@@ -68,20 +68,20 @@ public final class ProtobufProtocol {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private MyMessage(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -114,40 +114,40 @@ public final class ProtobufProtocol {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ProtobufProtocol.internal_static_MyMessage_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ProtobufProtocol.internal_static_MyMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ProtobufProtocol.MyMessage.class, akka.remote.ProtobufProtocol.MyMessage.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<MyMessage> PARSER =
-        new com.google.protobuf.AbstractParser<MyMessage>() {
+    public static akka.protobuf.Parser<MyMessage> PARSER =
+        new akka.protobuf.AbstractParser<MyMessage>() {
       public MyMessage parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new MyMessage(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<MyMessage> getParserForType() {
+    public akka.protobuf.Parser<MyMessage> getParserForType() {
       return PARSER;
     }
 
@@ -185,8 +185,8 @@ public final class ProtobufProtocol {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           name_ = s;
@@ -197,17 +197,17 @@ public final class ProtobufProtocol {
     /**
      * <code>required string name = 2;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getNameBytes() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         name_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -253,7 +253,7 @@ public final class ProtobufProtocol {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -275,15 +275,15 @@ public final class ProtobufProtocol {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeUInt64Size(1, id_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(2, getNameBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBoolSize(3, status_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -299,24 +299,24 @@ public final class ProtobufProtocol {
     }
 
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(java.io.InputStream input)
@@ -325,7 +325,7 @@ public final class ProtobufProtocol {
     }
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -335,18 +335,18 @@ public final class ProtobufProtocol {
     }
     public static akka.remote.ProtobufProtocol.MyMessage parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -360,7 +360,7 @@ public final class ProtobufProtocol {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -368,14 +368,14 @@ public final class ProtobufProtocol {
      * Protobuf type {@code MyMessage}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.remote.ProtobufProtocol.MyMessageOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ProtobufProtocol.internal_static_MyMessage_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ProtobufProtocol.internal_static_MyMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -388,12 +388,12 @@ public final class ProtobufProtocol {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -415,7 +415,7 @@ public final class ProtobufProtocol {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ProtobufProtocol.internal_static_MyMessage_descriptor;
       }
@@ -453,7 +453,7 @@ public final class ProtobufProtocol {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.ProtobufProtocol.MyMessage) {
           return mergeFrom((akka.remote.ProtobufProtocol.MyMessage)other);
         } else {
@@ -496,13 +496,13 @@ public final class ProtobufProtocol {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ProtobufProtocol.MyMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ProtobufProtocol.MyMessage) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -561,7 +561,7 @@ public final class ProtobufProtocol {
       public java.lang.String getName() {
         java.lang.Object ref = name_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           name_ = s;
           return s;
@@ -572,17 +572,17 @@ public final class ProtobufProtocol {
       /**
        * <code>required string name = 2;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getNameBytes() {
         java.lang.Object ref = name_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           name_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -611,7 +611,7 @@ public final class ProtobufProtocol {
        * <code>required string name = 2;</code>
        */
       public Builder setNameBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -665,17 +665,17 @@ public final class ProtobufProtocol {
     // @@protoc_insertion_point(class_scope:MyMessage)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_MyMessage_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_MyMessage_fieldAccessorTable;
 
-  public static com.google.protobuf.Descriptors.FileDescriptor
+  public static akka.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static com.google.protobuf.Descriptors.FileDescriptor
+  private static akka.protobuf.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -683,23 +683,23 @@ public final class ProtobufProtocol {
       "\002id\030\001 \002(\004\022\014\n\004name\030\002 \002(\t\022\016\n\006status\030\003 \002(\010B" +
       "\r\n\013akka.remote"
     };
-    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
+    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+        public akka.protobuf.ExtensionRegistry assignDescriptors(
+            akka.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
           internal_static_MyMessage_descriptor =
             getDescriptor().getMessageTypes().get(0);
           internal_static_MyMessage_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_MyMessage_descriptor,
               new java.lang.String[] { "Id", "Name", "Status", });
           return null;
         }
       };
-    com.google.protobuf.Descriptors.FileDescriptor
+    akka.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
+        new akka.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
 

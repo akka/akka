@@ -6,10 +6,10 @@ package akka.cluster.pubsub.protobuf.msg;
 public final class DistributedPubSubMessages {
   private DistributedPubSubMessages() {}
   public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
+      akka.protobuf.ExtensionRegistry registry) {
   }
   public interface StatusOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // repeated .Status.Version versions = 1;
     /**
@@ -40,14 +40,14 @@ public final class DistributedPubSubMessages {
    * Protobuf type {@code Status}
    */
   public static final class Status extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements StatusOrBuilder {
     // Use Status.newBuilder() to construct.
-    private Status(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Status(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Status(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Status(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Status defaultInstance;
     public static Status getDefaultInstance() {
@@ -58,20 +58,20 @@ public final class DistributedPubSubMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Status(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -97,10 +97,10 @@ public final class DistributedPubSubMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -110,35 +110,35 @@ public final class DistributedPubSubMessages {
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Status> PARSER =
-        new com.google.protobuf.AbstractParser<Status>() {
+    public static akka.protobuf.Parser<Status> PARSER =
+        new akka.protobuf.AbstractParser<Status>() {
       public Status parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Status(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Status> getParserForType() {
+    public akka.protobuf.Parser<Status> getParserForType() {
       return PARSER;
     }
 
     public interface VersionOrBuilder
-        extends com.google.protobuf.MessageOrBuilder {
+        extends akka.protobuf.MessageOrBuilder {
 
       // required .Address address = 1;
       /**
@@ -168,14 +168,14 @@ public final class DistributedPubSubMessages {
      * Protobuf type {@code Status.Version}
      */
     public static final class Version extends
-        com.google.protobuf.GeneratedMessage
+        akka.protobuf.GeneratedMessage
         implements VersionOrBuilder {
       // Use Version.newBuilder() to construct.
-      private Version(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      private Version(akka.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private Version(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private Version(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
       private static final Version defaultInstance;
       public static Version getDefaultInstance() {
@@ -186,20 +186,20 @@ public final class DistributedPubSubMessages {
         return defaultInstance;
       }
 
-      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      private final akka.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      public final com.google.protobuf.UnknownFieldSet
+      public final akka.protobuf.UnknownFieldSet
           getUnknownFields() {
         return this.unknownFields;
       }
       private Version(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         initFields();
         int mutable_bitField0_ = 0;
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder();
+        akka.protobuf.UnknownFieldSet.Builder unknownFields =
+            akka.protobuf.UnknownFieldSet.newBuilder();
         try {
           boolean done = false;
           while (!done) {
@@ -235,40 +235,40 @@ public final class DistributedPubSubMessages {
               }
             }
           }
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(
+          throw new akka.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
           this.unknownFields = unknownFields.build();
           makeExtensionsImmutable();
         }
       }
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_Version_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_Version_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
                 akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<Version> PARSER =
-          new com.google.protobuf.AbstractParser<Version>() {
+      public static akka.protobuf.Parser<Version> PARSER =
+          new akka.protobuf.AbstractParser<Version>() {
         public Version parsePartialFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobuf.InvalidProtocolBufferException {
           return new Version(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<Version> getParserForType() {
+      public akka.protobuf.Parser<Version> getParserForType() {
         return PARSER;
       }
 
@@ -336,7 +336,7 @@ public final class DistributedPubSubMessages {
         return true;
       }
 
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
+      public void writeTo(akka.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -355,11 +355,11 @@ public final class DistributedPubSubMessages {
 
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeMessageSize(1, address_);
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeInt64Size(2, timestamp_);
         }
         size += getUnknownFields().getSerializedSize();
@@ -375,24 +375,24 @@ public final class DistributedPubSubMessages {
       }
 
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parseFrom(
           byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parseFrom(java.io.InputStream input)
@@ -401,7 +401,7 @@ public final class DistributedPubSubMessages {
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parseFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -411,18 +411,18 @@ public final class DistributedPubSubMessages {
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parseDelimitedFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parseFrom(
-          com.google.protobuf.CodedInputStream input)
+          akka.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parseFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -436,7 +436,7 @@ public final class DistributedPubSubMessages {
 
       @java.lang.Override
       protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -444,14 +444,14 @@ public final class DistributedPubSubMessages {
        * Protobuf type {@code Status.Version}
        */
       public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
+          akka.protobuf.GeneratedMessage.Builder<Builder>
          implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.VersionOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static final akka.protobuf.Descriptors.Descriptor
             getDescriptor() {
           return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_Version_descriptor;
         }
 
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        protected akka.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_Version_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -464,12 +464,12 @@ public final class DistributedPubSubMessages {
         }
 
         private Builder(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            akka.protobuf.GeneratedMessage.BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
         private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
             getAddressFieldBuilder();
           }
         }
@@ -494,7 +494,7 @@ public final class DistributedPubSubMessages {
           return create().mergeFrom(buildPartial());
         }
 
-        public com.google.protobuf.Descriptors.Descriptor
+        public akka.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_Version_descriptor;
         }
@@ -532,7 +532,7 @@ public final class DistributedPubSubMessages {
           return result;
         }
 
-        public Builder mergeFrom(com.google.protobuf.Message other) {
+        public Builder mergeFrom(akka.protobuf.Message other) {
           if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version) {
             return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version)other);
           } else {
@@ -570,13 +570,13 @@ public final class DistributedPubSubMessages {
         }
 
         public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          } catch (akka.protobuf.InvalidProtocolBufferException e) {
             parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version) e.getUnfinishedMessage();
             throw e;
           } finally {
@@ -590,7 +590,7 @@ public final class DistributedPubSubMessages {
 
         // required .Address address = 1;
         private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address address_ = akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.getDefaultInstance();
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.AddressOrBuilder> addressBuilder_;
         /**
          * <code>required .Address address = 1;</code>
@@ -691,11 +691,11 @@ public final class DistributedPubSubMessages {
         /**
          * <code>required .Address address = 1;</code>
          */
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.AddressOrBuilder> 
             getAddressFieldBuilder() {
           if (addressBuilder_ == null) {
-            addressBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+            addressBuilder_ = new akka.protobuf.SingleFieldBuilder<
                 akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.AddressOrBuilder>(
                     address_,
                     getParentForChildren(),
@@ -803,7 +803,7 @@ public final class DistributedPubSubMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       for (int i = 0; i < versions_.size(); i++) {
@@ -819,7 +819,7 @@ public final class DistributedPubSubMessages {
 
       size = 0;
       for (int i = 0; i < versions_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, versions_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
@@ -835,24 +835,24 @@ public final class DistributedPubSubMessages {
     }
 
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parseFrom(java.io.InputStream input)
@@ -861,7 +861,7 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -871,18 +871,18 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -896,7 +896,7 @@ public final class DistributedPubSubMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -904,14 +904,14 @@ public final class DistributedPubSubMessages {
      * Protobuf type {@code Status}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.StatusOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -924,12 +924,12 @@ public final class DistributedPubSubMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getVersionsFieldBuilder();
         }
       }
@@ -952,7 +952,7 @@ public final class DistributedPubSubMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Status_descriptor;
       }
@@ -985,7 +985,7 @@ public final class DistributedPubSubMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status) {
           return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status)other);
         } else {
@@ -1015,7 +1015,7 @@ public final class DistributedPubSubMessages {
               versions_ = other.versions_;
               bitField0_ = (bitField0_ & ~0x00000001);
               versionsBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getVersionsFieldBuilder() : null;
             } else {
               versionsBuilder_.addAllMessages(other.versions_);
@@ -1037,13 +1037,13 @@ public final class DistributedPubSubMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -1065,7 +1065,7 @@ public final class DistributedPubSubMessages {
          }
       }
 
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.VersionOrBuilder> versionsBuilder_;
 
       /**
@@ -1280,11 +1280,11 @@ public final class DistributedPubSubMessages {
            getVersionsBuilderList() {
         return getVersionsFieldBuilder().getBuilderList();
       }
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.VersionOrBuilder> 
           getVersionsFieldBuilder() {
         if (versionsBuilder_ == null) {
-          versionsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+          versionsBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.Version.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Status.VersionOrBuilder>(
                   versions_,
                   ((bitField0_ & 0x00000001) == 0x00000001),
@@ -1307,7 +1307,7 @@ public final class DistributedPubSubMessages {
   }
 
   public interface DeltaOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // repeated .Delta.Bucket buckets = 1;
     /**
@@ -1338,14 +1338,14 @@ public final class DistributedPubSubMessages {
    * Protobuf type {@code Delta}
    */
   public static final class Delta extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements DeltaOrBuilder {
     // Use Delta.newBuilder() to construct.
-    private Delta(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Delta(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Delta(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Delta(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Delta defaultInstance;
     public static Delta getDefaultInstance() {
@@ -1356,20 +1356,20 @@ public final class DistributedPubSubMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Delta(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -1395,10 +1395,10 @@ public final class DistributedPubSubMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -1408,35 +1408,35 @@ public final class DistributedPubSubMessages {
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Delta> PARSER =
-        new com.google.protobuf.AbstractParser<Delta>() {
+    public static akka.protobuf.Parser<Delta> PARSER =
+        new akka.protobuf.AbstractParser<Delta>() {
       public Delta parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Delta(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Delta> getParserForType() {
+    public akka.protobuf.Parser<Delta> getParserForType() {
       return PARSER;
     }
 
     public interface EntryOrBuilder
-        extends com.google.protobuf.MessageOrBuilder {
+        extends akka.protobuf.MessageOrBuilder {
 
       // required string key = 1;
       /**
@@ -1450,7 +1450,7 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required string key = 1;</code>
        */
-      com.google.protobuf.ByteString
+      akka.protobuf.ByteString
           getKeyBytes();
 
       // required int64 version = 2;
@@ -1475,21 +1475,21 @@ public final class DistributedPubSubMessages {
       /**
        * <code>optional string ref = 3;</code>
        */
-      com.google.protobuf.ByteString
+      akka.protobuf.ByteString
           getRefBytes();
     }
     /**
      * Protobuf type {@code Delta.Entry}
      */
     public static final class Entry extends
-        com.google.protobuf.GeneratedMessage
+        akka.protobuf.GeneratedMessage
         implements EntryOrBuilder {
       // Use Entry.newBuilder() to construct.
-      private Entry(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      private Entry(akka.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private Entry(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private Entry(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
       private static final Entry defaultInstance;
       public static Entry getDefaultInstance() {
@@ -1500,20 +1500,20 @@ public final class DistributedPubSubMessages {
         return defaultInstance;
       }
 
-      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      private final akka.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      public final com.google.protobuf.UnknownFieldSet
+      public final akka.protobuf.UnknownFieldSet
           getUnknownFields() {
         return this.unknownFields;
       }
       private Entry(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         initFields();
         int mutable_bitField0_ = 0;
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder();
+        akka.protobuf.UnknownFieldSet.Builder unknownFields =
+            akka.protobuf.UnknownFieldSet.newBuilder();
         try {
           boolean done = false;
           while (!done) {
@@ -1546,40 +1546,40 @@ public final class DistributedPubSubMessages {
               }
             }
           }
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(
+          throw new akka.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
           this.unknownFields = unknownFields.build();
           makeExtensionsImmutable();
         }
       }
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Entry_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Entry_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
                 akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<Entry> PARSER =
-          new com.google.protobuf.AbstractParser<Entry>() {
+      public static akka.protobuf.Parser<Entry> PARSER =
+          new akka.protobuf.AbstractParser<Entry>() {
         public Entry parsePartialFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobuf.InvalidProtocolBufferException {
           return new Entry(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<Entry> getParserForType() {
+      public akka.protobuf.Parser<Entry> getParserForType() {
         return PARSER;
       }
 
@@ -1601,8 +1601,8 @@ public final class DistributedPubSubMessages {
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
+          akka.protobuf.ByteString bs = 
+              (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             key_ = s;
@@ -1613,17 +1613,17 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required string key = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getKeyBytes() {
         java.lang.Object ref = key_;
         if (ref instanceof java.lang.String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           key_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
 
@@ -1660,8 +1660,8 @@ public final class DistributedPubSubMessages {
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
+          akka.protobuf.ByteString bs = 
+              (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             ref_ = s;
@@ -1672,17 +1672,17 @@ public final class DistributedPubSubMessages {
       /**
        * <code>optional string ref = 3;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getRefBytes() {
         java.lang.Object ref = ref_;
         if (ref instanceof java.lang.String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           ref_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
 
@@ -1708,7 +1708,7 @@ public final class DistributedPubSubMessages {
         return true;
       }
 
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
+      public void writeTo(akka.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -1730,15 +1730,15 @@ public final class DistributedPubSubMessages {
 
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeBytesSize(1, getKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeInt64Size(2, version_);
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeBytesSize(3, getRefBytes());
         }
         size += getUnknownFields().getSerializedSize();
@@ -1754,24 +1754,24 @@ public final class DistributedPubSubMessages {
       }
 
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parseFrom(
           byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parseFrom(java.io.InputStream input)
@@ -1780,7 +1780,7 @@ public final class DistributedPubSubMessages {
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parseFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -1790,18 +1790,18 @@ public final class DistributedPubSubMessages {
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parseDelimitedFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parseFrom(
-          com.google.protobuf.CodedInputStream input)
+          akka.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parseFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -1815,7 +1815,7 @@ public final class DistributedPubSubMessages {
 
       @java.lang.Override
       protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -1823,14 +1823,14 @@ public final class DistributedPubSubMessages {
        * Protobuf type {@code Delta.Entry}
        */
       public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
+          akka.protobuf.GeneratedMessage.Builder<Builder>
          implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.EntryOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static final akka.protobuf.Descriptors.Descriptor
             getDescriptor() {
           return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Entry_descriptor;
         }
 
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        protected akka.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Entry_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -1843,12 +1843,12 @@ public final class DistributedPubSubMessages {
         }
 
         private Builder(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            akka.protobuf.GeneratedMessage.BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
         private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           }
         }
         private static Builder create() {
@@ -1870,7 +1870,7 @@ public final class DistributedPubSubMessages {
           return create().mergeFrom(buildPartial());
         }
 
-        public com.google.protobuf.Descriptors.Descriptor
+        public akka.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Entry_descriptor;
         }
@@ -1908,7 +1908,7 @@ public final class DistributedPubSubMessages {
           return result;
         }
 
-        public Builder mergeFrom(com.google.protobuf.Message other) {
+        public Builder mergeFrom(akka.protobuf.Message other) {
           if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry) {
             return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry)other);
           } else {
@@ -1949,13 +1949,13 @@ public final class DistributedPubSubMessages {
         }
 
         public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          } catch (akka.protobuf.InvalidProtocolBufferException e) {
             parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry) e.getUnfinishedMessage();
             throw e;
           } finally {
@@ -1981,7 +1981,7 @@ public final class DistributedPubSubMessages {
         public java.lang.String getKey() {
           java.lang.Object ref = key_;
           if (!(ref instanceof java.lang.String)) {
-            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+            java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
             key_ = s;
             return s;
@@ -1992,17 +1992,17 @@ public final class DistributedPubSubMessages {
         /**
          * <code>required string key = 1;</code>
          */
-        public com.google.protobuf.ByteString
+        public akka.protobuf.ByteString
             getKeyBytes() {
           java.lang.Object ref = key_;
           if (ref instanceof String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
+            akka.protobuf.ByteString b = 
+                akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
             key_ = b;
             return b;
           } else {
-            return (com.google.protobuf.ByteString) ref;
+            return (akka.protobuf.ByteString) ref;
           }
         }
         /**
@@ -2031,7 +2031,7 @@ public final class DistributedPubSubMessages {
          * <code>required string key = 1;</code>
          */
         public Builder setKeyBytes(
-            com.google.protobuf.ByteString value) {
+            akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -2088,7 +2088,7 @@ public final class DistributedPubSubMessages {
         public java.lang.String getRef() {
           java.lang.Object ref = ref_;
           if (!(ref instanceof java.lang.String)) {
-            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+            java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
             ref_ = s;
             return s;
@@ -2099,17 +2099,17 @@ public final class DistributedPubSubMessages {
         /**
          * <code>optional string ref = 3;</code>
          */
-        public com.google.protobuf.ByteString
+        public akka.protobuf.ByteString
             getRefBytes() {
           java.lang.Object ref = ref_;
           if (ref instanceof String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
+            akka.protobuf.ByteString b = 
+                akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
             ref_ = b;
             return b;
           } else {
-            return (com.google.protobuf.ByteString) ref;
+            return (akka.protobuf.ByteString) ref;
           }
         }
         /**
@@ -2138,7 +2138,7 @@ public final class DistributedPubSubMessages {
          * <code>optional string ref = 3;</code>
          */
         public Builder setRefBytes(
-            com.google.protobuf.ByteString value) {
+            akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -2160,7 +2160,7 @@ public final class DistributedPubSubMessages {
     }
 
     public interface BucketOrBuilder
-        extends com.google.protobuf.MessageOrBuilder {
+        extends akka.protobuf.MessageOrBuilder {
 
       // required .Address owner = 1;
       /**
@@ -2215,14 +2215,14 @@ public final class DistributedPubSubMessages {
      * Protobuf type {@code Delta.Bucket}
      */
     public static final class Bucket extends
-        com.google.protobuf.GeneratedMessage
+        akka.protobuf.GeneratedMessage
         implements BucketOrBuilder {
       // Use Bucket.newBuilder() to construct.
-      private Bucket(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      private Bucket(akka.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private Bucket(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private Bucket(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
       private static final Bucket defaultInstance;
       public static Bucket getDefaultInstance() {
@@ -2233,20 +2233,20 @@ public final class DistributedPubSubMessages {
         return defaultInstance;
       }
 
-      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      private final akka.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      public final com.google.protobuf.UnknownFieldSet
+      public final akka.protobuf.UnknownFieldSet
           getUnknownFields() {
         return this.unknownFields;
       }
       private Bucket(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         initFields();
         int mutable_bitField0_ = 0;
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder();
+        akka.protobuf.UnknownFieldSet.Builder unknownFields =
+            akka.protobuf.UnknownFieldSet.newBuilder();
         try {
           boolean done = false;
           while (!done) {
@@ -2290,10 +2290,10 @@ public final class DistributedPubSubMessages {
               }
             }
           }
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(
+          throw new akka.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
           if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
@@ -2303,30 +2303,30 @@ public final class DistributedPubSubMessages {
           makeExtensionsImmutable();
         }
       }
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Bucket_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Bucket_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
                 akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<Bucket> PARSER =
-          new com.google.protobuf.AbstractParser<Bucket>() {
+      public static akka.protobuf.Parser<Bucket> PARSER =
+          new akka.protobuf.AbstractParser<Bucket>() {
         public Bucket parsePartialFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobuf.InvalidProtocolBufferException {
           return new Bucket(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<Bucket> getParserForType() {
+      public akka.protobuf.Parser<Bucket> getParserForType() {
         return PARSER;
       }
 
@@ -2437,7 +2437,7 @@ public final class DistributedPubSubMessages {
         return true;
       }
 
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
+      public void writeTo(akka.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -2459,15 +2459,15 @@ public final class DistributedPubSubMessages {
 
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeMessageSize(1, owner_);
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeInt64Size(2, version_);
         }
         for (int i = 0; i < content_.size(); i++) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeMessageSize(3, content_.get(i));
         }
         size += getUnknownFields().getSerializedSize();
@@ -2483,24 +2483,24 @@ public final class DistributedPubSubMessages {
       }
 
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parseFrom(
           byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parseFrom(java.io.InputStream input)
@@ -2509,7 +2509,7 @@ public final class DistributedPubSubMessages {
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parseFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -2519,18 +2519,18 @@ public final class DistributedPubSubMessages {
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parseDelimitedFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parseFrom(
-          com.google.protobuf.CodedInputStream input)
+          akka.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
       public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parseFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -2544,7 +2544,7 @@ public final class DistributedPubSubMessages {
 
       @java.lang.Override
       protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -2552,14 +2552,14 @@ public final class DistributedPubSubMessages {
        * Protobuf type {@code Delta.Bucket}
        */
       public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
+          akka.protobuf.GeneratedMessage.Builder<Builder>
          implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.BucketOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static final akka.protobuf.Descriptors.Descriptor
             getDescriptor() {
           return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Bucket_descriptor;
         }
 
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        protected akka.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Bucket_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -2572,12 +2572,12 @@ public final class DistributedPubSubMessages {
         }
 
         private Builder(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            akka.protobuf.GeneratedMessage.BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
         private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
             getOwnerFieldBuilder();
             getContentFieldBuilder();
           }
@@ -2609,7 +2609,7 @@ public final class DistributedPubSubMessages {
           return create().mergeFrom(buildPartial());
         }
 
-        public com.google.protobuf.Descriptors.Descriptor
+        public akka.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_Bucket_descriptor;
         }
@@ -2656,7 +2656,7 @@ public final class DistributedPubSubMessages {
           return result;
         }
 
-        public Builder mergeFrom(com.google.protobuf.Message other) {
+        public Builder mergeFrom(akka.protobuf.Message other) {
           if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket) {
             return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket)other);
           } else {
@@ -2692,7 +2692,7 @@ public final class DistributedPubSubMessages {
                 content_ = other.content_;
                 bitField0_ = (bitField0_ & ~0x00000004);
                 contentBuilder_ = 
-                  com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                  akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                      getContentFieldBuilder() : null;
               } else {
                 contentBuilder_.addAllMessages(other.content_);
@@ -2726,13 +2726,13 @@ public final class DistributedPubSubMessages {
         }
 
         public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          } catch (akka.protobuf.InvalidProtocolBufferException e) {
             parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket) e.getUnfinishedMessage();
             throw e;
           } finally {
@@ -2746,7 +2746,7 @@ public final class DistributedPubSubMessages {
 
         // required .Address owner = 1;
         private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address owner_ = akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.getDefaultInstance();
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.AddressOrBuilder> ownerBuilder_;
         /**
          * <code>required .Address owner = 1;</code>
@@ -2847,11 +2847,11 @@ public final class DistributedPubSubMessages {
         /**
          * <code>required .Address owner = 1;</code>
          */
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.AddressOrBuilder> 
             getOwnerFieldBuilder() {
           if (ownerBuilder_ == null) {
-            ownerBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+            ownerBuilder_ = new akka.protobuf.SingleFieldBuilder<
                 akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.AddressOrBuilder>(
                     owner_,
                     getParentForChildren(),
@@ -2904,7 +2904,7 @@ public final class DistributedPubSubMessages {
            }
         }
 
-        private com.google.protobuf.RepeatedFieldBuilder<
+        private akka.protobuf.RepeatedFieldBuilder<
             akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.EntryOrBuilder> contentBuilder_;
 
         /**
@@ -3119,11 +3119,11 @@ public final class DistributedPubSubMessages {
              getContentBuilderList() {
           return getContentFieldBuilder().getBuilderList();
         }
-        private com.google.protobuf.RepeatedFieldBuilder<
+        private akka.protobuf.RepeatedFieldBuilder<
             akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.EntryOrBuilder> 
             getContentFieldBuilder() {
           if (contentBuilder_ == null) {
-            contentBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+            contentBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
                 akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Entry.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.EntryOrBuilder>(
                     content_,
                     ((bitField0_ & 0x00000004) == 0x00000004),
@@ -3199,7 +3199,7 @@ public final class DistributedPubSubMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       for (int i = 0; i < buckets_.size(); i++) {
@@ -3215,7 +3215,7 @@ public final class DistributedPubSubMessages {
 
       size = 0;
       for (int i = 0; i < buckets_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, buckets_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
@@ -3231,24 +3231,24 @@ public final class DistributedPubSubMessages {
     }
 
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parseFrom(java.io.InputStream input)
@@ -3257,7 +3257,7 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -3267,18 +3267,18 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -3292,7 +3292,7 @@ public final class DistributedPubSubMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3300,14 +3300,14 @@ public final class DistributedPubSubMessages {
      * Protobuf type {@code Delta}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.DeltaOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3320,12 +3320,12 @@ public final class DistributedPubSubMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getBucketsFieldBuilder();
         }
       }
@@ -3348,7 +3348,7 @@ public final class DistributedPubSubMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Delta_descriptor;
       }
@@ -3381,7 +3381,7 @@ public final class DistributedPubSubMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta) {
           return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta)other);
         } else {
@@ -3411,7 +3411,7 @@ public final class DistributedPubSubMessages {
               buckets_ = other.buckets_;
               bitField0_ = (bitField0_ & ~0x00000001);
               bucketsBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getBucketsFieldBuilder() : null;
             } else {
               bucketsBuilder_.addAllMessages(other.buckets_);
@@ -3433,13 +3433,13 @@ public final class DistributedPubSubMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -3461,7 +3461,7 @@ public final class DistributedPubSubMessages {
          }
       }
 
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.BucketOrBuilder> bucketsBuilder_;
 
       /**
@@ -3676,11 +3676,11 @@ public final class DistributedPubSubMessages {
            getBucketsBuilderList() {
         return getBucketsFieldBuilder().getBuilderList();
       }
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.BucketOrBuilder> 
           getBucketsFieldBuilder() {
         if (bucketsBuilder_ == null) {
-          bucketsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+          bucketsBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.Bucket.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Delta.BucketOrBuilder>(
                   buckets_,
                   ((bitField0_ & 0x00000001) == 0x00000001),
@@ -3703,7 +3703,7 @@ public final class DistributedPubSubMessages {
   }
 
   public interface AddressOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string system = 1;
     /**
@@ -3717,7 +3717,7 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string system = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getSystemBytes();
 
     // required string hostname = 2;
@@ -3732,7 +3732,7 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string hostname = 2;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getHostnameBytes();
 
     // required uint32 port = 3;
@@ -3757,7 +3757,7 @@ public final class DistributedPubSubMessages {
     /**
      * <code>optional string protocol = 4;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getProtocolBytes();
   }
   /**
@@ -3769,14 +3769,14 @@ public final class DistributedPubSubMessages {
    * </pre>
    */
   public static final class Address extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements AddressOrBuilder {
     // Use Address.newBuilder() to construct.
-    private Address(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Address(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Address(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Address(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Address defaultInstance;
     public static Address getDefaultInstance() {
@@ -3787,20 +3787,20 @@ public final class DistributedPubSubMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Address(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -3838,40 +3838,40 @@ public final class DistributedPubSubMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Address_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Address_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Address> PARSER =
-        new com.google.protobuf.AbstractParser<Address>() {
+    public static akka.protobuf.Parser<Address> PARSER =
+        new akka.protobuf.AbstractParser<Address>() {
       public Address parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Address(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Address> getParserForType() {
+    public akka.protobuf.Parser<Address> getParserForType() {
       return PARSER;
     }
 
@@ -3893,8 +3893,8 @@ public final class DistributedPubSubMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           system_ = s;
@@ -3905,17 +3905,17 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string system = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getSystemBytes() {
       java.lang.Object ref = system_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         system_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -3936,8 +3936,8 @@ public final class DistributedPubSubMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           hostname_ = s;
@@ -3948,17 +3948,17 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string hostname = 2;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getHostnameBytes() {
       java.lang.Object ref = hostname_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         hostname_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -3995,8 +3995,8 @@ public final class DistributedPubSubMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           protocol_ = s;
@@ -4007,17 +4007,17 @@ public final class DistributedPubSubMessages {
     /**
      * <code>optional string protocol = 4;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getProtocolBytes() {
       java.lang.Object ref = protocol_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         protocol_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -4048,7 +4048,7 @@ public final class DistributedPubSubMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -4073,19 +4073,19 @@ public final class DistributedPubSubMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getSystemBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(2, getHostnameBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeUInt32Size(3, port_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(4, getProtocolBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -4101,24 +4101,24 @@ public final class DistributedPubSubMessages {
     }
 
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parseFrom(java.io.InputStream input)
@@ -4127,7 +4127,7 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4137,18 +4137,18 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4162,7 +4162,7 @@ public final class DistributedPubSubMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4175,14 +4175,14 @@ public final class DistributedPubSubMessages {
      * </pre>
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.AddressOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Address_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Address_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -4195,12 +4195,12 @@ public final class DistributedPubSubMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -4224,7 +4224,7 @@ public final class DistributedPubSubMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Address_descriptor;
       }
@@ -4266,7 +4266,7 @@ public final class DistributedPubSubMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address) {
           return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address)other);
         } else {
@@ -4316,13 +4316,13 @@ public final class DistributedPubSubMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -4348,7 +4348,7 @@ public final class DistributedPubSubMessages {
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           system_ = s;
           return s;
@@ -4359,17 +4359,17 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required string system = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getSystemBytes() {
         java.lang.Object ref = system_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           system_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -4398,7 +4398,7 @@ public final class DistributedPubSubMessages {
        * <code>required string system = 1;</code>
        */
       public Builder setSystemBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4422,7 +4422,7 @@ public final class DistributedPubSubMessages {
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           hostname_ = s;
           return s;
@@ -4433,17 +4433,17 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required string hostname = 2;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getHostnameBytes() {
         java.lang.Object ref = hostname_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           hostname_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -4472,7 +4472,7 @@ public final class DistributedPubSubMessages {
        * <code>required string hostname = 2;</code>
        */
       public Builder setHostnameBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4529,7 +4529,7 @@ public final class DistributedPubSubMessages {
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           protocol_ = s;
           return s;
@@ -4540,17 +4540,17 @@ public final class DistributedPubSubMessages {
       /**
        * <code>optional string protocol = 4;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getProtocolBytes() {
         java.lang.Object ref = protocol_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           protocol_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -4579,7 +4579,7 @@ public final class DistributedPubSubMessages {
        * <code>optional string protocol = 4;</code>
        */
       public Builder setProtocolBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4601,7 +4601,7 @@ public final class DistributedPubSubMessages {
   }
 
   public interface SendOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string path = 1;
     /**
@@ -4615,7 +4615,7 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string path = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getPathBytes();
 
     // required bool localAffinity = 2;
@@ -4651,14 +4651,14 @@ public final class DistributedPubSubMessages {
    * </pre>
    */
   public static final class Send extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements SendOrBuilder {
     // Use Send.newBuilder() to construct.
-    private Send(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Send(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Send(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Send(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Send defaultInstance;
     public static Send getDefaultInstance() {
@@ -4669,20 +4669,20 @@ public final class DistributedPubSubMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Send(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -4723,40 +4723,40 @@ public final class DistributedPubSubMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Send_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Send_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Send> PARSER =
-        new com.google.protobuf.AbstractParser<Send>() {
+    public static akka.protobuf.Parser<Send> PARSER =
+        new akka.protobuf.AbstractParser<Send>() {
       public Send parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Send(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Send> getParserForType() {
+    public akka.protobuf.Parser<Send> getParserForType() {
       return PARSER;
     }
 
@@ -4778,8 +4778,8 @@ public final class DistributedPubSubMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           path_ = s;
@@ -4790,17 +4790,17 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string path = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getPathBytes() {
       java.lang.Object ref = path_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         path_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -4872,7 +4872,7 @@ public final class DistributedPubSubMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -4894,15 +4894,15 @@ public final class DistributedPubSubMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getPathBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBoolSize(2, localAffinity_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(3, payload_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -4918,24 +4918,24 @@ public final class DistributedPubSubMessages {
     }
 
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parseFrom(java.io.InputStream input)
@@ -4944,7 +4944,7 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4954,18 +4954,18 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4979,7 +4979,7 @@ public final class DistributedPubSubMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4992,14 +4992,14 @@ public final class DistributedPubSubMessages {
      * </pre>
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Send_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Send_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -5012,12 +5012,12 @@ public final class DistributedPubSubMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getPayloadFieldBuilder();
         }
       }
@@ -5044,7 +5044,7 @@ public final class DistributedPubSubMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Send_descriptor;
       }
@@ -5086,7 +5086,7 @@ public final class DistributedPubSubMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send) {
           return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send)other);
         } else {
@@ -5133,13 +5133,13 @@ public final class DistributedPubSubMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Send) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -5165,7 +5165,7 @@ public final class DistributedPubSubMessages {
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           path_ = s;
           return s;
@@ -5176,17 +5176,17 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required string path = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getPathBytes() {
         java.lang.Object ref = path_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           path_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -5215,7 +5215,7 @@ public final class DistributedPubSubMessages {
        * <code>required string path = 1;</code>
        */
       public Builder setPathBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -5260,7 +5260,7 @@ public final class DistributedPubSubMessages {
 
       // required .Payload payload = 3;
       private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload payload_ = akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> payloadBuilder_;
       /**
        * <code>required .Payload payload = 3;</code>
@@ -5361,11 +5361,11 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required .Payload payload = 3;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> 
           getPayloadFieldBuilder() {
         if (payloadBuilder_ == null) {
-          payloadBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          payloadBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder>(
                   payload_,
                   getParentForChildren(),
@@ -5387,7 +5387,7 @@ public final class DistributedPubSubMessages {
   }
 
   public interface SendToAllOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string path = 1;
     /**
@@ -5401,7 +5401,7 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string path = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getPathBytes();
 
     // required bool allButSelf = 2;
@@ -5437,14 +5437,14 @@ public final class DistributedPubSubMessages {
    * </pre>
    */
   public static final class SendToAll extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements SendToAllOrBuilder {
     // Use SendToAll.newBuilder() to construct.
-    private SendToAll(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private SendToAll(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private SendToAll(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private SendToAll(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final SendToAll defaultInstance;
     public static SendToAll getDefaultInstance() {
@@ -5455,20 +5455,20 @@ public final class DistributedPubSubMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private SendToAll(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -5509,40 +5509,40 @@ public final class DistributedPubSubMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_SendToAll_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_SendToAll_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<SendToAll> PARSER =
-        new com.google.protobuf.AbstractParser<SendToAll>() {
+    public static akka.protobuf.Parser<SendToAll> PARSER =
+        new akka.protobuf.AbstractParser<SendToAll>() {
       public SendToAll parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new SendToAll(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<SendToAll> getParserForType() {
+    public akka.protobuf.Parser<SendToAll> getParserForType() {
       return PARSER;
     }
 
@@ -5564,8 +5564,8 @@ public final class DistributedPubSubMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           path_ = s;
@@ -5576,17 +5576,17 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string path = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getPathBytes() {
       java.lang.Object ref = path_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         path_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -5658,7 +5658,7 @@ public final class DistributedPubSubMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -5680,15 +5680,15 @@ public final class DistributedPubSubMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getPathBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBoolSize(2, allButSelf_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(3, payload_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -5704,24 +5704,24 @@ public final class DistributedPubSubMessages {
     }
 
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parseFrom(java.io.InputStream input)
@@ -5730,7 +5730,7 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -5740,18 +5740,18 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -5765,7 +5765,7 @@ public final class DistributedPubSubMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -5778,14 +5778,14 @@ public final class DistributedPubSubMessages {
      * </pre>
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAllOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_SendToAll_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_SendToAll_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -5798,12 +5798,12 @@ public final class DistributedPubSubMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getPayloadFieldBuilder();
         }
       }
@@ -5830,7 +5830,7 @@ public final class DistributedPubSubMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_SendToAll_descriptor;
       }
@@ -5872,7 +5872,7 @@ public final class DistributedPubSubMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll) {
           return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll)other);
         } else {
@@ -5919,13 +5919,13 @@ public final class DistributedPubSubMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.SendToAll) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -5951,7 +5951,7 @@ public final class DistributedPubSubMessages {
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           path_ = s;
           return s;
@@ -5962,17 +5962,17 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required string path = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getPathBytes() {
         java.lang.Object ref = path_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           path_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -6001,7 +6001,7 @@ public final class DistributedPubSubMessages {
        * <code>required string path = 1;</code>
        */
       public Builder setPathBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -6046,7 +6046,7 @@ public final class DistributedPubSubMessages {
 
       // required .Payload payload = 3;
       private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload payload_ = akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> payloadBuilder_;
       /**
        * <code>required .Payload payload = 3;</code>
@@ -6147,11 +6147,11 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required .Payload payload = 3;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> 
           getPayloadFieldBuilder() {
         if (payloadBuilder_ == null) {
-          payloadBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          payloadBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder>(
                   payload_,
                   getParentForChildren(),
@@ -6173,7 +6173,7 @@ public final class DistributedPubSubMessages {
   }
 
   public interface PublishOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string topic = 1;
     /**
@@ -6187,7 +6187,7 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string topic = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getTopicBytes();
 
     // required .Payload payload = 3;
@@ -6213,14 +6213,14 @@ public final class DistributedPubSubMessages {
    * </pre>
    */
   public static final class Publish extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements PublishOrBuilder {
     // Use Publish.newBuilder() to construct.
-    private Publish(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Publish(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Publish(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Publish(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Publish defaultInstance;
     public static Publish getDefaultInstance() {
@@ -6231,20 +6231,20 @@ public final class DistributedPubSubMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Publish(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -6280,40 +6280,40 @@ public final class DistributedPubSubMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Publish_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Publish_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Publish> PARSER =
-        new com.google.protobuf.AbstractParser<Publish>() {
+    public static akka.protobuf.Parser<Publish> PARSER =
+        new akka.protobuf.AbstractParser<Publish>() {
       public Publish parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Publish(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Publish> getParserForType() {
+    public akka.protobuf.Parser<Publish> getParserForType() {
       return PARSER;
     }
 
@@ -6335,8 +6335,8 @@ public final class DistributedPubSubMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           topic_ = s;
@@ -6347,17 +6347,17 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required string topic = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getTopicBytes() {
       java.lang.Object ref = topic_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         topic_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -6408,7 +6408,7 @@ public final class DistributedPubSubMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -6427,11 +6427,11 @@ public final class DistributedPubSubMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getTopicBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(3, payload_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -6447,24 +6447,24 @@ public final class DistributedPubSubMessages {
     }
 
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parseFrom(java.io.InputStream input)
@@ -6473,7 +6473,7 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -6483,18 +6483,18 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -6508,7 +6508,7 @@ public final class DistributedPubSubMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -6521,14 +6521,14 @@ public final class DistributedPubSubMessages {
      * </pre>
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PublishOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Publish_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Publish_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -6541,12 +6541,12 @@ public final class DistributedPubSubMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getPayloadFieldBuilder();
         }
       }
@@ -6571,7 +6571,7 @@ public final class DistributedPubSubMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Publish_descriptor;
       }
@@ -6609,7 +6609,7 @@ public final class DistributedPubSubMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish) {
           return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish)other);
         } else {
@@ -6649,13 +6649,13 @@ public final class DistributedPubSubMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Publish) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -6681,7 +6681,7 @@ public final class DistributedPubSubMessages {
       public java.lang.String getTopic() {
         java.lang.Object ref = topic_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           topic_ = s;
           return s;
@@ -6692,17 +6692,17 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required string topic = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getTopicBytes() {
         java.lang.Object ref = topic_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           topic_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -6731,7 +6731,7 @@ public final class DistributedPubSubMessages {
        * <code>required string topic = 1;</code>
        */
       public Builder setTopicBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -6743,7 +6743,7 @@ public final class DistributedPubSubMessages {
 
       // required .Payload payload = 3;
       private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload payload_ = akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> payloadBuilder_;
       /**
        * <code>required .Payload payload = 3;</code>
@@ -6844,11 +6844,11 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required .Payload payload = 3;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> 
           getPayloadFieldBuilder() {
         if (payloadBuilder_ == null) {
-          payloadBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          payloadBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder>(
                   payload_,
                   getParentForChildren(),
@@ -6870,7 +6870,7 @@ public final class DistributedPubSubMessages {
   }
 
   public interface PayloadOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required bytes enclosedMessage = 1;
     /**
@@ -6880,7 +6880,7 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
-    com.google.protobuf.ByteString getEnclosedMessage();
+    akka.protobuf.ByteString getEnclosedMessage();
 
     // required int32 serializerId = 2;
     /**
@@ -6900,20 +6900,20 @@ public final class DistributedPubSubMessages {
     /**
      * <code>optional bytes messageManifest = 4;</code>
      */
-    com.google.protobuf.ByteString getMessageManifest();
+    akka.protobuf.ByteString getMessageManifest();
   }
   /**
    * Protobuf type {@code Payload}
    */
   public static final class Payload extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements PayloadOrBuilder {
     // Use Payload.newBuilder() to construct.
-    private Payload(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Payload(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Payload(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Payload(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Payload defaultInstance;
     public static Payload getDefaultInstance() {
@@ -6924,20 +6924,20 @@ public final class DistributedPubSubMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Payload(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -6970,47 +6970,47 @@ public final class DistributedPubSubMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Payload_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Payload_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.class, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Payload> PARSER =
-        new com.google.protobuf.AbstractParser<Payload>() {
+    public static akka.protobuf.Parser<Payload> PARSER =
+        new akka.protobuf.AbstractParser<Payload>() {
       public Payload parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Payload(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Payload> getParserForType() {
+    public akka.protobuf.Parser<Payload> getParserForType() {
       return PARSER;
     }
 
     private int bitField0_;
     // required bytes enclosedMessage = 1;
     public static final int ENCLOSEDMESSAGE_FIELD_NUMBER = 1;
-    private com.google.protobuf.ByteString enclosedMessage_;
+    private akka.protobuf.ByteString enclosedMessage_;
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
@@ -7020,7 +7020,7 @@ public final class DistributedPubSubMessages {
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
-    public com.google.protobuf.ByteString getEnclosedMessage() {
+    public akka.protobuf.ByteString getEnclosedMessage() {
       return enclosedMessage_;
     }
 
@@ -7042,7 +7042,7 @@ public final class DistributedPubSubMessages {
 
     // optional bytes messageManifest = 4;
     public static final int MESSAGEMANIFEST_FIELD_NUMBER = 4;
-    private com.google.protobuf.ByteString messageManifest_;
+    private akka.protobuf.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 4;</code>
      */
@@ -7052,14 +7052,14 @@ public final class DistributedPubSubMessages {
     /**
      * <code>optional bytes messageManifest = 4;</code>
      */
-    public com.google.protobuf.ByteString getMessageManifest() {
+    public akka.protobuf.ByteString getMessageManifest() {
       return messageManifest_;
     }
 
     private void initFields() {
-      enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
+      enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
       serializerId_ = 0;
-      messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+      messageManifest_ = akka.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -7078,7 +7078,7 @@ public final class DistributedPubSubMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -7100,15 +7100,15 @@ public final class DistributedPubSubMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, enclosedMessage_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeInt32Size(2, serializerId_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(4, messageManifest_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -7124,24 +7124,24 @@ public final class DistributedPubSubMessages {
     }
 
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parseFrom(java.io.InputStream input)
@@ -7150,7 +7150,7 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -7160,18 +7160,18 @@ public final class DistributedPubSubMessages {
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -7185,7 +7185,7 @@ public final class DistributedPubSubMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -7193,14 +7193,14 @@ public final class DistributedPubSubMessages {
      * Protobuf type {@code Payload}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Payload_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Payload_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -7213,12 +7213,12 @@ public final class DistributedPubSubMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -7227,11 +7227,11 @@ public final class DistributedPubSubMessages {
 
       public Builder clear() {
         super.clear();
-        enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
+        enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         serializerId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
-        messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+        messageManifest_ = akka.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
@@ -7240,7 +7240,7 @@ public final class DistributedPubSubMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.internal_static_Payload_descriptor;
       }
@@ -7278,7 +7278,7 @@ public final class DistributedPubSubMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload) {
           return mergeFrom((akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload)other);
         } else {
@@ -7315,13 +7315,13 @@ public final class DistributedPubSubMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -7334,7 +7334,7 @@ public final class DistributedPubSubMessages {
       private int bitField0_;
 
       // required bytes enclosedMessage = 1;
-      private com.google.protobuf.ByteString enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
+      private akka.protobuf.ByteString enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>required bytes enclosedMessage = 1;</code>
        */
@@ -7344,13 +7344,13 @@ public final class DistributedPubSubMessages {
       /**
        * <code>required bytes enclosedMessage = 1;</code>
        */
-      public com.google.protobuf.ByteString getEnclosedMessage() {
+      public akka.protobuf.ByteString getEnclosedMessage() {
         return enclosedMessage_;
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
        */
-      public Builder setEnclosedMessage(com.google.protobuf.ByteString value) {
+      public Builder setEnclosedMessage(akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -7403,7 +7403,7 @@ public final class DistributedPubSubMessages {
       }
 
       // optional bytes messageManifest = 4;
-      private com.google.protobuf.ByteString messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+      private akka.protobuf.ByteString messageManifest_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 4;</code>
        */
@@ -7413,13 +7413,13 @@ public final class DistributedPubSubMessages {
       /**
        * <code>optional bytes messageManifest = 4;</code>
        */
-      public com.google.protobuf.ByteString getMessageManifest() {
+      public akka.protobuf.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
        */
-      public Builder setMessageManifest(com.google.protobuf.ByteString value) {
+      public Builder setMessageManifest(akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -7449,62 +7449,62 @@ public final class DistributedPubSubMessages {
     // @@protoc_insertion_point(class_scope:Payload)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Status_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Status_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Status_Version_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Status_Version_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Delta_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Delta_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Delta_Entry_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Delta_Entry_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Delta_Bucket_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Delta_Bucket_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Address_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Address_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Send_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Send_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_SendToAll_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_SendToAll_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Publish_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Publish_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Payload_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Payload_fieldAccessorTable;
 
-  public static com.google.protobuf.Descriptors.FileDescriptor
+  public static akka.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static com.google.protobuf.Descriptors.FileDescriptor
+  private static akka.protobuf.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -7527,77 +7527,77 @@ public final class DistributedPubSubMessages {
       "\030\002 \002(\005\022\027\n\017messageManifest\030\004 \001(\014B$\n akka." +
       "cluster.pubsub.protobuf.msgH\001"
     };
-    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
+    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+        public akka.protobuf.ExtensionRegistry assignDescriptors(
+            akka.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
           internal_static_Status_descriptor =
             getDescriptor().getMessageTypes().get(0);
           internal_static_Status_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Status_descriptor,
               new java.lang.String[] { "Versions", });
           internal_static_Status_Version_descriptor =
             internal_static_Status_descriptor.getNestedTypes().get(0);
           internal_static_Status_Version_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Status_Version_descriptor,
               new java.lang.String[] { "Address", "Timestamp", });
           internal_static_Delta_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_Delta_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Delta_descriptor,
               new java.lang.String[] { "Buckets", });
           internal_static_Delta_Entry_descriptor =
             internal_static_Delta_descriptor.getNestedTypes().get(0);
           internal_static_Delta_Entry_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Delta_Entry_descriptor,
               new java.lang.String[] { "Key", "Version", "Ref", });
           internal_static_Delta_Bucket_descriptor =
             internal_static_Delta_descriptor.getNestedTypes().get(1);
           internal_static_Delta_Bucket_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Delta_Bucket_descriptor,
               new java.lang.String[] { "Owner", "Version", "Content", });
           internal_static_Address_descriptor =
             getDescriptor().getMessageTypes().get(2);
           internal_static_Address_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Address_descriptor,
               new java.lang.String[] { "System", "Hostname", "Port", "Protocol", });
           internal_static_Send_descriptor =
             getDescriptor().getMessageTypes().get(3);
           internal_static_Send_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Send_descriptor,
               new java.lang.String[] { "Path", "LocalAffinity", "Payload", });
           internal_static_SendToAll_descriptor =
             getDescriptor().getMessageTypes().get(4);
           internal_static_SendToAll_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SendToAll_descriptor,
               new java.lang.String[] { "Path", "AllButSelf", "Payload", });
           internal_static_Publish_descriptor =
             getDescriptor().getMessageTypes().get(5);
           internal_static_Publish_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Publish_descriptor,
               new java.lang.String[] { "Topic", "Payload", });
           internal_static_Payload_descriptor =
             getDescriptor().getMessageTypes().get(6);
           internal_static_Payload_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Payload_descriptor,
               new java.lang.String[] { "EnclosedMessage", "SerializerId", "MessageManifest", });
           return null;
         }
       };
-    com.google.protobuf.Descriptors.FileDescriptor
+    akka.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
+        new akka.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
 

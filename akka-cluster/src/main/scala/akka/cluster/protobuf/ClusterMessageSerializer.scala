@@ -12,7 +12,7 @@ import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages ⇒ cm }
 import akka.serialization.BaseSerializer
 import akka.util.ClassLoaderObjectInputStream
-import com.google.protobuf.{ ByteString, MessageLite }
+import akka.protobuf.{ ByteString, MessageLite }
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._

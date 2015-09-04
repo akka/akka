@@ -6,13 +6,13 @@ package akka.remote;
 public final class ContainerFormats {
   private ContainerFormats() {}
   public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
+      akka.protobuf.ExtensionRegistry registry) {
   }
   /**
    * Protobuf enum {@code PatternType}
    */
   public enum PatternType
-      implements com.google.protobuf.ProtocolMessageEnum {
+      implements akka.protobuf.ProtocolMessageEnum {
     /**
      * <code>PARENT = 0;</code>
      */
@@ -52,27 +52,27 @@ public final class ContainerFormats {
       }
     }
 
-    public static com.google.protobuf.Internal.EnumLiteMap<PatternType>
+    public static akka.protobuf.Internal.EnumLiteMap<PatternType>
         internalGetValueMap() {
       return internalValueMap;
     }
-    private static com.google.protobuf.Internal.EnumLiteMap<PatternType>
+    private static akka.protobuf.Internal.EnumLiteMap<PatternType>
         internalValueMap =
-          new com.google.protobuf.Internal.EnumLiteMap<PatternType>() {
+          new akka.protobuf.Internal.EnumLiteMap<PatternType>() {
             public PatternType findValueByNumber(int number) {
               return PatternType.valueOf(number);
             }
           };
 
-    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+    public final akka.protobuf.Descriptors.EnumValueDescriptor
         getValueDescriptor() {
       return getDescriptor().getValues().get(index);
     }
-    public final com.google.protobuf.Descriptors.EnumDescriptor
+    public final akka.protobuf.Descriptors.EnumDescriptor
         getDescriptorForType() {
       return getDescriptor();
     }
-    public static final com.google.protobuf.Descriptors.EnumDescriptor
+    public static final akka.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.getDescriptor().getEnumTypes().get(0);
     }
@@ -80,7 +80,7 @@ public final class ContainerFormats {
     private static final PatternType[] VALUES = values();
 
     public static PatternType valueOf(
-        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+        akka.protobuf.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
         throw new java.lang.IllegalArgumentException(
           "EnumValueDescriptor is not for this type.");
@@ -100,7 +100,7 @@ public final class ContainerFormats {
   }
 
   public interface SelectionEnvelopeOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required bytes enclosedMessage = 1;
     /**
@@ -110,7 +110,7 @@ public final class ContainerFormats {
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
-    com.google.protobuf.ByteString getEnclosedMessage();
+    akka.protobuf.ByteString getEnclosedMessage();
 
     // required int32 serializerId = 2;
     /**
@@ -155,15 +155,23 @@ public final class ContainerFormats {
     /**
      * <code>optional bytes messageManifest = 4;</code>
      */
-    com.google.protobuf.ByteString getMessageManifest();
+    akka.protobuf.ByteString getMessageManifest();
 
     // optional bool wildcardFanOut = 5;
     /**
      * <code>optional bool wildcardFanOut = 5;</code>
+     *
+     * <pre>
+     * optional for pre 2.3.4 compatibility 
+     * </pre>
      */
     boolean hasWildcardFanOut();
     /**
      * <code>optional bool wildcardFanOut = 5;</code>
+     *
+     * <pre>
+     * optional for pre 2.3.4 compatibility 
+     * </pre>
      */
     boolean getWildcardFanOut();
   }
@@ -171,14 +179,14 @@ public final class ContainerFormats {
    * Protobuf type {@code SelectionEnvelope}
    */
   public static final class SelectionEnvelope extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements SelectionEnvelopeOrBuilder {
     // Use SelectionEnvelope.newBuilder() to construct.
-    private SelectionEnvelope(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private SelectionEnvelope(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private SelectionEnvelope(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private SelectionEnvelope(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final SelectionEnvelope defaultInstance;
     public static SelectionEnvelope getDefaultInstance() {
@@ -189,20 +197,20 @@ public final class ContainerFormats {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private SelectionEnvelope(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -248,10 +256,10 @@ public final class ContainerFormats {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
@@ -261,37 +269,37 @@ public final class ContainerFormats {
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_SelectionEnvelope_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ContainerFormats.internal_static_SelectionEnvelope_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ContainerFormats.SelectionEnvelope.class, akka.remote.ContainerFormats.SelectionEnvelope.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<SelectionEnvelope> PARSER =
-        new com.google.protobuf.AbstractParser<SelectionEnvelope>() {
+    public static akka.protobuf.Parser<SelectionEnvelope> PARSER =
+        new akka.protobuf.AbstractParser<SelectionEnvelope>() {
       public SelectionEnvelope parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new SelectionEnvelope(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<SelectionEnvelope> getParserForType() {
+    public akka.protobuf.Parser<SelectionEnvelope> getParserForType() {
       return PARSER;
     }
 
     private int bitField0_;
     // required bytes enclosedMessage = 1;
     public static final int ENCLOSEDMESSAGE_FIELD_NUMBER = 1;
-    private com.google.protobuf.ByteString enclosedMessage_;
+    private akka.protobuf.ByteString enclosedMessage_;
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
@@ -301,7 +309,7 @@ public final class ContainerFormats {
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
-    public com.google.protobuf.ByteString getEnclosedMessage() {
+    public akka.protobuf.ByteString getEnclosedMessage() {
       return enclosedMessage_;
     }
 
@@ -359,7 +367,7 @@ public final class ContainerFormats {
 
     // optional bytes messageManifest = 4;
     public static final int MESSAGEMANIFEST_FIELD_NUMBER = 4;
-    private com.google.protobuf.ByteString messageManifest_;
+    private akka.protobuf.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 4;</code>
      */
@@ -369,7 +377,7 @@ public final class ContainerFormats {
     /**
      * <code>optional bytes messageManifest = 4;</code>
      */
-    public com.google.protobuf.ByteString getMessageManifest() {
+    public akka.protobuf.ByteString getMessageManifest() {
       return messageManifest_;
     }
 
@@ -378,22 +386,30 @@ public final class ContainerFormats {
     private boolean wildcardFanOut_;
     /**
      * <code>optional bool wildcardFanOut = 5;</code>
+     *
+     * <pre>
+     * optional for pre 2.3.4 compatibility 
+     * </pre>
      */
     public boolean hasWildcardFanOut() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
      * <code>optional bool wildcardFanOut = 5;</code>
+     *
+     * <pre>
+     * optional for pre 2.3.4 compatibility 
+     * </pre>
      */
     public boolean getWildcardFanOut() {
       return wildcardFanOut_;
     }
 
     private void initFields() {
-      enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
+      enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
       serializerId_ = 0;
       pattern_ = java.util.Collections.emptyList();
-      messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+      messageManifest_ = akka.protobuf.ByteString.EMPTY;
       wildcardFanOut_ = false;
     }
     private byte memoizedIsInitialized = -1;
@@ -419,7 +435,7 @@ public final class ContainerFormats {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -447,23 +463,23 @@ public final class ContainerFormats {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, enclosedMessage_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeInt32Size(2, serializerId_);
       }
       for (int i = 0; i < pattern_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(3, pattern_.get(i));
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(4, messageManifest_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBoolSize(5, wildcardFanOut_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -479,24 +495,24 @@ public final class ContainerFormats {
     }
 
     public static akka.remote.ContainerFormats.SelectionEnvelope parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ContainerFormats.SelectionEnvelope parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ContainerFormats.SelectionEnvelope parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ContainerFormats.SelectionEnvelope parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ContainerFormats.SelectionEnvelope parseFrom(java.io.InputStream input)
@@ -505,7 +521,7 @@ public final class ContainerFormats {
     }
     public static akka.remote.ContainerFormats.SelectionEnvelope parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -515,18 +531,18 @@ public final class ContainerFormats {
     }
     public static akka.remote.ContainerFormats.SelectionEnvelope parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.remote.ContainerFormats.SelectionEnvelope parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.remote.ContainerFormats.SelectionEnvelope parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -540,7 +556,7 @@ public final class ContainerFormats {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -548,14 +564,14 @@ public final class ContainerFormats {
      * Protobuf type {@code SelectionEnvelope}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.remote.ContainerFormats.SelectionEnvelopeOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ContainerFormats.internal_static_SelectionEnvelope_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ContainerFormats.internal_static_SelectionEnvelope_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -568,12 +584,12 @@ public final class ContainerFormats {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getPatternFieldBuilder();
         }
       }
@@ -583,7 +599,7 @@ public final class ContainerFormats {
 
       public Builder clear() {
         super.clear();
-        enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
+        enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         serializerId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -593,7 +609,7 @@ public final class ContainerFormats {
         } else {
           patternBuilder_.clear();
         }
-        messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+        messageManifest_ = akka.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
         wildcardFanOut_ = false;
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -604,7 +620,7 @@ public final class ContainerFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ContainerFormats.internal_static_SelectionEnvelope_descriptor;
       }
@@ -655,7 +671,7 @@ public final class ContainerFormats {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.ContainerFormats.SelectionEnvelope) {
           return mergeFrom((akka.remote.ContainerFormats.SelectionEnvelope)other);
         } else {
@@ -691,7 +707,7 @@ public final class ContainerFormats {
               pattern_ = other.pattern_;
               bitField0_ = (bitField0_ & ~0x00000004);
               patternBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getPatternFieldBuilder() : null;
             } else {
               patternBuilder_.addAllMessages(other.pattern_);
@@ -727,13 +743,13 @@ public final class ContainerFormats {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ContainerFormats.SelectionEnvelope parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ContainerFormats.SelectionEnvelope) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -746,7 +762,7 @@ public final class ContainerFormats {
       private int bitField0_;
 
       // required bytes enclosedMessage = 1;
-      private com.google.protobuf.ByteString enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
+      private akka.protobuf.ByteString enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>required bytes enclosedMessage = 1;</code>
        */
@@ -756,13 +772,13 @@ public final class ContainerFormats {
       /**
        * <code>required bytes enclosedMessage = 1;</code>
        */
-      public com.google.protobuf.ByteString getEnclosedMessage() {
+      public akka.protobuf.ByteString getEnclosedMessage() {
         return enclosedMessage_;
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
        */
-      public Builder setEnclosedMessage(com.google.protobuf.ByteString value) {
+      public Builder setEnclosedMessage(akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -824,7 +840,7 @@ public final class ContainerFormats {
          }
       }
 
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.remote.ContainerFormats.Selection, akka.remote.ContainerFormats.Selection.Builder, akka.remote.ContainerFormats.SelectionOrBuilder> patternBuilder_;
 
       /**
@@ -1039,11 +1055,11 @@ public final class ContainerFormats {
            getPatternBuilderList() {
         return getPatternFieldBuilder().getBuilderList();
       }
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.remote.ContainerFormats.Selection, akka.remote.ContainerFormats.Selection.Builder, akka.remote.ContainerFormats.SelectionOrBuilder> 
           getPatternFieldBuilder() {
         if (patternBuilder_ == null) {
-          patternBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+          patternBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
               akka.remote.ContainerFormats.Selection, akka.remote.ContainerFormats.Selection.Builder, akka.remote.ContainerFormats.SelectionOrBuilder>(
                   pattern_,
                   ((bitField0_ & 0x00000004) == 0x00000004),
@@ -1055,7 +1071,7 @@ public final class ContainerFormats {
       }
 
       // optional bytes messageManifest = 4;
-      private com.google.protobuf.ByteString messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+      private akka.protobuf.ByteString messageManifest_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 4;</code>
        */
@@ -1065,13 +1081,13 @@ public final class ContainerFormats {
       /**
        * <code>optional bytes messageManifest = 4;</code>
        */
-      public com.google.protobuf.ByteString getMessageManifest() {
+      public akka.protobuf.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
        */
-      public Builder setMessageManifest(com.google.protobuf.ByteString value) {
+      public Builder setMessageManifest(akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1094,18 +1110,30 @@ public final class ContainerFormats {
       private boolean wildcardFanOut_ ;
       /**
        * <code>optional bool wildcardFanOut = 5;</code>
+       *
+       * <pre>
+       * optional for pre 2.3.4 compatibility 
+       * </pre>
        */
       public boolean hasWildcardFanOut() {
         return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
        * <code>optional bool wildcardFanOut = 5;</code>
+       *
+       * <pre>
+       * optional for pre 2.3.4 compatibility 
+       * </pre>
        */
       public boolean getWildcardFanOut() {
         return wildcardFanOut_;
       }
       /**
        * <code>optional bool wildcardFanOut = 5;</code>
+       *
+       * <pre>
+       * optional for pre 2.3.4 compatibility 
+       * </pre>
        */
       public Builder setWildcardFanOut(boolean value) {
         bitField0_ |= 0x00000010;
@@ -1115,6 +1143,10 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional bool wildcardFanOut = 5;</code>
+       *
+       * <pre>
+       * optional for pre 2.3.4 compatibility 
+       * </pre>
        */
       public Builder clearWildcardFanOut() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -1135,7 +1167,7 @@ public final class ContainerFormats {
   }
 
   public interface SelectionOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .PatternType type = 1;
     /**
@@ -1159,21 +1191,21 @@ public final class ContainerFormats {
     /**
      * <code>optional string matcher = 2;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getMatcherBytes();
   }
   /**
    * Protobuf type {@code Selection}
    */
   public static final class Selection extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements SelectionOrBuilder {
     // Use Selection.newBuilder() to construct.
-    private Selection(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Selection(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Selection(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Selection(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Selection defaultInstance;
     public static Selection getDefaultInstance() {
@@ -1184,20 +1216,20 @@ public final class ContainerFormats {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Selection(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -1231,40 +1263,40 @@ public final class ContainerFormats {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ContainerFormats.internal_static_Selection_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ContainerFormats.internal_static_Selection_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ContainerFormats.Selection.class, akka.remote.ContainerFormats.Selection.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Selection> PARSER =
-        new com.google.protobuf.AbstractParser<Selection>() {
+    public static akka.protobuf.Parser<Selection> PARSER =
+        new akka.protobuf.AbstractParser<Selection>() {
       public Selection parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Selection(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Selection> getParserForType() {
+    public akka.protobuf.Parser<Selection> getParserForType() {
       return PARSER;
     }
 
@@ -1302,8 +1334,8 @@ public final class ContainerFormats {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           matcher_ = s;
@@ -1314,17 +1346,17 @@ public final class ContainerFormats {
     /**
      * <code>optional string matcher = 2;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getMatcherBytes() {
       java.lang.Object ref = matcher_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         matcher_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -1345,7 +1377,7 @@ public final class ContainerFormats {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -1364,11 +1396,11 @@ public final class ContainerFormats {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeEnumSize(1, type_.getNumber());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(2, getMatcherBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -1384,24 +1416,24 @@ public final class ContainerFormats {
     }
 
     public static akka.remote.ContainerFormats.Selection parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ContainerFormats.Selection parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ContainerFormats.Selection parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ContainerFormats.Selection parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ContainerFormats.Selection parseFrom(java.io.InputStream input)
@@ -1410,7 +1442,7 @@ public final class ContainerFormats {
     }
     public static akka.remote.ContainerFormats.Selection parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -1420,18 +1452,18 @@ public final class ContainerFormats {
     }
     public static akka.remote.ContainerFormats.Selection parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.remote.ContainerFormats.Selection parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.remote.ContainerFormats.Selection parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -1445,7 +1477,7 @@ public final class ContainerFormats {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1453,14 +1485,14 @@ public final class ContainerFormats {
      * Protobuf type {@code Selection}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.remote.ContainerFormats.SelectionOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ContainerFormats.internal_static_Selection_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ContainerFormats.internal_static_Selection_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1473,12 +1505,12 @@ public final class ContainerFormats {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -1498,7 +1530,7 @@ public final class ContainerFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ContainerFormats.internal_static_Selection_descriptor;
       }
@@ -1532,7 +1564,7 @@ public final class ContainerFormats {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.ContainerFormats.Selection) {
           return mergeFrom((akka.remote.ContainerFormats.Selection)other);
         } else {
@@ -1564,13 +1596,13 @@ public final class ContainerFormats {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ContainerFormats.Selection parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ContainerFormats.Selection) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -1632,7 +1664,7 @@ public final class ContainerFormats {
       public java.lang.String getMatcher() {
         java.lang.Object ref = matcher_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           matcher_ = s;
           return s;
@@ -1643,17 +1675,17 @@ public final class ContainerFormats {
       /**
        * <code>optional string matcher = 2;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getMatcherBytes() {
         java.lang.Object ref = matcher_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           matcher_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -1682,7 +1714,7 @@ public final class ContainerFormats {
        * <code>optional string matcher = 2;</code>
        */
       public Builder setMatcherBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1703,22 +1735,22 @@ public final class ContainerFormats {
     // @@protoc_insertion_point(class_scope:Selection)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_SelectionEnvelope_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_SelectionEnvelope_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Selection_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Selection_fieldAccessorTable;
 
-  public static com.google.protobuf.Descriptors.FileDescriptor
+  public static akka.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static com.google.protobuf.Descriptors.FileDescriptor
+  private static akka.protobuf.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -1731,29 +1763,29 @@ public final class ContainerFormats {
       "Type\022\n\n\006PARENT\020\000\022\016\n\nCHILD_NAME\020\001\022\021\n\rCHIL" +
       "D_PATTERN\020\002B\017\n\013akka.remoteH\001"
     };
-    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
+    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+        public akka.protobuf.ExtensionRegistry assignDescriptors(
+            akka.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
           internal_static_SelectionEnvelope_descriptor =
             getDescriptor().getMessageTypes().get(0);
           internal_static_SelectionEnvelope_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SelectionEnvelope_descriptor,
               new java.lang.String[] { "EnclosedMessage", "SerializerId", "Pattern", "MessageManifest", "WildcardFanOut", });
           internal_static_Selection_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_Selection_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Selection_descriptor,
               new java.lang.String[] { "Type", "Matcher", });
           return null;
         }
       };
-    com.google.protobuf.Descriptors.FileDescriptor
+    akka.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
+        new akka.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
 
