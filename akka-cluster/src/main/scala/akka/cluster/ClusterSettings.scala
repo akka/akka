@@ -69,7 +69,10 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   val DownRemovalMargin: FiniteDuration = {
     val key = "down-removal-margin"
-    cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s")
+    cc.getString(key).toLowerCase(Locale.ROOT) match {
+      case "off" ⇒ Duration.Zero
+      case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+    }
   }
 
   val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
