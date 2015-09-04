@@ -79,6 +79,11 @@ Successful ``Subscribe`` and ``Unsubscribe`` is acknowledged with
 ``DistributedPubSubMediator.SubscribeAck`` and ``DistributedPubSubMediator.UnsubscribeAck``
 replies.
 
+Cluster members with status :ref:`WeaklyUp <weakly_up_scala>`, if that feature is enabled,
+will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with 
+``WeaklyUp`` status will receive published messages if the publisher and subscriber are on
+same side of a network partition.
+
 A Small Example
 ---------------
 

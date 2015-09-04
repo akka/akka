@@ -179,8 +179,10 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
     case MemberRemoved(m, _)        ⇒ removeMember(m)
     case MemberExited(m)            ⇒ removeMember(m)
     case UnreachableMember(m)       ⇒ removeMember(m)
-    case ReachableMember(m)         ⇒ if (m.status == MemberStatus.Up) addMember(m)
-    case _: MemberEvent             ⇒ // not interested in other types of MemberEvent
+    case ReachableMember(m) ⇒
+      if (m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp)
+        addMember(m)
+    case _: MemberEvent ⇒ // not interested in other types of MemberEvent
 
   }
 
@@ -209,7 +211,9 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
    * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus]] `Up`.
    */
   def receiveState(state: CurrentClusterState): Unit =
-    nodes = (state.members -- state.unreachable) collect { case m if m.status == MemberStatus.Up ⇒ m.address }
+    nodes = (state.members -- state.unreachable) collect {
+      case m if m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp ⇒ m.address
+    }
 
   /**
    * Samples the latest metrics for the node, updates metrics statistics in

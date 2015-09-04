@@ -280,6 +280,10 @@ promoted while convergence is not yet reached. These ``Joining`` nodes will be
 promoted as ``WeaklyUp``. Once gossip convergence is reached, the leader will move
 ``WeaklyUp`` members to ``Up``.
 
+Note that members on the other side of a network partition have no knowledge about 
+the existence of the new members. You should for example not count ``WeaklyUp`` 
+members in quorum decisions.
+
 State Diagram for the Member States (``akka.cluster.allow-weakly-up-members=off``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

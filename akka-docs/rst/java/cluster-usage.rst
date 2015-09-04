@@ -169,6 +169,8 @@ leaving member will be shutdown after the leader has changed status of the membe
 automatically, but in case of network failures during this process it might still be necessary
 to set the node’s status to ``Down`` in order to complete the removal.
 
+.. _weakly_up_java:
+
 WeaklyUp Members
 ^^^^^^^^^^^^^^^^
 
@@ -176,7 +178,13 @@ If a node is ``unreachable`` then gossip convergence is not possible and therefo
 ``leader`` actions are also not possible. However, we still might want new nodes to join
 the cluster in this scenario.
 
-With a configuration option you can allow this behavior::
+.. warning::
+
+  The WeaklyUp feature is marked as **“experimental”** as of its introduction in Akka 2.4.0. We will continue to
+  improve this feature based on our users’ feedback, which implies that while we try to keep incompatible
+  changes to a minimum the binary compatibility guarantee for maintenance releases does not apply this feature.
+
+This feature is disabled by default. With a configuration option you can allow this behavior::
 
     akka.cluster.allow-weakly-up-members = on
 
@@ -185,10 +193,16 @@ When ``allow-weakly-up-members`` is enabled and there is no gossip convergence,
 cluster. Once gossip convergence is reached, the leader will move ``WeaklyUp``
 members to ``Up``.
 
+You can subscribe to the ``WeaklyUp`` membership event to make use of the members that are
+in this state, but you should be aware of that members on the other side of a network partition
+have no knowledge about the existence of the new members. You should for example not count 
+``WeaklyUp`` members in quorum decisions.
+
 .. warning::
 
   This feature is only available from Akka 2.4.0 and cannot be used if some of your
   cluster members are running an older version of Akka.
+
 
 .. _cluster_subscriber_java:
 
@@ -457,6 +471,9 @@ When a node becomes unreachable or leaves the cluster the routees of that node a
 automatically unregistered from the router. When new nodes join the cluster additional
 routees are added to the router, according to the configuration. Routees are also added 
 when a node becomes reachable again, after having been unreachable.
+
+Cluster aware routers make use of members with status :ref:`WeaklyUp <weakly_up_java>` if that feature
+is enabled.
 
 There are two distinct types of routers. 
 
