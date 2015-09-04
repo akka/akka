@@ -158,7 +158,9 @@ above.
 
 A more graceful exit can be performed if you tell the cluster that a node shall leave.
 This can be performed using :ref:`cluster_jmx_java` or :ref:`cluster_command_line_java`.
-It can also be performed programmatically with ``Cluster.get(system).leave(address)``.
+It can also be performed programmatically with:
+
+.. includecode:: code/docs/cluster/ClusterDocTest.java#leave
 
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving. The cluster extension, but not the actor system or JVM, of the 
