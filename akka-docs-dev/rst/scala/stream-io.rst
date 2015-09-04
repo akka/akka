@@ -16,7 +16,7 @@ Streaming TCP
 
 Accepting connections: Echo Server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In order to implement a simple EchoServer we ``bind`` to a given address, which returns a ``Source[IncomingConnection]``,
+In order to implement a simple EchoServer we ``bind`` to a given address, which returns a ``Source[IncomingConnection, Future[ServerBinding]]``,
 which will emit an :class:`IncomingConnection` element for each new connection that the Server should handle:
 
 .. includecode:: code/docs/stream/io/StreamTcpDocSpec.scala#echo-server-simple-bind
@@ -35,8 +35,8 @@ incoming connection Flow, since it directly corresponds to an existing, already 
 only ever be materialized *once*.
 
 Closing connections is possible by cancelling the *incoming connection* :class:`Flow` from your server logic (e.g. by
-connecting its downstream to an :class:`CancelledSink` and its upstream to a *completed* :class:`Source`).
-It is also possible to shut down the servers socket by cancelling the ``connections:Source[IncomingConnection]``.
+connecting its downstream to a :class:`Sink.cancelled` and its upstream to a :class:`Source.empty`).
+It is also possible to shut down the server's socket by cancelling the :class:`IncomingConnection` source ``connections``.
 
 We can then test the TCP server by sending data to the TCP Socket using ``netcat``:
 

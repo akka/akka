@@ -47,7 +47,10 @@ class StreamTcpDocSpec extends AkkaSpec {
         println(s"New connection from: ${connection.remoteAddress}")
 
         val echo = Flow[ByteString]
-          .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
+          .via(Framing.delimiter(
+            ByteString("\n"),
+            maximumFrameLength = 256,
+            allowTruncation = true))
           .map(_.utf8String)
           .map(_ + "!!!\n")
           .map(ByteString(_))
@@ -86,7 +89,10 @@ class StreamTcpDocSpec extends AkkaSpec {
 
         val welcome = Source.single(ByteString(welcomeMsg))
         val echo = b.add(Flow[ByteString]
-          .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
+          .via(Framing.delimiter(
+            ByteString("\n"),
+            maximumFrameLength = 256,
+            allowTruncation = true))
           .map(_.utf8String)
           //#welcome-banner-chat-server
           .map { command ⇒ serverProbe.ref ! command; command }
@@ -106,9 +112,9 @@ class StreamTcpDocSpec extends AkkaSpec {
 
       connection.handleWith(serverLogic)
     }
+    //#welcome-banner-chat-server
 
     import akka.stream.io.Framing
-    //#welcome-banner-chat-server
 
     val input = new AtomicReference("Hello world" :: "What a lovely day" :: Nil)
     def readLine(prompt: String): String = {
@@ -138,7 +144,10 @@ class StreamTcpDocSpec extends AkkaSpec {
       }
 
       val repl = Flow[ByteString]
-        .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
+        .via(Framing.delimiter(
+          ByteString("\n"),
+          maximumFrameLength = 256,
+          allowTruncation = true))
         .map(_.utf8String)
         .map(text => println("Server: " + text))
         .map(_ => readLine("> "))
