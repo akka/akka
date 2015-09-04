@@ -16,6 +16,9 @@ import java.lang.management.ManagementFactory
 import javax.management.ObjectName
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
+import akka.actor.ActorSystem
+import akka.actor.Props
+import com.typesafe.config.ConfigFactory
 
 object ClusterSpec {
   val config = """
@@ -28,7 +31,7 @@ object ClusterSpec {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.tcp.port = 0
-    # akka.loglevel = DEBUG
+    #akka.loglevel = DEBUG
     """
 
   final case class GossipTo(address: Address)
@@ -105,6 +108,31 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       expectMsgType[ClusterEvent.MemberRemoved].member.address should ===(selfAddress)
 
       callbackProbe.expectMsg("OnMemberRemoved")
+    }
+
+    "allow join and leave with local address" in {
+      val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
+        akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+        akka.remote.netty.tcp.port = 0
+        """))
+      try {
+        val ref = sys2.actorOf(Props.empty)
+        Cluster(sys2).join(ref.path.address) // address doesn't contain full address information
+        within(5.seconds) {
+          awaitAssert {
+            Cluster(sys2).state.members.size should ===(1)
+            Cluster(sys2).state.members.head.status should ===(MemberStatus.Up)
+          }
+        }
+        Cluster(sys2).leave(ref.path.address)
+        within(5.seconds) {
+          awaitAssert {
+            Cluster(sys2).isTerminated should ===(true)
+          }
+        }
+      } finally {
+        shutdown(sys2)
+      }
     }
 
   }
