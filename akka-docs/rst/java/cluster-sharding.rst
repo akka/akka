@@ -22,6 +22,9 @@ the sender to know the location of the destination actor. This is achieved by se
 the messages via a ``ShardRegion`` actor provided by this extension, which knows how
 to route the message with the entity id to the final destination.
 
+Cluster sharding will not be active on members with status :ref:`WeaklyUp <weakly_up_java>` 
+if that feature is enabled.
+
 An Example
 ----------
 
