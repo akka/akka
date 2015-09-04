@@ -28,7 +28,6 @@ object Dependencies {
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config        = "com.typesafe"                % "config"                       % "1.3.0"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.10.3.Final" // ApacheV2
-    val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = Def.setting { "org.scala-stm" %% "scala-stm" % scalaStmVersion.value } // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.12"       // MIT
@@ -92,9 +91,9 @@ object Dependencies {
 
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
-  val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck.value, protobuf, Test.junitIntf)
+  val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck.value, Test.junitIntf)
 
-  val remote = l ++= Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest.value)
+  val remote = l ++= Seq(netty, uncommonsMath, Test.junit, Test.scalatest.value)
 
   val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
 
@@ -112,7 +111,7 @@ object Dependencies {
 
   val agent = l ++= Seq(scalaStm.value, Test.scalatest.value, Test.junit)
 
-  val persistence = l ++= Seq(protobuf, Provided.levelDB, Provided.levelDBNative, Test.scalatest.value, Test.junit, Test.commonsIo, Test.scalaXml)
+  val persistence = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Test.scalatest.value, Test.junit, Test.commonsIo, Test.scalaXml)
 
   val persistenceQuery = l ++= Seq(akkaStream, Test.scalatest.value, Test.junit, Test.commonsIo, Test.akkaStreamTestkit)
 
