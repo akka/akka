@@ -431,7 +431,6 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
 
     "use third and fourth node" in within(15 seconds) {
       join(third, first)
-      join(fourth, first)
 
       runOn(third) {
         for (_ ← 1 to 10)
@@ -441,6 +440,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         lastSender.path should ===(region.path / "3" / "3") // local
       }
       enterBarrier("third-update")
+
+      join(fourth, first)
 
       runOn(fourth) {
         for (_ ← 1 to 20)
