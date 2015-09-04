@@ -152,7 +152,9 @@ above.
 
 A more graceful exit can be performed if you tell the cluster that a node shall leave.
 This can be performed using :ref:`cluster_jmx_scala` or :ref:`cluster_command_line_scala`.
-It can also be performed programmatically with ``Cluster(system).leave(address)``.
+It can also be performed programmatically with:
+
+.. includecode:: code/docs/cluster/ClusterDocSpec.scala#leave
 
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving. The cluster extension, but not the actor system or JVM, of the 
