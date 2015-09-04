@@ -30,7 +30,7 @@ out-of-date value.
   improve this API based on our users’ feedback, which implies that while we try to keep incompatible
   changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
   contents of the ``akka.persistence`` package.
-
+  
 Using the Replicator
 ====================
 
@@ -39,6 +39,10 @@ The ``Replicator`` actor must be started on each node in the cluster, or group o
 with a specific role. It communicates with other ``Replicator`` instances with the same path 
 (without address) that are running on other nodes . For convenience it can be used with the
 ``akka.cluster.ddata.DistributedData`` extension.
+
+Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, if that feature is enabled,
+will currently not participate in Distributed Data, but that is something that should be possible to
+add in a future release.
 
 Below is an example of an actor that schedules tick messages to itself and for each tick 
 adds or removes elements from a ``ORSet`` (observed-remove set). It also subscribes to
