@@ -50,7 +50,8 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
       // TODO it would be nice to DRY this with AsyncWriteJournal, but this is using
       //      AsyncWriteProxy message protocol
       val replyTo = sender()
-      asyncReadHighestSequenceNr(persistenceId, fromSequenceNr).flatMap { highSeqNr ⇒
+      val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)
+      asyncReadHighestSequenceNr(persistenceId, readHighestSequenceNrFrom).flatMap { highSeqNr ⇒
         if (highSeqNr == 0L || max == 0L)
           Future.successful(highSeqNr)
         else {
