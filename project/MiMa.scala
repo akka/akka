@@ -566,7 +566,10 @@ object MiMa extends AutoPlugin {
       FilterAnyProblemStartingWith("akka.remote.serialization.DaemonMsgCreateSerializer"),
       FilterAnyProblemStartingWith("akka.remote.testconductor.TestConductorProtocol"),
       FilterAnyProblemStartingWith("akka.cluster.protobuf.msg.ClusterMessages"),
-      FilterAnyProblemStartingWith("akka.cluster.protobuf.ClusterMessageSerializer")
+      FilterAnyProblemStartingWith("akka.cluster.protobuf.ClusterMessageSerializer"),
+      
+      // #13584 change in internal actor
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterCoreDaemon.akka$cluster$ClusterCoreDaemon$$isJoiningToUp$1")
 
      )
   }

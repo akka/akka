@@ -111,6 +111,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     case HeartbeatTick                ⇒ heartbeat()
     case HeartbeatRsp(from)           ⇒ heartbeatRsp(from)
     case MemberUp(m)                  ⇒ addMember(m)
+    case MemberWeaklyUp(m)            ⇒ addMember(m)
     case MemberRemoved(m, _)          ⇒ removeMember(m)
     case UnreachableMember(m)         ⇒ unreachableMember(m)
     case ReachableMember(m)           ⇒ reachableMember(m)
@@ -120,7 +121,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
 
   def init(snapshot: CurrentClusterState): Unit = {
     val nodes: Set[UniqueAddress] = snapshot.members.collect {
-      case m if m.status == MemberStatus.Up ⇒ m.uniqueAddress
+      case m if m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp ⇒ m.uniqueAddress
     }(collection.breakOut)
     val unreachable: Set[UniqueAddress] = snapshot.unreachable.map(_.uniqueAddress)
     state = state.init(nodes, unreachable)
