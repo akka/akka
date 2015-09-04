@@ -8,7 +8,7 @@ import akka.actor.ExtendedActorSystem
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 
-class EventAdaptersSpec extends AkkaSpec {
+class InmemEventAdaptersSpec extends AkkaSpec {
 
   val config = ConfigFactory.parseString(
     s"""
