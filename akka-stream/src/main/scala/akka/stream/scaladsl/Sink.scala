@@ -3,18 +3,17 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.javadsl
 import akka.actor.{ ActorRef, Props }
-import akka.stream._
-import akka.stream.impl.Stages.{ MapAsyncUnordered, DefaultAttributes }
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
-import akka.stream.Attributes._
-import akka.stream.stage.{ TerminationDirective, Directive, Context, PushStage, SyncDirective }
+import akka.stream.stage.{ Context, PushStage, SyncDirective, TerminationDirective }
+import akka.stream.{ javadsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
-import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -204,5 +203,21 @@ object Sink extends SinkApply {
    */
   def actorSubscriber[T](props: Props): Sink[T, ActorRef] =
     new Sink(new ActorSubscriberSink(props, DefaultAttributes.actorSubscriberSink, shape("ActorSubscriberSink")))
+
+  /**
+   * Creates a `Sink` that is materialized as an [[akka.stream.SinkQueue]].
+   * [[akka.stream.SinkQueue.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
+   * `Future` completes when element is available.
+   *
+   * `Sink` will request at most `bufferSize` number of elements from
+   * upstream and then stop back pressure.
+   *
+   * @param bufferSize The size of the buffer in element count
+   * @param timeout Timeout for ``SinkQueue.pull():Future[Option[T] ]``
+   */
+  def queue[T](bufferSize: Int, timeout: FiniteDuration = 5.seconds): Sink[T, SinkQueue[T]] = {
+    require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
+    new Sink(new AcknowledgeSink(bufferSize, DefaultAttributes.acknowledgeSink, shape("AcknowledgeSink"), timeout))
+  }
 
 }

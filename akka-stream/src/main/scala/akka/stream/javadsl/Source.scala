@@ -3,27 +3,20 @@
  */
 package akka.stream.javadsl
 
-import java.io.File
-import akka.japi.function
-import scala.collection.immutable
-import java.util.concurrent.Callable
-import akka.actor.{ Cancellable, ActorRef, Props }
+import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
-import akka.japi.Util
-import akka.stream.Attributes._
+import akka.japi.{ Util, function }
 import akka.stream._
-import akka.stream.impl.{ ActorPublisherSource, StreamLayout }
-import akka.util.ByteString
-import org.reactivestreams.{ Processor, Publisher, Subscriber }
+import akka.stream.impl.StreamLayout
+import akka.stream.stage.Stage
+import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
-import scala.concurrent.{ Promise, Future }
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
-import scala.language.higherKinds
-import scala.language.implicitConversions
-import akka.stream.stage.Stage
-import akka.stream.impl.StreamLayout
-import scala.annotation.varargs
+import scala.concurrent.{ Future, Promise }
+import scala.language.{ higherKinds, implicitConversions }
 
 /** Java API */
 object Source {
@@ -235,6 +228,32 @@ object Source {
     val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num ⇒ strategy.apply(num)))
   }
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.stream.SourceQueue]].
+   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * Acknowledgement mechanism is available.
+   * [[akka.stream.SourceQueue.offer]] returns ``Future[Boolean]`` which completes with true
+   * if element was added to buffer or sent downstream. It completes
+   * with false if element was dropped.
+   *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `offer():Future` until buffer is full.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped
+   * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
+   * not matter.
+   *
+   * @param bufferSize The size of the buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   * @param timeout Timeout for ``SourceQueue.offer(T):Future[Boolean]``
+   */
+  def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy, timeout: FiniteDuration): Source[T, SourceQueue[T]] =
+    new Source(scaladsl.Source.queue(bufferSize, overflowStrategy, timeout))
 }
 
 /**

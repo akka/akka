@@ -4,13 +4,18 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
-import akka.actor.{ ActorRef, Cancellable, PoisonPill, Props }
-import akka.stream.impl.StreamLayout.Module
+
+import akka.actor._
 import akka.stream._
+import akka.stream.impl.AcknowledgePublisher.{ Ok, Rejected }
+import akka.stream.impl.StreamLayout.Module
+import akka.util.Timeout
 import org.reactivestreams._
+
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.Promise
+import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.concurrent.{ Future, Promise }
+import scala.language.postfixOps
 import scala.util.{ Failure, Success }
 
 /**
@@ -162,4 +167,33 @@ private[akka] final class ActorRefSource[Out](
     new ActorRefSource[Out](bufferSize, overflowStrategy, attributes, shape)
   override def withAttributes(attr: Attributes): Module =
     new ActorRefSource(bufferSize, overflowStrategy, attr, amendShape(attr))
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class AcknowledgeSource[Out](bufferSize: Int, overflowStrategy: OverflowStrategy,
+                                                 val attributes: Attributes, shape: SourceShape[Out],
+                                                 timeout: FiniteDuration = 5 seconds)
+  extends SourceModule[Out, SourceQueue[Out]](shape) {
+
+  override def create(context: MaterializationContext) = {
+    import akka.pattern.ask
+    val ref = ActorMaterializer.downcast(context.materializer).actorOf(context,
+      AcknowledgePublisher.props(bufferSize, overflowStrategy))
+    implicit val t = Timeout(timeout)
+
+    (akka.stream.actor.ActorPublisher[Out](ref), new SourceQueue[Out] {
+      implicit val ctx = context.materializer.executionContext
+      override def offer(out: Out): Future[Boolean] = (ref ? out).map {
+        case Ok()       ⇒ true
+        case Rejected() ⇒ false
+      }
+    })
+  }
+
+  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, SourceQueue[Out]] =
+    new AcknowledgeSource[Out](bufferSize, overflowStrategy, attributes, shape, timeout)
+  override def withAttributes(attr: Attributes): Module =
+    new AcknowledgeSource(bufferSize, overflowStrategy, attr, amendShape(attr), timeout)
 }

@@ -12,7 +12,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ Future, Promise }
 import scala.language.higherKinds
 
@@ -400,5 +400,33 @@ object Source extends SourceApply {
 
       combineRest(2, rest.iterator)
     })
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.stream.SourceQueue]].
+   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * Acknowledgement mechanism is available.
+   * [[akka.stream.SourceQueue.offer]] returns ``Future[Boolean]`` which completes with true
+   * if element was added to buffer or sent downstream. It completes
+   * with false if element was dropped.
+   *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `offer():Future` until buffer is full.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped
+   * if there is no demand from downstream. When `bufferSize` is 0 the `overflowStrategy` does
+   * not matter.
+   *
+   * @param bufferSize The size of the buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   * @param timeout Timeout for ``SourceQueue.offer(T):Future[Boolean]``
+   */
+  def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy, timeout: FiniteDuration = 5.seconds): Source[T, SourceQueue[T]] = {
+    require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
+    new Source(new AcknowledgeSource(bufferSize, overflowStrategy, DefaultAttributes.acknowledgeSource, shape("AcknowledgeSource")))
+  }
 
 }
