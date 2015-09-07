@@ -17,7 +17,7 @@
         <paxexam.version>2.6.0</paxexam.version>
         <paxswissbox.version>1.6.0</paxswissbox.version>
         <protobuf.version>2.5.0</protobuf.version>
-        <scala.version>2.11.5</scala.version>
+        <scala.version>2.11.7</scala.version>
         <scala.dep.version>2.11</scala.dep.version>
         <scalatest.version>2.2.3</scalatest.version>
         <typesafe.config.version>1.2.1</typesafe.config.version>
