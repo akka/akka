@@ -4,11 +4,16 @@
 package akka.stream.impl
 
 import akka.actor.{ Deploy, ActorRef, Props }
+import akka.stream.actor.ActorPublisherMessage.Request
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.{ Attributes, Inlet, Shape, SinkShape, MaterializationContext, ActorMaterializer }
+import akka.stream._
+import akka.util.Timeout
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.annotation.unchecked.uncheckedVariance
+import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ Future, Promise }
+import scala.language.postfixOps
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -217,3 +222,28 @@ private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any
   override def toString: String = "ActorRefSink"
 }
 
+/**
+ * INTERNAL API
+ */
+private[akka] final class AcknowledgeSink[In](bufferSize: Int, val attributes: Attributes,
+                                              shape: SinkShape[In], timeout: FiniteDuration) extends SinkModule[In, SinkQueue[In]](shape) {
+
+  override def create(context: MaterializationContext) = {
+    import akka.pattern.ask
+    val actorMaterializer = ActorMaterializer.downcast(context.materializer)
+
+    implicit val t = Timeout(timeout)
+    val subscriberRef = actorMaterializer.actorOf(context,
+      AcknowledgeSubscriber.props(bufferSize))
+    (akka.stream.actor.ActorSubscriber[In](subscriberRef),
+      new SinkQueue[In] {
+        override def pull(): Future[Option[In]] = (subscriberRef ? Request(1)).mapTo[Option[In]]
+      })
+  }
+
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, SinkQueue[In]] =
+    new AcknowledgeSink[In](bufferSize, attributes, shape, timeout)
+  override def withAttributes(attr: Attributes): Module =
+    new AcknowledgeSink[In](bufferSize, attr, amendShape(attr), timeout)
+  override def toString: String = "AcknowledgeSink"
+}
