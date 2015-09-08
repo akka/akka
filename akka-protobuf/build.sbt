@@ -5,7 +5,7 @@ AkkaBuild.defaultSettings
 
 Formatting.formatSettings
 
-enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams)
+enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 OSGi.protobuf
 
