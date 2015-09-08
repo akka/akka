@@ -560,6 +560,12 @@ To send messages with at-least-once delivery semantics to destinations you can e
 class instead of ``UntypedPersistentActor`` on the sending side.  It takes care of re-sending messages when they
 have not been confirmed within a configurable timeout.
 
+The state of the sending actor, including which messages that have been sent and still not been
+confirmed by the recepient, must be persistent so that it can survive a crash of the sending actor
+or JVM. The ``UntypedPersistentActorWithAtLeastOnceDelivery`` class does not persist anything by itself. 
+It is your responsibility to persist the intent that a message is sent and that a confirmation has been
+received.
+
 .. note::
 
   At-least-once delivery implies that original message send order is not always preserved
@@ -585,8 +591,15 @@ when the destination has replied with a confirmation message.
 Relationship between deliver and confirmDelivery
 ------------------------------------------------
 
-To send messages to the destination path, use the ``deliver`` method. If the persistent actor is not currently recovering, 
-this will send the message to the destination actor. When recovering, messages will be buffered until they have been confirmed using ``confirmDelivery``. 
+To send messages to the destination path, use the ``deliver`` method after you have persisted the intent
+to send the message. 
+
+The destination actor must send back a confirmation message. When the sending actor receives this
+confirmation message you should persist the fact that the message was delivered successfully and then call
+the ``confirmDelivery`` method.
+
+If the persistent actor is not currently recovering, the ``deliver`` method will send the message to 
+the destination actor. When recovering, messages will be buffered until they have been confirmed using ``confirmDelivery``. 
 Once recovery has completed, if there are outstanding messages that have not been confirmed (during the message replay), 
 the persistent actor will resend these before sending any other messages.
 
