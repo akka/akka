@@ -136,6 +136,25 @@ class ReplyException extends Actor {
 
 }
 
+class StoppingActorsWrapper {
+  //#stoppingActors-actor
+  class MyActor extends Actor {
+
+    val child: ActorRef = ???
+
+    def receive = {
+      case "interrupt-child" =>
+        context stop child
+
+      case "done" =>
+        context stop self
+    }
+
+  }
+
+  //#stoppingActors-actor
+}
+
 //#gracefulStop-actor
 object Manager {
   case object Shutdown
