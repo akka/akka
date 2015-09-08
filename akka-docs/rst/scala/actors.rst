@@ -283,7 +283,8 @@ that point the appropriate lifecycle events are called and watching actors
 are notified of the termination. After the incarnation is stopped, the path can
 be reused again by creating an actor with ``actorOf()``. In this case the
 name of the new incarnation will be the same as the previous one but the
-UIDs will differ.
+UIDs will differ. An actor can be stopped by the actor itself, another actor
+or the ``ActorSystem`` (see :ref:`stopping-actors-scala`).
 
 An ``ActorRef`` always represents an incarnation (path and UID) not just a
 given path. Therefore if an actor is stopped and a new one with the same
@@ -664,9 +665,11 @@ Stopping actors
 
 Actors are stopped by invoking the :meth:`stop` method of a ``ActorRefFactory``,
 i.e. ``ActorContext`` or ``ActorSystem``. Typically the context is used for stopping
-child actors and the system for stopping top level actors. The actual termination of
-the actor is performed asynchronously, i.e. :meth:`stop` may return before the actor is
-stopped.
+the actor itself or child actors and the system for stopping top level actors. The actual
+termination of the actor is performed asynchronously, i.e. :meth:`stop` may return before
+the actor is stopped.
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala#stoppingActors-actor
 
 Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these
