@@ -123,6 +123,19 @@ If you want very detailed logging of all lifecycle changes of Actors (restarts, 
       }
     }
 
+If you want unhandled messages logged at DEBUG:
+
+.. code-block:: ruby
+
+    akka {
+      actor {
+        debug {
+          # enable DEBUG logging of unhandled messages
+          unhandled = on
+        }
+      }
+    }
+
 If you want very detailed logging of all events, transitions and timers of FSM Actors that extend LoggingFSM:
 
 .. code-block:: ruby
