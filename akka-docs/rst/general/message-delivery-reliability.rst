@@ -253,24 +253,24 @@ escaped our analysis.
 How does Local Ordering relate to Network Ordering
 --------------------------------------------------
 
-As explained in the previous paragraph local message sends obey transitive
-causal ordering under certain conditions. If the remote message transport would
-respect this ordering as well, that would translate to transitive causal
-ordering across one network link, i.e. if exactly two network hosts are
-involved. Involving multiple links, e.g. the three actors on three different
-nodes mentioned above, then no guarantees can be made.
+The rule that *for a given pair of actors, messages sent directly from the first 
+to the second will not be received out-of-order* holds for messages sent over the
+network with the TCP based Akka remote transport protocol.
 
-The current remote transport does **not** support this (again this is caused by
-non-FIFO wake-up order of a lock, this time serializing connection
-establishment).
+As explained in the previous section local message sends obey transitive causal
+ordering under certain conditions. This ordering can be violated due to different
+message delivery latencies. For example:
 
-As a speculative view into the future it might be possible to support this
-ordering guarantee by re-implementing the remote transport layer based
-completely on actors; at the same time we are looking into providing other
-low-level transport protocols like UDP or SCTP which would enable higher
-throughput or lower latency by removing this guarantee again, which would mean
-that choosing between different implementations would allow trading guarantees
-versus performance.
+  Actor ``A`` on node-1 sends message ``M1`` to actor ``C`` on node-3
+
+  Actor ``A`` on node-1 then sends message ``M2`` to actor ``B`` on node-2
+
+  Actor ``B`` on node-2 forwards message ``M2`` to actor ``C`` on node-3
+
+  Actor ``C`` may receive ``M1`` and ``M2`` in any order
+
+It might take longer time for ``M1`` to "travel" to node-3 than it takes
+for ``M2`` to "travel" to node-3 via node-2.
 
 Higher-level abstractions
 =========================
