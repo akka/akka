@@ -162,10 +162,11 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(Connected(channel), _) ⇒
       channel.write(Hello(name.name, TestConductor().address))
       goto(AwaitDone) using Data(Some(channel), None)
-    case Event(_: ConnectionFailure, _) ⇒
+    case Event(e: ConnectionFailure, _) ⇒
+      log.error(e, "ConnectionFailure")
       goto(Failed)
     case Event(StateTimeout, _) ⇒
-      log.error("connect timeout to TestConductor")
+      log.error("Failed to connect to test conductor within {} ms.", settings.ConnectTimeout.toMillis)
       goto(Failed)
   }
 
