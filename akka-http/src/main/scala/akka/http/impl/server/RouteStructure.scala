@@ -70,6 +70,7 @@ private[http] object RouteStructure {
   case class Validated(isValid: Boolean, errorMsg: String)(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
 
   case class HandleExceptions(handler: ExceptionHandler)(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
+  case class HandleRejections(handler: RejectionHandler)(val innerRoute: Route, val moreInnerRoutes: immutable.Seq[Route]) extends DirectiveRoute
 
   sealed abstract class HostFilter extends DirectiveRoute {
     def filter(hostName: String): Boolean
