@@ -327,6 +327,11 @@ More fine grained log levels can be defined in the configuration of the SLF4J ba
 the ``logging-filter`` configuration property. It will filter the log events using the backend
 configuration (e.g. logback.xml) before they are published to the event bus.
 
+.. warning::
+  If you set the ``loglevel`` to a higher level than "DEBUG", any DEBUG events will be filtered
+  out already at the source and will never reach the logging backend, regardless of how the backend
+  is configured.
+
 .. code-block:: ruby
 
   akka {
