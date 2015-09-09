@@ -125,7 +125,7 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
     runOn(from) {
       cluster join node(to).address
       startSharding()
-      within(5.seconds) {
+      within(15.seconds) {
         awaitAssert(cluster.state.members.exists { m ⇒
           m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up
         } should be(true))
