@@ -46,6 +46,8 @@ private[http] final case class RequestContextImpl(underlying: ScalaRequestContex
 
   def notFound(): RouteResult = underlying.reject()
 
+  def reject(customRejection: CustomRejection): RouteResult = underlying.reject(CustomRejectionWrapper(customRejection))
+
   def executionContext(): ExecutionContext = underlying.executionContext
   def materializer(): Materializer = underlying.materializer
 }

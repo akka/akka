@@ -73,5 +73,8 @@ trait RequestContext {
    */
   def notFound(): RouteResult
 
-  // FIXME: provide proper support for rejections, see #16438
+  /**
+   * Reject this request with an application-defined CustomRejection.
+   */
+  def reject(customRejection: CustomRejection): RouteResult
 }
