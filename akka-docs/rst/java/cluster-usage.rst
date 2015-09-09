@@ -34,6 +34,10 @@ To enable cluster capabilities in your Akka project you should, at a minimum, ad
 settings, but with ``akka.cluster.ClusterActorRefProvider``.
 The ``akka.cluster.seed-nodes`` should normally also be added to your ``application.conf`` file.
 
+.. note::
+  If you are using Docker or the nodes for some other reason have separate internal and external ip addresses
+  you must configure remoting according to :ref:`remote-configuration-nat-java`
+
 The seed nodes are configured contact points for initial, automatic, join of the cluster.
 
 Note that if you are going to start the nodes on different machines you need to specify the
