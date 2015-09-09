@@ -114,6 +114,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
         }
         handleExceptions(pf)
 
+      case HandleRejections(handler)        ⇒ handleRejections(new RejectionHandlerWrapper(handler))
       case Validated(isValid, errorMsg)     ⇒ validate(isValid, errorMsg)
       case RangeSupport()                   ⇒ withRangeSupport
       case SetCookie(cookie)                ⇒ setCookie(cookie.asScala)
