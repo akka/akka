@@ -56,6 +56,9 @@ private[akka] object FanIn {
     private var markedPending = 0
     private var markedDepleted = 0
 
+    private var receivedInput = false
+    private var completedCounter = 0
+
     private[this] final def hasState(index: Int, flag: Int): Boolean =
       (states(index) & flag) != 0
     private[this] final def setState(index: Int, flag: Int, on: Boolean): Unit =
@@ -65,7 +68,10 @@ private[akka] object FanIn {
     private[this] final def cancelled(index: Int, on: Boolean): Unit = setState(index, Cancelled, on)
 
     private[this] final def completed(index: Int): Boolean = hasState(index, Completed)
-    private[this] final def completed(index: Int, on: Boolean): Unit = setState(index, Completed, on)
+    private[this] final def registerCompleted(index: Int): Unit = {
+      completedCounter += 1
+      setState(index, Completed, true)
+    }
 
     private[this] final def depleted(index: Int): Boolean = hasState(index, Depleted)
     private[this] final def depleted(index: Int, on: Boolean): Unit = setState(index, Depleted, on)
@@ -111,6 +117,8 @@ private[akka] object FanIn {
 
     def onDepleted(input: Int): Unit = ()
 
+    def onCompleteWhenNoInput(): Unit = ()
+
     def markInput(input: Int): Unit = {
       if (!marked(input)) {
         if (depleted(input)) markedDepleted += 1
@@ -150,6 +158,8 @@ private[akka] object FanIn {
     def isDepleted(input: Int): Boolean = depleted(input)
 
     def isCancelled(input: Int): Boolean = cancelled(input)
+
+    def isAllCompleted(): Boolean = inputCount == completedCounter
 
     def idToDequeue(): Int = {
       var id = preferredId
@@ -205,7 +215,7 @@ private[akka] object FanIn {
     }
 
     def inputsAvailableFor(id: Int) = new TransferState {
-      override def isCompleted: Boolean = depleted(id) || cancelled(id)
+      override def isCompleted: Boolean = depleted(id) || cancelled(id) || (!pending(id) && completed(id))
       override def isReady: Boolean = pending(id)
     }
 
@@ -221,6 +231,7 @@ private[akka] object FanIn {
       case OnNext(id, elem) ⇒
         if (marked(id) && !pending(id)) markedPending += 1
         pending(id, on = true)
+        receivedInput = true
         inputs(id).subreceive(ActorSubscriberMessage.OnNext(elem))
       case OnComplete(id) ⇒
         if (!pending(id)) {
@@ -228,8 +239,9 @@ private[akka] object FanIn {
           depleted(id, on = true)
           onDepleted(id)
         }
-        completed(id, on = true)
+        registerCompleted(id)
         inputs(id).subreceive(ActorSubscriberMessage.OnComplete)
+        if (!receivedInput && isAllCompleted) onCompleteWhenNoInput()
       case OnError(id, e) ⇒
         onError(id, e)
     })
@@ -247,6 +259,7 @@ private[akka] abstract class FanIn(val settings: ActorMaterializerSettings, val 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
   protected val inputBunch = new InputBunch(inputCount, settings.maxInputBufferSize, this) {
     override def onError(input: Int, e: Throwable): Unit = fail(e)
+    override def onCompleteWhenNoInput(): Unit = pumpFinished()
   }
 
   override def pumpFinished(): Unit = {
@@ -350,9 +363,8 @@ private[akka] final class Concat(_settings: ActorMaterializerSettings) extends F
     if (!inputBunch.isDepleted(First)) {
       val elem = inputBunch.dequeue(First)
       primaryOutputs.enqueueOutputElement(elem)
-    } else {
-      nextPhase(drainSecond)
     }
+    if (inputBunch.isDepleted(First)) nextPhase(drainSecond)
   }
 
   def drainSecond = TransferPhase(inputBunch.inputsAvailableFor(Second) && primaryOutputs.NeedsDemand) { () ⇒
