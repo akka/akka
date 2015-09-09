@@ -118,9 +118,9 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         watch(subjectNew)
 
         subjectNew ! "shutdown"
-        fishForMessage(5.seconds) {
-          case _: ActorIdentity       ⇒ false
-          case Terminated(subjectNew) ⇒ true
+        // we are waiting for a Terminated here, but it is ok if it does not arrive
+        receiveWhile(5.seconds) {
+          case _: ActorIdentity ⇒ true
         }
       }
 
