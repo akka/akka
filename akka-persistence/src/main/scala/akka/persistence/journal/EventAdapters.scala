@@ -16,8 +16,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import scala.util.Try
 
-/** INTERNAL API */
-private[akka] class EventAdapters(
+/**
+ * `EventAdapters` serves as a per-journal collection of bound event adapters.
+ */
+class EventAdapters(
   map: ConcurrentHashMap[Class[_], EventAdapter],
   bindings: immutable.Seq[(Class[_], EventAdapter)],
   log: LoggingAdapter) {
@@ -62,7 +64,10 @@ private[akka] object EventAdapters {
   def apply(system: ExtendedActorSystem, config: Config): EventAdapters = {
     val adapters = configToMap(config, "event-adapters")
     val adapterBindings = configToListMap(config, "event-adapter-bindings")
-    apply(system, adapters, adapterBindings)
+    if (adapters.isEmpty && adapterBindings.isEmpty)
+      IdentityEventAdapters
+    else
+      apply(system, adapters, adapterBindings)
   }
 
   private def apply(
