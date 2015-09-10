@@ -244,6 +244,21 @@ using a ``Passivate``.
 Note that the state of the entities themselves will not be restored unless they have been made persistent,
 e.g. with :ref:`persistence-scala`.
 
+Supervision
+-----------
+
+If you need to use another ``supervisorStrategy`` for the entity actors than the default (restarting) strategy
+you need to create an intermediate parent actor that defines the ``supervisorStrategy`` to the
+child entity actor.
+
+.. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#supervisor
+
+You start such a supervisor in the same way as if it was the entity actor.
+
+.. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#counter-supervisor-start
+
+Note that stopped entities will be started again when a new message is targeted to the entity.
+
 Graceful Shutdown
 -----------------
 

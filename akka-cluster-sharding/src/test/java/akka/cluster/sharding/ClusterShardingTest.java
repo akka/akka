@@ -8,16 +8,21 @@ import java.util.concurrent.TimeUnit;
 import scala.concurrent.duration.Duration;
 
 import akka.actor.AbstractActor;
+import akka.actor.ActorInitializationException;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.OneForOneStrategy;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
+import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
 import akka.actor.ReceiveTimeout;
+import akka.actor.UntypedActor;
 import akka.japi.Procedure;
 import akka.japi.Option;
 import akka.persistence.UntypedPersistentActor;
 import akka.cluster.Cluster;
+import akka.japi.pf.DeciderBuilder;
 import akka.japi.pf.ReceiveBuilder;
 
 // Doc code, compile only
@@ -83,6 +88,11 @@ public class ClusterShardingTest {
         Counter.CounterOp.INCREMENT), getSelf());
     counterRegion.tell(new Counter.Get(123), getSelf());
     //#counter-usage
+
+    //#counter-supervisor-start
+    ClusterSharding.get(system).start("SupervisedCounter",
+        Props.create(CounterSupervisor.class), settings, messageExtractor);
+    //#counter-supervisor-start
   }
 
   static//#counter-actor
@@ -194,5 +204,30 @@ public class ClusterShardingTest {
     }
   }
   //#graceful-shutdown
+
+  static//#supervisor
+  public class CounterSupervisor extends UntypedActor {
+
+    private final ActorRef counter = getContext().actorOf(
+        Props.create(Counter.class), "theCounter");
+
+    private static final SupervisorStrategy strategy =
+      new OneForOneStrategy(DeciderBuilder.
+        match(IllegalArgumentException.class, e -> SupervisorStrategy.resume()).
+        match(ActorInitializationException.class, e -> SupervisorStrategy.stop()).
+        match(Exception.class, e -> SupervisorStrategy.restart()).
+        matchAny(o -> SupervisorStrategy.escalate()).build());
+
+    @Override
+    public SupervisorStrategy supervisorStrategy() {
+      return strategy;
+    }
+
+    @Override
+    public void onReceive(Object msg) {
+      counter.forward(msg, getContext());
+    }
+  }
+  //#supervisor
 
 }
