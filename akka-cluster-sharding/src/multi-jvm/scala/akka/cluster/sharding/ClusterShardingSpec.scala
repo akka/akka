@@ -95,6 +95,23 @@ object ClusterShardingSpec {
 
   class AnotherCounter extends QualifiedCounter("AnotherCounter")
 
+  //#supervisor
+  class CounterSupervisor extends Actor {
+    val counter = context.actorOf(Props[Counter], "theCounter")
+
+    override val supervisorStrategy = OneForOneStrategy() {
+      case _: IllegalArgumentException     ⇒ SupervisorStrategy.Resume
+      case _: ActorInitializationException ⇒ SupervisorStrategy.Stop
+      case _: DeathPactException           ⇒ SupervisorStrategy.Stop
+      case _: Exception                    ⇒ SupervisorStrategy.Restart
+    }
+
+    def receive = {
+      case msg ⇒ counter forward msg
+    }
+  }
+  //#supervisor
+
 }
 
 abstract class ClusterShardingSpecConfig(val mode: String) extends MultiNodeConfig {
@@ -561,6 +578,15 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
+
+      //#counter-supervisor-start
+      ClusterSharding(system).start(
+        typeName = "SupervisedCounter",
+        entityProps = Props[CounterSupervisor],
+        settings = ClusterShardingSettings(system),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
+      //#counter-supervisor-start
     }
     enterBarrier("extension-started")
     runOn(fifth) {
