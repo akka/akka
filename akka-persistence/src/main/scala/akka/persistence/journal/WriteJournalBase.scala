@@ -6,7 +6,6 @@ package akka.persistence.journal
 
 import akka.actor.Actor
 import akka.persistence.{ Persistence, PersistentEnvelope, PersistentRepr }
-
 import scala.collection.immutable
 import akka.persistence.AtomicWrite
 
@@ -33,11 +32,16 @@ private[akka] trait WriteJournalBase {
   private[akka] final def adaptToJournal(repr: PersistentRepr): PersistentRepr = {
     val payload = repr.payload
     val adapter = eventAdapters.get(payload.getClass)
-    val manifest = adapter.manifest(payload)
 
-    repr
-      .withPayload(adapter.toJournal(payload))
-      .withManifest(manifest)
+    // IdentityEventAdapter returns "" as manifest and normally the incoming PersistentRepr
+    // doesn't have an assigned manifest, but when WriteMessages is sent directly to the
+    // journal for testing purposes we want to preserve the original manifest instead of
+    // letting IdentityEventAdapter clearing it out.
+    if (adapter == IdentityEventAdapter || adapter.isInstanceOf[NoopWriteEventAdapter])
+      repr
+    else {
+      repr.withPayload(adapter.toJournal(payload)).withManifest(adapter.manifest(payload))
+    }
   }
 
 }
