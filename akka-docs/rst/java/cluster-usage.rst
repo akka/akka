@@ -333,8 +333,7 @@ How To Cleanup when Member is Removed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can do some clean up in a ``registerOnMemberRemoved`` callback, which will
-be invoked when the current member status is changed to 'Removed' or the cluster have been shutdown,i.e.
-terminate the actor system.
+be invoked when the current member status is changed to 'Removed' or the cluster have been shutdown.
 
 For example, this is how to shut down the ``ActorSystem`` and thereafter exit the JVM:
 
