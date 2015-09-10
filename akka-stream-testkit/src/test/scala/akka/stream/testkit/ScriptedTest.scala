@@ -4,16 +4,16 @@
 package akka.stream.testkit
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializerSettings
-import akka.stream.scaladsl.{ Sink, Source, Flow }
-import akka.stream.testkit._
-import akka.stream.testkit.StreamTestKit._
+import akka.stream.testkit.TestPublisher._
+import akka.stream.testkit.TestSubscriber._
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 import org.reactivestreams.Publisher
 import org.scalatest.Matchers
+
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.stream.ActorMaterializer
 
 trait ScriptedTest extends Matchers {
 
