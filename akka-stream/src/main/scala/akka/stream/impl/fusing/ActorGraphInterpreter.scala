@@ -73,8 +73,8 @@ private[stream] object ActorGraphInterpreter {
     }
   }
 
-  def props(assembly: GraphAssembly, shape: Shape, settings: ActorMaterializerSettings): Props =
-    Props(new ActorGraphInterpreter(assembly, shape, settings)).withDeploy(Deploy.local)
+  def props(assembly: GraphAssembly, shape: Shape, settings: ActorMaterializerSettings, mat: Materializer): Props =
+    Props(new ActorGraphInterpreter(assembly, shape, settings, mat)).withDeploy(Deploy.local)
 
   class BatchingActorInputBoundary(size: Int, id: Int) extends UpstreamBoundaryStageLogic[Any] {
     require(size > 0, "buffer size cannot be zero")
@@ -279,10 +279,17 @@ private[stream] object ActorGraphInterpreter {
 /**
  * INTERNAL API
  */
-private[stream] class ActorGraphInterpreter(assembly: GraphAssembly, shape: Shape, settings: ActorMaterializerSettings) extends Actor {
+private[stream] class ActorGraphInterpreter(
+  assembly: GraphAssembly,
+  shape: Shape,
+  settings: ActorMaterializerSettings,
+  mat: Materializer) extends Actor {
   import ActorGraphInterpreter._
 
-  val interpreter = new GraphInterpreter(assembly, (logic, event, handler) ⇒ self ! AsyncInput(logic, event, handler))
+  val interpreter = new GraphInterpreter(
+    assembly,
+    mat,
+    (logic, event, handler) ⇒ self ! AsyncInput(logic, event, handler))
   val inputs = Array.tabulate(shape.inlets.size)(new BatchingActorInputBoundary(settings.maxInputBufferSize, _))
   val outputs = Array.tabulate(shape.outlets.size)(new ActorOutputBoundary(self, _))
   // Limits the number of events processed by the interpreter before scheduling a self-message for fairness with other
@@ -324,8 +331,13 @@ private[stream] class ActorGraphInterpreter(assembly: GraphAssembly, shape: Shap
       if (interpreter.isSuspended) runBatch()
     case AsyncInput(logic, event, handler) ⇒
       if (GraphInterpreter.Debug) println(s"ASYNC $event")
-      if (!interpreter.isStageCompleted(logic.stageId))
-        handler(event)
+      if (!interpreter.isStageCompleted(logic.stageId)) {
+        try handler(event)
+        catch {
+          case NonFatal(e) ⇒ logic.failStage(e)
+        }
+      }
+
       runBatch()
 
     // Initialization and completion messages
@@ -347,6 +359,7 @@ private[stream] class ActorGraphInterpreter(assembly: GraphAssembly, shape: Shap
       outputs(id).subscribePending()
     case ExposedPublisher(id, publisher) ⇒
       outputs(id).exposedPublisher(publisher)
+
   }
 
   override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {

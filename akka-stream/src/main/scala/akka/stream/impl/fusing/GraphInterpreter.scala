@@ -4,7 +4,9 @@
 package akka.stream.impl.fusing
 
 import akka.stream.stage.{ OutHandler, InHandler, GraphStage, GraphStageLogic }
-import akka.stream.{ Shape, Inlet, Outlet }
+import akka.stream.{ Materializer, Shape, Inlet, Outlet }
+
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -180,6 +182,7 @@ private[stream] object GraphInterpreter {
  */
 private[stream] final class GraphInterpreter(
   private val assembly: GraphInterpreter.GraphAssembly,
+  val materializer: Materializer,
   val onAsyncInput: (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit) {
   import GraphInterpreter._
 
@@ -256,6 +259,7 @@ private[stream] final class GraphInterpreter(
     var i = 0
     while (i < logics.length) {
       logics(i).stageId = i
+      logics(i).beforePreStart()
       logics(i).preStart()
       i += 1
     }
@@ -267,7 +271,10 @@ private[stream] final class GraphInterpreter(
   def finish(): Unit = {
     var i = 0
     while (i < logics.length) {
-      if (!isStageCompleted(i)) logics(i).postStop()
+      if (!isStageCompleted(i)) {
+        logics(i).postStop()
+        logics(i).afterPostStop()
+      }
       i += 1
     }
   }
@@ -290,7 +297,19 @@ private[stream] final class GraphInterpreter(
     var eventsRemaining = eventLimit
     var connection = dequeue()
     while (eventsRemaining > 0 && connection != NoEvent) {
-      processEvent(connection)
+      try processEvent(connection)
+      catch {
+        case NonFatal(e) ⇒
+          val stageId = connectionStates(connection) match {
+            case Failed(ex)          ⇒ throw new IllegalStateException("Double fault. Failure while handling failure.", e)
+            case Pushable            ⇒ assembly.outOwners(connection)
+            case Completed           ⇒ assembly.inOwners(connection)
+            case Cancelled           ⇒ assembly.outOwners(connection)
+            case PushCompleted(elem) ⇒ assembly.inOwners(connection)
+            case pushedElem          ⇒ assembly.inOwners(connection)
+          }
+          logics(stageId).failStage(e)
+      }
       eventsRemaining -= 1
       if (eventsRemaining > 0) connection = dequeue()
     }
@@ -392,6 +411,7 @@ private[stream] final class GraphInterpreter(
         if (activeConnections == 1) {
           runningStages -= 1
           logics(stageId).postStop()
+          logics(stageId).afterPostStop()
         }
       }
     }

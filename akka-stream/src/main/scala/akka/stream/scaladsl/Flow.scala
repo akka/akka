@@ -9,6 +9,7 @@ import akka.stream._
 import akka.stream.impl.SplitDecision._
 import akka.stream.impl.Stages.{ DirectProcessor, MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
+import akka.stream.impl.fusing.{ DropWithin, TakeWithin, GroupedWithin }
 import akka.stream.impl.{ Stages, StreamLayout }
 import akka.stream.stage._
 import akka.util.Collections.EmptyImmutableSeq
@@ -32,41 +33,6 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   private[stream] def isIdentity: Boolean = this.module.isInstanceOf[Stages.Identity]
 
-  /**
-   * Transform this [[Flow]] by appending the given processing steps.
-   * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
-   * }}}
-   * The materialized value of the combined [[Flow]] will be the materialized
-   * value of the current flow (ignoring the other Flow’s value), use
-   * [[Flow#viaMat viaMat]] if a different strategy is needed.
-   */
-  def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Flow[In, T, Mat] = viaMat(flow)(Keep.left)
-
-  /**
-   * Transform this [[Flow]] by appending the given processing steps.
-   * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
-   * }}}
-   * The `combine` function is used to compose the materialized values of this flow and that
-   * flow into the materialized value of the resulting Flow.
-   */
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
     if (this.isIdentity) {
       val flowInstance: Flow[In, T, Mat2] = if (flow.isInstanceOf[javadsl.Flow[In, T, Mat2]])
@@ -378,11 +344,47 @@ case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) 
  * Scala API: Operations offered by Sources and Flows with a free output side: the DSL flows left-to-right only.
  */
 trait FlowOps[+Out, +Mat] {
-  import FlowOps._
   import akka.stream.impl.Stages._
   type Repr[+O, +M] <: FlowOps[O, M]
 
   private final val _identity = (x: Any) ⇒ x
+
+  /**
+   * Transform this [[Flow]] by appending the given processing steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * [[Flow#viaMat viaMat]] if a different strategy is needed.
+   */
+  def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T, Mat] = viaMat(flow)(Keep.left)
+
+  /**
+   * Transform this [[Flow]] by appending the given processing steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * flow into the materialized value of the resulting Flow.
+   */
+  def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Repr[T, Mat3]
 
   /**
    * Recover allows to send last element on failure and gracefully complete the stream
@@ -650,31 +652,10 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream completes
    */
-  def groupedWithin(n: Int, d: FiniteDuration): Repr[Out, Mat]#Repr[immutable.Seq[Out], Mat] = {
+  def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out], Mat] = {
     require(n > 0, "n must be greater than 0")
     require(d > Duration.Zero)
-    withAttributes(name("groupedWithin")).timerTransform(() ⇒ new TimerTransformer[Out, immutable.Seq[Out]] {
-      schedulePeriodically(GroupedWithinTimerKey, d)
-      var buf: Vector[Out] = Vector.empty
-
-      def onNext(in: Out) = {
-        buf :+= in
-        if (buf.size == n) {
-          // start new time window
-          schedulePeriodically(GroupedWithinTimerKey, d)
-          emitGroup()
-        } else Nil
-      }
-      override def onTermination(e: Option[Throwable]) = if (buf.isEmpty) Nil else List(buf)
-      def onTimer(timerKey: Any) = emitGroup()
-      private def emitGroup(): immutable.Seq[immutable.Seq[Out]] =
-        if (buf.isEmpty) EmptyImmutableSeq
-        else {
-          val group = buf
-          buf = Vector.empty
-          List(group)
-        }
-    })
+    via(new GroupedWithin[Out](n, d).withAttributes(name("groupedWithin")))
   }
 
   /**
@@ -702,21 +683,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def dropWithin(d: FiniteDuration): Repr[Out, Mat]#Repr[Out, Mat] =
-    withAttributes(name("dropWithin")).timerTransform(() ⇒ new TimerTransformer[Out, Out] {
-      scheduleOnce(DropWithinTimerKey, d)
-
-      var delegate: TransformerLike[Out, Out] =
-        new TransformerLike[Out, Out] {
-          def onNext(in: Out) = Nil
-        }
-
-      def onNext(in: Out) = delegate.onNext(in)
-      def onTimer(timerKey: Any) = {
-        delegate = FlowOps.identityTransformer[Out]
-        Nil
-      }
-    })
+  def dropWithin(d: FiniteDuration): Repr[Out, Mat] =
+    via(new DropWithin[Out](d).withAttributes(name("dropWithin")))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
@@ -754,19 +722,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
-  def takeWithin(d: FiniteDuration): Repr[Out, Mat]#Repr[Out, Mat] =
-    withAttributes(name("takeWithin")).timerTransform(() ⇒ new TimerTransformer[Out, Out] {
-      scheduleOnce(TakeWithinTimerKey, d)
-
-      var delegate: TransformerLike[Out, Out] = FlowOps.identityTransformer[Out]
-
-      override def onNext(in: Out) = delegate.onNext(in)
-      override def isComplete = delegate.isComplete
-      override def onTimer(timerKey: Any) = {
-        delegate = FlowOps.completedTransformer[Out]
-        Nil
-      }
-    })
+  def takeWithin(d: FiniteDuration): Repr[Out, Mat] =
+    via(new TakeWithin[Out](d).withAttributes(name("takeWithin")))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -1009,35 +966,6 @@ trait FlowOps[+Out, +Mat] {
   }
 
   /**
-   * INTERNAL API - meant for removal / rewrite. See https://github.com/akka/akka/issues/16393
-   *
-   * Transformation of a stream, with additional support for scheduled events.
-   *
-   * For each element the [[akka.stream.TransformerLike#onNext]]
-   * function is invoked, expecting a (possibly empty) sequence of output elements
-   * to be produced.
-   * After handing off the elements produced from one input element to the downstream
-   * subscribers, the [[akka.stream.TransformerLike#isComplete]] predicate determines whether to end
-   * stream processing at this point; in that case the upstream subscription is
-   * canceled. Before signaling normal completion to the downstream subscribers,
-   * the [[akka.stream.TransformerLike#onTermination]] function is invoked to produce a (possibly empty)
-   * sequence of elements in response to the end-of-stream event.
-   *
-   * [[akka.stream.TransformerLike#onError]] is called when failure is signaled from upstream.
-   *
-   * After normal completion or failure the [[akka.stream.TransformerLike#cleanup]] function is called.
-   *
-   * It is possible to keep state in the concrete [[akka.stream.Transformer]] instance with
-   * ordinary instance variables. The [[akka.stream.Transformer]] is executed by an actor and
-   * therefore you do not have to add any additional thread safety or memory
-   * visibility constructs to access the state from the callback methods.
-   *
-   * Note that you can use [[#transform]] if you just need to transform elements time plays no role in the transformation.
-   */
-  private[akka] def timerTransform[U](mkStage: () ⇒ TimerTransformer[Out, U]): Repr[U, Mat] =
-    andThen(TimerTransform(mkStage.asInstanceOf[() ⇒ TimerTransformer[Any, Any]]))
-
-  /**
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
@@ -1065,24 +993,3 @@ trait FlowOps[+Out, +Mat] {
   private[scaladsl] def andThenMat[U, Mat2](op: MaterializingStageFactory): Repr[U, Mat2]
 }
 
-/**
- * INTERNAL API
- */
-private[stream] object FlowOps {
-  private case object TakeWithinTimerKey
-  private case object DropWithinTimerKey
-  private case object GroupedWithinTimerKey
-
-  private[this] final case object CompletedTransformer extends TransformerLike[Any, Any] {
-    override def onNext(elem: Any) = Nil
-    override def isComplete = true
-  }
-
-  private[this] final case object IdentityTransformer extends TransformerLike[Any, Any] {
-    override def onNext(elem: Any) = List(elem)
-  }
-
-  def completedTransformer[T]: TransformerLike[T, T] = CompletedTransformer.asInstanceOf[TransformerLike[T, T]]
-  def identityTransformer[T]: TransformerLike[T, T] = IdentityTransformer.asInstanceOf[TransformerLike[T, T]]
-
-}
