@@ -5,14 +5,13 @@
 package akka.stream
 
 import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
-
 import scala.concurrent.Lock
 import scala.util.Success
+import akka.stream.impl.fusing.GraphStages
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -41,6 +40,7 @@ class FlowMapBenchmark {
 
   var materializer: ActorMaterializer = _
 
+  final val UseGraphStageIdentity = false
 
   // manual, and not via @Param, because we want @OperationsPerInvocation on our tests
   final val data100k = (1 to 100000).toVector
@@ -64,7 +64,12 @@ class FlowMapBenchmark {
 
     materializer = ActorMaterializer(settings)
 
-    flow = mkMaps(Source(data100k), numberOfMapOps)(identity)
+    flow = mkMaps(Source(data100k), numberOfMapOps) {
+      if (UseGraphStageIdentity)
+        new GraphStages.Identity[Int]
+      else
+        Flow[Int].map(identity)
+    }
   }
 
   @TearDown
@@ -85,10 +90,10 @@ class FlowMapBenchmark {
   }
 
   // source setup
-  private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(op: O ⇒ O): Source[O, Mat] = {
+  private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(flow: => Graph[FlowShape[O, O], _]): Source[O, Mat] = {
     var f = source
     for (i ← 1 to count)
-      f = f.map(op)
+      f = f.via(flow)
     f
   }
 
