@@ -21,6 +21,7 @@ import akka.stream.stage.Stage
 import akka.stream.Attributes._
 import org.reactivestreams._
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, ExecutionContextExecutor }
 
 /**
@@ -60,6 +61,12 @@ private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
       }
     }
   }
+
+  override def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable) =
+    system.scheduler.schedule(initialDelay, interval, task)(executionContext)
+
+  override def scheduleOnce(delay: FiniteDuration, task: Runnable) =
+    system.scheduler.scheduleOnce(delay, task)(executionContext)
 
   override def materialize[Mat](runnableGraph: Graph[ClosedShape, Mat]): Mat = {
     if (haveShutDown.get())
@@ -114,7 +121,7 @@ private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
 
           case graph: GraphModule ⇒
             val calculatedSettings = effectiveSettings(effectiveAttributes)
-            val props = ActorGraphInterpreter.props(graph.assembly, graph.shape, calculatedSettings)
+            val props = ActorGraphInterpreter.props(graph.assembly, graph.shape, calculatedSettings, ActorMaterializerImpl.this)
             val impl = actorOf(props, stageName(effectiveAttributes), calculatedSettings.dispatcher)
             for ((inlet, i) ← graph.shape.inlets.iterator.zipWithIndex) {
               val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, i)
@@ -342,7 +349,6 @@ private[akka] object ActorProcessorFactory {
       case Split(d, _)                ⇒ (SplitWhereProcessorImpl.props(settings, d), ())
       case ConcatAll(_)               ⇒ (ConcatAllImpl.props(materializer), ())
       case StageFactory(mkStage, _)   ⇒ interp(mkStage())
-      case TimerTransform(mkStage, _) ⇒ (TimerTransformerProcessorsImpl.props(settings, mkStage()), ())
       case MaterializingStageFactory(mkStageAndMat, _) ⇒
         val s_m = mkStageAndMat()
         (ActorInterpreter.props(settings, List(s_m._1), materializer, att), s_m._2)

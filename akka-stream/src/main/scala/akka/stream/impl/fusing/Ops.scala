@@ -6,13 +6,16 @@ package akka.stream.impl.fusing
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.stream.Attributes.LogLevels
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ FixedSizeBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.collection.immutable.VectorBuilder
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
@@ -725,4 +728,122 @@ private[akka] object Log {
   private final val DefaultLoggerName = "akka.stream.Log"
   private final val OffInt = LogLevels.Off.asInt
   private final val DefaultLogLevels = LogLevels(onElement = Logging.DebugLevel, onFinish = Logging.DebugLevel, onFailure = Logging.ErrorLevel)
+}
+
+/**
+ * INTERNAL API
+ */
+private[stream] object TimerKeys {
+  case object TakeWithinTimerKey
+  case object DropWithinTimerKey
+  case object GroupedWithinTimerKey
+}
+
+private[stream] class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
+  val in = Inlet[T]("in")
+  val out = Outlet[immutable.Seq[T]]("out")
+  val shape = FlowShape(in, out)
+
+  override def createLogic: GraphStageLogic = new GraphStageLogic {
+    private val buf: VectorBuilder[T] = new VectorBuilder
+    // True if:
+    // - buf is nonEmpty
+    //       AND
+    // - timer fired OR group is full
+    private var groupClosed = false
+    private var finished = false
+    private var elements = 0
+
+    private val GroupedWithinTimer = "GroupedWithinTimer"
+
+    override def preStart() = {
+      schedulePeriodically(GroupedWithinTimer, d)
+      pull(in)
+    }
+
+    private def nextElement(elem: T): Unit = {
+      buf += elem
+      elements += 1
+      if (elements == n) {
+        schedulePeriodically(GroupedWithinTimer, d)
+        closeGroup()
+      } else pull(in)
+    }
+
+    private def closeGroup(): Unit = {
+      groupClosed = true
+      if (isAvailable(out)) emitGroup()
+    }
+
+    private def emitGroup(): Unit = {
+      push(out, buf.result())
+      buf.clear()
+      if (!finished) startNewGroup()
+      else completeStage()
+    }
+
+    private def startNewGroup(): Unit = {
+      elements = 0
+      groupClosed = false
+      if (isAvailable(in)) nextElement(grab(in))
+      else if (!hasBeenPulled(in)) pull(in)
+    }
+
+    setHandler(in, new InHandler {
+      override def onPush(): Unit =
+        if (!groupClosed) nextElement(grab(in)) // otherwise keep the element for next round
+      override def onUpstreamFinish(): Unit = {
+        finished = true
+        if (!groupClosed && elements > 0) closeGroup()
+        else completeStage()
+      }
+      override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
+    })
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = if (groupClosed) emitGroup()
+      override def onDownstreamFinish(): Unit = completeStage()
+    })
+
+    override protected def onTimer(timerKey: Any) =
+      if (elements > 0) closeGroup()
+  }
+}
+
+private[stream] class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+
+  override def createLogic: GraphStageLogic = new SimpleLinearStageLogic {
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = push(out, grab(in))
+      override def onUpstreamFinish(): Unit = completeStage()
+      override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
+    })
+
+    final override protected def onTimer(key: Any): Unit =
+      completeStage()
+
+    scheduleOnce("TakeWithinTimer", timeout)
+  }
+
+  override def toString = "TakeWithin"
+}
+
+private[stream] class DropWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+  private var allow = false
+
+  override def createLogic: GraphStageLogic = new SimpleLinearStageLogic {
+    setHandler(in, new InHandler {
+      override def onPush(): Unit =
+        if (allow) push(out, grab(in))
+        else pull(in)
+      override def onUpstreamFinish(): Unit = completeStage()
+      override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
+    })
+
+    final override protected def onTimer(key: Any): Unit = allow = true
+
+    scheduleOnce("DropWithinTimer", timeout)
+  }
+
+  override def toString = "DropWithin"
 }
