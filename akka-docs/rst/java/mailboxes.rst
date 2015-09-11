@@ -134,9 +134,9 @@ Akka comes shipped with a number of mailbox implementations:
 
 * **NonBlockingBoundedMailbox**
 
-  - Backed by a very efficient Multiple-Producer Multiple-Consumer queue
+  - Backed by a very efficient Multiple-Producer Single-Consumer queue
 
-  - Blocking: No
+  - Blocking: No (discards overflowing messages into deadLetters)
 
   - Bounded: Yes
 
