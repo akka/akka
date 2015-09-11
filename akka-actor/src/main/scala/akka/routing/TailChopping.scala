@@ -19,15 +19,27 @@ import akka.util.Helpers.ConfigOps
 import scala.util.Random
 
 /**
- * Sends the message to a first, random picked, routee,
- * then wait a specified `interval` and then send to a second, random picked, and so on till one full cycle.
+ * As each message is sent to the router, the routees are randomly ordered. The message is sent to the
+ * first routee. If no response is received before the `interval` has passed, the same message is sent
+ * to the next routee. This process repeats until either a response is received from some routee, the
+ * routees in the pool are exhausted, or the `within` duration has passed since the first send. If no
+ * routee sends a response in time, a [[akka.actor.Status.Failure]] wrapping a [[akka.pattern.AskTimeoutException]]
+ * is sent to the sender.
+ * 
+ * The goal of this routing algorithm is to decrease tail latencies ("chop off the tail latency") in situations
+ * where multiple routees can perform the same piece of work, and where a routee may occasionally respond
+ * more slowly than expected. In this case, sending the same work request (also known as a "backup request")
+ * to another actor results in decreased response time - because it's less probable that multiple actors
+ * are under heavy load simultaneously. This technique is explained in depth in Jeff Dean's presentation on
+ * <a href="http://static.googleusercontent.com/media/research.google.com/en//people/jeff/Berkeley-Latency-Mar2012.pdf">
+ * Achieving Rapid Response Times in Large Online Services</a>.
  *
  * @param scheduler schedules sending messages to routees
  *
  * @param within expecting at least one reply within this duration, otherwise
  *   it will reply with [[akka.pattern.AskTimeoutException]] in a [[akka.actor.Status.Failure]]
  *
- * @param interval duration after which next routee will be picked
+ * @param interval duration after which the message will be sent to the next routee
  *
  * @param context execution context used by scheduler
  */
@@ -83,8 +95,17 @@ private[akka] final case class TailChoppingRoutees(
 }
 
 /**
- * A router poll that sends the message to a first, random picked, routee,
- * then wait a specified `interval` and then send to a second, random picked, and so on till one full cycle..
+ * A router pool with retry logic, intended for cases where a return message is expected in
+ * response to a message sent to the routee. As each message is sent to the routing pool, the
+ * routees are randomly ordered. The message is sent to the first routee. If no response is received
+ * before the `interval` has passed, the same message is sent to the next routee. This process repeats
+ * until either a response is received from some routee, the routees in the pool are exhausted, or
+ * the `within` duration has passed since the first send. If no routee sends
+ * a response in time, a [[akka.actor.Status.Failure]] wrapping a [[akka.pattern.AskTimeoutException]]
+ * is sent to the sender.
+ * 
+ * Refer to [[akka.routing.TailChoppingRoutingLogic]] for comments regarding the goal of this
+ * routing algorithm.
  *
  * The configuration parameter trumps the constructor arguments. This means that
  * if you provide `nrOfInstances` during instantiation they will be ignored if
@@ -111,7 +132,7 @@ private[akka] final case class TailChoppingRoutees(
  * @param within expecting at least one reply within this duration, otherwise
  *   it will reply with [[akka.pattern.AskTimeoutException]] in a [[akka.actor.Status.Failure]]
  *
- * @param interval duration after which next routee will be picked
+ * @param interval duration after which the message will be sent to the next routee
  *
  * @param supervisorStrategy strategy for supervising the routees, see 'Supervision Setup'
  *
@@ -178,9 +199,18 @@ final case class TailChoppingPool(
 }
 
 /**
- * A router group that sends the message to a first, random picked, routee,
- * then wait a specified `interval` and then send to a second, random picked, and so on till one full cycle..
+ * A router group with retry logic, intended for cases where a return message is expected in
+ * response to a message sent to the routee. As each message is sent to the routing group, the
+ * routees are randomly ordered. The message is sent to the first routee. If no response is received
+ * before the `interval` has passed, the same message is sent to the next routee. This process repeats
+ * until either a response is received from some routee, the routees in the group are exhausted, or
+ * the `within` duration has passed since the first send. If no routee sends
+ * a response in time, a [[akka.actor.Status.Failure]] wrapping a [[akka.pattern.AskTimeoutException]]
+ * is sent to the sender.
  *
+ * Refer to [[akka.routing.TailChoppingRoutingLogic]] for comments regarding the goal of this
+ * routing algorithm.
+ * 
  * The configuration parameter trumps the constructor arguments. This means that
  * if you provide `paths` during instantiation they will be ignored if
  * the router is defined in the configuration file for the actor being used.
@@ -191,7 +221,7 @@ final case class TailChoppingPool(
  * @param within expecting at least one reply within this duration, otherwise
  *   it will reply with [[akka.pattern.AskTimeoutException]] in a [[akka.actor.Status.Failure]]
  *
- * @param interval duration after which next routee will be picked
+ * @param interval duration after which the message will be sent to the next routee
  *
  * @param routerDispatcher dispatcher to use for the router head actor, which handles
  *   router management messages
