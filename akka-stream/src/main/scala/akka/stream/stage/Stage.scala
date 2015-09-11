@@ -3,7 +3,7 @@
  */
 package akka.stream.stage
 
-import akka.stream.{ Materializer, Attributes, Supervision }
+import akka.stream.{ Attributes, Materializer, Supervision }
 
 /**
  * General interface for stream transformation.

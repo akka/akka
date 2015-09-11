@@ -100,27 +100,28 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
     }
 
     "reset time window when max elements reached" in {
-      val input = Iterator.from(1)
-      val p = TestPublisher.manualProbe[Int]()
-      val c = TestSubscriber.manualProbe[immutable.Seq[Int]]()
-      Source(p).groupedWithin(3, 2.second).to(Sink(c)).run()
-      val pSub = p.expectSubscription
-      val cSub = c.expectSubscription
-      cSub.request(4)
-      val demand1 = pSub.expectRequest.toInt
-      demand1 should be(4)
-      c.expectNoMsg(1000.millis)
-      (1 to demand1) foreach { _ ⇒ pSub.sendNext(input.next()) }
-      c.within(1000.millis) {
-        c.expectNext((1 to 3).toVector)
+      val inputs = Iterator.from(1)
+      val upstream = TestPublisher.probe[Int]()
+      val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
+      Source(upstream).groupedWithin(3, 2.second).to(Sink(downstream)).run()
+
+      downstream.request(2)
+      downstream.expectNoMsg(1000.millis)
+
+      (1 to 4) foreach { _ ⇒ upstream.sendNext(inputs.next()) }
+      downstream.within(1000.millis) {
+        downstream.expectNext((1 to 3).toVector)
       }
-      c.expectNoMsg(1500.millis)
-      c.within(1000.millis) {
-        c.expectNext(List(4))
+
+      downstream.expectNoMsg(1500.millis)
+
+      downstream.within(1000.millis) {
+        downstream.expectNext(List(4))
       }
-      pSub.sendComplete()
-      c.expectComplete
-      c.expectNoMsg(100.millis)
+
+      upstream.sendComplete()
+      downstream.expectComplete
+      downstream.expectNoMsg(100.millis)
     }
 
     "group evenly" in {

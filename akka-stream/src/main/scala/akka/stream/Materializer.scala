@@ -3,8 +3,12 @@
  */
 package akka.stream
 
+import akka.actor.Cancellable
+
 import scala.concurrent.ExecutionContextExecutor
 import akka.japi
+
+import scala.concurrent.duration.FiniteDuration
 
 abstract class Materializer {
 
@@ -31,6 +35,24 @@ abstract class Materializer {
    */
   implicit def executionContext: ExecutionContextExecutor
 
+  /**
+   * Interface for stages that need timer services for their functionality. Schedules a
+   * single task with the given delay.
+   *
+   * @return A [[akka.actor.Cancellable]] that allows cancelling the timer. Cancelling is best effort, if the event
+   *         has been already enqueued it will not have an effect.
+   */
+  def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable
+
+  /**
+   * Interface for stages that need timer services for their functionality. Schedules a
+   * repeated task with the given interval between invocations.
+   *
+   * @return A [[akka.actor.Cancellable]] that allows cancelling the timer. Cancelling is best effort, if the event
+   *         has been already enqueued it will not have an effect.
+   */
+  def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable
+
 }
 
 /**
@@ -43,6 +65,12 @@ private[akka] object NoMaterializer extends Materializer {
     throw new UnsupportedOperationException("NoMaterializer cannot materialize")
   override def executionContext: ExecutionContextExecutor =
     throw new UnsupportedOperationException("NoMaterializer does not provide an ExecutionContext")
+
+  def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable =
+    throw new UnsupportedOperationException("NoMaterializer cannot schedule a single event")
+
+  def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
+    throw new UnsupportedOperationException("NoMaterializer cannot schedule a repeated event")
 }
 
 /**

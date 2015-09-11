@@ -11,22 +11,30 @@ import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
  */
 object GraphStages {
 
-  class Identity[T] extends GraphStage[FlowShape[T, T]] {
+  /**
+   * INERNAL API
+   */
+  private[stream] abstract class SimpleLinearGraphStage[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T]("in")
     val out = Outlet[T]("out")
-
     override val shape = FlowShape(in, out)
 
-    override def createLogic: GraphStageLogic = new GraphStageLogic {
+    protected abstract class SimpleLinearStageLogic extends GraphStageLogic {
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = pull(in)
+        override def onDownstreamFinish(): Unit = completeStage()
+      })
+    }
+
+  }
+
+  class Identity[T] extends SimpleLinearGraphStage[T] {
+
+    override def createLogic: GraphStageLogic = new SimpleLinearStageLogic {
       setHandler(in, new InHandler {
         override def onPush(): Unit = push(out, grab(in))
         override def onUpstreamFinish(): Unit = completeStage()
         override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
-      })
-
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
-        override def onDownstreamFinish(): Unit = completeStage()
       })
     }
 
