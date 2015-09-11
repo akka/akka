@@ -9,7 +9,7 @@ import akka.util.Unsafe;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Lock-free bounded non-blocking multiple-producer multiple-consumer queue based on the works of:
+ * Lock-free bounded non-blocking multiple-producer single-consumer queue based on the works of:
  *
  * Andriy Plokhotnuyk (https://github.com/plokhotnyuk)
  *   - https://github.com/plokhotnyuk/actors/blob/2e65abb7ce4cbfcb1b29c98ee99303d6ced6b01f/src/test/scala/akka/dispatch/Mailboxes.scala
