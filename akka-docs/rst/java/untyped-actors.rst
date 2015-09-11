@@ -742,6 +742,8 @@ behavior is not the default).
 
 .. includecode:: code/docs/actor/UntypedActorSwapper.java#swapper
 
+.. _stash-java:
+
 Stash
 =====
 
