@@ -787,6 +787,7 @@ Encoding Scala Actors nested receives without accidentally leaking memory
 
 See this `Unnested receive example <@github@/akka-docs/rst/scala/code/docs/actor/UnnestedReceives.scala>`_.
 
+.. _stash-scala:
 
 Stash
 =====
