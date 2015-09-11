@@ -386,7 +386,10 @@ class NodeMessageQueue extends AbstractNodeQueue[Envelope] with MessageQueue wit
   }
 }
 
-//Discards overflowing messages into DeadLetters
+/**
+ * Lock-free bounded non-blocking multiple-producer single-consumer queue.
+ * Discards overflowing messages into DeadLetters.
+ */
 class BoundedNodeMessageQueue(capacity: Int) extends AbstractBoundedNodeQueue[Envelope](capacity)
   with MessageQueue with BoundedMessageQueueSemantics with MultipleConsumerSemantics {
   final def pushTimeOut: Duration = Duration.Undefined
@@ -627,8 +630,10 @@ final case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with P
 }
 
 /**
- * NonBlockingBoundedMailbox is a high-performance, multiple producer—multiple consumer, bounded MailboxType,
+ * NonBlockingBoundedMailbox is a high-performance, multiple-producer single-consumer, bounded MailboxType,
  * Noteworthy is that it discards overflow as DeadLetters.
+ *
+ * It can't have multiple consumers, which rules out using it with BalancingPool (BalancingDispatcher) for instance.
  *
  * NOTE: NonBlockingBoundedMailbox does not use `mailbox-push-timeout-time` as it is non-blocking.
  */
