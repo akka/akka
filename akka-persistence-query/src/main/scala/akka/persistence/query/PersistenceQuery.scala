@@ -24,7 +24,9 @@ object PersistenceQuery extends ExtensionId[PersistenceQuery] with ExtensionIdPr
   def lookup() = PersistenceQuery
 
   /** INTERNAL API. */
-  private[persistence] case class PluginHolder(plugin: scaladsl.ReadJournal) extends Extension
+  private[persistence] case class PluginHolder(
+    scaladslPlugin: scaladsl.ReadJournal, javadslPlugin: akka.persistence.query.javadsl.ReadJournal)
+    extends Extension
 
 }
 
@@ -37,33 +39,38 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
   private val readJournalPluginExtensionIds = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
 
   /**
-   * Returns the [[akka.persistence.query.scaladsl.ReadJournal]] specified by the given read journal configuration entry.
+   * Scala API: Returns the [[akka.persistence.query.scaladsl.ReadJournal]] specified by the given
+   * read journal configuration entry.
    */
-  @tailrec final def readJournalFor(readJournalPluginId: String): scaladsl.ReadJournal = {
+  final def readJournalFor[T <: scaladsl.ReadJournal](readJournalPluginId: String): T =
+    readJournalPluginFor(readJournalPluginId).scaladslPlugin.asInstanceOf[T]
+
+  /**
+   * Java API: Returns the [[akka.persistence.query.javadsl.ReadJournal]] specified by the given
+   * read journal configuration entry.
+   */
+  final def getReadJournalFor[T <: javadsl.ReadJournal](clazz: Class[T], readJournalPluginId: String): T =
+    readJournalPluginFor(readJournalPluginId).javadslPlugin.asInstanceOf[T]
+
+  @tailrec private def readJournalPluginFor(readJournalPluginId: String): PluginHolder = {
     val configPath = readJournalPluginId
     val extensionIdMap = readJournalPluginExtensionIds.get
     extensionIdMap.get(configPath) match {
       case Some(extensionId) ⇒
-        extensionId(system).plugin
+        extensionId(system)
       case None ⇒
         val extensionId = new ExtensionId[PluginHolder] {
-          override def createExtension(system: ExtendedActorSystem): PluginHolder =
-            PluginHolder(createPlugin(configPath))
+          override def createExtension(system: ExtendedActorSystem): PluginHolder = {
+            val provider = createPlugin(configPath)
+            PluginHolder(provider.scaladslReadJournal(), provider.javadslReadJournal())
+          }
         }
         readJournalPluginExtensionIds.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
-        readJournalFor(readJournalPluginId) // Recursive invocation.
+        readJournalPluginFor(readJournalPluginId) // Recursive invocation.
     }
   }
 
-  /**
-   * Java API
-   *
-   * Returns the [[akka.persistence.query.javadsl.ReadJournal]] specified by the given read journal configuration entry.
-   */
-  final def getReadJournalFor(readJournalPluginId: String): javadsl.ReadJournal =
-    new javadsl.ReadJournalAdapter(readJournalFor(readJournalPluginId))
-
-  private def createPlugin(configPath: String): scaladsl.ReadJournal = {
+  private def createPlugin(configPath: String): ReadJournalProvider = {
     require(!isEmpty(configPath) && system.settings.config.hasPath(configPath),
       s"'reference.conf' is missing persistence read journal plugin config path: '${configPath}'")
     val pluginConfig = system.settings.config.getConfig(configPath)
@@ -71,26 +78,12 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
     log.debug(s"Create plugin: ${configPath} ${pluginClassName}")
     val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
 
-    // TODO remove duplication
-    val scalaPlugin =
-      if (classOf[scaladsl.ReadJournal].isAssignableFrom(pluginClass))
-        system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
-          .orElse(system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil))
-          .orElse(system.dynamicAccess.createInstanceFor[scaladsl.ReadJournal](pluginClass, Nil))
-          .recoverWith {
-            case ex: Exception ⇒ Failure.apply(new IllegalArgumentException(s"Unable to create read journal plugin instance for path [$configPath], class [$pluginClassName]!", ex))
-          }
-      else if (classOf[javadsl.ReadJournal].isAssignableFrom(pluginClass))
-        system.dynamicAccess.createInstanceFor[javadsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
-          .orElse(system.dynamicAccess.createInstanceFor[javadsl.ReadJournal](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil))
-          .orElse(system.dynamicAccess.createInstanceFor[javadsl.ReadJournal](pluginClass, Nil))
-          .map(jj ⇒ new scaladsl.ReadJournalAdapter(jj))
-          .recoverWith {
-            case ex: Exception ⇒ Failure.apply(new IllegalArgumentException(s"Unable to create read journal plugin instance for path [$configPath], class [$pluginClassName]!", ex))
-          }
-      else throw new IllegalArgumentException(s"Configured class ${pluginClass} does not extend")
-
-    scalaPlugin.get
+    system.dynamicAccess.createInstanceFor[ReadJournalProvider](pluginClass, (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
+      .orElse(system.dynamicAccess.createInstanceFor[ReadJournalProvider](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil))
+      .orElse(system.dynamicAccess.createInstanceFor[ReadJournalProvider](pluginClass, Nil))
+      .recoverWith {
+        case ex: Exception ⇒ Failure.apply(new IllegalArgumentException(s"Unable to create read journal plugin instance for path [$configPath], class [$pluginClassName]!", ex))
+      }.get
   }
 
   /** Check for default or missing identity. */

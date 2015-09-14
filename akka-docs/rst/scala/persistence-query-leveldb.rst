@@ -33,10 +33,10 @@ extension:
 Supported Queries
 =================
 
-EventsByPersistenceId
----------------------
+EventsByPersistenceIdQuery and CurrentEventsByPersistenceIdQuery
+----------------------------------------------------------------
 
-``EventsByPersistenceId`` is used for retrieving events for a specific ``PersistentActor`` 
+``eventsByPersistenceId`` is used for retrieving events for a specific ``PersistentActor`` 
 identified by ``persistenceId``.
 
 .. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala#EventsByPersistenceId
@@ -50,15 +50,10 @@ The returned event stream is ordered by sequence number, i.e. the same order as 
 ``PersistentActor`` persisted the events. The same prefix of stream elements (in same order)
 are returned for multiple executions of the query, except for when events have been deleted.
 
-The query supports two different completion modes:
-
-* The stream is not completed when it reaches the end of the currently stored events,
-  but it continues to push new events when new events are persisted. This is the
-  default mode that is used when no hints are given. It can also be specified with
-  hint ``RefreshInterval``.
-  
-* The stream is completed when it reaches the end of the currently stored events.
-  This mode is specified with hint ``NoRefresh``.
+The stream is not completed when it reaches the end of the currently stored events,
+but it continues to push new events when new events are persisted.
+Corresponding query that is completed when it reaches the end of the currently
+stored events is provided by ``currentEventsByPersistenceId``.
 
 The LevelDB write journal is notifying the query side as soon as events are persisted, but for
 efficiency reasons the query side retrieves the events in batches that sometimes can
@@ -68,25 +63,20 @@ hint.
 The stream is completed with failure if there is a failure in executing the query in the
 backend journal.
 
-AllPersistenceIds
------------------
+AllPersistenceIdsQuery and CurrentPersistenceIdsQuery 
+-----------------------------------------------------
 
-``AllPersistenceIds`` is used for retrieving all ``persistenceIds`` of all persistent actors.
+``allPersistenceIds`` is used for retrieving all ``persistenceIds`` of all persistent actors.
 
 .. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala#AllPersistenceIds
 
 The returned event stream is unordered and you can expect different order for multiple
 executions of the query.
 
-The query supports two different completion modes:
-
-* The stream is not completed when it reaches the end of the currently used ``persistenceIds``,
-  but it continues to push new ``persistenceIds`` when new persistent actors are created.
-  This is the default mode that is used when no hints are given. It can also be specified with
-  hint ``RefreshInterval``.
-  
-* The stream is completed when it reaches the end of the currently used ``persistenceIds``.
-  This mode is specified with hint ``NoRefresh``.
+The stream is not completed when it reaches the end of the currently used `persistenceIds`,
+but it continues to push new `persistenceIds` when new persistent actors are created.
+Corresponding query that is completed when it reaches the end of the currently
+currently used `persistenceIds` is provided by ``currentPersistenceIds``.
 
 The LevelDB write journal is notifying the query side as soon as new ``persistenceIds`` are
 created and there is no periodic polling or batching involved in this query.
@@ -94,10 +84,10 @@ created and there is no periodic polling or batching involved in this query.
 The stream is completed with failure if there is a failure in executing the query in the
 backend journal.
 
-EventsByTag
------------
+EventsByTag and CurrentEventsByTag
+----------------------------------
 
-``EventsByTag`` is used for retrieving events that were marked with a given tag, e.g. 
+``eventsByTag`` is used for retrieving events that were marked with a given tag, e.g. 
 all domain events of an Aggregate Root type.
 
 .. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala#EventsByTag
@@ -126,15 +116,10 @@ tagged event stream.
 
   Events deleted using ``deleteMessages(toSequenceNr)`` are not deleted from the "tagged stream".
 
-The query supports two different completion modes:
-
-* The stream is not completed when it reaches the end of the currently stored events,
-  but it continues to push new events when new events are persisted. This is the
-  default mode that is used when no hints are given. It can also be specified with
-  hint ``RefreshInterval``.
-  
-* The stream is completed when it reaches the end of the currently stored events.
-  This mode is specified with hint ``NoRefresh``.
+The stream is not completed when it reaches the end of the currently stored events,
+but it continues to push new events when new events are persisted.
+Corresponding query that is completed when it reaches the end of the currently
+stored events is provided by ``currentEventsByTag``.
 
 The LevelDB write journal is notifying the query side as soon as tagged events are persisted, but for
 efficiency reasons the query side retrieves the events in batches that sometimes can
