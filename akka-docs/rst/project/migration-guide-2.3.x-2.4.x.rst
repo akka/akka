@@ -151,6 +151,13 @@ If you use ``Slf4jLogger`` you should add the following configuration::
 It will filter the log events using the backend configuration (e.g. logback.xml) before
 they are published to the event bus.
 
+Inbox.receive Java API
+======================
+
+``Inbox.receive`` now throws a checked ``java.util.concurrent.TimeoutException`` exception if the receive timeout
+is reached.
+
+
 Pool routers nrOfInstances method now takes ActorSystem
 =======================================================
 
