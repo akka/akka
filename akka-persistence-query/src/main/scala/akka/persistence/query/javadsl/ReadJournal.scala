@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.persistence.query.scaladsl
+package akka.persistence.query.javadsl
 
 /**
  * API for reading persistent events and information derived
@@ -18,11 +18,12 @@ package akka.persistence.query.scaladsl
  *
  * Usage:
  * {{{
- * val journal = PersistenceQuery(system).readJournalFor[SomeCoolReadJournal](queryPluginConfigPath)
- * val events = journal.query(EventsByTag("mytag", 0L))
+ * SomeCoolReadJournal journal =
+ *   PersistenceQuery.get(system).getReadJournalFor(SomeCoolReadJournal.class, queryPluginConfigPath);
+ * Source<EventEnvolope, Unit> events = journal.eventsByTag("mytag", 0L);
  * }}}
  *
- * For Java API see [[akka.persistence.query.javadsl.ReadJournal]].
+ * For Scala API see [[akka.persistence.query.scaladsl.ReadJournal]].
  */
 trait ReadJournal
 

@@ -5,7 +5,9 @@
 package docs.persistence;
 
 import static akka.pattern.Patterns.ask;
-
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Iterator;
 import com.typesafe.config.Config;
 
 import akka.actor.*;
@@ -44,48 +46,156 @@ public class PersistenceQueryDocTest {
 
   final ActorSystem system = ActorSystem.create();
   final ActorMaterializer mat = ActorMaterializer.create(system);
+  
+  static
+  //#advanced-journal-query-types
+  public class RichEvent {
+    public final Set<String >tags;
+    public final Object payload;
+    
+    public RichEvent(Set<String> tags, Object payload) {
+      this.tags = tags;
+      this.payload = payload;
+    }
+  }
+  //#advanced-journal-query-types
 
+  static
+  //#advanced-journal-query-types
+  // a plugin can provide:
+  public final class QueryMetadata{
+    public final boolean deterministicOrder;
+    public final boolean infinite;
+
+    public QueryMetadata(boolean deterministicOrder, boolean infinite) {
+      this.deterministicOrder = deterministicOrder;
+      this.infinite = infinite;
+    }
+  }
+  //#advanced-journal-query-types
+
+  static
   //#my-read-journal
-  class MyReadJournal implements ReadJournal {
-    private final ExtendedActorSystem system;
+  public class MyReadJournalProvider implements ReadJournalProvider {
+    private final MyJavadslReadJournal javadslReadJournal;
 
-    public MyReadJournal(ExtendedActorSystem system, Config config) {
-      this.system = system;
+    public MyReadJournalProvider(ExtendedActorSystem system, Config config) {
+      this.javadslReadJournal = new MyJavadslReadJournal(system, config);
+    }
+    
+    @Override
+    public MyScaladslReadJournal scaladslReadJournal() {
+      return new MyScaladslReadJournal(javadslReadJournal);
     }
 
-    final FiniteDuration defaultRefreshInterval = FiniteDuration.create(3, TimeUnit.SECONDS);
+    @Override
+    public MyJavadslReadJournal javadslReadJournal() {
+      return this.javadslReadJournal;
+    }  
+  }
+  //#my-read-journal
+  
+  static
+  //#my-read-journal
+  public class MyJavadslReadJournal implements 
+  akka.persistence.query.javadsl.ReadJournal,
+  akka.persistence.query.javadsl.EventsByTagQuery,
+  akka.persistence.query.javadsl.EventsByPersistenceIdQuery,
+  akka.persistence.query.javadsl.AllPersistenceIdsQuery,
+  akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
+    
+    private final FiniteDuration refreshInterval;
 
-    @SuppressWarnings("unchecked")
-    public <T, M> Source<T, M> query(Query<T, M> q, Hint... hints) {
-      if (q instanceof EventsByTag) {
-        final EventsByTag eventsByTag = (EventsByTag) q;
-        final String tag = eventsByTag.tag();
-        long offset = eventsByTag.offset();
-
-        final Props props = MyEventsByTagPublisher.props(tag, offset, refreshInterval(hints));
-
-        return (Source<T, M>) Source.<EventEnvelope>actorPublisher(props)
-                                    .mapMaterializedValue(noMaterializedValue());
-      } else {
-        // unsuported
-        return Source.<T>failed(
-          new UnsupportedOperationException(
-            "Query " + q + " not supported by " + getClass().getName()))
-                     .mapMaterializedValue(noMaterializedValue());
-      }
+    public MyJavadslReadJournal(ExtendedActorSystem system, Config config) {
+      refreshInterval = 
+          FiniteDuration.create(config.getDuration("refresh-interval", 
+              TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
     }
 
-    private FiniteDuration refreshInterval(Hint[] hints) {
-      for (Hint hint : hints)
-        if (hint instanceof RefreshInterval)
-          return ((RefreshInterval) hint).interval();
-
-      return defaultRefreshInterval;
+    @Override
+    public Source<EventEnvelope, BoxedUnit> eventsByTag(String tag, long offset) {
+      final Props props = MyEventsByTagPublisher.props(tag, offset, refreshInterval);
+      return Source.<EventEnvelope>actorPublisher(props).
+          mapMaterializedValue(m -> BoxedUnit.UNIT);
     }
 
-    private <I, M> akka.japi.function.Function<I, M> noMaterializedValue() {
-      return param -> (M) null;
+    @Override
+    public Source<EventEnvelope, BoxedUnit> eventsByPersistenceId(String persistenceId,
+        long fromSequenceNr, long toSequenceNr) {
+      // implement in a similar way as eventsByTag
+      throw new UnsupportedOperationException("Not implemented yet");
     }
+
+    @Override
+    public Source<String, BoxedUnit> allPersistenceIds() {
+      // implement in a similar way as eventsByTag
+      throw new UnsupportedOperationException("Not implemented yet");
+    }
+    
+    @Override
+    public Source<String, BoxedUnit> currentPersistenceIds() {
+      // implement in a similar way as eventsByTag
+      throw new UnsupportedOperationException("Not implemented yet");
+    }
+    
+    // possibility to add more plugin specific queries
+
+    //#advanced-journal-query-definition
+    public Source<RichEvent, QueryMetadata> byTagsWithMeta(Set<String> tags) {
+      //#advanced-journal-query-definition
+      // implement in a similar way as eventsByTag
+      throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+  }
+  //#my-read-journal
+  
+  static
+  //#my-read-journal
+  public class MyScaladslReadJournal implements 
+  akka.persistence.query.scaladsl.ReadJournal,
+  akka.persistence.query.scaladsl.EventsByTagQuery,
+  akka.persistence.query.scaladsl.EventsByPersistenceIdQuery,
+  akka.persistence.query.scaladsl.AllPersistenceIdsQuery,
+  akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery {
+    
+    private final MyJavadslReadJournal javadslReadJournal;
+
+    public MyScaladslReadJournal(MyJavadslReadJournal javadslReadJournal) {
+      this.javadslReadJournal = javadslReadJournal;
+    }
+
+    @Override
+    public akka.stream.scaladsl.Source<EventEnvelope, BoxedUnit> eventsByTag(
+        String tag, long offset) {
+      return javadslReadJournal.eventsByTag(tag, offset).asScala();
+    }
+
+    @Override
+    public akka.stream.scaladsl.Source<EventEnvelope, BoxedUnit> eventsByPersistenceId(
+        String persistenceId, long fromSequenceNr, long toSequenceNr) {
+      return javadslReadJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, 
+          toSequenceNr).asScala();
+    }
+
+    @Override
+    public akka.stream.scaladsl.Source<String, BoxedUnit> allPersistenceIds() {
+      return javadslReadJournal.allPersistenceIds().asScala();
+    }
+    
+    @Override
+    public akka.stream.scaladsl.Source<String, BoxedUnit> currentPersistenceIds() {
+      return javadslReadJournal.currentPersistenceIds().asScala();
+    }
+    
+    // possibility to add more plugin specific queries
+
+    public akka.stream.scaladsl.Source<RichEvent, QueryMetadata> byTagsWithMeta(
+        scala.collection.Set<String> tags) {
+      Set<String> jTags = scala.collection.JavaConversions.setAsJavaSet(tags);
+      return javadslReadJournal.byTagsWithMeta(jTags).asScala();
+    }
+
   }
   //#my-read-journal
 
@@ -94,13 +204,13 @@ public class PersistenceQueryDocTest {
 
     //#basic-usage
     // obtain read journal by plugin id
-    final ReadJournal readJournal =
-      PersistenceQuery.get(system)
-                      .getReadJournalFor("akka.persistence.query.noop-read-journal");
+    final MyJavadslReadJournal readJournal =
+      PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
+          "akka.persistence.query.my-read-journal");
 
     // issue query to journal
     Source<EventEnvelope, BoxedUnit> source =
-      readJournal.query(EventsByPersistenceId.create("user-1337", 0, Long.MAX_VALUE));
+      readJournal.eventsByPersistenceId("user-1337", 0, Long.MAX_VALUE);
 
     // materialize stream, consuming events
     ActorMaterializer mat = ActorMaterializer.create(system);
@@ -109,52 +219,51 @@ public class PersistenceQueryDocTest {
   }
 
   void demonstrateAllPersistenceIdsLive() {
-    final ReadJournal readJournal =
-      PersistenceQuery.get(system)
-                      .getReadJournalFor("akka.persistence.query.noop-read-journal");
+    final MyJavadslReadJournal readJournal =
+        PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
+            "akka.persistence.query.my-read-journal");
 
     //#all-persistence-ids-live
-    readJournal.query(AllPersistenceIds.getInstance());
+    readJournal.allPersistenceIds();
     //#all-persistence-ids-live
   }
 
   void demonstrateNoRefresh() {
     final ActorSystem system = ActorSystem.create();
 
-    final ReadJournal readJournal =
-      PersistenceQuery.get(system)
-                      .getReadJournalFor("akka.persistence.query.noop-read-journal");
+    final MyJavadslReadJournal readJournal =
+        PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
+            "akka.persistence.query.my-read-journal");
 
     //#all-persistence-ids-snap
-    readJournal.query(AllPersistenceIds.getInstance(), NoRefresh.getInstance());
+    readJournal.currentPersistenceIds();
     //#all-persistence-ids-snap
   }
 
   void demonstrateRefresh() {
     final ActorSystem system = ActorSystem.create();
 
-    final ReadJournal readJournal =
-      PersistenceQuery.get(system)
-                      .getReadJournalFor("akka.persistence.query.noop-read-journal");
+    final MyJavadslReadJournal readJournal =
+        PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
+            "akka.persistence.query.my-read-journal");
 
-    //#events-by-persistent-id-refresh
-    final RefreshInterval refresh = RefreshInterval.create(1, TimeUnit.SECONDS);
-    readJournal.query(EventsByPersistenceId.create("user-us-1337"), refresh);
-    //#events-by-persistent-id-refresh
+    //#events-by-persistent-id
+    readJournal.eventsByPersistenceId("user-us-1337", 0L, Long.MAX_VALUE);
+    //#events-by-persistent-id
   }
 
   void demonstrateEventsByTag() {
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer mat = ActorMaterializer.create(system);
 
-    final ReadJournal readJournal =
-      PersistenceQuery.get(system)
-                      .getReadJournalFor("akka.persistence.query.noop-read-journal");
+    final MyJavadslReadJournal readJournal =
+        PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
+            "akka.persistence.query.my-read-journal");
 
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
     final Source<EventEnvelope, BoxedUnit> blueThings =
-      readJournal.query(EventsByTag.create("blue"));
+      readJournal.eventsByTag("blue", 0L);
 
     // find top 10 blue things:
     final Future<List<Object>> top10BlueThings =
@@ -167,56 +276,39 @@ public class PersistenceQueryDocTest {
         }, mat);
 
     // start another query, from the known offset
-    Source<EventEnvelope, BoxedUnit> blue = readJournal.query(EventsByTag.create("blue", 10));
+    Source<EventEnvelope, BoxedUnit> blue = readJournal.eventsByTag("blue", 10);
     //#events-by-tag
   }
-  //#materialized-query-metadata-classes
-  // a plugin can provide:
 
-  //#materialized-query-metadata-classes
-
-  static
-  //#materialized-query-metadata-classes
-  final class QueryMetadata {
-    public final boolean deterministicOrder;
-    public final boolean infinite;
-
-    public QueryMetadata(Boolean deterministicOrder, Boolean infinite) {
-      this.deterministicOrder = deterministicOrder;
-      this.infinite = infinite;
-    }
-  }
-
-  //#materialized-query-metadata-classes
-
-  static
-  //#materialized-query-metadata-classes
-  final class AllEvents implements Query<Object, QueryMetadata> {
-    private AllEvents() {}
-    private static AllEvents INSTANCE = new AllEvents();
-  }
-
-  //#materialized-query-metadata-classes
 
   void demonstrateMaterializedQueryValues() {
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer mat = ActorMaterializer.create(system);
 
-    final ReadJournal readJournal =
-      PersistenceQuery.get(system)
-                      .getReadJournalFor("akka.persistence.query.noop-read-journal");
+    final MyJavadslReadJournal readJournal =
+        PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
+            "akka.persistence.query.my-read-journal");
 
-    //#materialized-query-metadata
+    //#advanced-journal-query-usage
 
-    final Source<Object, QueryMetadata> events = readJournal.query(AllEvents.INSTANCE);
-
-    events.mapMaterializedValue(meta -> {
-      System.out.println("The query is: " +
-        "ordered deterministically: " + meta.deterministicOrder + " " +
-        "infinite: " + meta.infinite);
-      return meta;
-    });
-    //#materialized-query-metadata
+    Set<String> tags = new HashSet<String>();
+    tags.add("red");
+    tags.add("blue");
+    final Source<RichEvent, QueryMetadata> events = readJournal.byTagsWithMeta(tags)
+      .mapMaterializedValue(meta -> {
+        System.out.println("The query is: " +
+          "ordered deterministically: " + meta.deterministicOrder + " " +
+          "infinite: " + meta.infinite);
+        return meta;
+      });
+    
+    events.map(event -> {
+      System.out.println("Event payload: " + event.payload); 
+      return event.payload;
+    }).runWith(Sink.ignore(), mat);
+    
+    
+    //#advanced-journal-query-usage
   }
 
   class ReactiveStreamsCompatibleDBDriver {
@@ -229,9 +321,9 @@ public class PersistenceQueryDocTest {
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer mat = ActorMaterializer.create(system);
 
-    final ReadJournal readJournal =
-      PersistenceQuery.get(system)
-                      .getReadJournalFor("akka.persistence.query.noop-read-journal");
+    final MyJavadslReadJournal readJournal =
+        PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
+            "akka.persistence.query.my-read-journal");
 
 
     //#projection-into-different-store-rs
@@ -240,7 +332,7 @@ public class PersistenceQueryDocTest {
 
     // Using an example (Reactive Streams) Database driver
     readJournal
-      .query(EventsByPersistenceId.create("user-1337"))
+      .eventsByPersistenceId("user-1337", 0L, Long.MAX_VALUE)
       .map(envelope -> envelope.event())
       .grouped(20) // batch inserts into groups of 20
       .runWith(Sink.create(dbBatchWriter), mat); // write batches to read-side database
@@ -262,16 +354,16 @@ public class PersistenceQueryDocTest {
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer mat = ActorMaterializer.create(system);
 
-    final ReadJournal readJournal =
-      PersistenceQuery.get(system)
-                      .getReadJournalFor("akka.persistence.query.noop-read-journal");
+    final MyJavadslReadJournal readJournal =
+        PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
+            "akka.persistence.query.my-read-journal");
 
 
     //#projection-into-different-store-simple
     final ExampleStore store = new ExampleStore();
 
     readJournal
-      .query(EventsByTag.create("bid"))
+      .eventsByTag("bid", 0L)
       .mapAsync(1, store::save)
       .runWith(Sink.ignore(), mat);
     //#projection-into-different-store-simple
@@ -305,9 +397,9 @@ public class PersistenceQueryDocTest {
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer mat = ActorMaterializer.create(system);
 
-    final ReadJournal readJournal =
-      PersistenceQuery.get(system)
-                      .getReadJournalFor("akka.persistence.query.noop-read-journal");
+    final MyJavadslReadJournal readJournal =
+        PersistenceQuery.get(system).getReadJournalFor(MyJavadslReadJournal.class,
+            "akka.persistence.query.my-read-journal");
 
 
     //#projection-into-different-store-actor-run
@@ -321,7 +413,7 @@ public class PersistenceQueryDocTest {
     long startFromOffset = Await.result(bidProjection.latestOffset(), timeout.duration());
 
     readJournal
-      .query(EventsByTag.create("bid", startFromOffset))
+      .eventsByTag("bid", startFromOffset)
       .<Long>mapAsync(8, envelope -> {
         final Future<Object> f = ask(writer, envelope.event(), timeout);
         return f.<Long>map(new Mapper<Object, Long>() {

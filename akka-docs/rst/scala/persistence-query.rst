@@ -47,20 +47,20 @@ Read Journals
 
 In order to issue queries one has to first obtain an instance of a ``ReadJournal``.
 Read journals are implemented as `Community plugins`_, each targeting a specific datastore (for example Cassandra or JDBC
-databases). For example, given a library that provides a ``akka.persistence.query.noop-read-journal`` obtaining the related
+databases). For example, given a library that provides a ``akka.persistence.query.my-read-journal`` obtaining the related
 journal is as simple as:
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#basic-usage
 
 Journal implementers are encouraged to put this identifier in a variable known to the user, such that one can access it via
-``journalFor(NoopJournal.identifier)``, however this is not enforced.
+``readJournalFor[NoopJournal](NoopJournal.identifier)``, however this is not enforced.
 
 Read journal implementations are available as `Community plugins`_.
 
 
 Predefined queries
 ------------------
-Akka persistence query comes with a number of ``Query`` objects built in and suggests Journal implementors to implement
+Akka persistence query comes with a number of query interfaces built in and suggests Journal implementors to implement
 them according to the semantics described below. It is important to notice that while these query types are very common
 a journal is not obliged to implement all of them - for example because in a given journal such query would be
 significantly inefficient.
@@ -71,34 +71,37 @@ significantly inefficient.
 
 The predefined queries are:
 
-AllPersistenceIds
-^^^^^^^^^^^^^^^^^
+AllPersistenceIdsQuery and CurrentPersistenceIdsQuery 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``AllPersistenceIds`` which is designed to allow users to subscribe to a stream of all persistent ids in the system.
+``allPersistenceIds`` which is designed to allow users to subscribe to a stream of all persistent ids in the system.
 By default this stream should be assumed to be a "live" stream, which means that the journal should keep emitting new
 persistence ids as they come into the system:
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#all-persistence-ids-live
 
-If your usage does not require a live stream, you can disable refreshing by using *hints*, providing the built-in
-``NoRefresh`` hint to the query:
+If your usage does not require a live stream, you can use the ``currentPersistenceIds`` query:
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#all-persistence-ids-snap
 
-EventsByPersistenceId
-^^^^^^^^^^^^^^^^^^^^^
+EventsByPersistenceIdQuery and CurrentEventsByPersistenceIdQuery
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``EventsByPersistenceId`` is a query equivalent to replaying a :ref:`PersistentActor <event-sourcing-scala>`,
+``eventsByPersistenceId`` is a query equivalent to replaying a :ref:`PersistentActor <event-sourcing-scala>`,
 however, since it is a stream it is possible to keep it alive and watch for additional incoming events persisted by the
-persistent actor identified by the given ``persistenceId``. Most journals will have to revert to polling in order to achieve
-this, which can be configured using the ``RefreshInterval`` query hint:
+persistent actor identified by the given ``persistenceId``.
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#events-by-persistent-id-refresh
+.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#events-by-persistent-id
 
-EventsByTag
-^^^^^^^^^^^
+Most journals will have to revert to polling in order to achieve this, 
+which can typically be configured with a ``refresh-interval`` configuration property.
 
-``EventsByTag`` allows querying events regardless of which ``persistenceId`` they are associated with. This query is hard to
+If your usage does not require a live stream, you can use the ``currentEventsByPersistenceId`` query.
+
+EventsByTag and CurrentEventsByTag
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``eventsByTag`` allows querying events regardless of which ``persistenceId`` they are associated with. This query is hard to
 implement in some journals or may need some additional preparation of the used data store to be executed efficiently.
 The goal of this query is to allow querying for all events which are "tagged" with a specific tag.
 That includes the use case to query all domain events of an Aggregate Root type.
@@ -130,6 +133,7 @@ query has an optionally supported offset parameter (of type ``Long``) which the 
 For example a journal may be able to use a WHERE clause to begin the read starting from a specific row, or in a datastore
 that is able to order events by insertion time it could treat the Long as a timestamp and select only older events.
 
+If your usage does not require a live stream, you can use the ``currentEventsByTag`` query.
 
 Materialized values of queries
 ------------------------------
@@ -138,10 +142,14 @@ which are a feature of `Akka Streams`_ that allows to expose additional values a
 
 More advanced query journals may use this technique to expose information about the character of the materialized
 stream, for example if it's finite or infinite, strictly ordered or not ordered at all. The materialized value type
-is defined as the ``M`` type parameter of a query (``Query[T,M]``), which allows journals to provide users with their
+is defined as the second type parameter of the returned ``Source``, which allows journals to provide users with their
 specialised query object, as demonstrated in the sample below:
 
-.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#materialized-query-metadata
+.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#advanced-journal-query-types
+
+.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#advanced-journal-query-definition
+
+.. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#advanced-journal-query-usage
 
 .. _materialized values: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala/stream-quickstart.html#Materialized_values
 .. _Akka Streams: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala.html
@@ -226,16 +234,27 @@ Most users will not need to implement journals themselves, except if targeting a
 ReadJournal plugin API
 ----------------------
 
-Journals *MUST* return a *failed* ``Source`` if they are unable to execute the passed in query.
-For example if the user accidentally passed in an ``SqlQuery()`` to a key-value journal.
+A read journal plugin must implement ``akka.persistence.query.ReadJournalProvider`` which
+creates instances of ``akka.persistence.query.scaladsl.ReadJournal`` and
+``akka.persistence.query.javaadsl.ReadJournal``. The plugin must implement both the ``scaladsl``
+and the ``javadsl`` traits because the ``akka.stream.scaladsl.Source`` and 
+``akka.stream.javadsl.Source`` are different types and even though those types can easily be converted
+to each other it is most convenient for the end user to get access to the Java or Scala directly.
+As illustrated below one of the implementations can delegate to the other. 
 
 Below is a simple journal implementation:
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#my-read-journal
 
-And the ``EventsByTag`` could be backed by such an Actor for example:
+And the ``eventsByTag`` could be backed by such an Actor for example:
 
 .. includecode:: code/docs/persistence/query/MyEventsByTagPublisher.scala#events-by-tag-publisher
+
+If the underlying datastore only supports queries that are completed when they reach the
+end of the "result set", the journal has to submit new queries after a while in order
+to support "infinite" event streams that include events stored after the initial query
+has completed. It is recommended that the plugin use a configuration property named
+``refresh-interval`` for defining such a refresh interval. 
 
 Plugin TCK
 ----------

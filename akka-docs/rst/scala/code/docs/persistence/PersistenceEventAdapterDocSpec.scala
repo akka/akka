@@ -136,7 +136,7 @@ trait DomainEvent
 case class Person(name: String, age: Int) extends DomainEvent
 case class Box(length: Int) extends DomainEvent
 
-case class MyTaggingJournalModel(payload: Any, tags: immutable.Set[String])
+case class MyTaggingJournalModel(payload: Any, tags: Set[String])
 
 //#identity-event-adapter
 class MyEventAdapter(system: ExtendedActorSystem) extends EventAdapter {
