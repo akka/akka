@@ -5,9 +5,11 @@ Prerequisites
 -------------
 
 Akka requires that you have `Java 8 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or
-later installed on you machine.
+later installed on your machine.
 
-`Typesafe <http://www.typesafe.com>`_ provides versions of Akka that are compatible with Java 6, 7 and 8.
+`Typesafe <http://www.typesafe.com>`_ provides a commercial build of Akka and related projects such as Scala or Play
+as part of the `Reactive Platform <http://www.typesafe.com/products/typesafe-reactive-platform>`_ which is made available
+for Java 6 in case your project can not upgrade to Java 8 just yet. It also includes additional commercial features or libraries.
 
 Getting Started Guides and Template Projects
 --------------------------------------------
