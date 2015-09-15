@@ -211,7 +211,7 @@ object AkkaBuild extends Build {
   lazy val benchJmhDev = Project(
     id = "akka-bench-jmh-dev",
     base = file("akka-bench-jmh-dev"),
-    dependencies = Seq(stream, http, httpCore),
+    dependencies = Seq(stream, streamTests % "compile->test", http, httpCore),
     settings = defaultSettings ++ Seq(
       publishArtifact in Compile := false
     ) ++ settings ++ jmhSettings
