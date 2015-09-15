@@ -3,24 +3,22 @@
  */
 package akka.stream.scaladsl
 
-import java.util.concurrent.atomic.AtomicLong
-import akka.dispatch.Dispatchers
+import akka.actor._
 import akka.stream.Supervision._
-import akka.stream.impl.Stages.StageModule
+import akka.stream.impl._
+import akka.stream.impl.fusing.ActorInterpreter
 import akka.stream.stage.Stage
+import akka.stream.testkit.Utils._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings, Attributes }
+import akka.testkit.TestEvent.{ Mute, UnMute }
+import akka.testkit.{ EventFilter, TestDuration }
+import com.typesafe.config.ConfigFactory
+import org.reactivestreams.{ Publisher, Subscriber }
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor._
-import akka.stream.{ AbruptTerminationException, Attributes, ActorMaterializerSettings, ActorMaterializer }
-import akka.stream.impl._
-import akka.stream.testkit._
-import akka.stream.testkit.Utils._
-import akka.testkit.{ TestDuration, EventFilter }
-import akka.testkit.TestEvent.{ UnMute, Mute }
-import com.typesafe.config.ConfigFactory
-import org.reactivestreams.{ Subscription, Processor, Subscriber, Publisher }
-import akka.stream.impl.fusing.ActorInterpreter
 import scala.util.control.NoStackTrace
 
 object FlowSpec {
@@ -311,6 +309,59 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       subs.expectNext("5-s")
       subs.expectNext("6-s")
       subs.expectComplete()
+    }
+
+    "be able to concat with empty source" in {
+      val probe = Source.single(1).concat(Source.empty)
+        .runWith(TestSink.probe[Int])
+      probe.request(1)
+      probe.expectNext(1)
+      probe.expectComplete()
+    }
+
+    "be able to concat empty source" in {
+      val probe = Source.empty.concat(Source.single(1))
+        .runWith(TestSink.probe[Int])
+      probe.request(1)
+      probe.expectNext(1)
+      probe.expectComplete()
+    }
+
+    "be able to concat two empty sources" in {
+      val probe = Source.empty.concat(Source.empty)
+        .runWith(TestSink.probe[Int])
+      probe.expectSubscription()
+      probe.expectComplete()
+    }
+
+    "be able to concat source with error" in {
+      val probe = Source.single(1).concat(Source.failed(TestException))
+        .runWith(TestSink.probe[Int])
+      probe.expectSubscription()
+      probe.expectError(TestException)
+    }
+
+    "subscribe at once to initial source and to one that it's concat to" in {
+      val publisher1 = TestPublisher.probe[Int]()
+      val publisher2 = TestPublisher.probe[Int]()
+      val probeSink = Source.apply(publisher1).concat(Source.apply(publisher2))
+        .runWith(TestSink.probe[Int])
+
+      val sub1 = publisher1.expectSubscription()
+      val sub2 = publisher2.expectSubscription()
+      val subSink = probeSink.expectSubscription()
+
+      sub1.sendNext(1)
+      subSink.request(1)
+      probeSink.expectNext(1)
+      sub1.sendComplete()
+
+      sub2.sendNext(2)
+      subSink.request(1)
+      probeSink.expectNext(2)
+      sub2.sendComplete()
+
+      probeSink.expectComplete()
     }
 
     "be possible to convert to a processor, and should be able to take a Processor" in {
