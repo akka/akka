@@ -115,14 +115,20 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
   /**
    * The Singleton actor
    */
-  class Consumer(queue: ActorRef, delegateTo: ActorRef) extends Actor {
+  class Consumer(queue: ActorRef, delegateTo: ActorRef) extends Actor with ActorLogging {
 
     import Consumer._
     import PointToPointChannel._
 
     var current = 0
+    var stoppedBeforeUnregistration = true
 
     override def preStart(): Unit = queue ! RegisterConsumer
+
+    override def postStop(): Unit = {
+      if (stoppedBeforeUnregistration)
+        log.warning("Stopped before unregistration")
+    }
 
     def receive = {
       case n: Int if n <= current ⇒
@@ -138,6 +144,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
       case End ⇒
         queue ! UnregisterConsumer
       case UnregistrationOk ⇒
+        stoppedBeforeUnregistration = false
         context stop self
       case Ping ⇒
         sender() ! Pong
