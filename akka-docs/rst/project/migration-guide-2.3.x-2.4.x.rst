@@ -295,6 +295,26 @@ actor external actor of how to allocate shards or rebalance shards.
 For the synchronous case you can return the result via ``scala.concurrent.Future.successful`` in Scala or 
 ``akka.dispatch.Futures.successful`` in Java.
 
+Cluster Sharding internal data
+==============================
+
+The Cluster Sharding coordinator stores the locations of the shards using Akka Persistence.
+This data can safely be removed when restarting the whole Akka Cluster.
+
+The serialization format of the internal persistent events stored by the Cluster Sharding coordinator
+has been changed and it cannot load old data from 2.3.x or some 2.4 milestone.
+
+The ``persistenceId`` of the Cluster Sharding coordinator has been changed since 2.3.x so
+it should not load such old data, but it can be a problem if you have used a 2.4
+milestone release. In that case you should remove the persistent data that the 
+Cluster Sharding coordinator stored. Note that this is not application data.
+
+Consult the Journal Plugin and Snapshot Store Plugin documentation or backend
+data store documentation for information about how to remove such data.
+
+The new ``persistenceId`` is ``s"/sharding/${typeName}Coordinator"``.
+The old ``persistenceId`` is ``s"/user/sharding/${typeName}Coordinator/singleton/coordinator"``.  
+
 ClusterSingletonManager and ClusterSingletonProxy construction
 ==============================================================
 
