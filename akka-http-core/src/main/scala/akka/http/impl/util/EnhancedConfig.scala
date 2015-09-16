@@ -39,8 +39,8 @@ private[http] class EnhancedConfig(val underlying: Config) extends AnyVal {
     case x          ⇒ getIntBytes(path)
   }
 
-  def getPossiblyInfiniteLongBytes(path: String): Long = underlying.getString(path) match {
+  def getPossiblyInfiniteBytes(path: String): Long = underlying.getString(path) match {
     case "infinite" ⇒ Long.MaxValue
-    case x          ⇒ getIntBytes(path)
+    case x          ⇒ underlying.getBytes(path)
   }
 }
