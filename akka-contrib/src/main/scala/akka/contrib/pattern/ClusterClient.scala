@@ -200,7 +200,11 @@ class ClusterClient(
         // heartbeat messages for compatibility with 2.3.12
         receptionist ! Identify(Heartbeat)
       }
-    case ActorIdentity(Heartbeat, _) ⇒
+    case ActorIdentity(Heartbeat, None) ⇒
+      // Server replied, but without ref, i.e. new incarnation (new uid) of receptionist,
+      // which may happen if server is restarted. Don't call failureDetector.
+      ()
+    case ActorIdentity(Heartbeat, Some(_)) ⇒
       // heartbeat reply, using Identify/ActorIdentify messages instead
       // of specialized heartbeat messages for compatibility with 2.3.12
       failureDetector.heartbeat()

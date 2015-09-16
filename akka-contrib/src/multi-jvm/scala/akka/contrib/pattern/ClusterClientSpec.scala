@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
@@ -18,6 +19,7 @@ import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.actor.Address
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.actor.ExtendedActorSystem
 
 object ClusterClientSpec extends MultiNodeConfig {
   val client = role("client")
@@ -31,14 +33,17 @@ object ClusterClientSpec extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
-    akka.cluster.client.heartbeat-interval = 1s
-    akka.cluster.client.acceptable-heartbeat-pause = 3s
+    akka.contrib.cluster.client.heartbeat-interval = 1s
+    akka.contrib.cluster.client.acceptable-heartbeat-pause = 3s
+    akka.test.filter-leeway = 10s
     """))
 
   testTransport(on = true)
 
   class TestService(testActor: ActorRef) extends Actor {
     def receive = {
+      case "shutdown" ⇒
+        context.system.shutdown()
       case msg ⇒
         testActor forward msg
         sender() ! msg + "-ack"
@@ -242,6 +247,52 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       }
 
       enterBarrier("after-5")
+    }
+
+    "re-establish connection to receptionist after server restart" in within(30 seconds) {
+      runOn(client) {
+        remainingServerRoleNames.size should ===(1)
+        val remainingContacts = remainingServerRoleNames.map { r ⇒
+          system.actorSelection(node(r) / "user" / "receptionist")
+        }
+        val c = system.actorOf(ClusterClient.props(remainingContacts), "client4")
+
+        c ! ClusterClient.Send("/user/service2", "bonjour4", localAffinity = true)
+        expectMsg(10.seconds, "bonjour4-ack")
+        val lastSenderAddress = lastSender.path.address
+        val receptionistRoleName = roleName(lastSenderAddress) match {
+          case Some(r) ⇒ r
+          case None    ⇒ fail("unexpected missing roleName: " + lastSender.path.address)
+        }
+        receptionistRoleName should ===(remainingServerRoleNames.head)
+        val logSource = s"${system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress}/user/client4"
+
+        EventFilter.info(start = "Connected to", source = logSource, occurrences = 1) intercept {
+          EventFilter.info(start = "Lost contact", source = logSource, occurrences = 1) intercept {
+            // shutdown server
+            testConductor.shutdown(remainingServerRoleNames.head).await
+          }
+        }
+
+        c ! ClusterClient.Send("/user/service2", "shutdown", localAffinity = true)
+        Thread.sleep(2000) // to ensure that it is sent out before shutting down system
+      }
+
+      // There is only one client JVM and one server JVM left. The other JVMs have been exited
+      // by previous test steps. However, on the we don't know which server JVM that is left here
+      // so we let the following run on all server JVMs, but there is actually only one alive.
+      runOn(remainingServerRoleNames.toSeq: _*) {
+        system.awaitTermination(20.seconds)
+        // start new system on same port
+        val sys2 = ActorSystem(system.name,
+          ConfigFactory.parseString("akka.remote.netty.tcp.port=" + Cluster(system).selfAddress.port.get)
+            .withFallback(system.settings.config))
+        Cluster(sys2).join(Cluster(sys2).selfAddress)
+        val service2 = sys2.actorOf(Props(classOf[TestService], testActor), "service2")
+        ClusterReceptionistExtension(sys2).registerService(service2)
+        sys2.awaitTermination(20.seconds)
+      }
+
     }
 
   }
