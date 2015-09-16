@@ -19,5 +19,5 @@ Description
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: 0redirectToNoTrailingSlashIfPresent
