@@ -22,5 +22,5 @@ See :ref:`which-parameter-directive` for other choices.
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: parameterSeq
