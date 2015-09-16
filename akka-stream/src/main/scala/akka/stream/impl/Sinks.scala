@@ -3,17 +3,20 @@
  */
 package akka.stream.impl
 
-import akka.actor.{ Deploy, ActorRef, Props }
-import akka.stream.actor.ActorPublisherMessage.Request
-import akka.stream.impl.StreamLayout.Module
+import akka.actor.{ ActorRef, Deploy, Props }
 import akka.stream._
+import akka.stream.actor.ActorPublisher.Internal.Subscribe
+import akka.stream.actor.ActorPublisherMessage.Request
+import akka.stream.impl.ReactiveStreamsCompliance._
+import akka.stream.impl.StreamLayout.Module
+import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.language.postfixOps
-import scala.util.Try
 
 /**
  * INTERNAL API
@@ -246,4 +249,56 @@ private[akka] final class AcknowledgeSink[In](bufferSize: Int, val attributes: A
   override def withAttributes(attr: Attributes): Module =
     new AcknowledgeSink[In](bufferSize, attr, amendShape(attr), timeout)
   override def toString: String = "AcknowledgeSink"
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] trait LazyPublisher[In] {
+  def publisher(subscriberRef: ActorRef) = new Publisher[In] {
+    override def subscribe(subscriber: Subscriber[_ >: In]): Unit = {
+      requireNonNullSubscriber(subscriber)
+      subscriberRef ! Subscribe(subscriber.asInstanceOf[Subscriber[Any]])
+    }
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class PipedSink[In](val attributes: Attributes, shape: SinkShape[In])
+  extends SinkModule[In, Source[In, Unit]](shape) with LazyPublisher[In] {
+
+  override def create(context: MaterializationContext) = {
+    val subscriberRef = ActorMaterializer.downcast(context.materializer).actorOf(context,
+      PipedSinkSubscriber.props())
+    val pub: Publisher[In] = publisher(subscriberRef)
+    (akka.stream.actor.ActorSubscriber[In](subscriberRef), Source(pub))
+  }
+
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Source[In, Unit]] =
+    new PipedSink[In](attributes, shape)
+  override def withAttributes(attr: Attributes): Module =
+    new PipedSink[In](attr, amendShape(attr))
+  override def toString: String = "PipedSink"
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class JavaPipedSink[In](val attributes: Attributes, shape: SinkShape[In])
+  extends SinkModule[In, javadsl.Source[In, Unit]](shape) with LazyPublisher[In] {
+
+  override def create(context: MaterializationContext) = {
+    val subscriberRef = ActorMaterializer.downcast(context.materializer).actorOf(context,
+      PipedSinkSubscriber.props())
+    val pub: Publisher[In] = publisher(subscriberRef)
+    (akka.stream.actor.ActorSubscriber[In](subscriberRef), javadsl.Source.from(pub))
+  }
+
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, javadsl.Source[In, Unit]] =
+    new JavaPipedSink[In](attributes, shape)
+  override def withAttributes(attr: Attributes): Module =
+    new JavaPipedSink[In](attr, amendShape(attr))
+  override def toString: String = "PipedSink"
 }

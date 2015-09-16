@@ -5,7 +5,8 @@ package akka.stream.javadsl
 
 import akka.actor.{ ActorRef, Props }
 import akka.japi.function
-import akka.stream.impl.StreamLayout
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.{ JavaPipedSink, StreamLayout }
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -162,6 +163,12 @@ object Sink {
   def queue[T](bufferSize: Int, timeout: FiniteDuration): Sink[T, SinkQueue[T]] =
     new Sink(scaladsl.Sink.queue(bufferSize, timeout))
 
+  /**
+   * Crates a `Sink` that is materialized into `Source` to connect with another flow.
+   * This sink gets backpressure from second flow and does not have internal buffer.
+   */
+  def pipedSink[T](): Sink[T, javadsl.Source[T, Unit]] =
+    new Sink(new scaladsl.Sink(new JavaPipedSink[T](DefaultAttributes.pipedSink, scaladsl.Sink.shape("PipedSink"))))
 }
 
 /**

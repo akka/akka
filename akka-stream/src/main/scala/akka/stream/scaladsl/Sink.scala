@@ -220,4 +220,11 @@ object Sink extends SinkApply {
     new Sink(new AcknowledgeSink(bufferSize, DefaultAttributes.acknowledgeSink, shape("AcknowledgeSink"), timeout))
   }
 
+  /**
+   * Crates a `Sink` that is materialized into `Source` to connect with another flow.
+   * This sink gets backpressure from second flow and does not have internal buffer.
+   */
+  def pipedSink[T](): Sink[T, Source[T, Unit]] =
+    new Sink(new PipedSink(DefaultAttributes.pipedSink, shape("PipedSink")))
+
 }
