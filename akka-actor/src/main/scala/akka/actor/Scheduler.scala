@@ -74,6 +74,9 @@ trait Scheduler {
    * of the function executions). In such cases, the actual execution interval
    * will differ from the interval passed to this method.
    *
+   * If the function throws an exception the repeated scheduling is aborted,
+   * i.e. the function will not be invoked any more.
+   *
    * Scala API
    */
   final def schedule(
@@ -83,7 +86,7 @@ trait Scheduler {
     schedule(initialDelay, interval, new Runnable { override def run = f })
 
   /**
-   * Schedules a function to be run repeatedly with an initial delay and
+   * Schedules a `Runnable` to be run repeatedly with an initial delay and
    * a frequency. E.g. if you would like the function to be run after 2
    * seconds and thereafter every 100ms you would set delay = Duration(2,
    * TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS). If
@@ -93,6 +96,8 @@ trait Scheduler {
    * the actual execution interval will differ from the interval passed to this
    * method.
    *
+   * If the `Runnable` throws an exception the repeated scheduling is aborted,
+   * i.e. the function will not be invoked any more.
    *
    * Java API
    */
@@ -287,6 +292,10 @@ class LightArrayRevolverScheduler(config: Config,
       case SchedulerException(msg) ⇒ throw new IllegalStateException(msg)
     }
 
+  /**
+   * Shutdown the scheduler. All scheduled task will be executed when the scheduler closed,
+   * i.e. the task may execute before its timeout.
+   */
   override def close(): Unit = Await.result(stop(), getShutdownTimeout) foreach {
     task ⇒
       try task.run() catch {
@@ -372,7 +381,7 @@ class LightArrayRevolverScheduler(config: Config,
               tickNanos - 1 // rounding up
               ) / tickNanos).toInt // and converting to slot number
             // tick is an Int that will wrap around, but toInt of futureTick gives us modulo operations
-            // and the difference (offset) will be correct in any case 
+            // and the difference (offset) will be correct in any case
             val offset = futureTick - tick
             val bucket = futureTick & wheelMask
             node.value.ticks = offset
