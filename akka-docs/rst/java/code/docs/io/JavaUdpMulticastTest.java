@@ -34,10 +34,13 @@ public class JavaUdpMulticastTest {
             NetworkInterface ipv6Iface = null;
             for (Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements() && ipv6Iface == null;) {
                 NetworkInterface interf = interfaces.nextElement();
-                for (Enumeration<InetAddress> addresses = interf.getInetAddresses(); addresses.hasMoreElements() && ipv6Iface == null;) {
-                    InetAddress address = addresses.nextElement();
-                    if (address instanceof Inet6Address) {
-                        ipv6Iface = interf;
+                // awdl0 is a special interface on OSX that we cannot use
+                if (!interf.getDisplayName().equals("awdl0")) {
+                    for (Enumeration<InetAddress> addresses = interf.getInetAddresses(); addresses.hasMoreElements() && ipv6Iface == null; ) {
+                        InetAddress address = addresses.nextElement();
+                        if (address instanceof Inet6Address) {
+                            ipv6Iface = interf;
+                        }
                     }
                 }
             }
