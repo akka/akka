@@ -12,8 +12,8 @@ import akka.persistence.AtomicWrite
 private[akka] trait WriteJournalBase {
   this: Actor ⇒
 
-  lazy val persistence = Persistence(context.system)
-  private def eventAdapters = persistence.adaptersFor(self)
+  val persistence = Persistence(context.system)
+  private val eventAdapters = persistence.adaptersFor(self)
 
   protected def preparePersistentBatch(rb: immutable.Seq[PersistentEnvelope]): immutable.Seq[AtomicWrite] =
     rb.collect { // collect instead of flatMap to avoid Some allocations
