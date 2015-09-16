@@ -12,6 +12,7 @@ Actors
    routing
    fsm
    persistence
+   persistence-schema-evolution
    persistence-query
    persistence-query-leveldb
    testing
