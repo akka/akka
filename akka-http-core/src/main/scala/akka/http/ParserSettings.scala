@@ -65,7 +65,7 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
       c getIntBytes "max-header-name-length",
       c getIntBytes "max-header-value-length",
       c getIntBytes "max-header-count",
-      c getBytes "max-content-length",
+      c getPossiblyInfiniteBytes "max-content-length",
       c getIntBytes "max-chunk-ext-length",
       c getIntBytes "max-chunk-size",
       Uri.ParsingMode(c getString "uri-parsing-mode"),
