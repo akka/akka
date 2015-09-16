@@ -1,10 +1,10 @@
-.. _persistence-schema-evolution-scala:
+.. _persistence-schema-evolution-java:
 
 ##############################
 Persistence - Schema Evolution
 ##############################
 
-When working on long running projects using :ref:`persistence-scala`, or any kind of `Event Sourcing`_ architectures,
+When working on long running projects using :ref:`persistence-java`, or any kind of `Event Sourcing`_ architectures,
 schema evolution becomes one of the more important technical aspects of developing your application.
 The requirements as well as our own understanding of the business domain may (and will) change in time.
 
@@ -35,7 +35,7 @@ Since with `Event Sourcing`_ the **events are immutable** and usually never dele
 differs from how one would go about it in a mutable database setting (e.g. in typical CRUD database applications).
 The system needs to be able to continue to work in the presence of "old" events which were stored under the "old" schema.
 We also want to limit complexity in the business logic layer, exposing a consistent view over all of the events of a given
-type to :class:`PersistentActor` s and :ref:`persistence queries <persistence-query-scala>`. This allows the business logic layer to focus on solving business problems
+type to :class:`PersistentActor` s and :ref:`persistence queries <persistence-query-java>`. This allows the business logic layer to focus on solving business problems
 instead of having to explicitly deal with different schemas.
 
 The system needs to be able to continue to work in the presence of "old" events which were stored under the "old" schema,
@@ -65,10 +65,10 @@ definition - in a backwards compatible way - such that the new deserialization c
 
 The most common schema changes you will likely are:
 
-- :ref:`adding a field to an event type <add-field-scala>`,
-- :ref:`remove or rename field in event type <rename-field-scala>`,
-- :ref:`remove event type <remove-event-class-scala>`,
-- :ref:`split event into multiple smaller events <split-large-event-into-smaller-scala>`.
+- :ref:`adding a field to an event type <add-field-java>`,
+- :ref:`remove or rename field in event type <rename-field-java>`,
+- :ref:`remove event type <remove-event-class-java>`,
+- :ref:`split event into multiple smaller events <split-large-event-into-smaller-java>`.
 
 The following sections will explain some patterns which can be used to safely evolve your schema when facing those changes.
 
@@ -105,7 +105,7 @@ by Martin Kleppmann.
 Provided default serializers
 ----------------------------
 
-Akka Persistence provides `Google Protocol Buffers`_ based serializers (using :ref:`Akka Serialization <serialization-scala>`)
+Akka Persistence provides `Google Protocol Buffers`_ based serializers (using :ref:`Akka Serialization <serialization-java>`)
 for it's own message types such as ``PersistentRepr``, ``AtomicWrite`` and snapshots. Journal plugin implementations
 *may* choose to use those provided serializers, or pick a serializer which suits the underlying database better.
 
@@ -135,7 +135,7 @@ serializers, and the yellow payload indicates the user provided event (by callin
 As you can see, the ``PersistentMessage`` acts as an envelope around the payload, adding various fields related to the
 origin of the event (``persistenceId``, ``sequenceNr`` and more).
 
-More advanced techniques (e.g. :ref:`remove-event-class-scala`) will dive into using the manifests for increasing the
+More advanced techniques (e.g. :ref:`remove-event-class-java`) will dive into using the manifests for increasing the
 flexibility of the persisted vs. exposed types even more. Hhowever for now we will focus on the simpler evolution techniques,
 concerning simply configuring the payload serializers.
 
@@ -153,12 +153,12 @@ However, once you move to production you should really *pick a different seriali
 
 Configuring payload serializers
 -------------------------------
-This section aims to highlight the complete basics on how to define custom serializers using :ref:`Akka Serialization <serialization-scala>`.
+This section aims to highlight the complete basics on how to define custom serializers using :ref:`Akka Serialization <serialization-java>`.
 Many journal plugin implementations use Akka Serialization, thus it is tremendously important to understand how to configure
 it to work with your event classes.
 
 .. note::
-  Read the :ref:`Akka Serialization <serialization-scala>` docs to learn more about defining custom serializers,
+  Read the :ref:`Akka Serialization <serialization-java>` docs to learn more about defining custom serializers,
   to improve performance and maintainability of your system. Do not depend on Java serialization for production deployments.
 
 The below snippet explains in the minimal amount of lines how a custom serializer can be registered.
@@ -166,21 +166,21 @@ For more in-depth explanations on how serialization picks the serializer to use 
 
 First we start by defining our domain model class, here representing a person:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#simplest-custom-serializer-model
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#simplest-custom-serializer-model
 
 Next we implement a serializer (or extend an existing one to be able to handle the new ``Person`` class):
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#simplest-custom-serializer
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#simplest-custom-serializer
 
 And finally we register the serializer and bind it to handle the ``docs.persistence.Person`` class:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#simplest-custom-serializer-config
+.. includecode:: ../scala/code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#simplest-custom-serializer-config
 
 Deserialization will be performed by the same serializer which serialized the message initially
 because of the ``identifier`` being stored together with the message.
 
-Please refer to the :ref:`Akka Serialization <serialization-scala>` documentation for more advanced use of serializers,
-especially the :ref:`string-manifest-serializer-scala` section since it is very useful for Persistence based applications
+Please refer to the :ref:`Akka Serialization <serialization-java>` documentation for more advanced use of serializers,
+especially the :ref:`string-manifest-serializer-java` section since it is very useful for Persistence based applications
 dealing with schema evolutions, as we will see in some of the examples below.
 
 Schema evolution in action
@@ -191,13 +191,13 @@ some of the various options one might go about handling the described situation.
 a complete guide, so feel free to adapt these techniques depending on your serializer's capabilities
 and/or other domain specific limitations.
 
-.. _add-field-scala:
+.. _add-field-java:
 
 Add fields
 ----------
 
 **Situation:**
-You need to add a field to an existing message type. For example, a ``SeatReservation(letter:String, row:Int)`` now
+You need to add a field to an existing message type. For example, a ``SeatReservation(String letter, int row)`` now
 needs to have an associated code which indicates if it is a window or aisle seat.
 
 **Solution:**
@@ -209,10 +209,10 @@ you should research before picking one to run with. In the following examples we
 we are familiar with it, it does its job well and Akka is using it internally as well.
 
 While being able to read messages with missing fields is half of the solution, you also need to deal with the missing
-values somehow. This is usually modeled as some kind of default value, or by representing the field as an ``Option[T]``
+values somehow. This is usually modeled as some kind of default value, or by representing the field as an ``Optional<T>``
 See below for an example how reading an optional field from from a serialized protocol buffers message might look like.
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#protobuf-read-optional-model
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#protobuf-read-optional-model
 
 Next we prepare an protocol definition using the protobuf Interface Description Language, which we'll use to generate
 the serializer code to be used on the Akka Serialization layer (notice that the schema aproach allows us to easily rename
@@ -225,9 +225,9 @@ Optional fields can be handled explicitly or missing values by calling the ``has
 which we do for ``seatType`` in order to use a ``Unknown`` type in case the event was stored before we had introduced
 the field to this event type:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#protobuf-read-optional
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#protobuf-read-optional
 
-.. _rename-field-scala:
+.. _rename-field-java:
 
 Rename fields
 -------------
@@ -255,7 +255,7 @@ add the overhead of having to maintain the schema. When using serializers like t
 
 This is how such a rename would look in protobuf:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#protobuf-rename-proto
+.. includecode:: ../scala/code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#protobuf-rename-proto
 
 It is important to learn about the strengths and limitations of your serializers, in order to be able to move
 swiftly and refactor your models fearlessly as you go on with the project.
@@ -279,22 +279,23 @@ or using a library like `Stamina`_ which helps to create those ``V1->V2->V3->...
 .. figure:: ../images/persistence-manual-rename.png
    :align: center
 
-The following snippet showcases how one could apply renames if working with plain JSON (using ``spray.json.JsObject``):
+The following snippet showcases how one could apply renames if working with plain JSON (using a 
+``JsObject`` as an example JSON representation):
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#rename-plain-json
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#rename-plain-json
 
 As you can see, manually handling renames induces some boilerplate onto the EventAdapter, however much of it
 you will find is common infrastructure code that can be either provided by an external library (for promotion management)
-or put together in a simple helper trait.
+or put together in a simple helper class.
 
 .. note::
   The technique of versioning events and then promoting them to the latest version using JSON transformations
   can of course be applied to more than just field renames – it also applies to adding fields and all kinds of
   changes in the message format.
 
-.. _Stamina: https://github.com/scalapenos/stamina
+.. _Stamina: https://github.com/javapenos/stamina
 
-.. _remove-event-class-scala:
+.. _remove-event-class-java:
 
 Remove event class and ignore events
 ------------------------------------
@@ -308,7 +309,7 @@ and should be deleted. You still have to be able to replay from a journal which 
 
 The problem of removing an event type from the domain model is not as much its removal, as the implications
 for the recovery mechanisms that this entails. For example, a naive way of filtering out certain kinds of events from
-being delivered to a recovering ``PersistentActor`` is pretty simple, as one can simply filter them out in an :ref:`EventAdapter <event-adapters-scala>`:
+being delivered to a recovering ``PersistentActor`` is pretty simple, as one can simply filter them out in an :ref:`EventAdapter <event-adapters-java>`:
 
 
 .. figure:: ../images/persistence-drop-event.png
@@ -338,7 +339,7 @@ this before starting to deserialize the object.
 
 This aproach allows us to *remove the original class from our classpath*, which makes for less "old" classes lying around in the project.
 This can for example be implemented by using an ``SerializerWithStringManifest``
-(documented in depth in :ref:`string-manifest-serializer-scala`). By looking at the string manifest, the serializer can notice
+(documented in depth in :ref:`string-manifest-serializer-java`). By looking at the string manifest, the serializer can notice
 that the type is no longer needed, and skip the deserialization all-together:
 
 .. figure:: ../images/persistence-drop-event-serializer.png
@@ -350,14 +351,14 @@ that the type is no longer needed, and skip the deserialization all-together:
 
 The serializer detects that the string manifest points to a removed event type and skips attempting to deserialize it:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#string-serializer-skip-deleved-event-by-manifest
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#string-serializer-skip-deleved-event-by-manifest
 
 The EventAdapter we implemented is aware of ``EventDeserializationSkipped`` events (our "Tombstones"),
 and emits and empty ``EventSeq`` whenever such object is encoutered:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#string-serializer-skip-deleved-event-by-manifest-adapter
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#string-serializer-skip-deleved-event-by-manifest-adapter
 
-.. _detach-domain-from-data-model-scala:
+.. _detach-domain-from-data-model-java:
 
 Detach domain model from data model
 -----------------------------------
@@ -370,10 +371,10 @@ independently of the domain model.
 Another situation where this technique may be useful is when your serialization tool of choice requires generated
 classes to be used for serialization and deserialization of objects, like for example `Google Protocol Buffers`_ do,
 yet you do not want to leak this implementation detail into the domain model itself, which you'd like to model as
-plain Scala case classes.
+plain Java classes.
 
 **Solution:**
-In order to detach the domain model, which is often represented using pure scala (case) classes, from the data model
+In order to detach the domain model, which is often represented using pure java (case) classes, from the data model
 classes which very often may be less user-friendly yet highly optimised for throughput and schema evolution
 (like the classes generated by protobuf for example), it is possible to use a simple EventAdapter which maps between
 these types in a 1:1 style as illustrated below:
@@ -387,18 +388,18 @@ these types in a 1:1 style as illustrated below:
 
 We will use the following domain and data models to showcase how the separation can be implemented by the adapter:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#detach-models
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#detach-models
 
 The :class:`EventAdapter` takes care of converting from one model to the other one (in both directions),
 alowing the models to be completely detached from each other, such that they can be optimised independently
 as long as the mapping logic is able to convert between them:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#detach-models-adapter
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#detach-models-adapter
 
 The same technique could also be used directly in the Serializer if the end result of marshalling is bytes.
 Then the serializer can simply convert the bytes do the domain object by using the generated protobuf builders.
 
-.. _store-human-readable-scala:
+.. _store-human-readable-java:
 
 Store events as human-readable data model
 -----------------------------------------
@@ -406,7 +407,7 @@ Store events as human-readable data model
 You want to keep your persisted events in a human-readable format, for example JSON.
 
 **Solution:**
-This is a special case of the :ref:`detach-domain-from-data-model-scala` pattern, and thus requires some co-operation
+This is a special case of the :ref:`detach-domain-from-data-model-java` pattern, and thus requires some co-operation
 from the Journal implementation to achieve this.
 
 An example of a Journal which may implement this pattern is MongoDB, however other databases such as PostgreSQL
@@ -416,7 +417,7 @@ In this aproach, the :class:`EventAdapter` is used as the marshalling layer: it 
 The journal plugin notices that the incoming event type is JSON (for example by performing a ``match`` on the incoming
 event) and stores the incoming object directly.
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#detach-models-adapter-json
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#detach-models-adapter-json
 
 .. note::
   This technique only applies if the Akka Persistence plugin you are using provides this capability.
@@ -434,7 +435,7 @@ from JSON.
 
 .. note::
   If in need of human-readable events on the *write-side* of your application reconsider whether preparing materialized views
-  using :ref:`persistence-query-scala` would not be an efficient way to go about this, without compromising the
+  using :ref:`persistence-query-java` would not be an efficient way to go about this, without compromising the
   write-side's throughput characteristics.
 
   If indeed you want to use a human-readable representation on the write-side, pick a Persistence plugin
@@ -443,7 +444,7 @@ from JSON.
 
 .. _list of existing journal plugins: http://akka.io/community/#journal-plugins
 
-.. _split-large-event-into-smaller-scala:
+.. _split-large-event-into-smaller-java:
 
 Split large event into fine-grained events
 ------------------------------------------
@@ -470,7 +471,7 @@ During recovery however, we now need to convert the old ``V1`` model into the ``
 Depending if the old event contains a name change, we either emit the ``UserNameChanged`` or we don't,
 and the address change is handled similarily:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala#split-events-during-recovery
+.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#split-events-during-recovery
 
 By returning an :class:`EventSeq` from the event adapter, the recovered event can be converted to multiple events before
 being delivered to the persistent actor.
