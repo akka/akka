@@ -7,7 +7,7 @@ import akka.actor._
 import akka.event.Logging
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
-import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.StreamLayout.{ CopiedModule, Module }
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic, GraphAssembly }
 import akka.stream.impl.{ ActorPublisher, ReactiveStreamsCompliance }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
@@ -22,9 +22,13 @@ private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, at
   override def subModules: Set[Module] = Set.empty
   override def withAttributes(newAttr: Attributes): Module = copy(attributes = newAttr)
 
-  override def carbonCopy: Module = copy()
+  override final def carbonCopy: Module = {
+    val newShape = shape.deepCopy()
+    replaceShape(newShape)
+  }
 
-  override def replaceShape(s: Shape): Module = ???
+  override final def replaceShape(newShape: Shape): Module =
+    CopiedModule(newShape, attributes, copyOf = this)
 }
 
 /**
@@ -50,7 +54,7 @@ private[stream] object ActorGraphInterpreter {
   final class BoundarySubscription(val parent: ActorRef, val id: Int) extends Subscription {
     override def request(elements: Long): Unit = parent ! RequestMore(id, elements)
     override def cancel(): Unit = parent ! Cancel(id)
-    override def toString = "BoundarySubscription" + System.identityHashCode(this)
+    override def toString = s"BoundarySubscription[$parent, $id]"
   }
 
   final class BoundarySubscriber(val parent: ActorRef, id: Int) extends Subscriber[Any] {
@@ -306,6 +310,25 @@ private[stream] class ActorGraphInterpreter(assembly: GraphAssembly, shape: Shap
   }
 
   override def receive: Receive = {
+    // Cases that are most likely on the hot path, in decreasing order of frequency
+    case OnNext(id: Int, e: Any) ⇒
+      if (GraphInterpreter.Debug) println(s" onNext $e id=$id")
+      inputs(id).onNext(e)
+      runBatch()
+    case RequestMore(id: Int, demand: Long) ⇒
+      if (GraphInterpreter.Debug) println(s" request  $demand id=$id")
+      outputs(id).requestMore(demand)
+      runBatch()
+    case Resume ⇒
+      resumeScheduled = false
+      if (interpreter.isSuspended) runBatch()
+    case AsyncInput(logic, event, handler) ⇒
+      if (GraphInterpreter.Debug) println(s"ASYNC $event")
+      if (!interpreter.isStageCompleted(logic.stageId))
+        handler(event)
+      runBatch()
+
+    // Initialization and completion messages
     case OnError(id: Int, cause: Throwable) ⇒
       if (GraphInterpreter.Debug) println(s" onError id=$id")
       inputs(id).onError(cause)
@@ -314,17 +337,8 @@ private[stream] class ActorGraphInterpreter(assembly: GraphAssembly, shape: Shap
       if (GraphInterpreter.Debug) println(s" onComplete id=$id")
       inputs(id).onComplete()
       runBatch()
-    case OnNext(id: Int, e: Any) ⇒
-      if (GraphInterpreter.Debug) println(s" onNext $e id=$id")
-      inputs(id).onNext(e)
-      runBatch()
     case OnSubscribe(id: Int, subscription: Subscription) ⇒
       inputs(id).onSubscribe(subscription)
-
-    case RequestMore(id: Int, demand: Long) ⇒
-      if (GraphInterpreter.Debug) println(s" request  $demand id=$id")
-      outputs(id).requestMore(demand)
-      runBatch()
     case Cancel(id: Int) ⇒
       if (GraphInterpreter.Debug) println(s" cancel id=$id")
       outputs(id).cancel()
@@ -333,16 +347,6 @@ private[stream] class ActorGraphInterpreter(assembly: GraphAssembly, shape: Shap
       outputs(id).subscribePending()
     case ExposedPublisher(id, publisher) ⇒
       outputs(id).exposedPublisher(publisher)
-
-    case AsyncInput(_, event, handler) ⇒
-      if (GraphInterpreter.Debug) println(s"ASYNC $event")
-      handler(event)
-      runBatch()
-
-    case Resume ⇒
-      resumeScheduled = false
-      if (interpreter.isSuspended) runBatch()
-
   }
 
   override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {

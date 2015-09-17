@@ -44,7 +44,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
       new Source(
         module
           .fuse(flowCopy, shape.outlet, flowCopy.shape.inlets.head, combine)
-          .replaceShape(SourceShape(flowCopy.shape.outlets.head))) // FIXME why is not .wrap() needed here?
+          .replaceShape(SourceShape(flowCopy.shape.outlets.head)))
     }
   }
 
