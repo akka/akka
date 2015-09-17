@@ -10,15 +10,10 @@ import scala.runtime.BoxedUnit;
 
 import akka.actor.ActorSystem;
 import akka.persistence.journal.WriteEventAdapter;
-import akka.persistence.journal.EventSeq;
 import akka.persistence.journal.Tagged;
-import akka.persistence.query.AllPersistenceIds;
 import akka.persistence.query.EventEnvelope;
-import akka.persistence.query.EventsByPersistenceId;
-import akka.persistence.query.EventsByTag;
 import akka.persistence.query.PersistenceQuery;
-import akka.persistence.query.javadsl.ReadJournal;
-import akka.persistence.query.journal.leveldb.LeveldbReadJournal;
+import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Source;
 
@@ -30,38 +25,41 @@ public class LeveldbPersistenceQueryDocTest {
     //#get-read-journal
     final ActorMaterializer mat = ActorMaterializer.create(system);
     
-    ReadJournal queries =
-      PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.Identifier());
+    LeveldbReadJournal queries =
+      PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
+          LeveldbReadJournal.Identifier());
     //#get-read-journal
   }
   
   public void demonstrateEventsByPersistenceId() {
     //#EventsByPersistenceId
-    ReadJournal queries =
-        PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.Identifier());
+    LeveldbReadJournal queries =
+        PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
+            LeveldbReadJournal.Identifier());
     
     Source<EventEnvelope, BoxedUnit> source =
-        queries.query(EventsByPersistenceId.create("some-persistence-id", 0, Long.MAX_VALUE));
+        queries.eventsByPersistenceId("some-persistence-id", 0, Long.MAX_VALUE);
     //#EventsByPersistenceId
   }
   
   public void demonstrateAllPersistenceIds() {
     //#AllPersistenceIds
-    ReadJournal queries =
-        PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.Identifier());
+    LeveldbReadJournal queries =
+        PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
+            LeveldbReadJournal.Identifier());
     
-    Source<String, BoxedUnit> source =
-        queries.query(AllPersistenceIds.getInstance());
+    Source<String, BoxedUnit> source = queries.allPersistenceIds();
     //#AllPersistenceIds
   }
   
   public void demonstrateEventsByTag() {
     //#EventsByTag
-    ReadJournal queries =
-        PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.Identifier());
+    LeveldbReadJournal queries =
+        PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
+            LeveldbReadJournal.Identifier());
     
     Source<EventEnvelope, BoxedUnit> source =
-        queries.query(EventsByTag.create("green", 0));
+        queries.eventsByTag("green", 0);
     //#EventsByTag
   }
   
