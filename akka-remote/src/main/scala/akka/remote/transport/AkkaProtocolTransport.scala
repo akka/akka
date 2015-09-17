@@ -463,7 +463,8 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
     } else {
       // send disassociate just to be sure
       sendDisassociate(wrappedHandle, Unknown)
-      stop(FSM.Failure(TimeoutReason("No response from remote. Handshake timed out or transport failure detector triggered.")))
+      stop(FSM.Failure(TimeoutReason(s"No response from remote. " +
+        s"Handshake timed out or transport failure detector triggered. (internal state was $stateName)")))
     }
   }
 
