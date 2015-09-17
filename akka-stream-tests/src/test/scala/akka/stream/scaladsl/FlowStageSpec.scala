@@ -300,7 +300,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
               emit(Iterator(elem, elem), ctx)
           }
         })
-        .runWith(TestSink.probe[Int]())
+        .runWith(TestSink.probe[Int])
         .request(1000)
         .expectNext(1)
         .cancel()
@@ -444,7 +444,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
             terminationEmit(Iterator("byebye"), ctx)
           }
         })
-        .runWith(TestSink.probe[String]())
+        .runWith(TestSink.probe[String])
         .request(1)
         .expectNext("hi1")
         .request(2)
