@@ -19,5 +19,5 @@ Description
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
    :snippet: 0decodeRequestWith

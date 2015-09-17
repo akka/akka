@@ -23,5 +23,5 @@ unconditionally overriding the status code with the given one.
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
    :snippet: overrideStatusCode-examples

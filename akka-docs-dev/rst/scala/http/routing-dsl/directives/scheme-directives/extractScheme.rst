@@ -22,5 +22,5 @@ For rejecting a request if it doesn't match a specified scheme name, see the :re
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala
    :snippet: example-1

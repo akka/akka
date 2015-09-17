@@ -19,5 +19,5 @@ Description
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
    :snippet: 0overrideMethodWithParameter

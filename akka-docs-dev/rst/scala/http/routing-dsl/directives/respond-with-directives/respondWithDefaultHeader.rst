@@ -26,5 +26,5 @@ response. If you'd like to add more than one header you can use the :ref:`-respo
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
    :snippet: respondWithDefaultHeader-examples
