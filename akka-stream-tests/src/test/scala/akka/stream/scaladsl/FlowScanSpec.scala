@@ -3,16 +3,15 @@
  */
 package akka.stream.scaladsl
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
-import scala.collection.immutable
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.{ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
-import akka.stream.ActorAttributes
-import akka.stream.Supervision
+
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.concurrent.forkjoin.ThreadLocalRandom.{current => random}
 
 class FlowScanSpec extends AkkaSpec {
 
@@ -42,8 +41,8 @@ class FlowScanSpec extends AkkaSpec {
     }
 
     "emit values promptly" in {
-      val f = Source.single(1).concat(Source.lazyEmpty).scan(0)(_ + _).grouped(2).runWith(Sink.head)
-      Await.result(f, 1.second) should be(Seq(0, 1))
+      Source.single(1).concat(Source.lazyEmpty).scan(0)(_ + _).grouped(2).runWith(TestSink.probe())
+        .toStrict(1.second) should ===(Seq(0, 1))
     }
 
     "fail properly" in {
@@ -52,8 +51,8 @@ class FlowScanSpec extends AkkaSpec {
         require(current > 0)
         old + current
       }.withAttributes(supervisionStrategy(Supervision.restartingDecider))
-      val f = Source(List(1, 3, -1, 5, 7)).via(scan).grouped(1000).runWith(Sink.head)
-      Await.result(f, 1.second) should be(Seq(0, 1, 4, 0, 5, 12))
+      Source(List(1, 3, -1, 5, 7)).via(scan).runWith(TestSink.probe())
+        .toStrict(1.second) should ===(Seq(0, 1, 4, 0, 5, 12))
     }
   }
 }

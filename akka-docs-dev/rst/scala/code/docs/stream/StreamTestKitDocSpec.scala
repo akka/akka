@@ -153,7 +153,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     sub.expectNextUnordered(1, 2, 3)
 
     pub.sendError(new Exception("Power surge in the linear subroutine C-47!"))
-    val ex = sub.expectError
+    val ex = sub.expectError()
     assert(ex.getMessage.contains("C-47"))
     //#test-source-and-sink
   }
