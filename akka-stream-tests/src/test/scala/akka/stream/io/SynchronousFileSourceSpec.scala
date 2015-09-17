@@ -172,7 +172,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       implicit val timeout = Timeout(500.millis)
 
       try {
-        val p = SynchronousFileSource(manyLines).runWith(TestSink.probe())(mat)
+        val p = SynchronousFileSource(manyLines).runWith(TestSink.probe)(mat)
 
         mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
@@ -188,7 +188,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       try {
         val p = SynchronousFileSource(manyLines)
           .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
-          .runWith(TestSink.probe())(mat)
+          .runWith(TestSink.probe)(mat)
 
         mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get

@@ -18,7 +18,7 @@ object TestSink {
   /**
    * A Sink that materialized to a [[TestSubscriber.Probe]].
    */
-  def probe[T]()(implicit system: ActorSystem): Sink[T, Probe[T]] =
+  def probe[T](implicit system: ActorSystem): Sink[T, Probe[T]] =
     new Sink[T, TestSubscriber.Probe[T]](new StreamTestKit.ProbeSink(none, SinkShape(Inlet("ProbeSink.in"))))
 
 }

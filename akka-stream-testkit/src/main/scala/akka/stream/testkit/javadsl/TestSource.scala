@@ -14,6 +14,6 @@ object TestSource {
    * A Source that materializes to a [[TestPublisher.Probe]].
    */
   def probe[T](system: ActorSystem): Source[T, TestPublisher.Probe[T]] =
-    new Source(scaladsl.TestSource.probe[T]()(system))
+    new Source(scaladsl.TestSource.probe[T](system))
 
 }
