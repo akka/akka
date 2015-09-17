@@ -15,7 +15,7 @@ object GraphStages {
     val in = Inlet[T]("in")
     val out = Outlet[T]("out")
 
-    val shape = FlowShape(in, out)
+    override val shape = FlowShape(in, out)
 
     override def createLogic: GraphStageLogic = new GraphStageLogic {
       setHandler(in, new InHandler {
@@ -36,7 +36,7 @@ object GraphStages {
   class Detacher[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T]("in")
     val out = Outlet[T]("out")
-    val shape = FlowShape(in, out)
+    override val shape = FlowShape(in, out)
 
     override def createLogic: GraphStageLogic = new GraphStageLogic {
       var initialized = false
@@ -70,7 +70,7 @@ object GraphStages {
   class Broadcast[T](private val outCount: Int) extends GraphStage[UniformFanOutShape[T, T]] {
     val in = Inlet[T]("in")
     val out = Vector.fill(outCount)(Outlet[T]("out"))
-    val shape = UniformFanOutShape(in, out: _*)
+    override val shape = UniformFanOutShape(in, out: _*)
 
     override def createLogic: GraphStageLogic = new GraphStageLogic {
       private var pending = outCount
@@ -101,7 +101,7 @@ object GraphStages {
     val in0 = Inlet[A]("in0")
     val in1 = Inlet[B]("in1")
     val out = Outlet[(A, B)]("out")
-    val shape = new FanInShape2[A, B, (A, B)](in0, in1, out)
+    override val shape = new FanInShape2[A, B, (A, B)](in0, in1, out)
 
     override def createLogic: GraphStageLogic = new GraphStageLogic {
       var pending = 2
@@ -130,7 +130,7 @@ object GraphStages {
   class Merge[T](private val inCount: Int) extends GraphStage[UniformFanInShape[T, T]] {
     val in = Vector.fill(inCount)(Inlet[T]("in"))
     val out = Outlet[T]("out")
-    val shape = UniformFanInShape(out, in: _*)
+    override val shape = UniformFanInShape(out, in: _*)
 
     override def createLogic: GraphStageLogic = new GraphStageLogic {
       private var initialized = false
@@ -187,7 +187,7 @@ object GraphStages {
   class Balance[T](private val outCount: Int) extends GraphStage[UniformFanOutShape[T, T]] {
     val in = Inlet[T]("in")
     val out = Vector.fill(outCount)(Outlet[T]("out"))
-    val shape = UniformFanOutShape[T, T](in, out: _*)
+    override val shape = UniformFanOutShape[T, T](in, out: _*)
 
     override def createLogic: GraphStageLogic = new GraphStageLogic {
       private val pendingQueue = Array.ofDim[Outlet[T]](outCount)
