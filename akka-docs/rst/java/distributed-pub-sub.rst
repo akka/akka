@@ -22,72 +22,44 @@ a few seconds. Changes are only performed in the own part of the registry and th
 changes are versioned. Deltas are disseminated in a scalable way to other nodes with
 a gossip protocol.
 
-You can send messages via the mediator on any node to registered actors on
-any other node. There are four modes of message delivery.
-
-**1. DistributedPubSubMediator.Send**
-
-The message will be delivered to one recipient with a matching path, if any such
-exists in the registry. If several entries match the path the message will be sent
-via the supplied ``RoutingLogic`` (default random) to one destination. The sender() of the
-message can specify that local affinity is preferred, i.e. the message is sent to an actor
-in the same local actor system as the used mediator actor, if any such exists, otherwise
-route to any other matching entry. A typical usage of this mode is private chat to one
-other user in an instant messaging application. It can also be used for distributing
-tasks to registered workers, like a cluster aware router where the routees dynamically
-can register themselves.
-
-**2. DistributedPubSubMediator.SendToAll**
-
-The message will be delivered to all recipients with a matching path. Actors with
-the same path, without address information, can be registered on different nodes.
-On each node there can only be one such actor, since the path is unique within one
-local actor system. Typical usage of this mode is to broadcast messages to all replicas
-with the same path, e.g. 3 actors on different nodes that all perform the same actions,
-for redundancy. You can also optionally specify a property (``allButSelf``) deciding
-if the message should be sent to a matching path on the self node or not.
-
-**3. DistributedPubSubMediator.Publish**
-
-Actors may be registered to a named topic instead of path. This enables many subscribers
-on each node. The message will be delivered to all subscribers of the topic. For
-efficiency the message is sent over the wire only once per node (that has a matching topic),
-and then delivered to all subscribers of the local topic representation. This is the
-true pub/sub mode. A typical usage of this mode is a chat room in an instant messaging
-application.
-
-**4. DistributedPubSubMediator.Publish with sendOneMessageToEachGroup**
-
-Actors may be subscribed to a named topic with an optional property (``group``).
-If subscribing with a group name, each message published to a topic with the
-(``sendOneMessageToEachGroup``) flag is delivered via the supplied ``RoutingLogic``
-(default random) to one actor within each subscribing group.
-If all the subscribed actors have the same group name, then this works just like
-``Send`` and all messages are delivered to one subscriber.
-If all the subscribed actors have different group names, then this works like
-normal ``Publish`` and all messages are broadcast to all subscribers.
-
-You register actors to the local mediator with ``DistributedPubSubMediator.Put`` or
-``DistributedPubSubMediator.Subscribe``. ``Put`` is used together with ``Send`` and
-``SendToAll`` message delivery modes. The ``ActorRef`` in ``Put`` must belong to the same
-local actor system as the mediator. ``Subscribe`` is used together with ``Publish``.
-Actors are automatically removed from the registry when they are terminated, or you
-can explicitly remove entries with ``DistributedPubSubMediator.Remove`` or
-``DistributedPubSubMediator.Unsubscribe``.
-
-Successful ``Subscribe`` and ``Unsubscribe`` is acknowledged with
-``DistributedPubSubMediator.SubscribeAck`` and ``DistributedPubSubMediator.UnsubscribeAck``
-replies.
-
 Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, if that feature is enabled,
 will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with 
 ``WeaklyUp`` status will receive published messages if the publisher and subscriber are on
 same side of a network partition.
 
-A Small Example
----------------
+You can send messages via the mediator on any node to registered actors on
+any other node.
 
-A subscriber actor:
+There a two different modes of message delivery, explained in the sections
+:ref:`distributed-pub-sub-publish-java` and :ref:`distributed-pub-sub-send-java` below. 
+
+.. _distributed-pub-sub-publish-java:
+
+Publish
+-------
+
+This is the true pub/sub mode. A typical usage of this mode is a chat room in an instant 
+messaging application.
+
+Actors are registered to a named topic. This enables many subscribers on each node. 
+The message will be delivered to all subscribers of the topic. 
+
+For efficiency the message is sent over the wire only once per node (that has a matching topic),
+and then delivered to all subscribers of the local topic representation.
+
+You register actors to the local mediator with ``DistributedPubSubMediator.Subscribe``. 
+Successful ``Subscribe`` and ``Unsubscribe`` is acknowledged with
+``DistributedPubSubMediator.SubscribeAck`` and ``DistributedPubSubMediator.UnsubscribeAck``
+replies. The acknowledgment means that the subscription is registered, but it can still
+take some time until it is replicated to other nodes.
+
+You publish messages by sending ``DistributedPubSubMediator.Publish`` message to the
+local mediator.
+
+Actors are automatically removed from the registry when they are terminated, or you
+can explicitly remove entries with ``DistributedPubSubMediator.Unsubscribe``.
+
+An example of a subscriber actor:
 
 .. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#subscriber
 
@@ -103,6 +75,75 @@ A simple actor that publishes to this "content" topic:
 It can publish messages to the topic from anywhere in the cluster:
 
 .. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#publish-message
+
+Actors may also be subscribed to a named topic with an optional property (``group``).
+If subscribing with a group name, each message published to a topic with the
+(``sendOneMessageToEachGroup``) flag is delivered via the supplied ``RoutingLogic``
+(default random) to one actor within each subscribing group.
+If all the subscribed actors have the same group name, then this works just like
+``Send`` and all messages are delivered to one subscriber.
+If all the subscribed actors have different group names, then this works like
+normal ``Publish`` and all messages are broadcast to all subscribers.
+
+.. _distributed-pub-sub-send-java:
+
+Send
+----
+
+This is a point-to-point mode where each message is delivered to one destination,
+but you still does not have to know where the destination is located.
+A typical usage of this mode is private chat to one other user in an instant messaging
+application. It can also be used for distributing tasks to registered workers, like a 
+cluster aware router where the routees dynamically can register themselves.
+
+The message will be delivered to one recipient with a matching path, if any such
+exists in the registry. If several entries match the path because it has been registered
+on several nodes the message will be sent via the supplied ``RoutingLogic`` (default random) 
+to one destination. The sender() of the message can specify that local affinity is preferred,
+i.e. the message is sent to an actor in the same local actor system as the used mediator actor,
+if any such exists, otherwise route to any other matching entry. 
+
+You register actors to the local mediator with ``DistributedPubSubMediator.Put``.
+The ``ActorRef`` in ``Put`` must belong to the same local actor system as the mediator.
+The path without address information is the key to which you send messages.
+On each node there can only be one actor for a given path, since the path is unique
+within one local actor system.
+
+You send messages by sending ``DistributedPubSubMediator.Send`` message to the
+local mediator with the path (without address information) of the destination
+actors.
+
+Actors are automatically removed from the registry when they are terminated, or you
+can explicitly remove entries with ``DistributedPubSubMediator.Remove``.
+
+An example of a destination actor:
+
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#send-destination
+
+Subscriber actors can be started on several nodes in the cluster, and all will receive
+messages published to the "content" topic.
+
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#start-send-destinations
+
+A simple actor that publishes to this "content" topic:
+
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#sender
+
+It can publish messages to the topic from anywhere in the cluster:
+
+.. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java#send-message
+
+It is also possible to broadcast messages to the actors that have been registered with
+``Put``. Send ``DistributedPubSubMediator.SendToAll`` message to the local mediator and the wrapped message 
+will then be delivered to all recipients with a matching path. Actors with
+the same path, without address information, can be registered on different nodes.
+On each node there can only be one such actor, since the path is unique within one
+local actor system. 
+
+Typical usage of this mode is to broadcast messages to all replicas
+with the same path, e.g. 3 actors on different nodes that all perform the same actions,
+for redundancy. You can also optionally specify a property (``allButSelf``) deciding
+if the message should be sent to a matching path on the self node or not.
 
 DistributedPubSub Extension
 ---------------------------
