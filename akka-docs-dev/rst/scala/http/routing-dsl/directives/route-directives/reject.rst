@@ -29,5 +29,5 @@ modifier for "filtering out" certain cases.
 Example
 -------
 
-... includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala
    :snippet: reject-examples
