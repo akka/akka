@@ -181,8 +181,11 @@ object TestSubscriber {
 
   /**
    * Implementation of [[org.reactivestreams.Subscriber]] that allows various assertions.
+   *
+   * All timeouts are dilated automatically, for more details about time dilation refer to [[akka.testkit.TestKit]].
    */
   class ManualProbe[I] private[TestSubscriber] ()(implicit system: ActorSystem) extends Subscriber[I] {
+    import akka.testkit._
 
     type Self <: ManualProbe[I]
 
@@ -207,11 +210,17 @@ object TestSubscriber {
       probe.expectMsgType[SubscriberEvent]
 
     /**
+     * Expect and return [[SubscriberEvent]] (any of: `OnSubscribe`, `OnNext`, `OnError` or `OnComplete`).
+     */
+    def expectEvent(max: FiniteDuration): SubscriberEvent =
+      probe.expectMsgType[SubscriberEvent](max.dilated)
+
+    /**
      * Fluent DSL
      *
      * Expect [[SubscriberEvent]] (any of: `OnSubscribe`, `OnNext`, `OnError` or `OnComplete`).
      */
-    def expectEvent(event: SubscriberEvent): Self = { // TODO it's more "signal" than event, shall we rename? -- ktoso
+    def expectEvent(event: SubscriberEvent): Self = {
       probe.expectMsg(event)
       self
     }
@@ -492,20 +501,14 @@ object TestSubscriber {
       val deadline = Deadline.now + atMost
       val b = immutable.Seq.newBuilder[I]
 
-      def checkDeadline(): Unit = {
-        if (deadline.isOverdue())
-          throw new TimeoutException(s"toStrict did not drain the stream within $atMost! Accumulated elements: ${b.result()}")
-      }
-
       @tailrec def drain(): immutable.Seq[I] =
-        self.expectEvent() match {
+        self.expectEvent(deadline.timeLeft) match {
           case OnError(ex) ⇒
-            throw new AssertionError(s"toStrict received OnError($ex) while draining stream! Accumulated elements: ${b.result()}")
+            // TODO once on JDK7+ this could be made an AssertionError, since it can carry ex in its cause param
+            throw new AssertionError(s"toStrict received OnError(${ex.getMessage}) while draining stream! Accumulated elements: ${b.result()}")
           case OnComplete ⇒
-            checkDeadline()
             b.result()
           case OnNext(i: I @unchecked) ⇒
-            checkDeadline()
             b += i
             drain()
         }
