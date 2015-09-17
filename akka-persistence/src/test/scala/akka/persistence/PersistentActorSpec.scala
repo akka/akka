@@ -1053,6 +1053,18 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(List("b-1", "b-2"))
     }
 
+    "be able to delete all events" in {
+      val persistentActor = namedPersistentActor[Behavior1PersistentActor]
+      persistentActor ! Cmd("b")
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "b-1", "b-2"))
+      persistentActor ! Delete(Long.MaxValue)
+      persistentActor ! "boom" // restart, recover
+      expectMsgType[DeleteMessagesSuccess]
+      persistentActor ! GetState
+      expectMsg(Nil)
+    }
+
   }
 
 }
