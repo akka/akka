@@ -97,8 +97,13 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
           if (iter.hasNext) keyFromBytes(iter.peekNext().getKey).sequenceNr else Long.MaxValue
         }
 
-        fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
-          batch.delete(keyToBytes(Key(nid, sequenceNr, 0)))
+        if (fromSequenceNr != Long.MaxValue) {
+          val toSeqNr = math.min(toSequenceNr, readHighestSequenceNr(nid))
+          var sequenceNr = fromSequenceNr
+          while (sequenceNr <= toSeqNr) {
+            batch.delete(keyToBytes(Key(nid, sequenceNr, 0)))
+            sequenceNr += 1
+          }
         }
       }
     } catch {
