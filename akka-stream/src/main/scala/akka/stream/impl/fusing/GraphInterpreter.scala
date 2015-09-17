@@ -255,6 +255,7 @@ private[stream] final class GraphInterpreter(
   def init(): Unit = {
     var i = 0
     while (i < logics.length) {
+      logics(i).stageId = i
       logics(i).preStart()
       i += 1
     }
@@ -373,7 +374,7 @@ private[stream] final class GraphInterpreter(
   def isConnectionCompleted(connection: Int): Boolean = connectionStates(connection).isInstanceOf[CompletedState]
 
   // Returns true if the given stage is alredy completed
-  private def isStageCompleted(stageId: Int): Boolean = stageId != Boundary && shutdownCounter(stageId) == 0
+  def isStageCompleted(stageId: Int): Boolean = stageId != Boundary && shutdownCounter(stageId) == 0
 
   private def isPushInFlight(connection: Int): Boolean =
     !inAvailable(connection) &&
