@@ -135,6 +135,15 @@ class MetricsGossipSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Impl
 
   val collector = createMetricsCollector
 
+  /**
+   * sometimes Sigar will not be able to return a valid value (NaN and such) so must ensure they
+   * have the same Metric types
+   */
+  def newSample(previousSample: Set[Metric]): Set[Metric] = {
+    // Metric.equals is based on name equality
+    collector.sample.metrics.filter(previousSample.contains) ++ previousSample
+  }
+
   "A MetricsGossip" must {
     "add new NodeMetrics" in {
       val m1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
@@ -161,7 +170,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Impl
       g1.nodes.size should ===(2)
       val beforeMergeNodes = g1.nodes
 
-      val m2Updated = m2 copy (metrics = collector.sample.metrics, timestamp = m2.timestamp + 1000)
+      val m2Updated = m2 copy (metrics = newSample(m2.metrics), timestamp = m2.timestamp + 1000)
       val g2 = g1 :+ m2Updated // merge peers
       g2.nodes.size should ===(2)
       g2.nodeMetricsFor(m1.address).map(_.metrics) should ===(Some(m1.metrics))
@@ -173,7 +182,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Impl
       val m1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val m2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
       val m3 = NodeMetrics(Address("akka.tcp", "sys", "a", 2556), newTimestamp, collector.sample.metrics)
-      val m2Updated = m2 copy (metrics = collector.sample.metrics, timestamp = m2.timestamp + 1000)
+      val m2Updated = m2 copy (metrics = newSample(m2.metrics), timestamp = m2.timestamp + 1000)
 
       val g1 = MetricsGossip.empty :+ m1 :+ m2
       val g2 = MetricsGossip.empty :+ m3 :+ m2Updated
