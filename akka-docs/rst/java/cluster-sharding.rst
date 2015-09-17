@@ -271,6 +271,46 @@ This is how to do that:
 
 .. includecode:: ../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java#graceful-shutdown
 
+.. _RemoveInternalClusterShardingData-java:
+
+Removal of Internal Cluster Sharding Data
+-----------------------------------------
+
+The Cluster Sharding coordinator stores the locations of the shards using Akka Persistence.
+This data can safely be removed when restarting the whole Akka Cluster.
+Note that this is not application data.
+
+There is a utility program ``akka.cluster.sharding.RemoveInternalClusterShardingData``
+that removes this data.
+ 
+.. warning::
+
+  Never use this program while there are running Akka Cluster nodes that are
+  using Cluster Sharding. Stop all Cluster nodes before using this program.
+
+It can be needed to remove the data if the Cluster Sharding coordinator
+cannot startup because of corrupt data, which may happen if accidentally
+two clusters were running at the same time, e.g. caused by using auto-down
+and there was a network partition.
+
+Use this program as a standalone Java main program::
+ 
+    java -classpath <jar files, including akka-cluster-sharding>
+      akka.cluster.sharding.RemoveInternalClusterShardingData
+        -2.3 entityType1 entityType2 entityType3
+
+The program is included in the ``akka-cluster-sharding`` jar file. It
+is easiest to run it with same classpath and configuration as your ordinary
+application. It can be run from sbt or maven in similar way.
+
+Specify the entity type names (same as you use in the ``start`` method
+of ``ClusterSharding``) as program arguments.
+
+If you specify ``-2.3`` as the first program argument it will also try
+to remove data that was stored by Cluster Sharding in Akka 2.3.x using
+different persistenceId.
+
+
 Dependencies
 ------------
 
