@@ -25,7 +25,7 @@ import scala.util.Random
  * routees in the pool are exhausted, or the `within` duration has passed since the first send. If no
  * routee sends a response in time, a [[akka.actor.Status.Failure]] wrapping a [[akka.pattern.AskTimeoutException]]
  * is sent to the sender.
- * 
+ *
  * The goal of this routing algorithm is to decrease tail latencies ("chop off the tail latency") in situations
  * where multiple routees can perform the same piece of work, and where a routee may occasionally respond
  * more slowly than expected. In this case, sending the same work request (also known as a "backup request")
@@ -103,7 +103,7 @@ private[akka] final case class TailChoppingRoutees(
  * the `within` duration has passed since the first send. If no routee sends
  * a response in time, a [[akka.actor.Status.Failure]] wrapping a [[akka.pattern.AskTimeoutException]]
  * is sent to the sender.
- * 
+ *
  * Refer to [[akka.routing.TailChoppingRoutingLogic]] for comments regarding the goal of this
  * routing algorithm.
  *
@@ -210,7 +210,7 @@ final case class TailChoppingPool(
  *
  * Refer to [[akka.routing.TailChoppingRoutingLogic]] for comments regarding the goal of this
  * routing algorithm.
- * 
+ *
  * The configuration parameter trumps the constructor arguments. This means that
  * if you provide `paths` during instantiation they will be ignored if
  * the router is defined in the configuration file for the actor being used.

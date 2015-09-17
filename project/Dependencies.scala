@@ -101,7 +101,7 @@ object Dependencies {
   
   val clusterTools = l ++= Seq(Test.junit, Test.scalatest.value)
   
-  val clusterSharding = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsIo)
+  val clusterSharding = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Test.junit, Test.scalatest.value, Test.commonsIo)
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
   

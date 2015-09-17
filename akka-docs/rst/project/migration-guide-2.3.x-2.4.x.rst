@@ -309,8 +309,8 @@ it should not load such old data, but it can be a problem if you have used a 2.4
 milestone release. In that case you should remove the persistent data that the 
 Cluster Sharding coordinator stored. Note that this is not application data.
 
-Consult the Journal Plugin and Snapshot Store Plugin documentation or backend
-data store documentation for information about how to remove such data.
+You can use the :ref:`RemoveInternalClusterShardingData <RemoveInternalClusterShardingData-scala>`
+utility program to remove this data.
 
 The new ``persistenceId`` is ``s"/sharding/${typeName}Coordinator"``.
 The old ``persistenceId`` is ``s"/user/sharding/${typeName}Coordinator/singleton/coordinator"``.  
