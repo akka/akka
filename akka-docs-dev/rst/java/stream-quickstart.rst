@@ -119,7 +119,7 @@ detail in :ref:`constructing-sources-sinks-flows-from-partial-graphs-java`. Flow
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#flow-graph-broadcast
 
 As you can see, we use graph builder ``b`` to construct the graph using ``UniformFanOutShape`` and ``Flow``s. Once we have the
-FlowGraph as result of ``closed()`` method *it is immutable, thread-safe, and freely shareable*. A graph can be ``run()`` directly -
+FlowGraph as a result of ``closed()`` method *it is immutable, thread-safe, and freely shareable*. A graph can be ``run()`` directly -
 assuming all ports (sinks/sources) within a flow have been connected properly. It is possible also to construct several :class:`PartialFlowGraph`s and
 and then combine them into one fully connected graph. This will be covered in detail in :ref:`partial-flow-graph-java`.
 
