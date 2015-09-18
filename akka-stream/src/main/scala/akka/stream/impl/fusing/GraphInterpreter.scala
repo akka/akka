@@ -3,7 +3,7 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.stage.{ OutHandler, InHandler, GraphStage, GraphStageLogic }
+import akka.stream.stage._
 import akka.stream.{ Materializer, Shape, Inlet, Outlet }
 
 import scala.util.control.NonFatal
@@ -76,7 +76,7 @@ private[stream] object GraphInterpreter {
    * corresponding segments of these arrays matches the exact same order of the ports in the [[Shape]].
    *
    */
-  final case class GraphAssembly(stages: Array[GraphStage[_]],
+  final case class GraphAssembly(stages: Array[GraphStageWithMaterializedValue[_, _]],
                                  ins: Array[Inlet[_]],
                                  inOwners: Array[Int],
                                  outs: Array[Outlet[_]],
@@ -87,12 +87,24 @@ private[stream] object GraphInterpreter {
     /**
      * Takes an interpreter and returns three arrays required by the interpreter containing the input, output port
      * handlers and the stage logic instances.
+     *
+     * Returns a tuple of
+     *  - lookup table for InHandlers
+     *  - lookup table for OutHandlers
+     *  - array of the logics
+     *  - materialized value
      */
-    def materialize(interpreter: GraphInterpreter): (Array[InHandler], Array[OutHandler], Array[GraphStageLogic]) = {
+    def materialize(): (Array[InHandler], Array[OutHandler], Array[GraphStageLogic], Any) = {
       val logics = Array.ofDim[GraphStageLogic](stages.length)
+      var finalMat: Any = ()
+
       for (i ← stages.indices) {
-        logics(i) = stages(i).createLogic
-        logics(i).interpreter = interpreter
+        // FIXME: Support for materialized values in fused islands is not yet figured out!
+        val (logic, mat) = stages(i).createLogicAndMaterializedValue
+        // FIXME: Current temporary hack to support non-fused stages. If there is one stage that will be under index 0.
+        if (i == 0) finalMat = mat
+
+        logics(i) = logic
       }
 
       val inHandlers = Array.ofDim[InHandler](connectionCount)
@@ -109,7 +121,7 @@ private[stream] object GraphInterpreter {
         }
       }
 
-      (inHandlers, outHandlers, logics)
+      (inHandlers, outHandlers, logics, finalMat)
     }
 
     override def toString: String =
@@ -183,6 +195,9 @@ private[stream] object GraphInterpreter {
 private[stream] final class GraphInterpreter(
   private val assembly: GraphInterpreter.GraphAssembly,
   val materializer: Materializer,
+  val inHandlers: Array[InHandler], // Lookup table for the InHandler of a connection
+  val outHandlers: Array[OutHandler], // Lookup table for the outHandler of the connection
+  val logics: Array[GraphStageLogic], // Array of stage logics
   val onAsyncInput: (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit) {
   import GraphInterpreter._
 
@@ -201,10 +216,6 @@ private[stream] final class GraphInterpreter(
   // Be aware that when inAvailable goes to false outAvailable does not become true immediately, only after
   // the corresponding event in the queue has been processed
   val outAvailable = Array.fill[Boolean](assembly.connectionCount)(false)
-
-  // Lookup tables for the InHandler and OutHandler for a given connection ID, and a lookup table for the
-  // GraphStageLogic instances
-  val (inHandlers, outHandlers, logics) = assembly.materialize(this)
 
   // The number of currently running stages. Once this counter reaches zero, the interpreter is considered to be
   // completed
@@ -259,6 +270,7 @@ private[stream] final class GraphInterpreter(
     var i = 0
     while (i < logics.length) {
       logics(i).stageId = i
+      logics(i).interpreter = this
       logics(i).beforePreStart()
       logics(i).preStart()
       i += 1
