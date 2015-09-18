@@ -29,14 +29,6 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
 
   override val shape: SourceShape[Out] = module.shape.asInstanceOf[SourceShape[Out]]
 
-  /**
-   * Transform this [[akka.stream.scaladsl.Source]] by appending the given processing stages.
-   */
-  def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Source[T, Mat] = viaMat(flow)(Keep.left)
-
-  /**
-   * Transform this [[akka.stream.scaladsl.Source]] by appending the given processing stages.
-   */
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
     if (flow.module.isInstanceOf[Stages.Identity]) this.asInstanceOf[Source[T, Mat3]]
     else {

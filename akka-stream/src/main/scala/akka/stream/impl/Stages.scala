@@ -6,7 +6,7 @@ package akka.stream.impl
 import akka.event.LoggingAdapter
 import akka.stream.impl.SplitDecision.SplitDecision
 import akka.stream.impl.StreamLayout._
-import akka.stream.{ OverflowStrategy, TimerTransformer, Attributes }
+import akka.stream.{ OverflowStrategy, Attributes }
 import akka.stream.Attributes._
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
@@ -99,11 +99,6 @@ private[stream] object Stages {
 
     protected def newInstance: StageModule
     override def carbonCopy: Module = newInstance
-  }
-
-  final case class TimerTransform(mkStage: () ⇒ TimerTransformer[Any, Any], attributes: Attributes = timerTransform) extends StageModule {
-    def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-    override protected def newInstance: StageModule = this.copy()
   }
 
   final case class StageFactory(mkStage: () ⇒ Stage[_, _], attributes: Attributes = stageFactory) extends StageModule {

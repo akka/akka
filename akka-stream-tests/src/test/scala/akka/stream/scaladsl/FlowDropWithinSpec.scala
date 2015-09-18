@@ -35,6 +35,16 @@ class FlowDropWithinSpec extends AkkaSpec {
       c.expectNoMsg(200.millis)
     }
 
+    "deliver completion even before the duration" in {
+      val upstream = TestPublisher.probe[Int]()
+      val downstream = TestSubscriber.probe[Int]()
+
+      Source(upstream).dropWithin(1.day).runWith(Sink(downstream))
+
+      upstream.sendComplete()
+      downstream.expectSubscriptionAndComplete()
+    }
+
   }
 
 }

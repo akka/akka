@@ -572,6 +572,8 @@ object FlowGraph extends GraphApply {
       }
     }
 
+    // Although Mat is always Unit, it cannot be removed as a type parameter, otherwise the "override type"
+    // won't work below
     class PortOps[Out, Mat](val outlet: Outlet[Out], b: Builder[_]) extends FlowOps[Out, Mat] with CombinerBase[Out] {
       override type Repr[+O, +M] = PortOps[O, M] @uncheckedVariance
 
@@ -590,10 +592,19 @@ object FlowGraph extends GraphApply {
       }
 
       override def importAndGetPort(b: Builder[_]): Outlet[Out] = outlet
+
+      override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T, Mat] =
+        super.~>(flow)(b).asInstanceOf[Repr[T, Mat]]
+
+      override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3) =
+        throw new UnsupportedOperationException("Cannot use viaMat on a port")
     }
 
     class DisabledPortOps[Out, Mat](msg: String) extends PortOps[Out, Mat](null, null) {
       override def importAndGetPort(b: Builder[_]): Outlet[Out] = throw new IllegalArgumentException(msg)
+
+      override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3) =
+        throw new IllegalArgumentException(msg)
     }
 
     implicit class ReversePortOps[In](val inlet: Inlet[In]) extends ReverseCombinerBase[In] {

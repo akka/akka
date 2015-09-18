@@ -3,10 +3,14 @@
  */
 package akka.stream.stage
 
+import akka.actor.{ Cancellable, DeadLetterSuppression }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.{ GraphModule, GraphInterpreter }
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
+
+import scala.collection.mutable
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * A GraphStage represents a reusable graph stream processing stage. A GraphStage consists of a [[Shape]] which describes
@@ -51,6 +55,17 @@ abstract class GraphStage[S <: Shape] extends Graph[S, Unit] {
   }
 }
 
+private object TimerMessages {
+  final case class Scheduled(timerKey: Any, timerId: Int, repeating: Boolean) extends DeadLetterSuppression
+
+  sealed trait Queued
+  final case class QueuedSchedule(timerKey: Any, initialDelay: FiniteDuration, interval: FiniteDuration) extends Queued
+  final case class QueuedScheduleOnce(timerKey: Any, delay: FiniteDuration) extends Queued
+  final case class QueuedCancelTimer(timerKey: Any) extends Queued
+
+  final case class Timer(id: Int, task: Cancellable)
+}
+
 /**
  * Represents the processing logic behind a [[GraphStage]]. Roughly speaking, a subclass of [[GraphStageLogic]] is a
  * collection of the following parts:
@@ -66,6 +81,19 @@ abstract class GraphStage[S <: Shape] extends Graph[S, Unit] {
  */
 abstract class GraphStageLogic {
   import GraphInterpreter._
+  import TimerMessages._
+
+  private val keyToTimers = mutable.Map[Any, Timer]()
+  private val timerIdGen = Iterator from 1
+  private var queuedTimerEvents = List.empty[Queued]
+
+  private var _timerAsyncCallback: AsyncCallback[Scheduled] = _
+  private def getTimerAsyncCallback: AsyncCallback[Scheduled] = {
+    if (_timerAsyncCallback eq null)
+      _timerAsyncCallback = getAsyncCallback(onInternalTimer)
+
+    _timerAsyncCallback
+  }
 
   /**
    * INTERNAL API
@@ -98,11 +126,17 @@ abstract class GraphStageLogic {
   /**
    * Assigns callbacks for the events for an [[Inlet]]
    */
-  final protected def setHandler(in: Inlet[_], handler: InHandler): Unit = inHandlers += in -> handler
+  final protected def setHandler(in: Inlet[_], handler: InHandler): Unit = {
+    handler.ownerStageLogic = this
+    inHandlers += in -> handler
+  }
   /**
    * Assigns callbacks for the events for an [[Outlet]]
    */
-  final protected def setHandler(out: Outlet[_], handler: OutHandler): Unit = outHandlers += out -> handler
+  final protected def setHandler(out: Outlet[_], handler: OutHandler): Unit = {
+    handler.ownerStageLogic = this
+    outHandlers += out -> handler
+  }
 
   private def conn[T](in: Inlet[T]): Int = inToConn(in)
   private def conn[T](out: Outlet[T]): Int = outToConn(out)
@@ -112,7 +146,7 @@ abstract class GraphStageLogic {
    * There can only be one outstanding request at any given time. The method [[hasBeenPulled()]] can be used
    * query whether pull is allowed to be called or not.
    */
-  final def pull[T](in: Inlet[T]): Unit = {
+  final protected def pull[T](in: Inlet[T]): Unit = {
     require(!hasBeenPulled(in), "Cannot pull port twice")
     interpreter.pull(conn(in))
   }
@@ -120,7 +154,7 @@ abstract class GraphStageLogic {
   /**
    * Requests to stop receiving events from a given input port.
    */
-  final def cancel[T](in: Inlet[T]): Unit = interpreter.cancel(conn(in))
+  final protected def cancel[T](in: Inlet[T]): Unit = interpreter.cancel(conn(in))
 
   /**
    * Once the callback [[InHandler.onPush()]] for an input port has been invoked, the element that has been pushed
@@ -129,7 +163,7 @@ abstract class GraphStageLogic {
    *
    * The method [[isAvailable()]] can be used to query if the port has an element that can be grabbed or not.
    */
-  final def grab[T](in: Inlet[T]): T = {
+  final protected def grab[T](in: Inlet[T]): T = {
     require(isAvailable(in), "Cannot get element from already empty input port")
     val connection = conn(in)
     val elem = interpreter.connectionStates(connection)
@@ -141,7 +175,7 @@ abstract class GraphStageLogic {
    * Indicates whether there is already a pending pull for the given input port. If this method returns true
    * then [[isAvailable()]] must return false for that same port.
    */
-  final def hasBeenPulled[T](in: Inlet[T]): Boolean = !interpreter.inAvailable(conn(in))
+  final protected def hasBeenPulled[T](in: Inlet[T]): Boolean = !interpreter.inAvailable(conn(in))
 
   /**
    * Indicates whether there is an element waiting at the given input port. [[grab()]] can be used to retrieve the
@@ -149,7 +183,7 @@ abstract class GraphStageLogic {
    *
    * If this method returns true then [[hasBeenPulled()]] will return false for that same port.
    */
-  final def isAvailable[T](in: Inlet[T]): Boolean = {
+  final protected def isAvailable[T](in: Inlet[T]): Boolean = {
     val connection = conn(in)
     interpreter.inAvailable(connection) && !(interpreter.connectionStates(connection) == Empty)
   }
@@ -159,7 +193,7 @@ abstract class GraphStageLogic {
    * will fail. There can be only one outstanding push request at any given time. The method [[isAvailable()]] can be
    * used to check if the port is ready to be pushed or not.
    */
-  final def push[T](out: Outlet[T], elem: T): Unit = {
+  final protected def push[T](out: Outlet[T], elem: T): Unit = {
     require(isAvailable(out), "Cannot push port twice")
     interpreter.push(conn(out), elem)
   }
@@ -167,12 +201,12 @@ abstract class GraphStageLogic {
   /**
    * Signals that there will be no more elements emitted on the given port.
    */
-  final def complete[T](out: Outlet[T]): Unit = interpreter.complete(conn(out))
+  final protected def complete[T](out: Outlet[T]): Unit = interpreter.complete(conn(out))
 
   /**
    * Signals failure through the given port.
    */
-  final def fail[T](out: Outlet[T], ex: Throwable): Unit = interpreter.fail(conn(out), ex)
+  final protected def fail[T](out: Outlet[T], ex: Throwable): Unit = interpreter.fail(conn(out), ex)
 
   /**
    * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
@@ -213,6 +247,103 @@ abstract class GraphStageLogic {
     }
   }
 
+  private def onInternalTimer(scheduled: Scheduled): Unit = {
+    val Id = scheduled.timerId
+    keyToTimers.get(scheduled.timerKey) match {
+      case Some(Timer(Id, _)) ⇒
+        if (!scheduled.repeating) keyToTimers -= scheduled.timerKey
+        onTimer(scheduled.timerKey)
+      case _ ⇒
+    }
+  }
+
+  /**
+   * Schedule timer to call [[#onTimer]] periodically with the given interval.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  final protected def schedulePeriodically(timerKey: Any, interval: FiniteDuration): Unit =
+    schedulePeriodicallyWithInitialDelay(timerKey, interval, interval)
+
+  /**
+   * Schedule timer to call [[#onTimer]] periodically with the given interval after the specified
+   * initial delay.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  final protected def schedulePeriodicallyWithInitialDelay(
+    timerKey: Any,
+    initialDelay: FiniteDuration,
+    interval: FiniteDuration): Unit = {
+    if (interpreter ne null) {
+      cancelTimer(timerKey)
+      val id = timerIdGen.next()
+      val task = interpreter.materializer.schedulePeriodically(initialDelay, interval, new Runnable {
+        def run() = getTimerAsyncCallback.invoke(Scheduled(timerKey, id, repeating = true))
+      })
+      keyToTimers(timerKey) = Timer(id, task)
+    } else {
+      queuedTimerEvents = QueuedSchedule(timerKey, initialDelay, interval) :: queuedTimerEvents
+    }
+  }
+
+  /**
+   * Schedule timer to call [[#onTimer]] after given delay.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  final protected def scheduleOnce(timerKey: Any, delay: FiniteDuration): Unit = {
+    if (interpreter ne null) {
+      cancelTimer(timerKey)
+      val id = timerIdGen.next()
+      val task = interpreter.materializer.scheduleOnce(delay, new Runnable {
+        def run() = getTimerAsyncCallback.invoke(Scheduled(timerKey, id, repeating = false))
+      })
+      keyToTimers(timerKey) = Timer(id, task)
+    } else {
+      queuedTimerEvents = QueuedScheduleOnce(timerKey, delay) :: queuedTimerEvents
+    }
+  }
+
+  /**
+   * Cancel timer, ensuring that the [[#onTimer]] is not subsequently called.
+   * @param timerKey key of the timer to cancel
+   */
+  final protected def cancelTimer(timerKey: Any): Unit =
+    keyToTimers.get(timerKey).foreach { t ⇒
+      t.task.cancel()
+      keyToTimers -= timerKey
+    }
+
+  /**
+   * Inquire whether the timer is still active. Returns true unless the
+   * timer does not exist, has previously been canceled or if it was a
+   * single-shot timer that was already triggered.
+   */
+  final protected def isTimerActive(timerKey: Any): Boolean = keyToTimers contains timerKey
+
+  /**
+   * Will be called when the scheduled timer is triggered.
+   * @param timerKey key of the scheduled timer
+   */
+  protected def onTimer(timerKey: Any): Unit = ()
+
+  // Internal hooks to avoid reliance on user calling super in preStart
+  protected[stream] def beforePreStart(): Unit = {
+    queuedTimerEvents.reverse.foreach {
+      case QueuedSchedule(timerKey, delay, interval) ⇒ schedulePeriodicallyWithInitialDelay(timerKey, delay, interval)
+      case QueuedScheduleOnce(timerKey, delay)       ⇒ scheduleOnce(timerKey, delay)
+      case QueuedCancelTimer(timerKey)               ⇒ cancelTimer(timerKey)
+    }
+    queuedTimerEvents = Nil
+  }
+
+  // Internal hooks to avoid reliance on user calling super in postStop
+  protected[stream] def afterPostStop(): Unit = {
+    keyToTimers.foreach { case (_, Timer(_, task)) ⇒ task.cancel() }
+    keyToTimers.clear()
+  }
+
   /**
    * Invoked before any external events are processed, at the startup of the stage.
    */
@@ -229,6 +360,11 @@ abstract class GraphStageLogic {
  */
 trait InHandler {
   /**
+   * INTERNAL API
+   */
+  private[stream] var ownerStageLogic: GraphStageLogic = _
+
+  /**
    * Called when the input port has a new element available. The actual element can be retrieved via the
    * [[GraphStageLogic.grab()]] method.
    */
@@ -237,18 +373,23 @@ trait InHandler {
   /**
    * Called when the input port is finished. After this callback no other callbacks will be called for this port.
    */
-  def onUpstreamFinish(): Unit = ()
+  def onUpstreamFinish(): Unit = ownerStageLogic.completeStage()
 
   /**
    * Called when the input port has failed. After this callback no other callbacks will be called for this port.
    */
-  def onUpstreamFailure(ex: Throwable): Unit = ()
+  def onUpstreamFailure(ex: Throwable): Unit = ownerStageLogic.failStage(ex)
 }
 
 /**
  * Collection of callbacks for an output port of a [[GraphStage]]
  */
 trait OutHandler {
+  /**
+   * INTERNAL API
+   */
+  private[stream] var ownerStageLogic: GraphStageLogic = _
+
   /**
    * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push()]]
    * is now allowed to be called on this port.
@@ -259,5 +400,5 @@ trait OutHandler {
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
    * be called for this port.
    */
-  def onDownstreamFinish(): Unit = ()
+  def onDownstreamFinish(): Unit = ownerStageLogic.completeStage()
 }
