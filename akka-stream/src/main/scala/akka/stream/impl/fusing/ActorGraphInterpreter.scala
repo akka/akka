@@ -261,7 +261,7 @@ private[stream] object ActorGraphInterpreter {
         downstreamDemand += elements
         if (downstreamDemand < 0)
           downstreamDemand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
-        if (!hasBeenPulled(in)) pull(in)
+        if (!hasBeenPulled(in) && !isClosed(in)) pull(in)
       }
     }
 
@@ -359,11 +359,6 @@ private[stream] class ActorGraphInterpreter(
       outputs(id).subscribePending()
     case ExposedPublisher(id, publisher) ⇒
       outputs(id).exposedPublisher(publisher)
-
-  }
-
-  override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
-    super.aroundReceive(receive, msg)
 
   }
 
