@@ -17,6 +17,11 @@ import scala.collection.JavaConverters._
 sealed abstract class InPort { self: Inlet[_] ⇒
   final override def hashCode: Int = System.identityHashCode(this)
   final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+
+  /**
+   * INTERNAL API
+   */
+  private[stream] var id: Int = 0
 }
 /**
  * An output port of a StreamLayout.Module. This type logically belongs
@@ -27,6 +32,11 @@ sealed abstract class InPort { self: Inlet[_] ⇒
 sealed abstract class OutPort { self: Outlet[_] ⇒
   final override def hashCode: Int = System.identityHashCode(this)
   final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+
+  /**
+   * INTERNAL API
+   */
+  private[stream] var id: Int = 0
 }
 
 /**
