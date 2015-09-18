@@ -29,6 +29,9 @@ object RemoteGatePiercingSpec extends MultiNodeConfig {
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 5 s
+      
+      akka.diagnostics.checker.disabled-checks += transport-failure-detector
+      akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
                               """)))
 
   nodeConfig(first)(

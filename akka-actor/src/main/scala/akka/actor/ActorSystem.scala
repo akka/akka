@@ -22,6 +22,7 @@ import scala.concurrent.{ Await, Future, Promise, ExecutionContext, ExecutionCon
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NonFatal, ControlThrowable }
 import java.util.Locale
+import akka.diagnostics.ConfigChecker
 
 object ActorSystem {
 
@@ -158,8 +159,9 @@ object ActorSystem {
      * @see <a href="http://typesafehub.github.io/config/v1.3.0/" target="_blank">The Typesafe Config Library API Documentation</a>
      */
     final val config: Config = {
-      val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
-      config.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
+      val reference = ConfigFactory.defaultReference(classLoader)
+      val config = cfg.withFallback(reference)
+      config.checkValid(reference, "akka")
       config
     }
 
@@ -666,6 +668,9 @@ private[akka] class ActorSystemImpl(
     eventStream.startUnsubscriber()
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
+
+    ConfigChecker.reportIssues(this)
+
     this
   } catch {
     case NonFatal(e) ⇒

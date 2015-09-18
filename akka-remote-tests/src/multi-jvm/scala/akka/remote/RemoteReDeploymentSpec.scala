@@ -33,7 +33,11 @@ object RemoteReDeploymentMultiJvmSpec extends MultiNodeConfig {
          threshold=0.1
          heartbeat-interval=0.1s
          acceptable-heartbeat-pause=2.5s
-       }""")))
+       }
+       
+       akka.diagnostics.checker.disabled-checks += transport-failure-detector
+       akka.diagnostics.checker.disabled-checks += remote-watch-failure-detector
+       """)))
   testTransport(on = true)
 
   deployOn(second, "/parent/hello.remote = \"@first@\"")

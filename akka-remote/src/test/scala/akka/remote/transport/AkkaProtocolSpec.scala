@@ -57,6 +57,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
         use-passive-connections = on
       }
+
+      akka.diagnostics.checker.disabled-checks += transport-failure-detector
   """)
 
   val localAddress = Address("test", "testsystem", "testhost", 1234)

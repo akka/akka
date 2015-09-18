@@ -26,6 +26,9 @@ object ThrottlerTransportAdapterSpec {
       remote.netty.tcp.applied-adapters = ["trttl"]
       remote.netty.tcp.port = 0
     }
+
+    akka.diagnostics.checker.disabled-checks += transport-failure-detector
+    akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
                                                    """)
 
   class Echo extends Actor {

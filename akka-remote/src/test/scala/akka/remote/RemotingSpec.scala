@@ -117,6 +117,9 @@ object RemotingSpec {
         /looker2/child/grandchild.remote = "akka.test://RemotingSpec@localhost:12345"
       }
     }
+
+    akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
+    akka.diagnostics.checker.confirmed-typos = ["akka.remote.test"]
   """)
 
   def muteSystem(system: ActorSystem) {
