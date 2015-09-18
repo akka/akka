@@ -50,10 +50,12 @@ class RecipeKeepAlive extends RecipeSpec {
       sub.expectNext(ByteString(1))
       subscription.request(2)
       sub.expectNext(ByteString(2))
-      sub.expectNext(ByteString(3))
+      // This still gets through because there is some intrinsic fairness caused by the FIFO queue in the interpreter
+      // Expecting here a preferred element also only worked true accident with the old Pump.
+      sub.expectNext(keepaliveMessage)
 
       subscription.request(1)
-      sub.expectNext(keepaliveMessage)
+      sub.expectNext(ByteString(3))
 
       subscription.request(1)
       tickPub.sendNext(())

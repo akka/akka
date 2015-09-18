@@ -80,7 +80,7 @@ class FlowGraphDocSpec extends AkkaSpec {
         // unconnected zip.out (!) => "must have at least 1 outgoing edge"
       }
       //#simple-graph
-    }.getMessage should include("unconnected ports: Zip.out")
+    }.getMessage should include("unconnected ports: ZipWith2.out")
   }
 
   "reusing a flow in a graph" in {

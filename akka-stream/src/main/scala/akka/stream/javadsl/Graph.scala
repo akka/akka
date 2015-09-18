@@ -10,14 +10,6 @@ import akka.japi.Pair
  * Merge several streams, taking elements as they arrive from input streams
  * (picking randomly when several have elements ready).
  *
- * When building the [[FlowGraph]] you must connect one or more input sources
- * and one output sink to the `Merge` vertex.
- *
- * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
- * that multiple flows can be attached to; if you want to have multiple independent
- * junctions within the same `FlowGraph` then you will have to create multiple such
- * instances.
- *
  * '''Emits when''' one of the inputs has an element available
  *
  * '''Backpressures when''' downstream backpressures
@@ -29,13 +21,13 @@ import akka.japi.Pair
 object Merge {
 
   /**
-   * Create a new `Merge` vertex with the specified output type.
+   * Create a new `Merge` stage with the specified output type.
    */
   def create[T](inputPorts: Int): Graph[UniformFanInShape[T, T], Unit] =
     scaladsl.Merge(inputPorts)
 
   /**
-   * Create a new `Merge` vertex with the specified output type.
+   * Create a new `Merge` stage with the specified output type.
    */
   def create[T](clazz: Class[T], inputPorts: Int): Graph[UniformFanInShape[T, T], Unit] = create(inputPorts)
 
@@ -44,14 +36,6 @@ object Merge {
 /**
  * Merge several streams, taking elements as they arrive from input streams
  * (picking from preferred when several have elements ready).
- *
- * When building the [[FlowGraph]] you must connect one or more input streams
- * and one output sink to the `Merge` vertex.
- *
- * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
- * that multiple flows can be attached to; if you want to have multiple independent
- * junctions within the same `FlowGraph` then you will have to create multiple such
- * instances.
  *
  * '''Emits when''' one of the inputs has an element available, preferring
  * a specified input if multiple have elements available
@@ -64,13 +48,13 @@ object Merge {
  */
 object MergePreferred {
   /**
-   * Create a new `MergePreferred` vertex with the specified output type.
+   * Create a new `MergePreferred` stage with the specified output type.
    */
   def create[T](secondaryPorts: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
     scaladsl.MergePreferred(secondaryPorts)
 
   /**
-   * Create a new `MergePreferred` vertex with the specified output type.
+   * Create a new `MergePreferred` stage with the specified output type.
    */
   def create[T](clazz: Class[T], secondaryPorts: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] = create(secondaryPorts)
 
@@ -80,11 +64,6 @@ object MergePreferred {
  * Fan-out the stream to several streams. emitting each incoming upstream element to all downstream consumers.
  * It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
- *
- * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
- * that multiple flows can be attached to; if you want to have multiple independent
- * junctions within the same `FlowGraph` then you will have to create multiple such
- * instances.
  *
  * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
  *
@@ -97,7 +76,7 @@ object MergePreferred {
  */
 object Broadcast {
   /**
-   * Create a new `Broadcast` vertex with the specified input type.
+   * Create a new `Broadcast` stage with the specified input type.
    *
    * @param outputCount number of output ports
    * @param eagerCancel if true, broadcast cancels upstream if any of its downstreams cancel.
@@ -106,14 +85,14 @@ object Broadcast {
     scaladsl.Broadcast(outputCount, eagerCancel = eagerCancel)
 
   /**
-   * Create a new `Broadcast` vertex with the specified input type.
+   * Create a new `Broadcast` stage with the specified input type.
    *
    * @param outputCount number of output ports
    */
   def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount, eagerCancel = false)
 
   /**
-   * Create a new `Broadcast` vertex with the specified input type.
+   * Create a new `Broadcast` stage with the specified input type.
    */
   def create[T](clazz: Class[T], outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] = create(outputCount)
 
@@ -123,11 +102,6 @@ object Broadcast {
  * Fan-out the stream to several streams. Each upstream element is emitted to the first available downstream consumer.
  * It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
- *
- * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
- * that multiple flows can be attached to; if you want to have multiple independent
- * junctions within the same `FlowGraph` then you will have to create multiple such
- * instances.
  *
  * '''Emits when''' any of the outputs stops backpressuring; emits the element to the first available output
  *
@@ -139,7 +113,7 @@ object Broadcast {
  */
 object Balance {
   /**
-   * Create a new `Balance` vertex with the specified input type.
+   * Create a new `Balance` stage with the specified input type.
    *
    * @param waitForAllDownstreams if `true` it will not start emitting
    *   elements to downstream outputs until all of them have requested at least one element
@@ -148,19 +122,19 @@ object Balance {
     scaladsl.Balance(outputCount, waitForAllDownstreams)
 
   /**
-   * Create a new `Balance` vertex with the specified input type.
+   * Create a new `Balance` stage with the specified input type.
    */
   def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] =
     create(outputCount, waitForAllDownstreams = false)
 
   /**
-   * Create a new `Balance` vertex with the specified input type.
+   * Create a new `Balance` stage with the specified input type.
    */
   def create[T](clazz: Class[T], outputCount: Int): Graph[UniformFanOutShape[T, T], Unit] =
     create(outputCount)
 
   /**
-   * Create a new `Balance` vertex with the specified input type.
+   * Create a new `Balance` stage with the specified input type.
    *
    * @param waitForAllDownstreams if `true` it will not start emitting
    *   elements to downstream outputs until all of them have requested at least one element
@@ -187,7 +161,7 @@ object Zip {
   import akka.japi.Pair
 
   /**
-   * Create a new `Zip` vertex with the specified input types and zipping-function
+   * Create a new `Zip` stage with the specified input types and zipping-function
    * which creates `akka.japi.Pair`s.
    */
   def create[A, B]: Graph[FanInShape2[A, B, A Pair B], Unit] =
@@ -214,13 +188,13 @@ object Unzip {
   import akka.japi.function.Function
 
   /**
-   * Creates a new `Unzip` vertex with the specified output types.
+   * Creates a new `Unzip` stage with the specified output types.
    */
   def create[A, B](): Graph[FanOutShape2[A Pair B, A, B], Unit] =
     UnzipWith.create(JavaIdentityFunction.asInstanceOf[Function[Pair[A, B], Pair[A, B]]])
 
   /**
-   * Creates a new `Unzip` vertex with the specified output types.
+   * Creates a new `Unzip` stage with the specified output types.
    */
   def create[A, B](left: Class[A], right: Class[B]): Graph[FanOutShape2[A Pair B, A, B], Unit] = create[A, B]()
 
@@ -230,11 +204,6 @@ object Unzip {
  * Takes two streams and outputs an output stream formed from the two input streams
  * by consuming one stream first emitting all of its elements, then consuming the
  * second stream emitting all of its elements.
- *
- * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
- * that multiple flows can be attached to; if you want to have multiple independent
- * junctions within the same `FlowGraph` then you will have to create multiple such
- * instances.
  *
  * '''Emits when''' the current stream has an element available; if the current input completes, it tries the next one
  *
@@ -246,18 +215,17 @@ object Unzip {
  */
 object Concat {
   /**
-   * Create a new anonymous `Concat` vertex with the specified input types.
-   * Note that a `Concat` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new anonymous `Concat` stage with the specified input types.
    */
   def create[T](): Graph[UniformFanInShape[T, T], Unit] = scaladsl.Concat[T]()
 
   /**
-   * Create a new anonymous `Concat` vertex with the specified input types.
-   * Note that a `Concat` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new anonymous `Concat` stage with the specified input types.
+   */
+  def create[T](inputCount: Int): Graph[UniformFanInShape[T, T], Unit] = scaladsl.Concat[T](inputCount)
+
+  /**
+   * Create a new anonymous `Concat` stage with the specified input types.
    */
   def create[T](clazz: Class[T]): Graph[UniformFanInShape[T, T], Unit] = create()
 

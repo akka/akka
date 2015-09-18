@@ -9,8 +9,6 @@ import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
 import akka.stream.actor.ActorSubscriber
-import akka.stream.impl.GenJunctions.ZipWithModule
-import akka.stream.impl.GenJunctions.UnzipWithModule
 import akka.stream.impl.Junctions._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphModule, ActorInterpreter }
@@ -160,23 +158,10 @@ private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
         op match {
           case fanin: FanInModule ⇒
             val (props, inputs, output) = fanin match {
-
-              case MergeModule(shape, _) ⇒
-                (FairMerge.props(effectiveSettings, shape.inSeq.size), shape.inSeq, shape.out)
-
               case f: FlexiMergeModule[t, p] ⇒
                 val flexi = f.flexi(f.shape)
                 (FlexiMerge.props(effectiveSettings, f.shape, flexi), f.shape.inlets, f.shape.outlets.head)
 
-              case MergePreferredModule(shape, _) ⇒
-                (UnfairMerge.props(effectiveSettings, shape.inlets.size), shape.preferred +: shape.inSeq, shape.out)
-
-              case ConcatModule(shape, _) ⇒
-                require(shape.inSeq.size == 2, "currently only supporting concatenation of exactly two inputs") // TODO
-                (Concat.props(effectiveSettings), shape.inSeq, shape.out)
-
-              case zip: ZipWithModule ⇒
-                (zip.props(effectiveSettings), zip.shape.inlets, zip.outPorts.head)
             }
             val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
             val publisher = new ActorPublisher[Any](impl)
@@ -193,15 +178,6 @@ private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
               case r: FlexiRouteModule[t, p] ⇒
                 val flexi = r.flexi(r.shape)
                 (FlexiRoute.props(effectiveSettings, r.shape, flexi), r.shape.inlets.head: InPort, r.shape.outlets)
-
-              case BroadcastModule(shape, eagerCancel, _) ⇒
-                (Broadcast.props(effectiveSettings, eagerCancel, shape.outArray.length), shape.in, shape.outArray.toSeq)
-
-              case BalanceModule(shape, waitForDownstreams, _) ⇒
-                (Balance.props(effectiveSettings, shape.outArray.length, waitForDownstreams), shape.in, shape.outArray.toSeq)
-
-              case unzip: UnzipWithModule ⇒
-                (unzip.props(effectiveSettings), unzip.inPorts.head, unzip.shape.outlets)
             }
             val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
             val size = outs.size
