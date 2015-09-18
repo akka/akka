@@ -12,7 +12,7 @@ All stages stop and propagate the failure downstream as soon as any of their ups
 is used. This happens to ensure reliable teardown of streams and cleanup when failures happen. Failures are meant to
 be to model unrecoverable conditions, therefore they are always eagerly propagated.
 For in-band error handling of normal errors (dropping elements if a map fails for example) you should use the
-upervision support, or explicitly wrap your element types in a proper container that can express error or success
+supervision support, or explicitly wrap your element types in a proper container that can express error or success
 states (for example ``Try`` in Scala).
 
 Custom components are not covered by this table since their semantics are defined by the user.
