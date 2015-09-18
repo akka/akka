@@ -401,7 +401,8 @@ object GraphInterpreterSpec {
           (Vector.fill(upstreams.size)(null) ++ outs).toArray,
           (Vector.fill(upstreams.size)(-1) ++ outOwners).toArray)
 
-        _interpreter = new GraphInterpreter(assembly, NoMaterializer, (_, _, _) ⇒ ())
+        val (inHandlers, outHandlers, logics, _) = assembly.materialize()
+        _interpreter = new GraphInterpreter(assembly, NoMaterializer, inHandlers, outHandlers, logics, (_, _, _) ⇒ ())
 
         for ((upstream, i) ← upstreams.zipWithIndex) {
           _interpreter.attachUpstreamBoundary(i, upstream._1)
@@ -415,8 +416,10 @@ object GraphInterpreterSpec {
       }
     }
 
-    def manualInit(assembly: GraphAssembly): Unit =
-      _interpreter = new GraphInterpreter(assembly, NoMaterializer, (_, _, _) ⇒ ())
+    def manualInit(assembly: GraphAssembly): Unit = {
+      val (inHandlers, outHandlers, logics, _) = assembly.materialize()
+      _interpreter = new GraphInterpreter(assembly, NoMaterializer, inHandlers, outHandlers, logics, (_, _, _) ⇒ ())
+    }
 
     def builder(stages: GraphStage[_ <: Shape]*): AssemblyBuilder = new AssemblyBuilder(stages.toSeq)
 
