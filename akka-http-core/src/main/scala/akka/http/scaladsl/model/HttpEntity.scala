@@ -13,11 +13,10 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.util.ByteString
-import akka.stream.Materializer
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.scaladsl._
-import akka.stream.io.SynchronousFileSource
+import akka.stream.io.{ Timeouts, SynchronousFileSource }
 import akka.{ japi, stream }
-import akka.stream.TimerTransformer
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -55,28 +54,10 @@ sealed trait HttpEntity extends jm.HttpEntity {
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
    * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
    */
-  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] = {
-    def transformer() =
-      new TimerTransformer[ByteString, HttpEntity.Strict] {
-        var bytes = ByteString.newBuilder
-        scheduleOnce("", timeout)
-
-        def onNext(element: ByteString): immutable.Seq[HttpEntity.Strict] = {
-          bytes ++= element
-          Nil
-        }
-
-        override def onTermination(e: Option[Throwable]): immutable.Seq[HttpEntity.Strict] =
-          HttpEntity.Strict(contentType, bytes.result()) :: Nil
-
-        def onTimer(timerKey: Any): immutable.Seq[HttpEntity.Strict] =
-          throw new java.util.concurrent.TimeoutException(
-            s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data")
-      }
-
-    // TODO timerTransform is meant to be replaced / rewritten, it's currently private[akka]; See https://github.com/akka/akka/issues/16393
-    dataBytes.via(Flow[ByteString].timerTransform(transformer).named("toStrict")).runWith(Sink.head)
-  }
+  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] =
+    dataBytes
+      .via(new akka.http.impl.util.ToStrict(timeout, contentType))
+      .runWith(Sink.head)
 
   /**
    * Returns a copy of the given entity with the ByteString chunks of this entity transformed by the given transformer.
