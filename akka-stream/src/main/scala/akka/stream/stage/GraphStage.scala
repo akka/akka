@@ -75,20 +75,20 @@ abstract class GraphStageLogic {
   /**
    * INTERNAL API
    */
-  private[stream] var inHandlers = scala.collection.Map.empty[Inlet[_], InHandler]
+  private[stream] var inHandlers = Array.ofDim[InHandler](16) // FIXME: proper size
   /**
    * INTERNAL API
    */
-  private[stream] var outHandlers = scala.collection.Map.empty[Outlet[_], OutHandler]
+  private[stream] var outHandlers = Array.ofDim[OutHandler](16)
 
   /**
    * INTERNAL API
    */
-  private[stream] var inToConn = scala.collection.Map.empty[Inlet[_], Int]
+  private[stream] var inToConn = Array.ofDim[Int](16)
   /**
    * INTERNAL API
    */
-  private[stream] var outToConn = scala.collection.Map.empty[Outlet[_], Int]
+  private[stream] var outToConn = Array.ofDim[Int](16)
 
   /**
    * INTERNAL API
@@ -98,14 +98,14 @@ abstract class GraphStageLogic {
   /**
    * Assigns callbacks for the events for an [[Inlet]]
    */
-  final protected def setHandler(in: Inlet[_], handler: InHandler): Unit = inHandlers += in -> handler
+  final protected def setHandler(in: Inlet[_], handler: InHandler): Unit = inHandlers(in.id) = handler
   /**
    * Assigns callbacks for the events for an [[Outlet]]
    */
-  final protected def setHandler(out: Outlet[_], handler: OutHandler): Unit = outHandlers += out -> handler
+  final protected def setHandler(out: Outlet[_], handler: OutHandler): Unit = outHandlers(out.id) = handler
 
-  private def conn[T](in: Inlet[T]): Int = inToConn(in)
-  private def conn[T](out: Outlet[T]): Int = outToConn(out)
+  private def conn[T](in: Inlet[T]): Int = inToConn(in.id)
+  private def conn[T](out: Outlet[T]): Int = outToConn(out.id)
 
   /**
    * Requests an element on the given port. Calling this method twice before an element arrived will fail.
@@ -179,8 +179,8 @@ abstract class GraphStageLogic {
    * then stops the stage, then [[postStop()]] is called.
    */
   final def completeStage(): Unit = {
-    inToConn.valuesIterator.foreach(interpreter.cancel)
-    outToConn.valuesIterator.foreach(interpreter.complete)
+    inToConn.foreach(interpreter.cancel)
+    outToConn.foreach(interpreter.complete)
   }
 
   /**
@@ -188,8 +188,8 @@ abstract class GraphStageLogic {
    * then stops the stage, then [[postStop()]] is called.
    */
   final def failStage(ex: Throwable): Unit = {
-    inToConn.valuesIterator.foreach(interpreter.cancel)
-    outToConn.valuesIterator.foreach(interpreter.fail(_, ex))
+    inToConn.foreach(interpreter.cancel)
+    outToConn.foreach(interpreter.fail(_, ex))
   }
 
   /**

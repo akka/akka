@@ -89,6 +89,10 @@ private[stream] object GraphInterpreter {
     def materialize(interpreter: GraphInterpreter): (Array[InHandler], Array[OutHandler], Array[GraphStageLogic]) = {
       val logics = Array.ofDim[GraphStageLogic](stages.length)
       for (i ← stages.indices) {
+        // Must come first
+        stages(i).asInstanceOf[GraphStage[Shape]].shape.inlets.zipWithIndex.foreach { case (inlet, idx) ⇒ inlet.id = idx }
+        stages(i).asInstanceOf[GraphStage[Shape]].shape.outlets.zipWithIndex.foreach { case (outlet, idx) ⇒ outlet.id = idx }
+
         logics(i) = stages(i).createLogic
         logics(i).interpreter = interpreter
       }
@@ -98,12 +102,12 @@ private[stream] object GraphInterpreter {
 
       for (i ← 0 until connectionCount) {
         if (ins(i) ne null) {
-          inHandlers(i) = logics(inOwners(i)).inHandlers(ins(i))
-          logics(inOwners(i)).inToConn += ins(i) -> i
+          inHandlers(i) = logics(inOwners(i)).inHandlers(ins(i).id)
+          logics(inOwners(i)).inToConn(ins(i).id) = i
         }
         if (outs(i) ne null) {
-          outHandlers(i) = logics(outOwners(i)).outHandlers(outs(i))
-          logics(outOwners(i)).outToConn += outs(i) -> i
+          outHandlers(i) = logics(outOwners(i)).outHandlers(outs(i).id)
+          logics(outOwners(i)).outToConn(outs(i).id) = i
         }
       }
 
@@ -224,9 +228,9 @@ private[stream] final class GraphInterpreter(
    * (outside the interpreter) to process and inject events.
    */
   def attachUpstreamBoundary(connection: Int, logic: UpstreamBoundaryStageLogic[_]): Unit = {
-    logic.outToConn += logic.out -> connection
+    logic.outToConn(logic.out.id) = connection
     logic.interpreter = this
-    outHandlers(connection) = logic.outHandlers.head._2
+    outHandlers(connection) = logic.outHandlers(0)
   }
 
   /**
@@ -234,9 +238,9 @@ private[stream] final class GraphInterpreter(
    * (outside the interpreter) to process and inject events.
    */
   def attachDownstreamBoundary(connection: Int, logic: DownstreamBoundaryStageLogic[_]): Unit = {
-    logic.inToConn += logic.in -> connection
+    logic.inToConn(logic.in.id) = connection
     logic.interpreter = this
-    inHandlers(connection) = logic.inHandlers.head._2
+    inHandlers(connection) = logic.inHandlers(0)
   }
 
   /**

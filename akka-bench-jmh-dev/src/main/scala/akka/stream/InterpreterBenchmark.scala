@@ -54,7 +54,10 @@ class InterpreterBenchmark {
     val lock = new Lock()
     lock.acquire()
     val sink = OneBoundedDataSink(data100k.size, lock)
-    val ops = Vector.fill(numberOfIds)(MapStage(identity[Int], Supervision.stoppingDecider))
+    val ops = Vector.fill(numberOfIds)(new PushPullStage[Int, Int] {
+      override def onPull(ctx: _root_.akka.stream.stage.Context[Int]) = ctx.pull()
+      override def onPush(elem: Int, ctx: _root_.akka.stream.stage.Context[Int]) = ctx.push(elem)
+    })
     val interpreter = new OneBoundedInterpreter(OneBoundedDataSource(data100k) +: ops :+ sink,
       (op, ctx, event) ⇒ (),
       Logging(NoopBus, classOf[InterpreterBenchmark]),
