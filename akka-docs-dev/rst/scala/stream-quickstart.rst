@@ -24,7 +24,7 @@ Here's the data model we'll be working with throughout the quickstart examples:
 
 Transforming and consuming simple streams
 -----------------------------------------
-The example application we will be looking at is a simple Twitter fed stream from which we'll want to extract certain information,
+The example application we will be looking at is a simple Twitter feed stream from which we'll want to extract certain information,
 like for example finding all twitter handles of users who tweet about ``#akka``.
 
 In order to prepare our environment by creating an :class:`ActorSystem` and :class:`ActorMaterializer`,
