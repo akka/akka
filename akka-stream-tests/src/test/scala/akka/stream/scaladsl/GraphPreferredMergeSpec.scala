@@ -46,6 +46,21 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
       Await.result(result, 3.seconds).filter(_ == 1).size should be(numElements)
     }
 
+    "eventually pass through all elements" in {
+      val result = FlowGraph.closed(Sink.head[Seq[Int]]) { implicit b ⇒
+        sink ⇒
+          val merge = b.add(MergePreferred[Int](3))
+          Source(1 to 100) ~> merge.preferred
+
+          merge.out.grouped(500) ~> sink.inlet
+          Source(101 to 200) ~> merge.in(0)
+          Source(201 to 300) ~> merge.in(1)
+          Source(301 to 400) ~> merge.in(2)
+      }.run()
+
+      Await.result(result, 3.seconds).toSet should ===((1 to 400).toSet)
+    }
+
     "disallow multiple preferred inputs" in {
       val s = Source(0 to 3)
 

@@ -4,20 +4,18 @@
 package akka.stream.scaladsl
 
 import akka.stream._
-import akka.stream.impl.GenJunctions._
 import akka.stream.impl.StreamLayout
+import akka.stream.stage._
 
 trait ZipWithApply {
 
   [2..20#/**
    * Create a new `ZipWith` specialized for 1 inputs.
    *
-   * @param f zipping-function from the input values to the output value
-   * @param attributes optional attributes for this vertex
+   * @param zipper zipping-function from the input values to the output value
    */
   def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): ZipWith1[[#A1#], O] = {
-    val shape = new FanInShape1[[#A1#], O]("ZipWith1")
-    new ZipWith1(shape, new ZipWith1Module(shape, zipper, Attributes.name("ZipWith1")))
+    new ZipWith1(zipper)
   }
   #
 
@@ -26,14 +24,42 @@ trait ZipWithApply {
 }
 
 [2..20#/** `ZipWith` specialized for 1 inputs */
-class ZipWith1[[#A1#], O] private[stream] (override val shape: FanInShape1[[#A1#], O],
-                         private[stream] override val module: StreamLayout.Module)
-  extends Graph[FanInShape1[[#A1#], O], Unit] {
+class ZipWith1[[#A1#], O] (zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape1[[#A1#], O]] {
+  override val shape: FanInShape1[[#A1#], O] = new FanInShape1[[#A1#], O]("ZipWith1")
+  def out: Outlet[O] = shape.out
+  [#val in0: Inlet[A1] = shape.in0#
+  ]
 
-  override def withAttributes(attr: Attributes): ZipWith1[[#A1#], O] =
-    new ZipWith1(shape, module.withAttributes(attr).nest())
+  override def createLogic: GraphStageLogic = new GraphStageLogic {
+    var pending = 1
 
-  override def named(name: String): ZipWith1[[#A1#], O] = withAttributes(Attributes.name(name))
+    private def pushAll(): Unit = push(out, zipper([#grab(in0)#]))
+
+    [#setHandler(in0, new InHandler {
+      override def onPush(): Unit = {
+        pending -= ##1
+        if (pending == ##0) pushAll()
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (!isAvailable(out) || !isAvailable(in0)) completeStage()
+      }
+
+    })#
+    ]
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = {
+        pending = shape.inlets.size
+        [#if (!isClosed(in0)) pull(in0)
+        else completeStage()#
+        ]
+      }
+    })
+  }
+
+  override def toString = "Zip"
+
 }
 #
 ]

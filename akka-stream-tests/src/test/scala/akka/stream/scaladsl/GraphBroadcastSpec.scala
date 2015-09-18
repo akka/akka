@@ -47,7 +47,7 @@ class GraphBroadcastSpec extends AkkaSpec {
       c2.expectComplete()
     }
 
-    "work with n-way broadcast" in {
+    "work with n-way broadcast" in assertAllStagesStopped {
       val headSink = Sink.head[Seq[Int]]
 
       import system.dispatcher
@@ -71,7 +71,7 @@ class GraphBroadcastSpec extends AkkaSpec {
       Await.result(result, 3.seconds) should be(List.fill(5)(List(1, 2, 3)))
     }
 
-    "work with 22-way broadcast" in {
+    "work with 22-way broadcast" in assertAllStagesStopped {
       type T = Seq[Int]
       type FT = Future[Seq[Int]]
       val headSink: Sink[T, FT] = Sink.head[T]

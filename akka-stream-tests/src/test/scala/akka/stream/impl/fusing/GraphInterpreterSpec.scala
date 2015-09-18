@@ -4,6 +4,7 @@
 package akka.stream.impl.fusing
 
 import akka.stream.testkit.AkkaSpec
+import akka.stream.scaladsl.{ Merge, Broadcast, Balance, Zip }
 import GraphInterpreter._
 
 class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
@@ -14,10 +15,10 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
     // Reusable components
     val identity = new Identity[Int]
     val detacher = new Detacher[Int]
-    val zip = new Zip[Int, String]
-    val bcast = new Broadcast[Int](2)
-    val merge = new Merge[Int](2)
-    val balance = new Balance[Int](2)
+    val zip = Zip[Int, String]
+    val bcast = Broadcast[Int](2)
+    val merge = Merge[Int](2)
+    val balance = Balance[Int](2)
 
     "implement identity" in new TestSetup {
       val source = new UpstreamProbe[Int]("source")
@@ -181,7 +182,7 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       val sink1 = new DownstreamProbe[(Int, Int)]("sink")
       val sink2 = new DownstreamProbe[(Int, Int)]("sink2")
       val zip = new Zip[Int, Int]
-      val bcast = new Broadcast[(Int, Int)](2)
+      val bcast = Broadcast[(Int, Int)](2)
 
       builder(bcast, zip)
         .connect(source1, zip.in0)
