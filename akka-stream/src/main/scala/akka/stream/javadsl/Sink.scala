@@ -5,8 +5,7 @@ package akka.stream.javadsl
 
 import akka.actor.{ ActorRef, Props }
 import akka.japi.function
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.{ JavaPipedSink, StreamLayout }
+import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -168,7 +167,10 @@ object Sink {
    * This sink gets backpressure from second flow and does not have internal buffer.
    */
   def pipedSink[T](): Sink[T, javadsl.Source[T, Unit]] =
-    new Sink(new scaladsl.Sink(new JavaPipedSink[T](DefaultAttributes.pipedSink, scaladsl.Sink.shape("PipedSink"))))
+    Sink.publisher[T].mapMaterializedValue(
+      new function.Function[Publisher[T], javadsl.Source[T, Unit]] {
+        def apply(pub: Publisher[T]) = javadsl.Source.from[T](pub)
+      }).named("PipedSink")
 }
 
 /**

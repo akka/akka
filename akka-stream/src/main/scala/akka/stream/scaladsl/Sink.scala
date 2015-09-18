@@ -225,6 +225,6 @@ object Sink extends SinkApply {
    * This sink gets backpressure from second flow and does not have internal buffer.
    */
   def pipedSink[T](): Sink[T, Source[T, Unit]] =
-    new Sink(new PipedSink(DefaultAttributes.pipedSink, shape("PipedSink")))
+    Sink.publisher[T].mapMaterializedValue(Source(_)).named("PipedSink")
 
 }
