@@ -63,8 +63,12 @@ object ORSet {
           }
       }
 
-    val newDots = dropDots(dot.versions.toList, Nil)
-    new VersionVector(versions = TreeMap.empty[UniqueAddress, Long] ++ newDots)
+    if (dot.versions.isEmpty)
+      VersionVector.empty
+    else {
+      val newDots = dropDots(dot.versions.toList, Nil)
+      new VersionVector(versions = VersionVector.emptyVersions ++ newDots)
+    }
   }
 
   /**
@@ -74,20 +78,26 @@ object ORSet {
   private[akka] def mergeCommonKeys[A](commonKeys: Set[A], lhs: ORSet[A], rhs: ORSet[A]): Map[A, ORSet.Dot] = {
     commonKeys.foldLeft(Map.empty[A, ORSet.Dot]) {
       case (acc, k) ⇒
-        val lhsDots = lhs.elementsMap(k).versions
-        val rhsDots = rhs.elementsMap(k).versions
-        val commonDots = lhsDots.filter {
-          case (thisDotNode, v) ⇒ rhsDots.get(thisDotNode).exists(_ == v)
+        val lhsDots = lhs.elementsMap(k)
+        val lhsDotsVersions = lhsDots.versions
+        val rhsDotsVersions = rhs.elementsMap(k).versions
+        if (lhsDotsVersions.size == 1 && rhsDotsVersions.size == 1 && lhsDotsVersions.head == rhsDotsVersions.head) {
+          // one single common dot
+          acc.updated(k, lhsDots)
+        } else {
+          val commonDots = lhsDotsVersions.filter {
+            case (thisDotNode, v) ⇒ rhsDotsVersions.get(thisDotNode).exists(_ == v)
+          }
+          val commonDotsKeys = commonDots.keys
+          val lhsUniqueDots = lhsDotsVersions -- commonDotsKeys
+          val rhsUniqueDots = rhsDotsVersions -- commonDotsKeys
+          val lhsKeep = ORSet.subtractDots(new VersionVector(lhsUniqueDots), rhs.vvector)
+          val rhsKeep = ORSet.subtractDots(new VersionVector(rhsUniqueDots), lhs.vvector)
+          val merged = lhsKeep.merge(rhsKeep).merge(new VersionVector(versions = commonDots))
+          // Perfectly possible that an item in both sets should be dropped
+          if (merged.versions.isEmpty) acc
+          else acc.updated(k, merged)
         }
-        val commonDotsKeys = commonDots.keys
-        val lhsUniqueDots = lhsDots -- commonDotsKeys
-        val rhsUniqueDots = rhsDots -- commonDotsKeys
-        val lhsKeep = ORSet.subtractDots(new VersionVector(lhsUniqueDots), rhs.vvector)
-        val rhsKeep = ORSet.subtractDots(new VersionVector(rhsUniqueDots), lhs.vvector)
-        val merged = lhsKeep.merge(rhsKeep).merge(new VersionVector(versions = commonDots))
-        // Perfectly possible that an item in both sets should be dropped
-        if (merged.versions.isEmpty) acc
-        else acc.updated(k, merged)
     }
   }
 
