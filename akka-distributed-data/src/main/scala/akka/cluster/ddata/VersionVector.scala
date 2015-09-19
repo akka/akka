@@ -16,7 +16,11 @@ import akka.cluster.UniqueAddress
  */
 object VersionVector {
 
-  val empty: VersionVector = new VersionVector(TreeMap.empty[UniqueAddress, Long])
+  /**
+   * INTERNAL API
+   */
+  private[akka] val emptyVersions: TreeMap[UniqueAddress, Long] = TreeMap.empty
+  val empty: VersionVector = new VersionVector(emptyVersions)
   def apply(): VersionVector = empty
   /**
    * Java API
