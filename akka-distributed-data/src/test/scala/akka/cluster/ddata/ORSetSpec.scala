@@ -59,6 +59,14 @@ class ORSetSpec extends WordSpec with Matchers {
 
       c5.elements should not contain (user1)
       c5.elements should not contain (user2)
+
+      val c6 = c3.merge(c5)
+      c6.elements should not contain (user1)
+      c6.elements should not contain (user2)
+
+      val c7 = c5.merge(c3)
+      c7.elements should not contain (user1)
+      c7.elements should not contain (user2)
     }
 
     "be able to add removed" in {
