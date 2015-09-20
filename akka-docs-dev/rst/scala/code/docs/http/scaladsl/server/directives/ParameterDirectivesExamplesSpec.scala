@@ -7,8 +7,9 @@ package directives
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers
 
-class ParameterDirectivesExamplesSpec extends RoutingSpec {
+class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStringUnmarshallers {
   "example-1" in {
     val route =
       parameter('color) { color =>
@@ -178,6 +179,19 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec {
     }
     Get("/?x=1&x=2") ~> route ~> check {
       responseAs[String] shouldEqual "The parameters are x = '1', x = '2'"
+    }
+  }
+  "csv" in {
+    val route =
+      parameter("names".as(CsvString)) { names =>
+        complete(s"The parameters are ${names.mkString(", ")}")
+      }
+
+    Get("/?names=Caplin") ~> route ~> check {
+      responseAs[String] shouldEqual "The parameters are Caplin"
+    }
+    Get("/?names=Caplin,John") ~> route ~> check {
+      responseAs[String] shouldEqual "The parameters are Caplin, John"
     }
   }
 }
