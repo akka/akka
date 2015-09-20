@@ -7,6 +7,7 @@ package directives
 
 import org.scalatest.{ FreeSpec, Inside }
 import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
+import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvString
 
 class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Inside {
   "when used with 'as[Int]' the parameter directive should" - {
@@ -48,6 +49,24 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
             case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit signed integer value", Some(_)) ⇒
           }
         }
+      }
+    }
+  }
+
+  "when used with 'as(CsvString)' the parameter directive should" - {
+    val route =
+      parameter("names".as(CsvString)) { names ⇒
+        complete(s"The parameters are ${names.mkString(", ")}")
+      }
+
+    "extract a single name" in {
+      Get("/?names=Caplin") ~> route ~> check {
+        responseAs[String] shouldEqual "The parameters are Caplin"
+      }
+    }
+    "extract a number of names" in {
+      Get("/?names=Caplin,John") ~> route ~> check {
+        responseAs[String] shouldEqual "The parameters are Caplin, John"
       }
     }
   }
