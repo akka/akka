@@ -75,7 +75,10 @@ object ORSet {
    * INTERNAL API
    * @see [[ORSet#merge]]
    */
-  private[akka] def mergeCommonKeys[A](commonKeys: Set[A], lhs: ORSet[A], rhs: ORSet[A]): Map[A, ORSet.Dot] = {
+  private[akka] def mergeCommonKeys[A](commonKeys: Set[A], lhs: ORSet[A], rhs: ORSet[A]): Map[A, ORSet.Dot] =
+    mergeCommonKeys(commonKeys.iterator, lhs, rhs)
+
+  private def mergeCommonKeys[A](commonKeys: Iterator[A], lhs: ORSet[A], rhs: ORSet[A]): Map[A, ORSet.Dot] = {
     commonKeys.foldLeft(Map.empty[A, ORSet.Dot]) {
       case (acc, k) ⇒
         val lhsDots = lhs.elementsMap(k)
@@ -106,7 +109,11 @@ object ORSet {
    * @see [[ORSet#merge]]
    */
   private[akka] def mergeDisjointKeys[A](keys: Set[A], elementsMap: Map[A, ORSet.Dot], vvector: VersionVector,
-                                         accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] = {
+                                         accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] =
+    mergeDisjointKeys(keys.iterator, elementsMap, vvector, accumulator)
+
+  private def mergeDisjointKeys[A](keys: Iterator[A], elementsMap: Map[A, ORSet.Dot], vvector: VersionVector,
+                                   accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] = {
     keys.foldLeft(accumulator) {
       case (acc, k) ⇒
         val dots = elementsMap(k)
@@ -242,14 +249,15 @@ final class ORSet[A] private[akka] (
     if ((this eq that) || that.isAncestorOf(this)) this.clearAncestor()
     else if (this.isAncestorOf(that)) that.clearAncestor()
     else {
-      val thisKeys = elementsMap.keySet
-      val thatKeys = that.elementsMap.keySet
-      val commonKeys = thisKeys.intersect(thatKeys)
-      val thisUniqueKeys = thisKeys -- commonKeys
-      val thatUniqueKeys = thatKeys -- commonKeys
-
+      val commonKeys =
+        if (this.elementsMap.size < that.elementsMap.size)
+          this.elementsMap.keysIterator.filter(that.elementsMap.contains)
+        else
+          that.elementsMap.keysIterator.filter(this.elementsMap.contains)
       val entries00 = ORSet.mergeCommonKeys(commonKeys, this, that)
+      val thisUniqueKeys = this.elementsMap.keysIterator.filterNot(that.elementsMap.contains)
       val entries0 = ORSet.mergeDisjointKeys(thisUniqueKeys, this.elementsMap, that.vvector, entries00)
+      val thatUniqueKeys = that.elementsMap.keysIterator.filterNot(this.elementsMap.contains)
       val entries = ORSet.mergeDisjointKeys(thatUniqueKeys, that.elementsMap, this.vvector, entries0)
       val mergedVvector = this.vvector.merge(that.vvector)
 
