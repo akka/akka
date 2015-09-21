@@ -5,7 +5,7 @@ package akka.stream.javadsl
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
-import akka.japi.{ Util, function }
+import akka.japi.{ Pair, Util, function }
 import akka.stream._
 import akka.stream.impl.StreamLayout
 import akka.stream.stage.Stage
@@ -195,22 +195,6 @@ object Source {
     new Source(scaladsl.Source.actorRef(bufferSize, overflowStrategy))
 
   /**
-   * Concatenates two sources so that the first element
-   * emitted by the second source is emitted after the last element of the first
-   * source.
-   */
-  def concat[T, M1, M2](first: Graph[SourceShape[T], M1], second: Graph[SourceShape[T], M2]): Source[T, (M1, M2)] =
-    new Source(scaladsl.Source.concat(first, second))
-
-  /**
-   * Concatenates two sources so that the first element
-   * emitted by the second source is emitted after the last element of the first
-   * source.
-   */
-  def concatMat[T, M1, M2, M3](first: Graph[SourceShape[T], M1], second: Graph[SourceShape[T], M2], combine: function.Function2[M1, M2, M3]): Source[T, M3] =
-    new Source(scaladsl.Source.concatMat(first, second)(combinerToScala(combine)))
-
-  /**
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
@@ -320,20 +304,74 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     runWith(Sink.fold(zero, f), materializer)
 
   /**
-   * Concatenates a second source so that the first element
-   * emitted by that source is emitted after the last element of this
-   * source.
+   * Concatenate the second [[Source]] to current one, meaning that once current
+   * is exhausted and all result elements have been generated,
+   * the second Source’s elements will be produced.
    */
-  def concat[Out2 >: Out, M2](second: Graph[SourceShape[Out2], M2]): javadsl.Source[Out2, (Mat, M2)] =
-    Source.concat(this, second)
+  def concat[T >: Out, M](second: Graph[SourceShape[T], M]): javadsl.Source[T, Mat] =
+    new Source(delegate.concat(second))
 
   /**
-   * Concatenates a second source so that the first element
-   * emitted by that source is emitted after the last element of this
-   * source.
+   * Concatenate the second [[Source]] to current one, meaning that once current
+   * is exhausted and all result elements have been generated,
+   * the second Source’s elements will be produced.
    */
-  def concatMat[M, M2](second: Graph[SourceShape[Out @uncheckedVariance], M], combine: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
-    new Source(delegate.concatMat(second)(combinerToScala(combine)))
+  def concatMat[T >: Out, M, M2](second: Graph[SourceShape[T], M],
+                                 matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+    new Source(delegate.concatMat(second)(combinerToScala(matF)))
+
+  /**
+   * Merge current source with the second one, taking elements as they arrive,
+   * picking randomly when several elements ready.
+   */
+  def merge[T >: Out](second: Graph[SourceShape[T], _]): javadsl.Source[T, Mat] =
+    new Source(delegate.merge(second))
+
+  /**
+   * Merge current source with the second one, taking elements as they arrive,
+   * picking randomly when several elements ready.
+   */
+  def mergeMat[T >: Out, M, M2](second: Graph[SourceShape[T], M],
+                                matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+    new Source(delegate.mergeMat(second)(combinerToScala(matF)))
+
+  /**
+   * Combine the elements of current [[Source]] and the second one into a stream of tuples.
+   */
+  def zip[T](second: Graph[SourceShape[T], _]): javadsl.Source[Out @uncheckedVariance Pair T, Mat] =
+    zipMat(second, combinerToJava((a: Mat, b: Any) ⇒ a))
+
+  /**
+   * Combine the elements of current [[Source]] and the second one into a stream of tuples.
+   */
+  def zipMat[T, M, M2](second: Graph[SourceShape[T], M],
+                       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] = {
+    //we need this only to have Flow of javadsl.Pair
+    def block(builder: FlowGraph.Builder[M],
+              source: SourceShape[T]): Pair[Inlet[Out], Outlet[Pair[Out, T]]] = {
+      val zip: FanInShape2[Out, T, Out Pair T] = builder.graph(Zip.create[Out, T])
+      builder.from(source).to(zip.in1)
+      new Pair(zip.in0, zip.out)
+    }
+    this.viaMat(Flow.factory.create(second, combinerToJava(block)), matF)
+  }
+
+  /**
+   * Put together elements of current [[Source]] and the second one
+   * into a stream of combined elements using a combiner function.
+   */
+  def zipWith[Out2, Out3](second: Graph[SourceShape[Out2], _],
+                          combine: function.Function2[Out, Out2, Out3]): javadsl.Source[Out3, Mat] =
+    new Source(delegate.zipWith[Out2, Out3](second)(combinerToScala(combine)))
+
+  /**
+   * Put together elements of current [[Source]] and the second one
+   * into a stream of combined elements using a combiner function.
+   */
+  def zipWithMat[Out2, Out3, M, M2](second: Graph[SourceShape[Out2], M],
+                                    combine: function.Function2[Out, Out2, Out3],
+                                    matF: function.Function2[Mat, M, M2]): javadsl.Source[Out3, M2] =
+    new Source(delegate.zipWithMat[Out2, Out3, M, M2](second)(combinerToScala(combine))(combinerToScala(matF)))
 
   /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
