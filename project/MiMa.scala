@@ -577,7 +577,10 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.EndpointManager.pruneTimerCancellable"),
         
         // #18722 internal changes to actor
-        FilterAnyProblem("akka.cluster.sharding.DDataShardCoordinator")
+        FilterAnyProblem("akka.cluster.sharding.DDataShardCoordinator"),
+
+        // #18328 optimize VersionVector for size 1
+        FilterAnyProblem("akka.cluster.ddata.VersionVector")
       )
     )
   }
