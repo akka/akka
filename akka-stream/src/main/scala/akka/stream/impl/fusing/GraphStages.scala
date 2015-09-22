@@ -294,5 +294,7 @@ object GraphStages {
 
       (logic, cancellable)
     }
+    
+    override def toString = s"TickSource($initialDelay, $interval, ...)"
   }
 }
