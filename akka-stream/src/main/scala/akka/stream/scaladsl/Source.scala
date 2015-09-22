@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.impl.Stages.{ DefaultAttributes, MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.fusing.GraphStages.TickSource
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
@@ -240,7 +241,7 @@ object Source extends SourceApply {
    * receive new tick elements as soon as it has requested more elements.
    */
   def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): Source[T, Cancellable] =
-    new Source(new TickSource(initialDelay, interval, tick, DefaultAttributes.tickSource, shape("TickSource")))
+    wrap(new TickSource[T](initialDelay, interval, tick))
 
   /**
    * Create a `Source` with one element.

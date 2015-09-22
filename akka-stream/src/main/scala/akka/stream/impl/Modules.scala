@@ -107,35 +107,6 @@ private[akka] final class LazyEmptySource[Out](val attributes: Attributes, shape
 
 /**
  * INTERNAL API
- * Elements are emitted periodically with the specified interval.
- * The tick element will be delivered to downstream consumers that has requested any elements.
- * If a consumer has not requested any elements at the point in time when the tick
- * element is produced it will not receive that tick element later. It will
- * receive new tick elements as soon as it has requested more elements.
- */
-private[akka] final class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Out, val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, Cancellable](shape) {
-
-  override def create(context: MaterializationContext) = {
-    val cancelled = new AtomicBoolean(false)
-    val actorMaterializer = ActorMaterializer.downcast(context.materializer)
-    val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
-    val ref = actorMaterializer.actorOf(context,
-      TickPublisher.props(initialDelay, interval, tick, effectiveSettings, cancelled))
-    (ActorPublisher[Out](ref), new Cancellable {
-      override def cancel(): Boolean = {
-        if (!isCancelled) ref ! PoisonPill
-        true
-      }
-      override def isCancelled: Boolean = cancelled.get()
-    })
-  }
-
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Cancellable] = new TickSource[Out](initialDelay, interval, tick, attributes, shape)
-  override def withAttributes(attr: Attributes): Module = new TickSource(initialDelay, interval, tick, attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
  * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
  */
