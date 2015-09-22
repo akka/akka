@@ -12,14 +12,9 @@ import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
-/**
- * A GraphStage represents a reusable graph stream processing stage. A GraphStage consists of a [[Shape]] which describes
- * its input and output ports and a factory function that creates a [[GraphStageLogic]] which implements the processing
- * logic that ties the ports together.
- */
-abstract class GraphStage[S <: Shape] extends Graph[S, Unit] {
+abstract class GraphStageWithMaterializedValue[S <: Shape, M] extends Graph[S, M] {
   def shape: S
-  def createLogic: GraphStageLogic
+  def createLogicAndMaterializedValue: (GraphStageLogic, M)
 
   final override private[stream] lazy val module: Module = {
     val connectionCount = shape.inlets.size + shape.outlets.size
@@ -47,12 +42,23 @@ abstract class GraphStage[S <: Shape] extends Graph[S, Unit] {
    * This method throws an [[UnsupportedOperationException]] by default. The subclass can override this method
    * and provide a correct implementation that creates an exact copy of the stage with the provided new attributes.
    */
-  final override def withAttributes(attr: Attributes): Graph[S, Unit] = new Graph[S, Unit] {
-    override def shape = GraphStage.this.shape
-    override private[stream] def module = GraphStage.this.module.withAttributes(attr)
+  final override def withAttributes(attr: Attributes): Graph[S, M] = new Graph[S, M] {
+    override def shape = GraphStageWithMaterializedValue.this.shape
+    override private[stream] def module = GraphStageWithMaterializedValue.this.module.withAttributes(attr)
 
-    override def withAttributes(attr: Attributes) = GraphStage.this.withAttributes(attr)
+    override def withAttributes(attr: Attributes) = GraphStageWithMaterializedValue.this.withAttributes(attr)
   }
+}
+
+/**
+ * A GraphStage represents a reusable graph stream processing stage. A GraphStage consists of a [[Shape]] which describes
+ * its input and output ports and a factory function that creates a [[GraphStageLogic]] which implements the processing
+ * logic that ties the ports together.
+ */
+abstract class GraphStage[S <: Shape] extends GraphStageWithMaterializedValue[S, Unit] {
+  final override def createLogicAndMaterializedValue = (createLogic, Unit)
+
+  def createLogic: GraphStageLogic
 }
 
 private object TimerMessages {

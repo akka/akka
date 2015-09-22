@@ -121,7 +121,11 @@ private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
 
           case graph: GraphModule ⇒
             val calculatedSettings = effectiveSettings(effectiveAttributes)
-            val props = ActorGraphInterpreter.props(graph.assembly, graph.shape, calculatedSettings, ActorMaterializerImpl.this)
+            val (inHandlers, outHandlers, logics, mat) = graph.assembly.materialize()
+
+            val props = ActorGraphInterpreter.props(
+              graph.assembly, inHandlers, outHandlers, logics, graph.shape, calculatedSettings, ActorMaterializerImpl.this)
+
             val impl = actorOf(props, stageName(effectiveAttributes), calculatedSettings.dispatcher)
             for ((inlet, i) ← graph.shape.inlets.iterator.zipWithIndex) {
               val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, i)
@@ -132,6 +136,7 @@ private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
               impl ! ActorGraphInterpreter.ExposedPublisher(i, publisher)
               assignPort(outlet, publisher)
             }
+            mat
 
           case junction: JunctionModule ⇒
             materializeJunction(junction, effectiveAttributes, effectiveSettings(effectiveAttributes))

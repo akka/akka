@@ -73,8 +73,14 @@ private[stream] object ActorGraphInterpreter {
     }
   }
 
-  def props(assembly: GraphAssembly, shape: Shape, settings: ActorMaterializerSettings, mat: Materializer): Props =
-    Props(new ActorGraphInterpreter(assembly, shape, settings, mat)).withDeploy(Deploy.local)
+  def props(assembly: GraphAssembly,
+            inHandlers: Array[InHandler],
+            outHandlers: Array[OutHandler],
+            logics: Array[GraphStageLogic],
+            shape: Shape,
+            settings: ActorMaterializerSettings,
+            mat: Materializer): Props =
+    Props(new ActorGraphInterpreter(assembly, inHandlers, outHandlers, logics, shape, settings, mat)).withDeploy(Deploy.local)
 
   class BatchingActorInputBoundary(size: Int, id: Int) extends UpstreamBoundaryStageLogic[Any] {
     require(size > 0, "buffer size cannot be zero")
@@ -281,6 +287,9 @@ private[stream] object ActorGraphInterpreter {
  */
 private[stream] class ActorGraphInterpreter(
   assembly: GraphAssembly,
+  inHandlers: Array[InHandler],
+  outHandlers: Array[OutHandler],
+  logics: Array[GraphStageLogic],
   shape: Shape,
   settings: ActorMaterializerSettings,
   mat: Materializer) extends Actor {
@@ -289,7 +298,11 @@ private[stream] class ActorGraphInterpreter(
   val interpreter = new GraphInterpreter(
     assembly,
     mat,
+    inHandlers,
+    outHandlers,
+    logics,
     (logic, event, handler) ⇒ self ! AsyncInput(logic, event, handler))
+
   val inputs = Array.tabulate(shape.inlets.size)(new BatchingActorInputBoundary(settings.maxInputBufferSize, _))
   val outputs = Array.tabulate(shape.outlets.size)(new ActorOutputBoundary(self, _))
   // Limits the number of events processed by the interpreter before scheduling a self-message for fairness with other
