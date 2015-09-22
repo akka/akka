@@ -25,6 +25,9 @@ object OverflowStrategy {
    */
   private[akka] final case object DropBuffer extends OverflowStrategy
 
+  /**
+   * INTERNAL API
+   */
   private[akka] final case object DropNew extends OverflowStrategy
 
   /**
