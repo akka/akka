@@ -69,5 +69,13 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
       checkSerialization(Shard.EntityStarted("e1"))
       checkSerialization(Shard.EntityStopped("e1"))
     }
+
+    "be able to serializable GetShardStats" in {
+      checkSerialization(Shard.GetShardStats)
+    }
+
+    "be able to serializable ShardStats" in {
+      checkSerialization(Shard.ShardStats("a", 23))
+    }
   }
 }

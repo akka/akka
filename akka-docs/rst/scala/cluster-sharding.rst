@@ -344,3 +344,18 @@ if needed.
 Custom shard allocation strategy can be defined in an optional parameter to
 ``ClusterSharding.start``. See the API documentation of ``ShardAllocationStrategy`` for details of 
 how to implement a custom shard allocation strategy.
+
+
+Inspecting cluster sharding state
+---------------------------------
+Two requests to inspect the cluster state are available:
+
+`ClusterShard.GetShardRegionState` which will return a `ClusterShard.ShardRegionState` that contains
+the `ShardId`s running in a Region and what `EntityId`s are alive for each of them.
+
+`ClusterShard.GetClusterShardingStats` which will query all the regions in the cluster and return
+a `ClusterShard.ClusterShardingStats` containing the `ShardId`s running in each region and a count
+of entities that are alive in each shard.
+
+The purpose of these messages is testing and monitoring, they are not provided to give access to
+directly sending messages to the individual entities.
