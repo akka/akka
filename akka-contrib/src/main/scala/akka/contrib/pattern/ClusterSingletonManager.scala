@@ -482,7 +482,7 @@ class ClusterSingletonManager(
     case Event(MemberRemoved(m, _), BecomingOldestData(Some(previousOldest))) if m.address == previousOldest ⇒
       logInfo("Previous oldest [{}] removed", previousOldest)
       addRemoved(m.address)
-      stay
+      gotoOldest()
 
     case Event(TakeOverFromMe, BecomingOldestData(None)) ⇒
       sender() ! HandOverToMe
