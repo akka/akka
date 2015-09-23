@@ -60,7 +60,7 @@ final case class GSet[A](elements: Set[A]) extends ReplicatedData with Replicate
     else if (this.isAncestorOf(that)) that.clearAncestor()
     else {
       clearAncestor()
-      copy(elements ++ that.elements)
+      copy(elements union that.elements)
     }
 }
 

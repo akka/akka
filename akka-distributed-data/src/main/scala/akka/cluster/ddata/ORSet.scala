@@ -10,8 +10,6 @@ import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.util.HashCode
 
-// TODO this class can be optimized, but I wanted to start with correct functionality and comparability with riak_dt_orswot
-
 object ORSet {
   private val _empty: ORSet[Any] = new ORSet(Map.empty, VersionVector.empty)
   def empty[A]: ORSet[A] = _empty.asInstanceOf[ORSet[A]]
