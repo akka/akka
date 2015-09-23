@@ -34,7 +34,8 @@ object MiMa extends AutoPlugin {
 
   val mimaIgnoredProblems = {
     import com.typesafe.tools.mima.core._
-    Seq()
+    Seq(
+      FilterAnyProblem("akka.remote.transport.ProtocolStateActor"))
     
     // FIXME somehow we must use different filters when akkaPreviousArtifact is 2.3.x
     /* Below are the filters we used when comparing to 2.3.x 
