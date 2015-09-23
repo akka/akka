@@ -3,6 +3,8 @@
  */
 package akka.cluster.sharding
 
+import akka.util.Timeout
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -17,7 +19,7 @@ import akka.cluster.ddata.LWWRegister
 import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.Replicator._
 import akka.dispatch.ExecutionContexts
-import akka.pattern.pipe
+import akka.pattern.{ AskTimeoutException, pipe }
 import akka.persistence._
 
 /**
@@ -528,6 +530,25 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
             continueRebalance(shards.toSet)
           case None ⇒
         }
+
+    case ShardRegion.GetClusterShardingStats(waitMax) ⇒
+      import akka.pattern.ask
+      implicit val timeout: Timeout = waitMax
+      Future.sequence(aliveRegions.map { regionActor ⇒
+        (regionActor ? ShardRegion.GetShardRegionStats).mapTo[ShardRegion.ShardRegionStats]
+          .map(stats ⇒ regionActor -> stats)
+      }).map { allRegionStats ⇒
+        ShardRegion.ClusterShardingStats(allRegionStats.map {
+          case (region, stats) ⇒
+            val address: Address =
+              if (region == self) Cluster(context.system).selfAddress
+              else region.path.address
+
+            address -> stats
+        }.toMap)
+      }.recover {
+        case x: AskTimeoutException ⇒ ShardRegion.ClusterShardingStats(Map.empty)
+      }.pipeTo(sender())
 
     case ShardHome(_, _) ⇒
     //On rebalance, we send ourselves a GetShardHome message to reallocate a

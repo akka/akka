@@ -9,7 +9,7 @@ import akka.actor.ActorRef
 import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.cluster.sharding.Shard.ShardCommand
+import akka.cluster.sharding.Shard.{ GetCurrentShardState, ShardCommand }
 import akka.persistence.PersistentActor
 import akka.persistence.SnapshotOffer
 import akka.actor.Actor
@@ -41,6 +41,11 @@ private[akka] object Shard {
   }
 
   /**
+   * A query for information about the shard
+   */
+  sealed trait ShardQuery
+
+  /**
    * `State` change for starting an entity in this `Shard`
    */
   @SerialVersionUID(1L) final case class EntityStarted(entityId: EntityId) extends StateChange
@@ -49,6 +54,14 @@ private[akka] object Shard {
    * `State` change for an entity which has terminated.
    */
   @SerialVersionUID(1L) final case class EntityStopped(entityId: EntityId) extends StateChange
+
+  @SerialVersionUID(1L) case object GetCurrentShardState extends ShardQuery
+
+  @SerialVersionUID(1L) final case class CurrentShardState(shardId: ShardRegion.ShardId, entityIds: Set[EntityId])
+
+  @SerialVersionUID(1L) case object GetShardStats extends ShardQuery
+
+  @SerialVersionUID(1L) final case class ShardStats(shardId: ShardRegion.ShardId, entityCount: Int)
 
   object State {
     val Empty = State()
@@ -101,6 +114,7 @@ private[akka] class Shard(
   import ShardRegion.{ handOffStopperProps, EntityId, Msg, Passivate, ShardInitialized }
   import ShardCoordinator.Internal.{ HandOff, ShardStopped }
   import Shard.{ State, RestartEntity, EntityStopped, EntityStarted }
+  import Shard.{ ShardQuery, GetCurrentShardState, CurrentShardState, GetShardStats, ShardStats }
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
   import settings.tuningParameters._
@@ -129,6 +143,7 @@ private[akka] class Shard(
     case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
     case msg: ShardCommand                       ⇒ receiveShardCommand(msg)
     case msg: ShardRegionCommand                 ⇒ receiveShardRegionCommand(msg)
+    case msg: ShardQuery                         ⇒ receiveShardQuery(msg)
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
   }
 
@@ -145,6 +160,11 @@ private[akka] class Shard(
     case HandOff(`shardId`) ⇒ handOff(sender())
     case HandOff(shard)     ⇒ log.warning("Shard [{}] can not hand off for another Shard [{}]", shardId, shard)
     case _                  ⇒ unhandled(msg)
+  }
+
+  def receiveShardQuery(msg: ShardQuery): Unit = msg match {
+    case GetCurrentShardState ⇒ sender() ! CurrentShardState(shardId, refById.keySet)
+    case GetShardStats        ⇒ sender() ! ShardStats(shardId, state.entities.size)
   }
 
   def handOff(replyTo: ActorRef): Unit = handOffStopper match {
