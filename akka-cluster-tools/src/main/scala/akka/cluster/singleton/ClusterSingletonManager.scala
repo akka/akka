@@ -387,7 +387,13 @@ class ClusterSingletonManager(
 
   val (maxHandOverRetries, maxTakeOverRetries) = {
     val n = (removalMargin.toMillis / handOverRetryInterval.toMillis).toInt
-    (n + 3, math.max(1, n - 3))
+    val minRetries = context.system.settings.config.getInt(
+      "akka.cluster.singleton.min-number-of-hand-over-retries")
+    require(minRetries >= 1, "min-number-of-hand-over-retries must be >= 1")
+    val handOverRetries = math.max(minRetries, n + 3)
+    val takeOverRetries = math.max(1, handOverRetries - 3)
+
+    (handOverRetries, takeOverRetries)
   }
 
   // started when when self member is Up
@@ -556,8 +562,11 @@ class ClusterSingletonManager(
   }
 
   def scheduleDelayedMemberRemoved(m: Member): Unit = {
-    log.debug("Schedule DelayedMemberRemoved for [{}]", m.address)
-    context.system.scheduler.scheduleOnce(removalMargin, self, DelayedMemberRemoved(m))(context.dispatcher)
+    if (removalMargin > Duration.Zero) {
+      log.debug("Schedule DelayedMemberRemoved for [{}]", m.address)
+      context.system.scheduler.scheduleOnce(removalMargin, self, DelayedMemberRemoved(m))(context.dispatcher)
+    } else
+      self ! DelayedMemberRemoved(m)
   }
 
   def gotoOldest(): State = {

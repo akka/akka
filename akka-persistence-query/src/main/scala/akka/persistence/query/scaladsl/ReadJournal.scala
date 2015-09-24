@@ -1,11 +1,7 @@
 /*
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-
 package akka.persistence.query.scaladsl
-
-import akka.persistence.query.{ Hint, Query }
-import akka.stream.scaladsl.Source
 
 /**
  * API for reading persistent events and information derived
@@ -15,30 +11,18 @@ import akka.stream.scaladsl.Source
  * journal implementations, because the technical capabilities may be very different.
  * The interface is very open so that different journals may implement specific queries.
  *
+ * There are a few pre-defined queries that a query implementation may implement,
+ * such as [[EventsByPersistenceIdQuery]], [[AllPersistenceIdsQuery]] and [[EventsByTagQuery]]
+ * Implementation of these queries are optional and query (journal) plugins may define
+ * their own specialized queries by implementing other methods.
+ *
  * Usage:
  * {{{
- * val journal = PersistenceQuery(system).readJournalFor(queryPluginConfigPath)
+ * val journal = PersistenceQuery(system).readJournalFor[SomeCoolReadJournal](queryPluginConfigPath)
  * val events = journal.query(EventsByTag("mytag", 0L))
  * }}}
  *
  * For Java API see [[akka.persistence.query.javadsl.ReadJournal]].
  */
-abstract class ReadJournal {
+trait ReadJournal
 
-  /**
-   * A query that returns a `Source` with output type `T` and materialized
-   * value `M`.
-   *
-   * The `hints` are optional parameters that defines how to execute the
-   * query, typically specific to the journal implementation.
-   *
-   */
-  def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M]
-
-}
-
-/** INTERNAL API */
-private[akka] final class ReadJournalAdapter(backing: akka.persistence.query.javadsl.ReadJournal) extends ReadJournal {
-  override def query[T, M](q: Query[T, M], hints: Hint*): Source[T, M] =
-    backing.query(q, hints: _*).asScala
-}

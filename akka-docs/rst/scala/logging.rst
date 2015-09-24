@@ -139,6 +139,19 @@ If you want very detailed logging of all lifecycle changes of Actors (restarts, 
       }
     }
 
+If you want unhandled messages logged at DEBUG:
+
+.. code-block:: ruby
+
+    akka {
+      actor {
+        debug {
+          # enable DEBUG logging of unhandled messages
+          unhandled = on
+        }
+      }
+    }
+
 If you want very detailed logging of all events, transitions and timers of FSM Actors that extend LoggingFSM:
 
 .. code-block:: ruby
@@ -313,6 +326,11 @@ More fine grained log levels can be defined in the configuration of the SLF4J ba
 (e.g. logback.xml). You should also define ``akka.event.slf4j.Slf4jLoggingFilter`` in
 the ``logging-filter`` configuration property. It will filter the log events using the backend
 configuration (e.g. logback.xml) before they are published to the event bus.
+
+.. warning::
+  If you set the ``loglevel`` to a higher level than "DEBUG", any DEBUG events will be filtered
+  out already at the source and will never reach the logging backend, regardless of how the backend
+  is configured.
 
 .. code-block:: ruby
 

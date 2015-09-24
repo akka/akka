@@ -56,24 +56,24 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
     ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, "", deleted, Actor.noSender, writerUuid))
 
   def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {
+
+    def persistentRepr(sequenceNr: Long) = PersistentRepr(
+      payload = s"a-$sequenceNr", sequenceNr = sequenceNr, persistenceId = pid,
+      sender = sender, writerUuid = writerUuid)
+
     val msgs =
-      if (supportsAtomicPersistAllOfSeveralEvents)
-        (fromSnr to toSnr).map { i ⇒
-          AtomicWrite(PersistentRepr(payload = s"a-$i", sequenceNr = i, persistenceId = pid, sender = sender,
-            writerUuid = writerUuid))
-        }
-      else
+      if (supportsAtomicPersistAllOfSeveralEvents) {
         (fromSnr to toSnr - 1).map { i ⇒
           if (i == toSnr - 1)
-            AtomicWrite(List(
-              PersistentRepr(payload = s"a-$i", sequenceNr = i, persistenceId = pid, sender = sender,
-                writerUuid = writerUuid),
-              PersistentRepr(payload = s"a-${i + 1}", sequenceNr = i + 1, persistenceId = pid, sender = sender,
-                writerUuid = writerUuid)))
+            AtomicWrite(List(persistentRepr(i), persistentRepr(i + 1)))
           else
-            AtomicWrite(PersistentRepr(payload = s"a-${i}", sequenceNr = i, persistenceId = pid, sender = sender,
-              writerUuid = writerUuid))
+            AtomicWrite(persistentRepr(i))
         }
+      } else {
+        (fromSnr to toSnr).map { i ⇒
+          AtomicWrite(PersistentRepr(persistentRepr(i)))
+        }
+      }
 
     val probe = TestProbe()
 

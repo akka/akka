@@ -6,10 +6,10 @@ package akka.cluster.sharding.protobuf.msg;
 public final class ClusterShardingMessages {
   private ClusterShardingMessages() {}
   public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
+      akka.protobuf.ExtensionRegistry registry) {
   }
   public interface CoordinatorStateOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // repeated .CoordinatorState.ShardEntry shards = 1;
     /**
@@ -53,7 +53,7 @@ public final class ClusterShardingMessages {
     /**
      * <code>repeated string regions = 2;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getRegionsBytes(int index);
 
     // repeated string regionProxies = 3;
@@ -73,7 +73,7 @@ public final class ClusterShardingMessages {
     /**
      * <code>repeated string regionProxies = 3;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getRegionProxiesBytes(int index);
 
     // repeated string unallocatedShards = 4;
@@ -93,21 +93,21 @@ public final class ClusterShardingMessages {
     /**
      * <code>repeated string unallocatedShards = 4;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getUnallocatedShardsBytes(int index);
   }
   /**
    * Protobuf type {@code CoordinatorState}
    */
   public static final class CoordinatorState extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements CoordinatorStateOrBuilder {
     // Use CoordinatorState.newBuilder() to construct.
-    private CoordinatorState(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private CoordinatorState(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private CoordinatorState(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private CoordinatorState(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final CoordinatorState defaultInstance;
     public static CoordinatorState getDefaultInstance() {
@@ -118,20 +118,20 @@ public final class ClusterShardingMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private CoordinatorState(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -157,7 +157,7 @@ public final class ClusterShardingMessages {
             }
             case 18: {
               if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
-                regions_ = new com.google.protobuf.LazyStringArrayList();
+                regions_ = new akka.protobuf.LazyStringArrayList();
                 mutable_bitField0_ |= 0x00000002;
               }
               regions_.add(input.readBytes());
@@ -165,7 +165,7 @@ public final class ClusterShardingMessages {
             }
             case 26: {
               if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
-                regionProxies_ = new com.google.protobuf.LazyStringArrayList();
+                regionProxies_ = new akka.protobuf.LazyStringArrayList();
                 mutable_bitField0_ |= 0x00000004;
               }
               regionProxies_.add(input.readBytes());
@@ -173,7 +173,7 @@ public final class ClusterShardingMessages {
             }
             case 34: {
               if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-                unallocatedShards_ = new com.google.protobuf.LazyStringArrayList();
+                unallocatedShards_ = new akka.protobuf.LazyStringArrayList();
                 mutable_bitField0_ |= 0x00000008;
               }
               unallocatedShards_.add(input.readBytes());
@@ -181,57 +181,57 @@ public final class ClusterShardingMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
           shards_ = java.util.Collections.unmodifiableList(shards_);
         }
         if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
-          regions_ = new com.google.protobuf.UnmodifiableLazyStringList(regions_);
+          regions_ = new akka.protobuf.UnmodifiableLazyStringList(regions_);
         }
         if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
-          regionProxies_ = new com.google.protobuf.UnmodifiableLazyStringList(regionProxies_);
+          regionProxies_ = new akka.protobuf.UnmodifiableLazyStringList(regionProxies_);
         }
         if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-          unallocatedShards_ = new com.google.protobuf.UnmodifiableLazyStringList(unallocatedShards_);
+          unallocatedShards_ = new akka.protobuf.UnmodifiableLazyStringList(unallocatedShards_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<CoordinatorState> PARSER =
-        new com.google.protobuf.AbstractParser<CoordinatorState>() {
+    public static akka.protobuf.Parser<CoordinatorState> PARSER =
+        new akka.protobuf.AbstractParser<CoordinatorState>() {
       public CoordinatorState parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new CoordinatorState(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<CoordinatorState> getParserForType() {
+    public akka.protobuf.Parser<CoordinatorState> getParserForType() {
       return PARSER;
     }
 
     public interface ShardEntryOrBuilder
-        extends com.google.protobuf.MessageOrBuilder {
+        extends akka.protobuf.MessageOrBuilder {
 
       // required string shardId = 1;
       /**
@@ -245,7 +245,7 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string shardId = 1;</code>
        */
-      com.google.protobuf.ByteString
+      akka.protobuf.ByteString
           getShardIdBytes();
 
       // required string regionRef = 2;
@@ -260,21 +260,21 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string regionRef = 2;</code>
        */
-      com.google.protobuf.ByteString
+      akka.protobuf.ByteString
           getRegionRefBytes();
     }
     /**
      * Protobuf type {@code CoordinatorState.ShardEntry}
      */
     public static final class ShardEntry extends
-        com.google.protobuf.GeneratedMessage
+        akka.protobuf.GeneratedMessage
         implements ShardEntryOrBuilder {
       // Use ShardEntry.newBuilder() to construct.
-      private ShardEntry(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      private ShardEntry(akka.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private ShardEntry(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private ShardEntry(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
       private static final ShardEntry defaultInstance;
       public static ShardEntry getDefaultInstance() {
@@ -285,20 +285,20 @@ public final class ClusterShardingMessages {
         return defaultInstance;
       }
 
-      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      private final akka.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      public final com.google.protobuf.UnknownFieldSet
+      public final akka.protobuf.UnknownFieldSet
           getUnknownFields() {
         return this.unknownFields;
       }
       private ShardEntry(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         initFields();
         int mutable_bitField0_ = 0;
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder();
+        akka.protobuf.UnknownFieldSet.Builder unknownFields =
+            akka.protobuf.UnknownFieldSet.newBuilder();
         try {
           boolean done = false;
           while (!done) {
@@ -326,40 +326,40 @@ public final class ClusterShardingMessages {
               }
             }
           }
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(
+          throw new akka.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
           this.unknownFields = unknownFields.build();
           makeExtensionsImmutable();
         }
       }
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_ShardEntry_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_ShardEntry_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
                 akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<ShardEntry> PARSER =
-          new com.google.protobuf.AbstractParser<ShardEntry>() {
+      public static akka.protobuf.Parser<ShardEntry> PARSER =
+          new akka.protobuf.AbstractParser<ShardEntry>() {
         public ShardEntry parsePartialFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobuf.InvalidProtocolBufferException {
           return new ShardEntry(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<ShardEntry> getParserForType() {
+      public akka.protobuf.Parser<ShardEntry> getParserForType() {
         return PARSER;
       }
 
@@ -381,8 +381,8 @@ public final class ClusterShardingMessages {
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
+          akka.protobuf.ByteString bs = 
+              (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             shardId_ = s;
@@ -393,17 +393,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string shardId = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getShardIdBytes() {
         java.lang.Object ref = shardId_;
         if (ref instanceof java.lang.String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           shardId_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
 
@@ -424,8 +424,8 @@ public final class ClusterShardingMessages {
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
+          akka.protobuf.ByteString bs = 
+              (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             regionRef_ = s;
@@ -436,17 +436,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string regionRef = 2;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getRegionRefBytes() {
         java.lang.Object ref = regionRef_;
         if (ref instanceof java.lang.String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           regionRef_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
 
@@ -471,7 +471,7 @@ public final class ClusterShardingMessages {
         return true;
       }
 
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
+      public void writeTo(akka.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -490,11 +490,11 @@ public final class ClusterShardingMessages {
 
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeBytesSize(1, getShardIdBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeBytesSize(2, getRegionRefBytes());
         }
         size += getUnknownFields().getSerializedSize();
@@ -510,24 +510,24 @@ public final class ClusterShardingMessages {
       }
 
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseFrom(
           byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseFrom(java.io.InputStream input)
@@ -536,7 +536,7 @@ public final class ClusterShardingMessages {
       }
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -546,18 +546,18 @@ public final class ClusterShardingMessages {
       }
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseDelimitedFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseFrom(
-          com.google.protobuf.CodedInputStream input)
+          akka.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
       public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parseFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -571,7 +571,7 @@ public final class ClusterShardingMessages {
 
       @java.lang.Override
       protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -579,14 +579,14 @@ public final class ClusterShardingMessages {
        * Protobuf type {@code CoordinatorState.ShardEntry}
        */
       public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
+          akka.protobuf.GeneratedMessage.Builder<Builder>
          implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntryOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static final akka.protobuf.Descriptors.Descriptor
             getDescriptor() {
           return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_ShardEntry_descriptor;
         }
 
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        protected akka.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_ShardEntry_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -599,12 +599,12 @@ public final class ClusterShardingMessages {
         }
 
         private Builder(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            akka.protobuf.GeneratedMessage.BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
         private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           }
         }
         private static Builder create() {
@@ -624,7 +624,7 @@ public final class ClusterShardingMessages {
           return create().mergeFrom(buildPartial());
         }
 
-        public com.google.protobuf.Descriptors.Descriptor
+        public akka.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_ShardEntry_descriptor;
         }
@@ -658,7 +658,7 @@ public final class ClusterShardingMessages {
           return result;
         }
 
-        public Builder mergeFrom(com.google.protobuf.Message other) {
+        public Builder mergeFrom(akka.protobuf.Message other) {
           if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry) {
             return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry)other);
           } else {
@@ -696,13 +696,13 @@ public final class ClusterShardingMessages {
         }
 
         public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
           akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          } catch (akka.protobuf.InvalidProtocolBufferException e) {
             parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry) e.getUnfinishedMessage();
             throw e;
           } finally {
@@ -728,7 +728,7 @@ public final class ClusterShardingMessages {
         public java.lang.String getShardId() {
           java.lang.Object ref = shardId_;
           if (!(ref instanceof java.lang.String)) {
-            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+            java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
             shardId_ = s;
             return s;
@@ -739,17 +739,17 @@ public final class ClusterShardingMessages {
         /**
          * <code>required string shardId = 1;</code>
          */
-        public com.google.protobuf.ByteString
+        public akka.protobuf.ByteString
             getShardIdBytes() {
           java.lang.Object ref = shardId_;
           if (ref instanceof String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
+            akka.protobuf.ByteString b = 
+                akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
             shardId_ = b;
             return b;
           } else {
-            return (com.google.protobuf.ByteString) ref;
+            return (akka.protobuf.ByteString) ref;
           }
         }
         /**
@@ -778,7 +778,7 @@ public final class ClusterShardingMessages {
          * <code>required string shardId = 1;</code>
          */
         public Builder setShardIdBytes(
-            com.google.protobuf.ByteString value) {
+            akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -802,7 +802,7 @@ public final class ClusterShardingMessages {
         public java.lang.String getRegionRef() {
           java.lang.Object ref = regionRef_;
           if (!(ref instanceof java.lang.String)) {
-            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+            java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
             regionRef_ = s;
             return s;
@@ -813,17 +813,17 @@ public final class ClusterShardingMessages {
         /**
          * <code>required string regionRef = 2;</code>
          */
-        public com.google.protobuf.ByteString
+        public akka.protobuf.ByteString
             getRegionRefBytes() {
           java.lang.Object ref = regionRef_;
           if (ref instanceof String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
+            akka.protobuf.ByteString b = 
+                akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
             regionRef_ = b;
             return b;
           } else {
-            return (com.google.protobuf.ByteString) ref;
+            return (akka.protobuf.ByteString) ref;
           }
         }
         /**
@@ -852,7 +852,7 @@ public final class ClusterShardingMessages {
          * <code>required string regionRef = 2;</code>
          */
         public Builder setRegionRefBytes(
-            com.google.protobuf.ByteString value) {
+            akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -911,7 +911,7 @@ public final class ClusterShardingMessages {
 
     // repeated string regions = 2;
     public static final int REGIONS_FIELD_NUMBER = 2;
-    private com.google.protobuf.LazyStringList regions_;
+    private akka.protobuf.LazyStringList regions_;
     /**
      * <code>repeated string regions = 2;</code>
      */
@@ -934,14 +934,14 @@ public final class ClusterShardingMessages {
     /**
      * <code>repeated string regions = 2;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getRegionsBytes(int index) {
       return regions_.getByteString(index);
     }
 
     // repeated string regionProxies = 3;
     public static final int REGIONPROXIES_FIELD_NUMBER = 3;
-    private com.google.protobuf.LazyStringList regionProxies_;
+    private akka.protobuf.LazyStringList regionProxies_;
     /**
      * <code>repeated string regionProxies = 3;</code>
      */
@@ -964,14 +964,14 @@ public final class ClusterShardingMessages {
     /**
      * <code>repeated string regionProxies = 3;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getRegionProxiesBytes(int index) {
       return regionProxies_.getByteString(index);
     }
 
     // repeated string unallocatedShards = 4;
     public static final int UNALLOCATEDSHARDS_FIELD_NUMBER = 4;
-    private com.google.protobuf.LazyStringList unallocatedShards_;
+    private akka.protobuf.LazyStringList unallocatedShards_;
     /**
      * <code>repeated string unallocatedShards = 4;</code>
      */
@@ -994,16 +994,16 @@ public final class ClusterShardingMessages {
     /**
      * <code>repeated string unallocatedShards = 4;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getUnallocatedShardsBytes(int index) {
       return unallocatedShards_.getByteString(index);
     }
 
     private void initFields() {
       shards_ = java.util.Collections.emptyList();
-      regions_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      regionProxies_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      unallocatedShards_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      regions_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      regionProxies_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      unallocatedShards_ = akka.protobuf.LazyStringArrayList.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1020,7 +1020,7 @@ public final class ClusterShardingMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       for (int i = 0; i < shards_.size(); i++) {
@@ -1045,13 +1045,13 @@ public final class ClusterShardingMessages {
 
       size = 0;
       for (int i = 0; i < shards_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, shards_.get(i));
       }
       {
         int dataSize = 0;
         for (int i = 0; i < regions_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
+          dataSize += akka.protobuf.CodedOutputStream
             .computeBytesSizeNoTag(regions_.getByteString(i));
         }
         size += dataSize;
@@ -1060,7 +1060,7 @@ public final class ClusterShardingMessages {
       {
         int dataSize = 0;
         for (int i = 0; i < regionProxies_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
+          dataSize += akka.protobuf.CodedOutputStream
             .computeBytesSizeNoTag(regionProxies_.getByteString(i));
         }
         size += dataSize;
@@ -1069,7 +1069,7 @@ public final class ClusterShardingMessages {
       {
         int dataSize = 0;
         for (int i = 0; i < unallocatedShards_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
+          dataSize += akka.protobuf.CodedOutputStream
             .computeBytesSizeNoTag(unallocatedShards_.getByteString(i));
         }
         size += dataSize;
@@ -1088,24 +1088,24 @@ public final class ClusterShardingMessages {
     }
 
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseFrom(java.io.InputStream input)
@@ -1114,7 +1114,7 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -1124,18 +1124,18 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -1149,7 +1149,7 @@ public final class ClusterShardingMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1157,14 +1157,14 @@ public final class ClusterShardingMessages {
      * Protobuf type {@code CoordinatorState}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorStateOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1177,12 +1177,12 @@ public final class ClusterShardingMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getShardsFieldBuilder();
         }
       }
@@ -1198,11 +1198,11 @@ public final class ClusterShardingMessages {
         } else {
           shardsBuilder_.clear();
         }
-        regions_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        regions_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000002);
-        regionProxies_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        regionProxies_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
-        unallocatedShards_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        unallocatedShards_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
@@ -1211,7 +1211,7 @@ public final class ClusterShardingMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_CoordinatorState_descriptor;
       }
@@ -1241,19 +1241,19 @@ public final class ClusterShardingMessages {
           result.shards_ = shardsBuilder_.build();
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          regions_ = new com.google.protobuf.UnmodifiableLazyStringList(
+          regions_ = new akka.protobuf.UnmodifiableLazyStringList(
               regions_);
           bitField0_ = (bitField0_ & ~0x00000002);
         }
         result.regions_ = regions_;
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          regionProxies_ = new com.google.protobuf.UnmodifiableLazyStringList(
+          regionProxies_ = new akka.protobuf.UnmodifiableLazyStringList(
               regionProxies_);
           bitField0_ = (bitField0_ & ~0x00000004);
         }
         result.regionProxies_ = regionProxies_;
         if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          unallocatedShards_ = new com.google.protobuf.UnmodifiableLazyStringList(
+          unallocatedShards_ = new akka.protobuf.UnmodifiableLazyStringList(
               unallocatedShards_);
           bitField0_ = (bitField0_ & ~0x00000008);
         }
@@ -1262,7 +1262,7 @@ public final class ClusterShardingMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState) {
           return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState)other);
         } else {
@@ -1292,7 +1292,7 @@ public final class ClusterShardingMessages {
               shards_ = other.shards_;
               bitField0_ = (bitField0_ & ~0x00000001);
               shardsBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getShardsFieldBuilder() : null;
             } else {
               shardsBuilder_.addAllMessages(other.shards_);
@@ -1344,13 +1344,13 @@ public final class ClusterShardingMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -1372,7 +1372,7 @@ public final class ClusterShardingMessages {
          }
       }
 
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry.Builder, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntryOrBuilder> shardsBuilder_;
 
       /**
@@ -1587,11 +1587,11 @@ public final class ClusterShardingMessages {
            getShardsBuilderList() {
         return getShardsFieldBuilder().getBuilderList();
       }
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry.Builder, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntryOrBuilder> 
           getShardsFieldBuilder() {
         if (shardsBuilder_ == null) {
-          shardsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+          shardsBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
               akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntry.Builder, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.CoordinatorState.ShardEntryOrBuilder>(
                   shards_,
                   ((bitField0_ & 0x00000001) == 0x00000001),
@@ -1603,10 +1603,10 @@ public final class ClusterShardingMessages {
       }
 
       // repeated string regions = 2;
-      private com.google.protobuf.LazyStringList regions_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private akka.protobuf.LazyStringList regions_ = akka.protobuf.LazyStringArrayList.EMPTY;
       private void ensureRegionsIsMutable() {
         if (!((bitField0_ & 0x00000002) == 0x00000002)) {
-          regions_ = new com.google.protobuf.LazyStringArrayList(regions_);
+          regions_ = new akka.protobuf.LazyStringArrayList(regions_);
           bitField0_ |= 0x00000002;
          }
       }
@@ -1632,7 +1632,7 @@ public final class ClusterShardingMessages {
       /**
        * <code>repeated string regions = 2;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getRegionsBytes(int index) {
         return regions_.getByteString(index);
       }
@@ -1676,7 +1676,7 @@ public final class ClusterShardingMessages {
        * <code>repeated string regions = 2;</code>
        */
       public Builder clearRegions() {
-        regions_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        regions_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000002);
         onChanged();
         return this;
@@ -1685,7 +1685,7 @@ public final class ClusterShardingMessages {
        * <code>repeated string regions = 2;</code>
        */
       public Builder addRegionsBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1696,10 +1696,10 @@ public final class ClusterShardingMessages {
       }
 
       // repeated string regionProxies = 3;
-      private com.google.protobuf.LazyStringList regionProxies_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private akka.protobuf.LazyStringList regionProxies_ = akka.protobuf.LazyStringArrayList.EMPTY;
       private void ensureRegionProxiesIsMutable() {
         if (!((bitField0_ & 0x00000004) == 0x00000004)) {
-          regionProxies_ = new com.google.protobuf.LazyStringArrayList(regionProxies_);
+          regionProxies_ = new akka.protobuf.LazyStringArrayList(regionProxies_);
           bitField0_ |= 0x00000004;
          }
       }
@@ -1725,7 +1725,7 @@ public final class ClusterShardingMessages {
       /**
        * <code>repeated string regionProxies = 3;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getRegionProxiesBytes(int index) {
         return regionProxies_.getByteString(index);
       }
@@ -1769,7 +1769,7 @@ public final class ClusterShardingMessages {
        * <code>repeated string regionProxies = 3;</code>
        */
       public Builder clearRegionProxies() {
-        regionProxies_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        regionProxies_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
         onChanged();
         return this;
@@ -1778,7 +1778,7 @@ public final class ClusterShardingMessages {
        * <code>repeated string regionProxies = 3;</code>
        */
       public Builder addRegionProxiesBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1789,10 +1789,10 @@ public final class ClusterShardingMessages {
       }
 
       // repeated string unallocatedShards = 4;
-      private com.google.protobuf.LazyStringList unallocatedShards_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private akka.protobuf.LazyStringList unallocatedShards_ = akka.protobuf.LazyStringArrayList.EMPTY;
       private void ensureUnallocatedShardsIsMutable() {
         if (!((bitField0_ & 0x00000008) == 0x00000008)) {
-          unallocatedShards_ = new com.google.protobuf.LazyStringArrayList(unallocatedShards_);
+          unallocatedShards_ = new akka.protobuf.LazyStringArrayList(unallocatedShards_);
           bitField0_ |= 0x00000008;
          }
       }
@@ -1818,7 +1818,7 @@ public final class ClusterShardingMessages {
       /**
        * <code>repeated string unallocatedShards = 4;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getUnallocatedShardsBytes(int index) {
         return unallocatedShards_.getByteString(index);
       }
@@ -1862,7 +1862,7 @@ public final class ClusterShardingMessages {
        * <code>repeated string unallocatedShards = 4;</code>
        */
       public Builder clearUnallocatedShards() {
-        unallocatedShards_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        unallocatedShards_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
         onChanged();
         return this;
@@ -1871,7 +1871,7 @@ public final class ClusterShardingMessages {
        * <code>repeated string unallocatedShards = 4;</code>
        */
       public Builder addUnallocatedShardsBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1893,7 +1893,7 @@ public final class ClusterShardingMessages {
   }
 
   public interface ActorRefMessageOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string ref = 1;
     /**
@@ -1907,21 +1907,21 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string ref = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getRefBytes();
   }
   /**
    * Protobuf type {@code ActorRefMessage}
    */
   public static final class ActorRefMessage extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements ActorRefMessageOrBuilder {
     // Use ActorRefMessage.newBuilder() to construct.
-    private ActorRefMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private ActorRefMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private ActorRefMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private ActorRefMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final ActorRefMessage defaultInstance;
     public static ActorRefMessage getDefaultInstance() {
@@ -1932,20 +1932,20 @@ public final class ClusterShardingMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private ActorRefMessage(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -1968,40 +1968,40 @@ public final class ClusterShardingMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ActorRefMessage_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ActorRefMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<ActorRefMessage> PARSER =
-        new com.google.protobuf.AbstractParser<ActorRefMessage>() {
+    public static akka.protobuf.Parser<ActorRefMessage> PARSER =
+        new akka.protobuf.AbstractParser<ActorRefMessage>() {
       public ActorRefMessage parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new ActorRefMessage(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<ActorRefMessage> getParserForType() {
+    public akka.protobuf.Parser<ActorRefMessage> getParserForType() {
       return PARSER;
     }
 
@@ -2023,8 +2023,8 @@ public final class ClusterShardingMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           ref_ = s;
@@ -2035,17 +2035,17 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string ref = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getRefBytes() {
       java.lang.Object ref = ref_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         ref_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -2065,7 +2065,7 @@ public final class ClusterShardingMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -2081,7 +2081,7 @@ public final class ClusterShardingMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getRefBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -2097,24 +2097,24 @@ public final class ClusterShardingMessages {
     }
 
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseFrom(java.io.InputStream input)
@@ -2123,7 +2123,7 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -2133,18 +2133,18 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -2158,7 +2158,7 @@ public final class ClusterShardingMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2166,14 +2166,14 @@ public final class ClusterShardingMessages {
      * Protobuf type {@code ActorRefMessage}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessageOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ActorRefMessage_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ActorRefMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2186,12 +2186,12 @@ public final class ClusterShardingMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -2209,7 +2209,7 @@ public final class ClusterShardingMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ActorRefMessage_descriptor;
       }
@@ -2239,7 +2239,7 @@ public final class ClusterShardingMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage) {
           return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage)other);
         } else {
@@ -2268,13 +2268,13 @@ public final class ClusterShardingMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ActorRefMessage) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -2300,7 +2300,7 @@ public final class ClusterShardingMessages {
       public java.lang.String getRef() {
         java.lang.Object ref = ref_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           ref_ = s;
           return s;
@@ -2311,17 +2311,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string ref = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getRefBytes() {
         java.lang.Object ref = ref_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           ref_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -2350,7 +2350,7 @@ public final class ClusterShardingMessages {
        * <code>required string ref = 1;</code>
        */
       public Builder setRefBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -2372,7 +2372,7 @@ public final class ClusterShardingMessages {
   }
 
   public interface ShardIdMessageOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string shard = 1;
     /**
@@ -2386,21 +2386,21 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string shard = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getShardBytes();
   }
   /**
    * Protobuf type {@code ShardIdMessage}
    */
   public static final class ShardIdMessage extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements ShardIdMessageOrBuilder {
     // Use ShardIdMessage.newBuilder() to construct.
-    private ShardIdMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private ShardIdMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private ShardIdMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private ShardIdMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final ShardIdMessage defaultInstance;
     public static ShardIdMessage getDefaultInstance() {
@@ -2411,20 +2411,20 @@ public final class ClusterShardingMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private ShardIdMessage(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -2447,40 +2447,40 @@ public final class ClusterShardingMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardIdMessage_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardIdMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<ShardIdMessage> PARSER =
-        new com.google.protobuf.AbstractParser<ShardIdMessage>() {
+    public static akka.protobuf.Parser<ShardIdMessage> PARSER =
+        new akka.protobuf.AbstractParser<ShardIdMessage>() {
       public ShardIdMessage parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new ShardIdMessage(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<ShardIdMessage> getParserForType() {
+    public akka.protobuf.Parser<ShardIdMessage> getParserForType() {
       return PARSER;
     }
 
@@ -2502,8 +2502,8 @@ public final class ClusterShardingMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           shard_ = s;
@@ -2514,17 +2514,17 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string shard = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getShardBytes() {
       java.lang.Object ref = shard_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         shard_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -2544,7 +2544,7 @@ public final class ClusterShardingMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -2560,7 +2560,7 @@ public final class ClusterShardingMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getShardBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -2576,24 +2576,24 @@ public final class ClusterShardingMessages {
     }
 
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseFrom(java.io.InputStream input)
@@ -2602,7 +2602,7 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -2612,18 +2612,18 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -2637,7 +2637,7 @@ public final class ClusterShardingMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2645,14 +2645,14 @@ public final class ClusterShardingMessages {
      * Protobuf type {@code ShardIdMessage}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessageOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardIdMessage_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardIdMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2665,12 +2665,12 @@ public final class ClusterShardingMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -2688,7 +2688,7 @@ public final class ClusterShardingMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardIdMessage_descriptor;
       }
@@ -2718,7 +2718,7 @@ public final class ClusterShardingMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage) {
           return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage)other);
         } else {
@@ -2747,13 +2747,13 @@ public final class ClusterShardingMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardIdMessage) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -2779,7 +2779,7 @@ public final class ClusterShardingMessages {
       public java.lang.String getShard() {
         java.lang.Object ref = shard_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           shard_ = s;
           return s;
@@ -2790,17 +2790,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string shard = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getShardBytes() {
         java.lang.Object ref = shard_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           shard_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -2829,7 +2829,7 @@ public final class ClusterShardingMessages {
        * <code>required string shard = 1;</code>
        */
       public Builder setShardBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -2851,7 +2851,7 @@ public final class ClusterShardingMessages {
   }
 
   public interface ShardHomeAllocatedOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string shard = 1;
     /**
@@ -2865,7 +2865,7 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string shard = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getShardBytes();
 
     // required string region = 2;
@@ -2880,21 +2880,21 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string region = 2;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getRegionBytes();
   }
   /**
    * Protobuf type {@code ShardHomeAllocated}
    */
   public static final class ShardHomeAllocated extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements ShardHomeAllocatedOrBuilder {
     // Use ShardHomeAllocated.newBuilder() to construct.
-    private ShardHomeAllocated(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private ShardHomeAllocated(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private ShardHomeAllocated(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private ShardHomeAllocated(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final ShardHomeAllocated defaultInstance;
     public static ShardHomeAllocated getDefaultInstance() {
@@ -2905,20 +2905,20 @@ public final class ClusterShardingMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private ShardHomeAllocated(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -2946,40 +2946,40 @@ public final class ClusterShardingMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHomeAllocated_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHomeAllocated_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<ShardHomeAllocated> PARSER =
-        new com.google.protobuf.AbstractParser<ShardHomeAllocated>() {
+    public static akka.protobuf.Parser<ShardHomeAllocated> PARSER =
+        new akka.protobuf.AbstractParser<ShardHomeAllocated>() {
       public ShardHomeAllocated parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new ShardHomeAllocated(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<ShardHomeAllocated> getParserForType() {
+    public akka.protobuf.Parser<ShardHomeAllocated> getParserForType() {
       return PARSER;
     }
 
@@ -3001,8 +3001,8 @@ public final class ClusterShardingMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           shard_ = s;
@@ -3013,17 +3013,17 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string shard = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getShardBytes() {
       java.lang.Object ref = shard_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         shard_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -3044,8 +3044,8 @@ public final class ClusterShardingMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           region_ = s;
@@ -3056,17 +3056,17 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string region = 2;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getRegionBytes() {
       java.lang.Object ref = region_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         region_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -3091,7 +3091,7 @@ public final class ClusterShardingMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -3110,11 +3110,11 @@ public final class ClusterShardingMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getShardBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(2, getRegionBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -3130,24 +3130,24 @@ public final class ClusterShardingMessages {
     }
 
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseFrom(java.io.InputStream input)
@@ -3156,7 +3156,7 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -3166,18 +3166,18 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -3191,7 +3191,7 @@ public final class ClusterShardingMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3199,14 +3199,14 @@ public final class ClusterShardingMessages {
      * Protobuf type {@code ShardHomeAllocated}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocatedOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHomeAllocated_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHomeAllocated_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3219,12 +3219,12 @@ public final class ClusterShardingMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -3244,7 +3244,7 @@ public final class ClusterShardingMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHomeAllocated_descriptor;
       }
@@ -3278,7 +3278,7 @@ public final class ClusterShardingMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated) {
           return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated)other);
         } else {
@@ -3316,13 +3316,13 @@ public final class ClusterShardingMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeAllocated) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -3348,7 +3348,7 @@ public final class ClusterShardingMessages {
       public java.lang.String getShard() {
         java.lang.Object ref = shard_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           shard_ = s;
           return s;
@@ -3359,17 +3359,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string shard = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getShardBytes() {
         java.lang.Object ref = shard_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           shard_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -3398,7 +3398,7 @@ public final class ClusterShardingMessages {
        * <code>required string shard = 1;</code>
        */
       public Builder setShardBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -3422,7 +3422,7 @@ public final class ClusterShardingMessages {
       public java.lang.String getRegion() {
         java.lang.Object ref = region_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           region_ = s;
           return s;
@@ -3433,17 +3433,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string region = 2;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getRegionBytes() {
         java.lang.Object ref = region_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           region_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -3472,7 +3472,7 @@ public final class ClusterShardingMessages {
        * <code>required string region = 2;</code>
        */
       public Builder setRegionBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -3494,7 +3494,7 @@ public final class ClusterShardingMessages {
   }
 
   public interface ShardHomeOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string shard = 1;
     /**
@@ -3508,7 +3508,7 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string shard = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getShardBytes();
 
     // required string region = 2;
@@ -3523,21 +3523,21 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string region = 2;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getRegionBytes();
   }
   /**
    * Protobuf type {@code ShardHome}
    */
   public static final class ShardHome extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements ShardHomeOrBuilder {
     // Use ShardHome.newBuilder() to construct.
-    private ShardHome(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private ShardHome(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private ShardHome(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private ShardHome(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final ShardHome defaultInstance;
     public static ShardHome getDefaultInstance() {
@@ -3548,20 +3548,20 @@ public final class ClusterShardingMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private ShardHome(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -3589,40 +3589,40 @@ public final class ClusterShardingMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHome_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHome_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<ShardHome> PARSER =
-        new com.google.protobuf.AbstractParser<ShardHome>() {
+    public static akka.protobuf.Parser<ShardHome> PARSER =
+        new akka.protobuf.AbstractParser<ShardHome>() {
       public ShardHome parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new ShardHome(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<ShardHome> getParserForType() {
+    public akka.protobuf.Parser<ShardHome> getParserForType() {
       return PARSER;
     }
 
@@ -3644,8 +3644,8 @@ public final class ClusterShardingMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           shard_ = s;
@@ -3656,17 +3656,17 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string shard = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getShardBytes() {
       java.lang.Object ref = shard_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         shard_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -3687,8 +3687,8 @@ public final class ClusterShardingMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           region_ = s;
@@ -3699,17 +3699,17 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string region = 2;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getRegionBytes() {
       java.lang.Object ref = region_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         region_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -3734,7 +3734,7 @@ public final class ClusterShardingMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -3753,11 +3753,11 @@ public final class ClusterShardingMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getShardBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(2, getRegionBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -3773,24 +3773,24 @@ public final class ClusterShardingMessages {
     }
 
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseFrom(java.io.InputStream input)
@@ -3799,7 +3799,7 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -3809,18 +3809,18 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -3834,7 +3834,7 @@ public final class ClusterShardingMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3842,14 +3842,14 @@ public final class ClusterShardingMessages {
      * Protobuf type {@code ShardHome}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHomeOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHome_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHome_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3862,12 +3862,12 @@ public final class ClusterShardingMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -3887,7 +3887,7 @@ public final class ClusterShardingMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardHome_descriptor;
       }
@@ -3921,7 +3921,7 @@ public final class ClusterShardingMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome) {
           return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome)other);
         } else {
@@ -3959,13 +3959,13 @@ public final class ClusterShardingMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardHome) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -3991,7 +3991,7 @@ public final class ClusterShardingMessages {
       public java.lang.String getShard() {
         java.lang.Object ref = shard_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           shard_ = s;
           return s;
@@ -4002,17 +4002,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string shard = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getShardBytes() {
         java.lang.Object ref = shard_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           shard_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -4041,7 +4041,7 @@ public final class ClusterShardingMessages {
        * <code>required string shard = 1;</code>
        */
       public Builder setShardBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4065,7 +4065,7 @@ public final class ClusterShardingMessages {
       public java.lang.String getRegion() {
         java.lang.Object ref = region_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           region_ = s;
           return s;
@@ -4076,17 +4076,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string region = 2;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getRegionBytes() {
         java.lang.Object ref = region_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           region_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -4115,7 +4115,7 @@ public final class ClusterShardingMessages {
        * <code>required string region = 2;</code>
        */
       public Builder setRegionBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4137,7 +4137,7 @@ public final class ClusterShardingMessages {
   }
 
   public interface EntityStateOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // repeated string entities = 1;
     /**
@@ -4156,21 +4156,21 @@ public final class ClusterShardingMessages {
     /**
      * <code>repeated string entities = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getEntitiesBytes(int index);
   }
   /**
    * Protobuf type {@code EntityState}
    */
   public static final class EntityState extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements EntityStateOrBuilder {
     // Use EntityState.newBuilder() to construct.
-    private EntityState(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private EntityState(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private EntityState(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private EntityState(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final EntityState defaultInstance;
     public static EntityState getDefaultInstance() {
@@ -4181,20 +4181,20 @@ public final class ClusterShardingMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private EntityState(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -4212,7 +4212,7 @@ public final class ClusterShardingMessages {
             }
             case 10: {
               if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-                entities_ = new com.google.protobuf.LazyStringArrayList();
+                entities_ = new akka.protobuf.LazyStringArrayList();
                 mutable_bitField0_ |= 0x00000001;
               }
               entities_.add(input.readBytes());
@@ -4220,49 +4220,49 @@ public final class ClusterShardingMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-          entities_ = new com.google.protobuf.UnmodifiableLazyStringList(entities_);
+          entities_ = new akka.protobuf.UnmodifiableLazyStringList(entities_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityState_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityState_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<EntityState> PARSER =
-        new com.google.protobuf.AbstractParser<EntityState>() {
+    public static akka.protobuf.Parser<EntityState> PARSER =
+        new akka.protobuf.AbstractParser<EntityState>() {
       public EntityState parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new EntityState(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<EntityState> getParserForType() {
+    public akka.protobuf.Parser<EntityState> getParserForType() {
       return PARSER;
     }
 
     // repeated string entities = 1;
     public static final int ENTITIES_FIELD_NUMBER = 1;
-    private com.google.protobuf.LazyStringList entities_;
+    private akka.protobuf.LazyStringList entities_;
     /**
      * <code>repeated string entities = 1;</code>
      */
@@ -4285,13 +4285,13 @@ public final class ClusterShardingMessages {
     /**
      * <code>repeated string entities = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getEntitiesBytes(int index) {
       return entities_.getByteString(index);
     }
 
     private void initFields() {
-      entities_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      entities_ = akka.protobuf.LazyStringArrayList.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -4302,7 +4302,7 @@ public final class ClusterShardingMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       for (int i = 0; i < entities_.size(); i++) {
@@ -4320,7 +4320,7 @@ public final class ClusterShardingMessages {
       {
         int dataSize = 0;
         for (int i = 0; i < entities_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
+          dataSize += akka.protobuf.CodedOutputStream
             .computeBytesSizeNoTag(entities_.getByteString(i));
         }
         size += dataSize;
@@ -4339,24 +4339,24 @@ public final class ClusterShardingMessages {
     }
 
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseFrom(java.io.InputStream input)
@@ -4365,7 +4365,7 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4375,18 +4375,18 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4400,7 +4400,7 @@ public final class ClusterShardingMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4408,14 +4408,14 @@ public final class ClusterShardingMessages {
      * Protobuf type {@code EntityState}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStateOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityState_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityState_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -4428,12 +4428,12 @@ public final class ClusterShardingMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -4442,7 +4442,7 @@ public final class ClusterShardingMessages {
 
       public Builder clear() {
         super.clear();
-        entities_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        entities_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
@@ -4451,7 +4451,7 @@ public final class ClusterShardingMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityState_descriptor;
       }
@@ -4472,7 +4472,7 @@ public final class ClusterShardingMessages {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState(this);
         int from_bitField0_ = bitField0_;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          entities_ = new com.google.protobuf.UnmodifiableLazyStringList(
+          entities_ = new akka.protobuf.UnmodifiableLazyStringList(
               entities_);
           bitField0_ = (bitField0_ & ~0x00000001);
         }
@@ -4481,7 +4481,7 @@ public final class ClusterShardingMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState) {
           return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState)other);
         } else {
@@ -4511,13 +4511,13 @@ public final class ClusterShardingMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityState) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -4530,10 +4530,10 @@ public final class ClusterShardingMessages {
       private int bitField0_;
 
       // repeated string entities = 1;
-      private com.google.protobuf.LazyStringList entities_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private akka.protobuf.LazyStringList entities_ = akka.protobuf.LazyStringArrayList.EMPTY;
       private void ensureEntitiesIsMutable() {
         if (!((bitField0_ & 0x00000001) == 0x00000001)) {
-          entities_ = new com.google.protobuf.LazyStringArrayList(entities_);
+          entities_ = new akka.protobuf.LazyStringArrayList(entities_);
           bitField0_ |= 0x00000001;
          }
       }
@@ -4559,7 +4559,7 @@ public final class ClusterShardingMessages {
       /**
        * <code>repeated string entities = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getEntitiesBytes(int index) {
         return entities_.getByteString(index);
       }
@@ -4603,7 +4603,7 @@ public final class ClusterShardingMessages {
        * <code>repeated string entities = 1;</code>
        */
       public Builder clearEntities() {
-        entities_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        entities_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         onChanged();
         return this;
@@ -4612,7 +4612,7 @@ public final class ClusterShardingMessages {
        * <code>repeated string entities = 1;</code>
        */
       public Builder addEntitiesBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4634,7 +4634,7 @@ public final class ClusterShardingMessages {
   }
 
   public interface EntityStartedOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string entityId = 1;
     /**
@@ -4648,21 +4648,21 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string entityId = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getEntityIdBytes();
   }
   /**
    * Protobuf type {@code EntityStarted}
    */
   public static final class EntityStarted extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements EntityStartedOrBuilder {
     // Use EntityStarted.newBuilder() to construct.
-    private EntityStarted(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private EntityStarted(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private EntityStarted(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private EntityStarted(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final EntityStarted defaultInstance;
     public static EntityStarted getDefaultInstance() {
@@ -4673,20 +4673,20 @@ public final class ClusterShardingMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private EntityStarted(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -4709,40 +4709,40 @@ public final class ClusterShardingMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStarted_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStarted_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<EntityStarted> PARSER =
-        new com.google.protobuf.AbstractParser<EntityStarted>() {
+    public static akka.protobuf.Parser<EntityStarted> PARSER =
+        new akka.protobuf.AbstractParser<EntityStarted>() {
       public EntityStarted parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new EntityStarted(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<EntityStarted> getParserForType() {
+    public akka.protobuf.Parser<EntityStarted> getParserForType() {
       return PARSER;
     }
 
@@ -4764,8 +4764,8 @@ public final class ClusterShardingMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           entityId_ = s;
@@ -4776,17 +4776,17 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string entityId = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getEntityIdBytes() {
       java.lang.Object ref = entityId_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         entityId_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -4806,7 +4806,7 @@ public final class ClusterShardingMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -4822,7 +4822,7 @@ public final class ClusterShardingMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getEntityIdBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -4838,24 +4838,24 @@ public final class ClusterShardingMessages {
     }
 
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseFrom(java.io.InputStream input)
@@ -4864,7 +4864,7 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4874,18 +4874,18 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4899,7 +4899,7 @@ public final class ClusterShardingMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4907,14 +4907,14 @@ public final class ClusterShardingMessages {
      * Protobuf type {@code EntityStarted}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStartedOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStarted_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStarted_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -4927,12 +4927,12 @@ public final class ClusterShardingMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -4950,7 +4950,7 @@ public final class ClusterShardingMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStarted_descriptor;
       }
@@ -4980,7 +4980,7 @@ public final class ClusterShardingMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted) {
           return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted)other);
         } else {
@@ -5009,13 +5009,13 @@ public final class ClusterShardingMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStarted) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -5041,7 +5041,7 @@ public final class ClusterShardingMessages {
       public java.lang.String getEntityId() {
         java.lang.Object ref = entityId_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           entityId_ = s;
           return s;
@@ -5052,17 +5052,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string entityId = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getEntityIdBytes() {
         java.lang.Object ref = entityId_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           entityId_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -5091,7 +5091,7 @@ public final class ClusterShardingMessages {
        * <code>required string entityId = 1;</code>
        */
       public Builder setEntityIdBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -5113,7 +5113,7 @@ public final class ClusterShardingMessages {
   }
 
   public interface EntityStoppedOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string entityId = 1;
     /**
@@ -5127,21 +5127,21 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string entityId = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getEntityIdBytes();
   }
   /**
    * Protobuf type {@code EntityStopped}
    */
   public static final class EntityStopped extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements EntityStoppedOrBuilder {
     // Use EntityStopped.newBuilder() to construct.
-    private EntityStopped(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private EntityStopped(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private EntityStopped(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private EntityStopped(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final EntityStopped defaultInstance;
     public static EntityStopped getDefaultInstance() {
@@ -5152,20 +5152,20 @@ public final class ClusterShardingMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private EntityStopped(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -5188,40 +5188,40 @@ public final class ClusterShardingMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStopped_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStopped_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<EntityStopped> PARSER =
-        new com.google.protobuf.AbstractParser<EntityStopped>() {
+    public static akka.protobuf.Parser<EntityStopped> PARSER =
+        new akka.protobuf.AbstractParser<EntityStopped>() {
       public EntityStopped parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new EntityStopped(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<EntityStopped> getParserForType() {
+    public akka.protobuf.Parser<EntityStopped> getParserForType() {
       return PARSER;
     }
 
@@ -5243,8 +5243,8 @@ public final class ClusterShardingMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           entityId_ = s;
@@ -5255,17 +5255,17 @@ public final class ClusterShardingMessages {
     /**
      * <code>required string entityId = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getEntityIdBytes() {
       java.lang.Object ref = entityId_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         entityId_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -5285,7 +5285,7 @@ public final class ClusterShardingMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -5301,7 +5301,7 @@ public final class ClusterShardingMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getEntityIdBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -5317,24 +5317,24 @@ public final class ClusterShardingMessages {
     }
 
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseFrom(java.io.InputStream input)
@@ -5343,7 +5343,7 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -5353,18 +5353,18 @@ public final class ClusterShardingMessages {
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -5378,7 +5378,7 @@ public final class ClusterShardingMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -5386,14 +5386,14 @@ public final class ClusterShardingMessages {
      * Protobuf type {@code EntityStopped}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStoppedOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStopped_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStopped_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -5406,12 +5406,12 @@ public final class ClusterShardingMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -5429,7 +5429,7 @@ public final class ClusterShardingMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_EntityStopped_descriptor;
       }
@@ -5459,7 +5459,7 @@ public final class ClusterShardingMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped) {
           return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped)other);
         } else {
@@ -5488,13 +5488,13 @@ public final class ClusterShardingMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.EntityStopped) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -5520,7 +5520,7 @@ public final class ClusterShardingMessages {
       public java.lang.String getEntityId() {
         java.lang.Object ref = entityId_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           entityId_ = s;
           return s;
@@ -5531,17 +5531,17 @@ public final class ClusterShardingMessages {
       /**
        * <code>required string entityId = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getEntityIdBytes() {
         java.lang.Object ref = entityId_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           entityId_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -5570,7 +5570,7 @@ public final class ClusterShardingMessages {
        * <code>required string entityId = 1;</code>
        */
       public Builder setEntityIdBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -5591,57 +5591,57 @@ public final class ClusterShardingMessages {
     // @@protoc_insertion_point(class_scope:EntityStopped)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_CoordinatorState_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_CoordinatorState_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_CoordinatorState_ShardEntry_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_CoordinatorState_ShardEntry_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_ActorRefMessage_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ActorRefMessage_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_ShardIdMessage_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ShardIdMessage_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_ShardHomeAllocated_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ShardHomeAllocated_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_ShardHome_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ShardHome_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_EntityState_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_EntityState_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_EntityStarted_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_EntityStarted_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_EntityStopped_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_EntityStopped_fieldAccessorTable;
 
-  public static com.google.protobuf.Descriptors.FileDescriptor
+  public static akka.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static com.google.protobuf.Descriptors.FileDescriptor
+  private static akka.protobuf.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -5659,71 +5659,71 @@ public final class ClusterShardingMessages {
       "\001 \002(\t\"!\n\rEntityStopped\022\020\n\010entityId\030\001 \002(\t" +
       "B&\n\"akka.cluster.sharding.protobuf.msgH\001"
     };
-    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
+    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+        public akka.protobuf.ExtensionRegistry assignDescriptors(
+            akka.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
           internal_static_CoordinatorState_descriptor =
             getDescriptor().getMessageTypes().get(0);
           internal_static_CoordinatorState_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_CoordinatorState_descriptor,
               new java.lang.String[] { "Shards", "Regions", "RegionProxies", "UnallocatedShards", });
           internal_static_CoordinatorState_ShardEntry_descriptor =
             internal_static_CoordinatorState_descriptor.getNestedTypes().get(0);
           internal_static_CoordinatorState_ShardEntry_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_CoordinatorState_ShardEntry_descriptor,
               new java.lang.String[] { "ShardId", "RegionRef", });
           internal_static_ActorRefMessage_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_ActorRefMessage_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ActorRefMessage_descriptor,
               new java.lang.String[] { "Ref", });
           internal_static_ShardIdMessage_descriptor =
             getDescriptor().getMessageTypes().get(2);
           internal_static_ShardIdMessage_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ShardIdMessage_descriptor,
               new java.lang.String[] { "Shard", });
           internal_static_ShardHomeAllocated_descriptor =
             getDescriptor().getMessageTypes().get(3);
           internal_static_ShardHomeAllocated_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ShardHomeAllocated_descriptor,
               new java.lang.String[] { "Shard", "Region", });
           internal_static_ShardHome_descriptor =
             getDescriptor().getMessageTypes().get(4);
           internal_static_ShardHome_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ShardHome_descriptor,
               new java.lang.String[] { "Shard", "Region", });
           internal_static_EntityState_descriptor =
             getDescriptor().getMessageTypes().get(5);
           internal_static_EntityState_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_EntityState_descriptor,
               new java.lang.String[] { "Entities", });
           internal_static_EntityStarted_descriptor =
             getDescriptor().getMessageTypes().get(6);
           internal_static_EntityStarted_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_EntityStarted_descriptor,
               new java.lang.String[] { "EntityId", });
           internal_static_EntityStopped_descriptor =
             getDescriptor().getMessageTypes().get(7);
           internal_static_EntityStopped_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_EntityStopped_descriptor,
               new java.lang.String[] { "EntityId", });
           return null;
         }
       };
-    com.google.protobuf.Descriptors.FileDescriptor
+    akka.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
+        new akka.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
 

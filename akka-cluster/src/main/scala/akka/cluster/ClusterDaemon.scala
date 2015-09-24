@@ -156,16 +156,24 @@ private[cluster] object InternalClusterAction {
 private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Actor with ActorLogging
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
-  // Important - don't use Cluster(context.system) here because that would
+  // Important - don't use Cluster(context.system) in constructor because that would
   // cause deadlock. The Cluster extension is currently being created and is waiting
   // for response from GetClusterCoreRef in its constructor.
-  val coreSupervisor = context.actorOf(Props[ClusterCoreSupervisor].
-    withDispatcher(context.props.dispatcher), name = "core")
-  context.actorOf(Props[ClusterHeartbeatReceiver].
-    withDispatcher(context.props.dispatcher), name = "heartbeatReceiver")
+  // Child actors are therefore created when GetClusterCoreRef is received
+  var coreSupervisor: Option[ActorRef] = None
+
+  def createChildren(): Unit = {
+    coreSupervisor = Some(context.actorOf(Props[ClusterCoreSupervisor].
+      withDispatcher(context.props.dispatcher), name = "core"))
+    context.actorOf(Props[ClusterHeartbeatReceiver].
+      withDispatcher(context.props.dispatcher), name = "heartbeatReceiver")
+  }
 
   def receive = {
-    case msg: GetClusterCoreRef.type ⇒ coreSupervisor forward msg
+    case msg: GetClusterCoreRef.type ⇒
+      if (coreSupervisor.isEmpty)
+        createChildren()
+      coreSupervisor.foreach(_ forward msg)
     case AddOnMemberUpListener(code) ⇒
       context.actorOf(Props(classOf[OnMemberStatusChangedListener], code, Up).withDeploy(Deploy.local))
     case AddOnMemberRemovedListener(code) ⇒
@@ -191,12 +199,20 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 
-  val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
-    withDispatcher(context.props.dispatcher), name = "publisher")
-  val coreDaemon = context.watch(context.actorOf(Props(classOf[ClusterCoreDaemon], publisher).
-    withDispatcher(context.props.dispatcher), name = "daemon"))
+  // Important - don't use Cluster(context.system) in constructor because that would
+  // cause deadlock. The Cluster extension is currently being created and is waiting
+  // for response from GetClusterCoreRef in its constructor.
+  // Child actors are therefore created when GetClusterCoreRef is received
 
-  context.parent ! PublisherCreated(publisher)
+  var coreDaemon: Option[ActorRef] = None
+
+  def createChildren(): Unit = {
+    val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
+      withDispatcher(context.props.dispatcher), name = "publisher")
+    coreDaemon = Some(context.watch(context.actorOf(Props(classOf[ClusterCoreDaemon], publisher).
+      withDispatcher(context.props.dispatcher), name = "daemon")))
+    context.parent ! PublisherCreated(publisher)
+  }
 
   override val supervisorStrategy =
     OneForOneStrategy() {
@@ -209,7 +225,10 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
   override def postStop(): Unit = Cluster(context.system).shutdown()
 
   def receive = {
-    case InternalClusterAction.GetClusterCoreRef ⇒ sender() ! coreDaemon
+    case InternalClusterAction.GetClusterCoreRef ⇒
+      if (coreDaemon.isEmpty)
+        createChildren()
+      coreDaemon.foreach(sender() ! _)
   }
 }
 
@@ -810,6 +829,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         leaderActionCounter = 0
         leaderActionsOnConvergence()
       } else {
+        if (cluster.settings.AllowWeaklyUpMembers)
+          moveJoiningToWeaklyUp()
+
         leaderActionCounter += 1
         if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
           logInfo("Leader can currently not perform its duties, reachability status: [{}], member status: [{}]",
@@ -840,6 +862,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     }
   }
 
+  def isMinNrOfMembersFulfilled: Boolean = {
+    latestGossip.members.size >= MinNrOfMembers && MinNrOfMembersOfRole.forall {
+      case (role, threshold) ⇒ latestGossip.members.count(_.hasRole(role)) >= threshold
+    }
+  }
+
   /**
    * Leader actions are as follows:
    * 1. Move JOINING     => UP                   -- When a node joins the cluster
@@ -859,12 +887,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val localOverview = localGossip.overview
     val localSeen = localOverview.seen
 
-    def enoughMembers: Boolean = {
-      localMembers.size >= MinNrOfMembers && MinNrOfMembersOfRole.forall {
-        case (role, threshold) ⇒ localMembers.count(_.hasRole(role)) >= threshold
-      }
-    }
-    def isJoiningToUp(m: Member): Boolean = m.status == Joining && enoughMembers
+    val enoughMembers: Boolean = isMinNrOfMembersFulfilled
+    def isJoiningToUp(m: Member): Boolean = (m.status == Joining || m.status == WeaklyUp) && enoughMembers
 
     val removedUnreachable = for {
       node ← localOverview.reachability.allUnreachableOrTerminated
@@ -946,6 +970,33 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       }
 
     }
+  }
+
+  def moveJoiningToWeaklyUp(): Unit = {
+    val localGossip = latestGossip
+    val localMembers = localGossip.members
+
+    val enoughMembers: Boolean = isMinNrOfMembersFulfilled
+    def isJoiningToWeaklyUp(m: Member): Boolean =
+      m.status == Joining && enoughMembers && latestGossip.reachabilityExcludingDownedObservers.isReachable(m.uniqueAddress)
+    val changedMembers = localMembers.collect {
+      case m if isJoiningToWeaklyUp(m) ⇒ m.copy(status = WeaklyUp)
+    }
+
+    if (changedMembers.nonEmpty) {
+      // replace changed members
+      val newMembers = changedMembers ++ localMembers
+      val newGossip = localGossip.copy(members = newMembers)
+      updateLatestGossip(newGossip)
+
+      // log status changes
+      changedMembers foreach { m ⇒
+        logInfo("Leader is moving node [{}] to [{}]", m.address, m.status)
+      }
+
+      publish(latestGossip)
+    }
+
   }
 
   /**

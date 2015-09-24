@@ -66,7 +66,6 @@ abstract class ClusterShardingLeavingSpecConfig(val mode: String) extends MultiN
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
-    akka.cluster.down-removal-margin = 5s
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
     akka.persistence.journal.leveldb-shared {
       timeout = 5s
@@ -126,7 +125,7 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
     runOn(from) {
       cluster join node(to).address
       startSharding()
-      within(5.seconds) {
+      within(15.seconds) {
         awaitAssert(cluster.state.members.exists { m ⇒
           m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up
         } should be(true))

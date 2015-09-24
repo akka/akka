@@ -4,18 +4,14 @@
 package akka.persistence.query.journal.leveldb
 
 import scala.concurrent.duration._
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.persistence.query.EventsByPersistenceId
+
 import akka.persistence.query.PersistenceQuery
-import akka.persistence.query.RefreshInterval
+import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
+import akka.persistence.query.scaladsl.AllPersistenceIdsQuery
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.ImplicitSender
-import akka.testkit.TestKit
-import akka.persistence.query.NoRefresh
 import akka.testkit.AkkaSpec
-import akka.persistence.query.AllPersistenceIds
+import akka.testkit.ImplicitSender
 
 object AllPersistenceIdsSpec {
   val config = """
@@ -32,9 +28,14 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
 
   implicit val mat = ActorMaterializer()(system)
 
-  val queries = PersistenceQuery(system).readJournalFor(LeveldbReadJournal.Identifier)
+  val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   "Leveldb query AllPersistenceIds" must {
+
+    "implement standard AllPersistenceIdsQuery" in {
+      queries.isInstanceOf[AllPersistenceIdsQuery] should ===(true)
+    }
+
     "find existing persistenceIds" in {
       system.actorOf(TestActor.props("a")) ! "a1"
       expectMsg("a1-done")
@@ -43,7 +44,7 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
       system.actorOf(TestActor.props("c")) ! "c1"
       expectMsg("c1-done")
 
-      val src = queries.query(AllPersistenceIds, NoRefresh)
+      val src = queries.currentPersistenceIds()
       src.runWith(TestSink.probe[String])
         .request(5)
         .expectNextUnordered("a", "b", "c")
@@ -55,7 +56,7 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
       system.actorOf(TestActor.props("d")) ! "d1"
       expectMsg("d1-done")
 
-      val src = queries.query(AllPersistenceIds)
+      val src = queries.allPersistenceIds()
       val probe = src.runWith(TestSink.probe[String])
         .request(5)
         .expectNextUnorderedN(List("a", "b", "c", "d"))

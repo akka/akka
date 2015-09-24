@@ -95,6 +95,23 @@ object ClusterShardingSpec {
 
   class AnotherCounter extends QualifiedCounter("AnotherCounter")
 
+  //#supervisor
+  class CounterSupervisor extends Actor {
+    val counter = context.actorOf(Props[Counter], "theCounter")
+
+    override val supervisorStrategy = OneForOneStrategy() {
+      case _: IllegalArgumentException     ⇒ SupervisorStrategy.Resume
+      case _: ActorInitializationException ⇒ SupervisorStrategy.Stop
+      case _: DeathPactException           ⇒ SupervisorStrategy.Stop
+      case _: Exception                    ⇒ SupervisorStrategy.Restart
+    }
+
+    def receive = {
+      case msg ⇒ counter forward msg
+    }
+  }
+  //#supervisor
+
 }
 
 abstract class ClusterShardingSpecConfig(val mode: String) extends MultiNodeConfig {
@@ -111,7 +128,6 @@ abstract class ClusterShardingSpecConfig(val mode: String) extends MultiNodeConf
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
-    akka.cluster.down-removal-margin = 5s
     akka.cluster.roles = ["backend"]
     akka.cluster.distributed-data.gossip-interval = 1s
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
@@ -432,7 +448,6 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
 
     "use third and fourth node" in within(15 seconds) {
       join(third, first)
-      join(fourth, first)
 
       runOn(third) {
         for (_ ← 1 to 10)
@@ -442,6 +457,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         lastSender.path should ===(region.path / "3" / "3") // local
       }
       enterBarrier("third-update")
+
+      join(fourth, first)
 
       runOn(fourth) {
         for (_ ← 1 to 20)
@@ -561,6 +578,15 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
+
+      //#counter-supervisor-start
+      ClusterSharding(system).start(
+        typeName = "SupervisedCounter",
+        entityProps = Props[CounterSupervisor],
+        settings = ClusterShardingSettings(system),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
+      //#counter-supervisor-start
     }
     enterBarrier("extension-started")
     runOn(fifth) {

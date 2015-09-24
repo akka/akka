@@ -225,7 +225,7 @@ object Coroner {
         for (li ← locks) appendMsg("\t- ", li)
       }
       sb.append('\n')
-      return sb.toString
+      sb.toString
     }
 
     println("All threads:")

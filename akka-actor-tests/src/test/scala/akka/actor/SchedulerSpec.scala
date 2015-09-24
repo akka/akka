@@ -17,6 +17,7 @@ import org.scalatest.BeforeAndAfterEach
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.pattern.ask
 import akka.testkit._
+import scala.util.control.NoStackTrace
 
 object SchedulerSpec {
   val testConfRevolver = ConfigFactory.parseString("""
@@ -75,6 +76,19 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       // stop the actor and, hence, the continuous messaging from happening
       system stop actor
 
+      expectNoMsg(500 millis)
+    }
+
+    "stop continuous scheduling if the task throws exception" taggedAs TimingTest in {
+      val count = new AtomicInteger(0)
+      collectCancellable(system.scheduler.schedule(0 milliseconds, 20.millis) {
+        val c = count.incrementAndGet()
+        testActor ! c
+        if (c == 3) throw new RuntimeException("TEST") with NoStackTrace
+      })
+      expectMsg(1)
+      expectMsg(2)
+      expectMsg(3)
       expectNoMsg(500 millis)
     }
 

@@ -5,22 +5,19 @@
 package akka.persistence.query
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor.ActorSystem
-import akka.persistence.journal.{ EventAdapter, EventSeq }
+import akka.persistence.journal.EventSeq
+import akka.persistence.journal.ReadEventAdapter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
-  val anything: Query[String, _] = null
-
   val eventAdaptersConfig =
     s"""
-      |akka.persistence.query.journal.mock {
+      |akka.persistence.query.journal.dummy {
       |  event-adapters {
       |    adapt = ${classOf[PrefixStringWithPAdapter].getCanonicalName}
       |  }
@@ -30,35 +27,25 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
   "ReadJournal" must {
     "be found by full config key" in {
       withActorSystem() { system ⇒
-        PersistenceQuery.get(system).readJournalFor(MockReadJournal.Identifier)
+        PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier)
       }
     }
 
     "throw if unable to find query journal by config key" in {
       withActorSystem() { system ⇒
         intercept[IllegalArgumentException] {
-          PersistenceQuery.get(system).readJournalFor(MockReadJournal.Identifier + "-unknown")
+          PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "-unknown")
         }.getMessage should include("missing persistence read journal")
       }
     }
 
-    "expose scaladsl implemented journal as javadsl.ReadJournal" in {
-      withActorSystem() { system ⇒
-        val j: javadsl.ReadJournal = PersistenceQuery.get(system).getReadJournalFor(MockReadJournal.Identifier)
-      }
-    }
-    "expose javadsl implemented journal as scaladsl.ReadJournal" in {
-      withActorSystem() { system ⇒
-        val j: scaladsl.ReadJournal = PersistenceQuery.get(system).readJournalFor(MockJavaReadJournal.Identifier)
-      }
-    }
   }
 
   private val systemCounter = new AtomicInteger()
   private def withActorSystem(conf: String = "")(block: ActorSystem ⇒ Unit): Unit = {
     val config =
-      MockReadJournal.config
-        .withFallback(MockJavaReadJournal.config)
+      DummyReadJournalProvider.config
+        .withFallback(DummyJavaReadJournalProvider.config)
         .withFallback(ConfigFactory.parseString(conf))
         .withFallback(ConfigFactory.parseString(eventAdaptersConfig))
         .withFallback(ConfigFactory.load())
@@ -73,9 +60,7 @@ object ExampleQueryModels {
   case class NewModel(value: String)
 }
 
-class PrefixStringWithPAdapter extends EventAdapter {
+class PrefixStringWithPAdapter extends ReadEventAdapter {
   override def fromJournal(event: Any, manifest: String) = EventSeq.single("p-" + event)
-
-  override def manifest(event: Any) = ""
-  override def toJournal(event: Any) = throw new Exception("toJournal should not be called by query side")
 }
+

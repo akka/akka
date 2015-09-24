@@ -122,6 +122,16 @@ object ClusterEvent {
   }
 
   /**
+   * Member status changed to WeaklyUp.
+   * A joining member can be moved to `WeaklyUp` if convergence
+   * cannot be reached, i.e. there are unreachable nodes.
+   * It will be moved to `Up` when convergence is reached.
+   */
+  final case class MemberWeaklyUp(member: Member) extends MemberEvent {
+    if (member.status != WeaklyUp) throw new IllegalArgumentException("Expected WeaklyUp status, got: " + member)
+  }
+
+  /**
    * Member status changed to Up.
    */
   final case class MemberUp(member: Member) extends MemberEvent {
@@ -268,8 +278,9 @@ object ClusterEvent {
         case (_, newMember :: oldMember :: Nil) if newMember.status != oldMember.status ⇒ newMember
       }
       val memberEvents = (newMembers ++ changedMembers) collect {
-        case m if m.status == Up      ⇒ MemberUp(m)
-        case m if m.status == Exiting ⇒ MemberExited(m)
+        case m if m.status == WeaklyUp ⇒ MemberWeaklyUp(m)
+        case m if m.status == Up       ⇒ MemberUp(m)
+        case m if m.status == Exiting  ⇒ MemberExited(m)
         // no events for other transitions
       }
 

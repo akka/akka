@@ -10,7 +10,7 @@ import akka.persistence._
 import akka.persistence.fsm.PersistentFSM.StateChangeEvent
 import akka.persistence.serialization.{ MessageFormats ⇒ mf }
 import akka.serialization._
-import com.google.protobuf._
+import akka.protobuf._
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import akka.actor.Actor
@@ -130,6 +130,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
     if (persistent.persistenceId != Undefined) builder.setPersistenceId(persistent.persistenceId)
     if (persistent.sender != Actor.noSender) builder.setSender(Serialization.serializedActorPath(persistent.sender))
+    if (persistent.manifest != PersistentRepr.Undefined) builder.setManifest(persistent.manifest)
 
     builder.setPayload(persistentPayloadBuilder(persistent.payload.asInstanceOf[AnyRef]))
     builder.setSequenceNr(persistent.sequenceNr)
@@ -146,7 +147,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       serializer match {
         case ser2: SerializerWithStringManifest ⇒
           val manifest = ser2.manifest(payload)
-          if (manifest != "")
+          if (manifest != PersistentRepr.Undefined)
             builder.setPayloadManifest(ByteString.copyFromUtf8(manifest))
         case _ ⇒
           if (serializer.includeManifest)

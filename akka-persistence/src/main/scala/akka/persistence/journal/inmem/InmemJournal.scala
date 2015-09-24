@@ -83,7 +83,13 @@ private[persistence] class InmemStore extends Actor with InmemMessages with Writ
         }
       sender() ! results
     case DeleteMessagesTo(pid, tsnr) ⇒
-      sender() ! (1L to tsnr foreach { snr ⇒ delete(pid, snr) })
+      val toSeqNr = math.min(tsnr, highestSequenceNr(pid))
+      var snr = 1L
+      while (snr <= toSeqNr) {
+        delete(pid, snr)
+        snr += 1
+      }
+      sender().tell((), self)
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
       val highest = highestSequenceNr(pid)
       if (highest != 0L && max != 0L)

@@ -16,8 +16,8 @@ import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages ⇒ dm }
 import akka.serialization.JSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
-import com.google.protobuf.ByteString
-import com.google.protobuf.MessageLite
+import akka.protobuf.ByteString
+import akka.protobuf.MessageLite
 import akka.serialization.SerializerWithStringManifest
 
 /**

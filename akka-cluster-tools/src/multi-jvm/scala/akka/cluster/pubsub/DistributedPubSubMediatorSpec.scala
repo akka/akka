@@ -82,16 +82,41 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     mediator ! Subscribe("content", self)
 
     def receive = {
+      case s: String ⇒
+        log.info("Got {}", s)
       case SubscribeAck(Subscribe("content", None, `self`)) ⇒
-        context become ready
+        log.info("subscribing");
     }
+  }
+  //#subscriber
 
-    def ready: Actor.Receive = {
+  //#sender
+  class Sender extends Actor {
+    import DistributedPubSubMediator.Send
+    // activate the extension
+    val mediator = DistributedPubSub(context.system).mediator
+
+    def receive = {
+      case in: String ⇒
+        val out = in.toUpperCase
+        mediator ! Send(path = "/user/destination", msg = out, localAffinity = true)
+    }
+  }
+  //#sender
+
+  //#send-destination
+  class Destination extends Actor with ActorLogging {
+    import DistributedPubSubMediator.Put
+    val mediator = DistributedPubSub(context.system).mediator
+    // register to the path
+    mediator ! Put(self)
+
+    def receive = {
       case s: String ⇒
         log.info("Got {}", s)
     }
   }
-  //#subscriber
+  //#send-destination
 
 }
 
@@ -301,7 +326,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       enterBarrier("after-7")
     }
 
-    "demonstrate usage" in within(15 seconds) {
+    "demonstrate usage of Publish" in within(15 seconds) {
       def later(): Unit = {
         awaitCount(10)
       }
@@ -328,12 +353,38 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       enterBarrier("after-8")
     }
 
+    "demonstrate usage of Send" in within(15 seconds) {
+      def later(): Unit = {
+        awaitCount(12)
+      }
+
+      //#start-send-destinations
+      runOn(first) {
+        system.actorOf(Props[Destination], "destination")
+      }
+      runOn(second) {
+        system.actorOf(Props[Destination], "destination")
+      }
+      //#start-send-destinations
+
+      //#send-message
+      runOn(third) {
+        val sender = system.actorOf(Props[Sender], "sender")
+        later()
+        // after a while the destinations are replicated
+        sender ! "hello"
+      }
+      //#send-message
+
+      enterBarrier("after-8")
+    }
+
     "send-all to all other nodes" in within(15 seconds) {
       runOn(first, second, third) { // create the user on all nodes
         val u11 = createChatUser("u11")
         mediator ! Put(u11)
       }
-      awaitCount(13)
+      awaitCount(15)
       enterBarrier("11-registered")
 
       runOn(third) {
@@ -366,7 +417,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
         u13 ! JoinGroup("topic2", "group2")
         expectMsg(SubscribeAck(Subscribe("topic2", Some("group2"), u13)))
       }
-      awaitCount(17)
+      awaitCount(19)
       enterBarrier("12-registered")
 
       runOn(first) {
@@ -406,8 +457,8 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
         mediator ! Status(versions = Map.empty)
         val deltaBuckets = expectMsgType[Delta].buckets
         deltaBuckets.size should ===(3)
-        deltaBuckets.find(_.owner == firstAddress).get.content.size should ===(9)
-        deltaBuckets.find(_.owner == secondAddress).get.content.size should ===(8)
+        deltaBuckets.find(_.owner == firstAddress).get.content.size should ===(10)
+        deltaBuckets.find(_.owner == secondAddress).get.content.size should ===(9)
         deltaBuckets.find(_.owner == thirdAddress).get.content.size should ===(2)
       }
       enterBarrier("verified-initial-delta")
@@ -429,12 +480,12 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
         mediator ! Status(versions = deltaBuckets2.map(b ⇒ b.owner -> b.version).toMap)
         val deltaBuckets3 = expectMsgType[Delta].buckets
 
-        deltaBuckets3.map(_.content.size).sum should ===(9 + 8 + 2 + many - 500 - 500)
+        deltaBuckets3.map(_.content.size).sum should ===(10 + 9 + 2 + many - 500 - 500)
       }
 
       enterBarrier("verified-delta-with-many")
       within(10.seconds) {
-        awaitCount(17 + many)
+        awaitCount(19 + many)
       }
 
       enterBarrier("after-13")

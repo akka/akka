@@ -64,6 +64,9 @@ trait Scheduler {
    * of the function executions). In such cases, the actual execution interval
    * will differ from the interval passed to this method.
    *
+   * If the function throws an exception the repeated scheduling is aborted,
+   * i.e. the function will not be invoked any more.
+   *
    * Scala API
    */
   final def schedule(
@@ -73,7 +76,7 @@ trait Scheduler {
     schedule(initialDelay, interval, new Runnable { override def run = f })
 
   /**
-   * Schedules a function to be run repeatedly with an initial delay and
+   * Schedules a `Runnable` to be run repeatedly with an initial delay and
    * a frequency. E.g. if you would like the function to be run after 2
    * seconds and thereafter every 100ms you would set delay = Duration(2,
    * TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS). If
@@ -83,6 +86,8 @@ trait Scheduler {
    * the actual execution interval will differ from the interval passed to this
    * method.
    *
+   * If the `Runnable` throws an exception the repeated scheduling is aborted,
+   * i.e. the function will not be invoked any more.
    *
    * Java API
    */

@@ -132,6 +132,10 @@ class LightArrayRevolverScheduler(config: Config,
       case SchedulerException(msg) ⇒ throw new IllegalStateException(msg)
     }
 
+  /**
+   * Shutdown the scheduler. All scheduled task will be executed when the scheduler closed,
+   * i.e. the task may execute before its timeout.
+   */
   override def close(): Unit = Await.result(stop(), getShutdownTimeout) foreach {
     task ⇒
       try task.run() catch {

@@ -70,6 +70,18 @@ The following, previously deprecated, features have been removed:
 
 * Java API TestKit.dilated, moved to JavaTestKit.dilated
 
+Protobuf Dependency
+===================
+
+The transitive dependency to Protobuf has been removed to make it possible to use any version
+of Protobuf for the application messages. If you use Protobuf in your application you need
+to add the following dependency with desired version number::
+
+    "com.google.protobuf" % "protobuf-java" % "2.5.0" 
+
+Internally Akka is using an embedded version of protobuf that corresponds to ``com.google.protobuf/protobuf-java``
+version 2.5.0. The package name of the embedded classes has been changed to ``akka.protobuf``.
+
 Added parameter validation to RootActorPath
 ===========================================
 Previously ``akka.actor.RootActorPath`` allowed passing in arbitrary strings into its name parameter,
@@ -138,6 +150,13 @@ If you use ``Slf4jLogger`` you should add the following configuration::
 
 It will filter the log events using the backend configuration (e.g. logback.xml) before
 they are published to the event bus.
+
+Inbox.receive Java API
+======================
+
+``Inbox.receive`` now throws a checked ``java.util.concurrent.TimeoutException`` exception if the receive timeout
+is reached.
+
 
 Pool routers nrOfInstances method now takes ActorSystem
 =======================================================
@@ -275,6 +294,26 @@ actor external actor of how to allocate shards or rebalance shards.
 
 For the synchronous case you can return the result via ``scala.concurrent.Future.successful`` in Scala or 
 ``akka.dispatch.Futures.successful`` in Java.
+
+Cluster Sharding internal data
+==============================
+
+The Cluster Sharding coordinator stores the locations of the shards using Akka Persistence.
+This data can safely be removed when restarting the whole Akka Cluster.
+
+The serialization format of the internal persistent events stored by the Cluster Sharding coordinator
+has been changed and it cannot load old data from 2.3.x or some 2.4 milestone.
+
+The ``persistenceId`` of the Cluster Sharding coordinator has been changed since 2.3.x so
+it should not load such old data, but it can be a problem if you have used a 2.4
+milestone release. In that case you should remove the persistent data that the 
+Cluster Sharding coordinator stored. Note that this is not application data.
+
+You can use the :ref:`RemoveInternalClusterShardingData <RemoveInternalClusterShardingData-scala>`
+utility program to remove this data.
+
+The new ``persistenceId`` is ``s"/sharding/${typeName}Coordinator"``.
+The old ``persistenceId`` is ``s"/user/sharding/${typeName}Coordinator/singleton/coordinator"``.  
 
 ClusterSingletonManager and ClusterSingletonProxy construction
 ==============================================================

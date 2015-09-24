@@ -62,6 +62,10 @@ From ``akka.actor.ActorSystem``
 .. includecode:: ../../../akka-actor/src/main/scala/akka/actor/ActorSystem.scala
    :include: scheduler
 
+.. warning::
+
+  All scheduled task will be executed when the ``ActorSystem`` is terminated, i.e. 
+  the task may execute before its timeout.
 
 The Scheduler Interface for Implementors
 ----------------------------------------
