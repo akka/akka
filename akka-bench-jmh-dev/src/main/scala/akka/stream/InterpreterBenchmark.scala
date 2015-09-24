@@ -1,7 +1,7 @@
 package akka.stream
 
 import akka.event._
-import akka.stream.impl.fusing.{ InterpreterSpecKit, GraphInterpreterSpec, GraphStages, Map => MapStage, OneBoundedInterpreter }
+import akka.stream.impl.fusing.{ GraphInterpreterSpecKit, GraphStages, Map => MapStage, OneBoundedInterpreter }
 import akka.stream.impl.fusing.GraphStages.Identity
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
 import akka.stream.stage._
@@ -26,34 +26,33 @@ class InterpreterBenchmark {
   @Benchmark
   @OperationsPerInvocation(100000)
   def graph_interpreter_100k_elements() {
-    val lock = new Lock()
-    lock.acquire()
-    new GraphInterpreterSpec.TestSetup() {
-      val identities = Vector.fill(numberOfIds)(new Identity[Int])
-      val source = new GraphDataSource("source", data100k)
-      val sink = new GraphDataSink[Int]("sink", data100k.size, lock)
+    new GraphInterpreterSpecKit {
+      new TestSetup {
+        val identities = Vector.fill(numberOfIds)(new Identity[Int])
+        val source = new GraphDataSource("source", data100k)
+        val sink = new GraphDataSink[Int]("sink", data100k.size)
 
-      val b = builder(identities:_*)
-        .connect(source, identities.head.in)
-        .connect(identities.last.out, sink)
+        val b = builder(identities: _*)
+          .connect(source, identities.head.in)
+          .connect(identities.last.out, sink)
 
-      for (i <- (0 until identities.size - 1)) {
-        b.connect(identities(i).out, identities(i + 1).in)
+        // FIXME: This should not be here, this is pure setup overhead
+        for (i <- (0 until identities.size - 1)) {
+          b.connect(identities(i).out, identities(i + 1).in)
+        }
+
+        b.init()
+        sink.requestOne()
+        interpreter.execute(Int.MaxValue)
       }
-
-      b.init()
-      sink.requestOne()
-      interpreter.execute(Int.MaxValue)
     }
-    lock.acquire()
   }
 
   @Benchmark
   @OperationsPerInvocation(100000)
   def onebounded_interpreter_100k_elements() {
-    val lock = new Lock()
-    lock.acquire()
-    val sink = OneBoundedDataSink(data100k.size, lock)
+    val sink = OneBoundedDataSink(data100k.size)
+    // FIXME: This should not be here, this is pure setup overhead
     val ops = Vector.fill(numberOfIds)(MapStage(identity[Int], Supervision.stoppingDecider))
     val interpreter = new OneBoundedInterpreter(OneBoundedDataSource(data100k) +: ops :+ sink,
       (op, ctx, event) ⇒ (),
@@ -63,7 +62,6 @@ class InterpreterBenchmark {
       forkLimit = 100, overflowToHeap = false)
     interpreter.init()
     sink.requestOne()
-    lock.acquire()
   }
 }
 
@@ -87,16 +85,14 @@ object InterpreterBenchmark {
     })
   }
 
-  case class GraphDataSink[T](override val toString: String, var expected: Int, completionLock: Lock) extends DownstreamBoundaryStageLogic[T] {
+  case class GraphDataSink[T](override val toString: String, var expected: Int) extends DownstreamBoundaryStageLogic[T] {
     val in = Inlet[T]("in")
 
     setHandler(in, new InHandler {
       override def onPush(): Unit = {
         expected -= 1
-        pull(in)
-        if (expected == 0) {
-          completionLock.release()
-        }
+        if (expected > 0) pull(in)
+        // Otherwise do nothing, it will exit the interpreter
       }
       override def onUpstreamFinish(): Unit = completeStage()
       override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
@@ -126,13 +122,11 @@ object InterpreterBenchmark {
       throw new UnsupportedOperationException("Cannot push the boundary")
   }
 
-  case class OneBoundedDataSink(var expected: Int, completionLock: Lock) extends BoundaryStage {
+  case class OneBoundedDataSink(var expected: Int) extends BoundaryStage {
     override def onPush(elem: Any, ctx: BoundaryContext): Directive = {
       expected -= 1
-      if (expected == 0) {
-        completionLock.release()
-      }
-      ctx.pull()
+      if (expected == 0) ctx.exit()
+      else ctx.pull()
     }
 
     override def onUpstreamFinish(ctx: BoundaryContext): TerminationDirective = {
