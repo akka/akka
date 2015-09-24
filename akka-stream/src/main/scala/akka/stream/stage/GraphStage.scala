@@ -154,11 +154,12 @@ abstract class GraphStageLogic {
    */
   final protected def pull[T](in: Inlet[T]): Unit = {
     require(!hasBeenPulled(in), "Cannot pull port twice")
+    require(!isClosed(in), "Cannot pull closed port")
     interpreter.pull(conn(in))
   }
 
   /**
-   * Requests to stop receiving events from a given input port.
+   * Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port.
    */
   final protected def cancel[T](in: Inlet[T]): Unit = interpreter.cancel(conn(in))
 
@@ -173,15 +174,22 @@ abstract class GraphStageLogic {
     require(isAvailable(in), "Cannot get element from already empty input port")
     val connection = conn(in)
     val elem = interpreter.connectionStates(connection)
-    interpreter.connectionStates(connection) = Empty
-    elem.asInstanceOf[T]
+
+    elem match {
+      case CompletedHasElement(realElem) ⇒
+        interpreter.connectionStates(connection) = Completed
+        realElem.asInstanceOf[T]
+      case _ ⇒
+        interpreter.connectionStates(connection) = Empty
+        elem.asInstanceOf[T]
+    }
   }
 
   /**
    * Indicates whether there is already a pending pull for the given input port. If this method returns true
    * then [[isAvailable()]] must return false for that same port.
    */
-  final protected def hasBeenPulled[T](in: Inlet[T]): Boolean = !interpreter.inAvailable(conn(in))
+  final protected def hasBeenPulled[T](in: Inlet[T]): Boolean = interpreter.inStates(conn(in)) eq InFlight
 
   /**
    * Indicates whether there is an element waiting at the given input port. [[grab()]] can be used to retrieve the
@@ -191,8 +199,19 @@ abstract class GraphStageLogic {
    */
   final protected def isAvailable[T](in: Inlet[T]): Boolean = {
     val connection = conn(in)
-    interpreter.inAvailable(connection) && !(interpreter.connectionStates(connection) == Empty)
+    val state = interpreter.connectionStates(connection)
+
+    val arrived = interpreter.inStates(connection) ne InFlight
+    val hasElementState = state.isInstanceOf[HasElementState]
+    val rawElement = (state != Empty) && !state.isInstanceOf[ConnectionState]
+
+    arrived && (hasElementState || rawElement)
   }
+
+  /**
+   * Indicates whether the port has been closed. A closed port cannot be pulled.
+   */
+  final protected def isClosed[T](in: Inlet[T]): Boolean = interpreter.inStates(conn(in)) eq Closed
 
   /**
    * Emits an element through the given output port. Calling this method twice before a [[pull()]] has been arrived
@@ -201,6 +220,7 @@ abstract class GraphStageLogic {
    */
   final protected def push[T](out: Outlet[T], elem: T): Unit = {
     require(isAvailable(out), "Cannot push port twice")
+    require(!isClosed(out), "Cannot pull closed port")
     interpreter.push(conn(out), elem)
   }
 
@@ -235,7 +255,12 @@ abstract class GraphStageLogic {
   /**
    * Return true if the given output port is ready to be pushed.
    */
-  final def isAvailable[T](out: Outlet[T]): Boolean = interpreter.outAvailable(conn(out))
+  final def isAvailable[T](out: Outlet[T]): Boolean = interpreter.outStates(conn(out)) eq Available
+
+  /**
+   * Indicates whether the port has been closed. A closed port cannot be pushed.
+   */
+  final protected def isClosed[T](out: Outlet[T]): Boolean = interpreter.outStates(conn(out)) eq Closed
 
   /**
    * Obtain a callback object that can be used asynchronously to re-enter the

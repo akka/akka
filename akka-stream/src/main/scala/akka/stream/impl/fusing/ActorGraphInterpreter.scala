@@ -3,6 +3,8 @@
  */
 package akka.stream.impl.fusing
 
+import java.util.concurrent.TimeoutException
+
 import akka.actor._
 import akka.event.Logging
 import akka.stream._
@@ -120,6 +122,7 @@ private[stream] object ActorGraphInterpreter {
     }
 
     def cancel(): Unit = {
+      downstreamCanceled = true
       if (!upstreamCompleted) {
         upstreamCompleted = true
         if (upstream ne null) tryCancel(upstream)
@@ -137,7 +140,7 @@ private[stream] object ActorGraphInterpreter {
     }
 
     def onError(e: Throwable): Unit =
-      if (!upstreamCompleted) {
+      if (!upstreamCompleted || !downstreamCanceled) {
         upstreamCompleted = true
         clear()
         fail(out, e)
@@ -200,8 +203,6 @@ private[stream] object ActorGraphInterpreter {
     // This flag is only used if complete/fail is called externally since this op turns into a Finished one inside the
     // interpreter (i.e. inside this op this flag has no effects since if it is completed the op will not be invoked)
     private var downstreamCompleted = false
-    // this is true while we “hold the ball”; while “false” incoming demand will just be queued up
-    private var upstreamWaiting = true
     // when upstream failed before we got the exposed publisher
     private var upstreamFailed: Option[Throwable] = None
 
@@ -267,7 +268,7 @@ private[stream] object ActorGraphInterpreter {
         downstreamDemand += elements
         if (downstreamDemand < 0)
           downstreamDemand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
-        if (!hasBeenPulled(in)) pull(in)
+        if (!hasBeenPulled(in) && !isClosed(in)) pull(in)
       }
     }
 
@@ -303,16 +304,19 @@ private[stream] class ActorGraphInterpreter(
     logics,
     (logic, event, handler) ⇒ self ! AsyncInput(logic, event, handler))
 
-  val inputs = Array.tabulate(shape.inlets.size)(new BatchingActorInputBoundary(settings.maxInputBufferSize, _))
-  val outputs = Array.tabulate(shape.outlets.size)(new ActorOutputBoundary(self, _))
+  private val inputs = Array.tabulate(shape.inlets.size)(new BatchingActorInputBoundary(settings.maxInputBufferSize, _))
+  private val outputs = Array.tabulate(shape.outlets.size)(new ActorOutputBoundary(self, _))
+
+  private var subscribesPending = inputs.length
+
   // Limits the number of events processed by the interpreter before scheduling a self-message for fairness with other
   // actors.
-  // TODO: Better heuristic here
-  val eventLimit = settings.maxInputBufferSize * assembly.stages.length * 4 // Roughly 4 events per element transfer
+  // TODO: Better heuristic here (take into account buffer size, connection count, 4 events per element, have a max)
+  val eventLimit = settings.maxInputBufferSize * (inputs.length + outputs.length) * 2
   // Limits the number of events processed by the interpreter on an abort event.
   // TODO: Better heuristic here
-  val abortLimit = eventLimit * 2
-  var resumeScheduled = false
+  private val abortLimit = eventLimit * 2
+  private var resumeScheduled = false
 
   override def preStart(): Unit = {
     var i = 0
@@ -350,7 +354,6 @@ private[stream] class ActorGraphInterpreter(
           case NonFatal(e) ⇒ logic.failStage(e)
         }
       }
-
       runBatch()
 
     // Initialization and completion messages
@@ -363,6 +366,7 @@ private[stream] class ActorGraphInterpreter(
       inputs(id).onComplete()
       runBatch()
     case OnSubscribe(id: Int, subscription: Subscription) ⇒
+      subscribesPending -= 1
       inputs(id).onSubscribe(subscription)
     case Cancel(id: Int) ⇒
       if (GraphInterpreter.Debug) println(s" cancel id=$id")
@@ -375,16 +379,28 @@ private[stream] class ActorGraphInterpreter(
 
   }
 
-  override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
-    super.aroundReceive(receive, msg)
-
+  private def waitShutdown: Receive = {
+    case OnSubscribe(_, sub) ⇒
+      tryCancel(sub)
+      subscribesPending -= 1
+      if (subscribesPending == 0) context.stop(self)
+    case ReceiveTimeout ⇒
+      tryAbort(new TimeoutException("Streaming actor has been already stopped processing (normally), but not all of its " +
+        s"inputs have been subscribed in [${settings.subscriptionTimeoutSettings.timeout}}]. Aborting actor now."))
+    case _ ⇒ // Ignore, there is nothing to do anyway
   }
 
   private def runBatch(): Unit = {
     try {
       interpreter.execute(eventLimit)
-      if (interpreter.isCompleted) context.stop(self)
-      else if (interpreter.isSuspended && !resumeScheduled) {
+      if (interpreter.isCompleted) {
+        // Cannot stop right away if not completely subscribed
+        if (subscribesPending == 0) context.stop(self)
+        else {
+          context.become(waitShutdown)
+          context.setReceiveTimeout(settings.subscriptionTimeoutSettings.timeout)
+        }
+      } else if (interpreter.isSuspended && !resumeScheduled) {
         resumeScheduled = true
         self ! Resume
       }

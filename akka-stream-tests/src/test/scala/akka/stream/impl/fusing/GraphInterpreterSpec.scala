@@ -3,16 +3,10 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream._
-import akka.stream.impl.fusing.GraphInterpreterSpec.TestSetup
-import akka.stream.stage.{ InHandler, OutHandler, GraphStage, GraphStageLogic }
 import akka.stream.testkit.AkkaSpec
 import GraphInterpreter._
 
-import scala.collection.immutable
-
-class GraphInterpreterSpec extends AkkaSpec {
-  import GraphInterpreterSpec._
+class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
   import GraphStages._
 
   "GraphInterpreter" must {
@@ -26,8 +20,8 @@ class GraphInterpreterSpec extends AkkaSpec {
     val balance = new Balance[Int](2)
 
     "implement identity" in new TestSetup {
-      val source = UpstreamProbe[Int]("source")
-      val sink = DownstreamProbe[Int]("sink")
+      val source = new UpstreamProbe[Int]("source")
+      val sink = new DownstreamProbe[Int]("sink")
 
       builder(identity)
         .connect(source, identity.in)
@@ -70,8 +64,8 @@ class GraphInterpreterSpec extends AkkaSpec {
     }
 
     "implement detacher stage" in new TestSetup {
-      val source = UpstreamProbe[Int]("source")
-      val sink = DownstreamProbe[Int]("sink")
+      val source = new UpstreamProbe[Int]("source")
+      val sink = new DownstreamProbe[Int]("sink")
 
       builder(detacher)
         .connect(source, detacher.in)
@@ -348,114 +342,4 @@ class GraphInterpreterSpec extends AkkaSpec {
     }
   }
 
-}
-
-object GraphInterpreterSpec {
-
-  sealed trait TestEvent {
-    def source: GraphStageLogic
-  }
-
-  case class OnComplete(source: GraphStageLogic) extends TestEvent
-  case class Cancel(source: GraphStageLogic) extends TestEvent
-  case class OnError(source: GraphStageLogic, cause: Throwable) extends TestEvent
-  case class OnNext(source: GraphStageLogic, elem: Any) extends TestEvent
-  case class RequestOne(source: GraphStageLogic) extends TestEvent
-  case class RequestAnother(source: GraphStageLogic) extends TestEvent
-
-  abstract class TestSetup {
-    private var lastEvent: Set[TestEvent] = Set.empty
-    private var _interpreter: GraphInterpreter = _
-    protected def interpreter: GraphInterpreter = _interpreter
-
-    class AssemblyBuilder(stages: Seq[GraphStage[_ <: Shape]]) {
-      var upstreams = Vector.empty[(UpstreamBoundaryStageLogic[_], Inlet[_])]
-      var downstreams = Vector.empty[(Outlet[_], DownstreamBoundaryStageLogic[_])]
-      var connections = Vector.empty[(Outlet[_], Inlet[_])]
-
-      def connect[T](upstream: UpstreamBoundaryStageLogic[T], in: Inlet[T]): AssemblyBuilder = {
-        upstreams :+= upstream -> in
-        this
-      }
-
-      def connect[T](out: Outlet[T], downstream: DownstreamBoundaryStageLogic[T]): AssemblyBuilder = {
-        downstreams :+= out -> downstream
-        this
-      }
-
-      def connect[T](out: Outlet[T], in: Inlet[T]): AssemblyBuilder = {
-        connections :+= out -> in
-        this
-      }
-
-      def init(): Unit = {
-        val ins = upstreams.map(_._2) ++ connections.map(_._2)
-        val outs = connections.map(_._1) ++ downstreams.map(_._1)
-        val inOwners = ins.map { in ⇒ stages.indexWhere(_.shape.inlets.contains(in)) }
-        val outOwners = outs.map { out ⇒ stages.indexWhere(_.shape.outlets.contains(out)) }
-
-        val assembly = GraphAssembly(
-          stages.toArray,
-          (ins ++ Vector.fill(downstreams.size)(null)).toArray,
-          (inOwners ++ Vector.fill(downstreams.size)(-1)).toArray,
-          (Vector.fill(upstreams.size)(null) ++ outs).toArray,
-          (Vector.fill(upstreams.size)(-1) ++ outOwners).toArray)
-
-        val (inHandlers, outHandlers, logics, _) = assembly.materialize()
-        _interpreter = new GraphInterpreter(assembly, NoMaterializer, inHandlers, outHandlers, logics, (_, _, _) ⇒ ())
-
-        for ((upstream, i) ← upstreams.zipWithIndex) {
-          _interpreter.attachUpstreamBoundary(i, upstream._1)
-        }
-
-        for ((downstream, i) ← downstreams.zipWithIndex) {
-          _interpreter.attachDownstreamBoundary(i + upstreams.size + connections.size, downstream._2)
-        }
-
-        _interpreter.init()
-      }
-    }
-
-    def manualInit(assembly: GraphAssembly): Unit = {
-      val (inHandlers, outHandlers, logics, _) = assembly.materialize()
-      _interpreter = new GraphInterpreter(assembly, NoMaterializer, inHandlers, outHandlers, logics, (_, _, _) ⇒ ())
-    }
-
-    def builder(stages: GraphStage[_ <: Shape]*): AssemblyBuilder = new AssemblyBuilder(stages.toSeq)
-
-    def lastEvents(): Set[TestEvent] = {
-      val result = lastEvent
-      lastEvent = Set.empty
-      result
-    }
-
-    case class UpstreamProbe[T](override val toString: String) extends UpstreamBoundaryStageLogic[T] {
-      val out = Outlet[T]("out")
-
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = lastEvent += RequestOne(UpstreamProbe.this)
-      })
-
-      def onNext(elem: T, eventLimit: Int = Int.MaxValue): Unit = {
-        if (GraphInterpreter.Debug) println(s"----- NEXT: $this $elem")
-        push(out, elem)
-        interpreter.execute(eventLimit)
-      }
-    }
-
-    case class DownstreamProbe[T](override val toString: String) extends DownstreamBoundaryStageLogic[T] {
-      val in = Inlet[T]("in")
-
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = lastEvent += OnNext(DownstreamProbe.this, grab(in))
-      })
-
-      def requestOne(eventLimit: Int = Int.MaxValue): Unit = {
-        if (GraphInterpreter.Debug) println(s"----- REQ $this")
-        pull(in)
-        interpreter.execute(eventLimit)
-      }
-    }
-
-  }
 }
