@@ -26,12 +26,16 @@ private[stream] object GraphInterpreter {
   case object Empty
 
   sealed trait ConnectionState
-  sealed trait CompletedState extends ConnectionState
   case object Pulled extends ConnectionState
-  case object Completed extends CompletedState
-  final case class PushCompleted(element: Any) extends ConnectionState
-  case object Cancelled extends CompletedState
-  final case class Failed(ex: Throwable) extends CompletedState
+
+  sealed trait HasElementState
+
+  sealed trait CompletingState extends ConnectionState
+  final case class CompletedHasElement(element: Any) extends CompletingState with HasElementState
+  final case class PushCompleted(element: Any) extends CompletingState with HasElementState
+  case object Completed extends CompletingState
+  case object Cancelled extends CompletingState
+  final case class Failed(ex: Throwable) extends CompletingState
 
   val NoEvent = -1
   val Boundary = -1
@@ -223,8 +227,8 @@ private[stream] final class GraphInterpreter(
   }
 
   // An event queue implemented as a circular buffer
-  private val mask = 255
   private val eventQueue = Array.ofDim[Int](256)
+  private val mask = eventQueue.length - 1
   private var queueHead: Int = 0
   private var queueTail: Int = 0
 
@@ -300,6 +304,7 @@ private[stream] final class GraphInterpreter(
    * true.
    */
   def execute(eventLimit: Int): Unit = {
+    if (GraphInterpreter.Debug) println("---------------- EXECUTE")
     var eventsRemaining = eventLimit
     var connection = dequeue()
     while (eventsRemaining > 0 && connection != NoEvent) {
@@ -340,9 +345,9 @@ private[stream] final class GraphInterpreter(
           outStates(connection) = Available
           outHandlers(connection).onPull()
         }
-      case Completed ⇒
+      case Completed | CompletedHasElement(_) ⇒
         val stageId = assembly.inOwners(connection)
-        if (!isStageCompleted(stageId)) {
+        if (!isStageCompleted(stageId) && inStates(connection) != Closed) {
           if (GraphInterpreter.Debug) println(s"COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)}")
           inStates(connection) = Closed
           inHandlers(connection).onUpstreamFinish()
@@ -350,7 +355,7 @@ private[stream] final class GraphInterpreter(
         }
       case Failed(ex) ⇒
         val stageId = assembly.inOwners(connection)
-        if (!isStageCompleted(stageId)) {
+        if (!isStageCompleted(stageId) && inStates(connection) != Closed) {
           if (GraphInterpreter.Debug) println(s"FAIL ${outOwnerName(connection)} -> ${inOwnerName(connection)}")
           inStates(connection) = Closed
           inHandlers(connection).onUpstreamFailure(ex)
@@ -358,17 +363,25 @@ private[stream] final class GraphInterpreter(
         }
       case Cancelled ⇒
         val stageId = assembly.outOwners(connection)
-        if (!isStageCompleted(stageId)) {
+        if (!isStageCompleted(stageId) && outStates(connection) != Closed) {
           if (GraphInterpreter.Debug) println(s"CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)}")
           outStates(connection) = Closed
           outHandlers(connection).onDownstreamFinish()
           completeConnection(stageId)
         }
       case PushCompleted(elem) ⇒
-        inStates(connection) = Available
-        connectionStates(connection) = elem
-        processElement(elem)
-        enqueue(connection, Completed)
+        val stageId = assembly.inOwners(connection)
+        if (!isStageCompleted(stageId) && inStates(connection) != Closed) {
+          inStates(connection) = Available
+          connectionStates(connection) = elem
+          processElement(elem)
+          val elemAfter = connectionStates(connection)
+          if (elemAfter == Empty) enqueue(connection, Completed)
+          else enqueue(connection, CompletedHasElement(elemAfter))
+        } else {
+          connectionStates(connection) = Completed
+        }
+
       case pushedElem ⇒ processElement(pushedElem)
 
     }
@@ -396,14 +409,17 @@ private[stream] final class GraphInterpreter(
   // to prevent redundant completion events in case of concurrent invocation on both sides of the connection.
   // I.e. when one side already enqueued the completion event, then the other side will not enqueue the event since
   // there is noone to process it anymore.
-  def isConnectionCompleting(connection: Int): Boolean = connectionStates(connection).isInstanceOf[CompletedState]
+  def isConnectionCompleting(connection: Int): Boolean = connectionStates(connection).isInstanceOf[CompletingState]
 
   // Returns true if the given stage is alredy completed
   def isStageCompleted(stageId: Int): Boolean = stageId != Boundary && shutdownCounter(stageId) == 0
 
   private def isPushInFlight(connection: Int): Boolean =
     (inStates(connection) == InFlight) && // Other side has not been notified
-      !connectionStates(connection).isInstanceOf[ConnectionState] && // and the pe
+      hasElement(connection)
+
+  private def hasElement(connection: Int): Boolean =
+    !connectionStates(connection).isInstanceOf[ConnectionState] &&
       connectionStates(connection) != Empty
 
   // Register that a connection in which the given stage participated has been completed and therefore the stage
@@ -436,14 +452,13 @@ private[stream] final class GraphInterpreter(
   private[stream] def complete(connection: Int): Unit = {
     outStates(connection) = Closed
     if (!isConnectionCompleting(connection) && (inStates(connection) ne Closed)) {
-      // There is a pending push, we change the signal to be a PushCompleted (there can be only one signal in flight
-      // for a connection)
-      // FIXME: There is a variant on this, when the push has been signalled, but the element was ungrabbed.
-      // We should not overwrite that element!
-      if (isPushInFlight(connection))
-        connectionStates(connection) = PushCompleted(connectionStates(connection))
-      else
-        enqueue(connection, Completed)
+      if (hasElement(connection)) {
+        // There is a pending push, we change the signal to be a PushCompleted (there can be only one signal in flight
+        // for a connection)
+        if (inStates(connection) == InFlight)
+          connectionStates(connection) = PushCompleted(connectionStates(connection))
+        else enqueue(connection, CompletedHasElement(connectionStates(connection)))
+      } else enqueue(connection, Completed)
     }
     completeConnection(assembly.outOwners(connection))
   }
