@@ -254,3 +254,14 @@ Parsing / Rendering
 
 Parsing and rendering of HTTP data structures is heavily optimized and for most types there's currently no public API
 provided to parse (or render to) Strings or byte arrays.
+
+.. note::
+  Various parsing and rendering settings are available to tweak in the configuration under ``akka.http.client[.parsing]``,
+  ``akka.http.server[.parsing]`` and ``akka.http.host-connection-pool[.client.parsing]``. Please note that while each of
+  these sections expose the same parsing options, they will only be used for their respective APIs. For example, changing
+  a setting inside ``akka.http.client.parsing`` **does not** change the same value in ``akka.http.host-connection-pool.client.parsing``,
+  as they are different APIs.
+
+  You can check which settings to tweak for which method exposed on the Http object by inspecting their ScalaDoc.
+  In general though it's as simple as "pool" backed services use the ``host-connection-pool`` section, other clients
+  which expose ``Flow`` use the ``client`` section, and the server side uses the ``server`` configuration section.
