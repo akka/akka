@@ -177,6 +177,11 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         }
         serializerMap.putIfAbsent(clazz, ser) match {
           case null ⇒
+            if (shouldWarnAboutJavaSerializer(clazz, ser)) {
+              log.warning("Using the default Java serializer for class [{}] which is not recommended because of " +
+                "performance implications. Use another serializer or disable this warning using the setting " +
+                "'akka.actor.warn-about-java-serializer-usage'", clazz.getName)
+            }
             log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName)
             ser
           case some ⇒ some
@@ -240,6 +245,11 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   val serializerByIdentity: Map[Int, Serializer] =
     Map(NullSerializer.identifier -> NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
+
+  private def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) =
+    settings.config.getBoolean("akka.actor.warn-about-java-serializer-usage") &&
+      serializer.isInstanceOf[JavaSerializer] &&
+      !serializedClass.getName.startsWith("akka.")
 
 }
 
