@@ -55,7 +55,8 @@ final case class ParserSettings(
 }
 
 object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsing") {
-  def fromSubConfig(c: Config) = {
+  def fromSubConfig(root: Config, inner: Config) = {
+    val c = inner.withFallback(root.getConfig(prefix))
     val cacheConfig = c getConfig "header-cache"
 
     apply(
