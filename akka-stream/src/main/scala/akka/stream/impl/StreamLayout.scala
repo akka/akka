@@ -379,11 +379,9 @@ private[stream] final class VirtualProcessor[T] extends Processor[T, T] {
               case Completed  ⇒ tryOnComplete(s)
               case Failed(ex) ⇒ tryOnError(s, ex)
               case Allowed    ⇒ // all good
-
             }
           } catch {
-            case ex @ canNotSubscribeTheSameSubscriberMultipleTimesException ⇒ throw ex
-            case NonFatal(ex) ⇒ sub.cancel()
+            case NonFatal(ex) ⇒ if (isCancelled) throw ex else sub.cancel()
           }
       }
   }
