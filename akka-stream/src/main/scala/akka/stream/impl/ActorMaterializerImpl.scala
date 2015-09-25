@@ -339,7 +339,6 @@ private[akka] object ActorProcessorFactory {
       case Scan(z, f, _)              ⇒ interp(fusing.Scan(z, f, settings.supervisionDecider))
       case Fold(z, f, _)              ⇒ interp(fusing.Fold(z, f, settings.supervisionDecider))
       case Recover(pf, _)             ⇒ interp(fusing.Recover(pf))
-      case Scan(z, f, _)              ⇒ interp(fusing.Scan(z, f, settings.supervisionDecider))
       case Expand(s, f, _)            ⇒ interp(fusing.Expand(s, f))
       case Conflate(s, f, _)          ⇒ interp(fusing.Conflate(s, f, settings.supervisionDecider))
       case Buffer(n, s, _)            ⇒ interp(fusing.Buffer(n, s))

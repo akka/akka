@@ -20,10 +20,13 @@ private[http] class FrameEventRenderer extends StatefulStage[FrameEvent, ByteStr
   object Idle extends State {
     def onPush(elem: FrameEvent, ctx: Context[ByteString]): SyncDirective = elem match {
       case start @ FrameStart(header, data) ⇒
-        assert(header.length >= data.size)
+        require(header.length >= data.size)
         if (!start.lastPart && header.length > 0) become(renderData(header.length - data.length, this))
 
         ctx.push(renderStart(start))
+
+      case f: FrameData ⇒
+        ctx.fail(new IllegalStateException("unexpected FrameData (need FrameStart first)"))
     }
   }
 
@@ -43,6 +46,9 @@ private[http] class FrameEventRenderer extends StatefulStage[FrameEvent, ByteStr
             remaining -= data.size
             ctx.push(data)
           }
+
+        case f: FrameStart ⇒
+          ctx.fail(new IllegalStateException("unexpected FrameStart (need more FrameData first)"))
       }
     }
 

@@ -23,13 +23,13 @@ object MyRejectionHandler {
         complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
       }
       .handle { case AuthorizationFailedRejection ⇒
-        complete(Forbidden, "You're out of your depth!")
+        complete((Forbidden, "You're out of your depth!"))
       }
       .handleAll[MethodRejection] { methodRejections ⇒
         val names = methodRejections.map(_.supported.name)
-        complete(MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!")
+        complete((MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!"))
       }
-      .handleNotFound { complete(NotFound, "Not here!") }
+      .handleNotFound { complete((NotFound, "Not here!")) }
       .result()
 
   object MyApp extends App {

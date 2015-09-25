@@ -16,7 +16,7 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
         complete(HttpResponse(entity = "foo"))
       } ~
         path("b") {
-          complete(StatusCodes.Created, "bar")
+          complete((StatusCodes.Created, "bar"))
         } ~
         (path("c") & complete("baz")) // `&` also works with `complete` as the 2nd argument
 

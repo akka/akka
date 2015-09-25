@@ -8,14 +8,24 @@ import java.nio.channels.DatagramChannel
 import java.nio.channels.ServerSocketChannel
 import java.net.InetSocketAddress
 import java.net.SocketAddress
+import java.net.DatagramSocket
+import java.net.ServerSocket
 
 object TestUtils { // FIXME: remove once going back to project dependencies
-  import scala.language.reflectiveCalls
-  // Structural type needed since DatagramSocket and ServerSocket has no common ancestor apart from Object
-  type GeneralSocket = {
+  trait GeneralSocket extends Any {
     def bind(sa: SocketAddress): Unit
     def close(): Unit
-    def getLocalPort(): Int
+    def getLocalPort: Int
+  }
+  implicit class GeneralDatagramSocket(val s: DatagramSocket) extends GeneralSocket {
+    def bind(sa: SocketAddress): Unit = s.bind(sa)
+    def close(): Unit = s.close()
+    def getLocalPort: Int = s.getLocalPort
+  }
+  implicit class GeneralServerSocket(val s: ServerSocket) extends GeneralSocket {
+    def bind(sa: SocketAddress): Unit = s.bind(sa)
+    def close(): Unit = s.close()
+    def getLocalPort: Int = s.getLocalPort
   }
 
   def temporaryServerAddress(address: String = "127.0.0.1", udp: Boolean = false): InetSocketAddress =

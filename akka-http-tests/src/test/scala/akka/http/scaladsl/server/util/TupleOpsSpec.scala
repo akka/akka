@@ -21,9 +21,9 @@ class TupleOpsSpec extends WordSpec with Matchers {
     }
 
     "support joining tuples" in {
-      (1, 'X2, "3") join () shouldEqual (1, 'X2, "3")
-      () join (1, 'X2, "3") shouldEqual (1, 'X2, "3")
-      (1, 'X2, "3") join (4.0, 5L) shouldEqual (1, 'X2, "3", 4.0, 5L)
+      (1, 'X2, "3") join (()) shouldEqual ((1, 'X2, "3"))
+      () join ((1, 'X2, "3")) shouldEqual ((1, 'X2, "3"))
+      (1, 'X2, "3") join ((4.0, 5L)) shouldEqual ((1, 'X2, "3", 4.0, 5L))
     }
   }
 }

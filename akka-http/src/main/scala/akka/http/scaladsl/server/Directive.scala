@@ -101,7 +101,7 @@ object Directive {
   /**
    * A Directive that always passes the request on to its inner route (i.e. does nothing).
    */
-  val Empty: Directive0 = Directive(_())
+  val Empty: Directive0 = Directive(_(()))
 
   /**
    * Adds `apply` to all Directives with 1 or more extractions,

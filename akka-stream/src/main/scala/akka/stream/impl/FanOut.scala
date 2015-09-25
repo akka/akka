@@ -141,7 +141,7 @@ private[akka] object FanOut {
       while (!(marked(id) && pending(id))) {
         id += 1
         if (id == outputCount) id = 0
-        assert(id != preferredId, "Tried to enqueue without waiting for any demand")
+        require(id != preferredId, "Tried to enqueue without waiting for any demand")
       }
       id
     }
