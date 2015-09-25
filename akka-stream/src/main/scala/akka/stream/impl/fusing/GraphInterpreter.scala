@@ -26,15 +26,24 @@ private[stream] object GraphInterpreter {
   case object Empty
 
   sealed trait ConnectionState
-  sealed trait CompletedState extends ConnectionState
-  case object Pushable extends ConnectionState
-  case object Completed extends CompletedState
-  final case class PushCompleted(element: Any) extends ConnectionState
-  case object Cancelled extends CompletedState
-  final case class Failed(ex: Throwable) extends CompletedState
+  case object Pulled extends ConnectionState
+
+  sealed trait HasElementState
+
+  sealed trait CompletingState extends ConnectionState
+  final case class CompletedHasElement(element: Any) extends CompletingState with HasElementState
+  final case class PushCompleted(element: Any) extends CompletingState with HasElementState
+  case object Completed extends CompletingState
+  case object Cancelled extends CompletingState
+  final case class Failed(ex: Throwable) extends CompletingState
 
   val NoEvent = -1
   val Boundary = -1
+
+  sealed trait PortState
+  case object InFlight extends PortState
+  case object Available extends PortState
+  case object Closed extends PortState
 
   abstract class UpstreamBoundaryStageLogic[T] extends GraphStageLogic {
     def out: Outlet[T]
@@ -160,10 +169,11 @@ private[stream] object GraphInterpreter {
  * while in the practical sense a connection is a number which represents slots in certain arrays.
  * In particular
  *  - connectionStates is a mapping from a connection id to a current (or future) state of the connection
- *  - inAvailable is a mapping from a connection to a boolean that indicates whether the input corresponding
- *    to the connection is currently pullable
- *  - outAvailable is a mapping from a connection to a boolean that indicates whether the input corresponding
- *    to the connection is currently pushable
+ *  - inStates is a mapping from a connection to a [[akka.stream.impl.fusing.GraphInterpreter.PortState]]
+ *    that indicates whether the input corresponding
+ *    to the connection is currently pullable or completed
+ *  - outStates is a mapping from a connection to a [[akka.stream.impl.fusing.GraphInterpreter.PortState]]
+ *    that indicates whether the input corresponding to the connection is currently pushable or completed
  *  - inHandlers is a mapping from a connection id to the [[InHandler]] instance that handles the events corresponding
  *    to the input port of the connection
  *  - outHandlers is a mapping from a connection id to the [[OutHandler]] instance that handles the events corresponding
@@ -177,14 +187,14 @@ private[stream] object GraphInterpreter {
  *
  * Sending an event is usually the following sequence:
  *  - An action is requested by a stage logic (push, pull, complete, etc.)
- *  - the availability of the port is set on the sender side to false (inAvailable or outAvailable)
+ *  - the availability of the port is set on the sender side to Limbo (inStates or outStates)
  *  - the scheduled event is put in the slot of the connection in the connectionStates table
  *  - the id of the affected connection is enqueued
  *
  * Receiving an event is usually the following sequence:
  *  - id of connection to be processed is dequeued
  *  - the type of the event is determined by the object in the corresponding connectionStates slot
- *  - the availability of the port is set on the receiver side to be true (inAvailable or outAvailable)
+ *  - the availability of the port is set on the receiver side to be Available (inStates or outStates)
  *  - using the inHandlers/outHandlers table the corresponding callback is called on the stage logic.
  *
  * Because of the FIFO construction of the queue the interpreter is fair, i.e. a pending event is always executed
@@ -203,19 +213,19 @@ private[stream] final class GraphInterpreter(
 
   // Maintains the next event (and state) of the connection.
   // Technically the connection cannot be considered being in the state that is encoded here before the enqueued
-  // connection event has been processed. The inAvailable and outAvailable arrays usually protect access to this
+  // connection event has been processed. The inStates and outStates arrays usually protect access to this
   // field while it is in transient state.
   val connectionStates = Array.fill[Any](assembly.connectionCount)(Empty)
 
   // Indicates whether the input port is pullable. After pulling it becomes false
   // Be aware that when inAvailable goes to false outAvailable does not become true immediately, only after
   // the corresponding event in the queue has been processed
-  val inAvailable = Array.fill[Boolean](assembly.connectionCount)(true)
+  val inStates = Array.fill[PortState](assembly.connectionCount)(Available)
 
   // Indicates whether the output port is pushable. After pushing it becomes false
   // Be aware that when inAvailable goes to false outAvailable does not become true immediately, only after
   // the corresponding event in the queue has been processed
-  val outAvailable = Array.fill[Boolean](assembly.connectionCount)(false)
+  val outStates = Array.fill[PortState](assembly.connectionCount)(InFlight)
 
   // The number of currently running stages. Once this counter reaches zero, the interpreter is considered to be
   // completed
@@ -228,8 +238,8 @@ private[stream] final class GraphInterpreter(
   }
 
   // An event queue implemented as a circular buffer
-  private val mask = 255
   private val eventQueue = Array.ofDim[Int](256)
+  private val mask = eventQueue.length - 1
   private var queueHead: Int = 0
   private var queueTail: Int = 0
 
@@ -306,6 +316,7 @@ private[stream] final class GraphInterpreter(
    * true.
    */
   def execute(eventLimit: Int): Unit = {
+    if (GraphInterpreter.Debug) println("---------------- EXECUTE")
     var eventsRemaining = eventLimit
     var connection = dequeue()
     while (eventsRemaining > 0 && connection != NoEvent) {
@@ -314,13 +325,14 @@ private[stream] final class GraphInterpreter(
         case NonFatal(e) ⇒
           val stageId = connectionStates(connection) match {
             case Failed(ex)          ⇒ throw new IllegalStateException("Double fault. Failure while handling failure.", e)
-            case Pushable            ⇒ assembly.outOwners(connection)
+            case Pulled              ⇒ assembly.outOwners(connection)
             case Completed           ⇒ assembly.inOwners(connection)
             case Cancelled           ⇒ assembly.outOwners(connection)
             case PushCompleted(elem) ⇒ assembly.inOwners(connection)
             case pushedElem          ⇒ assembly.inOwners(connection)
           }
-          logics(stageId).failStage(e)
+          if (stageId == Boundary) throw e
+          else logics(stageId).failStage(e)
       }
       eventsRemaining -= 1
       if (eventsRemaining > 0) connection = dequeue()
@@ -334,47 +346,55 @@ private[stream] final class GraphInterpreter(
     def processElement(elem: Any): Unit = {
       if (!isStageCompleted(assembly.inOwners(connection))) {
         if (GraphInterpreter.Debug) println(s"PUSH ${outOwnerName(connection)} -> ${inOwnerName(connection)}, $elem")
-        inAvailable(connection) = true
+        inStates(connection) = Available
         inHandlers(connection).onPush()
       }
     }
 
     connectionStates(connection) match {
-      case Pushable ⇒
+      case Pulled ⇒
         if (!isStageCompleted(assembly.outOwners(connection))) {
           if (GraphInterpreter.Debug) println(s"PULL ${inOwnerName(connection)} -> ${outOwnerName(connection)}")
-          outAvailable(connection) = true
+          outStates(connection) = Available
           outHandlers(connection).onPull()
         }
-      case Completed ⇒
+      case Completed | CompletedHasElement(_) ⇒
         val stageId = assembly.inOwners(connection)
-        if (!isStageCompleted(stageId)) {
+        if (!isStageCompleted(stageId) && inStates(connection) != Closed) {
           if (GraphInterpreter.Debug) println(s"COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)}")
-          inAvailable(connection) = false
+          inStates(connection) = Closed
           inHandlers(connection).onUpstreamFinish()
           completeConnection(stageId)
         }
       case Failed(ex) ⇒
         val stageId = assembly.inOwners(connection)
-        if (!isStageCompleted(stageId)) {
+        if (!isStageCompleted(stageId) && inStates(connection) != Closed) {
           if (GraphInterpreter.Debug) println(s"FAIL ${outOwnerName(connection)} -> ${inOwnerName(connection)}")
-          inAvailable(connection) = false
+          inStates(connection) = Closed
           inHandlers(connection).onUpstreamFailure(ex)
           completeConnection(stageId)
         }
       case Cancelled ⇒
         val stageId = assembly.outOwners(connection)
-        if (!isStageCompleted(stageId)) {
+        if (!isStageCompleted(stageId) && outStates(connection) != Closed) {
           if (GraphInterpreter.Debug) println(s"CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)}")
-          outAvailable(connection) = false
+          outStates(connection) = Closed
           outHandlers(connection).onDownstreamFinish()
           completeConnection(stageId)
         }
       case PushCompleted(elem) ⇒
-        inAvailable(connection) = true
-        connectionStates(connection) = elem
-        processElement(elem)
-        enqueue(connection, Completed)
+        val stageId = assembly.inOwners(connection)
+        if (!isStageCompleted(stageId) && inStates(connection) != Closed) {
+          inStates(connection) = Available
+          connectionStates(connection) = elem
+          processElement(elem)
+          val elemAfter = connectionStates(connection)
+          if (elemAfter == Empty) enqueue(connection, Completed)
+          else enqueue(connection, CompletedHasElement(elemAfter))
+        } else {
+          connectionStates(connection) = Completed
+        }
+
       case pushedElem ⇒ processElement(pushedElem)
 
     }
@@ -402,14 +422,17 @@ private[stream] final class GraphInterpreter(
   // to prevent redundant completion events in case of concurrent invocation on both sides of the connection.
   // I.e. when one side already enqueued the completion event, then the other side will not enqueue the event since
   // there is noone to process it anymore.
-  def isConnectionCompleted(connection: Int): Boolean = connectionStates(connection).isInstanceOf[CompletedState]
+  def isConnectionCompleting(connection: Int): Boolean = connectionStates(connection).isInstanceOf[CompletingState]
 
   // Returns true if the given stage is alredy completed
   def isStageCompleted(stageId: Int): Boolean = stageId != Boundary && shutdownCounter(stageId) == 0
 
   private def isPushInFlight(connection: Int): Boolean =
-    !inAvailable(connection) &&
-      !connectionStates(connection).isInstanceOf[ConnectionState] &&
+    (inStates(connection) == InFlight) && // Other side has not been notified
+      hasElement(connection)
+
+  private def hasElement(connection: Int): Boolean =
+    !connectionStates(connection).isInstanceOf[ConnectionState] &&
       connectionStates(connection) != Empty
 
   // Register that a connection in which the given stage participated has been completed and therefore the stage
@@ -430,37 +453,46 @@ private[stream] final class GraphInterpreter(
   }
 
   private[stream] def push(connection: Int, elem: Any): Unit = {
-    outAvailable(connection) = false
-    enqueue(connection, elem)
+    if (!(inStates(connection) eq Closed)) {
+      outStates(connection) = InFlight
+      enqueue(connection, elem)
+    }
   }
 
   private[stream] def pull(connection: Int): Unit = {
-    inAvailable(connection) = false
-    enqueue(connection, Pushable)
+    if (!(outStates(connection) eq Closed)) {
+      inStates(connection) = InFlight
+      enqueue(connection, Pulled)
+    }
   }
 
   private[stream] def complete(connection: Int): Unit = {
-    outAvailable(connection) = false
-    if (!isConnectionCompleted(connection)) {
-      // There is a pending push, we change the signal to be a PushCompleted (there can be only one signal in flight
-      // for a connection)
-      if (isPushInFlight(connection))
-        connectionStates(connection) = PushCompleted(connectionStates(connection))
-      else
-        enqueue(connection, Completed)
+    outStates(connection) = Closed
+    if (!isConnectionCompleting(connection) && (inStates(connection) ne Closed)) {
+      if (hasElement(connection)) {
+        // There is a pending push, we change the signal to be a PushCompleted (there can be only one signal in flight
+        // for a connection)
+        if (inStates(connection) == InFlight)
+          connectionStates(connection) = PushCompleted(connectionStates(connection))
+        else enqueue(connection, CompletedHasElement(connectionStates(connection)))
+      } else enqueue(connection, Completed)
     }
     completeConnection(assembly.outOwners(connection))
   }
 
   private[stream] def fail(connection: Int, ex: Throwable): Unit = {
-    outAvailable(connection) = false
-    if (!isConnectionCompleted(connection)) enqueue(connection, Failed(ex))
+    outStates(connection) = Closed
+    if (!isConnectionCompleting(connection) && (inStates(connection) ne Closed))
+      enqueue(connection, Failed(ex))
+
     completeConnection(assembly.outOwners(connection))
   }
 
   private[stream] def cancel(connection: Int): Unit = {
-    inAvailable(connection) = false
-    if (!isConnectionCompleted(connection)) enqueue(connection, Cancelled)
+    inStates(connection) = Closed
+    if (!isConnectionCompleting(connection) && (outStates(connection) ne Closed))
+      enqueue(connection, Cancelled)
+
     completeConnection(assembly.inOwners(connection))
   }
 
