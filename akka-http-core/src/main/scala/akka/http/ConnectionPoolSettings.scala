@@ -5,15 +5,14 @@
 package akka.http
 
 import java.lang.{ Iterable ⇒ JIterable }
-import akka.http.scaladsl.HttpsContext
-import com.typesafe.config.Config
-import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import akka.japi.Util._
+
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.impl.util._
-import akka.io.Inet
+import akka.http.scaladsl.HttpsContext
+import com.typesafe.config.Config
+
+import scala.concurrent.duration.Duration
 
 final case class HostConnectionPoolSetup(host: String, port: Int, setup: ConnectionPoolSetup)
 
@@ -46,14 +45,14 @@ final case class ConnectionPoolSettings(
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings]("akka.http.host-connection-pool") {
-  def fromSubConfig(c: Config) = {
+  def fromSubConfig(root: Config, c: Config) = {
     apply(
       c getInt "max-connections",
       c getInt "max-retries",
       c getInt "max-open-requests",
       c getInt "pipelining-limit",
       c getPotentiallyInfiniteDuration "idle-timeout",
-      ClientConnectionSettings fromSubConfig c.getConfig("client"))
+      ClientConnectionSettings.fromSubConfig(root, c.getConfig("client")))
   }
 
   /**
