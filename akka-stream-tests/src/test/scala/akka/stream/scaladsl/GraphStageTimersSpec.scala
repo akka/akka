@@ -90,12 +90,12 @@ class GraphStageTimersSpec extends AkkaSpec {
     "receive single-shot timer" in {
       val driver = setupIsolatedStage
 
-      within(2 seconds) {
-        within(500 millis, 1 second) {
+      within(2.seconds) {
+        within(500.millis, 1.second) {
           driver ! TestSingleTimer
           expectMsg(Tick(1))
         }
-        expectNoMsg(1 second)
+        expectNoMsg(1.second)
       }
 
       driver.stopStage()
@@ -104,15 +104,15 @@ class GraphStageTimersSpec extends AkkaSpec {
     "resubmit single-shot timer" in {
       val driver = setupIsolatedStage
 
-      within(2.5 seconds) {
-        within(500 millis, 1 second) {
+      within(2.5.seconds) {
+        within(500.millis, 1.second) {
           driver ! TestSingleTimerResubmit
           expectMsg(Tick(1))
         }
-        within(1 second) {
+        within(1.second) {
           expectMsg(Tick(2))
         }
-        expectNoMsg(1 second)
+        expectNoMsg(1.second)
       }
 
       driver.stopStage()
@@ -122,13 +122,13 @@ class GraphStageTimersSpec extends AkkaSpec {
       val driver = setupIsolatedStage
 
       driver ! TestCancelTimer
-      within(500 millis) {
+      within(500.millis) {
         expectMsg(TestCancelTimerAck)
       }
-      within(300 millis, 1 second) {
+      within(300.millis, 1.second) {
         expectMsg(Tick(1))
       }
-      expectNoMsg(1 second)
+      expectNoMsg(1.second)
 
       driver.stopStage()
     }
@@ -137,11 +137,11 @@ class GraphStageTimersSpec extends AkkaSpec {
       val driver = setupIsolatedStage
 
       driver ! TestRepeatedTimer
-      val seq = receiveWhile(2 seconds) {
+      val seq = receiveWhile(2.seconds) {
         case t: Tick ⇒ t
       }
       seq should have length 5
-      expectNoMsg(1 second)
+      expectNoMsg(1.second)
 
       driver.stopStage()
     }

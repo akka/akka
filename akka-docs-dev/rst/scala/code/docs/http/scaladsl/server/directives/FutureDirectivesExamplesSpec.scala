@@ -23,7 +23,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
   implicit val myExceptionHandler =
     ExceptionHandler {
       case TestException => ctx =>
-        ctx.complete(InternalServerError, "Unsuccessful future!")
+        ctx.complete((InternalServerError, "Unsuccessful future!"))
     }
 
   val resourceActor = system.actorOf(Props(new Actor {
@@ -40,7 +40,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
       path("divide" / IntNumber / IntNumber) { (a, b) =>
         onComplete(divide(a, b)) {
           case Success(value) => complete(s"The result was $value")
-          case Failure(ex)    => complete(InternalServerError, s"An error occurred: ${ex.getMessage}")
+          case Failure(ex)    => complete((InternalServerError, s"An error occurred: ${ex.getMessage}"))
         }
       }
 

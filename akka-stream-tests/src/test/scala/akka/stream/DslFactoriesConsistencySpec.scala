@@ -183,6 +183,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
   def returnTypeString(m: Method): String =
     m.returnType.getName.drop("akka.stream.".length)
 
+  import language.existentials
   case class Method(name: String, parameterTypes: List[Class[_]], returnType: Class[_], declaringClass: Class[_])
 
   sealed trait MatchResult {

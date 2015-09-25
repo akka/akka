@@ -20,7 +20,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     DebuggingDirectives.logRequest("get-user")
 
     // marks with "get-user", log with info level, HttpRequest.toString
-    DebuggingDirectives.logRequest("get-user", Logging.InfoLevel)
+    DebuggingDirectives.logRequest(("get-user", Logging.InfoLevel))
 
     // logs just the request method at debug level
     def requestMethod(req: HttpRequest): String = req.method.toString
@@ -46,7 +46,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     DebuggingDirectives.logRequestResult("get-user")
 
     // marks with "get-user", log with info level, HttpRequest.toString, HttpResponse.toString
-    DebuggingDirectives.logRequestResult("get-user", Logging.InfoLevel)
+    DebuggingDirectives.logRequestResult(("get-user", Logging.InfoLevel))
 
     // logs just the request method and response status at info level
     def requestMethodAndResponseStatusAsInfo(req: HttpRequest): Any => Option[LogEntry] = {
@@ -72,7 +72,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     DebuggingDirectives.logResult("get-user")
 
     // marks with "get-user", log with info level, HttpResponse.toString
-    DebuggingDirectives.logResult("get-user", Logging.InfoLevel)
+    DebuggingDirectives.logResult(("get-user", Logging.InfoLevel))
 
     // logs just the response status at debug level
     def responseStatus(res: Any): String = res match {

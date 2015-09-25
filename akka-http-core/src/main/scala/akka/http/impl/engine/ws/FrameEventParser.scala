@@ -99,7 +99,7 @@ private[http] class FrameEventParser extends ByteStringParserStage[FrameEvent] {
           remaining -= elem.size
           ctx.push(FrameData(elem, lastPart = false))
         } else {
-          assert(remaining <= Int.MaxValue) // safe because, remaining <= elem.size <= Int.MaxValue
+          require(remaining <= Int.MaxValue) // safe because, remaining <= elem.size <= Int.MaxValue
           val frameData = elem.take(remaining.toInt)
           val remainingData = elem.drop(remaining.toInt)
 

@@ -114,7 +114,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
   }
 
   protected def onSubscribe(subscription: Subscription): Unit = {
-    assert(subscription != null)
+    require(subscription != null)
     if (upstreamCompleted) subscription.cancel()
     else {
       upstream = subscription

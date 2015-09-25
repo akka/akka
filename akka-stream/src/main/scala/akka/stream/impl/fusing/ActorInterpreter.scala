@@ -44,7 +44,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
 
   private def dequeue(): Any = {
     val elem = inputBuffer(nextInputElementCursor)
-    assert(elem ne null)
+    require(elem ne null)
     inputBuffer(nextInputElementCursor) = null
 
     batchRemaining -= 1
@@ -110,7 +110,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int, val name: String)
     }
 
   private def onSubscribe(subscription: Subscription): Unit = {
-    assert(subscription != null)
+    require(subscription != null)
     if (upstreamCompleted)
       tryCancel(subscription)
     else if (downstreamCanceled) {

@@ -141,8 +141,9 @@ class FlowGraphDocSpec extends AkkaSpec {
         outlets: immutable.Seq[Outlet[_]]) = {
         assert(inlets.size == this.inlets.size)
         assert(outlets.size == this.outlets.size)
-        // This is why order matters when overriding inlets and outlets
-        PriorityWorkerPoolShape(inlets(0), inlets(1), outlets(0))
+        // This is why order matters when overriding inlets and outlets.
+        // The "[Nothing, Any]" is equivalent to casting the Inlets/Outlets.
+        PriorityWorkerPoolShape[Nothing, Any](inlets(0), inlets(1), outlets(0))
       }
     }
     //#flow-graph-components-shape

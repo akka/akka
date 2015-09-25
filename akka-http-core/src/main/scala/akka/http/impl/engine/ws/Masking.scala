@@ -57,6 +57,8 @@ private[http] object Masking {
               become(new Running(mask))
               current.onPush(start.copy(header = setNewMask(header, mask)), ctx)
             }
+          case _: FrameData ⇒
+            ctx.fail(new IllegalStateException("unexpected FrameData (need FrameStart first)"))
         }
     }
     class Running(initialMask: Int) extends State {
