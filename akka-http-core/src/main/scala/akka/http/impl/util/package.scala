@@ -138,7 +138,7 @@ package util {
     val out = Outlet[HttpEntity.Strict]("out")
     override val shape = FlowShape(in, out)
 
-    override def createLogic: GraphStageLogic = new GraphStageLogic {
+    override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
       var bytes = ByteString.newBuilder
       private var emptyStream = false
 
