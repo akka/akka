@@ -41,7 +41,7 @@ akka.actor.deployment {
 
   //#routing-logic
   import scala.collection.immutable
-  import scala.concurrent.forkjoin.ThreadLocalRandom
+  import java.util.concurrent.ThreadLocalRandom
   import akka.routing.RoundRobinRoutingLogic
   import akka.routing.RoutingLogic
   import akka.routing.Routee

@@ -16,7 +16,7 @@ import java.io.NotSerializableException
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.testkit.SocketUtil.temporaryServerAddress
 
 object RemotingSpec {

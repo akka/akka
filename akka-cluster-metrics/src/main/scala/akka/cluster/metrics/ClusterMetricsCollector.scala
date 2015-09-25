@@ -13,7 +13,7 @@ import akka.cluster.Member
 import akka.cluster.Cluster
 import scala.collection.immutable
 import akka.cluster.MemberStatus
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.actor.Terminated
 import akka.actor.DeadLetterSuppression
 

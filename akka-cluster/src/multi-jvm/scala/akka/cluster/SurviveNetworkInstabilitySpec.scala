@@ -10,7 +10,7 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import scala.concurrent.duration._
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.remote.testconductor.RoleName
 import akka.actor.Props
 import akka.actor.Actor
