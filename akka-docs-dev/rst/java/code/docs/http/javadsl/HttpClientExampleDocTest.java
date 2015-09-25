@@ -16,6 +16,7 @@ import akka.http.javadsl.model.*;
 import akka.http.javadsl.Http;
 import scala.util.Try;
 
+@SuppressWarnings("unused")
 public class HttpClientExampleDocTest {
 
     // compile only test

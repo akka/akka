@@ -566,7 +566,7 @@ public class SourceTest extends StreamTest {
     final Source<Integer, ?> source1 = Source.from(Arrays.asList(0, 1));
     final Source<Integer, ?> source2 = Source.from(Arrays.asList(2, 3));
 
-    final Source<Integer, ?> source = Source.combine(source1, source2, new ArrayList(),
+    final Source<Integer, ?> source = Source.combine(source1, source2, new ArrayList<Source<Integer, ?>>(),
             new Function<Integer, Graph<UniformFanInShape<Integer, Integer>, BoxedUnit>>() {
               public Graph<UniformFanInShape<Integer, Integer>, BoxedUnit> apply(Integer elem) {
                 return Merge.create(elem);

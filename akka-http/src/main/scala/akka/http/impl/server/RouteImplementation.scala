@@ -151,7 +151,7 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
         (requestValToDirective(dyn.value1) & requestValToDirective(dyn.value2))(runToRoute)
 
       case o: OpaqueRoute ⇒ (ctx ⇒ o.handle(new RequestContextImpl(ctx)).asInstanceOf[RouteResultImpl].underlying)
-      case p: Product     ⇒ extractExecutionContext { implicit ec ⇒ complete(500, s"Not implemented: ${p.productPrefix}") }
+      case p: Product     ⇒ extractExecutionContext { implicit ec ⇒ complete((500, s"Not implemented: ${p.productPrefix}")) }
     }
   }
   def pathMatcherDirective[T](matchers: immutable.Seq[PathMatcher[_]],

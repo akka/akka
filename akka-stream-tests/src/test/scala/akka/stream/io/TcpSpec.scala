@@ -505,7 +505,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
       val address = temporaryServerAddress()
       val firstClientConnected = Promise[Unit]()
       val takeTwoAndDropSecond = Flow[IncomingConnection].map(conn ⇒ {
-        firstClientConnected.trySuccess()
+        firstClientConnected.trySuccess(())
         conn
       }).grouped(2).take(1).map(_.head)
       Tcp().bind(address.getHostName, address.getPort)

@@ -16,7 +16,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
 
   //# path-dsl
   // matches /foo/
-  path("foo" /)
+  path("foo"./)
 
   // matches e.g. /foo/123 and extracts "123" as a String
   path("foo" / """\d+""".r)

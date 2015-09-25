@@ -40,6 +40,7 @@ public class SimpleServerApp8 extends HttpApp {
     @Override
     public Route createRoute() {
         Handler addHandler = new Handler() {
+            static final long serialVersionUID = 1L;
             @Override
             public RouteResult apply(RequestContext ctx) {
                 int xVal = x.get(ctx);
@@ -49,6 +50,7 @@ public class SimpleServerApp8 extends HttpApp {
             }
         };
         Handler2<Integer, Integer> subtractHandler = new Handler2<Integer, Integer>() {
+            static final long serialVersionUID = 1L;
             public RouteResult apply(RequestContext ctx, Integer xVal, Integer yVal) {
                 int result = xVal - yVal;
                 return ctx.complete(String.format("%d - %d = %d", xVal, yVal, result));

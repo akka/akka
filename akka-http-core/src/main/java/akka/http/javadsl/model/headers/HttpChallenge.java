@@ -4,7 +4,6 @@
 
 package akka.http.javadsl.model.headers;
 
-import akka.http.scaladsl.model.headers.HttpChallenge$;
 import akka.http.impl.util.Util;
 
 import java.util.Map;

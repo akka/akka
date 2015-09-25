@@ -166,7 +166,7 @@ private[akka] object FanIn {
       while (!(marked(id) && pending(id))) {
         id += 1
         if (id == inputCount) id = 0
-        assert(id != preferredId, "Tried to dequeue without waiting for any input")
+        require(id != preferredId, "Tried to dequeue without waiting for any input")
       }
       id
     }

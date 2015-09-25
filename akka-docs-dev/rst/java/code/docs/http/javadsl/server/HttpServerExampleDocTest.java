@@ -10,16 +10,12 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.IncomingConnection;
 import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.model.*;
-import akka.http.javadsl.model.ws.Websocket;
 import akka.japi.function.Function;
 import akka.japi.function.Procedure;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import org.junit.Test;
-import scala.Function1;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
@@ -29,7 +25,7 @@ import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
 public class HttpServerExampleDocTest {
-    public static void bindingExample() {
+    public static void bindingExample() throws Exception {
         //#binding-example
         ActorSystem system = ActorSystem.create();
         Materializer materializer = ActorMaterializer.create(system);
@@ -47,6 +43,7 @@ public class HttpServerExampleDocTest {
                     }
                 })).run(materializer);
         //#binding-example
+        Await.result(serverBindingFuture, new FiniteDuration(3, TimeUnit.SECONDS));
     }
     public static void fullServerExample() throws Exception {
         //#full-server-example

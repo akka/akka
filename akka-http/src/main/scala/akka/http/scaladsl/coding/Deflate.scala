@@ -43,7 +43,7 @@ class DeflateCompressor extends Compressor {
   override final def finish(): ByteString = finishWithBuffer(newTempBuffer())
 
   protected def compressWithBuffer(input: ByteString, buffer: Array[Byte]): ByteString = {
-    assert(deflater.needsInput())
+    require(deflater.needsInput())
     deflater.setInput(input.toArray)
     drainDeflater(deflater, buffer)
   }
@@ -108,7 +108,7 @@ private[http] object DeflateCompressor {
       result ++= ByteString.fromArray(buffer, 0, len)
       drainDeflater(deflater, buffer, result)
     } else {
-      assert(deflater.needsInput())
+      require(deflater.needsInput())
       result.result()
     }
   }

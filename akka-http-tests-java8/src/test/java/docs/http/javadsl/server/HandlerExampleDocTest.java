@@ -11,12 +11,9 @@ import akka.http.javadsl.server.values.Parameters;
 import akka.http.javadsl.server.values.PathMatchers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
-import akka.japi.function.Function;
 import org.junit.Test;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
-
-import java.util.concurrent.Callable;
 
 public class HandlerExampleDocTest extends JUnitRouteTest {
     @Test
@@ -25,6 +22,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
         class TestHandler extends akka.http.javadsl.server.AllDirectives {
             //#simple-handler
             Handler handler = new Handler() {
+                static final long serialVersionUID = 1L;
                 @Override
                 public RouteResult apply(RequestContext ctx) {
                     return ctx.complete("This was a " + ctx.request().method().value()  +
@@ -75,6 +73,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
             //#handler2
             final Handler2<Integer, Integer> multiply =
                 new Handler2<Integer, Integer>() {
+                    static final long serialVersionUID = 1L;
                     @Override
                     public RouteResult apply(RequestContext ctx, Integer x, Integer y) {
                         int result = x * y;

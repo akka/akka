@@ -106,10 +106,11 @@ private[http] object FrameHandler {
           val closeCode = FrameEventParser.parseCloseCode(data)
           emit(Iterator(Left(PeerClosed(closeCode)), Right(PeerClosed(closeCode))), ctx, WaitForPeerTcpClose)
         case Opcode.Other(o) ⇒ closeWithCode(Protocol.CloseCodes.ProtocolError, "Unsupported opcode")
+        case other           ⇒ ctx.fail(new IllegalStateException(s"unexpected message of type [${other.getClass.getName}] when expecting ControlFrame"))
       }
     }
     private def collectControlFrame(start: FrameStart, nextState: State)(implicit ctx: Ctx): SyncDirective = {
-      assert(!start.isFullMessage)
+      require(!start.isFullMessage)
       become(new CollectingControlFrame(start.header.opcode, start.data, nextState))
       ctx.pull()
     }
