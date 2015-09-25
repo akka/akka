@@ -45,7 +45,7 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
   }
   implicit def timeoutsShortcut(s: ServerSettings): Timeouts = s.timeouts
 
-  def fromSubConfig(c: Config) = apply(
+  def fromSubConfig(root: Config, c: Config) = apply(
     c.getString("server-header").toOption.map(Server(_)),
     Timeouts(
       c getPotentiallyInfiniteDuration "idle-timeout",
@@ -57,7 +57,7 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
     c getBoolean "verbose-error-messages",
     c getIntBytes "response-header-size-hint",
     c getInt "backlog",
-    SocketOptionSettings fromSubConfig c.getConfig("socket-options"),
+    SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
     defaultHostHeader =
       HttpHeader.parse("Host", c getString "default-host-header") match {
         case HttpHeader.ParsingResult.Ok(x: Host, Nil) ⇒ x
@@ -65,7 +65,7 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
           val info = result.errors.head.withSummary("Configured `default-host-header` is illegal")
           throw new ConfigurationException(info.formatPretty)
       },
-    ParserSettings fromSubConfig c.getConfig("parsing"))
+    ParserSettings.fromSubConfig(root, c.getConfig("parsing")))
 
   def apply(optionalSettings: Option[ServerSettings])(implicit actorRefFactory: ActorRefFactory): ServerSettings =
     optionalSettings getOrElse apply(actorSystem)

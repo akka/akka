@@ -15,7 +15,7 @@ import akka.actor.ActorSystem
 /**
  * INTERNAL API
  */
-private[http] abstract class SettingsCompanion[T](prefix: String) {
+private[http] abstract class SettingsCompanion[T](protected val prefix: String) {
   private final val MaxCached = 8
   private[this] var cache = ListMap.empty[ActorSystem, T]
 
@@ -41,9 +41,9 @@ private[http] abstract class SettingsCompanion[T](prefix: String) {
       .withFallback(defaultReference(getClass.getClassLoader)))
 
   def apply(config: Config): T =
-    fromSubConfig(config getConfig prefix)
+    fromSubConfig(config, config getConfig prefix)
 
-  def fromSubConfig(c: Config): T
+  def fromSubConfig(root: Config, c: Config): T
 }
 
 private[http] object SettingsCompanion {
