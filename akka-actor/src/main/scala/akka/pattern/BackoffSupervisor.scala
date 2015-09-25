@@ -4,7 +4,7 @@
 package akka.pattern
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.DeadLetterSuppression
