@@ -12,6 +12,7 @@ import org.openjdk.jmh.annotations._
 import scala.concurrent.Lock
 import scala.util.Success
 import akka.stream.impl.fusing.GraphStages
+import org.reactivestreams._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -24,6 +25,15 @@ class FlowMapBenchmark {
         log-config-on-start = off
         log-dead-letters-during-shutdown = off
         loglevel = "WARNING"
+
+        actor.default-dispatcher {
+          #executor = "thread-pool-executor"
+          throughput = 1024
+        }
+
+        actor.default-mailbox {
+          mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
+        }
 
         test {
           timefactor =  1.0
@@ -40,10 +50,8 @@ class FlowMapBenchmark {
 
   var materializer: ActorMaterializer = _
 
-  final val UseGraphStageIdentity = false
-
-  // manual, and not via @Param, because we want @OperationsPerInvocation on our tests
-  final val data100k = (1 to 100000).toVector
+  @Param(Array("true", "false"))
+  val UseGraphStageIdentity = false
 
   final val successMarker = Success(1)
   final val successFailure = Success(new Exception)
@@ -51,7 +59,7 @@ class FlowMapBenchmark {
   // safe to be benchmark scoped because the flows we construct in this bench are stateless
   var flow: Source[Int, Unit] = _
 
-  @Param(Array("2", "8")) // todo
+  @Param(Array("8", "32", "128"))
   val initialInputBufferSize = 0
 
   @Param(Array("1", "5", "10"))
@@ -60,11 +68,38 @@ class FlowMapBenchmark {
   @Setup
   def setup() {
     val settings = ActorMaterializerSettings(system)
-      .withInputBuffer(initialInputBufferSize, 16)
+      .withInputBuffer(initialInputBufferSize, initialInputBufferSize)
 
     materializer = ActorMaterializer(settings)
 
-    flow = mkMaps(Source(data100k), numberOfMapOps) {
+    // Important to use a synchronous, zero overhead source, otherwise the slowness of the source
+    // might bias the benchmark, since the stream always adjusts the rate to the slowest stage.
+    val syncTestPublisher = new Publisher[Int] {
+      override def subscribe(s: Subscriber[_ >: Int]): Unit = {
+        val sub = new Subscription {
+          var counter = 0 // Piggyback on caller thread, no need for volatile
+
+          override def request(n: Long): Unit = {
+            var i = n
+            while (i > 0) {
+              s.onNext(counter)
+              counter += 1
+              if (counter == 100000) {
+                s.onComplete()
+                return
+              }
+              i -= 1
+            }
+          }
+
+          override def cancel(): Unit = ()
+        }
+
+        s.onSubscribe(sub)
+      }
+    }
+
+    flow = mkMaps(Source(syncTestPublisher), numberOfMapOps) {
       if (UseGraphStageIdentity)
         new GraphStages.Identity[Int]
       else

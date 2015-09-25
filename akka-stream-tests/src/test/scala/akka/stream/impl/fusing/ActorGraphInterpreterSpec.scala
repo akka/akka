@@ -47,7 +47,7 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
         val out2 = Outlet[Int]("out2")
         val shape = BidiShape(in1, out1, in2, out2)
 
-        override def createLogic: GraphStageLogic = new GraphStageLogic {
+        override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
           setHandler(in1, new InHandler {
             override def onPush(): Unit = push(out1, grab(in1))
             override def onUpstreamFinish(): Unit = complete(out1)
@@ -88,7 +88,7 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
         val out2 = Outlet[Int]("out2")
         val shape = BidiShape(in1, out1, in2, out2)
 
-        override def createLogic: GraphStageLogic = new GraphStageLogic {
+        override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
           setHandler(in1, new InHandler {
             override def onPush(): Unit = push(out1, grab(in1))
 
@@ -134,7 +134,7 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
         val out2 = Outlet[Int]("out2")
         val shape = BidiShape(in1, out1, in2, out2)
 
-        override def createLogic: GraphStageLogic = new GraphStageLogic {
+        override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
           setHandler(in1, new InHandler {
             override def onPush(): Unit = push(out1, grab(in1))
 
@@ -183,7 +183,7 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
         val out2 = Outlet[Int]("out2")
         val shape = BidiShape(in1, out1, in2, out2)
 
-        override def createLogic: GraphStageLogic = new GraphStageLogic {
+        override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
           setHandler(in1, new InHandler {
             override def onPush(): Unit = push(out2, grab(in1))
 
