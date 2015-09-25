@@ -6,7 +6,7 @@ package sample.redelivery
 
 import akka.actor._
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import java.util.UUID
 
 object SimpleOrderedRedeliverer {

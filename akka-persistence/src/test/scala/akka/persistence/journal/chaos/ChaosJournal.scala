@@ -6,7 +6,7 @@ package akka.persistence.journal.chaos
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.persistence._
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.journal.inmem.InmemMessages

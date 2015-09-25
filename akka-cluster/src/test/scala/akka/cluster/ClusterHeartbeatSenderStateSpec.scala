@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.remote.FailureDetector
 import akka.remote.DefaultFailureDetectorRegistry
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 
 object ClusterHeartbeatSenderStateSpec {
   class FailureDetectorStub extends FailureDetector {
