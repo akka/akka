@@ -16,7 +16,7 @@ trait MiscDirectives {
    * If the condition fails the route is rejected with a [[ValidationRejection]].
    */
   def validate(check: ⇒ Boolean, errorMsg: String): Directive0 =
-    Directive { inner ⇒ if (check) inner() else reject(ValidationRejection(errorMsg)) }
+    Directive { inner ⇒ if (check) inner(()) else reject(ValidationRejection(errorMsg)) }
 
   /**
    * Extracts the client's IP from either the X-Forwarded-For, Remote-Address or X-Real-IP header

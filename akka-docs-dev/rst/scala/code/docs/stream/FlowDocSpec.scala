@@ -199,7 +199,7 @@ class FlowDocSpec extends AkkaSpec {
     val (promise, cancellable, future) = r11.run()
 
     // Type inference works as expected
-    promise.success(0)
+    promise.success(())
     cancellable.cancel()
     future.map(_ + 3)
 

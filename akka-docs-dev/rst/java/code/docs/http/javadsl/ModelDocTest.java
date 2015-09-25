@@ -13,6 +13,7 @@ import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.*;
 //#import-model
 
+@SuppressWarnings("unused")
 public class ModelDocTest {
     @Test
     public void testConstructRequest() {
@@ -78,7 +79,7 @@ public class ModelDocTest {
     //#headers
 
     // a method that extracts basic HTTP credentials from a request
-    private Option<BasicHttpCredentials> getCredentialsOfRequest(HttpRequest request) {
+	private Option<BasicHttpCredentials> getCredentialsOfRequest(HttpRequest request) {
         Option<Authorization> auth = request.getHeader(Authorization.class);
         if (auth.isDefined() && auth.get().credentials() instanceof BasicHttpCredentials)
             return Option.some((BasicHttpCredentials) auth.get().credentials());
