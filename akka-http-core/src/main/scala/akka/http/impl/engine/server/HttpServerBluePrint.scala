@@ -204,9 +204,13 @@ private[http] object HttpServerBluePrint {
             }
 
           case (ctx, _, OneHundredContinue) ⇒
-            assert(requestStart.expect100ContinueResponsePending)
+            require(requestStart.expect100ContinueResponsePending)
             ctx.emit(ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
             requestStart = requestStart.copy(expect100ContinueResponsePending = false)
+            SameState
+
+          case (ctx, _, msg) ⇒
+            ctx.fail(new IllegalStateException(s"unexpected message of type [${msg.getClass}], expecting only HttpResponse or OneHundredContinue"))
             SameState
         }
 

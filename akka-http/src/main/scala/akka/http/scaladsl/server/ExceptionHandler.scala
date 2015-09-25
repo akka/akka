@@ -41,7 +41,7 @@ object ExceptionHandler {
       case IllegalRequestException(info, status) ⇒ ctx ⇒ {
         ctx.log.warning("Illegal request {}\n\t{}\n\tCompleting with '{}' response",
           ctx.request, info.formatPretty, status)
-        ctx.complete(status, info.format(settings.verboseErrorMessages))
+        ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }
       case NonFatal(e) ⇒ ctx ⇒ {
         ctx.log.error(e, "Error during processing of request {}", ctx.request)

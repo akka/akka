@@ -50,7 +50,7 @@ public abstract class HttpCookie {
         return new akka.http.scaladsl.model.headers.HttpCookie(
                 name, value,
                 Util.<DateTime, akka.http.scaladsl.model.DateTime>convertOptionToScala(expires),
-                ((Option<Object>) (Option) maxAge).asScala(),
+                ((Option<Object>) (Object) maxAge).asScala(),
                 domain.asScala(),
                 path.asScala(),
                 secure,

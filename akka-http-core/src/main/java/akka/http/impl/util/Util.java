@@ -23,17 +23,17 @@ public abstract class Util {
     // needed to provide covariant conversions that the Java interfaces don't provide automatically.
     // The alternative would be having to cast around everywhere instead of doing it here in a central place.
     public static <U, T extends U> Option<U> convertOption(scala.Option<T> o) {
-        return (Option<U>)(Option) akka.japi.Option.fromScalaOption(o);
+        return (Option<U>)(Object) akka.japi.Option.fromScalaOption(o);
     }
     @SuppressWarnings("unchecked") // no support for covariance of Publisher in Java
     // needed to provide covariant conversions that the Java interfaces don't provide automatically.
     // The alternative would be having to cast around everywhere instead of doing it here in a central place.
     public static <U, T extends U> Source<U, scala.Unit> convertPublisher(Source<T, scala.Unit> p) {
-        return (Source<U, scala.Unit>)(Source) p;
+        return (Source<U, scala.Unit>)(Object) p;
     }
     @SuppressWarnings("unchecked")
     public static <T, U extends T> Source<U, scala.Unit> upcastSource(Source<T, scala.Unit> p) {
-        return (Source<U, scala.Unit>)(Source) p;
+        return (Source<U, scala.Unit>)(Object) p;
     }
     @SuppressWarnings("unchecked")
     public static scala.collection.immutable.Map<String, String> convertMapToScala(Map<String, String> map) {

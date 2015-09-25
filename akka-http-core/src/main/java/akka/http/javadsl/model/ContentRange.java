@@ -27,7 +27,7 @@ public abstract class ContentRange {
     }
     @SuppressWarnings("unchecked")
     public static ContentRange create(long first, long last, Option<Long> instanceLength) {
-        return ContentRange$.MODULE$.apply(first, last, ((Option<Object>) (Option) instanceLength).asScala());
+        return ContentRange$.MODULE$.apply(first, last, ((Option<Object>) (Object) instanceLength).asScala());
     }
     public static ContentRange createUnsatisfiable(long length) {
         return new akka.http.scaladsl.model.ContentRange.Unsatisfiable(length);

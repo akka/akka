@@ -108,7 +108,7 @@ trait RangeDirectives {
                     case Nil                   ⇒ ctx.reject(UnsatisfiableRangeRejection(ranges, length))
                     case Seq(satisfiableRange) ⇒ ctx.complete(rangeResponse(satisfiableRange, entity, length, headers))
                     case satisfiableRanges ⇒
-                      ctx.complete(PartialContent, headers, multipartRanges(satisfiableRanges, entity))
+                      ctx.complete((PartialContent, headers, multipartRanges(satisfiableRanges, entity)))
                   }
                 case None ⇒
                   // Ranges not supported for Chunked or CloseDelimited responses
