@@ -18,9 +18,10 @@ trait ClassMagnet[T] {
   def extractPF: PartialFunction[Any, T]
 }
 object ClassMagnet {
-  implicit def apply[T](c: Class[T]): ClassMagnet[T] = ClassMagnet()(ClassTag(c))
+  implicit def fromClass[T](c: Class[T]): ClassMagnet[T] = ClassMagnet(ClassTag(c))
+  implicit def fromUnit[T](u: Unit)(implicit tag: ClassTag[T]) = ClassMagnet(tag)
 
-  implicit def apply[T](u: Unit)(implicit tag: ClassTag[T]): ClassMagnet[T] =
+  def apply[T](implicit tag: ClassTag[T]): ClassMagnet[T] =
     new ClassMagnet[T] {
       val classTag: ClassTag[T] = tag
       val runtimeClass: Class[T] = tag.runtimeClass.asInstanceOf[Class[T]]

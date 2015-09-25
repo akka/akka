@@ -24,7 +24,6 @@ private[http] class Utf8Encoder extends PushStage[String, ByteString] {
     val builder = new ByteStringBuilder
 
     def b(v: Int): Unit = {
-      assert((v & 0xff) == v)
       builder += v.toByte
     }
 

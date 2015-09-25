@@ -126,6 +126,7 @@ private[http] object OutgoingConnectionBlueprint {
           case (ctx, `terminationBackchannelInput`) ⇒
             ctx.finish()
             SameState
+          case (_, _) ⇒ SameState
         },
         onUpstreamFailure = defaultCompletionHandling.onUpstreamFailure)
     }
@@ -220,6 +221,7 @@ private[http] object OutgoingConnectionBlueprint {
               ctx.fail(new ResponseParsingError(parser.onPull().asInstanceOf[ErrorOutput]))
             }
             SameState
+          case (_, _) ⇒ SameState
         },
         onUpstreamFailure = defaultCompletionHandling.onUpstreamFailure)
     }

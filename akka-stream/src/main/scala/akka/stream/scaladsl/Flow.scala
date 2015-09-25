@@ -319,7 +319,7 @@ object Flow extends FlowApply {
  * Flow with attached input and output, can be executed.
  */
 case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
-  assert(module.isRunnable)
+  require(module.isRunnable)
   def shape = ClosedShape
 
   /**

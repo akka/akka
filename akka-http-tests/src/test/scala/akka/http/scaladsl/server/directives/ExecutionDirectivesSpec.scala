@@ -14,7 +14,7 @@ class ExecutionDirectivesSpec extends RoutingSpec {
   object MyException extends RuntimeException
   val handler =
     ExceptionHandler {
-      case MyException ⇒ complete(500, "Pling! Plong! Something went wrong!!!")
+      case MyException ⇒ complete((500, "Pling! Plong! Something went wrong!!!"))
     }
 
   "The `handleExceptions` directive" should {

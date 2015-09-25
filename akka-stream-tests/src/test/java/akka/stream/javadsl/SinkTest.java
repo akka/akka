@@ -82,7 +82,7 @@ public class SinkTest extends StreamTest {
     final Sink<Integer, ?> sink1 = Sink.actorRef(probe1.getRef(), "done1");
     final Sink<Integer, ?> sink2 = Sink.actorRef(probe2.getRef(), "done2");
 
-    final Sink<Integer, ?> sink = Sink.combine(sink1, sink2, new ArrayList(),
+    final Sink<Integer, ?> sink = Sink.combine(sink1, sink2, new ArrayList<Sink<Integer, ?>>(),
             new Function<Integer, Graph<UniformFanOutShape<Integer, Integer>, BoxedUnit>>() {
               public Graph<UniformFanOutShape<Integer, Integer>, BoxedUnit> apply(Integer elem) {
                 return Broadcast.create(elem);

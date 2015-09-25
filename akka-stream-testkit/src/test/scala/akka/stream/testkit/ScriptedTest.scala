@@ -34,35 +34,40 @@ trait ScriptedTest extends Matchers {
         jumps ++= Vector.fill(ins.size - 1)(0) ++ Vector(outs.size)
       }
 
-      Script(providedInputs, expectedOutputs, jumps, inputCursor = 0, outputCursor = 0, outputEndCursor = 0, completed = false)
+      new Script(providedInputs, expectedOutputs, jumps, inputCursor = 0, outputCursor = 0, outputEndCursor = 0, completed = false)
     }
   }
 
-  final case class Script[In, Out](
-    providedInputs: Vector[In],
-    expectedOutputs: Vector[Out],
-    jumps: Vector[Int],
-    inputCursor: Int,
-    outputCursor: Int,
-    outputEndCursor: Int,
-    completed: Boolean) {
+  final class Script[In, Out](
+    val providedInputs: Vector[In],
+    val expectedOutputs: Vector[Out],
+    val jumps: Vector[Int],
+    val inputCursor: Int,
+    val outputCursor: Int,
+    val outputEndCursor: Int,
+    val completed: Boolean) {
     require(jumps.size == providedInputs.size)
 
     def provideInput: (In, Script[In, Out]) =
       if (noInsPending)
         throw new ScriptException("Script cannot provide more input.")
       else
-        (providedInputs(inputCursor), this.copy(inputCursor = inputCursor + 1, outputEndCursor = outputEndCursor + jumps(inputCursor)))
+        (providedInputs(inputCursor),
+          new Script(providedInputs, expectedOutputs, jumps, inputCursor = inputCursor + 1,
+            outputCursor, outputEndCursor = outputEndCursor + jumps(inputCursor), completed))
 
     def consumeOutput(out: Out): Script[In, Out] = {
       if (noOutsPending)
         throw new ScriptException(s"Tried to produce element ${out} but no elements should be produced right now.")
       out should be(expectedOutputs(outputCursor))
-      this.copy(outputCursor = outputCursor + 1)
+      new Script(providedInputs, expectedOutputs, jumps, inputCursor,
+        outputCursor = outputCursor + 1, outputEndCursor, completed)
     }
 
     def complete(): Script[In, Out] = {
-      if (finished) copy(completed = true)
+      if (finished)
+        new Script(providedInputs, expectedOutputs, jumps, inputCursor,
+          outputCursor = outputCursor + 1, outputEndCursor, completed = true)
       else fail("received onComplete prematurely")
     }
 
