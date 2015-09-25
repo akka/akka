@@ -51,9 +51,13 @@ class InterpreterBenchmark {
   @Benchmark
   @OperationsPerInvocation(100000)
   def onebounded_interpreter_100k_elements() {
+    val lock = new Lock()
+    lock.acquire()
     val sink = OneBoundedDataSink(data100k.size)
-    // FIXME: This should not be here, this is pure setup overhead
-    val ops = Vector.fill(numberOfIds)(MapStage(identity[Int], Supervision.stoppingDecider))
+    val ops = Vector.fill(numberOfIds)(new PushPullStage[Int, Int] {
+      override def onPull(ctx: _root_.akka.stream.stage.Context[Int]) = ctx.pull()
+      override def onPush(elem: Int, ctx: _root_.akka.stream.stage.Context[Int]) = ctx.push(elem)
+    })
     val interpreter = new OneBoundedInterpreter(OneBoundedDataSource(data100k) +: ops :+ sink,
       (op, ctx, event) ⇒ (),
       Logging(NoopBus, classOf[InterpreterBenchmark]),
@@ -70,6 +74,7 @@ object InterpreterBenchmark {
   case class GraphDataSource[T](override val toString: String, data: Vector[T]) extends UpstreamBoundaryStageLogic[T] {
     var idx = 0
     val out = Outlet[T]("out")
+    out.id = 0
 
     setHandler(out, new OutHandler {
       override def onPull(): Unit = {
@@ -87,6 +92,7 @@ object InterpreterBenchmark {
 
   case class GraphDataSink[T](override val toString: String, var expected: Int) extends DownstreamBoundaryStageLogic[T] {
     val in = Inlet[T]("in")
+    in.id = 0
 
     setHandler(in, new InHandler {
       override def onPush(): Unit = {

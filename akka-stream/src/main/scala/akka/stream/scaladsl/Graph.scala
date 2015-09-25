@@ -40,7 +40,7 @@ class Merge[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] 
   val out: Outlet[T] = Outlet[T]("Merge.out")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
-  override def createLogic: GraphStageLogic = new GraphStageLogic {
+  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
     private var initialized = false
 
     private val pendingQueue = Array.ofDim[Inlet[T]](inputPorts)
@@ -143,7 +143,7 @@ class MergePreferred[T] private (secondaryPorts: Int) extends GraphStage[MergePr
   def preferred: Inlet[T] = shape.preferred
 
   // FIXME: Factor out common stuff with Merge
-  override def createLogic: GraphStageLogic = new GraphStageLogic {
+  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
     private var initialized = false
 
     private val pendingQueue = Array.ofDim[Inlet[T]](secondaryPorts)
@@ -252,7 +252,7 @@ class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) extends G
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Broadcast.out" + i))
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape(in, out: _*)
 
-  override def createLogic: GraphStageLogic = new GraphStageLogic {
+  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
     private var pendingCount = outputPorts
     private val pending = Array.fill[Boolean](outputPorts)(true)
     private var downstreamsRunning = outputPorts
@@ -350,7 +350,7 @@ class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) extends G
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Balance.out" + i))
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
-  override def createLogic: GraphStageLogic = new GraphStageLogic {
+  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
     private val pendingQueue = Array.ofDim[Outlet[T]](outputPorts)
     private var pendingHead: Int = 0
     private var pendingTail: Int = 0
@@ -522,7 +522,7 @@ class Concat[T](inputCount: Int) extends GraphStage[UniformFanInShape[T, T]] {
   val out: Outlet[T] = Outlet[T]("Concat.out")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
-  override def createLogic = new GraphStageLogic {
+  override def createLogic = new GraphStageLogic(shape) {
     var activeStream: Int = 0
 
     {

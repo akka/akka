@@ -8,10 +8,11 @@ object BenchRunner {
   def main(args: Array[String]) = {
     import scala.collection.JavaConversions._
 
-    val args2 = args.toList match {
-      case "quick" :: tail => "-i 1 -wi 1 -f1 -t1".split(" ").toList ::: tail
-      case "full" :: tail => "-i 10 -wi 4 -f3 -t1".split(" ").toList ::: tail
-      case other => other
+    val args2 = args.toList.flatMap {
+      case "quick" => "-i 1 -wi 1 -f1 -t1".split(" ").toList
+      case "full" => "-i 10 -wi 4 -f3 -t1".split(" ").toList
+      case "jitwatch" => "-jvmArgs=-XX:+UnlockDiagnosticVMOptions -XX:+TraceClassLoading -XX:+LogCompilation" :: Nil
+      case other => other :: Nil
     }
 
     val opts = new CommandLineOptions(args2: _*)
