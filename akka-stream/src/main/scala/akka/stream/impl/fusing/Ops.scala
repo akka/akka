@@ -744,7 +744,7 @@ private[stream] class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphS
   val out = Outlet[immutable.Seq[T]]("out")
   val shape = FlowShape(in, out)
 
-  override def createLogic: GraphStageLogic = new GraphStageLogic {
+  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
     private val buf: VectorBuilder[T] = new VectorBuilder
     // True if:
     // - buf is nonEmpty

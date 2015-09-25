@@ -100,6 +100,7 @@ private[stream] object ActorGraphInterpreter {
     private var batchRemaining = requestBatchSize
 
     val out: Outlet[Any] = Outlet[Any]("UpstreamBoundary" + id)
+    out.id = 0
 
     private def dequeue(): Any = {
       val elem = inputBuffer(nextInputElementCursor)
@@ -195,6 +196,7 @@ private[stream] object ActorGraphInterpreter {
 
   class ActorOutputBoundary(actor: ActorRef, id: Int) extends DownstreamBoundaryStageLogic[Any] {
     val in: Inlet[Any] = Inlet[Any]("UpstreamBoundary" + id)
+    in.id = 0
 
     private var exposedPublisher: ActorPublisher[Any] = _
 
@@ -299,6 +301,7 @@ private[stream] class ActorGraphInterpreter(
   val interpreter = new GraphInterpreter(
     assembly,
     mat,
+    Logging(this),
     inHandlers,
     outHandlers,
     logics,

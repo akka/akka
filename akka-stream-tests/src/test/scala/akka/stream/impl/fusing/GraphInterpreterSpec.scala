@@ -7,7 +7,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.{ Merge, Broadcast, Balance, Zip }
 import GraphInterpreter._
 
-class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class GraphInterpreterSpec extends GraphInterpreterSpecKit {
   import GraphStages._
 
   "GraphInterpreter" must {
@@ -272,8 +272,6 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       source.onNext(2)
       lastEvents() should ===(Set(OnNext(sink2, 2)))
     }
-
-    "implement bidi-stage" in pending
 
     "implement non-divergent cycle" in new TestSetup {
       val source = new UpstreamProbe[Int]("source")

@@ -4,10 +4,13 @@
 package akka.stream.impl.fusing
 
 import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit.Utils._
 
-class GraphInterpreterPortsSpec extends AkkaSpec with GraphInterpreterSpecKit {
+class GraphInterpreterPortsSpec extends GraphInterpreterSpecKit {
 
   "Port states" must {
+
+    // FIXME test failure scenarios
 
     "properly transition on push and pull" in new PortTestSetup {
       lastEvents() should be(Set.empty)
@@ -350,6 +353,32 @@ class GraphInterpreterPortsSpec extends AkkaSpec with GraphInterpreterSpecKit {
       in.hasBeenPulled should be(false)
       in.isClosed should be(true)
       in.grab() should ===(0)
+    }
+
+    "propagate complete while push is in flight and pulled after the push" in new PortTestSetup {
+      in.pull()
+      stepAll()
+      clearEvents()
+
+      out.push(0)
+      out.complete()
+      step()
+
+      lastEvents() should be(Set(OnNext(in, 0)))
+      in.grab() should ===(0)
+
+      in.pull()
+      stepAll()
+
+      lastEvents() should be(Set(OnComplete(in)))
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
     }
 
     "ignore pull while completing" in new PortTestSetup {
@@ -728,6 +757,392 @@ class GraphInterpreterPortsSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
       out.push(0)
       out.complete()
+
+      step()
+
+      lastEvents() should be(Set(OnNext(in, 0)))
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(true)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(false)
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      in.grab() should ===(0)
+
+      in.cancel()
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "not allow to grab element before it arrives" in new PortTestSetup {
+      in.pull()
+      stepAll()
+      out.push(0)
+
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "not allow to grab element if already cancelled" in new PortTestSetup {
+      in.pull()
+      stepAll()
+
+      out.push(0)
+      in.cancel()
+
+      stepAll()
+
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "propagate failure while downstream is active" in new PortTestSetup {
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(false)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(false)
+
+      out.fail(TE("test"))
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(false)
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+
+      stepAll()
+
+      lastEvents() should be(Set(OnError(in, TE("test"))))
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+
+      in.cancel() // This should have no effect now
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+
+      out.complete() // This should have no effect now
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "propagate failure while upstream is active" in new PortTestSetup {
+      in.pull()
+      stepAll()
+
+      lastEvents() should be(Set(RequestOne(out)))
+      out.isAvailable should be(true)
+      out.isClosed should be(false)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(true)
+      in.isClosed should be(false)
+
+      out.fail(TE("test"))
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(true)
+      in.isClosed should be(false)
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+
+      stepAll()
+
+      lastEvents() should be(Set(OnError(in, TE("test"))))
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+
+      in.cancel() // This should have no effect now
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+
+      out.complete() // This should have no effect now
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+
+    }
+
+    "propagate failure while pull is in flight" in new PortTestSetup {
+      in.pull()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(false)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(true)
+      in.isClosed should be(false)
+
+      out.fail(TE("test"))
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(true)
+      in.isClosed should be(false)
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+
+      stepAll()
+
+      lastEvents() should be(Set(OnError(in, TE("test"))))
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+
+      in.cancel() // This should have no effect now
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+
+      out.complete() // This should have no effect now
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "propagate failure while push is in flight" in new PortTestSetup {
+      in.pull()
+      stepAll()
+      clearEvents()
+
+      out.push(0)
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(false)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(true)
+      in.isClosed should be(false)
+
+      out.fail(TE("test"))
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(true)
+      in.isClosed should be(false)
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+
+      step()
+
+      lastEvents() should be(Set(OnNext(in, 0)))
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(true)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(false)
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      in.grab() should ===(0)
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+
+      step()
+
+      lastEvents() should be(Set(OnError(in, TE("test"))))
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+
+      out.complete() // This should have no effect now
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "propagate failure while push is in flight and keep ungrabbed element" in new PortTestSetup {
+      in.pull()
+      stepAll()
+      clearEvents()
+
+      out.push(0)
+      out.fail(TE("test"))
+      step()
+
+      lastEvents() should be(Set(OnNext(in, 0)))
+      step()
+
+      lastEvents() should be(Set(OnError(in, TE("test"))))
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(true)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      in.grab() should ===(0)
+    }
+
+    "ignore pull while failing" in new PortTestSetup {
+      out.fail(TE("test"))
+      in.pull()
+
+      stepAll()
+
+      lastEvents() should be(Set(OnError(in, TE("test"))))
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "ignore any failure completion if they are concurrent (cancel first)" in new PortTestSetup {
+      in.cancel()
+      out.fail(TE("test"))
+
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "ignore any failure completion if they are concurrent (complete first)" in new PortTestSetup {
+      out.fail(TE("test"))
+      in.cancel()
+
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "ignore failure from a push-then-fail if cancelled while in flight" in new PortTestSetup {
+      in.pull()
+      stepAll()
+      clearEvents()
+
+      out.push(0)
+      out.fail(TE("test"))
+      in.cancel()
+
+      stepAll()
+
+      lastEvents() should be(Set.empty)
+      out.isAvailable should be(false)
+      out.isClosed should be(true)
+      in.isAvailable should be(false)
+      in.hasBeenPulled should be(false)
+      in.isClosed should be(true)
+      an[IllegalArgumentException] should be thrownBy { in.pull() }
+      an[IllegalArgumentException] should be thrownBy { out.push(0) }
+      an[IllegalArgumentException] should be thrownBy { in.grab() }
+    }
+
+    "ignore failure from a push-then-fail if cancelled after onPush" in new PortTestSetup {
+      in.pull()
+      stepAll()
+      clearEvents()
+
+      out.push(0)
+      out.fail(TE("test"))
 
       step()
 
