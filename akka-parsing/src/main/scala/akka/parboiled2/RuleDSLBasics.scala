@@ -49,12 +49,20 @@ trait RuleDSLBasics {
 
   /**
    * Matches any single one of the given characters.
+   *
+   * Note: This helper has O(n) runtime with n being the length of the given string.
+   * If your string consists only of 7-bit ASCII chars using a pre-allocated
+   * [[CharPredicate]] will be more efficient.
    */
   @compileTimeOnly("Calls to `anyOf` must be inside `rule` macro")
   def anyOf(chars: String): Rule0 = `n/a`
 
   /**
    * Matches any single character except the ones in the given string and except EOI.
+   *
+   * Note: This helper has O(n) runtime with n being the length of the given string.
+   * If your string consists only of 7-bit ASCII chars using a pre-allocated
+   * [[CharPredicate]] will be more efficient.
    */
   @compileTimeOnly("Calls to `noneOf` must be inside `rule` macro")
   def noneOf(chars: String): Rule0 = `n/a`
@@ -92,10 +100,25 @@ trait RuleDSLBasics {
   def MATCH: Rule0 = Rule
 
   /**
-   * A rule that always fails.
+   * A Rule0 that always fails.
+   */
+  def MISMATCH0: Rule0 = MISMATCH
+
+  /**
+   * A generic Rule that always fails.
    */
   def MISMATCH[I <: HList, O <: HList]: Rule[I, O] = null
-  def MISMATCH0: Rule0 = MISMATCH
+
+  /**
+   * A rule that always fails and causes the parser to immediately terminate the parsing run.
+   * The resulting parse error only has a single trace with a single frame which holds the given error message.
+   */
+  def fail(expected: String): Rule0 = `n/a`
+
+  /**
+   * Fully generic variant of [[fail]].
+   */
+  def failX[I <: HList, O <: HList](expected: String): Rule[I, O] = `n/a`
 
   @compileTimeOnly("Calls to `str2CharRangeSupport` must be inside `rule` macro")
   implicit def str2CharRangeSupport(s: String): CharRangeSupport = `n/a`

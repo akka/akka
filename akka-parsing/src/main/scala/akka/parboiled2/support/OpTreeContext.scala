@@ -23,33 +23,52 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
   val c: OpTreeCtx
   import c.universe._
 
-  lazy val ruleType = typeOf[Rule[_, _]]
+  sealed trait OpTree {
+    // renders a Boolean Tree
+    def render(wrapped: Boolean): Tree
+  }
 
-  sealed abstract class OpTree {
-    def ruleFrame: Tree
-
-    // renders a RuleX Tree
-    def renderRule(ruleName: String): Tree = q"""
-      // split out into separate method so as to not double the rule method size
-      // which would effectively decrease method inlining by about 50%
-      def wrapped: Boolean = ${render(wrapped = true, ruleName)}
-      val matched =
-        if (__collectingErrors) wrapped
-        else ${render(wrapped = false)}
-      if (matched) akka.parboiled2.Rule else null""" // we encode the "matched" boolean as 'ruleResult ne null'
+  sealed abstract class NonTerminalOpTree extends OpTree {
+    def bubbleUp: Tree
 
     // renders a Boolean Tree
-    def render(wrapped: Boolean, ruleName: String = ""): Tree =
+    def render(wrapped: Boolean): Tree =
       if (wrapped) q"""
+        val start = cursor
         try ${renderInner(wrapped)}
-        catch {
-          case e: akka.parboiled2.Parser.CollectingRuleStackException ⇒
-            e.save(akka.parboiled2.RuleFrame($ruleFrame, $ruleName))
-        }"""
+        catch { case e: akka.parboiled2.Parser#TracingBubbleException ⇒ $bubbleUp }"""
       else renderInner(wrapped)
 
     // renders a Boolean Tree
     protected def renderInner(wrapped: Boolean): Tree
+  }
+
+  sealed abstract class DefaultNonTerminalOpTree extends NonTerminalOpTree {
+    def bubbleUp: Tree = q"e.bubbleUp($ruleTraceNonTerminalKey, start)"
+    def ruleTraceNonTerminalKey: Tree
+  }
+
+  sealed abstract class TerminalOpTree extends OpTree {
+    def bubbleUp: Tree = q"__bubbleUp($ruleTraceTerminal)"
+    def ruleTraceTerminal: Tree
+
+    // renders a Boolean Tree
+    final def render(wrapped: Boolean): Tree =
+      if (wrapped) q"""
+        try ${renderInner(wrapped)}
+        catch { case akka.parboiled2.Parser.StartTracingException ⇒ $bubbleUp }"""
+      else renderInner(wrapped)
+
+    // renders a Boolean Tree
+    protected def renderInner(wrapped: Boolean): Tree
+  }
+
+  sealed abstract class PotentiallyNamedTerminalOpTree(arg: Tree) extends TerminalOpTree {
+    override def bubbleUp = callName(arg) match {
+      case Some(name) ⇒ q"__bubbleUp(akka.parboiled2.RuleTrace.NonTerminal(akka.parboiled2.RuleTrace.Named($name), 0) :: Nil, $ruleTraceTerminal)"
+      case None       ⇒ super.bubbleUp
+    }
+    def ruleTraceTerminal: Tree
   }
 
   def collector(lifterTree: Tree): Collector =
@@ -62,6 +81,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
 
   val opTreePF: PartialFunction[Tree, OpTree] = {
     case q"$lhs.~[$a, $b]($rhs)($c, $d)"                   ⇒ Sequence(OpTree(lhs), OpTree(rhs))
+    case q"$lhs.~!~[$a, $b]($rhs)($c, $d)"                 ⇒ Cut(OpTree(lhs), OpTree(rhs))
     case q"$lhs.|[$a, $b]($rhs)"                           ⇒ FirstOf(OpTree(lhs), OpTree(rhs))
     case q"$a.this.ch($c)"                                 ⇒ CharMatch(c)
     case q"$a.this.str($s)"                                ⇒ StringMatch(s)
@@ -71,18 +91,28 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     case q"$a.this.anyOf($s)"                              ⇒ AnyOf(s)
     case q"$a.this.noneOf($s)"                             ⇒ NoneOf(s)
     case q"$a.this.ANY"                                    ⇒ ANY
-    case q"$a.this.optional[$b, $c]($arg)($o)"             ⇒ Optional(OpTree(arg), collector(o))
-    case q"$a.this.zeroOrMore[$b, $c]($arg)($s)"           ⇒ ZeroOrMore(OpTree(arg), collector(s))
-    case q"$a.this.oneOrMore[$b, $c]($arg)($s)"            ⇒ OneOrMore(OpTree(arg), collector(s))
+    case q"$a.this.optional[$b, $c]($arg)($l)"             ⇒ Optional(OpTree(arg), collector(l))
+    case q"$base.?($l)"                                    ⇒ Optional(OpTree(base), collector(l))
+    case q"$a.this.zeroOrMore[$b, $c]($arg)($l)"           ⇒ ZeroOrMore(OpTree(arg), collector(l))
+    case q"$base.*($l)"                                    ⇒ ZeroOrMore(OpTree(base), collector(l))
+    case q"$base.*($sep)($l)"                              ⇒ ZeroOrMore(OpTree(base), collector(l), Separator(OpTree(sep)))
+    case q"$a.this.oneOrMore[$b, $c]($arg)($l)"            ⇒ OneOrMore(OpTree(arg), collector(l))
+    case q"$base.+($l)"                                    ⇒ OneOrMore(OpTree(base), collector(l))
+    case q"$base.+($sep)($l)"                              ⇒ OneOrMore(OpTree(base), collector(l), Separator(OpTree(sep)))
     case q"$base.times[$a, $b]($r)($s)"                    ⇒ Times(base, OpTree(r), collector(s))
     case q"$a.this.&($arg)"                                ⇒ AndPredicate(OpTree(arg))
     case q"$a.unary_!()"                                   ⇒ NotPredicate(OpTree(a))
+    case q"$a.this.atomic[$b, $c]($arg)"                   ⇒ Atomic(OpTree(arg))
+    case q"$a.this.quiet[$b, $c]($arg)"                    ⇒ Quiet(OpTree(arg))
     case q"$a.this.test($flag)"                            ⇒ SemanticPredicate(flag)
     case q"$a.this.capture[$b, $c]($arg)($d)"              ⇒ Capture(OpTree(arg))
     case q"$a.this.run[$b]($arg)($c.fromAux[$d, $e]($rr))" ⇒ RunAction(arg, rr)
     case q"$a.this.push[$b]($arg)($hl)"                    ⇒ PushAction(arg, hl)
     case q"$a.this.drop[$b]($hl)"                          ⇒ DropAction(hl)
     case q"$a.this.runSubParser[$b, $c]($f)"               ⇒ RunSubParser(f)
+    case q"$a.this.fail($m)"                               ⇒ Fail(m)
+    case q"$a.this.failX[$b, $c]($m)"                      ⇒ Fail(m)
+    case q"$a.named($name)"                                ⇒ Named(OpTree(a), name)
     case x @ q"$a.this.str2CharRangeSupport($l).-($r)"     ⇒ CharRange(l, r)
     case q"$a.this.charAndValue[$t]($b.any2ArrowAssoc[$t1]($c).->[$t2]($v))($hl)" ⇒
       Sequence(CharMatch(c), PushAction(v, hl))
@@ -90,15 +120,13 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       Sequence(StringMatch(s), PushAction(v, hl))
     case q"$a.this.rule2ActionOperator[$b1, $b2]($r)($o).~>.apply[..$e]($f)($g, support.this.FCapture.apply[$ts])" ⇒
       Sequence(OpTree(r), Action(f, ts))
-    case x @ q"$a.this.rule2WithSeparatedBy[$b1, $b2]($base.$fun[$d, $e]($arg)($s)).separatedBy($sep)" ⇒
-      val (op, coll, separator) = (OpTree(arg), collector(s), Separator(OpTree(sep)))
-      fun.decodedName.toString match {
-        case "zeroOrMore" ⇒ ZeroOrMore(op, coll, separator)
-        case "oneOrMore"  ⇒ OneOrMore(op, coll, separator)
-        case "times"      ⇒ Times(base, op, coll, separator)
-        case _            ⇒ c.abort(x.pos, "Unexpected Repeated fun: " + fun)
+    case x @ q"$a.this.rule2WithSeparatedBy[$b1, $b2]($base).separatedBy($sep)" ⇒
+      OpTree(base) match {
+        case x: WithSeparator ⇒ x.withSeparator(Separator(OpTree(sep)))
+        case _                ⇒ c.abort(x.pos, "Illegal `separatedBy` base: " + base)
       }
-    case call @ (Apply(_, _) | Select(_, _) | Ident(_)) ⇒ RuleCall(call)
+    case call @ (Apply(_, _) | Select(_, _) | Ident(_) | TypeApply(_, _)) ⇒
+      RuleCall(Right(call), Literal(Constant(callName(call) getOrElse c.abort(call.pos, "Illegal rule call: " + call))))
   }
 
   def OpTree(tree: Tree): OpTree =
@@ -112,11 +140,23 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       case _                                ⇒ Sequence(Seq(lhs, rhs))
     }
 
-  case class Sequence(ops: Seq[OpTree]) extends OpTree {
+  case class Sequence(ops: Seq[OpTree]) extends DefaultNonTerminalOpTree {
     require(ops.size >= 2)
-    def ruleFrame = q"akka.parboiled2.RuleFrame.Sequence(${ops.size})"
+    def ruleTraceNonTerminalKey = reify(RuleTrace.Sequence).tree
     def renderInner(wrapped: Boolean): Tree =
-      ops.map(_.render(wrapped)).reduceLeft((l, r) ⇒ q"$l && $r")
+      ops.map(_.render(wrapped)).reduceLeft((l, r) ⇒
+        q"val l = $l; if (l) $r else false") // work-around for https://issues.scala-lang.org/browse/SI-8657"
+  }
+
+  case class Cut(lhs: OpTree, rhs: OpTree) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = reify(RuleTrace.Cut).tree
+    def renderInner(wrapped: Boolean): Tree = q"""
+      var matched = ${lhs.render(wrapped)}
+      if (matched) {
+        matched = ${rhs.render(wrapped)}
+        if (!matched) throw akka.parboiled2.Parser.CutError
+        true
+      } else false""" // work-around for https://issues.scala-lang.org/browse/SI-8657
   }
 
   def FirstOf(lhs: OpTree, rhs: OpTree): FirstOf =
@@ -127,16 +167,17 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       case _                              ⇒ FirstOf(Seq(lhs, rhs))
     }
 
-  case class FirstOf(ops: Seq[OpTree]) extends OpTree {
-    def ruleFrame = q"akka.parboiled2.RuleFrame.FirstOf(${ops.size})"
+  case class FirstOf(ops: Seq[OpTree]) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = reify(RuleTrace.FirstOf).tree
     def renderInner(wrapped: Boolean): Tree =
       q"""val mark = __saveState; ${
-        ops.map(_.render(wrapped)).reduceLeft((l, r) ⇒ q"$l || { __restoreState(mark); $r }")
+        ops.map(_.render(wrapped)).reduceLeft((l, r) ⇒
+          q"val l = $l; if (!l) { __restoreState(mark); $r } else true // work-around for https://issues.scala-lang.org/browse/SI-8657")
       }"""
   }
 
-  case class CharMatch(charTree: Tree) extends OpTree {
-    def ruleFrame = q"akka.parboiled2.RuleFrame.CharMatch($charTree)"
+  case class CharMatch(charTree: Tree) extends TerminalOpTree {
+    def ruleTraceTerminal = q"akka.parboiled2.RuleTrace.CharMatch($charTree)"
     def renderInner(wrapped: Boolean): Tree = {
       val unwrappedTree = q"cursorChar == $charTree && __advance()"
       if (wrapped) q"$unwrappedTree && __updateMaxCursor() || __registerMismatch()" else unwrappedTree
@@ -145,9 +186,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
 
   case class StringMatch(stringTree: Tree) extends OpTree {
     final private val autoExpandMaxStringLength = 8
-    def renderInner(wrapped: Boolean): Tree = `n/a`
-    def ruleFrame = q"akka.parboiled2.RuleFrame.StringMatch($stringTree)"
-    override def render(wrapped: Boolean, ruleName: String = ""): Tree = {
+    def render(wrapped: Boolean): Tree = {
       def unrollUnwrapped(s: String, ix: Int = 0): Tree =
         if (ix < s.length) q"""
           if (cursorChar == ${s charAt ix}) {
@@ -158,17 +197,16 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       def unrollWrapped(s: String, ix: Int = 0): Tree =
         if (ix < s.length) {
           val ch = s charAt ix
-          q"""
-          if (cursorChar == $ch) {
+          q"""if (cursorChar == $ch) {
             __advance()
             __updateMaxCursor()
             ${unrollWrapped(s, ix + 1)}
           } else {
             try __registerMismatch()
             catch {
-              case e: akka.parboiled2.Parser.CollectingRuleStackException ⇒
-                e.save(akka.parboiled2.RuleFrame(akka.parboiled2.RuleFrame.StringMatch($s), $ruleName),
-                     akka.parboiled2.RuleFrame.CharMatch($ch))
+              case akka.parboiled2.Parser.StartTracingException ⇒
+                import akka.parboiled2.RuleTrace._
+                __bubbleUp(NonTerminal(StringMatch($stringTree), -$ix) :: Nil, CharMatch($ch))
             }
           }"""
         } else q"true"
@@ -177,18 +215,14 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
         case Literal(Constant(s: String)) if s.length <= autoExpandMaxStringLength ⇒
           if (s.isEmpty) q"true" else if (wrapped) unrollWrapped(s) else unrollUnwrapped(s)
         case _ ⇒
-          if (wrapped) q"__matchStringWrapped($stringTree, $ruleName)"
+          if (wrapped) q"__matchStringWrapped($stringTree)"
           else q"__matchString($stringTree)"
       }
     }
   }
 
   case class MapMatch(mapTree: Tree) extends OpTree {
-    def ruleFrame = q"akka.parboiled2.RuleFrame.MapMatch($mapTree)"
-    def renderInner(wrapped: Boolean): Tree = `n/a`
-    override def render(wrapped: Boolean, ruleName: String = ""): Tree =
-      if (wrapped) q"__matchMapWrapped($mapTree, $ruleName)"
-      else q"__matchMap($mapTree)"
+    def render(wrapped: Boolean): Tree = if (wrapped) q"__matchMapWrapped($mapTree)" else q"__matchMap($mapTree)"
   }
 
   def IgnoreCase(argTree: Tree): OpTree = {
@@ -198,8 +232,8 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     else c.abort(argTree.pos, "Unexpected `ignoreCase` argument type: " + argTypeSymbol)
   }
 
-  case class IgnoreCaseChar(charTree: Tree) extends OpTree {
-    def ruleFrame = q"akka.parboiled2.RuleFrame.IgnoreCaseChar($charTree)"
+  case class IgnoreCaseChar(charTree: Tree) extends TerminalOpTree {
+    def ruleTraceTerminal = q"akka.parboiled2.RuleTrace.IgnoreCaseChar($charTree)"
     def renderInner(wrapped: Boolean): Tree = {
       val unwrappedTree = q"_root_.java.lang.Character.toLowerCase(cursorChar) == $charTree && __advance()"
       if (wrapped) q"$unwrappedTree && __updateMaxCursor() || __registerMismatch()" else unwrappedTree
@@ -208,9 +242,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
 
   case class IgnoreCaseString(stringTree: Tree) extends OpTree {
     final private val autoExpandMaxStringLength = 8
-    def renderInner(wrapped: Boolean): Tree = `n/a`
-    def ruleFrame = q"akka.parboiled2.RuleFrame.IgnoreCaseString($stringTree)"
-    override def render(wrapped: Boolean, ruleName: String = ""): Tree = {
+    def render(wrapped: Boolean): Tree = {
       def unrollUnwrapped(s: String, ix: Int = 0): Tree =
         if (ix < s.length) q"""
           if (_root_.java.lang.Character.toLowerCase(cursorChar) == ${s charAt ix}) {
@@ -221,17 +253,16 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       def unrollWrapped(s: String, ix: Int = 0): Tree =
         if (ix < s.length) {
           val ch = s charAt ix
-          q"""
-          if (_root_.java.lang.Character.toLowerCase(cursorChar) == $ch) {
+          q"""if (_root_.java.lang.Character.toLowerCase(cursorChar) == $ch) {
             __advance()
             __updateMaxCursor()
             ${unrollWrapped(s, ix + 1)}
           } else {
             try __registerMismatch()
             catch {
-              case e: akka.parboiled2.Parser.CollectingRuleStackException ⇒
-                e.save(akka.parboiled2.RuleFrame(akka.parboiled2.RuleFrame.IgnoreCaseString($s), $ruleName),
-                  akka.parboiled2.RuleFrame.IgnoreCaseChar($ch))
+              case akka.parboiled2.Parser.StartTracingException ⇒
+                import akka.parboiled2.RuleTrace._
+                __bubbleUp(NonTerminal(IgnoreCaseString($stringTree), -$ix) :: Nil, IgnoreCaseChar($ch))
             }
           }"""
         } else q"true"
@@ -240,48 +271,50 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
         case Literal(Constant(s: String)) if s.length <= autoExpandMaxStringLength ⇒
           if (s.isEmpty) q"true" else if (wrapped) unrollWrapped(s) else unrollUnwrapped(s)
         case _ ⇒
-          if (wrapped) q"__matchIgnoreCaseStringWrapped($stringTree, $ruleName)"
+          if (wrapped) q"__matchIgnoreCaseStringWrapped($stringTree)"
           else q"__matchIgnoreCaseString($stringTree)"
       }
     }
   }
 
-  case class CharPredicateMatch(predicateTree: Tree) extends OpTree {
-    def predicateName = callName(predicateTree) getOrElse ""
-    def ruleFrame = q"akka.parboiled2.RuleFrame.CharPredicateMatch($predicateTree, $predicateName)"
+  case class CharPredicateMatch(predicateTree: Tree) extends PotentiallyNamedTerminalOpTree(predicateTree) {
+    def ruleTraceTerminal = q"akka.parboiled2.RuleTrace.CharPredicateMatch($predicateTree)"
     def renderInner(wrapped: Boolean): Tree = {
       val unwrappedTree = q"$predicateTree(cursorChar) && __advance()"
       if (wrapped) q"$unwrappedTree && __updateMaxCursor() || __registerMismatch()" else unwrappedTree
     }
   }
 
-  case class AnyOf(stringTree: Tree) extends OpTree {
-    def ruleFrame = q"akka.parboiled2.RuleFrame.AnyOf($stringTree)"
-    def renderInner(wrapped: Boolean): Tree =
-      if (wrapped) q"__matchAnyOf($stringTree) && __updateMaxCursor() || __registerMismatch()"
-      else q"__matchAnyOf($stringTree)"
+  case class AnyOf(stringTree: Tree) extends TerminalOpTree {
+    def ruleTraceTerminal = q"akka.parboiled2.RuleTrace.AnyOf($stringTree)"
+    def renderInner(wrapped: Boolean): Tree = {
+      val unwrappedTree = q"__matchAnyOf($stringTree)"
+      if (wrapped) q"$unwrappedTree && __updateMaxCursor() || __registerMismatch()" else unwrappedTree
+    }
   }
 
-  case class NoneOf(stringTree: Tree) extends OpTree {
-    def ruleFrame = q"akka.parboiled2.RuleFrame.NoneOf($stringTree)"
-    def renderInner(wrapped: Boolean): Tree =
-      if (wrapped) q"__matchNoneOf($stringTree) && __updateMaxCursor() || __registerMismatch()"
-      else q"__matchNoneOf($stringTree)"
+  case class NoneOf(stringTree: Tree) extends TerminalOpTree {
+    def ruleTraceTerminal = q"akka.parboiled2.RuleTrace.NoneOf($stringTree)"
+    def renderInner(wrapped: Boolean): Tree = {
+      val unwrappedTree = q"__matchNoneOf($stringTree)"
+      if (wrapped) q"$unwrappedTree && __updateMaxCursor() || __registerMismatch()" else unwrappedTree
+    }
   }
 
-  case object ANY extends OpTree {
-    def ruleFrame = reify(RuleFrame.ANY).tree
+  case object ANY extends TerminalOpTree {
+    def ruleTraceTerminal = reify(RuleTrace.ANY).tree
     def renderInner(wrapped: Boolean): Tree = {
       val unwrappedTree = q"cursorChar != EOI && __advance()"
       if (wrapped) q"$unwrappedTree && __updateMaxCursor() || __registerMismatch()" else unwrappedTree
     }
   }
 
-  case class Optional(op: OpTree, collector: Collector) extends OpTree {
-    def ruleFrame = reify(RuleFrame.Optional).tree
+  case class Optional(op: OpTree, collector: Collector) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = reify(RuleTrace.Optional).tree
     def renderInner(wrapped: Boolean): Tree = q"""
       val mark = __saveState
-      if (${op.render(wrapped)}) {
+      val matched = ${op.render(wrapped)}
+      if (matched) {
         ${collector.pushSomePop}
       } else {
         __restoreState(mark)
@@ -290,8 +323,13 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       true"""
   }
 
-  case class ZeroOrMore(op: OpTree, collector: Collector, separator: Separator = null) extends OpTree {
-    def ruleFrame = reify(RuleFrame.ZeroOrMore).tree
+  sealed abstract class WithSeparator extends DefaultNonTerminalOpTree {
+    def withSeparator(sep: Separator): OpTree
+  }
+
+  case class ZeroOrMore(op: OpTree, collector: Collector, separator: Separator = null) extends WithSeparator {
+    def withSeparator(sep: Separator) = copy(separator = sep)
+    def ruleTraceNonTerminalKey = reify(RuleTrace.ZeroOrMore).tree
     def renderInner(wrapped: Boolean): Tree = {
       val recurse =
         if (separator eq null) q"rec(__saveState)"
@@ -300,19 +338,22 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       q"""
       ${collector.valBuilder}
 
-      @_root_.scala.annotation.tailrec def rec(mark: akka.parboiled2.Parser.Mark): akka.parboiled2.Parser.Mark =
-        if (${op.render(wrapped)}) {
+      @_root_.scala.annotation.tailrec def rec(mark: akka.parboiled2.Parser.Mark): akka.parboiled2.Parser.Mark = {
+        val matched = ${op.render(wrapped)}
+        if (matched) {
           ${collector.popToBuilder}
           $recurse
         } else mark
+      }
 
       __restoreState(rec(__saveState))
       ${collector.pushBuilderResult}"""
     }
   }
 
-  case class OneOrMore(op: OpTree, collector: Collector, separator: Separator = null) extends OpTree {
-    def ruleFrame = reify(RuleFrame.OneOrMore).tree
+  case class OneOrMore(op: OpTree, collector: Collector, separator: Separator = null) extends WithSeparator {
+    def withSeparator(sep: Separator) = copy(separator = sep)
+    def ruleTraceNonTerminalKey = reify(RuleTrace.OneOrMore).tree
     def renderInner(wrapped: Boolean): Tree = {
       val recurse =
         if (separator eq null) q"rec(__saveState)"
@@ -322,11 +363,13 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       val firstMark = __saveState
       ${collector.valBuilder}
 
-      @_root_.scala.annotation.tailrec def rec(mark: akka.parboiled2.Parser.Mark): akka.parboiled2.Parser.Mark =
-        if (${op.render(wrapped)}) {
+      @_root_.scala.annotation.tailrec def rec(mark: akka.parboiled2.Parser.Mark): akka.parboiled2.Parser.Mark = {
+        val matched = ${op.render(wrapped)}
+        if (matched) {
           ${collector.popToBuilder}
           $recurse
         } else mark
+      }
 
       val mark = rec(firstMark)
       mark != firstMark && {
@@ -340,7 +383,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     base match {
       case q"$a.this.int2NTimes($n)" ⇒ n match {
         case Literal(Constant(i: Int)) ⇒
-          if (i < 0) c.abort(base.pos, "`x` in `x.times` must be non-negative")
+          if (i <= 0) c.abort(base.pos, "`x` in `x.times` must be positive")
           else if (i == 1) rule
           else Times(rule, q"val min, max = $n", collector, separator)
         case x @ (Ident(_) | Select(_, _)) ⇒ Times(rule, q"val min = $n; val max = min", collector, separator)
@@ -349,8 +392,8 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       case q"$a.this.range2NTimes($r)" ⇒ r match {
         case q"scala.this.Predef.intWrapper($mn).to($mx)" ⇒ (mn, mx) match {
           case (Literal(Constant(min: Int)), Literal(Constant(max: Int))) ⇒
-            if (min < 0) c.abort(mn.pos, "`min` in `(min to max).times` must be non-negative")
-            else if (max < 0) c.abort(mx.pos, "`max` in `(min to max).times` must be non-negative")
+            if (min <= 0) c.abort(mn.pos, "`min` in `(min to max).times` must be positive")
+            else if (max <= 0) c.abort(mx.pos, "`max` in `(min to max).times` must be positive")
             else if (max < min) c.abort(mx.pos, "`max` in `(min to max).times` must be >= `min`")
             else Times(rule, q"val min = $mn; val max = $mx", collector, separator)
           case ((Ident(_) | Select(_, _)), (Ident(_) | Select(_, _))) ⇒
@@ -364,9 +407,10 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       case _ ⇒ c.abort(base.pos, "Invalid base expression for `.times(...)`: " + base)
     }
 
-  case class Times(op: OpTree, init: Tree, collector: Collector, separator: Separator) extends OpTree {
+  case class Times(op: OpTree, init: Tree, collector: Collector, separator: Separator) extends WithSeparator {
+    def withSeparator(sep: Separator) = copy(separator = sep)
     val Block(inits, _) = init
-    def ruleFrame = q"..$inits; akka.parboiled2.RuleFrame.Times(min, max)"
+    def ruleTraceNonTerminalKey = q"..$inits; akka.parboiled2.RuleTrace.Times(min, max)"
     def renderInner(wrapped: Boolean): Tree = {
       val recurse =
         if (separator eq null) q"rec(count + 1, __saveState)"
@@ -379,7 +423,8 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       ..$inits
 
       @_root_.scala.annotation.tailrec def rec(count: Int, mark: akka.parboiled2.Parser.Mark): Boolean = {
-        if (${op.render(wrapped)}) {
+        val matched = ${op.render(wrapped)}
+        if (matched) {
           ${collector.popToBuilder}
           if (count < max) $recurse else true
         } else (count > min) && { __restoreState(mark); true }
@@ -389,51 +434,87 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     }
   }
 
-  case class AndPredicate(op: OpTree) extends OpTree {
-    def ruleFrame = reify(RuleFrame.AndPredicate).tree
+  case class AndPredicate(op: OpTree) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = reify(RuleTrace.AndPredicate).tree
     def renderInner(wrapped: Boolean): Tree = q"""
       val mark = __saveState
-      val result = ${op.render(wrapped)}
+      val matched = ${op.render(wrapped)}
       __restoreState(mark)
-      result"""
+      matched"""
   }
 
   case class NotPredicate(op: OpTree) extends OpTree {
-    def renderInner(wrapped: Boolean): Tree = `n/a`
-    def ruleFrame = reify(RuleFrame.NotPredicate).tree
-    override def render(wrapped: Boolean, ruleName: String = ""): Tree = {
+    def render(wrapped: Boolean): Tree = {
       val unwrappedTree = q"""
         val mark = __saveState
-        val saved = __enterNotPredicate
-        val result = ${op.render(wrapped)}
+        val saved = __enterNotPredicate()
+        val matched = ${op.render(wrapped)}
         __exitNotPredicate(saved)
+        ${if (wrapped) q"matchEnd = cursor" else q"()"}
         __restoreState(mark)
-        !result"""
-      if (wrapped) q"""
+        !matched"""
+      if (wrapped) {
+        val base = op match {
+          case x: TerminalOpTree   ⇒ q"akka.parboiled2.RuleTrace.NotPredicate.Terminal(${x.ruleTraceTerminal})"
+          case x: RuleCall         ⇒ q"akka.parboiled2.RuleTrace.NotPredicate.RuleCall(${x.calleeNameTree})"
+          case x: StringMatch      ⇒ q"""akka.parboiled2.RuleTrace.NotPredicate.Named('"' + ${x.stringTree} + '"')"""
+          case x: IgnoreCaseString ⇒ q"""akka.parboiled2.RuleTrace.NotPredicate.Named('"' + ${x.stringTree} + '"')"""
+          case x: Named            ⇒ q"akka.parboiled2.RuleTrace.NotPredicate.Named(${x.stringTree})"
+          case _                   ⇒ q"akka.parboiled2.RuleTrace.NotPredicate.Anonymous"
+        }
+        q"""
+        var matchEnd = 0
         try $unwrappedTree || __registerMismatch()
         catch {
-          case e: akka.parboiled2.Parser.CollectingRuleStackException ⇒
-            e.save(akka.parboiled2.RuleFrame($ruleFrame, $ruleName), ${op.ruleFrame})
+          case akka.parboiled2.Parser.StartTracingException ⇒ __bubbleUp {
+            akka.parboiled2.RuleTrace.NotPredicate($base, matchEnd - cursor)
+          }
         }"""
-      else unwrappedTree
+      } else unwrappedTree
     }
   }
 
-  case class SemanticPredicate(flagTree: Tree) extends OpTree {
-    def ruleFrame = reify(RuleFrame.SemanticPredicate).tree
+  case class Atomic(op: OpTree) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = reify(RuleTrace.Atomic).tree
     def renderInner(wrapped: Boolean): Tree =
-      if (wrapped) flagTree else q"$flagTree || __registerMismatch()"
+      if (wrapped) q"""
+        val saved = __enterAtomic(start)
+        val matched = ${op.render(wrapped)}
+        __exitAtomic(saved)
+        matched"""
+      else op.render(wrapped)
   }
 
-  case class Capture(op: OpTree) extends OpTree {
-    def ruleFrame = reify(RuleFrame.Capture).tree
+  case class Quiet(op: OpTree) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = reify(RuleTrace.Quiet).tree
+    def renderInner(wrapped: Boolean): Tree =
+      if (wrapped) q"""
+        val saved = __enterQuiet()
+        val matched = ${op.render(wrapped)}
+        __exitQuiet(saved)
+        matched"""
+      else op.render(wrapped)
+  }
+
+  case class SemanticPredicate(flagTree: Tree) extends TerminalOpTree {
+    def ruleTraceTerminal = reify(RuleTrace.SemanticPredicate).tree
+    def renderInner(wrapped: Boolean): Tree =
+      if (wrapped) q"$flagTree || __registerMismatch()" else flagTree
+  }
+
+  case class Capture(op: OpTree) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = reify(RuleTrace.Capture).tree
     def renderInner(wrapped: Boolean): Tree = q"""
-      val start = cursor
-      ${op.render(wrapped)} && {valueStack.push(input.sliceString(start, cursor)); true}"""
+      ${if (!wrapped) q"val start = cursor" else q"();"}
+      val matched = ${op.render(wrapped)}
+      if (matched) {
+        valueStack.push(input.sliceString(start, cursor))
+        true
+      } else false"""
   }
 
-  case class RunAction(argTree: Tree, rrTree: Tree) extends OpTree {
-    def ruleFrame = reify(RuleFrame.Run).tree
+  case class RunAction(argTree: Tree, rrTree: Tree) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = reify(RuleTrace.Run).tree
     def renderInner(wrapped: Boolean): Tree = {
       def renderFunctionAction(resultTypeTree: Tree, argTypeTrees: Tree*): Tree = {
         def actionBody(tree: Tree): Tree =
@@ -443,9 +524,9 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
             case q"(..$args ⇒ $body)" ⇒
               def rewrite(tree: Tree): Tree =
                 tree match {
-                  case Block(statements, res)               ⇒ block(statements, rewrite(res))
-                  case x if resultTypeTree.tpe <:< ruleType ⇒ expand(x, wrapped)
-                  case x                                    ⇒ q"__push($x)"
+                  case Block(statements, res) ⇒ block(statements, rewrite(res))
+                  case x if isSubClass(resultTypeTree.tpe, "akka.parboiled2.Rule") ⇒ expand(x, wrapped)
+                  case x ⇒ q"__push($x)"
                 }
               val valDefs = args.zip(argTypeTrees).map { case (a, t) ⇒ q"val ${a.name} = valueStack.pop().asInstanceOf[${t.tpe}]" }.reverse
               block(valDefs, rewrite(body))
@@ -476,8 +557,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
   }
 
   case class PushAction(argTree: Tree, hlTree: Tree) extends OpTree {
-    def ruleFrame = reify(RuleFrame.Push).tree
-    def renderInner(wrapped: Boolean): Tree =
+    def render(wrapped: Boolean): Tree =
       block(hlTree match {
         case q"support.this.HListable.fromUnit"       ⇒ argTree
         case q"support.this.HListable.fromHList[$t]"  ⇒ q"valueStack.pushAll(${c.resetLocalAttrs(argTree)})"
@@ -487,8 +567,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
   }
 
   case class DropAction(hlTree: Tree) extends OpTree {
-    def ruleFrame = reify(RuleFrame.Drop).tree
-    def renderInner(wrapped: Boolean): Tree =
+    def render(wrapped: Boolean): Tree =
       hlTree match {
         case q"support.this.HListable.fromUnit"       ⇒ q"true"
         case q"support.this.HListable.fromAnyRef[$t]" ⇒ q"valueStack.pop(); true"
@@ -503,10 +582,16 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       }
   }
 
-  case class RuleCall(call: Tree) extends OpTree {
-    def calleeName = callName(call) getOrElse c.abort(call.pos, "Illegal rule call: " + call)
-    def ruleFrame = q"akka.parboiled2.RuleFrame.RuleCall($calleeName)"
-    def renderInner(wrapped: Boolean): Tree = q"$call ne null"
+  case class RuleCall(call: Either[OpTree, Tree], calleeNameTree: Tree) extends NonTerminalOpTree {
+    def bubbleUp = q"""
+      import akka.parboiled2.RuleTrace._
+      e.prepend(RuleCall, start).bubbleUp(Named($calleeNameTree), start)"""
+    override def render(wrapped: Boolean) =
+      call match {
+        case Left(_)  ⇒ super.render(wrapped)
+        case Right(x) ⇒ q"$x ne null"
+      }
+    def renderInner(wrapped: Boolean) = call.asInstanceOf[Left[OpTree, Tree]].a.render(wrapped)
   }
 
   def CharRange(lowerTree: Tree, upperTree: Tree): CharacterRange = {
@@ -522,8 +607,8 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     CharacterRange(lowerBoundChar, upperBoundChar)
   }
 
-  case class CharacterRange(lowerBound: Char, upperBound: Char) extends OpTree {
-    def ruleFrame = q"akka.parboiled2.RuleFrame.CharRange($lowerBound, $upperBound)"
+  case class CharacterRange(lowerBound: Char, upperBound: Char) extends TerminalOpTree {
+    def ruleTraceTerminal = q"akka.parboiled2.RuleTrace.CharRange($lowerBound, $upperBound)"
     def renderInner(wrapped: Boolean): Tree = {
       val unwrappedTree = q"""
         val char = cursorChar
@@ -532,12 +617,12 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     }
   }
 
-  case class Action(actionTree: Tree, actionTypeTree: Tree) extends OpTree {
+  case class Action(actionTree: Tree, actionTypeTree: Tree) extends DefaultNonTerminalOpTree {
     val actionType: List[Type] = actionTypeTree.tpe match {
       case TypeRef(_, _, args) if args.nonEmpty ⇒ args
       case x                                    ⇒ c.abort(actionTree.pos, "Unexpected action type: " + x)
     }
-    def ruleFrame = reify(RuleFrame.Action).tree
+    def ruleTraceNonTerminalKey = reify(RuleTrace.Action).tree
     def renderInner(wrapped: Boolean): Tree = {
       val argTypes = actionType dropRight 1
 
@@ -556,9 +641,9 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
           case q"(..$args ⇒ $body)" ⇒
             def rewrite(tree: Tree): Tree =
               tree match {
-                case Block(statements, res)            ⇒ block(statements, rewrite(res))
-                case x if actionType.last <:< ruleType ⇒ expand(x, wrapped)
-                case x                                 ⇒ q"__push($x)"
+                case Block(statements, res) ⇒ block(statements, rewrite(res))
+                case x if isSubClass(actionType.last, "akka.parboiled2.Rule") ⇒ expand(x, wrapped)
+                case x ⇒ q"__push($x)"
               }
             block(popToVals(args.map(_.name)), rewrite(body))
         }
@@ -567,8 +652,8 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     }
   }
 
-  case class RunSubParser(fTree: Tree) extends OpTree {
-    def ruleFrame = reify(RuleFrame.RunSubParser).tree
+  case class RunSubParser(fTree: Tree) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = reify(RuleTrace.RunSubParser).tree
     def renderInner(wrapped: Boolean): Tree = {
       def rewrite(arg: TermName, tree: Tree): Tree =
         tree match {
@@ -586,6 +671,15 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       val q"($arg ⇒ $body)" = c.resetLocalAttrs(fTree)
       rewrite(arg.name, body)
     }
+  }
+
+  case class Fail(stringTree: Tree) extends OpTree {
+    def render(wrapped: Boolean): Tree = q"throw new akka.parboiled2.Parser.Fail($stringTree)"
+  }
+
+  case class Named(op: OpTree, stringTree: Tree) extends DefaultNonTerminalOpTree {
+    def ruleTraceNonTerminalKey = q"akka.parboiled2.RuleTrace.Named($stringTree)"
+    def renderInner(wrapped: Boolean): Tree = op.render(wrapped)
   }
 
   /////////////////////////////////// helpers ////////////////////////////////////
@@ -613,8 +707,8 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
 
   def Separator(op: OpTree): Separator = wrapped ⇒ op.render(wrapped)
 
-  lazy val HListConsTypeSymbol = typeOf[akka.shapeless.::[_, _]].typeSymbol
-  lazy val HNilTypeSymbol = typeOf[akka.shapeless.HNil].typeSymbol
+  lazy val HListConsTypeSymbol = c.mirror.staticClass("shapeless.$colon$colon")
+  lazy val HNilTypeSymbol = c.mirror.staticClass("shapeless.HNil")
 
   // tries to match and expand the leaves of the given Tree
   def expand(tree: Tree, wrapped: Boolean): Tree =
@@ -629,10 +723,11 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
   @tailrec
   private def callName(tree: Tree): Option[String] =
     tree match {
-      case Ident(name)     ⇒ Some(name.decodedName.toString)
-      case Select(_, name) ⇒ Some(name.decodedName.toString)
-      case Apply(fun, _)   ⇒ callName(fun)
-      case _               ⇒ None
+      case Ident(name)       ⇒ Some(name.decodedName.toString)
+      case Select(_, name)   ⇒ Some(name.decodedName.toString)
+      case Apply(fun, _)     ⇒ callName(fun)
+      case TypeApply(fun, _) ⇒ callName(fun)
+      case _                 ⇒ None
     }
 
   def block(a: Tree, b: Tree): Tree =
@@ -652,4 +747,6 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
       case Block(a, b) ⇒ block(stmts ::: a ::: Nil, b)
       case _           ⇒ Block(stmts, expr)
     }
+
+  def isSubClass(t: Type, fqn: String) = t.baseClasses.contains(c.mirror.staticClass(fqn))
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2013 Mathias Doenitz, Alexander Myltsev
+ * Copyright (C) 2009-2014 Mathias Doenitz, Alexander Myltsev
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,216 +18,2154 @@ package akka.parboiled2.support
 
 import akka.shapeless._
 import akka.parboiled2.Rule
-import akka.shapeless.ops.hlist.ReversePrepend
 
 // format: OFF
 
-// provides the supported `~>` "overloads" for rule of type `Rule[I, O]` as `Out`
+// provides the supported `~>` "overloads" for rules of type `Rule[I, O]` as `Out`
 // as a phantom type, which is only used for rule DSL typing
+
 sealed trait ActionOps[I <: HList, O <: HList] { type Out }
 object ActionOps {
   private type SJoin[I <: HList, O <: HList, R] = Join[I, HNil, O, R]
 
-  implicit def ops0[I <: HList, O <: HNil]: ActionOps[I, O] { type Out = Ops0[I] } = `n/a`
-  sealed trait Ops0[I <: HList] {
-    def apply[R](f: () ⇒ R)(implicit j: SJoin[I, HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[Z, R](f: Z ⇒ R)(implicit j: SJoin[Z :: I, HNil, R], c: FCapture[Z ⇒ R]): Rule[j.In, j.Out]
-    def apply[Y, Z, R](f: (Y, Z) ⇒ R)(implicit j: SJoin[Y :: Z :: I, HNil, R], c: FCapture[(Y, Z) ⇒ R]): Rule[j.In, j.Out]
-    def apply[X, Y, Z, R](f: (X, Y, Z) ⇒ R)(implicit j: SJoin[X :: Y :: Z :: I, HNil, R], c: FCapture[(X, Y, Z) ⇒ R]): Rule[j.In, j.Out]
-    def apply[W, X, Y, Z, R](f: (W, X, Y, Z) ⇒ R)(implicit j: SJoin[W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(W, X, Y, Z) ⇒ R]): Rule[j.In, j.Out]
-    def apply[V, W, X, Y, Z, R](f: (V, W, X, Y, Z) ⇒ R)(implicit j: SJoin[V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(V, W, X, Y, Z) ⇒ R]): Rule[j.In, j.Out]
-    def apply[U, V, W, X, Y, Z, R](f: (U, V, W, X, Y, Z) ⇒ R)(implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(U, V, W, X, Y, Z) ⇒ R]): Rule[j.In, j.Out]
-    def apply[T, U, V, W, X, Y, Z, R](f: (T, U, V, W, X, Y, Z) ⇒ R)(implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(T, U, V, W, X, Y, Z) ⇒ R]): Rule[j.In, j.Out]
-    def apply[S, T, U, V, W, X, Y, Z, R](f: (S, T, U, V, W, X, Y, Z) ⇒ R)(implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(S, T, U, V, W, X, Y, Z) ⇒ R]): Rule[j.In, j.Out]
-    def apply[P, S, T, U, V, W, X, Y, Z, R](f: (P, S, T, U, V, W, X, Y, Z) ⇒ R)(implicit j: SJoin[P :: S :: T :: U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(P, S, T, U, V, W, X, Y, Z) ⇒ R]): Rule[j.In, j.Out]
-  }
-  implicit def ops1[I <: HList, A]: ActionOps[I, A :: HNil] { type Out = Ops1[I, A] } = `n/a`
-  sealed trait Ops1[I <: HList, A] {
-    def apply[R](f: () ⇒ R)(implicit j: SJoin[I, A :: HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: A ⇒ R)(implicit j: SJoin[I, HNil, R], c: FCapture[A ⇒ R]): Rule[j.In, j.Out]
-    def apply[Z, R](f: (Z, A) ⇒ R)(implicit j: SJoin[Z :: I, HNil, R], c: FCapture[(Z, A) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Y, Z, R](f: (Y, Z, A) ⇒ R)(implicit j: SJoin[Y :: Z :: I, HNil, R], c: FCapture[(Y, Z, A) ⇒ R]): Rule[j.In, j.Out]
-    def apply[X, Y, Z, R](f: (X, Y, Z, A) ⇒ R)(implicit j: SJoin[X :: Y :: Z :: I, HNil, R], c: FCapture[(X, Y, Z, A) ⇒ R]): Rule[j.In, j.Out]
-    def apply[W, X, Y, Z, R](f: (W, X, Y, Z, A) ⇒ R)(implicit j: SJoin[W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(W, X, Y, Z, A) ⇒ R]): Rule[j.In, j.Out]
-    def apply[V, W, X, Y, Z, R](f: (V, W, X, Y, Z, A) ⇒ R)(implicit j: SJoin[V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(V, W, X, Y, Z, A) ⇒ R]): Rule[j.In, j.Out]
-    def apply[U, V, W, X, Y, Z, R](f: (U, V, W, X, Y, Z, A) ⇒ R)(implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(U, V, W, X, Y, Z, A) ⇒ R]): Rule[j.In, j.Out]
-    def apply[T, U, V, W, X, Y, Z, R](f: (T, U, V, W, X, Y, Z, A) ⇒ R)(implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(T, U, V, W, X, Y, Z, A) ⇒ R]): Rule[j.In, j.Out]
-    def apply[S, T, U, V, W, X, Y, Z, R](f: (S, T, U, V, W, X, Y, Z, A) ⇒ R)(implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(S, T, U, V, W, X, Y, Z, A) ⇒ R]): Rule[j.In, j.Out]
-  }
-  implicit def ops2[I <: HList, A, B]: ActionOps[I, A :: B :: HNil] { type Out = Ops2[I, A, B] } = `n/a`
-  sealed trait Ops2[I <: HList, A, B] {
-    def apply[R](f: () ⇒ R)(implicit j: SJoin[I, A :: B :: HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: B ⇒ R)(implicit j: SJoin[I, A :: HNil, R], c: FCapture[B ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (A, B) ⇒ R)(implicit j: SJoin[I, HNil, R], c: FCapture[(A, B) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Z, R](f: (Z, A, B) ⇒ R)(implicit j: SJoin[Z :: I, HNil, R], c: FCapture[(Z, A, B) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Y, Z, R](f: (Y, Z, A, B) ⇒ R)(implicit j: SJoin[Y :: Z :: I, HNil, R], c: FCapture[(Y, Z, A, B) ⇒ R]): Rule[j.In, j.Out]
-    def apply[X, Y, Z, R](f: (X, Y, Z, A, B) ⇒ R)(implicit j: SJoin[X :: Y :: Z :: I, HNil, R], c: FCapture[(X, Y, Z, A, B) ⇒ R]): Rule[j.In, j.Out]
-    def apply[W, X, Y, Z, R](f: (W, X, Y, Z, A, B) ⇒ R)(implicit j: SJoin[W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(W, X, Y, Z, A, B) ⇒ R]): Rule[j.In, j.Out]
-    def apply[V, W, X, Y, Z, R](f: (V, W, X, Y, Z, A, B) ⇒ R)(implicit j: SJoin[V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(V, W, X, Y, Z, A, B) ⇒ R]): Rule[j.In, j.Out]
-    def apply[U, V, W, X, Y, Z, R](f: (U, V, W, X, Y, Z, A, B) ⇒ R)(implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(U, V, W, X, Y, Z, A, B) ⇒ R]): Rule[j.In, j.Out]
-    def apply[T, U, V, W, X, Y, Z, R](f: (T, U, V, W, X, Y, Z, A, B) ⇒ R)(implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(T, U, V, W, X, Y, Z, A, B) ⇒ R]): Rule[j.In, j.Out]
-  }
-  implicit def ops3[I <: HList, A, B, C]: ActionOps[I, A :: B :: C :: HNil] { type Out = Ops3[I, A, B, C] } = `n/a`
-  sealed trait Ops3[I <: HList, A, B, C] {
-    def apply[R](f: () ⇒ R)(implicit j: SJoin[I, A :: B :: C :: HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: C ⇒ R)(implicit j: SJoin[I, A :: B :: HNil, R], c: FCapture[C ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (B, C) ⇒ R)(implicit j: SJoin[I, A :: HNil, R], c: FCapture[(B, C) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (A, B, C) ⇒ R)(implicit j: SJoin[I, HNil, R], c: FCapture[(A, B, C) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Z, R](f: (Z, A, B, C) ⇒ R)(implicit j: SJoin[Z :: I, HNil, R], c: FCapture[(Z, A, B, C) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Y, Z, R](f: (Y, Z, A, B, C) ⇒ R)(implicit j: SJoin[Y :: Z :: I, HNil, R], c: FCapture[(Y, Z, A, B, C) ⇒ R]): Rule[j.In, j.Out]
-    def apply[X, Y, Z, R](f: (X, Y, Z, A, B, C) ⇒ R)(implicit j: SJoin[X :: Y :: Z :: I, HNil, R], c: FCapture[(X, Y, Z, A, B, C) ⇒ R]): Rule[j.In, j.Out]
-    def apply[W, X, Y, Z, R](f: (W, X, Y, Z, A, B, C) ⇒ R)(implicit j: SJoin[W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(W, X, Y, Z, A, B, C) ⇒ R]): Rule[j.In, j.Out]
-    def apply[V, W, X, Y, Z, R](f: (V, W, X, Y, Z, A, B, C) ⇒ R)(implicit j: SJoin[V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(V, W, X, Y, Z, A, B, C) ⇒ R]): Rule[j.In, j.Out]
-    def apply[U, V, W, X, Y, Z, R](f: (U, V, W, X, Y, Z, A, B, C) ⇒ R)(implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(U, V, W, X, Y, Z, A, B, C) ⇒ R]): Rule[j.In, j.Out]
-  }
-  implicit def ops4[I <: HList, A, B, C, D]: ActionOps[I, A :: B :: C :: D :: HNil] { type Out = Ops4[I, A, B, C, D] } = `n/a`
-  sealed trait Ops4[I <: HList, A, B, C, D] {
-    def apply[R](f: () ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: D ⇒ R)(implicit j: SJoin[I, A :: B :: C :: HNil, R], c: FCapture[D ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (C, D) ⇒ R)(implicit j: SJoin[I, A :: B :: HNil, R], c: FCapture[(C, D) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (B, C, D) ⇒ R)(implicit j: SJoin[I, A :: HNil, R], c: FCapture[(B, C, D) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (A, B, C, D) ⇒ R)(implicit j: SJoin[I, HNil, R], c: FCapture[(A, B, C, D) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Z, R](f: (Z, A, B, C, D) ⇒ R)(implicit j: SJoin[Z :: I, HNil, R], c: FCapture[(Z, A, B, C, D) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Y, Z, R](f: (Y, Z, A, B, C, D) ⇒ R)(implicit j: SJoin[Y :: Z :: I, HNil, R], c: FCapture[(Y, Z, A, B, C, D) ⇒ R]): Rule[j.In, j.Out]
-    def apply[X, Y, Z, R](f: (X, Y, Z, A, B, C, D) ⇒ R)(implicit j: SJoin[X :: Y :: Z :: I, HNil, R], c: FCapture[(X, Y, Z, A, B, C, D) ⇒ R]): Rule[j.In, j.Out]
-    def apply[W, X, Y, Z, R](f: (W, X, Y, Z, A, B, C, D) ⇒ R)(implicit j: SJoin[W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(W, X, Y, Z, A, B, C, D) ⇒ R]): Rule[j.In, j.Out]
-    def apply[V, W, X, Y, Z, R](f: (V, W, X, Y, Z, A, B, C, D) ⇒ R)(implicit j: SJoin[V :: W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(V, W, X, Y, Z, A, B, C, D) ⇒ R]): Rule[j.In, j.Out]
-  }
-  implicit def ops5[I <: HList, A, B, C, D, E]: ActionOps[I, A :: B :: C :: D :: E :: HNil] { type Out = Ops5[I, A, B, C, D, E] } = `n/a`
-  sealed trait Ops5[I <: HList, A, B, C, D, E] {
-    def apply[R](f: () ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: E ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: HNil, R], c: FCapture[E ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (D, E) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: HNil, R], c: FCapture[(D, E) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (C, D, E) ⇒ R)(implicit j: SJoin[I, A :: B :: HNil, R], c: FCapture[(C, D, E) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (B, C, D, E) ⇒ R)(implicit j: SJoin[I, A :: HNil, R], c: FCapture[(B, C, D, E) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (A, B, C, D, E) ⇒ R)(implicit j: SJoin[I, HNil, R], c: FCapture[(A, B, C, D, E) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Z, R](f: (Z, A, B, C, D, E) ⇒ R)(implicit j: SJoin[Z :: I, HNil, R], c: FCapture[(Z, A, B, C, D, E) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Y, Z, R](f: (Y, Z, A, B, C, D, E) ⇒ R)(implicit j: SJoin[Y :: Z :: I, HNil, R], c: FCapture[(Y, Z, A, B, C, D, E) ⇒ R]): Rule[j.In, j.Out]
-    def apply[X, Y, Z, R](f: (X, Y, Z, A, B, C, D, E) ⇒ R)(implicit j: SJoin[X :: Y :: Z :: I, HNil, R], c: FCapture[(X, Y, Z, A, B, C, D, E) ⇒ R]): Rule[j.In, j.Out]
-    def apply[W, X, Y, Z, R](f: (W, X, Y, Z, A, B, C, D, E) ⇒ R)(implicit j: SJoin[W :: X :: Y :: Z :: I, HNil, R], c: FCapture[(W, X, Y, Z, A, B, C, D, E) ⇒ R]): Rule[j.In, j.Out]
-  }
-  implicit def ops6[I <: HList, A, B, C, D, E, F]: ActionOps[I, A :: B :: C :: D :: E :: F :: HNil] { type Out = Ops6[I, A, B, C, D, E, F] } = `n/a`
-  sealed trait Ops6[I <: HList, A, B, C, D, E, F] {
-    def apply[R](f: () ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: F :: HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: F ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: HNil, R], c: FCapture[F ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (E, F) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: HNil, R], c: FCapture[(E, F) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (D, E, F) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: HNil, R], c: FCapture[(D, E, F) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (C, D, E, F) ⇒ R)(implicit j: SJoin[I, A :: B :: HNil, R], c: FCapture[(C, D, E, F) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (B, C, D, E, F) ⇒ R)(implicit j: SJoin[I, A :: HNil, R], c: FCapture[(B, C, D, E, F) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (A, B, C, D, E, F) ⇒ R)(implicit j: SJoin[I, HNil, R], c: FCapture[(A, B, C, D, E, F) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Z, R](f: (Z, A, B, C, D, E, F) ⇒ R)(implicit j: SJoin[Z :: I, HNil, R], c: FCapture[(Z, A, B, C, D, E, F) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Y, Z, R](f: (Y, Z, A, B, C, D, E, F) ⇒ R)(implicit j: SJoin[Y :: Z :: I, HNil, R], c: FCapture[(Y, Z, A, B, C, D, E, F) ⇒ R]): Rule[j.In, j.Out]
-    def apply[X, Y, Z, R](f: (X, Y, Z, A, B, C, D, E, F) ⇒ R)(implicit j: SJoin[X :: Y :: Z :: I, HNil, R], c: FCapture[(X, Y, Z, A, B, C, D, E, F) ⇒ R]): Rule[j.In, j.Out]
-  }
-  implicit def ops7[I <: HList, A, B, C, D, E, F, G]: ActionOps[I, A :: B :: C :: D :: E :: F :: G :: HNil] { type Out = Ops7[I, A, B, C, D, E, F, G] } = `n/a`
-  sealed trait Ops7[I <: HList, A, B, C, D, E, F, G] {
-    def apply[R](f: () ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: F :: G :: HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: G ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: F :: HNil, R], c: FCapture[G ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (F, G) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: HNil, R], c: FCapture[(F, G) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (E, F, G) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: HNil, R], c: FCapture[(E, F, G) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (D, E, F, G) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: HNil, R], c: FCapture[(D, E, F, G) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (C, D, E, F, G) ⇒ R)(implicit j: SJoin[I, A :: B :: HNil, R], c: FCapture[(C, D, E, F, G) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (B, C, D, E, F, G) ⇒ R)(implicit j: SJoin[I, A :: HNil, R], c: FCapture[(B, C, D, E, F, G) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (A, B, C, D, E, F, G) ⇒ R)(implicit j: SJoin[I, HNil, R], c: FCapture[(A, B, C, D, E, F, G) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Z, R](f: (Z, A, B, C, D, E, F, G) ⇒ R)(implicit j: SJoin[Z :: I, HNil, R], c: FCapture[(Z, A, B, C, D, E, F, G) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Y, Z, R](f: (Y, Z, A, B, C, D, E, F, G) ⇒ R)(implicit j: SJoin[Y :: Z :: I, HNil, R], c: FCapture[(Y, Z, A, B, C, D, E, F, G) ⇒ R]): Rule[j.In, j.Out]
-  }
-  implicit def ops8[I <: HList, A, B, C, D, E, F, G, H]: ActionOps[I, A :: B :: C :: D :: E :: F :: G :: H :: HNil] { type Out = Ops8[I, A, B, C, D, E, F, G, H] } = `n/a`
-  sealed trait Ops8[I <: HList, A, B, C, D, E, F, G, H] {
-    def apply[R](f: () ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: F :: G :: H :: HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: H ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: F :: G :: HNil, R], c: FCapture[H ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (G, H) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: F :: HNil, R], c: FCapture[(G, H) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (F, G, H) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: E :: HNil, R], c: FCapture[(F, G, H) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (E, F, G, H) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: D :: HNil, R], c: FCapture[(E, F, G, H) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (D, E, F, G, H) ⇒ R)(implicit j: SJoin[I, A :: B :: C :: HNil, R], c: FCapture[(D, E, F, G, H) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (C, D, E, F, G, H) ⇒ R)(implicit j: SJoin[I, A :: B :: HNil, R], c: FCapture[(C, D, E, F, G, H) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (B, C, D, E, F, G, H) ⇒ R)(implicit j: SJoin[I, A :: HNil, R], c: FCapture[(B, C, D, E, F, G, H) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (A, B, C, D, E, F, G, H) ⇒ R)(implicit j: SJoin[I, HNil, R], c: FCapture[(A, B, C, D, E, F, G, H) ⇒ R]): Rule[j.In, j.Out]
-    def apply[Z, R](f: (Z, A, B, C, D, E, F, G, H) ⇒ R)(implicit j: SJoin[Z :: I, HNil, R], c: FCapture[(Z, A, B, C, D, E, F, G, H) ⇒ R]): Rule[j.In, j.Out]
-  }
-  implicit def ops[I <: HList, O <: HList, OI <: HList, A, B, C, D, E, F, G, H, J]
-    (implicit x: TakeRight9[O, OI, A, B, C, D, E, F, G, H, J]): ActionOps[I, O] { type Out = Ops[I, OI, A, B, C, D, E, F, G, H, J] } = `n/a`
-  sealed trait Ops[I <: HList, OI <: HList, A, B, C, D, E, F, G, H, J] {
-    def apply[R](f: () ⇒ R)(implicit j: Join[I, OI, A :: B :: C :: D :: E :: F :: G :: H :: J :: HNil, R], c: FCapture[() ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: J ⇒ R)(implicit j: Join[I, OI, A :: B :: C :: D :: E :: F :: G :: H :: HNil, R], c: FCapture[J ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (H, J) ⇒ R)(implicit j: Join[I, OI, A :: B :: C :: D :: E :: F :: G :: HNil, R], c: FCapture[(H, J) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (G, H, J) ⇒ R)(implicit j: Join[I, OI, A :: B :: C :: D :: E :: F :: HNil, R], c: FCapture[(G, H, J) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (F, G, H, J) ⇒ R)(implicit j: Join[I, OI, A :: B :: C :: D :: E :: HNil, R], c: FCapture[(F, G, H, J) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (E, F, G, H, J) ⇒ R)(implicit j: Join[I, OI, A :: B :: C :: D :: HNil, R], c: FCapture[(E, F, G, H, J) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (D, E, F, G, H, J) ⇒ R)(implicit j: Join[I, OI, A :: B :: C :: HNil, R], c: FCapture[(D, E, F, G, H, J) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (C, D, E, F, G, H, J) ⇒ R)(implicit j: Join[I, OI, A :: B :: HNil, R], c: FCapture[(C, D, E, F, G, H, J) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (B, C, D, E, F, G, H, J) ⇒ R)(implicit j: Join[I, OI, A :: HNil, R], c: FCapture[(B, C, D, E, F, G, H, J) ⇒ R]): Rule[j.In, j.Out]
-    def apply[R](f: (A, B, C, D, E, F, G, H, J) ⇒ R)(implicit j: Join[I, OI, HNil, R], c: FCapture[(A, B, C, D, E, F, G, H, J) ⇒ R]): Rule[j.In, j.Out]
-  }
-}
+  implicit def ops0[II <: HList, OO <: HNil]: ActionOps[II, OO] { type Out = Ops0[II] } = `n/a`
+  sealed trait Ops0[II <: HList] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
 
-// we want to support the "short case class notation" `... ~> Foo`
-// unfortunately the Tree for the function argument to the `apply` overloads above does *not* allow us to inspect the
-// function type which is why we capture it separately with this helper type
-sealed trait FCapture[T]
-object FCapture {
-  implicit def apply[T]: FCapture[T] = `n/a`
-}
-
-// builds `In` and `Out` types according to this logic:
-//  if (R == Unit)
-//    In = I, Out = L1 ::: L2
-//  else if (R <: HList)
-//    In = I, Out = L1 ::: L2 ::: R
-//  else if (R <: Rule[I2, O2])
-//    In = TailSwitch[I2, L1 ::: L2, I], Out = TailSwitch[L1 ::: L2, I2, O2]
-//  else
-//    In = I, Out = L1 ::: L2 ::: R :: HNil
-sealed trait Join[I <: HList, L1 <: HList, L2 <: HList, R] {
-  type In <: HList
-  type Out <: HList
-}
-object Join {
-  implicit def join[I <: HList, L1 <: HList, L2 <: HList, R, In0 <: HList, Out0 <: HList]
-  (implicit x: Aux[I, L1, L2, R, HNil, In0, Out0]): Join[I, L1, L2, R] { type In = In0; type Out = Out0 } = `n/a`
-  
-  sealed trait Aux[I <: HList, L1 <: HList, L2 <: HList, R, Acc <: HList, In <: HList, Out <: HList]
-  object Aux extends Aux1 {
-    // if R == Unit convert to HNil
-    implicit def forUnit[I <: HList, L1 <: HList, L2 <: HList, Acc <: HList, Out <: HList]
-    (implicit x: Aux[I, L1, L2, HNil, Acc, I, Out]): Aux[I, L1, L2, Unit, Acc, I, Out] = `n/a`
-
-    // if R <: HList and L1 non-empty move head of L1 to Acc
-    implicit def iter1[I <: HList, H, T <: HList, L2 <: HList, R <: HList, Acc <: HList, Out <: HList]
-    (implicit x: Aux[I, T, L2, R, H :: Acc, I, Out]): Aux[I, H :: T, L2, R, Acc, I, Out] = `n/a`
-
-    // if R <: HList and L1 empty and L2 non-empty move head of L2 to Acc
-    implicit def iter2[I <: HList, H, T <: HList, R <: HList, Acc <: HList, Out <: HList]
-    (implicit x: Aux[I, HNil, T, R, H :: Acc, I, Out]): Aux[I, HNil, H :: T, R, Acc, I, Out] = `n/a`
-
-    // if R <: HList and L1 and L2 empty set Out = reversePrepend Acc before R
-    implicit def terminate[I <: HList, R <: HList, Acc <: HList, Out <: HList]
-    (implicit x: ReversePrepend.Aux[Acc, R, Out]): Aux[I, HNil, HNil, R, Acc, I, Out] = `n/a`
-
-    // if R <: Rule and L1 non-empty move head of L1 to Acc
-    implicit def iterRule1[I <: HList, L2 <: HList, I2 <: HList, O2 <: HList, In0 <: HList, Acc <: HList, Out0 <: HList, H, T <: HList]
-    (implicit x: Aux[I, T, L2, Rule[I2, O2], H :: Acc, In0, Out0]): Aux[I, H :: T, L2, Rule[I2, O2], HNil, In0, Out0] = `n/a`
-
-    // if R <: Rule and L1 empty and Acc non-empty move head of Acc to L2
-    implicit def iterRule2[I <: HList, L2 <: HList, I2 <: HList, O2 <: HList, In0 <: HList, Out0 <: HList, H, T <: HList]
-    (implicit x: Aux[I, HNil, H :: L2, Rule[I2, O2], T, In0, Out0]): Aux[I, HNil, L2, Rule[I2, O2], H :: T, In0, Out0] = `n/a`
-
-    // if R <: Rule and L1 and Acc empty set In and Out to tailswitches result
-    implicit def terminateRule[I <: HList, O <: HList, I2 <: HList, O2 <: HList, In <: HList, Out <: HList]
-    (implicit i: TailSwitch.Aux[I2, I2, O, O, I, HNil, In], o: TailSwitch.Aux[O, O, I2, I2, O2, HNil, Out]): Aux[I, HNil, O, Rule[I2, O2], HNil, In, Out] = `n/a`
+    def apply[Z, RR](f: (Z) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR)
+        (implicit j: SJoin[E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z) ⇒ RR]): Rule[j.In, j.Out]
+       
   }
-  abstract class Aux1 {
-    // convert R to R :: HNil
-    implicit def forAny[I <: HList, L1 <: HList, L2 <: HList, R, Acc <: HList, Out <: HList](implicit x: Aux[I, L1, L2, R :: HNil, Acc, I, Out]): Aux[I, L1, L2, R, Acc, I, Out] = `n/a`
-  }
-}
+    
+  implicit def ops1[II <: HList, A]: ActionOps[II, A :: HNil] { type Out = Ops1[II, A] } = `n/a`
+  sealed trait Ops1[II <: HList, A] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
 
 
-sealed trait TakeRight9[L <: HList, Init <: HList, A, B, C, D, E, F, G, H, I]
-object TakeRight9 extends LowerPriorityMatchRight9 {
-  implicit def forHList9[A, B, C, D, E, F, G, H, I]: TakeRight9[A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, HNil, A, B, C, D, E, F, G, H, I] = `n/a`
-}
-private[parboiled2] abstract class LowerPriorityMatchRight9 {
-  implicit def forHList[Head, Tail <: HList, Init <: HList, A, B, C, D, E, F, G, H, I]
-  (implicit x: TakeRight9[Tail, Init, A, B, C, D, E, F, G, H, I]): TakeRight9[Head :: Tail, Head :: Init, A, B, C, D, E, F, G, H, I] = `n/a`
-}
+    def apply[RR](f: (A) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR)
+        (implicit j: SJoin[F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops2[II <: HList, A, B]: ActionOps[II, A :: B :: HNil] { type Out = Ops2[II, A, B] } = `n/a`
+  sealed trait Ops2[II <: HList, A, B] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (B) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR)
+        (implicit j: SJoin[G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops3[II <: HList, A, B, C]: ActionOps[II, A :: B :: C :: HNil] { type Out = Ops3[II, A, B, C] } = `n/a`
+  sealed trait Ops3[II <: HList, A, B, C] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (C) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR)
+        (implicit j: SJoin[H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops4[II <: HList, A, B, C, D]: ActionOps[II, A :: B :: C :: D :: HNil] { type Out = Ops4[II, A, B, C, D] } = `n/a`
+  sealed trait Ops4[II <: HList, A, B, C, D] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (D) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR)
+        (implicit j: SJoin[I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops5[II <: HList, A, B, C, D, E]: ActionOps[II, A :: B :: C :: D :: E :: HNil] { type Out = Ops5[II, A, B, C, D, E] } = `n/a`
+  sealed trait Ops5[II <: HList, A, B, C, D, E] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (E) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR)
+        (implicit j: SJoin[J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops6[II <: HList, A, B, C, D, E, F]: ActionOps[II, A :: B :: C :: D :: E :: F :: HNil] { type Out = Ops6[II, A, B, C, D, E, F] } = `n/a`
+  sealed trait Ops6[II <: HList, A, B, C, D, E, F] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (F) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR)
+        (implicit j: SJoin[K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops7[II <: HList, A, B, C, D, E, F, G]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: HNil] { type Out = Ops7[II, A, B, C, D, E, F, G] } = `n/a`
+  sealed trait Ops7[II <: HList, A, B, C, D, E, F, G] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (G) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR)
+        (implicit j: SJoin[L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops8[II <: HList, A, B, C, D, E, F, G, H]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil] { type Out = Ops8[II, A, B, C, D, E, F, G, H] } = `n/a`
+  sealed trait Ops8[II <: HList, A, B, C, D, E, F, G, H] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (H) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR)
+        (implicit j: SJoin[M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops9[II <: HList, A, B, C, D, E, F, G, H, I]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil] { type Out = Ops9[II, A, B, C, D, E, F, G, H, I] } = `n/a`
+  sealed trait Ops9[II <: HList, A, B, C, D, E, F, G, H, I] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (I) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[N, O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR)
+        (implicit j: SJoin[N :: O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops10[II <: HList, A, B, C, D, E, F, G, H, I, J]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil] { type Out = Ops10[II, A, B, C, D, E, F, G, H, I, J] } = `n/a`
+  sealed trait Ops10[II <: HList, A, B, C, D, E, F, G, H, I, J] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (J) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[O, P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR)
+        (implicit j: SJoin[O :: P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops11[II <: HList, A, B, C, D, E, F, G, H, I, J, K]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil] { type Out = Ops11[II, A, B, C, D, E, F, G, H, I, J, K] } = `n/a`
+  sealed trait Ops11[II <: HList, A, B, C, D, E, F, G, H, I, J, K] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (K) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[P, Q, R, S, T, U, V, W, X, Y, Z, RR](f: (P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR)
+        (implicit j: SJoin[P :: Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops12[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil] { type Out = Ops12[II, A, B, C, D, E, F, G, H, I, J, K, L] } = `n/a`
+  sealed trait Ops12[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Q, R, S, T, U, V, W, X, Y, Z, RR](f: (Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR)
+        (implicit j: SJoin[Q :: R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops13[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil] { type Out = Ops13[II, A, B, C, D, E, F, G, H, I, J, K, L, M] } = `n/a`
+  sealed trait Ops13[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[R, S, T, U, V, W, X, Y, Z, RR](f: (R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR)
+        (implicit j: SJoin[R :: S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(R, S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops14[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil] { type Out = Ops14[II, A, B, C, D, E, F, G, H, I, J, K, L, M, N] } = `n/a`
+  sealed trait Ops14[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR],
+                  c: FCapture[(N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[S, T, U, V, W, X, Y, Z, RR](f: (S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR)
+        (implicit j: SJoin[S :: T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(S, T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops15[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: HNil] { type Out = Ops15[II, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O] } = `n/a`
+  sealed trait Ops15[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil, RR],
+                  c: FCapture[(O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR],
+                  c: FCapture[(N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[T, U, V, W, X, Y, Z, RR](f: (T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR)
+        (implicit j: SJoin[T :: U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops16[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: HNil] { type Out = Ops16[II, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P] } = `n/a`
+  sealed trait Ops16[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: HNil, RR],
+                  c: FCapture[(P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil, RR],
+                  c: FCapture[(O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR],
+                  c: FCapture[(N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[U, V, W, X, Y, Z, RR](f: (U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR)
+        (implicit j: SJoin[U :: V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(U, V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops17[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: HNil] { type Out = Ops17[II, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q] } = `n/a`
+  sealed trait Ops17[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: HNil, RR],
+                  c: FCapture[(Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: HNil, RR],
+                  c: FCapture[(P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil, RR],
+                  c: FCapture[(O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR],
+                  c: FCapture[(N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[V, W, X, Y, Z, RR](f: (V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR)
+        (implicit j: SJoin[V :: W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(V, W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops18[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: HNil] { type Out = Ops18[II, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R] } = `n/a`
+  sealed trait Ops18[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: HNil, RR],
+                  c: FCapture[(R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: HNil, RR],
+                  c: FCapture[(Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: HNil, RR],
+                  c: FCapture[(P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil, RR],
+                  c: FCapture[(O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR],
+                  c: FCapture[(N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[W, X, Y, Z, RR](f: (W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR)
+        (implicit j: SJoin[W :: X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(W, X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops19[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: HNil] { type Out = Ops19[II, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S] } = `n/a`
+  sealed trait Ops19[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: HNil, RR],
+                  c: FCapture[(S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: HNil, RR],
+                  c: FCapture[(R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: HNil, RR],
+                  c: FCapture[(Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: HNil, RR],
+                  c: FCapture[(P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil, RR],
+                  c: FCapture[(O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[X, Y, Z, RR](f: (X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR)
+        (implicit j: SJoin[X :: Y :: Z :: II, HNil, RR],
+                  c: FCapture[(X, Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops20[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: HNil] { type Out = Ops20[II, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T] } = `n/a`
+  sealed trait Ops20[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: HNil, RR],
+                  c: FCapture[(T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: HNil, RR],
+                  c: FCapture[(S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: HNil, RR],
+                  c: FCapture[(R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: HNil, RR],
+                  c: FCapture[(Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: HNil, RR],
+                  c: FCapture[(P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[Y, Z, RR](f: (Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR)
+        (implicit j: SJoin[Y :: Z :: II, HNil, RR],
+                  c: FCapture[(Y, Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops21[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: HNil] { type Out = Ops21[II, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U] } = `n/a`
+  sealed trait Ops21[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: HNil, RR],
+                  c: FCapture[(U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: HNil, RR],
+                  c: FCapture[(T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: HNil, RR],
+                  c: FCapture[(S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: HNil, RR],
+                  c: FCapture[(R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: HNil, RR],
+                  c: FCapture[(Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[Z, RR](f: (Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR)
+        (implicit j: SJoin[Z :: II, HNil, RR],
+                  c: FCapture[(Z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) ⇒ RR]): Rule[j.In, j.Out]
+       
+  }
+     
+
+  implicit def ops22[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V]: ActionOps[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: HNil] { type Out = Ops22[II, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V] } = `n/a`
+  sealed trait Ops22[II <: HList, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V] {
+    def apply[RR](f: () ⇒ RR)(implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: V :: HNil, RR], c: FCapture[() ⇒ RR]): Rule[j.In, j.Out]
+
+    def apply[RR](f: (V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: U :: HNil, RR],
+                  c: FCapture[(V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: T :: HNil, RR],
+                  c: FCapture[(U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: S :: HNil, RR],
+                  c: FCapture[(T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: R :: HNil, RR],
+                  c: FCapture[(S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: Q :: HNil, RR],
+                  c: FCapture[(R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: P :: HNil, RR],
+                  c: FCapture[(Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: O :: HNil, RR],
+                  c: FCapture[(P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: N :: HNil, RR],
+                  c: FCapture[(O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: M :: HNil, RR],
+                  c: FCapture[(N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: L :: HNil, RR],
+                  c: FCapture[(M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: K :: HNil, RR],
+                  c: FCapture[(L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: J :: HNil, RR],
+                  c: FCapture[(K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: I :: HNil, RR],
+                  c: FCapture[(J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: H :: HNil, RR],
+                  c: FCapture[(I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: G :: HNil, RR],
+                  c: FCapture[(H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: F :: HNil, RR],
+                  c: FCapture[(G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: E :: HNil, RR],
+                  c: FCapture[(F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: D :: HNil, RR],
+                  c: FCapture[(E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: C :: HNil, RR],
+                  c: FCapture[(D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: B :: HNil, RR],
+                  c: FCapture[(C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)
+        (implicit j: SJoin[II, A :: HNil, RR],
+                  c: FCapture[(B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+       
+    def apply[RR](f: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR)(implicit j: SJoin[II, HNil, RR], c: FCapture[(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) ⇒ RR]): Rule[j.In, j.Out]
+
+
+  }
+     }
