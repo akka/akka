@@ -94,6 +94,12 @@ Repeated parameter
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: repeated
 
+Csv valued parameter
+++++++++++++++++++++
+
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+   :snippet: csv
+
 Repeated, deserialized parameter
 ++++++++++++++++++++++++++++++++
 
