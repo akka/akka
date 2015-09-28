@@ -16,8 +16,6 @@
 
 package akka.parboiled2
 
-import scala.language.experimental.macros
-
 import scala.collection.immutable
 import scala.reflect.macros.Context
 import akka.shapeless.HList
