@@ -21,7 +21,7 @@ that an implicit ``spray.json.RootJsonReader`` and/or ``spray.json.RootJsonWrite
 
 This is how you enable automatic support for (un)marshalling from and to JSON with `spray-json`_:
 
-1. Add a library dependency onto ``"com.typesafe.akka" %% "akka-http-spray-json-experimental" % "1.x"``.
+1. Add a library dependency onto ``"com.typesafe.akka" %% "akka-http-spray-json-experimental" % "@version@"``.
 
 2. ``import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._`` or mix in the
    ``akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport`` trait.
@@ -30,6 +30,11 @@ This is how you enable automatic support for (un)marshalling from and to JSON wi
    Check out the `spray-json`_ documentation for more info on how to do this.
 
 Once you have done this (un)marshalling between JSON and your type ``T`` should work nicely and transparently.
+
+.. includecode:: ../../code/docs/http/scaladsl/SprayJsonExampleSpec.scala
+  :include: example
+
+To learn more about how spray-json works please refer to its `documentation <https://github.com/spray/spray-json>`_.
 
 
 .. _spray-json: https://github.com/spray/spray-json
