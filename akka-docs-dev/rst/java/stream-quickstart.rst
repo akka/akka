@@ -25,7 +25,7 @@ Here's the data model we'll be working with throughout the quickstart examples:
 
 Transforming and consuming simple streams
 -----------------------------------------
-The example application we will be looking at is a simple Twitter fed stream from which we'll want to extract certain information,
+The example application we will be looking at is a simple Twitter feed stream from which we'll want to extract certain information,
 like for example finding all twitter handles of users who tweet about ``#akka``.
 
 In order to prepare our environment by creating an :class:`ActorSystem` and :class:`ActorMaterializer`,
@@ -118,10 +118,10 @@ detail in :ref:`constructing-sources-sinks-flows-from-partial-graphs-java`. Flow
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#flow-graph-broadcast
 
-As you can see, we use graph builder to mutably construct the graph using the ``addEdge`` method. Once we have the
-FlowGraph in the value ``g`` *it is immutable, thread-safe, and freely shareable*. A graph can be ``run()`` directly -
-assuming all ports (sinks/sources) within a flow have been connected properly. It is possible to construct :class:`PartialFlowGraph` s
-where this is not required but this will be covered in detail in :ref:`partial-flow-graph-java`.
+As you can see, we use graph builder ``b`` to construct the graph using ``UniformFanOutShape`` and ``Flow``s. Once we have the
+FlowGraph as a result of ``closed()`` method *it is immutable, thread-safe, and freely shareable*. A graph can be ``run()`` directly -
+assuming all ports (sinks/sources) within a flow have been connected properly. It is possible also to construct several :class:`PartialFlowGraph`s and
+and then combine them into one fully connected graph. This will be covered in detail in :ref:`partial-flow-graph-java`.
 
 As all Akka Streams elements, :class:`Broadcast` will properly propagate back-pressure to its upstream element.
 
