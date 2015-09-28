@@ -99,7 +99,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
                 summary = s"Response Content-Length of $contentLength bytes exceeds the configured limit of $maxContentLength bytes",
                 detail = "Consider increasing the value of akka.http.client.parsing.max-content-length")
             else if (contentLength == 0) finishEmptyResponse()
-            else if (contentLength < input.size - bodyStart) {
+            else if (contentLength <= input.size - bodyStart) {
               val cl = contentLength.toInt
               emitResponseStart(strictEntity(cth, input, bodyStart, cl))
               setCompletionHandling(HttpMessageParser.CompletionOk)

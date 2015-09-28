@@ -57,6 +57,17 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
+      "a response with a simple body" in new Test {
+        collectBlocking(rawParse(GET,
+          prep {
+            """HTTP/1.1 200 Ok
+              |Content-Length: 4
+              |
+              |ABCD"""
+          })) shouldEqual Seq(Right(HttpResponse(entity = "ABCD".getBytes)))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
       "a response with a custom status code" in new Test {
         override def parserSettings: ParserSettings =
           super.parserSettings.withCustomStatusCodes(ServerOnTheMove)
@@ -324,30 +335,30 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def generalRawMultiParseTo(requestMethod: HttpMethod, expected: Either[ResponseOutput, HttpResponse]*): Matcher[Seq[String]] =
       equal(expected.map(strictEqualify))
         .matcher[Seq[Either[ResponseOutput, StrictEqualHttpResponse]]] compose { input: Seq[String] ⇒
-          val future =
-            Source(input.toList)
-              .map(ByteString.apply)
-              .transform(() ⇒ newParserStage(requestMethod)).named("parser")
-              .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
-              .via(headAndTailFlow)
-              .collect {
-                case (ResponseStart(statusCode, protocol, headers, createEntity, close), entityParts) ⇒
-                  closeAfterResponseCompletion :+= close
-                  Right(HttpResponse(statusCode, headers, createEntity(entityParts), protocol))
-                case (x @ (MessageStartError(_, _) | EntityStreamError(_)), _) ⇒ Left(x)
-              }.map { x ⇒
-                Source {
-                  x match {
-                    case Right(response) ⇒ compactEntity(response.entity).fast.map(x ⇒ Right(response.withEntity(x)))
-                    case Left(error)     ⇒ FastFuture.successful(Left(error))
-                  }
-                }
+          collectBlocking {
+            rawParse(requestMethod, input: _*)
+              .mapAsync(1) {
+                case Right(response) ⇒ compactEntity(response.entity).fast.map(x ⇒ Right(response.withEntity(x)))
+                case Left(error)     ⇒ FastFuture.successful(Left(error))
               }
-              .flatten(FlattenStrategy.concat)
-              .map(strictEqualify)
-              .grouped(100000).runWith(Sink.head)
-          Await.result(future, 500.millis)
+          }.map(strictEqualify)
         }
+
+    def rawParse(requestMethod: HttpMethod, input: String*): Source[Either[ResponseOutput, HttpResponse], Unit] =
+      Source(input.toList)
+        .map(ByteString.apply)
+        .transform(() ⇒ newParserStage(requestMethod)).named("parser")
+        .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
+        .via(headAndTailFlow)
+        .collect {
+          case (ResponseStart(statusCode, protocol, headers, createEntity, close), entityParts) ⇒
+            closeAfterResponseCompletion :+= close
+            Right(HttpResponse(statusCode, headers, createEntity(entityParts), protocol))
+          case (x @ (MessageStartError(_, _) | EntityStreamError(_)), _) ⇒ Left(x)
+        }
+
+    def collectBlocking[T](source: Source[T, Any]): Seq[T] =
+      Await.result(source.grouped(100000).runWith(Sink.head), 500.millis)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
 
