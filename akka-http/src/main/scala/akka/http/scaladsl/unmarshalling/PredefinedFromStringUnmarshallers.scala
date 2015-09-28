@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import scala.collection.immutable
+
 trait PredefinedFromStringUnmarshallers {
 
   implicit val byteFromStringUnmarshaller: Unmarshaller[String, Byte] =
@@ -74,6 +76,11 @@ trait PredefinedFromStringUnmarshallers {
         case ""                     ⇒ throw Unmarshaller.NoContentException
         case x                      ⇒ throw new IllegalArgumentException(s"'$x' is not a valid Boolean value")
       }
+    }
+
+  val CsvString: Unmarshaller[String, immutable.Seq[String]] =
+    Unmarshaller.strict[String, immutable.Seq[String]] { string ⇒
+      string.split(",").toList
     }
 
   private def numberFormatError(value: String, target: String): PartialFunction[Throwable, Nothing] = {
