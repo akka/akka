@@ -259,7 +259,7 @@ Note that stopped entities will be started again when a new message is targeted 
 Graceful Shutdown
 -----------------
 
-You can send the message ``ClusterSharding.GracefulShutdown`` message (``ClusterSharding.gracefulShutdownInstance
+You can send the message ``ClusterSharding.GracefulShutdown`` message (``ClusterSharding.gracefulShutdownInstance``
 in Java) to the ``ShardRegion`` actor to handoff all shards that are hosted by that ``ShardRegion`` and then the
 ``ShardRegion`` actor will be stopped. You can ``watch`` the ``ShardRegion`` actor to know when it is completed.
 During this period other regions will buffer messages for those shards in the same way as when a rebalance is
