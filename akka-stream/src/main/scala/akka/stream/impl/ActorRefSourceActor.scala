@@ -82,7 +82,7 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
       context.stop(self)
 
     case Status.Failure(cause) if isActive ⇒
-      // errors must be signalled as soon as possible,
+      // errors must be signaled as soon as possible,
       // even if previously valid completion was requested via Status.Success
       onErrorThenStop(cause)
 

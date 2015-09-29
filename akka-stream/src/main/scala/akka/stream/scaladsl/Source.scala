@@ -285,7 +285,7 @@ object Source extends SourceApply {
    *
    * It materializes a [[scala.concurrent.Promise]] which will be completed
    * when the downstream stage of this source cancels. This promise can also
-   * be used to externally trigger completion, which the source then signalls
+   * be used to externally trigger completion, which the source then signals
    * to its downstream.
    */
   def lazyEmpty[T]: Source[T, Promise[Unit]] =
@@ -355,15 +355,15 @@ object Source extends SourceApply {
    * not matter.
    *
    * The stream can be completed successfully by sending the actor reference an [[akka.actor.Status.Success]]
-   * message in which case already buffered elements will be signalled before signalling completion,
-   * or by sending a [[akka.actor.PoisonPill]] in which case completion will be signalled immediately.
+   * message in which case already buffered elements will be signaled before signaling completion,
+   * or by sending a [[akka.actor.PoisonPill]] in which case completion will be signaled immediately.
    *
    * The stream can be completed with failure by sending [[akka.actor.Status.Failure]] to the
    * actor reference. In case the Actor is still draining its internal buffer (after having received
-   * an [[akka.actor.Status.Success]]) before signalling completion and it receives a [[akka.actor.Status.Failure]],
-   * the failure will be signalled downstream immediatly (instead of the completion signal).
+   * an [[akka.actor.Status.Success]]) before signaling completion and it receives a [[akka.actor.Status.Failure]],
+   * the failure will be signaled downstream immediately (instead of the completion signal).
    *
-   * The actor will be stopped when the stream is completed, failed or cancelled from downstream,
+   * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    *
    * @param bufferSize The size of the buffer in element count

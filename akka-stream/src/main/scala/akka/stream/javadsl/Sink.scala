@@ -104,7 +104,7 @@ object Sink {
 
   /**
    * Sends the elements of the stream to the given `ActorRef`.
-   * If the target actor terminates the stream will be cancelled.
+   * If the target actor terminates the stream will be canceled.
    * When the stream is completed successfully the given `onCompleteMessage`
    * will be sent to the destination actor.
    * When the stream is completed with failure a [[akka.actor.Status.Failure]]
