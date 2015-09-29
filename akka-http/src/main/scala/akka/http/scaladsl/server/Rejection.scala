@@ -196,7 +196,7 @@ case class ValidationRejection(message: String, cause: Option[Throwable] = None)
  * 3. A TransformationRejection holding a function filtering out the MethodRejection
  *
  * so that in the end the RejectionHandler will only see one rejection (the ValidationRejection), because the
- * MethodRejection added by the ``get`` directive is cancelled by the ``put`` directive (since the HTTP method
+ * MethodRejection added by the ``get`` directive is canceled by the ``put`` directive (since the HTTP method
  * did indeed match eventually).
  */
 case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection]) extends Rejection
