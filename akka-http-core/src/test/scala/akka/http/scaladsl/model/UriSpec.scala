@@ -148,7 +148,7 @@ class UriSpec extends WordSpec with Matchers {
     "not accept illegal IPv6 literals" in {
       // 5 char quad
       the[IllegalUriException] thrownBy Host("[::12345]") shouldBe {
-        IllegalUriException("Illegal URI host: Invalid input '5', expected !HEXDIG, ':' or ']' (line 1, column 8)",
+        IllegalUriException("Illegal URI host: Invalid input '5', expected ':' or ']' (line 1, column 8)",
           "[::12345]\n" +
             "       ^")
       }
@@ -465,14 +465,14 @@ class UriSpec extends WordSpec with Matchers {
     "produce proper error messages for illegal URIs" in {
       // illegal scheme
       the[IllegalUriException] thrownBy Uri("foö:/a") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input 'ö', expected scheme-char, ':', path-segment-char, '%', '/', '?', '#' or 'EOI' (line 1, column 3)",
+        IllegalUriException("Illegal URI reference: Invalid input 'ö', expected scheme-char, 'EOI', '#', ':', '?', slashSegments or pchar (line 1, column 3)",
           "foö:/a\n" +
             "  ^")
       }
 
       // illegal userinfo
       the[IllegalUriException] thrownBy Uri("http://user:ö@host") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input 'ö', expected userinfo-char, '%', '@' or DIGIT (line 1, column 13)",
+        IllegalUriException("Illegal URI reference: Invalid input 'ö', expected userinfo-char, pct-encoded, '@' or port (line 1, column 13)",
           "http://user:ö@host\n" +
             "            ^")
       }
@@ -486,21 +486,21 @@ class UriSpec extends WordSpec with Matchers {
 
       // illegal path
       the[IllegalUriException] thrownBy Uri("http://www.example.com/name with spaces/") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input ' ', expected path-segment-char, '%', '/', '?', '#' or 'EOI' (line 1, column 28)",
+        IllegalUriException("Illegal URI reference: Invalid input ' ', expected '/', 'EOI', '#', '?' or pchar (line 1, column 28)",
           "http://www.example.com/name with spaces/\n" +
             "                           ^")
       }
 
       // illegal path with control character
       the[IllegalUriException] thrownBy Uri("http:///with\newline") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input '\\n', expected path-segment-char, '%', '/', '?', '#' or 'EOI' (line 1, column 13)",
+        IllegalUriException("Illegal URI reference: Invalid input '\\n', expected '/', 'EOI', '#', '?' or pchar (line 1, column 13)",
           "http:///with\n" +
             "            ^")
       }
 
       // illegal query
       the[IllegalUriException] thrownBy Uri("?a=b=c") shouldBe {
-        IllegalUriException("Illegal URI reference: Invalid input '=', expected '+', query-char, '%', '&', '#' or 'EOI' (line 1, column 5)",
+        IllegalUriException("Illegal URI reference: Invalid input '=', expected '+', query-char, 'EOI', '#', '&' or pct-encoded (line 1, column 5)",
           "?a=b=c\n" +
             "    ^")
       }
