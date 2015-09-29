@@ -213,7 +213,7 @@ object TestSubscriber {
      * Expect and return [[SubscriberEvent]] (any of: `OnSubscribe`, `OnNext`, `OnError` or `OnComplete`).
      */
     def expectEvent(max: FiniteDuration): SubscriberEvent =
-      probe.expectMsgType[SubscriberEvent](max.dilated)
+      probe.expectMsgType[SubscriberEvent](max)
 
     /**
      * Fluent DSL
