@@ -17,7 +17,7 @@ private[akka] abstract class ExposedPublisherReceive(activeReceive: Actor.Receiv
     case ep: ExposedPublisher ⇒
       receiveExposedPublisher(ep)
       if (stash.nonEmpty) {
-        // we don't use sender() so this is allright
+        // we don't use sender() so this is alright
         stash.reverse.foreach { msg ⇒
           activeReceive.applyOrElse(msg, unhandled)
         }

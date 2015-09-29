@@ -134,7 +134,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
       s2.runWith(Sink.publisher).subscribe(s2SubscriberProbe)
       val s2Sub = s2SubscriberProbe.expectSubscription()
 
-      // sleep long enough for tiemout to trigger if not cancelled
+      // sleep long enough for timeout to trigger if not canceled
       Thread.sleep(1000)
 
       s2Sub.request(100)

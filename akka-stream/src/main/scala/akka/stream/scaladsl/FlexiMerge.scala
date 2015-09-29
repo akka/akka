@@ -20,7 +20,7 @@ object FlexiMerge {
    * fulfilled when there are elements for one specific upstream
    * input.
    *
-   * It is not allowed to use a handle that has been cancelled or
+   * It is not allowed to use a handle that has been canceled or
    * has been completed. `IllegalArgumentException` is thrown if
    * that is not obeyed.
    */
@@ -36,7 +36,7 @@ object FlexiMerge {
    * fulfilled when there are elements for any of the given upstream
    * inputs.
    *
-   * Cancelled and completed inputs are not used, i.e. it is allowed
+   * Canceled and completed inputs are not used, i.e. it is allowed
    * to specify them in the list of `inputs`.
    */
   final case class ReadAny[T](inputs: Inlet[T]*) extends ReadCondition[T]
@@ -53,7 +53,7 @@ object FlexiMerge {
    * the `preferred` and at least one other `secondary` input have demand,
    * the `preferred` input will always be consumed first.
    *
-   * Cancelled and completed inputs are not used, i.e. it is allowed
+   * Canceled and completed inputs are not used, i.e. it is allowed
    * to specify them in the list of `inputs`.
    */
   final case class ReadPreferred[T](preferred: Inlet[T], secondaries: Inlet[T]*) extends ReadCondition[T]
@@ -68,11 +68,11 @@ object FlexiMerge {
    * fulfilled when there are elements for *all* of the given upstream
    * inputs.
    *
-   * The emitted element the will be a [[ReadAllInputs]] object, which contains values for all non-cancelled inputs of this FlexiMerge.
+   * The emitted element the will be a [[ReadAllInputs]] object, which contains values for all non-canceled inputs of this FlexiMerge.
    *
-   * Cancelled inputs are not used, i.e. it is allowed to specify them in the list of `inputs`,
+   * Canceled inputs are not used, i.e. it is allowed to specify them in the list of `inputs`,
    * the resulting [[ReadAllInputs]] will then not contain values for this element, which can be
-   * handled via supplying a default value instead of the value from the (now cancelled) input.
+   * handled via supplying a default value instead of the value from the (now canceled) input.
    */
   final case class ReadAll[T](mkResult: immutable.Map[InPort, Any] ⇒ ReadAllInputsBase, inputs: Inlet[T]*) extends ReadCondition[ReadAllInputs]
 
@@ -133,12 +133,12 @@ object FlexiMerge {
      */
     trait MergeLogicContextBase {
       /**
-       * Complete this stream successfully. Upstream subscriptions will be cancelled.
+       * Complete this stream successfully. Upstream subscriptions will be canceled.
        */
       def finish(): Unit
 
       /**
-       * Complete this stream with failure. Upstream subscriptions will be cancelled.
+       * Complete this stream with failure. Upstream subscriptions will be canceled.
        */
       def fail(cause: Throwable): Unit
 

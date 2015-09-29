@@ -20,7 +20,7 @@ object FlexiRoute {
    * fulfilled when there are requests for elements from one specific downstream
    * output.
    *
-   * It is not allowed to use a handle that has been cancelled or
+   * It is not allowed to use a handle that has been canceled or
    * has been completed. `IllegalArgumentException` is thrown if
    * that is not obeyed.
    */
@@ -35,7 +35,7 @@ object FlexiRoute {
    * fulfilled when there are requests for elements from any of the given downstream
    * outputs.
    *
-   * Cancelled and completed outputs are not used, i.e. it is allowed
+   * Canceled and completed outputs are not used, i.e. it is allowed
    * to specify them in the list of `outputs`.
    */
   final case class DemandFromAny(outputs: immutable.Seq[OutPort]) extends DemandCondition[OutPort]
@@ -49,7 +49,7 @@ object FlexiRoute {
    * fulfilled when there are requests for elements from all of the given downstream
    * outputs.
    *
-   * Cancelled and completed outputs are not used, i.e. it is allowed
+   * Canceled and completed outputs are not used, i.e. it is allowed
    * to specify them in the list of `outputs`.
    */
   final case class DemandFromAll(outputs: immutable.Seq[OutPort]) extends DemandCondition[Unit]

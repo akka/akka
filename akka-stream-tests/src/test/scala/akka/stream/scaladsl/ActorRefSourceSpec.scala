@@ -126,7 +126,7 @@ class ActorRefSourceSpec extends AkkaSpec {
       sub.request(2) // not all elements drained yet
       s.expectNext(1, 2)
       ref ! PoisonPill
-      s.expectComplete() // element `3` not signalled
+      s.expectComplete() // element `3` not signaled
     }
 
     "fail the stream when receiving Status.Failure" in assertAllStagesStopped {

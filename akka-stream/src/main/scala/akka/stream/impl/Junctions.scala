@@ -25,7 +25,7 @@ private[stream] object Junctions {
       else throw new UnsupportedOperationException("cannot change the shape of a " + simpleName(this))
   }
 
-  // note: can't be sealed as we have boilerplate generated classes which must extend FaninModule/FanoutModule
+  // note: can't be sealed as we have boilerplate generated classes which must extend FanInModule/FanOutModule
   private[akka] trait FanInModule extends JunctionModule
   private[akka] trait FanOutModule extends JunctionModule
 

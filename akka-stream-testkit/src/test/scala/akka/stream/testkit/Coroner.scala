@@ -18,7 +18,7 @@ import akka.testkit.{ TestKit, TestDuration }
  * The Coroner can be used to print a diagnostic report of the JVM state,
  * including stack traces and deadlocks. A report can be printed directly, by
  * calling `printReport`. Alternatively, the Coroner can be asked to `watch`
- * the JVM and generate a report at a later time - unless the Coroner is cancelled
+ * the JVM and generate a report at a later time - unless the Coroner is canceled
  * by that time.
  *
  * The latter method is useful for printing diagnostics in the event that, for
@@ -30,7 +30,7 @@ object Coroner { // FIXME: remove once going back to project dependencies
 
   /**
    * Used to cancel the Coroner after calling `watch`.
-   * The result of this Awaitable will be `true` if it has been cancelled.
+   * The result of this Awaitable will be `true` if it has been canceled.
    */
   trait WatchHandle extends Awaitable[Boolean] {
     /**
@@ -73,7 +73,7 @@ object Coroner { // FIXME: remove once going back to project dependencies
   val defaultStartAndStopDuration = 1.second
 
   /**
-   * Ask the Coroner to print a report if it is not cancelled by the given deadline.
+   * Ask the Coroner to print a report if it is not canceled by the given deadline.
    * The returned handle can be used to perform the cancellation.
    *
    * If displayThreadCounts is set to true, then the Coroner will print thread counts during start
