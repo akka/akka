@@ -57,8 +57,10 @@ private[http] class UriParser(val input: ParserInput,
       case Left(error) => fail(error, "query")
     }
 
-  def fail(error: ParseError, target: String): Nothing =
-    Uri.fail(s"Illegal $target: " + formatError(error, showLine = false), formatErrorLine(error))
+  def fail(error: ParseError, target: String): Nothing = {
+    val formatter = new ErrorFormatter(showLine = false)
+    Uri.fail(s"Illegal $target: " + formatter.format(error, input), formatter.formatErrorLine(error, input))
+  }
 
   private[this] val `path-segment-char` = uriParsingMode match {
     case Uri.ParsingMode.Strict ⇒ `pchar-base`
