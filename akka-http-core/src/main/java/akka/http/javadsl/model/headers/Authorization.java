@@ -17,4 +17,7 @@ public abstract class Authorization extends akka.http.scaladsl.model.HttpHeader 
     public static Authorization basic(String username, String password) {
         return create(HttpCredentials.createBasicHttpCredentials(username, password));
     }
+    public static Authorization oauth2(String token) {
+        return create(HttpCredentials.createOAuth2BearerToken(token));
+    }
 }
