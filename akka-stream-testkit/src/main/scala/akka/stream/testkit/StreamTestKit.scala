@@ -3,8 +3,6 @@
  */
 package akka.stream.testkit
 
-import java.util.concurrent.TimeoutException
-
 import akka.actor.{ ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
@@ -23,6 +21,11 @@ import scala.language.existentials
 object TestPublisher {
 
   import StreamTestKit._
+
+  trait PublisherEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class Subscribe(subscription: Subscription) extends PublisherEvent
+  final case class CancelSubscription(subscription: Subscription) extends PublisherEvent
+  final case class RequestMore(subscription: Subscription, elements: Long) extends PublisherEvent
 
   /**
    * Publisher that signals complete to subscribers, after handing a void subscription.
@@ -118,6 +121,9 @@ object TestPublisher {
     def receiveWhile[T](max: Duration = Duration.Undefined, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[PublisherEvent, T]): immutable.Seq[T] =
       probe.receiveWhile(max, idle, messages)(f.asInstanceOf[PartialFunction[AnyRef, T]])
 
+    def expectEventPF[T](f: PartialFunction[PublisherEvent, T]): T =
+      probe.expectMsgPF[T](probe.remaining)(f.asInstanceOf[PartialFunction[Any, T]])
+
     def getPublisher: Publisher[I] = this
   }
 
@@ -170,7 +176,11 @@ object TestPublisher {
 
 object TestSubscriber {
 
-  import StreamTestKit._
+  trait SubscriberEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class OnSubscribe(subscription: Subscription) extends SubscriberEvent
+  final case class OnNext[I](element: I) extends SubscriberEvent
+  final case object OnComplete extends SubscriberEvent
+  final case class OnError(cause: Throwable) extends SubscriberEvent
 
   /**
    * Probe that implements [[org.reactivestreams.Subscriber]] interface.
@@ -477,6 +487,17 @@ object TestSubscriber {
       self
     }
 
+    def expectNextPF[T](f: PartialFunction[Any, T]): T = {
+      expectEventPF {
+        case OnNext(n) ⇒
+          assert(f.isDefinedAt(n))
+          f(n)
+      }
+    }
+
+    def expectEventPF[T](f: PartialFunction[SubscriberEvent, T]): T =
+      probe.expectMsgPF[T](probe.remaining)(f.asInstanceOf[PartialFunction[Any, T]])
+
     /**
      * Receive messages for a given duration or until one does not match a given partial function.
      */
@@ -564,17 +585,7 @@ object TestSubscriber {
  * INTERNAL API
  */
 private[testkit] object StreamTestKit {
-
-  sealed trait PublisherEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded
-  final case class Subscribe(subscription: Subscription) extends PublisherEvent
-  final case class CancelSubscription(subscription: Subscription) extends PublisherEvent
-  final case class RequestMore(subscription: Subscription, elements: Long) extends PublisherEvent
-
-  sealed trait SubscriberEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded
-  final case class OnSubscribe(subscription: Subscription) extends SubscriberEvent
-  final case class OnNext[I](element: I) extends SubscriberEvent
-  final case object OnComplete extends SubscriberEvent
-  final case class OnError(cause: Throwable) extends SubscriberEvent
+  import TestPublisher._
 
   final case class CompletedSubscription[T](subscriber: Subscriber[T]) extends Subscription {
     override def request(elements: Long): Unit = subscriber.onComplete()
