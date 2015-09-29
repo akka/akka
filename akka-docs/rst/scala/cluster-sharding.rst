@@ -36,7 +36,7 @@ The above actor uses event sourcing and the support provided in ``PersistentActo
 It does not have to be a persistent actor, but in case of failure or migration of entities between nodes it must be able to recover
 its state if it is valuable.
 
-Note how the ``persistenceId`` is defined. The name of the actor is the entity entity identifier (utf-8 URL-encoded).
+Note how the ``persistenceId`` is defined. The name of the actor is the entity identifier (utf-8 URL-encoded).
 You may define it another way, but it must be unique.
 
 When using the sharding extension you are first, typically at system startup on each node
