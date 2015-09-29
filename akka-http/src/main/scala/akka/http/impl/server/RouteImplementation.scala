@@ -5,7 +5,7 @@
 package akka.http.impl.server
 
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.server.values.{ PathMatcher, BasicUserCredentials }
+import akka.http.javadsl.server.values.{ PathMatcher, BasicCredentials, OAuth2Credentials }
 import akka.http.scaladsl.model.StatusCodes.Redirection
 import akka.http.scaladsl.server.util.TupleOps.Join
 
@@ -13,7 +13,7 @@ import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.http.javadsl.model.ContentType
-import akka.http.scaladsl.server.directives.{ UserCredentials, ContentTypeResolver }
+import akka.http.scaladsl.server.directives.{ Credentials, ContentTypeResolver }
 import akka.http.scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.{ HttpCookie, CustomHeader }
@@ -80,17 +80,40 @@ private[http] object RouteImplementation extends Directives with server.RouteCon
         authenticateBasicAsync(authenticator.realm, { creds ⇒
           val javaCreds =
             creds match {
-              case UserCredentials.Missing ⇒
-                new BasicUserCredentials {
+              case Credentials.Missing ⇒
+                new BasicCredentials {
                   def available: Boolean = false
-                  def userName: String = throw new IllegalStateException("Credentials missing")
-                  def verifySecret(secret: String): Boolean = throw new IllegalStateException("Credentials missing")
+                  def identifier: String = throw new IllegalStateException("Credentials missing")
+                  def verify(secret: String): Boolean = throw new IllegalStateException("Credentials missing")
                 }
-              case p @ UserCredentials.Provided(name) ⇒
-                new BasicUserCredentials {
+              case p @ Credentials.Provided(name) ⇒
+                new BasicCredentials {
                   def available: Boolean = true
-                  def userName: String = name
-                  def verifySecret(secret: String): Boolean = p.verifySecret(secret)
+                  def identifier: String = name
+                  def verify(secret: String): Boolean = p.verify(secret)
+                }
+            }
+
+          authenticator.authenticate(javaCreds)
+        }).flatMap { user ⇒
+          addExtraction(authenticator.asInstanceOf[RequestVal[Any]], user)
+        }
+
+      case OAuth2Authentication(authenticator) ⇒
+        authenticateOAuth2Async(authenticator.realm, { creds ⇒
+          val javaCreds =
+            creds match {
+              case Credentials.Missing ⇒
+                new OAuth2Credentials {
+                  def available: Boolean = false
+                  def identifier: String = throw new IllegalStateException("Credentials missing")
+                  def verify(secret: String): Boolean = throw new IllegalStateException("Credentials missing")
+                }
+              case p @ Credentials.Provided(name) ⇒
+                new OAuth2Credentials {
+                  def available: Boolean = true
+                  def identifier: String = name
+                  def verify(secret: String): Boolean = p.verify(secret)
                 }
             }
 
