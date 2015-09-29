@@ -163,8 +163,12 @@ class SteppingInMemPersistentActorStashingSpec extends PersistenceSpec(
       SteppingInmemJournal.step(journal)
       SteppingInmemJournal.step(journal)
 
-      persistentActor ! GetState
-      expectMsg(List("a", "c", "b"))
+      within(3.seconds) {
+        awaitAssert {
+          persistentActor ! GetState
+          expectMsg(List("a", "c", "b"))
+        }
+      }
     }
 
   }
