@@ -367,7 +367,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       sub.request(10)
       s.expectNext((1L, 1, "a"))
       s.expectNext((2L, 2, "b"))
-      // soonCancelledInput is now cancelled and continues with default (null) value
+      // soonCancelledInput is now canceled and continues with default (null) value
       s.expectNext((0L, 3, "c"))
       s.expectComplete()
     }

@@ -46,7 +46,7 @@ object StreamSubscriptionTimeoutSupport {
 /**
  * INTERNAL API
  * Provides support methods to create Publishers and Subscribers which time-out gracefully,
- * and are cancelled subscribing an `CancellingSubscriber` to the publisher, or by calling `onError` on the timed-out subscriber.
+ * and are canceled subscribing an `CancellingSubscriber` to the publisher, or by calling `onError` on the timed-out subscriber.
  *
  * See `akka.stream.materializer.subscription-timeout` for configuration options.
  */
@@ -103,7 +103,7 @@ private[akka] trait StreamSubscriptionTimeoutSupport {
   }
 
   /**
-   * Callback that should ensure that the target is cancelled with the given cause.
+   * Callback that should ensure that the target is canceled with the given cause.
    */
   protected def handleSubscriptionTimeout(target: Publisher[_], cause: Exception): Unit
 }

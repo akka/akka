@@ -71,7 +71,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
 
   /**
    * called before `shutdown()` if the stream is *not* being regularly completed
-   * but shut-down due to the last subscriber having cancelled its subscription
+   * but shut-down due to the last subscriber having canceled its subscription
    */
   protected def cancelUpstream(): Unit
 

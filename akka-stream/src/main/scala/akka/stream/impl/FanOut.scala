@@ -196,7 +196,7 @@ private[akka] object FanOut {
     /**
      * Will only transfer an element when all marked outputs
      * have demand, and will complete as soon as any of the marked
-     * outputs have cancelled.
+     * outputs have canceled.
      */
     val AllOfMarkedOutputs = new TransferState {
       override def isCompleted: Boolean = markedCancelled > 0 || markedCount == 0
@@ -206,7 +206,7 @@ private[akka] object FanOut {
     /**
      * Will transfer an element when any of the  marked outputs
      * have demand, and will complete when all of the marked
-     * outputs have cancelled.
+     * outputs have canceled.
      */
     val AnyOfMarkedOutputs = new TransferState {
       override def isCompleted: Boolean = markedCancelled == markedCount

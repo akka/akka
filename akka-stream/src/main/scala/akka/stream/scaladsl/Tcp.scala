@@ -27,7 +27,7 @@ import akka.stream.impl.io.StreamTcpManager
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   /**
-   * * Represents a succdessful TCP server binding.
+   * * Represents a successful TCP server binding.
    */
   case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
     def unbind(): Future[Unit] = unbindAction()

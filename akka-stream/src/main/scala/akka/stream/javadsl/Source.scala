@@ -41,7 +41,7 @@ object Source {
    *
    * It materializes a [[scala.concurrent.Promise]] which will be completed
    * when the downstream stage of this source cancels. This promise can also
-   * be used to externally trigger completion, which the source then signalls
+   * be used to externally trigger completion, which the source then signals
    * to its downstream.
    */
   def lazyEmpty[T](): Source[T, Promise[Unit]] =
@@ -185,7 +185,7 @@ object Source {
    * The stream can be completed with failure by sending [[akka.actor.Status.Failure]] to the
    * actor reference.
    *
-   * The actor will be stopped when the stream is completed, failed or cancelled from downstream,
+   * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    *
    * @param bufferSize The size of the buffer in element count
@@ -388,7 +388,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step. The function returns a `Future` and the
    * value of that future will be emitted downstreams. As many futures as requested elements by
-   * downstream may run in parallel and each processed element will be emitted dowstream
+   * downstream may run in parallel and each processed element will be emitted downstream
    * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
    * in the same order as received from upstream.
    *
@@ -689,7 +689,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow:
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] attribute on the given Flow:
    *
    * The `extract` function will be applied to each element before logging, so it is possible to log only those fields
    * of a complex object flowing through this element.
@@ -711,7 +711,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow:
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] attribute on the given Flow:
    *
    * The `extract` function will be applied to each element before logging, so it is possible to log only those fields
    * of a complex object flowing through this element.
@@ -733,7 +733,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow:
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] attribute on the given Flow:
    *
    * Uses the given [[LoggingAdapter]] for logging.
    *
@@ -752,7 +752,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
-   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] atrribute on the given Flow:
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] attribute on the given Flow:
    *
    * Uses an internally created [[LoggingAdapter]] which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
    *

@@ -143,7 +143,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         downstream.expectNext("test2")
         downstreamSubscription.cancel()
 
-        // because of the "must cancel its upstream Subscription if its last downstream Subscription has been cancelled" rule
+        // because of the "must cancel its upstream Subscription if its last downstream Subscription has been canceled" rule
         upstreamSubscription.expectCancellation()
       }
     }
