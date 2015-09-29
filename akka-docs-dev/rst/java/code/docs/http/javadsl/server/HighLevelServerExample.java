@@ -6,6 +6,7 @@ package docs.http.javadsl.server;
 
 //#high-level-server-example
 import akka.actor.ActorSystem;
+import akka.http.javadsl.model.ContentTypes;
 import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.server.*;
 import akka.http.javadsl.server.values.Parameters;
@@ -50,7 +51,7 @@ public class HighLevelServerExample extends HttpApp {
                     // matches the empty path
                     pathSingleSlash().route(
                         // return a constant string with a certain content type
-                        complete(MediaTypes.TEXT_HTML.toContentType(),
+                        complete(ContentTypes.TEXT_HTML,
                                 "<html><body>Hello world!</body></html>")
                     ),
                     path("ping").route(

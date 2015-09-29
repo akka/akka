@@ -72,7 +72,7 @@ public class HttpServerExampleDocTest {
                             if (uri.path().equals("/"))
                                 return
                                     HttpResponse.create()
-                                        .withEntity(MediaTypes.TEXT_HTML.toContentType(),
+                                        .withEntity(ContentTypes.TEXT_HTML,
                                             "<html><body>Hello world!</body></html>");
                             else if (uri.path().equals("/hello")) {
                                 String name = Util.getOrElse(uri.parameter("name"), "Mister X");

@@ -92,6 +92,7 @@ object ContentTypes {
   val `application/json` = ContentType(MediaTypes.`application/json`)
   val `text/plain` = ContentType(MediaTypes.`text/plain`)
   val `text/plain(UTF-8)` = ContentType(MediaTypes.`text/plain`, HttpCharsets.`UTF-8`)
+  val `text/html` = ContentType(MediaTypes.`text/html`)
   val `application/octet-stream` = ContentType(MediaTypes.`application/octet-stream`)
 
   // used for explicitly suppressing the rendering of Content-Type headers on requests and responses
