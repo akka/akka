@@ -52,8 +52,10 @@ private[http] class HeaderParser(val input: ParserInput, settings: HeaderParser.
   type Result = Either[ErrorInfo, HttpHeader]
   def parser: HeaderParser = this
   def success(result: HttpHeader :: HNil): Result = Right(result.head)
-  def parseError(error: ParseError): Result =
-    Left(ErrorInfo(formatError(error, showLine = false), formatErrorLine(error)))
+  def parseError(error: ParseError): Result = {
+    val formatter = new ErrorFormatter(showLine = false)
+    Left(ErrorInfo(formatter.format(error, input), formatter.formatErrorLine(error, input)))
+  }
   def failure(error: Throwable): Result = error match {
     case IllegalUriException(info) ⇒ Left(info)
     case NonFatal(e)               ⇒ Left(ErrorInfo.fromCompoundString(e.getMessage))

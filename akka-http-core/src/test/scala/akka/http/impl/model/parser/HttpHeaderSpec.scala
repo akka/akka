@@ -145,7 +145,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Authorization: NoParamScheme" =!=
         Authorization(GenericHttpCredentials("NoParamScheme", Map.empty[String, String]))
       "Authorization: QVFJQzV3TTJMWTRTZmN3Zk=" =!=
-        ErrorInfo("Illegal HTTP header 'Authorization': Invalid input '=', expected tchar, '\\r', WSP, token68-start or 'EOI' (line 1, column 23)",
+        ErrorInfo("Illegal HTTP header 'Authorization': Invalid input '=', expected auth-param, OWS, token68, 'EOI' or tchar (line 1, column 23)",
           """QVFJQzV3TTJMWTRTZmN3Zk=
             |                      ^""".stripMarginWithNewline("\n"))
     }
@@ -300,7 +300,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Location: https://spray.io/{sec}" =!= Location(Uri("https://spray.io/{sec}")).renderedTo(
         "https://spray.io/%7Bsec%7D")
       "Location: https://spray.io/ sec" =!= ErrorInfo("Illegal HTTP header 'Location': Invalid input ' ', " +
-        "expected path-segment-char, '%', '/', '?', '#' or 'EOI' (line 1, column 18)", "https://spray.io/ sec\n                 ^")
+        "expected '/', 'EOI', '#', segment or '?' (line 1, column 18)", "https://spray.io/ sec\n                 ^")
     }
 
     "Link" in {
@@ -471,7 +471,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
       "Set-Cookie: lang=; Expires=xxxx" =!=
         ErrorInfo(
-          "Illegal HTTP header 'Set-Cookie': Invalid input 'x', expected '\\r', WSP, 'S', 'M', 'T', 'W', 'F' or '0' (line 1, column 16)",
+          "Illegal HTTP header 'Set-Cookie': Invalid input 'x', expected OWS or HTTP-date (line 1, column 16)",
           "lang=; Expires=xxxx\n               ^")
 
       // extra examples from play
@@ -562,10 +562,10 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
     "not accept illegal header values" in {
       parse("Foo", "ba\u0000r") shouldEqual ParsingResult.Error(ErrorInfo(
-        "Illegal HTTP header value: Invalid input '\\u0000', expected VCHAR, obs-text, WSP, '\\r' or 'EOI' (line 1, column 3)",
+        "Illegal HTTP header value: Invalid input '\\u0000', expected field-value-char, FWS or 'EOI' (line 1, column 3)",
         "ba\u0000r\n  ^"))
       parse("Flood-Resistant-Hammerdrill", "árvíztűrő ütvefúrógép") shouldEqual ParsingResult.Error(ErrorInfo(
-        "Illegal HTTP header value: Invalid input 'ű', expected VCHAR, obs-text, WSP, '\\r' or 'EOI' (line 1, column 7)",
+        "Illegal HTTP header value: Invalid input 'ű', expected field-value-char, FWS or 'EOI' (line 1, column 7)",
         "árvíztűrő ütvefúrógép\n      ^"))
     }
     "compress value whitespace into single spaces and trim" in {
