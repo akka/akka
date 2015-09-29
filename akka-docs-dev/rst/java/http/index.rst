@@ -31,11 +31,11 @@ akka-http-jackson
 .. toctree::
    :maxdepth: 2
 
-   configuration
    http-model
    server-side/low-level-server-side-api
    server-side/websocket-support
    routing-dsl/index
    client-side/index
+   configuration
 
 .. _jackson: https://github.com/FasterXML/jackson
