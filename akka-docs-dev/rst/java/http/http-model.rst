@@ -42,11 +42,11 @@ HttpRequest
 
 An ``HttpRequest`` consists of
 
- - a method (GET, POST, etc.)
- - a URI
- - a seq of headers
- - an entity (body data)
- - a protocol
+- a method (GET, POST, etc.)
+- a URI
+- a seq of headers
+- an entity (body data)
+- a protocol
 
 Here are some examples how to construct an ``HttpRequest``:
 
@@ -64,10 +64,10 @@ HttpResponse
 
 An ``HttpResponse`` consists of
 
- - a status code
- - a list of headers
- - an entity (body data)
- - a protocol
+- a status code
+- a list of headers
+- an entity (body data)
+- a protocol
 
 Here are some examples how to construct an ``HttpResponse``:
 

@@ -1,4 +1,4 @@
-.. _PathDirectives-java:
+.. _path-directives-java:
 
 PathDirectives
 ==============

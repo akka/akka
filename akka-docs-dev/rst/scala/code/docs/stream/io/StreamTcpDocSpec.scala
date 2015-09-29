@@ -3,19 +3,15 @@
  */
 package docs.stream.io
 
-import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.stream._
 import akka.stream.scaladsl.Tcp._
 import akka.stream.scaladsl._
-import akka.stream.stage.Context
-import akka.stream.stage.PushStage
-import akka.stream.stage.SyncDirective
+import akka.stream.stage.{ Context, PushStage, SyncDirective }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.ByteString
-import docs.stream.cookbook.RecipeParseLines
 import docs.utils.TestUtils
 
 import scala.concurrent.Future
@@ -31,8 +27,14 @@ class StreamTcpDocSpec extends AkkaSpec {
   "simple server connection" in {
     {
       //#echo-server-simple-bind
-      val connections: Source[IncomingConnection, Future[ServerBinding]] =
-        Tcp().bind("127.0.0.1", 8888)
+      val binding: Future[ServerBinding] =
+        Tcp().bind("127.0.0.1", 8888).to(Sink.ignore).run()
+
+      binding.map { b =>
+        b.unbind() onComplete {
+          case _ => // ...
+        }
+      }
       //#echo-server-simple-bind
     }
     {
