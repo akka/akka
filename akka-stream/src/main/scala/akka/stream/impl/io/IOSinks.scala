@@ -15,7 +15,7 @@ import scala.concurrent.{ Future, Promise }
 /**
  * INTERNAL API
  * Creates simple synchronous (Java 6 compatible) Sink which writes all incoming elements to the given file
- * (creating it before hand if neccessary).
+ * (creating it before hand if necessary).
  */
 private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attributes: Attributes, shape: SinkShape[ByteString])
   extends SinkModule[ByteString, Future[Long]](shape) {
@@ -42,7 +42,7 @@ private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attr
 /**
  * INTERNAL API
  * Creates simple synchronous (Java 6 compatible) Sink which writes all incoming elements to the given file
- * (creating it before hand if neccessary).
+ * (creating it before hand if necessary).
  */
 private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, val attributes: Attributes, shape: SinkShape[ByteString])
   extends SinkModule[ByteString, Future[Long]](shape) {

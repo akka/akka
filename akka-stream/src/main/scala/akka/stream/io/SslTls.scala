@@ -225,7 +225,7 @@ case object Server extends Server
  *  - [[IgnoreCancel]] means to not react to cancellation of the receiving
  *    side unless the sending side has already completed
  *  - [[IgnoreComplete]] means to not react to the completion of the sending
- *    side unless the receiving side has already cancelled
+ *    side unless the receiving side has already canceled
  *  - [[IgnoreBoth]] means to ignore the first termination signal—be that
  *    cancellation or completion—and only act upon the second one
  */
