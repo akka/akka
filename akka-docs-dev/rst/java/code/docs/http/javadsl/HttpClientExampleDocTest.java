@@ -4,10 +4,14 @@
 
 package docs.http.javadsl;
 
+import akka.actor.AbstractActor;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.HostConnectionPool;
 import akka.japi.Pair;
 
+import akka.japi.pf.ReceiveBuilder;
+import akka.stream.Materializer;
+import scala.concurrent.ExecutionContextExecutor;
 import scala.concurrent.Future;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.*;
@@ -15,6 +19,8 @@ import akka.http.javadsl.OutgoingConnection;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.Http;
 import scala.util.Try;
+
+import static akka.pattern.Patterns.*;
 
 @SuppressWarnings("unused")
 public class HttpClientExampleDocTest {
@@ -62,11 +68,32 @@ public class HttpClientExampleDocTest {
   public void testSingleRequestExample() {
     //#single-request-example
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = ActorMaterializer.create(system);
 
     final Future<HttpResponse> responseFuture =
       Http.get(system)
           .singleRequest(HttpRequest.create("http://akka.io"), materializer);
     //#single-request-example
   }
+
+  static
+      //#single-request-in-actor-example
+    class Myself extends AbstractActor {
+      final Http http = Http.get(context().system());
+      final ExecutionContextExecutor dispatcher = context().dispatcher();
+      final Materializer materializer = ActorMaterializer.create(context());
+
+      public Myself() {
+        receive(ReceiveBuilder
+         .match(String.class, url -> {
+           pipe(fetch (url), dispatcher).to(self());
+         }).build());
+      }
+
+      Future<HttpResponse> fetch(String url) {
+        return http.singleRequest(HttpRequest.create(url), materializer);
+      }
+    }
+    //#single-request-in-actor-example
+
 }
