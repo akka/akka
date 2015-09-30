@@ -139,7 +139,7 @@ abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, C
   def onUpstreamFinish(ctx: Ctx): TerminationDirective = ctx.finish()
 
   /**
-   * `onDownstreamFinish` is called when downstream has cancelled.
+   * `onDownstreamFinish` is called when downstream has canceled.
    *
    * By default the cancel signal is immediately propagated with [[akka.stream.stage.Context#finish]].
    */

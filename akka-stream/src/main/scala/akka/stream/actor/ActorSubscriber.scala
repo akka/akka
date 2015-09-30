@@ -83,7 +83,7 @@ case object ZeroRequestStrategy extends RequestStrategy {
 object WatermarkRequestStrategy {
   /**
    * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
-   * the specifed `highWatermark`.
+   * the specified `highWatermark`.
    */
   def apply(highWatermark: Int): WatermarkRequestStrategy = new WatermarkRequestStrategy(highWatermark)
 }
@@ -98,7 +98,7 @@ final case class WatermarkRequestStrategy(highWatermark: Int, lowWatermark: Int)
 
   /**
    * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
-   * the specifed `highWatermark`.
+   * the specified `highWatermark`.
    */
   def this(highWatermark: Int) = this(highWatermark, lowWatermark = math.max(1, highWatermark / 2))
 
@@ -257,7 +257,7 @@ trait ActorSubscriber extends Actor {
    * Cancel upstream subscription.
    * No more elements will be delivered after cancel.
    *
-   * The [[ActorSubscriber]] will be stopped immediatly after signalling cancelation.
+   * The [[ActorSubscriber]] will be stopped immediately after signaling cancellation.
    * In case the upstream subscription has not yet arrived the Actor will stay alive
    * until a subscription arrives, cancel it and then stop itself.
    */
@@ -268,7 +268,7 @@ trait ActorSubscriber extends Actor {
           context.stop(self)
           s.cancel()
         case _ ⇒
-          _canceled = true // cancel will be signalled once a subscription arrives
+          _canceled = true // cancel will be signaled once a subscription arrives
       }
     }
 

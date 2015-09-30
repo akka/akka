@@ -712,7 +712,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]],
           a.context = state
           try a.preStart(state) catch {
             case NonFatal(ex) ⇒
-              failures ::= InitializationFailure(op, ex) // not logging here as 'most downstream' exception will be signalled via onError
+              failures ::= InitializationFailure(op, ex) // not logging here as 'most downstream' exception will be signaled via onError
           }
       }
       op += 1
