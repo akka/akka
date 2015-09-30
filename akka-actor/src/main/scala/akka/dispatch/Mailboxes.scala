@@ -136,10 +136,12 @@ private[akka] class Mailboxes(
       lazy val mqType: Class[_] = getProducedMessageQueueType(mailboxType)
       if (hasMailboxRequirement && !mailboxRequirement.isAssignableFrom(mqType))
         throw new IllegalArgumentException(
-          s"produced message queue type [$mqType] does not fulfill requirement for dispatcher [${id}]")
+          s"produced message queue type [$mqType] does not fulfill requirement for dispatcher [$id]. " +
+            s"Must be a subclass of [$mailboxRequirement].")
       if (hasRequiredType(actorClass) && !actorRequirement.isAssignableFrom(mqType))
         throw new IllegalArgumentException(
-          s"produced message queue type [$mqType] does not fulfill requirement for actor class [$actorClass]")
+          s"produced message queue type [$mqType] does not fulfill requirement for actor class [$actorClass]. " +
+            s"Must be a subclass of [$actorRequirement].")
       mailboxType
     }
 
