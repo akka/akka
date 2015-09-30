@@ -13,9 +13,12 @@ import akka.http.javadsl.IncomingConnection;
 import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.ContentTypes;
+import akka.http.javadsl.model.HttpMethods;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.Uri;
+import akka.http.scaladsl.model.*;
+import akka.http.scaladsl.model.HttpEntity;
 import akka.japi.JavaPartialFunction;
 import akka.japi.function.Function;
 import akka.japi.function.Procedure;
@@ -156,10 +159,11 @@ public class HttpServerExampleDocTest {
                 Flow.of(HttpRequest.class)
                     .via(failureDetection)
                     .map(request -> {
-                        Source<ByteString, ?> bytes = request.entity().getDataBytes();
-                        HttpEntity entity = HttpEntities.create(ContentTypes.TEXT_PLAIN, (Source<ByteString, Object>) bytes);
-                        return HttpResponse.create()
-                                .withEntity(entity);
+                      Source<ByteString, ?> bytes = request.entity().getDataBytes();
+                      HttpEntity.Chunked entity = HttpEntities.create(ContentTypes.TEXT_PLAIN, (Source<ByteString, Object>) bytes);
+
+                      return HttpResponse.create()
+                        .withEntity(entity);
                     });
 
         Future<ServerBinding> serverBindingFuture =

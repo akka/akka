@@ -31,7 +31,7 @@ public class HighLevelServerBindFailureExample {
                 System.err.println("Something very bad happened! " + failure.getMessage());
                 system.shutdown();
             }
-        });
+        }, system.dispatcher());
 
         system.shutdown();
     }
