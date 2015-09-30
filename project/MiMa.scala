@@ -33,7 +33,11 @@ object MiMa extends AutoPlugin {
   }
 
   val mimaIgnoredProblems = {
-      import com.typesafe.tools.mima.core._
+    import com.typesafe.tools.mima.core._
+    Seq()
+    
+    // FIXME somehow we must use different filters when akkaPreviousArtifact is 2.3.x
+    /* Below are the filters we used when comparing to 2.3.x 
     Seq(
       FilterAnyProblem("akka.remote.testconductor.Terminate"),
       FilterAnyProblem("akka.remote.testconductor.TerminateMsg"),
@@ -572,5 +576,6 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterCoreDaemon.akka$cluster$ClusterCoreDaemon$$isJoiningToUp$1")
 
      )
+     */
   }
 }
