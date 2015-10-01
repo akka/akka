@@ -141,6 +141,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     "log materialization errors in `bindAndHandle`" which {
 
       "are triggered in `transform`" in Utils.assertAllStagesStopped {
+        // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
+        pending
         val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].transform[HttpResponse](() ⇒ sys.error("BOOM"))
         val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
@@ -160,6 +162,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       }(materializer2)
 
       "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
+        // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
+        pending
         val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].map(_ ⇒ HttpResponse()).mapMaterializedValue(_ ⇒ sys.error("BOOM"))
         val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
