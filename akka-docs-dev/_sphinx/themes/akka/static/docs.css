@@ -170,7 +170,7 @@ strong {color: #0B5567; }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
-.pre { color: #0B5567; }
+.pre { padding: 1px 2px; color: #008FA9; background-color: #EFF2F5; border: 1px solid #DDDEDF; font-family: Menlo, Monaco, "Courier New", monospace; font-size: 12px; -webkit-border-radius: 3px; -moz-border-radius: 3px; border-radius: 3px; }
 .footer h5 { text-transform: none; }
 
 

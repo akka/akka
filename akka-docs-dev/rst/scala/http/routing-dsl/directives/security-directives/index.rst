@@ -15,14 +15,16 @@ SecurityDirectives
    extractCredentials
 
 
+.. _authentication-vs-authorization-scala:
+
 Authentication vs. Authorization
 --------------------------------
 
-*Authentication* is the process of establishing a known identity for the user, whereby 'identity' is defined in the
+**Authentication** is the process of establishing a known identity for the user, whereby 'identity' is defined in the
 context of the application. This may be done with a username/password combination, a cookie, a pre-defined IP or some
 other mechanism. After authentication the system believes that it knows who the user is.
 
-*Authorization* is the process of determining, whether a given user is allowed access to a given resource or not. In
+**Authorization** is the process of determining, whether a given user is allowed access to a given resource or not. In
 most cases, in order to be able to authorize a user (i.e. allow access to some part of the system) the users identity
 must already have been established, i.e. he/she must have been authenticated. Without prior authentication the
 authorization would have to be very crude, e.g. "allow access for *all* users" or "allow access for *noone*". Only after

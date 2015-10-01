@@ -1,28 +1,117 @@
 /*
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package docs.http.scaladsl.server
 package directives
-/*
-import com.typesafe.config.ConfigFactory
+
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.directives.Credentials
+import akka.stream.scaladsl.{ FlowGraph, Flow, FlattenStrategy }
 import scala.concurrent.Future
 import akka.http.scaladsl.model._
 import headers._
 
 class SecurityDirectivesExamplesSpec extends RoutingSpec {
-  "authenticate-custom-user-pass-authenticator" in {
-    def myUserPassAuthenticator(userPass: Option[UserPass]): Future[Option[String]] =
+
+  "authenticateBasic-0" in {
+    def myUserPassAuthenticator(credentials: Credentials): Option[String] =
+      credentials match {
+        case p @ Credentials.Provided(id) if p.verify("p4ssw0rd") => Some(id)
+        case _ => None
+      }
+
+    val route =
+      Route.seal {
+        path("secured") {
+          authenticateBasic(realm = "secure site", myUserPassAuthenticator) { userName =>
+            complete(s"The user is '$userName'")
+          }
+        }
+      }
+
+    Get("/secured") ~> route ~> check {
+      status shouldEqual StatusCodes.Unauthorized
+      responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
+      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", "secure site")
+    }
+
+    val validCredentials = BasicHttpCredentials("John", "p4ssw0rd")
+    Get("/secured") ~> addCredentials(validCredentials) ~> // adds Authorization header
+      route ~> check {
+        responseAs[String] shouldEqual "The user is 'John'"
+      }
+
+    val invalidCredentials = BasicHttpCredentials("Peter", "pan")
+    Get("/secured") ~>
+      addCredentials(invalidCredentials) ~> // adds Authorization header
+      route ~> check {
+        status shouldEqual StatusCodes.Unauthorized
+        responseAs[String] shouldEqual "The supplied authentication is invalid"
+        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", "secure site")
+      }
+  }
+  "authenticateBasicAsync-0" in {
+    def myUserPassAuthenticator(credentials: Credentials): Future[Option[String]] =
+      credentials match {
+        case p @ Credentials.Provided(id) =>
+          Future {
+            // potentially
+            if (p.verify("p4ssw0rd")) Some(id)
+            else None
+          }
+        case _ => Future.successful(None)
+      }
+
+    val route =
+      Route.seal {
+        path("secured") {
+          authenticateBasicAsync(realm = "secure site", myUserPassAuthenticator) { userName =>
+            complete(s"The user is '$userName'")
+          }
+        }
+      }
+
+    Get("/secured") ~> route ~> check {
+      status shouldEqual StatusCodes.Unauthorized
+      responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
+      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", "secure site")
+    }
+
+    val validCredentials = BasicHttpCredentials("John", "p4ssw0rd")
+    Get("/secured") ~> addCredentials(validCredentials) ~> // adds Authorization header
+      route ~> check {
+        responseAs[String] shouldEqual "The user is 'John'"
+      }
+
+    val invalidCredentials = BasicHttpCredentials("Peter", "pan")
+    Get("/secured") ~>
+      addCredentials(invalidCredentials) ~> // adds Authorization header
+      route ~> check {
+        status shouldEqual StatusCodes.Unauthorized
+        responseAs[String] shouldEqual "The supplied authentication is invalid"
+        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", "secure site")
+      }
+  }
+  "authenticateOrRejectWithChallenge-0" in {
+    val challenge = HttpChallenge("MyAuth", "MyRealm")
+
+    // your custom authentication logic:
+    def auth(creds: HttpCredentials): Boolean = true
+
+    def myUserPassAuthenticator(credentials: Option[HttpCredentials]): Future[AuthenticationResult[String]] =
       Future {
-        if (userPass.exists(up => up.user == "John" && up.pass == "p4ssw0rd")) Some("John")
-        else None
+        credentials match {
+          case Some(creds) if auth(creds) => Right("some-user-name-from-creds")
+          case _                          => Left(challenge)
+        }
       }
 
     val route =
       Route.seal {
         path("secured") {
-          authenticateBasic(BasicAuth(myUserPassAuthenticator _, realm = "secure site")) { userName =>
-            complete(s"The user is '$userName'")
+          authenticateOrRejectWithChallenge(myUserPassAuthenticator _) { userName =>
+            complete("Authenticated!")
           }
         }
       }
@@ -30,92 +119,77 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
-      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", "secure site")
+      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("MyAuth", "MyRealm")
     }
 
     val validCredentials = BasicHttpCredentials("John", "p4ssw0rd")
-    Get("/secured") ~>
-      addCredentials(validCredentials) ~> // adds Authorization header
+    Get("/secured") ~> addCredentials(validCredentials) ~> // adds Authorization header
       route ~> check {
-        responseAs[String] shouldEqual "The user is 'John'"
-      }
-
-    val invalidCredentials = BasicHttpCredentials("Peter", "pan")
-    Get("/secured") ~>
-      addCredentials(invalidCredentials) ~> // adds Authorization header
-      route ~> check {
-        status shouldEqual StatusCodes.Unauthorized
-        responseAs[String] shouldEqual "The supplied authentication is invalid"
-        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", "secure site")
+        status shouldEqual StatusCodes.OK
+        responseAs[String] shouldEqual "Authenticated!"
       }
   }
 
-  "authenticate-from-config" in {
-    def extractUser(userPass: UserPass): String = userPass.user
-    val config = ConfigFactory.parseString("John = p4ssw0rd")
+  "0authorize" in {
+    case class User(name: String)
+
+    // authenticate the user:
+    def myUserPassAuthenticator(credentials: Credentials): Option[User] =
+      credentials match {
+        case Credentials.Provided(id) => Some(User(id))
+        case _                        => None
+      }
+
+    // check if user is authorized to perform admin actions:
+    val admins = Set("Peter")
+    def hasAdminPermissions(user: User): Boolean =
+      admins.contains(user.name)
 
     val route =
       Route.seal {
-        path("secured") {
-          authenticateBasic(BasicAuth(realm = "secure site", config = config, createUser = extractUser _)) { userName =>
-            complete(s"The user is '$userName'")
-          }
-        }
-      }
-
-    Get("/secured") ~> route ~> check {
-      status shouldEqual StatusCodes.Unauthorized
-      responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
-      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", "secure site")
-    }
-
-    val validCredentials = BasicHttpCredentials("John", "p4ssw0rd")
-    Get("/secured") ~>
-      addCredentials(validCredentials) ~> // adds Authorization header
-      route ~> check {
-        responseAs[String] shouldEqual "The user is 'John'"
-      }
-
-    val invalidCredentials = BasicHttpCredentials("Peter", "pan")
-    Get("/secured") ~>
-      addCredentials(invalidCredentials) ~> // adds Authorization header
-      route ~> check {
-        status shouldEqual StatusCodes.Unauthorized
-        responseAs[String] shouldEqual "The supplied authentication is invalid"
-        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", "secure site")
-      }
-  }
-
-  "authorize-1" in {
-    def extractUser(userPass: UserPass): String = userPass.user
-    val config = ConfigFactory.parseString("John = p4ssw0rd\nPeter = pan")
-    def hasPermissionToPetersLair(userName: String) = userName == "Peter"
-
-    val route =
-      Route.seal {
-        authenticateBasic(BasicAuth(realm = "secure site", config = config, createUser = extractUser _)) { userName =>
+        authenticateBasic(realm = "secure site", myUserPassAuthenticator) { user =>
           path("peters-lair") {
-            authorize(hasPermissionToPetersLair(userName)) {
-              complete(s"'$userName' visited Peter's lair")
+            authorize(hasAdminPermissions(user)) {
+              complete(s"'${user.name}' visited Peter's lair")
             }
           }
         }
       }
 
     val johnsCred = BasicHttpCredentials("John", "p4ssw0rd")
-    Get("/peters-lair") ~>
-      addCredentials(johnsCred) ~> // adds Authorization header
+    Get("/peters-lair") ~> addCredentials(johnsCred) ~> // adds Authorization header
       route ~> check {
         status shouldEqual StatusCodes.Forbidden
         responseAs[String] shouldEqual "The supplied authentication is not authorized to access this resource"
       }
 
     val petersCred = BasicHttpCredentials("Peter", "pan")
-    Get("/peters-lair") ~>
-      addCredentials(petersCred) ~> // adds Authorization header
+    Get("/peters-lair") ~> addCredentials(petersCred) ~> // adds Authorization header
       route ~> check {
         responseAs[String] shouldEqual "'Peter' visited Peter's lair"
       }
   }
+
+  "0extractCredentials" in {
+    val route =
+      extractCredentials { creds =>
+        complete {
+          creds match {
+            case Some(c) => "Credentials: " + c
+            case _       => "No credentials"
+          }
+        }
+      }
+
+    val johnsCred = BasicHttpCredentials("John", "p4ssw0rd")
+    Get("/") ~> addCredentials(johnsCred) ~> // adds Authorization header
+      route ~> check {
+        responseAs[String] shouldEqual "Credentials: Basic Sm9objpwNHNzdzByZA=="
+      }
+
+    Get("/") ~> route ~> check {
+      responseAs[String] shouldEqual "No credentials"
+    }
+  }
 }
-*/ 
+

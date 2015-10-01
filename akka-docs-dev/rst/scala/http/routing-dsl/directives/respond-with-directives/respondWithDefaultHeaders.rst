@@ -26,4 +26,17 @@ response. If you'd like to add only a single header you can use the :ref:`-respo
 Example
 -------
 
+The ``respondWithDefaultHeaders`` directive is equivalent to the ``respondWithDefaultHeader`` directive which
+is shown in the example below, however it allows including multiple default headers at once in the directive, like so::
+
+  respondWithDefaultHeaders(
+    Origin(HttpOrigin("http://akka.io"),
+    RawHeader("X-Fish-Name", "Blippy"))) { /*...*/ }
+
+
+The semantics remain the same however, as explained by the following example:
+
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
+   :snippet: respondWithDefaultHeader-0
+
 See the :ref:`-respondWithDefaultHeader-` directive for an example with only one header.

@@ -21,3 +21,8 @@ To serve a single resource use ``getFromResource``, instead. To server files fro
 ``getFromDirectory`` instead.
 
 Note that it's not required to wrap this directive with ``get`` as this directive will only respond to ``GET`` requests.
+
+Example
+-------
+
+...
