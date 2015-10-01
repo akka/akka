@@ -25,10 +25,9 @@ object GraphStages {
     val out = Outlet[T]("out")
     override val shape = FlowShape(in, out)
 
-    protected abstract class SimpleLinearStageLogic extends GraphStageLogic {
+    protected abstract class SimpleLinearStageLogic extends GraphStageLogic(shape) {
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pull(in)
-        override def onDownstreamFinish(): Unit = completeStage()
       })
     }
 
@@ -36,11 +35,9 @@ object GraphStages {
 
   class Identity[T] extends SimpleLinearGraphStage[T] {
 
-    override def createLogic: GraphStageLogic = new SimpleLinearStageLogic {
+    override def createLogic: GraphStageLogic = new SimpleLinearStageLogic() {
       setHandler(in, new InHandler {
         override def onPush(): Unit = push(out, grab(in))
-        override def onUpstreamFinish(): Unit = completeStage()
-        override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
       })
     }
 
@@ -52,7 +49,7 @@ object GraphStages {
     val out = Outlet[T]("out")
     override val shape = FlowShape(in, out)
 
-    override def createLogic: GraphStageLogic = new GraphStageLogic {
+    override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
       var initialized = false
 
       setHandler(in, new InHandler {
@@ -108,7 +105,7 @@ object GraphStages {
       val cancelled = new AtomicBoolean(false)
       val cancellable = new TickSourceCancellable(cancelled)
 
-      val logic = new GraphStageLogic {
+      val logic = new GraphStageLogic(shape) {
         override def preStart() = {
           schedulePeriodicallyWithInitialDelay("TickTimer", initialDelay, interval)
           val callback = getAsyncCallback[Unit]((_) ⇒ {
