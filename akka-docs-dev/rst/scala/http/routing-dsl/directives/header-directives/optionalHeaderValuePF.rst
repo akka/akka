@@ -17,3 +17,9 @@ Description
 
 The ``optionalHeaderValuePF`` directive is similar to the ``headerValuePF`` directive but always extracts an ``Option``
 value instead of rejecting the request if no matching header could be found.
+
+Example
+-------
+
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
+   :snippet: optionalHeaderValuePF-0

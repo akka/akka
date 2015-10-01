@@ -25,4 +25,4 @@ Example
 -------
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
-   :snippet: respondWithHeaders-examples
+   :snippet: respondWithHeaders-0

@@ -47,6 +47,55 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
       responseAs[String] shouldEqual "The requested resource could not be found."
     }
   }
+  "optionalHeaderValue-0" in {
+    def extractHostPort: HttpHeader => Option[Int] = {
+      case h: `Host` => Some(h.port)
+      case x         => None
+    }
+
+    val route =
+      optionalHeaderValue(extractHostPort) {
+        case Some(port) => complete(s"The port was $port")
+        case None       => complete(s"The port was not provided explicitly")
+      } ~ // can also be written as:
+        optionalHeaderValue(extractHostPort) { port =>
+          complete {
+            port match {
+              case Some(p) => s"The port was $p"
+              case _       => "The port was not provided explicitly"
+            }
+          }
+        }
+
+    Get("/") ~> Host("example.com", 5043) ~> route ~> check {
+      responseAs[String] shouldEqual "The port was 5043"
+    }
+    Get("/") ~> Route.seal(route) ~> check {
+      responseAs[String] shouldEqual "The port was not provided explicitly"
+    }
+  }
+  "optionalHeaderValueByName-0" in {
+    val route =
+      optionalHeaderValueByName("X-User-Id") {
+        case Some(userId) => complete(s"The user is $userId")
+        case None         => complete(s"No user was provided")
+      } ~ // can also be written as:
+        optionalHeaderValueByName("port") { port =>
+          complete {
+            port match {
+              case Some(p) => s"The user is $p"
+              case _       => "No user was provided"
+            }
+          }
+        }
+
+    Get("/") ~> RawHeader("X-User-Id", "Joe42") ~> route ~> check {
+      responseAs[String] shouldEqual "The user is Joe42"
+    }
+    Get("/") ~> Route.seal(route) ~> check {
+      responseAs[String] shouldEqual "No user was provided"
+    }
+  }
   "headerValuePF-0" in {
     def extractHostPort: PartialFunction[HttpHeader, Int] = {
       case h: `Host` => h.port
@@ -63,6 +112,32 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     Get("/") ~> Route.seal(route) ~> check {
       status shouldEqual NotFound
       responseAs[String] shouldEqual "The requested resource could not be found."
+    }
+  }
+  "optionalHeaderValuePF-0" in {
+    def extractHostPort: PartialFunction[HttpHeader, Int] = {
+      case h: `Host` => h.port
+    }
+
+    val route =
+      optionalHeaderValuePF(extractHostPort) {
+        case Some(port) => complete(s"The port was $port")
+        case None       => complete(s"The port was not provided explicitly")
+      } ~ // can also be written as:
+        optionalHeaderValuePF(extractHostPort) { port =>
+          complete {
+            port match {
+              case Some(p) => s"The port was $p"
+              case _       => "The port was not provided explicitly"
+            }
+          }
+        }
+
+    Get("/") ~> Host("example.com", 5043) ~> route ~> check {
+      responseAs[String] shouldEqual "The port was 5043"
+    }
+    Get("/") ~> Route.seal(route) ~> check {
+      responseAs[String] shouldEqual "The port was not provided explicitly"
     }
   }
   "headerValueByType-0" in {
