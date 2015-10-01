@@ -288,54 +288,6 @@ private[akka] abstract class FanOut(val settings: ActorMaterializerSettings, val
 /**
  * INTERNAL API
  */
-private[akka] object Broadcast {
-  def props(settings: ActorMaterializerSettings, eagerCancel: Boolean, outputPorts: Int): Props =
-    Props(new Broadcast(settings, outputPorts, eagerCancel)).withDeploy(Deploy.local)
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class Broadcast(_settings: ActorMaterializerSettings, _outputPorts: Int, eagerCancel: Boolean) extends FanOut(_settings, _outputPorts) {
-  outputBunch.unmarkCancelledOutputs(!eagerCancel)
-  outputBunch.markAllOutputs()
-
-  initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
-    val elem = primaryInputs.dequeueInputElement()
-    outputBunch.enqueueMarked(elem)
-  })
-}
-
-/**
- * INTERNAL API
- */
-private[akka] object Balance {
-  def props(settings: ActorMaterializerSettings, outputPorts: Int, waitForAllDownstreams: Boolean): Props =
-    Props(new Balance(settings, outputPorts, waitForAllDownstreams)).withDeploy(Deploy.local)
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class Balance(_settings: ActorMaterializerSettings, _outputPorts: Int, waitForAllDownstreams: Boolean) extends FanOut(_settings, _outputPorts) {
-  outputBunch.markAllOutputs()
-
-  val runningPhase = TransferPhase(primaryInputs.NeedsInput && outputBunch.AnyOfMarkedOutputs) { () ⇒
-    val elem = primaryInputs.dequeueInputElement()
-    outputBunch.enqueueAndYield(elem)
-  }
-
-  if (waitForAllDownstreams)
-    initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
-      nextPhase(runningPhase)
-    })
-  else
-    initialPhase(1, runningPhase)
-}
-
-/**
- * INTERNAL API
- */
 private[akka] object Unzip {
   def props(settings: ActorMaterializerSettings): Props =
     Props(new Unzip(settings)).withDeploy(Deploy.local)
