@@ -129,7 +129,7 @@ object Timeouts {
 
     override def toString = "IdleTimeoutBidi"
 
-    override def createLogic: GraphStageLogic = new GraphStageLogic {
+    override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
       private var nextDeadline: Deadline = Deadline.now + timeout
 
       setHandler(in1, new InHandler {
