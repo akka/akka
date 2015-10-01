@@ -799,12 +799,12 @@ Plugin TCK
 ----------
 In order to help developers build correct and high quality storage plugins, we provide an Technology Compatibility Kit (`TCK <http://en.wikipedia.org/wiki/Technology_Compatibility_Kit>`_ for short).
 
-The TCK is usable from Java as well as Scala projects, for Java you need to include the akka-persistence-tck-experimental dependency::
+The TCK is usable from Java as well as Scala projects, for Java you need to include the akka-persistence-tck dependency::
 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-persistence-tck-experimental_${scala.version}</artifactId>
-    <version>2.3.5</version>
+    <artifactId>akka-persistence-tck_${scala.version}</artifactId>
+    <version>@version@</version>
     <scope>test</scope>
   </dependency>
 
