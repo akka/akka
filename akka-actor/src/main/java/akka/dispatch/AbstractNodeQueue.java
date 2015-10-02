@@ -14,7 +14,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQueue.Node<T>> {
-    // Extends AtomicReference for the "head" slot (which is the one that is appended to) since Unsafe does not expose XCHG operation intrinsically
+    // Extends AtomicReference for the "head" slot (which is the one that is appended to) since
+    // Unsafe does not expose XCHG operation intrinsically before JDK 8
     @SuppressWarnings("unused")
     private volatile Node<T> _tailDoNotCallMeDirectly;
 
@@ -34,7 +35,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         final Node<T> tail = ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset));
         Node<T> next = tail.next();
         if (next == null && get() != tail) {
-            // if tail != head this is not going to change until consumer makes progress
+            // if tail != head this is not going to change until producer makes progress
             // we can avoid reading the head and just spin on next until it shows up
             do {
                 next = tail.next();
