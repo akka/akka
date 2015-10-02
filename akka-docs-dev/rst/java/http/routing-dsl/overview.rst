@@ -74,3 +74,27 @@ quickly without running them over the network and helps with writing assertions 
 Read more about :ref:`http-testkit-java`.
 
 .. _DRY: http://en.wikipedia.org/wiki/Don%27t_repeat_yourself
+
+.. _handling-http-server-failures-high-level-scala:
+
+Handling HTTP Server failures in the High-Level API
+---------------------------------------------------
+There are various situations when failure may occur while initialising or running an Akka HTTP server.
+Akka by default will log all these failures, however sometimes one may want to react to failures in addition
+to them just being logged, for example by shutting down the actor system, or notifying some external monitoring
+end-point explicitly.
+
+Bind failures
+^^^^^^^^^^^^^
+For example the server might be unable to bind to the given port. For example when the port
+is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
+In this case the "binding future" will fail immediatly, and we can react to if by listening on the Future's completion:
+
+.. includecode:: ../../code/docs/http/javadsl/server/HighLevelServerBindFailureExample.java
+  :include: binding-failure-high-level-example
+
+
+.. note::
+  For a more low-level overview of the kinds of failures that can happen and also more fine-grained control over them
+  refer to the :ref:`handling-http-server-failures-low-level-java` documentation.
+
