@@ -413,6 +413,12 @@ implement it yourself either as a helper trait or simply by overriding ``persist
 
     override def persistenceId = self.path.toStringWithoutAddress
 
+Failures
+--------
+
+Backend journal failures during recovery and persist are treated differently than in 2.3.x. The ``PersitenceFailure``
+message is removed and the actor is unconditionally stopped. The new behavior and reasons for it is explained in
+:ref:`failures-scala`. 
 
 Persist sequence of events
 --------------------------
