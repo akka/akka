@@ -168,7 +168,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
         "HTTP header value exceeds the configured limit of 1000 characters"
     }
 
-    "continue parsing raw headers even if the overall cache capacity is reached" in new TestSetup() {
+    "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
         val name = nextRandomString(nextRandomAlphaNumChar, nextRandomInt(4, 16))
         val value = nextRandomString(nextRandomPrintableChar, nextRandomInt(4, 16))
@@ -179,13 +179,24 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       } should be < 300 // number of cache hits is smaller headers successfully parsed
     }
 
-    "continue parsing modelled headers even if the overall cache capacity is reached" in new TestSetup() {
+    "continue parsing modelled headers even if the overall cache value capacity is reached" in new TestSetup() {
       val randomHostHeaders = Stream.continually {
         Host(
           host = nextRandomString(nextRandomAlphaNumChar, nextRandomInt(4, 8)),
           port = nextRandomInt(1000, 10000))
       }
       randomHostHeaders.take(300).foldLeft(0) {
+        case (acc, header) ⇒ acc + parseAndCache(header.toString + "\r\nx", header)
+      } should be < 300 // number of cache hits is smaller headers successfully parsed
+    }
+
+    "continue parsing headers even if the overall cache node capacity is reached" in new TestSetup() {
+      val randomHostHeaders = Stream.continually {
+        RawHeader(
+          name = nextRandomString(nextRandomAlphaNumChar, 60),
+          value = nextRandomString(nextRandomAlphaNumChar, 1000))
+      }
+      randomHostHeaders.take(100).foldLeft(0) {
         case (acc, header) ⇒ acc + parseAndCache(header.toString + "\r\nx", header)
       } should be < 300 // number of cache hits is smaller headers successfully parsed
     }
