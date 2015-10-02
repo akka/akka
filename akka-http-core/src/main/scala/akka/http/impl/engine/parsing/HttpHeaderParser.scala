@@ -103,9 +103,12 @@ private[engine] final class HttpHeaderParser private (
         try {
           val valueIx = newValueIndex // compute early in order to trigger OutOfTrieSpaceExceptions before any change
           unshareIfRequired()
-          values(rootValueIx) = ValueBranch(rootValueIx, valueParser, branchRootNodeIx = nodeCount, valueCount = 1)
+          val nodeIx = nodeCount
           insertRemainingCharsAsNewNodes(input, header)(cursor, endIx, valueIx)
-        } catch { case OutOfTrieSpaceException ⇒ /* if we cannot insert then we simply don't */ }
+          values(rootValueIx) = ValueBranch(rootValueIx, valueParser, branchRootNodeIx = nodeIx, valueCount = 1)
+        } catch {
+          case OutOfTrieSpaceException ⇒ // if we cannot insert a value then we simply don't
+        }
       resultHeader = header
       endIx
     }
@@ -208,10 +211,11 @@ private[engine] final class HttpHeaderParser private (
           val valueIx = newValueIndex // compute early in order to trigger OutOfTrieSpaceExceptions before any change
           val rowIx = newBranchDataRowIndex
           unshareIfRequired()
+          val newNodeIx = nodeCount.toShort
+          insertRemainingCharsAsNewNodes(input, value)(cursor, endIx, valueIx, colonIx)
           nodes(nodeIx) = nodeBits(rowIx, nodeChar)
           branchData(rowIx + 1) = (nodeIx + 1).toShort
-          branchData(rowIx + 1 + signum) = nodeCount.toShort
-          insertRemainingCharsAsNewNodes(input, value)(cursor, endIx, valueIx, colonIx)
+          branchData(rowIx + 1 + signum) = newNodeIx
         case msb ⇒
           if (nodeChar == 0) { // leaf node
             require(cursor == endIx, "Cannot insert key of which a prefix already has a value")
@@ -222,8 +226,9 @@ private[engine] final class HttpHeaderParser private (
               case 0 ⇒ // branch doesn't exist yet, create
                 val valueIx = newValueIndex // compute early in order to trigger OutOfTrieSpaceExceptions before any change
                 unshareIfRequired()
-                branchData(branchIndex) = nodeCount.toShort // make the previously implicit "equals" sub node explicit
+                val newNodeIx = nodeCount.toShort
                 insertRemainingCharsAsNewNodes(input, value)(cursor, endIx, valueIx, colonIx)
+                branchData(branchIndex) = newNodeIx // make the previously implicit "equals" sub node explicit
               case subNodeIx ⇒ // descend, but advance only on match
                 insert(input, value)(cursor + 1 - math.abs(signum), endIx, subNodeIx, colonIx)
             }
@@ -260,9 +265,11 @@ private[engine] final class HttpHeaderParser private (
 
   private def newNodeIndex: Int = {
     val index = nodeCount
-    if (index == nodes.length) nodes = copyOf(nodes, index * 3 / 2)
-    nodeCount = index + 1
-    index
+    if (index < Short.MaxValue) {
+      if (index == nodes.length) nodes = copyOf(nodes, math.min(index * 3 / 2, Short.MaxValue))
+      nodeCount = index + 1
+      index
+    } else throw OutOfTrieSpaceException
   }
 
   private def newBranchDataRowIndex: Int = {
