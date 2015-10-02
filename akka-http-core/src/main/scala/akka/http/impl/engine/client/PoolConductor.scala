@@ -115,7 +115,7 @@ private object PoolConductor {
 
     override val shape = new FanInShape2(ctxIn, slotIn, out)
 
-    override def createLogic = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       val slotStates = Array.fill[SlotState](slotCount)(Unconnected)
       var nextSlot = 0
 
@@ -207,7 +207,7 @@ private object PoolConductor {
 
     override val shape = new UniformFanOutShape[SwitchCommand, RequestContext](slotCount)
 
-    override def createLogic = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       shape.outArray foreach { setHandler(_, ignoreTerminateOutput) }
 
       val in = shape.in

@@ -128,7 +128,7 @@ package object util {
 package util {
 
   import akka.http.scaladsl.model.{ ContentType, HttpEntity }
-  import akka.stream.{ Outlet, Inlet, FlowShape }
+  import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
   import scala.concurrent.duration.FiniteDuration
 
   private[http] class ToStrict(timeout: FiniteDuration, contentType: ContentType)
@@ -138,7 +138,7 @@ package util {
     val out = Outlet[HttpEntity.Strict]("out")
     override val shape = FlowShape(in, out)
 
-    override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       var bytes = ByteString.newBuilder
       private var emptyStream = false
 
