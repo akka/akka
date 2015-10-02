@@ -93,9 +93,9 @@ this connection.
 
 Requests are handled by calling one of the ``handleWithXXX`` methods with a handler, which can either be
 
-  - a ``Flow<HttpRequest, HttpResponse, ?>`` for ``handleWith``,
-  - a function ``Function<HttpRequest, HttpResponse>`` for ``handleWithSyncHandler``,
-  - a function ``Function<HttpRequest, Future<HttpResponse>>`` for ``handleWithAsyncHandler``.
+- a ``Flow<HttpRequest, HttpResponse, ?>`` for ``handleWith``,
+- a function ``Function<HttpRequest, HttpResponse>`` for ``handleWithSyncHandler``,
+- a function ``Function<HttpRequest, Future<HttpResponse>>`` for ``handleWithAsyncHandler``.
 
 Here is a complete example:
 
@@ -166,3 +166,63 @@ that is a stage that "upgrades" a potentially encrypted raw connection to the HT
 You create an instance of the layer by calling one of the two overloads of the ``Http.get(system).serverLayer`` method,
 which also allows for varying degrees of configuration. Note, that the returned instance is not reusable and can only
 be materialized once.
+
+.. _handling-http-server-failures-low-level-java:
+
+Handling HTTP Server failures in the Low-Level API
+--------------------------------------------------
+
+There are various situations when failure may occur while initialising or running an Akka HTTP server.
+Akka by default will log all these failures, however sometimes one may want to react to failures in addition to them
+just being logged, for example by shutting down the actor system, or notifying some external monitoring end-point explicitly.
+
+There are multiple things that can fail when creating and materializing an HTTP Server (similarily, the same applied to
+a plain streaming ``Tcp`` server). The types of failures that can happen on different layers of the stack, starting
+from being unable to start the server, and ending with failing to unmarshal an HttpRequest, examples of failures include
+(from outer-most, to inner-most):
+
+- Failure to ``bind`` to the specified address/port,
+- Failure while accepting new ``IncommingConnection`` s, for example when the OS has run out of file descriptors or memory,
+- Failure while handling a connection, for example if the incoming ``HttpRequest`` is malformed.
+
+This section describes how to handle each failure situation, and in which situations these failures may occur.
+
+Bind failures
+^^^^^^^^^^^^^
+
+The first type of failure is when the server is unable to bind to the given port. For example when the port
+is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
+In this case the "binding future" will fail immediatly, and we can react to if by listening on the Future's completion:
+
+.. includecode:: ../../code/docs/http/javadsl/server/HttpServerExampleDocTest.java
+  :include: binding-failure-handling
+
+Once the server has successfully bound to a port, the ``Source<IncomingConnection, ?>`` starts running and emiting
+new incoming connections. This source technically can signal a failure as well, however this should only happen in very
+dramantic situations such as running out of file descriptors or memory available to the system, such that it's not able
+to accept a new incoming connection. Handling failures in Akka Streams is pretty stright forward, as failures are signaled
+through the stream starting from the stage which failed, all the way downstream to the final stages.
+
+Connections Source failures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the example below we add a custom ``PushStage`` (see :ref:`stream-customize-java`) in order to react to the
+stream's failure. We signal a ``failureMonitor`` actor with the cause why the stream is going down, and let the Actor
+handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
+
+.. includecode:: ../../code/docs/http/javadsl/server/HttpServerExampleDocTest.java
+  :include: incoming-connections-source-failure-handling
+
+Connection failures
+^^^^^^^^^^^^^^^^^^^
+
+The third type of failure that can occur is when the connection has been properly established,
+however afterwards is terminated abruptly – for example by the client aborting the underlying TCP connection.
+To handle this failure we can use the same pattern as in the previous snippet, however apply it to the connection's Flow:
+
+.. includecode:: ../../code/docs/http/javadsl/server/HttpServerExampleDocTest.java
+  :include: connection-stream-failure-handling
+
+These failures can be described more or less infrastructure related, they are failing bindings or connections.
+Most of the time you won't need to dive into those very deeply, as Akka will simply log errors of this kind
+anyway, which is a reasonable default for such problems.

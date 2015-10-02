@@ -44,3 +44,33 @@ the Routing DSL will look like:
 
 .. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: long-routing-example
+
+.. _handling-http-server-failures-high-level-scala:
+
+Handling HTTP Server failures in the High-Level API
+---------------------------------------------------
+There are various situations when failure may occur while initialising or running an Akka HTTP server.
+Akka by default will log all these failures, however sometimes one may want to react to failures in addition
+to them just being logged, for example by shutting down the actor system, or notifying some external monitoring
+end-point explicitly.
+
+Bind failures
+^^^^^^^^^^^^^
+For example the server might be unable to bind to the given port. For example when the port
+is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
+In this case the "binding future" will fail immediatly, and we can react to if by listening on the Future's completion:
+
+.. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+  :snippet: binding-failure-high-level-example
+
+
+.. note::
+  For a more low-level overview of the kinds of failures that can happen and also more fine-grained control over them
+  refer to the :ref:`handling-http-server-failures-low-level-scala` documentation.
+
+Failures and exceptions inside the Routing DSL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exception handling within the Routing DSL is done by providing :class:`ExceptionHandler` s which are documented in-depth
+in the :ref:`exception-handling-scala` section of the documtnation. You can use them to transform exceptions into
+:class:`HttpResponse` s with apropriate error codes and human-readable failure descriptions.

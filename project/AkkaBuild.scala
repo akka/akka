@@ -891,6 +891,7 @@ object AkkaBuild extends Build {
     base = file("akka-docs-dev"),
     dependencies = Seq(streamTestkit % "test->test", stream, httpCore, http, httpTestkit, httpSprayJson, httpXml),
     settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ sphinxPreprocessing ++ Seq(
+      javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-Xlint:deprecation"), // docs-dev is allowed to use Java 8
       version := streamAndHttpVersion,
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       watchSources <++= (sourceDirectory in Sphinx, excludeFilter in Global) map { (source, excl) =>
@@ -1051,7 +1052,7 @@ object AkkaBuild extends Build {
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
-    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.6") ++
+    javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.8") ++
                             (if (sys.props("java.version").startsWith("1.8")) Seq("-Xdoclint:none") else Seq()),
 
     crossVersion := CrossVersion.binary,

@@ -1,4 +1,4 @@
-.. _Exception Handling:
+.. _exception-handling-scala:
 
 Exception Handling
 ==================
