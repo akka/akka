@@ -3,6 +3,8 @@
  */
 package akka.stream.impl.io
 
+import java.util.concurrent.BlockingQueue
+
 import akka.actor._
 import akka.stream.actor.ActorPublisherMessage
 import akka.util.ByteString
@@ -11,14 +13,13 @@ import scala.concurrent.Promise
 
 /** INTERNAL API */
 private[akka] object OutputStreamPublisher {
-  def props(bytesReadPromise: Promise[Long], bufSize: Int) = {
-    require(bufSize > 0, "buffer size must be > 0")
-    Props(classOf[OutputStreamPublisher], bytesReadPromise, bufSize)
+  def props(sharedBuffer: BlockingQueue[ByteString], bytesReadPromise: Promise[Long]) = {
+    Props(classOf[OutputStreamPublisher], sharedBuffer, bytesReadPromise)
       .withDeploy(Deploy.local)
   }
 
   sealed trait OutputStreamPublisherInMessage
-  case class Write(bs: ByteString) extends OutputStreamPublisherInMessage
+  case object WriteNotification extends OutputStreamPublisherInMessage
   case object Flush extends OutputStreamPublisherInMessage
   case object Close extends OutputStreamPublisherInMessage
 
@@ -28,11 +29,11 @@ private[akka] object OutputStreamPublisher {
 }
 
 /** INTERNAL API */
-private[akka] class OutputStreamPublisher(bytesReadPromise: Promise[Long], bufSize: Int)
+private[akka] class OutputStreamPublisher(sharedBuffer: BlockingQueue[ByteString],
+                                          bytesReadPromise: Promise[Long])
   extends akka.stream.actor.ActorPublisher[ByteString]
   with ActorLogging {
 
-  var availableChunks: Vector[ByteString] = Vector.empty[ByteString]
   var bytesSentDownstream = 0L
 
   //upstream write acknowledgement
@@ -52,26 +53,28 @@ private[akka] class OutputStreamPublisher(bytesReadPromise: Promise[Long], bufSi
       onCancelReceived = true
       confirmWriteToUpstream(signalCancellationToUpstream)
       if (sentCancelledAcknowledgement) context.stop(self)
-      else context.become(sendAcknowledgementThenStop)
+      else {
+        sharedBuffer.poll() //poll in case buffer is full and OutputStream is blocked
+        context.become(sendAcknowledgementThenStop)
+      }
 
     //Upstream messages from OutputStreamAdapter
-    case OutputStreamPublisher.Write(bs) ⇒ onWrite(bs)
-    case OutputStreamPublisher.Flush     ⇒ flush()
-    case OutputStreamPublisher.Close     ⇒ flush(); onCompleteThenStop()
+    case OutputStreamPublisher.WriteNotification ⇒ onWrite()
+    case OutputStreamPublisher.Flush             ⇒ flush()
+    case OutputStreamPublisher.Close             ⇒ flush(); onCompleteThenStop()
   }
 
   import OutputStreamPublisher._
   def sendAcknowledgementThenStop: Receive = {
-    case Write(_) | Close | Flush ⇒
+    case WriteNotification | Close | Flush ⇒
       sender ! Canceled
       context.stop(self)
   }
 
   def signalDownstream(): Unit =
     if (isActive) {
-      while (totalDemand > 0 && availableChunks.nonEmpty) {
-        val ready = availableChunks.head
-        availableChunks = availableChunks.tail
+      while (totalDemand > 0 && !sharedBuffer.isEmpty) {
+        val ready = sharedBuffer.poll()
         bytesSentDownstream += ready.size
         onNext(ready)
         confirmWriteToUpstream()
@@ -79,7 +82,7 @@ private[akka] class OutputStreamPublisher(bytesReadPromise: Promise[Long], bufSi
       confirmFlushToUpstream()
     }
 
-  def confirmWriteToUpstream(notify: (ActorRef) ⇒ Unit = signalOkUpstream(_)) = {
+  def confirmWriteToUpstream(notify: (ActorRef) ⇒ Unit = signalOkUpstream) = {
     notifyWhenSend match {
       case Some(sender) ⇒
         notify(sender)
@@ -90,7 +93,7 @@ private[akka] class OutputStreamPublisher(bytesReadPromise: Promise[Long], bufSi
   }
 
   def confirmFlushToUpstream() = {
-    if (availableChunks.isEmpty)
+    if (sharedBuffer.isEmpty)
       notifyWhenSendAll match {
         case Some(sender) ⇒
           signalOkUpstream(sender)
@@ -109,12 +112,10 @@ private[akka] class OutputStreamPublisher(bytesReadPromise: Promise[Long], bufSi
     bytesReadPromise.trySuccess(bytesSentDownstream)
   }
 
-  def isBufferFull = availableChunks.size == bufSize
+  def isBufferFull = sharedBuffer.remainingCapacity() == 0
 
-  def onWrite(byteString: ByteString) = {
+  def onWrite() = {
     if (isActive) {
-      availableChunks :+= byteString
-
       if (isBufferFull)
         notifyWhenSend = Some(sender)
       else

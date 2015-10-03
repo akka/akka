@@ -4,18 +4,16 @@
 package akka.stream.io
 
 import java.io.{ IOException, InputStream }
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.{ BlockingQueue, TimeoutException }
 
-import akka.actor.{ Deploy, ActorSystem, Props }
+import akka.actor.{ ActorSystem, Deploy, Props }
 import akka.stream._
 import akka.stream.actor.ActorSubscriber.OnSubscribe
-import akka.stream.actor.ActorSubscriberMessage
-import akka.stream.actor.ActorSubscriberMessage.{ OnComplete, OnNext, OnError }
+import akka.stream.actor.ActorSubscriberMessage.{ OnComplete, OnError, OnNext }
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.{ InputStreamSink, InputStreamSubscriber }
-import akka.stream.impl.{ SinkModule, ActorMaterializerImpl, StreamSupervisor }
+import akka.stream.impl.{ ActorMaterializerImpl, SinkModule, StreamSupervisor }
 import akka.stream.scaladsl.{ Keep, Sink }
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
@@ -49,15 +47,15 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
                               override val attributes: Attributes,
                               shape: SinkShape[ByteString])
       extends InputStreamSink(timeout, attributes, shape) {
-      override protected def getSubscriber(bytesWrittenPromise: Promise[Long], settings: ActorMaterializerSettings) =
-        Props(new TestInputStreamSubscriber(bytesWrittenPromise, settings.maxInputBufferSize)).withDeploy(Deploy.local)
+      override protected def getSubscriber(sharedBuffer: BlockingQueue[ByteString]) =
+        Props(new TestInputStreamSubscriber(sharedBuffer)).withDeploy(Deploy.local)
 
       override protected def newInstance(shape: SinkShape[ByteString]): SinkModule[ByteString, (InputStream, Future[Long])] =
         new TestInputStreamSink(timeout, attributes, shape)
     }
 
-    class TestInputStreamSubscriber(p: Promise[Long], bufSize: Int)
-      extends InputStreamSubscriber(p, bufSize) {
+    class TestInputStreamSubscriber(sharedBuffer: BlockingQueue[ByteString])
+      extends InputStreamSubscriber(sharedBuffer) {
       protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = {
         super.aroundReceive(receive, msg)
         probe.ref ! msg
@@ -73,11 +71,28 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       probe.sendNext(byteString)
       val arr = newArray()
       inputStream.read(arr)
-      assert(arr === byteArray)
+      arr should ===(byteArray)
 
       probe.sendComplete()
       inputStream.close()
       expectSuccess(f, 3)
+    }
+
+    "read bytes correctly if requested by InputStream not in chunk size" in assertAllStagesStopped {
+      val (probe, (inputStream, f)) = TestSource.probe[ByteString].toMat(InputStreamSink())(Keep.both).run()
+
+      probe.sendNext(byteString)
+      probe.sendNext(ByteString("def"))
+      val arr = new Array[Byte](2)
+      inputStream.read(arr)
+      arr should ===("ab".toArray)
+      inputStream.read(arr)
+      arr should ===("cd".toArray)
+      inputStream.read(arr)
+      arr should ===("ef".toArray)
+
+      inputStream.close()
+      expectSuccess(f, 6)
     }
 
     "returns less than was expected when the data source has provided some but not enough data" in assertAllStagesStopped {
@@ -86,7 +101,7 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       probe.sendNext(ByteString("ab"))
       val arr = newArray()
       inputStream.read(arr)
-      assert(arr === "ab\u0000".toArray)
+      arr should ===("ab\u0000".toArray)
 
       probe.sendComplete()
       inputStream.close()
@@ -94,7 +109,7 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "block read until get requested number of bytes from upstream" in assertAllStagesStopped {
-      val (probe, (inputStream, _)) = TestSource.probe[ByteString].toMat(InputStreamSink())(Keep.both).run()
+      val (probe, (inputStream, future)) = TestSource.probe[ByteString].toMat(InputStreamSink())(Keep.both).run()
 
       val arr = newArray()
       val f = Future(inputStream.read(arr))
@@ -104,6 +119,9 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       expectSuccess(f, 3)
 
       probe.sendComplete()
+      inputStream.read(newArray())
+      //complete stream future before input stream is closed
+      expectSuccess(future, 3)
       inputStream.close()
     }
 
@@ -121,8 +139,8 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       Await.result(f1, timeout) should be(3)
       Await.result(f2, timeout) should be(3)
 
-      assert(arr1 === byteArray)
-      assert(arr2 === "def".toArray)
+      arr1 should ===(byteArray)
+      arr2 should ===("def".toArray)
 
       probe.sendComplete()
       inputStream.close()
@@ -152,7 +170,7 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       val arr = newArray()
       val f = Future(inputStream.read(arr))
       expectSuccess(f, 1)
-      assert(arr === "a\u0000\u0000".toArray)
+      arr should ===("a\u0000\u0000".toArray)
     }
 
     "return -1 when read after stream is completed" in assertAllStagesStopped {
@@ -161,8 +179,9 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       probe.sendNext(byteString)
       val arr = newArray()
       inputStream.read(arr)
-      assert(arr === byteArray)
+      arr should ===(byteArray)
       probe.sendComplete()
+
       Await.result(Future(inputStream.read(arr)), timeout) should ===(-1)
 
       inputStream.close()
@@ -179,12 +198,15 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
       val arr = newArray()
       inputStream.read(arr)
-      sinkProbe.expectMsgClass(classOf[InputStreamSubscriber.Read])
+      sinkProbe.expectMsg(InputStreamSubscriber.ReadNotification)
 
       probe.sendError(ex)
       sinkProbe.expectMsgClass(classOf[OnError])
       val p = Future(inputStream.read(arr))
-      p.onFailure { case e ⇒ assert(e.isInstanceOf[IOException] && e.getCause.equals(ex)); Unit }
+      p.onFailure {
+        case e ⇒
+          (e.isInstanceOf[IOException] && e.getCause.equals(ex)) should ===(true); Unit
+      }
       p.onSuccess { case _ ⇒ fail() }
     }
 
@@ -198,6 +220,27 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         val ref = expectMsgType[Children].children.find(_.path.toString contains "inputStreamSink").get
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
       } finally shutdown(sys)
+    }
+  }
+  "InputStreamAdapter" must {
+    "send data request then read from shared buffer, then send read notification for back pressure" in assertAllStagesStopped {
+      val sinkProbe = TestProbe()
+      val (probe, (inputStream, _)) = TestSource.probe[ByteString].toMat(testSink(sinkProbe))(Keep.both).run()
+
+      sinkProbe.expectMsgClass(classOf[OnSubscribe])
+
+      val arr = newArray()
+      val p = Future(inputStream.read(arr))
+
+      sinkProbe.expectMsg(InputStreamSubscriber.Request)
+      probe.sendNext(byteString)
+      sinkProbe.expectMsgClass(classOf[OnNext])
+      Await.result(p, timeout) should ===(3)
+      arr should ===(byteArray)
+      sinkProbe.expectMsg(InputStreamSubscriber.ReadNotification)
+
+      probe.sendComplete()
+      inputStream.close()
     }
   }
 

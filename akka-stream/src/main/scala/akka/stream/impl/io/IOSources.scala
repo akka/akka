@@ -5,6 +5,7 @@ package akka.stream.impl.io
 
 import java.io.{ File, IOException, InputStream, OutputStream }
 import java.lang.{ Long ⇒ JLong }
+import java.util.concurrent.{ LinkedBlockingQueue, BlockingQueue }
 
 import akka.actor.{ ActorRef, Deploy }
 import akka.japi
@@ -87,20 +88,21 @@ private[akka] class OutputStreamSource(val timeout: FiniteDuration,
                                        val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, (OutputStream, Future[Long])](shape) {
 
-  protected def getPublisher(bytesReadPromise: Promise[Long], settings: ActorMaterializerSettings) =
-    OutputStreamPublisher.props(bytesReadPromise, settings.maxInputBufferSize)
+  protected def getPublisher(buffer: BlockingQueue[ByteString], bytesReadPromise: Promise[Long]) =
+    OutputStreamPublisher.props(buffer, bytesReadPromise)
 
   override def create(context: MaterializationContext) = {
     val mat = ActorMaterializer.downcast(context.materializer)
     val settings = mat.effectiveSettings(context.effectiveAttributes)
 
     val bytesReadPromise = Promise[Long]()
-    val props = getPublisher(bytesReadPromise, settings)
+    val sharedBuffer = new LinkedBlockingQueue[ByteString](settings.maxInputBufferSize)
+    val props = getPublisher(sharedBuffer, bytesReadPromise)
     val dispatcher = IOSettings.blockingIoDispatcher(context)
 
     val ref = mat.actorOf(context, props.withDispatcher(dispatcher))
     (akka.stream.actor.ActorPublisher[ByteString](ref),
-      (new OutputStreamAdapter(ref, timeout), bytesReadPromise.future))
+      (new OutputStreamAdapter(sharedBuffer, ref, timeout), bytesReadPromise.future))
   }
 
   override protected def newInstance(shape: SourceShape[ByteString]): SourceModule[ByteString, (OutputStream, Future[Long])] =
@@ -137,7 +139,9 @@ private[akka] final class JavaOutputStreamSource(val timeout: FiniteDuration,
  * INTERNAL API
  * OutputStreamAdapter that interacts with OutputStreamPublisher
  */
-private[akka] final class OutputStreamAdapter(val publisher: ActorRef, val timeout: FiniteDuration) extends OutputStream {
+private[akka] final class OutputStreamAdapter(sharedBuffer: BlockingQueue[ByteString],
+                                              val publisher: ActorRef,
+                                              val timeout: FiniteDuration) extends OutputStream {
   import akka.pattern.ask
 
   var isActive = true
@@ -163,11 +167,16 @@ private[akka] final class OutputStreamAdapter(val publisher: ActorRef, val timeo
     } else throw new IOException("OutputStream is closed")
 
   @scala.throws(classOf[IOException])
-  override def write(b: Int) = sendMessage(OutputStreamPublisher.Write(ByteString(b)))
+  override def write(b: Int) = {
+    sharedBuffer.add(ByteString(b))
+    sendMessage(OutputStreamPublisher.WriteNotification)
+  }
 
   @scala.throws(classOf[IOException])
-  override def write(b: Array[Byte], off: Int, len: Int) =
-    sendMessage(OutputStreamPublisher.Write(ByteString(b).drop(off)))
+  override def write(b: Array[Byte], off: Int, len: Int) = {
+    sharedBuffer.add(ByteString(b).drop(off))
+    sendMessage(OutputStreamPublisher.WriteNotification)
+  }
 
   @scala.throws(classOf[IOException])
   override def flush() = sendMessage(OutputStreamPublisher.Flush)

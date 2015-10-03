@@ -4,7 +4,7 @@
 package akka.stream.io
 
 import java.io.{ IOException, OutputStream }
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.{ BlockingQueue, TimeoutException }
 
 import akka.actor.{ Deploy, ActorSystem, Props }
 import akka.stream._
@@ -46,12 +46,12 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
                                  override val attributes: Attributes,
                                  shape: SourceShape[ByteString])
       extends OutputStreamSource(timeout, attributes, shape) {
-      override def getPublisher(p: Promise[Long], settings: ActorMaterializerSettings) =
-        Props(new TestOutputStreamPublisher(p, settings.maxInputBufferSize)).withDeploy(Deploy.local)
+      override def getPublisher(buffer: BlockingQueue[ByteString], p: Promise[Long]) =
+        Props(new TestOutputStreamPublisher(buffer, p)).withDeploy(Deploy.local)
     }
 
-    class TestOutputStreamPublisher(bytesReadPromise: Promise[Long], bufSize: Int)
-      extends OutputStreamPublisher(bytesReadPromise, bufSize) {
+    class TestOutputStreamPublisher(buffer: BlockingQueue[ByteString], bytesReadPromise: Promise[Long])
+      extends OutputStreamPublisher(buffer, bytesReadPromise) {
       protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = {
         super.aroundReceive(receive, msg)
         probe.ref ! msg
@@ -61,7 +61,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
   }
 
   "OutputStreamSource" must {
-    /*"read bytes from OutputStream" in assertAllStagesStopped {
+    "read bytes from OutputStream" in assertAllStagesStopped {
       val ((outputStream, f), probe) = OutputStreamSource().toMat(TestSink.probe[ByteString])(Keep.both).run
       val s = probe.expectSubscription()
 
@@ -150,7 +150,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
       } finally shutdown(sys)
     }
-*/
+
     "throw IOException when writing to the stream after the subscriber has cancelled the reactive stream" in assertAllStagesStopped {
       val sourceProbe = TestProbe()
       val ((outputStream, _), probe) = testSource(sourceProbe).toMat(TestSink.probe[ByteString])(Keep.both).run
@@ -159,7 +159,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       sourceProbe.expectMsgClass(classOf[Subscribe])
 
       outputStream.write(bytes)
-      sourceProbe.expectMsgClass(classOf[OutputStreamPublisher.Write])
+      sourceProbe.expectMsg(OutputStreamPublisher.WriteNotification)
       s.request(1)
 
       sourceProbe.expectMsgClass(classOf[Request])
