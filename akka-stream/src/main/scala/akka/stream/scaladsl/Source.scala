@@ -105,15 +105,6 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Unit] = runWith(Sink.foreach(f))
 
   /**
-   * Concatenates a second source so that the first element
-   * emitted by that source is emitted after the last element of this
-   * source.
-   *
-   * This is a shorthand for [[concat]]
-   */
-  def ++[Out2 >: Out, M](second: Graph[SourceShape[Out2], M]): Source[Out2, Mat] = concat(second)
-
-  /**
    * Nests the current Source and returns a Source with the given Attributes
    * @param attr the attributes to add
    * @return a new Source with the added attributes
