@@ -304,47 +304,87 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     runWith(Sink.fold(zero, f), materializer)
 
   /**
-   * Concatenate the second [[Source]] to current one, meaning that once current
+   * Concatenate this [[Source]] with the given one, meaning that once current
    * is exhausted and all result elements have been generated,
-   * the second Source’s elements will be produced.
+   * the given source elements will be produced.
+   *
+   * Note that given [[Source]] is materialized together with this Flow and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If this [[Source]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   *
+   * '''Emits when''' element is available from current source or from the given [[Source]] when current is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
    */
-  def concat[T >: Out, M](second: Graph[SourceShape[T], M]): javadsl.Source[T, Mat] =
-    new Source(delegate.concat(second))
+  def concat[T >: Out, M](that: Graph[SourceShape[T], M]): javadsl.Source[T, Mat] =
+    new Source(delegate.concat(that))
 
   /**
-   * Concatenate the second [[Source]] to current one, meaning that once current
+   * Concatenate this [[Source]] with the given one, meaning that once current
    * is exhausted and all result elements have been generated,
-   * the second Source’s elements will be produced.
+   * the given source elements will be produced.
+   *
+   * Note that given [[Source]] is materialized together with this Flow and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If this [[Source]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   *
+   * @see [[#concat]].
    */
-  def concatMat[T >: Out, M, M2](second: Graph[SourceShape[T], M],
+  def concatMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
                                  matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
-    new Source(delegate.concatMat(second)(combinerToScala(matF)))
+    new Source(delegate.concatMat(that)(combinerToScala(matF)))
 
   /**
-   * Merge current source with the second one, taking elements as they arrive,
+   * Merge the given [[Source]] to the current one, taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
+   *
+   * '''Emits when''' one of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstreams complete
+   *
+   * '''Cancels when''' downstream cancels
    */
-  def merge[T >: Out](second: Graph[SourceShape[T], _]): javadsl.Source[T, Mat] =
-    new Source(delegate.merge(second))
+  def merge[T >: Out](that: Graph[SourceShape[T], _]): javadsl.Source[T, Mat] =
+    new Source(delegate.merge(that))
 
   /**
-   * Merge current source with the second one, taking elements as they arrive,
+   * Merge the given [[Source]] to the current one, taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
+   *
+   * @see [[#merge]].
    */
-  def mergeMat[T >: Out, M, M2](second: Graph[SourceShape[T], M],
+  def mergeMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
                                 matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
-    new Source(delegate.mergeMat(second)(combinerToScala(matF)))
+    new Source(delegate.mergeMat(that)(combinerToScala(matF)))
 
   /**
-   * Combine the elements of current [[Source]] and the second one into a stream of tuples.
+   * Combine the elements of current [[Source]] and the given one into a stream of tuples.
+   *
+   * '''Emits when''' all of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' any upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
-  def zip[T](second: Graph[SourceShape[T], _]): javadsl.Source[Out @uncheckedVariance Pair T, Mat] =
-    zipMat(second, combinerToJava((a: Mat, b: Any) ⇒ a))
+  def zip[T](that: Graph[SourceShape[T], _]): javadsl.Source[Out @uncheckedVariance Pair T, Mat] =
+    zipMat(that, combinerToJava((a: Mat, b: Any) ⇒ a))
 
   /**
-   * Combine the elements of current [[Source]] and the second one into a stream of tuples.
+   * Combine the elements of current [[Source]] and the given one into a stream of tuples.
+   *
+   * @see [[#zip]].
    */
-  def zipMat[T, M, M2](second: Graph[SourceShape[T], M],
+  def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
                        matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] = {
     //we need this only to have Flow of javadsl.Pair
     def block(builder: FlowGraph.Builder[M],
@@ -353,25 +393,35 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
       builder.from(source).to(zip.in1)
       new Pair(zip.in0, zip.out)
     }
-    this.viaMat(Flow.factory.create(second, combinerToJava(block)), matF)
+    this.viaMat(Flow.factory.create(that, combinerToJava(block)), matF)
   }
 
   /**
-   * Put together elements of current [[Source]] and the second one
+   * Put together the elements of current [[Source]] and the given one
    * into a stream of combined elements using a combiner function.
+   *
+   * '''Emits when''' all of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' any upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
-  def zipWith[Out2, Out3](second: Graph[SourceShape[Out2], _],
+  def zipWith[Out2, Out3](that: Graph[SourceShape[Out2], _],
                           combine: function.Function2[Out, Out2, Out3]): javadsl.Source[Out3, Mat] =
-    new Source(delegate.zipWith[Out2, Out3](second)(combinerToScala(combine)))
+    new Source(delegate.zipWith[Out2, Out3](that)(combinerToScala(combine)))
 
   /**
-   * Put together elements of current [[Source]] and the second one
+   * Put together the elements of current [[Source]] and the given one
    * into a stream of combined elements using a combiner function.
+   *
+   * @see [[#zipWith]].
    */
-  def zipWithMat[Out2, Out3, M, M2](second: Graph[SourceShape[Out2], M],
+  def zipWithMat[Out2, Out3, M, M2](that: Graph[SourceShape[Out2], M],
                                     combine: function.Function2[Out, Out2, Out3],
                                     matF: function.Function2[Mat, M, M2]): javadsl.Source[Out3, M2] =
-    new Source(delegate.zipWithMat[Out2, Out3, M, M2](second)(combinerToScala(combine))(combinerToScala(matF)))
+    new Source(delegate.zipWithMat[Out2, Out3, M, M2](that)(combinerToScala(combine))(combinerToScala(matF)))
 
   /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
