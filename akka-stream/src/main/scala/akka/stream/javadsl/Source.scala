@@ -377,7 +377,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * '''Cancels when''' downstream cancels
    */
   def zip[T](that: Graph[SourceShape[T], _]): javadsl.Source[Out @uncheckedVariance Pair T, Mat] =
-    zipMat(that, combinerToJava((a: Mat, b: Any) ⇒ a))
+    zipMat(that, Keep.left)
 
   /**
    * Combine the elements of current [[Source]] and the given one into a stream of tuples.
