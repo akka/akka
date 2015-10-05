@@ -82,8 +82,6 @@ object RemotingSpec {
       actor.provider = "akka.remote.RemoteActorRefProvider"
 
       remote {
-        transport = "akka.remote.Remoting"
-
         retry-gate-closed-for = 1 s
         log-remote-lifecycle-events = on
 
@@ -637,7 +635,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val config = ConfigFactory.parseString(s"""
         akka.remote.enabled-transports = ["akka.remote.test"]
         akka.remote.retry-gate-closed-for = 5s
-        akka.remote.log-lifecylce-events = on
+        akka.remote.log-remote-lifecycle-events = on
         #akka.loglevel = DEBUG
 
         akka.remote.test {
@@ -717,7 +715,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val config = ConfigFactory.parseString(s"""
         akka.remote.enabled-transports = ["akka.remote.test"]
         akka.remote.retry-gate-closed-for = 5s
-        akka.remote.log-lifecylce-events = on
+        akka.remote.log-remote-lifecycle-events = on
 
         akka.remote.test {
           registry-key = JMeMndLLsw

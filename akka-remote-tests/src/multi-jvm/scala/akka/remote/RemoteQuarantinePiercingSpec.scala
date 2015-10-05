@@ -26,8 +26,6 @@ object RemoteQuarantinePiercingSpec extends MultiNodeConfig {
     ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
-      akka.remote.quarantine-systems-for = 1 d
-      akka.remote.gate-invalid-addresses-for = 0.5 s
                               """)))
 
   class Subject extends Actor {

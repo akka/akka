@@ -42,7 +42,6 @@ object Configuration {
         hostname = localhost
         port = %d
         security {
-          enable = on
           trust-store = "%s"
           key-store = "%s"
           key-store-password = "changeme"
