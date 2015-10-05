@@ -136,6 +136,11 @@ class FlowDocSpec extends AkkaSpec {
     val sink: Sink[Int, Unit] = Flow[Int].map(_ * 2).to(Sink.foreach(println(_)))
     Source(1 to 6).to(sink)
 
+    // Broadcast to a sink inline
+    val otherSink: Sink[Int, Unit] =
+      Flow[Int].alsoTo(Sink.foreach(println(_))).to(Sink.ignore)
+    Source(1 to 6).to(otherSink)
+
     //#flow-connecting
   }
 
