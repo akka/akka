@@ -11,3 +11,4 @@ customers.
 
    split-brain-resolver
    ../common/config-checker
+   ../common/diagnostics-recorder

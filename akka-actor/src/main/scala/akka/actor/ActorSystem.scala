@@ -23,6 +23,7 @@ import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NonFatal, ControlThrowable }
 import java.util.Locale
 import akka.diagnostics.ConfigChecker
+import akka.diagnostics.DiagnosticsRecorder
 
 object ActorSystem {
 
@@ -670,6 +671,7 @@ private[akka] class ActorSystemImpl(
     if (LogConfigOnStart) logConfiguration()
 
     ConfigChecker.reportIssues(this)
+    DiagnosticsRecorder(this).runStartupReport()
 
     this
   } catch {

@@ -59,6 +59,7 @@ object MultiNodeClusterSpec {
       power-user-settings,
       auto-down,
       cluster-failure-detector]
+    akka.diagnostics.recorder.enabled = off
     """)
 
   // sometimes we need to coordinate test shutdown with messages instead of barriers
