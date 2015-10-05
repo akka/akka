@@ -20,7 +20,4 @@ package object javadsl {
       case other                 ⇒ other.apply _
     }
 
-  def combinerToJava[M1, M2, M](f: (M1, M2) ⇒ M): akka.japi.function.Function2[M1, M2, M] =
-    new akka.japi.function.Function2[M1, M2, M] { def apply(m1: M1, m2: M2): M = f.apply(m1, m2) }
-
 }

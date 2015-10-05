@@ -1093,6 +1093,35 @@ trait FlowOps[+Out, +Mat] {
    */
   def ++[U >: Out, M](that: Graph[SourceShape[U], M]): Repr[U, Mat] = concat(that)
 
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * through will also be sent to the [[Sink]].
+   *
+   * '''Emits when''' element is available and demand exists both from the Sink and the downstream.
+   *
+   * '''Backpressures when''' downstream or Sink backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out, Mat] = alsoToMat(that)(Keep.left)
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * through will also be sent to the [[Sink]].
+   *
+   * @see [[#alsoTo]]
+   */
+  def alsoToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[Out, Mat3] =
+    this.viaMat(Flow(that) { implicit b ⇒
+      r ⇒
+        import FlowGraph.Implicits._
+        val bcast = b.add(Broadcast[Out](2))
+        bcast.out(1) ~> r
+        (bcast.in, bcast.out(0))
+    })(matF)
+
   def withAttributes(attr: Attributes): Repr[Out, Mat]
 
   /** INTERNAL API */
