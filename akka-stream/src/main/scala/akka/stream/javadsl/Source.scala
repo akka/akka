@@ -341,6 +341,31 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     new Source(delegate.concatMat(that)(combinerToScala(matF)))
 
   /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * through will also be sent to the [[Sink]].
+   *
+   * '''Emits when''' element is available and demand exists both from the Sink and the downstream.
+   *
+   * '''Backpressures when''' downstream or Sink backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def alsoTo(that: Graph[SinkShape[Out], _]): javadsl.Source[Out, Mat] =
+    new Source(delegate.alsoTo(that))
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * through will also be sent to the [[Sink]].
+   *
+   * @see [[#alsoTo]]
+   */
+  def alsoToMat[M2, M3](that: Graph[SinkShape[Out], M2],
+                        matF: function.Function2[Mat, M2, M3]): javadsl.Source[Out, M3] =
+    new Source(delegate.alsoToMat(that)(combinerToScala(matF)))
+
+  /**
    * Merge the given [[Source]] to the current one, taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *
@@ -385,16 +410,8 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * @see [[#zip]].
    */
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
-                       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] = {
-    //we need this only to have Flow of javadsl.Pair
-    def block(builder: FlowGraph.Builder[M],
-              source: SourceShape[T]): Pair[Inlet[Out], Outlet[Pair[Out, T]]] = {
-      val zip: FanInShape2[Out, T, Out Pair T] = builder.graph(Zip.create[Out, T])
-      builder.from(source).to(zip.in1)
-      new Pair(zip.in0, zip.out)
-    }
-    this.viaMat(Flow.factory.create(that, combinerToJava(block)), matF)
-  }
+                       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
+    this.viaMat(Flow.empty[Out].zipMat(that, Keep.right[Unit, M]), matF)
 
   /**
    * Put together the elements of current [[Source]] and the given one

@@ -219,5 +219,4 @@ object Sink extends SinkApply {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
     new Sink(new AcknowledgeSink(bufferSize, DefaultAttributes.acknowledgeSink, shape("AcknowledgeSink"), timeout))
   }
-
 }
