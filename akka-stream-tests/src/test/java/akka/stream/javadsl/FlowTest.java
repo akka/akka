@@ -613,4 +613,59 @@ public class FlowTest extends StreamTest {
   }
 
 
+  @Test
+  public void mustBeAbleToUseZipWith() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<String> input1 = Arrays.asList("A", "B", "C");
+    final Iterable<String> input2 = Arrays.asList("D", "E", "F");
+
+    Source.from(input1).via(Flow.of(String.class).zipWith(Source.from(input2), new Function2<String, String, String>() {
+      public String apply(String s1, String s2) {
+        return s1 + "-" + s2;
+      }
+    })).runForeach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }, materializer);
+
+    probe.expectMsgEquals("A-D");
+    probe.expectMsgEquals("B-E");
+    probe.expectMsgEquals("C-F");
+  }
+
+  @Test
+  public void mustBeAbleToUseZip2() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<String> input1 = Arrays.asList("A", "B", "C");
+    final Iterable<String> input2 = Arrays.asList("D", "E", "F");
+
+    Source.from(input1).via(Flow.of(String.class).zip(Source.from(input2)))
+            .runForeach(new Procedure<Pair<String, String>>() {
+              public void apply(Pair<String, String> elem) {
+                probe.getRef().tell(elem, ActorRef.noSender());
+              }
+            }, materializer);
+
+    probe.expectMsgEquals(new Pair<String,String>("A", "D"));
+    probe.expectMsgEquals(new Pair<String,String>("B", "E"));
+    probe.expectMsgEquals(new Pair<String,String>("C", "F"));
+  }
+
+  @Test
+  public void mustBeAbleToUseMerge2() {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<String> input1 = Arrays.asList("A", "B", "C");
+    final Iterable<String> input2 = Arrays.asList("D", "E", "F");
+
+    Source.from(input1).via(Flow.of(String.class).merge(Source.from(input2)))
+            .runForeach(new Procedure<String>() {
+              public void apply(String elem) {
+                probe.getRef().tell(elem, ActorRef.noSender());
+              }
+            }, materializer);
+
+    probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
+  }
+
 }

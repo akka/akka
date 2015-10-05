@@ -105,30 +105,6 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Unit] = runWith(Sink.foreach(f))
 
   /**
-   * Concatenates a second source so that the first element
-   * emitted by that source is emitted after the last element of this
-   * source.
-   */
-  def concat[Out2 >: Out, M](second: Graph[SourceShape[Out2], M]): Source[Out2, (Mat, M)] = concatMat(second)(Keep.both)
-
-  /**
-   * Concatenates a second source so that the first element
-   * emitted by that source is emitted after the last element of this
-   * source.
-   */
-  def concatMat[Out2 >: Out, Mat2, Mat3](second: Graph[SourceShape[Out2], Mat2])(
-    combine: (Mat, Mat2) ⇒ Mat3): Source[Out2, Mat3] = Source.concatMat(this, second)(combine)
-
-  /**
-   * Concatenates a second source so that the first element
-   * emitted by that source is emitted after the last element of this
-   * source.
-   *
-   * This is a shorthand for [[concat]]
-   */
-  def ++[Out2 >: Out, M](second: Graph[SourceShape[Out2], M]): Source[Out2, (Mat, M)] = concat(second)
-
-  /**
    * Nests the current Source and returns a Source with the given Attributes
    * @param attr the attributes to add
    * @return a new Source with the added attributes
@@ -300,30 +276,6 @@ object Source extends SourceApply {
         ErrorPublisher(cause, "FailedSource")[T],
         DefaultAttributes.failedSource,
         shape("FailedSource")))
-
-  /**
-   * Concatenates two sources so that the first element
-   * emitted by the second source is emitted after the last element of the first
-   * source.
-   */
-  def concat[T, Mat1, Mat2](source1: Graph[SourceShape[T], Mat1], source2: Graph[SourceShape[T], Mat2]): Source[T, (Mat1, Mat2)] =
-    concatMat(source1, source2)(Keep.both).withAttributes(DefaultAttributes.concatSource)
-
-  /**
-   * Concatenates two sources so that the first element
-   * emitted by the second source is emitted after the last element of the first
-   * source.
-   */
-  def concatMat[T, Mat1, Mat2, Mat3](source1: Graph[SourceShape[T], Mat1], source2: Graph[SourceShape[T], Mat2])(
-    combine: (Mat1, Mat2) ⇒ Mat3): Source[T, Mat3] =
-    wrap(FlowGraph.partial(source1, source2)(combine) { implicit b ⇒
-      (s1, s2) ⇒
-        import FlowGraph.Implicits._
-        val c = b.add(Concat[T]())
-        s1.outlet ~> c.in(0)
-        s2.outlet ~> c.in(1)
-        SourceShape(c.out)
-    }).withAttributes(DefaultAttributes.concatMatSource)
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
