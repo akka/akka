@@ -9,10 +9,9 @@ import akka.stream._
 import akka.stream.impl.SplitDecision._
 import akka.stream.impl.Stages.{ DirectProcessor, MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
-import akka.stream.impl.fusing.{ DropWithin, TakeWithin, GroupedWithin }
+import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, TakeWithin }
 import akka.stream.impl.{ Stages, StreamLayout }
 import akka.stream.stage._
-import akka.util.Collections.EmptyImmutableSeq
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -187,35 +186,6 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
       .wire(outs(1), shape.inlet)
       .replaceShape(FlowShape(ins(1), outs.head)))
   }
-
-  /**
-   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
-   * Flow’s input is exhausted and all result elements have been generated,
-   * the Source’s elements will be produced. Note that the Source is materialized
-   * together with this Flow and just kept from producing elements by asserting
-   * back-pressure until its time comes.
-   *
-   * The resulting Flow’s materialized value is a Tuple2 containing both materialized
-   * values (of this Flow and that Source).
-   */
-  def concat[Out2 >: Out, Mat2](source: Graph[SourceShape[Out2], Mat2]): Flow[In, Out2, (Mat, Mat2)] =
-    concatMat[Out2, Mat2, (Mat, Mat2)](source)(Keep.both)
-
-  /**
-   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
-   * Flow’s input is exhausted and all result elements have been generated,
-   * the Source’s elements will be produced. Note that the Source is materialized
-   * together with this Flow and just kept from producing elements by asserting
-   * back-pressure until its time comes.
-   */
-  def concatMat[Out2 >: Out, Mat2, Mat3](source: Graph[SourceShape[Out2], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, Out2, Mat3] =
-    this.viaMat(Flow(source) { implicit builder ⇒
-      s ⇒
-        import FlowGraph.Implicits._
-        val concat = builder.add(Concat[Out2]())
-        s.outlet ~> concat.in(1)
-        (concat.in(0), concat.out)
-    })(combine)
 
   /** INTERNAL API */
   override private[stream] def andThen[U](op: StageModule): Repr[U, Mat] = {
@@ -984,6 +954,144 @@ trait FlowOps[+Out, +Mat] {
    */
   def log(name: String, extract: Out ⇒ Any = _identity)(implicit log: LoggingAdapter = null): Repr[Out, Mat] =
     andThen(Stages.Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * '''Emits when''' all of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' any upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zip[U](that: Graph[SourceShape[U], _]): Repr[(Out, U), Mat] = zipMat(that)(Keep.left)
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * @see [[#zip]].
+   */
+  def zipMat[U, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[(Out, U), Mat3] =
+    this.viaMat(Flow(that) { implicit b ⇒
+      r ⇒
+        import FlowGraph.Implicits._
+        val zip = b.add(Zip[Out, U]())
+        r ~> zip.in1
+        (zip.in0, zip.out)
+    })(matF)
+
+  /**
+   * Put together the elements of current flow and the given [[Source]]
+   * into a stream of combined elements using a combiner function.
+   *
+   * '''Emits when''' all of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' any upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipWith[Out2, Out3](that: Graph[SourceShape[Out2], _])(combine: (Out, Out2) ⇒ Out3): Repr[Out3, Mat] =
+    zipWithMat(that)(combine)(Keep.left)
+
+  /**
+   * Put together the elements of current flow and the given [[Source]]
+   * into a stream of combined elements using a combiner function.
+   *
+   * @see [[#zipWith]].
+   */
+  def zipWithMat[Out2, Out3, Mat2, Mat3](that: Graph[SourceShape[Out2], Mat2])(combine: (Out, Out2) ⇒ Out3)(matF: (Mat, Mat2) ⇒ Mat3): Repr[Out3, Mat3] =
+    this.viaMat(Flow(that) { implicit b ⇒
+      r ⇒
+        import FlowGraph.Implicits._
+        val zip = b.add(ZipWith[Out, Out2, Out3](combine))
+        r ~> zip.in1
+        (zip.in0, zip.out)
+    })(matF)
+
+  /**
+   * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
+   * picking randomly when several elements ready.
+   *
+   * '''Emits when''' one of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def merge[U >: Out](that: Graph[SourceShape[U], _]): Repr[U, Mat] =
+    mergeMat(that)(Keep.left)
+
+  /**
+   * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
+   * picking randomly when several elements ready.
+   *
+   * @see [[#merge]].
+   */
+  def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
+    this.viaMat(Flow(that) { implicit b ⇒
+      r ⇒
+        import FlowGraph.Implicits._
+        val merge = b.add(Merge[U](2))
+        r ~> merge.in(1)
+        (merge.in(0), merge.out)
+    })(matF)
+
+  /**
+   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced.
+   *
+   * Note that the [[Source]] is materialized together with this Flow and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If this [[Flow]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   *
+   * '''Emits when''' element is available from current stream or from the given [[Source]] when current is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def concat[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Repr[U, Mat] =
+    concatMat(that)(Keep.left)
+
+  /**
+   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced.
+   *
+   * Note that the [[Source]] is materialized together with this Flow and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If this [[Flow]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   *
+   * @see [[#concat]].
+   */
+  def concatMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
+    this.viaMat(Flow(that) { implicit b ⇒
+      r ⇒
+        import FlowGraph.Implicits._
+        val merge = b.add(Concat[U]())
+        r ~> merge.in(1)
+        (merge.in(0), merge.out)
+    })(matF)
+
+  /**
+   * Concatenates this [[Flow]] with the given [[Source]] so the first element
+   * emitted by that source is emitted after the last element of this
+   * flow.
+   *
+   * This is a shorthand for [[concat]]
+   */
+  def ++[U >: Out, M](that: Graph[SourceShape[U], M]): Repr[U, Mat] = concat(that)
 
   def withAttributes(attr: Attributes): Repr[Out, Mat]
 
