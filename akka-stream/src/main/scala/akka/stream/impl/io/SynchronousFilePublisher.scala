@@ -13,6 +13,7 @@ import akka.util.ByteString
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
+import scala.util.control.NonFatal
 
 /** INTERNAL API */
 private[akka] object SynchronousFilePublisher {
@@ -30,14 +31,13 @@ private[akka] object SynchronousFilePublisher {
 }
 
 /** INTERNAL API */
-private[akka] class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
-  extends akka.stream.actor.ActorPublisher[ByteString]
-  with ActorLogging {
-
+private[akka] final class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+  extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
   import SynchronousFilePublisher._
 
   var eofReachedAtOffset = Long.MinValue
 
+  val buf = ByteBuffer.allocate(chunkSize)
   var readBytesTotal = 0L
   var availableChunks: Vector[ByteString] = Vector.empty // TODO possibly resign read-ahead-ing and make fusable as Stage
 
@@ -62,52 +62,41 @@ private[akka] class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[
     case ActorPublisherMessage.Cancel            ⇒ context.stop(self)
   }
 
-  def readAndSignal(readAhead: Int): Unit =
+  def readAndSignal(maxReadAhead: Int): Unit =
     if (isActive) {
-      // signal from available buffer right away
-      signalOnNexts()
-
-      // read chunks until readAhead is fulfilled
-      while (availableChunks.length < readAhead && !eofEncountered && isActive)
-        loadChunk()
-
-      if (totalDemand > 0) self ! Continue
-      else if (availableChunks.isEmpty) signalOnNexts()
+      // Write previously buffered, read into buffer, write newly buffered
+      availableChunks = signalOnNexts(readAhead(maxReadAhead, signalOnNexts(availableChunks)))
+      if (totalDemand > 0 && isActive) self ! Continue
     }
 
-  @tailrec private def signalOnNexts(): Unit =
-    if (availableChunks.nonEmpty) {
-      if (totalDemand > 0) {
-        val ready = availableChunks.head
-        availableChunks = availableChunks.tail
-
-        onNext(ready)
-
-        if (totalDemand > 0) signalOnNexts()
-      }
-    } else if (eofEncountered) onCompleteThenStop()
+  @tailrec private def signalOnNexts(chunks: Vector[ByteString]): Vector[ByteString] =
+    if (chunks.nonEmpty && totalDemand > 0) {
+      onNext(chunks.head)
+      signalOnNexts(chunks.tail)
+    } else {
+      if (chunks.isEmpty && eofEncountered)
+        onCompleteThenStop()
+      chunks
+    }
 
   /** BLOCKING I/O READ */
-  def loadChunk() = try {
-    val buf = ByteBuffer.allocate(chunkSize)
-
-    // blocking read
-    val readBytes = chan.read(buf)
-
-    readBytes match {
-      case -1 ⇒
-        // had nothing to read into this chunk
-        eofReachedAtOffset = chan.position
-        log.debug("No more bytes available to read (got `-1` from `read`), marking final bytes of file @ " + eofReachedAtOffset)
-
-      case _ ⇒
-        readBytesTotal += readBytes
-        availableChunks :+= ByteString(buf.array).take(readBytes)
-    }
-  } catch {
-    case ex: Exception ⇒
-      onErrorThenStop(ex)
-  }
+  @tailrec final def readAhead(maxChunks: Int, chunks: Vector[ByteString]): Vector[ByteString] =
+    if (chunks.size <= maxChunks && isActive) {
+      (try chan.read(buf) catch { case NonFatal(ex) ⇒ onErrorThenStop(ex); Int.MinValue }) match {
+        case -1 ⇒ // EOF
+          eofReachedAtOffset = chan.position
+          log.debug("No more bytes available to read (got `-1` from `read`), marking final bytes of file @ " + eofReachedAtOffset)
+          chunks
+        case 0            ⇒ readAhead(maxChunks, chunks) // had nothing to read into this chunk
+        case Int.MinValue ⇒ Vector.empty // read failed, we're done here
+        case readBytes ⇒
+          buf.flip()
+          readBytesTotal += readBytes
+          val newChunks = chunks :+ ByteString.fromByteBuffer(buf)
+          buf.clear()
+          readAhead(maxChunks, newChunks)
+      }
+    } else chunks
 
   private final def eofEncountered: Boolean = eofReachedAtOffset != Long.MinValue
 
