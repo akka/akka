@@ -10,7 +10,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.stream.stage._
 import akka.http.impl.util.Timestamp
-import FrameHandler.{ UserHandlerCompleted, ActivelyCloseWithCode, PeerClosed, DirectAnswer }
+import akka.http.impl.engine.ws.FrameHandler._
 import Websocket.Tick
 
 /**
