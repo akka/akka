@@ -55,13 +55,9 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |
               |""".stripMarginWithNewline("\r\n")
 
-          expectWSFrame(Protocol.Opcode.Text,
-
-            ByteString("Message 1"), fin = true)
-          expectWSFrame(Protocol.
-            Opcode.Text, ByteString("Message 2"), fin = true)
-          expectWSFrame(
-            Protocol.Opcode.Text, ByteString("Message 3"), fin = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 2"), fin = true)
+          expectWSFrame(Protocol.Opcode.Text, ByteString("Message 3"), fin = true)
           expectWSFrame(Protocol.Opcode.Text, ByteString("Message 4"), fin = true)
           expectWSFrame(Protocol.Opcode.Text, ByteString("Message 5"), fin = true)
           expectWSCloseFrame(Protocol.CloseCodes.Regular)
@@ -131,42 +127,13 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
     }
   }
 
-  class TestSetup extends HttpServerTestSetupBase {
+  class TestSetup extends HttpServerTestSetupBase with WSTestSetupBase {
     implicit def system = spec.system
     implicit def materializer = spec.materializer
-
-    def sendWSFrame(opcode: Opcode,
-                    data: ByteString,
-                    fin: Boolean,
-                    mask: Boolean = false,
-                    rsv1: Boolean = false,
-                    rsv2: Boolean = false,
-                    rsv3: Boolean = false): Unit = {
-      val (theMask, theData) =
-        if (mask) {
-          val m = Random.nextInt()
-          (Some(m), maskedBytes(data, m)._1)
-        } else (None, data)
-      send(frameHeader(opcode, data.length, fin, theMask, rsv1, rsv2, rsv3) ++ theData)
-    }
-
-    def sendWSCloseFrame(closeCode: Int, mask: Boolean = false): Unit =
-      send(closeFrame(closeCode, mask))
 
     def expectNextChunk(): ByteString = {
       netOutSub.request(1)
       netOut.expectNext()
     }
-
-    def expectWSFrame(opcode: Opcode,
-                      data: ByteString,
-                      fin: Boolean,
-                      mask: Option[Int] = None,
-                      rsv1: Boolean = false,
-                      rsv2: Boolean = false,
-                      rsv3: Boolean = false): Unit =
-      expectNextChunk() shouldEqual frameHeader(opcode, data.length, fin, mask, rsv1, rsv2, rsv3) ++ data
-    def expectWSCloseFrame(closeCode: Int, mask: Boolean = false): Unit =
-      expectNextChunk() shouldEqual closeFrame(closeCode, mask)
   }
 }
