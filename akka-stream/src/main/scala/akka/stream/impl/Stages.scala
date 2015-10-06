@@ -108,7 +108,7 @@ private[stream] object Stages {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }
 
-  final case class Identity(attributes: Attributes = Attributes.name("identity")) extends StageModule {
+  final case class Identity(attributes: Attributes = identityOp) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }
 
