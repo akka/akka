@@ -40,7 +40,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     "accept certificates signed by known CA" in {
       val pipe = pipeline(ExampleHttpContexts.exampleClientContext, hostname = "akka.example.org") // example context does include custom CA
 
-      whenReady(pipe(HttpRequest(uri = "https://akka.example.org/")), timeout) { response ⇒
+      whenReady(pipe(HttpRequest(uri = "https://akka.example.org:8080/")), timeout) { response ⇒
         response.status shouldEqual StatusCodes.OK
       }
     }
