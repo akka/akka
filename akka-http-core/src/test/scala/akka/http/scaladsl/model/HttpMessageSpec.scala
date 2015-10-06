@@ -6,13 +6,13 @@ import org.scalatest.{ Matchers, WordSpec }
 class HttpMessageSpec extends WordSpec with Matchers {
 
   def test(uri: String, hostHeader: Host, effectiveUri: String) =
-     HttpRequest.effectiveUri(Uri(uri), List(hostHeader), securedConnection = false, null) shouldEqual Uri(effectiveUri)
+    HttpRequest.effectiveUri(Uri(uri), List(hostHeader), securedConnection = false, null) shouldEqual Uri(effectiveUri)
 
   def fail(uri: String, hostHeader: Host) =
-    an [IllegalUriException] should be thrownBy
+    an[IllegalUriException] should be thrownBy
       HttpRequest.effectiveUri(Uri(uri), List(hostHeader), securedConnection = false, null)
 
-  "HttpRequset" should {
+  "HttpRequest" should {
     "provide an effective URI for relative URIs or matching Host-headers" in {
       test("/segment", Host("example.com"), "http://example.com/segment")
       test("http://example.com/", Host("example.com"), "http://example.com/")
@@ -25,5 +25,4 @@ class HttpMessageSpec extends WordSpec with Matchers {
       fail("http://example.com/", Host("example.com", 8080))
     }
   }
-
 }
