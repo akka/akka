@@ -4,7 +4,8 @@
 
 package docs.http.scaladsl
 
-import akka.actor.ActorSystem
+import akka.actor.{ ActorLogging, ActorSystem }
+import akka.util.ByteString
 import org.scalatest.{ Matchers, WordSpec }
 
 class HttpClientExampleSpec extends WordSpec with Matchers {
@@ -12,11 +13,12 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
   "outgoing-connection-example" in {
     pending // compile-time only test
     //#outgoing-connection-example
-    import scala.concurrent.Future
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
-    import akka.http.scaladsl.model._
-    import akka.http.scaladsl.Http
+
+    import scala.concurrent.Future
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
@@ -33,12 +35,13 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
   "host-level-example" in {
     pending // compile-time only test
     //#host-level-example
-    import scala.concurrent.Future
-    import scala.util.Try
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
-    import akka.http.scaladsl.model._
-    import akka.http.scaladsl.Http
+
+    import scala.concurrent.Future
+    import scala.util.Try
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
@@ -55,10 +58,11 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
   "single-request-example" in {
     pending // compile-time only test
     //#single-request-example
-    import scala.concurrent.Future
-    import akka.stream.ActorMaterializer
-    import akka.http.scaladsl.model._
     import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model._
+    import akka.stream.ActorMaterializer
+
+    import scala.concurrent.Future
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
@@ -66,6 +70,39 @@ class HttpClientExampleSpec extends WordSpec with Matchers {
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(HttpRequest(uri = "http://akka.io"))
     //#single-request-example
+  }
+
+  "single-request-in-actor-example" in {
+    pending // compile-time only test
+    //#single-request-in-actor-example
+    import akka.actor.Actor
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model._
+    import akka.stream.scaladsl.ImplicitMaterializer
+
+    class Myself extends Actor
+      with ImplicitMaterializer
+      with ActorLogging {
+
+      import akka.pattern.pipe
+      import context.dispatcher
+
+      val http = Http(context.system)
+
+      override def preStart() = {
+        http.singleRequest(HttpRequest(uri = "http://akka.io"))
+          .pipeTo(self)
+      }
+
+      def receive = {
+        case HttpResponse(StatusCodes.OK, headers, entity, _) =>
+          log.info("Got response, body: " + entity.dataBytes.runFold(ByteString(""))(_ ++ _))
+        case HttpResponse(code, _, _, _) =>
+          log.info("Request failed, response code: " + code)
+      }
+
+    }
+    //#single-request-in-actor-example
   }
 
 }
