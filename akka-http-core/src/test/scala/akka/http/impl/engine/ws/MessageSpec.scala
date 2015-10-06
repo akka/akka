@@ -134,6 +134,13 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           sub.expectNext(ByteString("def", "ASCII"))
           sub.expectComplete()
         }
+        "unmask masked input on the server side for empty frame" in new ServerTestSetup {
+          val mask = Random.nextInt()
+          val header = frameHeader(Opcode.Binary, 0, fin = true, mask = Some(mask))
+
+          pushInput(header)
+          expectBinaryMessage(BinaryMessage.Strict(ByteString.empty))
+        }
       }
       "for text messages" - {
         "empty message" in new ClientTestSetup {
@@ -207,6 +214,13 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           sub.expectNext(ByteString("cdef€", "UTF-8"))
           sub.expectComplete()
         }
+        "unmask masked input on the server side for empty frame" in new ServerTestSetup {
+          val mask = Random.nextInt()
+          val header = frameHeader(Opcode.Text, 0, fin = true, mask = Some(mask))
+
+          pushInput(header)
+          expectTextMessage(TextMessage.Strict(""))
+        }
       }
     }
     "render frames from messages" - {
@@ -264,6 +278,10 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
           sub.sendComplete()
           expectFrameOnNetwork(Opcode.Continuation, ByteString.empty, fin = true)
+        }
+        "and mask input on the client side for empty frame" in new ClientTestSetup {
+          pushMessage(BinaryMessage(ByteString.empty))
+          expectMaskedFrameOnNetwork(Opcode.Binary, ByteString.empty, fin = true)
         }
       }
       "for text messages" - {
@@ -346,6 +364,10 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
           sub.sendComplete()
           expectFrameOnNetwork(Opcode.Continuation, ByteString.empty, fin = true)
+        }
+        "and mask input on the client side for empty frame" in new ClientTestSetup {
+          pushMessage(TextMessage(""))
+          expectMaskedFrameOnNetwork(Opcode.Text, ByteString.empty, fin = true)
         }
       }
     }
@@ -440,7 +462,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
       }
       "after receiving close frame without close code" in new ServerTestSetup {
         netInSub.expectRequest()
-        pushInput(frameHeader(Opcode.Close, 0, fin = true))
+        pushInput(frameHeader(Opcode.Close, 0, fin = true, mask = Some(Random.nextInt())))
         messageIn.expectComplete()
 
         messageOutSub.sendComplete()
@@ -479,7 +501,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           netOutSub.request(10)
           messageInSub.request(10)
 
-          pushInput(frameHeader(Protocol.Opcode.Binary, 0, fin = false))
+          pushInput(frameHeader(Protocol.Opcode.Binary, 0, fin = false, mask = Some(Random.nextInt())))
           val dataSource = expectBinaryMessage().dataStream
           val inSubscriber = TestSubscriber.manualProbe[ByteString]()
           dataSource.runWith(Sink(inSubscriber))
@@ -742,9 +764,22 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         pushInput(input)
         expectProtocolErrorOnNetwork()
       }
+      "unmasked input on the server side for empty frame" in new ServerTestSetup {
+        val input = frameHeader(Opcode.Binary, 0, fin = true)
+
+        pushInput(input)
+        expectProtocolErrorOnNetwork()
+      }
       "masked input on the client side" in new ClientTestSetup {
         val mask = Random.nextInt()
         val input = frameHeader(Opcode.Binary, 6, fin = true, mask = Some(mask)) ++ maskedASCII("abcdef", mask)._1
+
+        pushInput(input)
+        expectProtocolErrorOnNetwork()
+      }
+      "masked input on the client side for empty frame" in new ClientTestSetup {
+        val mask = Random.nextInt()
+        val input = frameHeader(Opcode.Binary, 0, fin = true, mask = Some(mask))
 
         pushInput(input)
         expectProtocolErrorOnNetwork()
@@ -813,8 +848,14 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     def expectBinaryMessage(): BinaryMessage =
       expectMessage().asInstanceOf[BinaryMessage]
 
+    def expectBinaryMessage(message: BinaryMessage): Unit =
+      expectBinaryMessage() shouldEqual message
+
     def expectTextMessage(): TextMessage =
       expectMessage().asInstanceOf[TextMessage]
+
+    def expectTextMessage(message: TextMessage): Unit =
+      expectTextMessage() shouldEqual message
 
     var inBuffer = ByteString.empty
     @tailrec final def expectNetworkData(bytes: Int): ByteString =
