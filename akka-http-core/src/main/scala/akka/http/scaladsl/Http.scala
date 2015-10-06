@@ -37,6 +37,8 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   // SYNCHRONIZED ACCESS ONLY!
   private[this] var _defaultClientHttpsContext: HttpsContext = _
 
+  // ** SERVER ** //
+
   /**
    * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
@@ -52,6 +54,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *
    * If no ``port`` is explicitly given (or the port value is negative) the protocol's default port will be used,
    * which is 80 for HTTP and 443 for HTTPS.
+   *
+   * To configure additional settings for a server started using this method,
+   * use the `akka.http.server` config section or pass in a [[ServerSettings]] explicitly.
    */
   def bind(interface: String, port: Int = -1,
            settings: ServerSettings = ServerSettings(system),
@@ -76,6 +81,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
+   *
+   * To configure additional settings for a server started using this method,
+   * use the `akka.http.server` config section or pass in a [[ServerSettings]] explicitly.
    */
   def bindAndHandle(handler: Flow[HttpRequest, HttpResponse, Any],
                     interface: String, port: Int = -1,
@@ -114,6 +122,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
+   *
+   * To configure additional settings for a server started using this method,
+   * use the `akka.http.server` config section or pass in a [[ServerSettings]] explicitly.
    */
   def bindAndHandleSync(handler: HttpRequest ⇒ HttpResponse,
                         interface: String, port: Int = -1,
@@ -128,6 +139,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
+   *
+   * To configure additional settings for a server started using this method,
+   * use the `akka.http.server` config section or pass in a [[ServerSettings]] explicitly.
    */
   def bindAndHandleAsync(handler: HttpRequest ⇒ Future[HttpResponse],
                          interface: String, port: Int = -1,
@@ -140,8 +154,10 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   type ServerLayer = Http.ServerLayer
 
   /**
-   * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]]. The returned [[BidiFlow]]
-   * can only be materialized once.
+   * Constructs a [[ServerLayer]] stage using the configured default [[ServerSettings]],
+   * configured using the `akka.http.server` config section.
+   *
+   * The returned [[BidiFlow]] can only be materialized once.
    */
   def serverLayer()(implicit mat: Materializer): ServerLayer = serverLayer(ServerSettings(system))
 
@@ -155,9 +171,14 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                   log: LoggingAdapter = system.log)(implicit mat: Materializer): ServerLayer =
     HttpServerBluePrint(settings, remoteAddress, log)
 
+  // ** CLIENT ** //
+
   /**
    * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
+   *
+   * To configure additional settings for requests made using this method,
+   * use the `akka.http.client` config section or pass in a [[ClientConnectionSettings]] explicitly.
    */
   def outgoingConnection(host: String, port: Int = 80,
                          localAddress: Option[InetSocketAddress] = None,
@@ -170,6 +191,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *
    * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
    * for encryption on the connection.
+   *
+   * To configure additional settings for requests made using this method,
+   * use the `akka.http.client` config section or pass in a [[ClientConnectionSettings]] explicitly.
    */
   def outgoingConnectionTls(host: String, port: Int = 443,
                             localAddress: Option[InetSocketAddress] = None,
@@ -196,7 +220,8 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   type ClientLayer = Http.ClientLayer
 
   /**
-   * Constructs a [[ClientLayer]] stage using the configured default [[ClientConnectionSettings]].
+   * Constructs a [[ClientLayer]] stage using the configured default [[ClientConnectionSettings]],
+   * configured using the `akka.http.client` config section.
    */
   def clientLayer(hostHeader: Host): ClientLayer =
     clientLayer(hostHeader, ClientConnectionSettings(system))
@@ -208,6 +233,8 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                   settings: ClientConnectionSettings,
                   log: LoggingAdapter = system.log): ClientLayer =
     OutgoingConnectionBlueprint(hostHeader, settings, log)
+
+  // ** CONNECTION POOL ** //
 
   /**
    * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
@@ -222,6 +249,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type ``T`` from the application which is emitted together with the corresponding response.
+   *
+   * To configure additional settings for the pool (and requests made using it),
+   * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
    */
   def newHostConnectionPool[T](host: String, port: Int = 80,
                                settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
@@ -235,6 +265,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *
    * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
    * for encryption on the connections.
+   *
+   * To configure additional settings for the pool (and requests made using it),
+   * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
    */
   def newHostConnectionPoolTls[T](host: String, port: Int = 443,
                                   settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
@@ -280,6 +313,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type ``T`` from the application which is emitted together with the corresponding response.
+   *
+   * To configure additional settings for the pool (and requests made using it),
+   * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
    */
   def cachedHostConnectionPool[T](host: String, port: Int = 80,
                                   settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
@@ -294,6 +330,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *
    * If an explicit [[HttpsContext]] is given then it rather than the configured default [[HttpsContext]] will be used
    * for encryption on the connections.
+   *
+   * To configure additional settings for the pool (and requests made using it),
+   * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
    */
   def cachedHostConnectionPoolTls[T](host: String, port: Int = 443,
                                      settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
@@ -338,6 +377,9 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type ``T`` from the application which is emitted together with the corresponding response.
+   *
+   * To configure additional settings for the pool (and requests made using it),
+   * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
    */
   def superPool[T](settings: ConnectionPoolSettings = ConnectionPoolSettings(system),
                    httpsContext: Option[HttpsContext] = None,

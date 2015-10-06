@@ -254,3 +254,17 @@ Parsing / Rendering
 
 Parsing and rendering of HTTP data structures is heavily optimized and for most types there's currently no public API
 provided to parse (or render to) Strings or byte arrays.
+
+.. note::
+  Various parsing and rendering settings are available to tweak in the configuration under ``akka.http.client[.parsing]``,
+  ``akka.http.server[.parsing]`` and ``akka.http.host-connection-pool[.client.parsing]``, with defaults for all of these
+  being defined in the ``akka.http.parsing`` configuration section.
+
+  For example, if you want to change a parsing setting for all components, you can set the ``akka.http.parsing.illegal-header-warnings = off``
+  value. However this setting can be stil overriden by the more specific sections, like for example ``akka.http.server.parsing.illegal-header-warnings = on``.
+  In this case both ``client`` and ``host-connection-pool`` APIs will see the setting ``off``, however the server will see ``on``.
+
+  In the case of ``akka.http.host-connection-pool.client`` settings, they default to settings set in ``akka.http.client``,
+  and can override them if needed. This is useful, since both ``client`` and ``host-connection-pool`` APIs,
+  such as the Client API ``Http.get(sys).outgoingConnection`` or the Host Connection Pool APIs ``Http.get(sys).singleRequest``
+  or ``Http.get(sys).superPool``, usually need the same settings, however the ``server`` most likely has a very different set of settings.

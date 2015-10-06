@@ -29,14 +29,15 @@ final case class ClientConnectionSettings(
 }
 
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings]("akka.http.client") {
-  def fromSubConfig(c: Config) = {
+  def fromSubConfig(root: Config, inner: Config) = {
+    val c = inner.withFallback(root.getConfig(prefix))
     apply(
       c.getString("user-agent-header").toOption.map(`User-Agent`(_)),
       c getFiniteDuration "connecting-timeout",
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getIntBytes "request-header-size-hint",
-      SocketOptionSettings fromSubConfig c.getConfig("socket-options"),
-      ParserSettings fromSubConfig c.getConfig("parsing"))
+      SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
+      ParserSettings.fromSubConfig(root, c.getConfig("parsing")))
   }
 
   /**
