@@ -12,11 +12,11 @@ import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
 private[http] object SocketOptionSettings {
-  def fromSubConfig(config: Config): immutable.Traversable[SocketOption] = {
+  def fromSubConfig(root: Config, c: Config): immutable.Traversable[SocketOption] = {
     def so[T](setting: String)(f: (Config, String) ⇒ T)(cons: T ⇒ SocketOption): List[SocketOption] =
-      config.getString(setting) match {
+      c.getString(setting) match {
         case "undefined" ⇒ Nil
-        case x           ⇒ cons(f(config, setting)) :: Nil
+        case x           ⇒ cons(f(c, setting)) :: Nil
       }
 
     so("so-receive-buffer-size")(_ getIntBytes _)(Inet.SO.ReceiveBufferSize) :::

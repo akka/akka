@@ -18,7 +18,7 @@ case class RoutingSettings(
   fileIODispatcher: String)
 
 object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.routing") {
-  def fromSubConfig(c: Config) = apply(
+  def fromSubConfig(root: Config, c: Config) = apply(
     c getBoolean "verbose-error-messages",
     c getBoolean "file-get-conditional",
     c getBoolean "render-vanity-footer",
