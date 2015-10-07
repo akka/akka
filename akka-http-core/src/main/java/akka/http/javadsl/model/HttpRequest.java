@@ -86,11 +86,25 @@ public abstract class HttpRequest implements HttpMessage, HttpMessage.MessageTra
     public static HttpRequest DELETE(String uri) {
         return create(uri).withMethod(HttpMethods.DELETE);
     }
-
+    
     /**
      * A default HEAD request to be modified using the `withX` methods.
      */
     public static HttpRequest HEAD(String uri) {
         return create(uri).withMethod(HttpMethods.HEAD);
+    }
+
+    /**
+     * A default PATCH request to be modified using the `withX` methods.
+     */
+    public static HttpRequest PATCH(String uri) {
+        return create(uri).withMethod(HttpMethods.PATCH);
+    }
+    
+    /**
+     * A default OPTIONS request to be modified using the `withX` methods.
+     */
+    public static HttpRequest OPTIONS(String uri) {
+        return create(uri).withMethod(HttpMethods.OPTIONS);
     }
 }
