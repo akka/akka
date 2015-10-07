@@ -78,4 +78,25 @@ class MethodDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "HTTP method not allowed, supported methods: PUT"
     }
   }
+
+  "extractMethod-example" in {
+    val route =
+      get {
+        complete("This is a GET request.")
+      } ~
+        extractMethod { method =>
+          complete(s"This ${method.name} request, clearly is not a GET!")
+        }
+
+    Get("/") ~> route ~> check {
+      responseAs[String] shouldEqual "This is a GET request."
+    }
+
+    Put("/") ~> route ~> check {
+      responseAs[String] shouldEqual "This PUT request, clearly is not a GET!"
+    }
+    Head("/") ~> route ~> check {
+      responseAs[String] shouldEqual "This HEAD request, clearly is not a GET!"
+    }
+  }
 }

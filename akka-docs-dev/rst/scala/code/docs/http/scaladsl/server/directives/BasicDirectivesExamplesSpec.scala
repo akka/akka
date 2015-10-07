@@ -5,6 +5,15 @@
 package docs.http.scaladsl.server
 package directives
 
+import java.io.File
+
+import akka.event.Logging
+import akka.http.scaladsl.model.HttpEntity.Chunked
+import akka.stream.ActorMaterializer
+import akka.stream.io.SynchronousFileSource
+import akka.stream.scaladsl.{ Sink, Source }
+
+import scala.concurrent.Future
 import scala.util.control.NonFatal
 import akka.util.ByteString
 import akka.http.scaladsl.model.headers.RawHeader
@@ -22,6 +31,127 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
 
     Get("/abcdef") ~> route ~> check {
       responseAs[String] shouldEqual "The length of the request URI is 25"
+    }
+  }
+  "0extractLog" in {
+    val route =
+      extractLog { log =>
+        log.debug("I'm logging things in much detail..!")
+        complete("It's amazing!")
+      }
+
+    Get("/abcdef") ~> route ~> check {
+      responseAs[String] shouldEqual "It's amazing!"
+    }
+  }
+  "0withMaterializer" in {
+    val special = ActorMaterializer(namePrefix = Some("special"))
+
+    def sample() =
+      path("sample") {
+        extractMaterializer { mat =>
+          complete {
+            // explicitly use the materializer:
+            Source.single(s"Materialized by ${mat.##}!")
+              .runWith(Sink.head)(mat)
+          }
+        }
+      }
+
+    val route =
+      pathPrefix("special") {
+        withMaterializer(special) {
+          sample() // `special` materializer will be used
+        }
+      } ~ sample() // default materializer will be used
+
+    Get("/sample") ~> route ~> check {
+      responseAs[String] shouldEqual s"Materialized by ${materializer.##}!"
+    }
+    Get("/special/sample") ~> route ~> check {
+      responseAs[String] shouldEqual s"Materialized by ${special.##}!"
+    }
+  }
+  "0withExecutionContext" in compileOnlySpec {
+    val special = system.dispatchers.lookup("special")
+
+    def sample() =
+      path("sample") {
+        extractExecutionContext { implicit ec =>
+          complete {
+            Future(s"Run on ${ec.##}!") // uses the `ec` ExecutionContext
+          }
+        }
+      }
+
+    val route =
+      pathPrefix("special") {
+        withExecutionContext(special) {
+          sample() // `special` execution context will be used
+        }
+      } ~ sample() // default execution context will be used
+
+    Get("/sample") ~> route ~> check {
+      responseAs[String] shouldEqual s"Run on ${system.dispatcher.##}!"
+    }
+    Get("/special/sample") ~> route ~> check {
+      responseAs[String] shouldEqual s"Run on ${special.##}!"
+    }
+  }
+  "0withLog" in {
+    val special = Logging(system, "SpecialRoutes")
+
+    def sample() =
+      path("sample") {
+        extractLog { implicit log =>
+          complete {
+            val msg = s"Logging using $log!"
+            log.debug(msg)
+            msg
+          }
+        }
+      }
+
+    val route =
+      pathPrefix("special") {
+        withLog(special) {
+          sample() // `special` logging adapter will be used
+        }
+      } ~ sample() // default logging adapter will be used
+
+    Get("/sample") ~> route ~> check {
+      responseAs[String] shouldEqual s"Logging using ${system.log}!"
+    }
+    Get("/special/sample") ~> route ~> check {
+      responseAs[String] shouldEqual s"Logging using $special!"
+    }
+  }
+  "0withSettings" in compileOnlySpec {
+    val special = RoutingSettings(system).copy(fileIODispatcher = "special-io-dispatcher")
+
+    def sample() =
+      path("sample") {
+        complete {
+          // internally uses the configured fileIODispatcher:
+          val source = SynchronousFileSource(new File("example.json"))
+          HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, source))
+        }
+      }
+
+    val route =
+      get {
+        pathPrefix("special") {
+          withSettings(special) {
+            sample() // `special` file-io-dispatcher will be used to read the file
+          }
+        } ~ sample() // default file-io-dispatcher will be used to read the file
+      }
+
+    Post("/special/sample") ~> route ~> check {
+      responseAs[String] shouldEqual s"{}"
+    }
+    Get("/sample") ~> route ~> check {
+      responseAs[String] shouldEqual "{}"
     }
   }
   "textract" in {
@@ -291,4 +421,6 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "Unmatched: '/456'"
     }
   }
+
+  private def compileOnlySpec(block: => Unit) = pending
 }

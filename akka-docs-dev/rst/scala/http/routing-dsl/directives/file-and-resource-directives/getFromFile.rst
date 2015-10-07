@@ -21,3 +21,8 @@ To serve files from a directory use ``getFromDirectory``, instead. To serve a fi
 use ``getFromResource`` instead.
 
 Note that it's not required to wrap this directive with ``get`` as this directive will only respond to ``GET`` requests.
+
+Example
+-------
+
+...

@@ -16,6 +16,8 @@ import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsReje
 /**
  * Provides directives for securing an inner route using the standard Http authentication headers [[`WWW-Authenticate`]]
  * and [[Authorization]]. Most prominently, HTTP Basic authentication as defined in RFC 2617.
+ *
+ * See: <a href="https://www.ietf.org/rfc/rfc2617.txt">RFC 2617</a>.
  */
 trait SecurityDirectives {
   import BasicDirectives._
@@ -23,16 +25,26 @@ trait SecurityDirectives {
   import FutureDirectives._
   import RouteDirectives._
 
+  //#authentication-result
   /**
    * The result of an HTTP authentication attempt is either the user object or
    * an HttpChallenge to present to the browser.
    */
   type AuthenticationResult[+T] = Either[HttpChallenge, T]
+  //#authentication-result
 
+  //#authenticator
   type Authenticator[T] = Credentials ⇒ Option[T]
+  //#authenticator
+  //#async-authenticator
   type AsyncAuthenticator[T] = Credentials ⇒ Future[Option[T]]
+  //#async-authenticator
+  //#authenticator-pf
   type AuthenticatorPF[T] = PartialFunction[Credentials, T]
+  //#authenticator-pf
+  //#async-authenticator-pf
   type AsyncAuthenticatorPF[T] = PartialFunction[Credentials, Future[T]]
+  //#async-authenticator-pf
 
   /**
    * Extracts the potentially present [[HttpCredentials]] provided with the request's [[Authorization]] header.
@@ -184,6 +196,12 @@ sealed trait Credentials
 object Credentials {
   case object Missing extends Credentials
   abstract case class Provided(identifier: String) extends Credentials {
+    /**
+     * Safely compares the passed in `secret` with the received secret part of the Credentials.
+     * Use of this method instead of manual String equality testing is recommended in order to guard against timing attacks.
+     *
+     * See also [[EnhancedString#secure_==]], for more information.
+     */
     def verify(secret: String): Boolean
   }
 

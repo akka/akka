@@ -75,7 +75,7 @@ Read more about :ref:`http-testkit-java`.
 
 .. _DRY: http://en.wikipedia.org/wiki/Don%27t_repeat_yourself
 
-.. _handling-http-server-failures-high-level-scala:
+.. _handling-http-server-failures-high-level-java:
 
 Handling HTTP Server failures in the High-Level API
 ---------------------------------------------------

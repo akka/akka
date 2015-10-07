@@ -4,14 +4,15 @@
 
 package docs.http.scaladsl.server
 package directives
-/*
+
 import akka.http.scaladsl.server.UnacceptedResponseContentTypeRejection
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
 import headers._
 
 class RespondWithDirectivesExamplesSpec extends RoutingSpec {
 
-  "respondWithHeader-examples" in {
+  "respondWithHeader-0" in {
     val route =
       path("foo") {
         respondWithHeader(RawHeader("Funky-Muppet", "gonzo")) {
@@ -25,82 +26,122 @@ class RespondWithDirectivesExamplesSpec extends RoutingSpec {
     }
   }
 
-  "respondWithHeaders-examples" in {
+  "respondWithDefaultHeader-0" in {
+    // custom headers
+    val blippy = RawHeader("X-Fish-Name", "Blippy")
+    val elTonno = RawHeader("X-Fish-Name", "El Tonno")
+
+    // format: OFF
+    // by default always include the Blippy header,
+    // unless a more specific X-Fish-Name is given by the inner route
+    val route =
+      respondWithDefaultHeader(blippy) {  //  blippy
+        respondWithHeader(elTonno) {      // /  el tonno
+          path("el-tonno") {              // | /
+            complete("¡Ay blippy!")       // | |- el tonno
+          } ~                             // | |
+          path("los-tonnos") {            // | |
+            complete("¡Ay ay blippy!")    // | |- el tonno
+          }                               // | |
+        } ~                               // | x
+        complete("Blip!")                 // |- blippy
+      } // x
+    // format: ON
+
+    Get("/") ~> route ~> check {
+      header("X-Fish-Name") shouldEqual Some(RawHeader("X-Fish-Name", "Blippy"))
+      responseAs[String] shouldEqual "Blip!"
+    }
+
+    Get("/el-tonno") ~> route ~> check {
+      header("X-Fish-Name") shouldEqual Some(RawHeader("X-Fish-Name", "El Tonno"))
+      responseAs[String] shouldEqual "¡Ay blippy!"
+    }
+
+    Get("/los-tonnos") ~> route ~> check {
+      header("X-Fish-Name") shouldEqual Some(RawHeader("X-Fish-Name", "El Tonno"))
+      responseAs[String] shouldEqual "¡Ay ay blippy!"
+    }
+  }
+  // format: ON
+
+  "respondWithHeaders-0" in {
     val route =
       path("foo") {
-        respondWithHeaders(RawHeader("Funky-Muppet", "gonzo"), Origin(Seq(HttpOrigin("http://akka.io")))) {
+        respondWithHeaders(RawHeader("Funky-Muppet", "gonzo"), Origin(HttpOrigin("http://akka.io"))) {
           complete("beep")
         }
       }
 
     Get("/foo") ~> route ~> check {
       header("Funky-Muppet") shouldEqual Some(RawHeader("Funky-Muppet", "gonzo"))
-      header[Origin] shouldEqual Some(Origin(Seq(HttpOrigin("http://akka.io"))))
+      header[Origin] shouldEqual Some(Origin(HttpOrigin("http://akka.io")))
       responseAs[String] shouldEqual "beep"
     }
   }
 
-  "respondWithMediaType-examples" in {
-    import MediaTypes._
+  //  FIXME awaiting resolution of https://github.com/akka/akka/issues/18625
+  //  "respondWithMediaType-examples" in {
+  //    import MediaTypes._
+  //
+  //    val route =
+  //      path("foo") {
+  //        respondWithMediaType(`application/json`) {
+  //          complete("[]") // marshalled to `text/plain` here
+  //        }
+  //      }
+  //
+  //    Get("/foo") ~> route ~> check {
+  //      mediaType shouldEqual `application/json`
+  //      responseAs[String] shouldEqual "[]"
+  //    }
+  //
+  //    Get("/foo") ~> Accept(MediaRanges.`text/*`) ~> route ~> check {
+  //      rejection shouldEqual UnacceptedResponseContentTypeRejection(ContentType(`application/json`) :: Nil)
+  //    }
+  //  }
 
-    val route =
-      path("foo") {
-        respondWithMediaType(`application/json`) {
-          complete("[]") // marshalled to `text/plain` here
-        }
-      }
+  //  "respondWithSingletonHeader-examples" in {
+  //    val respondWithMuppetHeader =
+  //      respondWithSingletonHeader(RawHeader("Funky-Muppet", "gonzo"))
+  //
+  //    val route =
+  //      path("foo") {
+  //        respondWithMuppetHeader {
+  //          complete("beep")
+  //        }
+  //      } ~
+  //        path("bar") {
+  //          respondWithMuppetHeader {
+  //            respondWithHeader(RawHeader("Funky-Muppet", "kermit")) {
+  //              complete("beep")
+  //            }
+  //          }
+  //        }
+  //
+  //    Get("/foo") ~> route ~> check {
+  //      headers.filter(_.is("funky-muppet")) shouldEqual List(RawHeader("Funky-Muppet", "gonzo"))
+  //      responseAs[String] shouldEqual "beep"
+  //    }
+  //
+  //    Get("/bar") ~> route ~> check {
+  //      headers.filter(_.is("funky-muppet")) shouldEqual List(RawHeader("Funky-Muppet", "kermit"))
+  //      responseAs[String] shouldEqual "beep"
+  //    }
+  //  }
 
-    Get("/foo") ~> route ~> check {
-      mediaType shouldEqual `application/json`
-      responseAs[String] shouldEqual "[]"
-    }
-    */
-//Get("/foo") ~> Accept(MediaRanges.`text/*`) ~> route ~> check {
-/*  rejection shouldEqual UnacceptedResponseContentTypeRejection(ContentType(`application/json`) :: Nil)
-    }
-  }
-
-  "respondWithSingletonHeader-examples" in {
-    val respondWithMuppetHeader =
-      respondWithSingletonHeader(RawHeader("Funky-Muppet", "gonzo"))
-
-    val route =
-      path("foo") {
-        respondWithMuppetHeader {
-          complete("beep")
-        }
-      } ~
-        path("bar") {
-          respondWithMuppetHeader {
-            respondWithHeader(RawHeader("Funky-Muppet", "kermit")) {
-              complete("beep")
-            }
-          }
-        }
-
-    Get("/foo") ~> route ~> check {
-      headers.filter(_.is("funky-muppet")) shouldEqual List(RawHeader("Funky-Muppet", "gonzo"))
-      responseAs[String] shouldEqual "beep"
-    }
-
-    Get("/bar") ~> route ~> check {
-      headers.filter(_.is("funky-muppet")) shouldEqual List(RawHeader("Funky-Muppet", "kermit"))
-      responseAs[String] shouldEqual "beep"
-    }
-  }
-
-  "respondWithStatus-examples" in {
-    val route =
-      path("foo") {
-        respondWithStatus(201) {
-          complete("beep")
-        }
-      }
-
-    Get("/foo") ~> route ~> check {
-      status shouldEqual StatusCodes.Created
-      responseAs[String] shouldEqual "beep"
-    }
-  }
+  // FIXME https://github.com/akka/akka/issues/18626
+  //  "respondWithStatus-examples" in {
+  //    val route =
+  //      path("foo") {
+  //        respondWithStatus(201) {
+  //          complete("beep")
+  //        }
+  //      }
+  //
+  //    Get("/foo") ~> route ~> check {
+  //      status shouldEqual StatusCodes.Created
+  //      responseAs[String] shouldEqual "beep"
+  //    }
+  //  }
 }
-*/ 

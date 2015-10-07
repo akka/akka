@@ -175,6 +175,6 @@ strong {color: #1d3c52; }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
-.pre { padding: 1px 2px; color: #5d8700; background-color: #f3f7e9; border: 1px solid #dee1e2; font-family: Menlo, Monaco, "Courier New", monospace; font-size: 12px; -webkit-border-radius: 3px; -moz-border-radius: 3px; border-radius: 3px; }
+.pre { padding: 1px 2px; color: #008FA9; background-color: #EFF2F5; border: 1px solid #DDDEDF; font-family: Menlo, Monaco, "Courier New", monospace; font-size: 12px; -webkit-border-radius: 3px; -moz-border-radius: 3px; border-radius: 3px; }
 .footer h5 { text-transform: none; }
 
