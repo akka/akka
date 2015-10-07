@@ -5,6 +5,7 @@
 package akka.http.impl.engine.rendering
 
 import akka.http.ClientConnectionSettings
+import akka.http.scaladsl.model.RequestEntityAcceptance._
 
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
@@ -99,7 +100,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
       }
 
     def renderContentLength(contentLength: Long) =
-      if (method.isEntityAccepted) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
+      if (method.isEntityAccepted && (contentLength > 0 || method.requestEntityAcceptance == Expected)) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
     def renderStreamed(body: Source[ByteString, Any]): RequestRenderingOutput =
       RequestRenderingOutput.Streamed(renderByteStrings(r, body))
