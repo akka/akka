@@ -25,21 +25,21 @@ Predefined Request values
 akka-http provides a set of predefined request values for request data commonly accessed in a web
 service.
 
-These request values are defined:
+These request values are defined in the following objects:
 
-RequestVals
+akka.http.javadsl.server.values.FormFieldsRequestVals
   Contains request values for basic data like URI components, request method, peer address, or the entity data.
-Cookies
+akka.http.javadsl.server.values.FormFieldsCookies
   Contains request values representing cookies.
-FormFields
+akka.http.javadsl.server.values.FormFields
   Contains request values to access form fields unmarshalled to various primitive Java types.
-Headers
+:ref:`akka.http.javadsl.server.values.Headers <header-request-vals-java>`
   Contains request values to access request headers or header values.
-HttpBasicAuthenticator
+akka.http.javadsl.server.values.FormFieldsHttpBasicAuthenticator
   An abstract class to implement to create a request value representing a HTTP basic authenticated principal.
-Parameters
+akka.http.javadsl.server.values.FormFieldsParameters
   Contains request values to access URI paramaters unmarshalled to various primitive Java types.
-PathMatchers
+akka.http.javadsl.server.values.FormFieldsPathMatchers
   Contains request values to match and access URI path segments.
-CustomRequestVal
+akka.http.javadsl.server.values.FormFieldsCustomRequestVal
   An abstract class to implement arbitrary custom request values.
