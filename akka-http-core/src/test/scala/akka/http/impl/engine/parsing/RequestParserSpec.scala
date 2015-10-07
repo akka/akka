@@ -12,6 +12,7 @@ import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.HttpProtocols._
 import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
@@ -37,7 +38,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, entityAccepted = true)
+  val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, requestEntityAcceptance = Expected)
   implicit val materializer = ActorMaterializer()
 
   "The request parsing logic should" - {
@@ -448,17 +449,26 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           }
         }
 
-        "with an illegal entity" in new Test {
+        "with an illegal entity using CONNECT" in new Test {
+          """CONNECT /resource/yes HTTP/1.1
+            |Transfer-Encoding: chunked
+            |Host: x
+            |
+            |""" should parseToError(422: StatusCode, ErrorInfo("CONNECT requests must not have an entity"))
+        }
+        "with an illegal entity using HEAD" in new Test {
           """HEAD /resource/yes HTTP/1.1
             |Content-length: 3
             |Host: x
             |
             |foo""" should parseToError(422: StatusCode, ErrorInfo("HEAD requests must not have an entity"))
-          """DELETE /resource/yes HTTP/1.1
+        }
+        "with an illegal entity using TRACE" in new Test {
+          """TRACE /resource/yes HTTP/1.1
             |Transfer-Encoding: chunked
             |Host: x
             |
-            |""" should parseToError(422: StatusCode, ErrorInfo("DELETE requests must not have an entity"))
+            |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
         }
       }
     }
