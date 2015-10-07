@@ -150,6 +150,13 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       parseAndCache("Fancy: foo\tbar\r\nx")() shouldEqual RawHeader("Fancy", "foo bar")
     }
 
+    "parse and cache a header with UTF8 chars in the value" in new TestSetup() {
+      parseAndCache("2-UTF8-Bytes: árvíztűrő ütvefúrógép\r\nx")() shouldEqual RawHeader("2-UTF8-Bytes", "árvíztűrő ütvefúrógép")
+      parseAndCache("3-UTF8-Bytes: The € or the $?\r\nx")() shouldEqual RawHeader("3-UTF8-Bytes", "The € or the $?")
+      parseAndCache("4-UTF8-Bytes: Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!\r\nx")() shouldEqual
+        RawHeader("4-UTF8-Bytes", "Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!")
+    }
+
     "produce an error message for lines with an illegal header name" in new TestSetup() {
       the[ParsingException] thrownBy parseLine(" Connection: close\r\nx") should have message "Illegal character ' ' in header name"
       the[ParsingException] thrownBy parseLine("Connection : close\r\nx") should have message "Illegal character ' ' in header name"
