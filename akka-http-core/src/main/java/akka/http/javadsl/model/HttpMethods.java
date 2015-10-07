@@ -27,8 +27,8 @@ public final class HttpMethods {
     /**
      * Create a custom method type.
      */
-    public static HttpMethod custom(String value, boolean safe, boolean idempotent, boolean entityAccepted) {
-        return akka.http.scaladsl.model.HttpMethod.custom(value, safe, idempotent, entityAccepted);
+    public static HttpMethod custom(String value, boolean safe, boolean idempotent, akka.http.scaladsl.model.RequestEntityAcceptance requestEntityAcceptance) {
+        return akka.http.scaladsl.model.HttpMethod.custom(value, safe, idempotent, requestEntityAcceptance);
     }
 
     /**
