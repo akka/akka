@@ -3,7 +3,7 @@
 extractCredentials
 ==================
 
-...
+Extracts the potentially present ``HttpCredentials`` provided with the request's ``Authorization`` header.
 
 Signature
 ---------
@@ -14,7 +14,8 @@ Signature
 Description
 -----------
 
-...
+Extracts the potentially present ``HttpCredentials`` provided with the request's ``Authorization`` header,
+which can be then used to implement some custom authentication or authorization logic.
 
 Example
 -------

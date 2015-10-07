@@ -22,3 +22,8 @@ instead.
 The rendering can be overridden by providing a custom ``Marshaller[DirectoryListing]``.
 
 Note that it's not required to wrap this directive with ``get`` as this directive will only respond to ``GET`` requests.
+
+Example
+-------
+
+...

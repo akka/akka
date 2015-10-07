@@ -3,10 +3,12 @@
 authenticateBasic
 =================
 
-...
+Wraps the inner route with Http Basic authentication support using a given ``Authenticator[T]``.
 
 Signature
 ---------
+
+.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authenticator
 
 .. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
    :snippet: authenticateBasic
@@ -14,10 +16,28 @@ Signature
 Description
 -----------
 
-...
+Provides support for handling `HTTP Basic Authentication`_.
+
+Given a function returning ``Some[T]`` upon successful authentication and ``None`` otherwise,
+respectively applies the inner route or rejects the request with a :class:`AuthenticationFailedRejection` rejection,
+which by default is mapped to an ``401 Unauthorized`` response.
+
+Longer-running authentication tasks (like looking up credentials in a database) should use the :ref:`-authenticateBasicAsync-`
+variant of this directive which allows it to run without blocking routing layer of Akka HTTP, freeing it for other requests.
+
+The ``authenticate*`` directives themselfs are not tied to any HTTP-specific
+details so that various authentication schemes can be implemented on top of authenticate.
+
+Standard HTTP-based authentication which uses the ``WWW-Authenticate`` header containing challenge data and
+``Authorization`` header for receiving credentials is implemented in subclasses of ``HttpAuthenticator``.
+
+.. warning::
+  Make sure to use basic authentication only over SSL because credentials are transferred in plaintext.
+
+.. _HTTP Basic Authentication: https://en.wikipedia.org/wiki/Basic_auth
 
 Example
 -------
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
-   :snippet: 0authenticateBasic
+   :snippet: authenticateBasic-0
