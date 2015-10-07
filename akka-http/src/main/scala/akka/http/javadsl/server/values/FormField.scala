@@ -36,6 +36,7 @@ object FormFields {
   def hexIntValue(name: String): FormField[jl.Integer] = FormFieldImpl(name.as(Unmarshaller.HexInt))
   def hexLongValue(name: String): FormField[jl.Long] = FormFieldImpl(name.as(Unmarshaller.HexLong))
 
+  /** Unmarshals the `name` field using the provided `convert` function. */
   def fromString[T](name: String, convert: Function[String, T], clazz: Class[T]): FormField[T] = {
     implicit val tTag: ClassTag[T] = ClassTag(clazz)
     FormFieldImpl(name.as(Util.fromStringUnmarshallerFromFunction(convert)))
