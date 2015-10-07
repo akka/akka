@@ -27,7 +27,7 @@ service.
 
 These request values are defined in the following objects:
 
-akka.http.javadsl.server.values.FormFieldsRequestVals
+:ref:`akka.http.javadsl.server.values.FormFields <form-field-request-vals-java>`
   Contains request values for basic data like URI components, request method, peer address, or the entity data.
 akka.http.javadsl.server.values.FormFieldsCookies
   Contains request values representing cookies.

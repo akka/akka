@@ -5,13 +5,10 @@
 package docs.http.javadsl.server;
 
 import akka.http.javadsl.model.HttpRequest;
-//#by-class
 import akka.http.javadsl.model.headers.Host;
-
-//#by-class
 import akka.http.javadsl.model.headers.RawHeader;
-import akka.http.javadsl.server.*;
-import akka.http.javadsl.server.values.Header;
+import akka.http.javadsl.server.RequestVal;
+import akka.http.javadsl.server.Route;
 import akka.http.javadsl.server.values.Headers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import org.junit.Test;
