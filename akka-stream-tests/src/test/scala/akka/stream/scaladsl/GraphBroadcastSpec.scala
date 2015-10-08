@@ -3,8 +3,7 @@ package akka.stream.scaladsl
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 
-import akka.stream.{ OverflowStrategy, ActorMaterializerSettings }
-import akka.stream.ActorMaterializer
+import akka.stream.{ SinkShape, OverflowStrategy, ActorMaterializerSettings, ActorMaterializer }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 
@@ -193,12 +192,12 @@ class GraphBroadcastSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      val sink = Sink() { implicit b ⇒
+      val sink = Sink.wrap(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         bcast.out(0) ~> Sink(c1)
         bcast.out(1) ~> Sink(c2)
-        bcast.in
-      }
+        SinkShape(bcast.in)
+      })
 
       val s = Source.subscriber[Int].to(sink).run()
 

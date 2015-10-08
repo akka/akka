@@ -91,7 +91,7 @@ public class StreamPartialFlowGraphDocTest {
   //#source-from-partial-flow-graph
   
   @Test
-  public void demonstrateBuildSourceFromPartialFlowGraph() throws Exception {
+  public void demonstrateBuildSourceFromPartialFlowGraph.create() throws Exception {
     //#source-from-partial-flow-graph
     final Source<Integer, BoxedUnit> ints = Source.fromIterator(() -> new Ints());
     
@@ -113,7 +113,7 @@ public class StreamPartialFlowGraphDocTest {
   }
   
   @Test
-  public void demonstrateBuildFlowFromPartialFlowGraph() throws Exception {
+  public void demonstrateBuildFlowFromPartialFlowGraph.create() throws Exception {
     //#flow-from-partial-flow-graph
     final Flow<Integer, Pair<Integer, String>, BoxedUnit> pairs = Flow.factory().create(
         b -> {

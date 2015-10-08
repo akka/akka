@@ -35,8 +35,7 @@ public class BidiFlowTest extends StreamTest {
       "FlowTest", AkkaSpec.testConf());
 
   private final BidiFlow<Integer, Long, ByteString, String, BoxedUnit> bidi = BidiFlow
-      .factory()
-      .create(
+      .wrap(FlowGraph.factory().create(
           new Function<FlowGraph.Builder<BoxedUnit>, BidiShape<Integer, Long, ByteString, String>>() {
             @Override
             public BidiShape<Integer, Long, ByteString, String> apply(Builder<BoxedUnit> b)
@@ -58,11 +57,11 @@ public class BidiFlowTest extends StreamTest {
               return new BidiShape<Integer, Long, ByteString, String>(top
                   .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
             }
-          });
+          }));
 
   private final BidiFlow<Long, Integer, String, ByteString, BoxedUnit> inverse = BidiFlow
-      .factory()
-      .create(
+      .wrap(
+      FlowGraph.factory().create(
           new Function<FlowGraph.Builder<BoxedUnit>, BidiShape<Long, Integer, String, ByteString>>() {
             @Override
             public BidiShape<Long, Integer, String, ByteString> apply(Builder<BoxedUnit> b)
@@ -84,11 +83,11 @@ public class BidiFlowTest extends StreamTest {
               return new BidiShape<Long, Integer, String, ByteString>(top
                   .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
             }
-          });
+          }));
 
   private final BidiFlow<Integer, Long, ByteString, String, Future<Integer>> bidiMat = BidiFlow
-      .factory()
-      .create(
+      .wrap(
+      FlowGraph.factory().create(
           Sink.<Integer> head(),
           new Function2<FlowGraph.Builder<Future<Integer>>, SinkShape<Integer>, BidiShape<Integer, Long, ByteString, String>>() {
             @Override
@@ -112,7 +111,7 @@ public class BidiFlowTest extends StreamTest {
               return new BidiShape<Integer, Long, ByteString, String>(top
                   .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
             }
-          });
+          }));
 
   private final String str = "Hello World";
   private final ByteString bytes = ByteString.fromString(str);
@@ -226,10 +225,10 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustCombineMaterializationValues() throws Exception {
-    final Flow<String, Integer, Future<Integer>> left = Flow.factory().create(
-        Sink.<Integer> head(), new Function2<Builder<Future<Integer> >, SinkShape<Integer>, Pair<Inlet<String>, Outlet<Integer>>>() {
+    final Flow<String, Integer, Future<Integer>> left = Flow.wrap(FlowGraph.factory().create(
+        Sink.<Integer> head(), new Function2<Builder<Future<Integer> >, SinkShape<Integer>, FlowShape<String, Integer>>() {
           @Override
-          public Pair<Inlet<String>, Outlet<Integer>> apply(Builder<Future<Integer>> b,
+          public FlowShape<String, Integer> apply(Builder<Future<Integer>> b,
               SinkShape<Integer> sink) throws Exception {
             final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.<Integer> create(2));
             final UniformFanInShape<Integer, Integer> merge = b.graph(Merge.<Integer> create(2));
@@ -243,19 +242,19 @@ public class BidiFlowTest extends StreamTest {
             b.from(bcast).to(sink)
              .from(Source.single(1)).via(bcast).to(merge)
              .from(flow).to(merge);
-            return new Pair<Inlet<String>, Outlet<Integer>>(flow.inlet(), merge.out());
+            return new FlowShape<String, Integer>(flow.inlet(), merge.out());
           }
-        });
-    final Flow<Long, ByteString, Future<List<Long>>> right = Flow.factory().create(
-        Sink.<List<Long>> head(), new Function2<Builder<Future<List<Long>>>, SinkShape<List<Long>>, Pair<Inlet<Long>, Outlet<ByteString>>>() {
+        }));
+    final Flow<Long, ByteString, Future<List<Long>>> right = Flow.wrap(FlowGraph.factory().create(
+        Sink.<List<Long>> head(), new Function2<Builder<Future<List<Long>>>, SinkShape<List<Long>>, FlowShape<Long, ByteString>>() {
           @Override
-          public Pair<Inlet<Long>, Outlet<ByteString>> apply(Builder<Future<List<Long>>> b,
+          public FlowShape<Long, ByteString> apply(Builder<Future<List<Long>>> b,
               SinkShape<List<Long>> sink) throws Exception {
             final FlowShape<Long, List<Long>> flow = b.graph(Flow.<Long> empty().grouped(10));
             b.from(flow).to(sink);
-            return new Pair<Inlet<Long>, Outlet<ByteString>>(flow.inlet(), b.source(Source.single(ByteString.fromString("10"))));
+            return new FlowShape<Long, ByteString>(flow.inlet(), b.source(Source.single(ByteString.fromString("10"))));
           }
-        });
+        }));
     final Pair<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> result =
         left.joinMat(bidiMat, Keep.<Future<Integer>, Future<Integer>> both()).joinMat(right, Keep.<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> both()).run(materializer);
     final Future<Integer> l = result.first().first();

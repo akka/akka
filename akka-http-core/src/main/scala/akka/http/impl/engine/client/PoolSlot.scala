@@ -54,7 +54,7 @@ private object PoolSlot {
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
             remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
             settings: ConnectionPoolSettings)(implicit system: ActorSystem, fm: Materializer): Graph[Ports, Any] =
-    FlowGraph.partial() { implicit b ⇒
+    FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
 
       val slotProcessor = b.add {

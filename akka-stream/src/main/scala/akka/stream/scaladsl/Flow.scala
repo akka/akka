@@ -34,11 +34,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
     if (this.isIdentity) {
-      val flowInstance: Flow[In, T, Mat2] = if (flow.isInstanceOf[javadsl.Flow[In, T, Mat2]])
-        flow.asInstanceOf[javadsl.Flow[In, T, Mat2]].asScala
-      else
-        flow.asInstanceOf[Flow[In, T, Mat2]]
-      flowInstance.mapMaterializedValue(combine(().asInstanceOf[Mat], _))
+      Flow.wrap(flow.asInstanceOf[Graph[FlowShape[In, T], Mat2]]).mapMaterializedValue(combine(().asInstanceOf[Mat], _))
     } else {
       val flowCopy = flow.module.carbonCopy
       new Flow(
@@ -249,7 +245,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(this)
 }
 
-object Flow extends FlowApply {
+object Flow {
+  private[this] val identity: Flow[Any, Any, Unit] = new Flow[Any, Any, Unit](Stages.Identity())
 
   private def shape[I, O](name: String): FlowShape[I, O] = FlowShape(Inlet(name + ".in"), Outlet(name + ".out"))
 
@@ -265,7 +262,7 @@ object Flow extends FlowApply {
    * Helper to create `Flow` without a [[Source]] or a [[Sink]].
    * Example usage: `Flow[Int]`
    */
-  def apply[T]: Flow[T, T, Unit] = new Flow[Any, Any, Any](Stages.Identity()).asInstanceOf[Flow[T, T, Unit]]
+  def apply[T]: Flow[T, T, Unit] = identity.asInstanceOf[Flow[T, T, Unit]]
 
   /**
    * A graph with the shape of a flow logically is a flow, this method makes
@@ -273,22 +270,22 @@ object Flow extends FlowApply {
    */
   def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M] ⇒ f
-      case other            ⇒ new Flow(other.module)
+      case f: Flow[I, O, M]         ⇒ f
+      case f: javadsl.Flow[I, O, M] ⇒ f.asScala
+      case other                    ⇒ new Flow(other.module)
     }
 
   /**
    * Helper to create `Flow` from a pair of sink and source.
    */
   def wrap[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
-    Flow(sink, source)(f) { implicit b ⇒ (in, out) ⇒ (in.inlet, out.outlet) }
-
+    wrap(FlowGraph.create(sink, source)(f) { implicit b ⇒ (in, out) ⇒ FlowShape(in.inlet, out.outlet) })
 }
 
 /**
  * Flow with attached input and output, can be executed.
  */
-case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
+final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
   require(module.isRunnable)
   def shape = ClosedShape
 
@@ -974,12 +971,12 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#zip]].
    */
   def zipMat[U, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[(Out, U), Mat3] =
-    this.viaMat(Flow(that) { implicit b ⇒
+    this.viaMat(FlowGraph.create(that) { implicit b ⇒
       r ⇒
         import FlowGraph.Implicits._
         val zip = b.add(Zip[Out, U]())
         r ~> zip.in1
-        (zip.in0, zip.out)
+        FlowShape(zip.in0, zip.out)
     })(matF)
 
   /**
@@ -1004,12 +1001,12 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#zipWith]].
    */
   def zipWithMat[Out2, Out3, Mat2, Mat3](that: Graph[SourceShape[Out2], Mat2])(combine: (Out, Out2) ⇒ Out3)(matF: (Mat, Mat2) ⇒ Mat3): Repr[Out3, Mat3] =
-    this.viaMat(Flow(that) { implicit b ⇒
+    this.viaMat(FlowGraph.create(that) { implicit b ⇒
       r ⇒
         import FlowGraph.Implicits._
         val zip = b.add(ZipWith[Out, Out2, Out3](combine))
         r ~> zip.in1
-        (zip.in0, zip.out)
+        FlowShape(zip.in0, zip.out)
     })(matF)
 
   /**
@@ -1034,12 +1031,12 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#merge]].
    */
   def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
-    this.viaMat(Flow(that) { implicit b ⇒
+    this.viaMat(FlowGraph.create(that) { implicit b ⇒
       r ⇒
         import FlowGraph.Implicits._
         val merge = b.add(Merge[U](2))
         r ~> merge.in(1)
-        (merge.in(0), merge.out)
+        FlowShape(merge.in(0), merge.out)
     })(matF)
 
   /**
@@ -1076,12 +1073,12 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#concat]].
    */
   def concatMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
-    this.viaMat(Flow(that) { implicit b ⇒
+    this.viaMat(FlowGraph.create(that) { implicit b ⇒
       r ⇒
         import FlowGraph.Implicits._
         val merge = b.add(Concat[U]())
         r ~> merge.in(1)
-        (merge.in(0), merge.out)
+        FlowShape(merge.in(0), merge.out)
     })(matF)
 
   /**

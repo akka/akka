@@ -115,7 +115,7 @@ class CompositionDocSpec extends AkkaSpec {
     // format: OFF
     //#partial-graph
     import FlowGraph.Implicits._
-    val partial = FlowGraph.partial() { implicit builder =>
+    val partial = FlowGraph.create() { implicit builder =>
       val B = builder.add(Broadcast[Int](2))
       val C = builder.add(Merge[Int](2))
       val E = builder.add(Balance[Int](2))
@@ -140,14 +140,14 @@ class CompositionDocSpec extends AkkaSpec {
     val flow = Flow.wrap(partial)
 
     // Simple way to create a graph backed Source
-    val source = Source() { implicit builder =>
+    val source = Source.wrap( FlowGraph.create() { implicit builder =>
       val merge = builder.add(Merge[Int](2))
       Source.single(0)      ~> merge
       Source(List(2, 3, 4)) ~> merge
 
       // Exposing exactly one output port
-      merge.out
-    }
+      SourceShape(merge.out)
+    })
 
     // Building a Sink with a nested Flow, using the fluid DSL
     val sink = {

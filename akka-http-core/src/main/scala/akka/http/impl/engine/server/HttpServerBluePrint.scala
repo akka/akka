@@ -111,7 +111,7 @@ private[http] object HttpServerBluePrint {
         .flatten(FlattenStrategy.concat)
         .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
 
-    BidiFlow(requestParsingFlow, rendererPipeline, oneHundredContinueSource)((_, _, _) ⇒ ()) { implicit b ⇒
+    BidiFlow.wrap(FlowGraph.create(requestParsingFlow, rendererPipeline, oneHundredContinueSource)((_, _, _) ⇒ ()) { implicit b ⇒
       (requestParsing, renderer, oneHundreds) ⇒
         import FlowGraph.Implicits._
 
@@ -167,7 +167,7 @@ private[http] object HttpServerBluePrint {
           wrapTls.outlet,
           unwrapTls.inlet,
           requestsIn)
-    }
+    })
   }
 
   class BypassMerge(settings: ServerSettings, log: LoggingAdapter)

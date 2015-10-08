@@ -69,15 +69,16 @@ public class FlowGraphTest extends StreamTest {
 
     final Sink<String, Publisher<String>> publisher = Sink.publisher();
     
-    final Source<String, BoxedUnit> source = Source.factory().create(new Function<FlowGraph.Builder<BoxedUnit>, Outlet<String>>() {
+    final Source<String, BoxedUnit> source = Source.wrap(
+            FlowGraph.factory().create(new Function<FlowGraph.Builder<BoxedUnit>, SourceShape<String>>() {
       @Override
-      public Outlet<String> apply(Builder<BoxedUnit> b) throws Exception {
+      public SourceShape<String> apply(Builder<BoxedUnit> b) throws Exception {
         final UniformFanInShape<String, String> merge = b.graph(Merge.<String> create(2));
         b.flow(b.source(in1), f1, merge.in(0));
         b.flow(b.source(in2), f2, merge.in(1));
-        return merge.out();
+        return new SourceShape<String>(merge.out());
       }
-    });
+    }));
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);

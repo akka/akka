@@ -62,7 +62,7 @@ private object PoolConductor {
 
   */
   def apply(slotCount: Int, maxRetries: Int, pipeliningLimit: Int, log: LoggingAdapter): Graph[Ports, Any] =
-    FlowGraph.partial() { implicit b ⇒
+    FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
 
       // actually we want a `MergePreferred` here (and prefer the `retryInlet`),

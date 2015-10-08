@@ -121,7 +121,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
-    Source.wrap(FlowGraph.partial() { implicit b ⇒
+    Source.wrap(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)
@@ -137,7 +137,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
     })
 }
 
-object Source extends SourceApply {
+object Source {
 
   private[this] final val _id: Any ⇒ Any = x ⇒ x
   private[this] final def id[A]: A ⇒ A = _id.asInstanceOf[A ⇒ A]
@@ -180,8 +180,9 @@ object Source extends SourceApply {
    * it so also in type.
    */
   def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
-    case s: Source[T, M] ⇒ s
-    case other           ⇒ new Source(other.module)
+    case s: Source[T, M]         ⇒ s
+    case s: javadsl.Source[T, M] ⇒ s.asScala
+    case other                   ⇒ new Source(other.module)
   }
 
   /**
@@ -331,7 +332,7 @@ object Source extends SourceApply {
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
-    Source.wrap(FlowGraph.partial() { implicit b ⇒
+    Source.wrap(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)

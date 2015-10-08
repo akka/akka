@@ -35,7 +35,7 @@ public class TcpTest extends StreamTest {
   final Sink<IncomingConnection, Future<BoxedUnit>> echoHandler =
       Sink.foreach(new Procedure<IncomingConnection>() {
         public void apply(IncomingConnection conn) {
-          conn.handleWith(Flow.<ByteString>empty(), materializer);
+          conn.handleWith(Flow.of(ByteString.class), materializer);
         }
       });
 

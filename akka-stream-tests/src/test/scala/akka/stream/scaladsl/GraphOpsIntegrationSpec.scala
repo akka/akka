@@ -33,7 +33,7 @@ object GraphOpsIntegrationSpec {
     }
 
     def apply[In, Out](pipeline: Flow[In, Out, _]): Graph[ShufflePorts[In, Out], Unit] = {
-      FlowGraph.partial() { implicit b ⇒
+      FlowGraph.create() { implicit b ⇒
         val merge = b.add(Merge[In](2))
         val balance = b.add(Balance[Out](2))
         merge.out ~> pipeline ~> balance.in

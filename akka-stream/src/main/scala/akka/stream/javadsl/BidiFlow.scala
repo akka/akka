@@ -7,9 +7,6 @@ import akka.japi.function
 import akka.stream._
 
 object BidiFlow {
-
-  val factory: BidiFlowCreate = new BidiFlowCreate {}
-
   /**
    * A graph with the shape of a BidiFlow logically is a BidiFlow, this method makes
    * it so also in type.
@@ -45,6 +42,29 @@ object BidiFlow {
     combine: function.Function2[M1, M2, M]): BidiFlow[I1, O1, I2, O2, M] = {
     new BidiFlow(scaladsl.BidiFlow.wrap(flow1, flow2)(combinerToScala(combine)))
   }
+
+  /**
+   * Wraps two Flows to create a ''BidiFlow''. The materialized value of the resulting BidiFlow is Unit.
+   *
+   * {{{
+   *     +----------------------------+
+   *     | Resulting BidiFlow         |
+   *     |                            |
+   *     |  +----------------------+  |
+   * I1 ~~> |        Flow1         | ~~> O1
+   *     |  +----------------------+  |
+   *     |                            |
+   *     |  +----------------------+  |
+   * O2 <~~ |        Flow2         | <~~ I2
+   *     |  +----------------------+  |
+   *     +----------------------------+
+   * }}}
+   *
+   */
+  def create[I1, O1, I2, O2, M1, M2](
+    flow1: Graph[FlowShape[I1, O1], M1],
+    flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, Unit] =
+    new BidiFlow(scaladsl.BidiFlow(flow1, flow2))
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
@@ -84,7 +104,8 @@ class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O1, I2,
     new BidiFlow(delegate.atop(bidi.asScala))
 
   /**
-   * Add the given BidiFlow as the next step in a bidirectional transformation
+   * Add the given BidiFlow as the next step in a bidirectional transformation  161
+   *
    * pipeline. By convention protocol stacks are growing to the left: the right most is the bottom
    * layer, the closest to the metal.
    * {{{

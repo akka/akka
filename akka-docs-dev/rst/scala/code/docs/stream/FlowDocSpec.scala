@@ -4,6 +4,7 @@
 package docs.stream
 
 import akka.actor.Cancellable
+import akka.stream.FlowShape
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
@@ -142,13 +143,13 @@ class FlowDocSpec extends AkkaSpec {
   "various ways of transforming materialized values" in {
     import scala.concurrent.duration._
 
-    val throttler = Flow(Source(1.second, 1.second, "test")) { implicit builder =>
+    val throttler = Flow.wrap(FlowGraph.create(Source(1.second, 1.second, "test")) { implicit builder =>
       tickSource =>
         import FlowGraph.Implicits._
         val zip = builder.add(ZipWith[String, Int, Int](Keep.right))
         tickSource ~> zip.in0
-        (zip.in1, zip.out)
-    }
+        FlowShape(zip.in1, zip.out)
+    })
 
     //#flow-mat-combine
     // An empty source that can be shut down explicitly from the outside

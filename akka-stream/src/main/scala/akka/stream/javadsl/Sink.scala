@@ -15,14 +15,6 @@ import scala.util.Try
 
 /** Java API */
 object Sink {
-
-  val factory: SinkCreate = new SinkCreate {}
-
-  /** Adapt [[scaladsl.Sink]] for use within Java DSL */
-  //FIXME: Is this needed now?
-  def adapt[O, M](sink: scaladsl.Sink[O, M]): javadsl.Sink[O, M] =
-    new Sink(sink)
-
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
    * output (or the given `zero` value) and the element as input.

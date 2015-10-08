@@ -7,7 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Success, Failure }
 import scala.util.control.NoStackTrace
-import akka.stream.ActorMaterializer
+import akka.stream.{ SourceShape, ActorMaterializer }
 import akka.stream.testkit._
 import akka.stream.impl.PublisherSource
 import akka.stream.impl.ReactiveStreamsCompliance
@@ -126,7 +126,7 @@ class SourceSpec extends AkkaSpec {
       val source = Source.subscriber[Int]
       val out = TestSubscriber.manualProbe[Int]
 
-      val s = Source(source, source, source, source, source)(Seq(_, _, _, _, _)) { implicit b ⇒
+      val s = Source.wrap(FlowGraph.create(source, source, source, source, source)(Seq(_, _, _, _, _)) { implicit b ⇒
         (i0, i1, i2, i3, i4) ⇒
           import FlowGraph.Implicits._
           val m = b.add(Merge[Int](5))
@@ -135,8 +135,8 @@ class SourceSpec extends AkkaSpec {
           i2.outlet ~> m.in(2)
           i3.outlet ~> m.in(3)
           i4.outlet ~> m.in(4)
-          m.out
-      }.to(Sink(out)).run()
+          SourceShape(m.out)
+      }).to(Sink(out)).run()
 
       for (i ← 0 to 4) probes(i).subscribe(s(i))
       val sub = out.expectSubscription()

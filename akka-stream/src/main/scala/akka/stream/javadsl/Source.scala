@@ -20,20 +20,13 @@ import scala.language.{ higherKinds, implicitConversions }
 
 /** Java API */
 object Source {
-
-  val factory: SourceCreate = new SourceCreate {}
-
-  /** Adapt [[scaladsl.Source]] for use within JavaDSL */
-  // FIXME: is this needed now?
-  def adapt[O, M](source: scaladsl.Source[O, M]): Source[O, M] =
-    new Source(source)
+  private[this] val _empty = new Source[Any, Unit](scaladsl.Source.empty)
 
   /**
    * Create a `Source` with no elements, i.e. an empty stream that is completed immediately
    * for every connected `Sink`.
    */
-  def empty[O](): Source[O, Unit] =
-    new Source(scaladsl.Source.empty)
+  def empty[O](): Source[O, Unit] = _empty.asInstanceOf[Source[O, Unit]]
 
   /**
    * Create a `Source` with no elements, which does not complete its downstream,
@@ -247,9 +240,11 @@ object Source {
  * Can be used as a `Publisher`
  */
 class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[SourceShape[Out], Mat] {
+
   import scala.collection.JavaConverters._
 
   override def shape: SourceShape[Out] = delegate.shape
+
   private[stream] def module: StreamLayout.Module = delegate.module
 
   /** Converts this Java DSL element to its Scala DSL counterpart. */
@@ -385,16 +380,8 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * @see [[#zip]].
    */
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
-                       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] = {
-    //we need this only to have Flow of javadsl.Pair
-    def block(builder: FlowGraph.Builder[M],
-              source: SourceShape[T]): Pair[Inlet[Out], Outlet[Pair[Out, T]]] = {
-      val zip: FanInShape2[Out, T, Out Pair T] = builder.graph(Zip.create[Out, T])
-      builder.from(source).to(zip.in1)
-      new Pair(zip.in0, zip.out)
-    }
-    this.viaMat(Flow.factory.create(that, combinerToJava(block)), matF)
-  }
+                       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
+    this.viaMat(Flow.create[Out].zipMat(that, Keep.right[Unit, M]), matF)
 
   /**
    * Put together the elements of current [[Source]] and the given one

@@ -189,7 +189,7 @@ private[http] object Websocket {
       MessageToFrameRenderer.create(serverSide)
         .named("ws-render-messages")
 
-    BidiFlow() { implicit b ⇒
+    BidiFlow.wrap(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
 
       val routePreparation = b.add(Flow[FrameHandler.Output].mapConcat(x ⇒ x :: x :: Nil))
@@ -216,7 +216,7 @@ private[http] object Websocket {
         messagePreparation.outlet,
         messageRendering.inlet,
         merge.out)
-    }.named("ws-message-api")
+    }.named("ws-message-api"))
   }
 
   def stack(serverSide: Boolean = true,

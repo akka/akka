@@ -4,7 +4,7 @@
 package akka.stream.javadsl
 
 import akka.event.LoggingAdapter
-import akka.japi.{ Pair, function }
+import akka.japi.{ function, Pair }
 import akka.stream.impl.StreamLayout
 import akka.stream.{ scaladsl, _ }
 import akka.stream.stage.Stage
@@ -17,26 +17,23 @@ import scala.concurrent.duration.FiniteDuration
 
 object Flow {
 
-  val factory: FlowCreate = new FlowCreate {}
+  private[this] val _mkPair = new function.Function2[AnyRef, AnyRef, AnyRef Pair AnyRef] {
+    def apply(p1: AnyRef, p2: AnyRef): AnyRef Pair AnyRef = Pair(p1, p2)
+  }
 
-  /** Adapt [[scaladsl.Flow]] for use within Java DSL */
-  def adapt[I, O, M](flow: scaladsl.Flow[I, O, M]): javadsl.Flow[I, O, M] =
-    new Flow(flow)
+  private[this] val _identity = new javadsl.Flow(scaladsl.Flow[Any])
+
+  /** INTERNAL API **/
+  private[Flow] def mkPair[A, B]: function.Function2[A, B, A Pair B] = _mkPair.asInstanceOf[function.Function2[A, B, A Pair B]]
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def empty[T](): javadsl.Flow[T, T, Unit] =
-    Flow.create()
-
-  /** Create a `Flow` which can process elements of type `T`. */
-  def create[T](): javadsl.Flow[T, T, Unit] =
-    adapt(scaladsl.Flow[T])
+  def create[T](): javadsl.Flow[T, T, Unit] = wrap(scaladsl.Flow[T])
 
   def create[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, Unit] =
-    adapt(scaladsl.Flow(() ⇒ processorFactory.create()))
+    new Flow(scaladsl.Flow(() ⇒ processorFactory.create()))
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] =
-    create[T]()
+  def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] = create[T]()
 
   /**
    * A graph with the shape of a flow logically is a flow, this method makes
@@ -44,8 +41,9 @@ object Flow {
    */
   def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M] ⇒ f
-      case other            ⇒ new Flow(scaladsl.Flow.wrap(other))
+      case f: Flow[I, O, M]                          ⇒ f
+      case f: scaladsl.Flow[I, O, M] if f.isIdentity ⇒ _identity.asInstanceOf[Flow[I, O, M]]
+      case other                                     ⇒ new Flow(scaladsl.Flow.wrap(other))
     }
 
   /**
@@ -58,7 +56,7 @@ object Flow {
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
-class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
+final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
   import scala.collection.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
@@ -859,16 +857,15 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * @see [[#zip]]
    */
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
-                       matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out @uncheckedVariance Pair T, M2] = {
-    //we need this only to have Flow of javadsl.Pair
-    def block(builder: FlowGraph.Builder[M],
-              source: SourceShape[T]): Pair[Inlet[Out], Outlet[Pair[Out, T]]] = {
-      val zip: FanInShape2[Out, T, Out Pair T] = builder.graph(Zip.create[Out, T])
-      builder.from(source).to(zip.in1)
-      new Pair(zip.in0, zip.out)
-    }
-    this.viaMat(Flow.factory.create(that, combinerToJava(block)), matF)
-  }
+                       matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out @uncheckedVariance Pair T, M2] =
+    this.viaMat(Flow.wrap(FlowGraph.factory.create(that,
+      new function.Function2[FlowGraph.Builder[M], SourceShape[T], FlowShape[Out, Out @ uncheckedVariance Pair T]] {
+        def apply(b: FlowGraph.Builder[M], s: SourceShape[T]): FlowShape[Out, Out @uncheckedVariance Pair T] = {
+          val zip: FanInShape2[Out, T, Out Pair T] = b.graph(Zip.create[Out, T])
+          b.from(s).to(zip.in1)
+          FlowShape(zip.in0, zip.out)
+        }
+      })), matF)
 
   /**
    * Put together the elements of current [[Flow]] and the given [[Source]]

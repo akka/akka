@@ -86,7 +86,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * [[ServerBinding]].
    */
   def bind(interface: String, port: Int, materializer: Materializer): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(interface, port)(materializer)
+    new Source(delegate.bind(interface, port)(materializer)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
@@ -105,7 +105,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
            httpsContext: Option[HttpsContext],
            log: LoggingAdapter,
            materializer: Materializer): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(interface, port, settings, httpsContext, log)(materializer)
+    new Source(delegate.bind(interface, port, settings, httpsContext, log)(materializer)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
