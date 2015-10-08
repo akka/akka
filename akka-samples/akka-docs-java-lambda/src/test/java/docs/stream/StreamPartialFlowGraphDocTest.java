@@ -64,9 +64,9 @@ public class StreamPartialFlowGraphDocTest {
           // import the partial flow graph explicitly
           final UniformFanInShape<Integer, Integer> pm = builder.graph(pickMaxOfThree);
           
-          builder.from(Source.single(1)).to(pm.in(0));
-          builder.from(Source.single(2)).to(pm.in(1));
-          builder.from(Source.single(3)).to(pm.in(2));
+          builder.from(builder.graph(Source.single(1))).toInlet(pm.in(0));
+          builder.from(builder.graph(Source.single(2))).toInlet(pm.in(1));
+          builder.from(builder.graph(Source.single(3))).toInlet(pm.in(2));
           builder.from(pm.out()).to(sink);
         });
     
@@ -100,8 +100,8 @@ public class StreamPartialFlowGraphDocTest {
           final FanInShape2<Integer, Integer, Pair<Integer, Integer>> zip =
               builder.graph(Zip.create());
 
-          builder.from(ints.filter(i -> i % 2 == 0)).to(zip.in0());
-          builder.from(ints.filter(i -> i % 2 == 1)).to(zip.in1());
+          builder.from(builder.graph(ints.filter(i -> i % 2 == 0))).toInlet(zip.in0());
+          builder.from(builder.graph(ints.filter(i -> i % 2 == 1))).toInlet(zip.in1());
           
           return zip.out();
         });
@@ -121,8 +121,8 @@ public class StreamPartialFlowGraphDocTest {
           final FanInShape2<Integer, String, Pair<Integer, String>> zip =
               b.graph(Zip.create());
 
-          b.from(bcast).to(zip.in0());
-          b.from(bcast).via(Flow.of(Integer.class).map(i -> i.toString())).to(zip.in1());
+          b.from(bcast).toInlet(zip.in0());
+          b.from(bcast).via(b.graph(Flow.of(Integer.class).map(i -> i.toString()))).toInlet(zip.in1());
           
           return new Pair<>(bcast.in(), zip.out());
         });

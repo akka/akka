@@ -4,6 +4,7 @@
 package akka.stream
 
 import scala.collection.immutable
+import scala.annotation.unchecked.uncheckedVariance
 
 object FanOutShape {
   sealed trait Init[I] {
@@ -20,12 +21,12 @@ object FanOutShape {
   }
 }
 
-abstract class FanOutShape[I] private (_in: Inlet[I], _registered: Iterator[Outlet[_]], _name: String) extends Shape {
+abstract class FanOutShape[-I] private (_in: Inlet[I @uncheckedVariance], _registered: Iterator[Outlet[_]], _name: String) extends Shape {
   import FanOutShape._
 
   def this(init: FanOutShape.Init[I]) = this(init.inlet, init.outlets.iterator, init.name)
   
-  final def in: Inlet[I] = _in
+  final def in: Inlet[I @uncheckedVariance] = _in
   final override def outlets: immutable.Seq[Outlet[_]] = _outlets
   final override def inlets: immutable.Seq[Inlet[_]] = in :: Nil
   
@@ -36,7 +37,7 @@ abstract class FanOutShape[I] private (_in: Inlet[I], _registered: Iterator[Outl
     p
   }
   
-  protected def construct(init: Init[I]): FanOutShape[I]
+  protected def construct(init: Init[I @uncheckedVariance]): FanOutShape[I]
   
   def deepCopy(): FanOutShape[I] = construct(Ports[I](_in.carbonCopy(), outlets.map(_.carbonCopy())))
   final def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): FanOutShape[I] = {
@@ -51,24 +52,24 @@ object UniformFanOutShape {
     new UniformFanOutShape(outlets.size, FanOutShape.Ports(inlet, outlets.toList))
 }
 
-class UniformFanOutShape[I, O](n: Int, _init: FanOutShape.Init[I]) extends FanOutShape[I](_init) {
+class UniformFanOutShape[-I, +O](n: Int, _init: FanOutShape.Init[I @uncheckedVariance]) extends FanOutShape[I](_init) {
   def this(n: Int) = this(n, FanOutShape.Name[I]("UniformFanOut"))
   def this(n: Int, name: String) = this(n, FanOutShape.Name[I](name))
   def this(inlet: Inlet[I], outlets: Array[Outlet[O]]) = this(outlets.size, FanOutShape.Ports(inlet, outlets.toList))
-  override protected def construct(init: FanOutShape.Init[I]): FanOutShape[I] = new UniformFanOutShape(n, init)
+  override protected def construct(init: FanOutShape.Init[I @uncheckedVariance]): FanOutShape[I] = new UniformFanOutShape(n, init)
   override def deepCopy(): UniformFanOutShape[I, O] = super.deepCopy().asInstanceOf[UniformFanOutShape[I, O]]
   
-  val outArray: Array[Outlet[O]] = Array.tabulate(n)(i => newOutlet[O](s"out$i"))
-  def out(n: Int): Outlet[O] = outArray(n)
+  val outArray: Array[Outlet[O @uncheckedVariance]] = Array.tabulate(n)(i => newOutlet[O](s"out$i"))
+  def out(n: Int): Outlet[O @uncheckedVariance] = outArray(n)
 }
 
-[2..#class FanOutShape1[I, [#O0#]](_init: FanOutShape.Init[I]) extends FanOutShape[I](_init) {
+[2..#class FanOutShape1[-I, [#+O0#]](_init: FanOutShape.Init[I @uncheckedVariance]) extends FanOutShape[I](_init) {
   def this(name: String) = this(FanOutShape.Name[I](name))
   def this(in: Inlet[I], [#out0: Outlet[O0]#]) = this(FanOutShape.Ports(in, [#out0# :: ] :: Nil))
-  override protected def construct(init: FanOutShape.Init[I]): FanOutShape[I] = new FanOutShape1(init)
+  override protected def construct(init: FanOutShape.Init[I @uncheckedVariance]): FanOutShape[I] = new FanOutShape1(init)
   override def deepCopy(): FanOutShape1[I, [#O0#]] = super.deepCopy().asInstanceOf[FanOutShape1[I, [#O0#]]]
   
-  [#val out0 = newOutlet[O0]("out0")#
+  [#val out0: Outlet[O0 @uncheckedVariance] = newOutlet[O0]("out0")#
   ]
 }#
 

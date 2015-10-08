@@ -136,8 +136,8 @@ public class StreamTcpDocTest {
             final FlowShape<ByteString, ByteString> echo = builder.graph(echoFlow);
 
             builder
-              .from(welcome).to(concat)
-              .from(echo).to(concat);
+              .from(builder.graph(welcome)).toFanIn(concat)
+              .from(echo).toFanIn(concat);
 
             return new Pair<>(echo.inlet(), concat.out());
       });

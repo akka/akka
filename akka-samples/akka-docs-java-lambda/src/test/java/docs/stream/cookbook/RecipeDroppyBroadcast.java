@@ -65,10 +65,10 @@ public class RecipeDroppyBroadcast extends RecipeTest {
           final int outputCount = 3;
           final UniformFanOutShape<Integer, Integer> bcast =
             builder.graph(Broadcast.create(outputCount));
-          builder.from(builder.source(myData)).to(bcast);
-          builder.from(bcast).to(builder.sink(droppySink(mySink1, 10)));
-          builder.from(bcast).to(builder.sink(droppySink(mySink2, 10)));
-          builder.from(bcast).to(builder.sink(droppySink(mySink3, 10)));
+          builder.from(builder.source(myData)).toFanOut(bcast);
+          builder.from(bcast).toInlet(builder.sink(droppySink(mySink1, 10)));
+          builder.from(bcast).toInlet(builder.sink(droppySink(mySink2, 10)));
+          builder.from(bcast).toInlet(builder.sink(droppySink(mySink3, 10)));
         });
         //#droppy-bcast2
       }
