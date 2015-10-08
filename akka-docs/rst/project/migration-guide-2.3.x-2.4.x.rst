@@ -416,7 +416,7 @@ implement it yourself either as a helper trait or simply by overriding ``persist
 Failures
 --------
 
-Backend journal failures during recovery and persist are treated differently than in 2.3.x. The ``PersitenceFailure``
+Backend journal failures during recovery and persist are treated differently than in 2.3.x. The ``PersistenceFailure``
 message is removed and the actor is unconditionally stopped. The new behavior and reasons for it is explained in
 :ref:`failures-scala`. 
 
