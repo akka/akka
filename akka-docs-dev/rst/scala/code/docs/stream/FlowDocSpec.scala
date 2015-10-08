@@ -152,8 +152,8 @@ class FlowDocSpec extends AkkaSpec {
     })
 
     //#flow-mat-combine
-    // An empty source that can be shut down explicitly from the outside
-    val source: Source[Int, Promise[Unit]] = Source.lazyEmpty[Int]
+    // An source that can be signalled explicitly from the outside
+    val source: Source[Int, Promise[Option[Int]]] = Source.maybe[Int]
 
     // A flow that internally throttles elements to 1/second, and returns a Cancellable
     // which can be used to shut down the stream
@@ -163,7 +163,7 @@ class FlowDocSpec extends AkkaSpec {
     val sink: Sink[Int, Future[Int]] = Sink.head[Int]
 
     // By default, the materialized value of the leftmost stage is preserved
-    val r1: RunnableGraph[Promise[Unit]] = source.via(flow).to(sink)
+    val r1: RunnableGraph[Promise[Option[Int]]] = source.via(flow).to(sink)
 
     // Simple selection of materialized values by using Keep.right
     val r2: RunnableGraph[Cancellable] = source.viaMat(flow)(Keep.right).to(sink)
@@ -172,17 +172,17 @@ class FlowDocSpec extends AkkaSpec {
     // Using runWith will always give the materialized values of the stages added
     // by runWith() itself
     val r4: Future[Int] = source.via(flow).runWith(sink)
-    val r5: Promise[Unit] = flow.to(sink).runWith(source)
-    val r6: (Promise[Unit], Future[Int]) = flow.runWith(source, sink)
+    val r5: Promise[Option[Int]] = flow.to(sink).runWith(source)
+    val r6: (Promise[Option[Int]], Future[Int]) = flow.runWith(source, sink)
 
     // Using more complext combinations
-    val r7: RunnableGraph[(Promise[Unit], Cancellable)] =
+    val r7: RunnableGraph[(Promise[Option[Int]], Cancellable)] =
       source.viaMat(flow)(Keep.both).to(sink)
 
-    val r8: RunnableGraph[(Promise[Unit], Future[Int])] =
+    val r8: RunnableGraph[(Promise[Option[Int]], Future[Int])] =
       source.via(flow).toMat(sink)(Keep.both)
 
-    val r9: RunnableGraph[((Promise[Unit], Cancellable), Future[Int])] =
+    val r9: RunnableGraph[((Promise[Option[Int]], Cancellable), Future[Int])] =
       source.viaMat(flow)(Keep.both).toMat(sink)(Keep.both)
 
     val r10: RunnableGraph[(Cancellable, Future[Int])] =
@@ -190,7 +190,7 @@ class FlowDocSpec extends AkkaSpec {
 
     // It is also possible to map over the materialized values. In r9 we had a
     // doubly nested pair, but we want to flatten it out
-    val r11: RunnableGraph[(Promise[Unit], Cancellable, Future[Int])] =
+    val r11: RunnableGraph[(Promise[Option[Int]], Cancellable, Future[Int])] =
       r9.mapMaterializedValue {
         case ((promise, cancellable), future) =>
           (promise, cancellable, future)
@@ -200,12 +200,12 @@ class FlowDocSpec extends AkkaSpec {
     val (promise, cancellable, future) = r11.run()
 
     // Type inference works as expected
-    promise.success(())
+    promise.success(None)
     cancellable.cancel()
     future.map(_ + 3)
 
     // The result of r11 can be also achieved by using the Graph API
-    val r12: RunnableGraph[(Promise[Unit], Cancellable, Future[Int])] =
+    val r12: RunnableGraph[(Promise[Option[Int]], Cancellable, Future[Int])] =
       FlowGraph.closed(source, flow, sink)((_, _, _)) { implicit builder =>
         (src, f, dst) =>
           import FlowGraph.Implicits._

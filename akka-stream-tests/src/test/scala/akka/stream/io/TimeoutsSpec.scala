@@ -37,7 +37,7 @@ class TimeoutsSpec extends AkkaSpec {
 
     "fail if no initial element passes until timeout" in assertAllStagesStopped {
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source.lazyEmpty[Int]
+      Source.maybe[Int]
         .via(Timeouts.initalTimeout(1.seconds))
         .runWith(Sink(downstreamProbe))
 

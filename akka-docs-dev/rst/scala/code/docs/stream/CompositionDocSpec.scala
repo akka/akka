@@ -172,14 +172,14 @@ class CompositionDocSpec extends AkkaSpec {
 
   "materialized values" in {
     //#mat-combine-1
-    // Materializes to Promise[Unit]                                          (red)
-    val source: Source[Int, Promise[Unit]] = Source.lazyEmpty[Int]
+    // Materializes to Promise[Option[Int]]                                   (red)
+    val source: Source[Int, Promise[Option[Int]]] = Source.maybe[Int]
 
     // Materializes to Unit                                                   (black)
     val flow1: Flow[Int, Int, Unit] = Flow[Int].take(100)
 
-    // Materializes to Promise[Unit]                                          (red)
-    val nestedSource: Source[Int, Promise[Unit]] =
+    // Materializes to Promise[Int]                                          (red)
+    val nestedSource: Source[Int, Promise[Option[Int]]] =
       source.viaMat(flow1)(Keep.left).named("nestedSource")
     //#mat-combine-1
 
@@ -206,11 +206,11 @@ class CompositionDocSpec extends AkkaSpec {
     //#mat-combine-3
 
     //#mat-combine-4
-    case class MyClass(private val p: Promise[Unit], conn: OutgoingConnection) {
-      def close() = p.success(())
+    case class MyClass(private val p: Promise[Option[Int]], conn: OutgoingConnection) {
+      def close() = p.trySuccess(None)
     }
 
-    def f(p: Promise[Unit],
+    def f(p: Promise[Option[Int]],
           rest: (Future[OutgoingConnection], Future[String])): Future[MyClass] = {
 
       val connFuture = rest._1

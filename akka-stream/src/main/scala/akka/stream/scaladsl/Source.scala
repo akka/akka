@@ -250,16 +250,18 @@ object Source {
         shape("EmptySource")))
 
   /**
-   * Create a `Source` with no elements, which does not complete its downstream,
-   * until externally triggered to do so.
-   *
-   * It materializes a [[scala.concurrent.Promise]] which will be completed
-   * when the downstream stage of this source cancels. This promise can also
-   * be used to externally trigger completion, which the source then signals
-   * to its downstream.
+   * Create a `Source` which materializes a [[scala.concurrent.Promise]] which controls what element
+   * will be emitted by the Source.
+   * If the materialized promise is completed with a Some, that value will be produced downstream,
+   * followed by completion.
+   * If the materialized promise is completed with a None, no value will be produced downstream and completion will
+   * be signalled immediately.
+   * If the materialized promise is completed with a failure, then the returned source will terminate with that error.
+   * If the downstream of this source cancels before the promise has been completed, then the promise will be completed
+   * with None.
    */
-  def lazyEmpty[T]: Source[T, Promise[Unit]] =
-    new Source(new LazyEmptySource[T](DefaultAttributes.lazyEmptySource, shape("LazyEmptySource")))
+  def maybe[T]: Source[T, Promise[Option[T]]] =
+    new Source(new MaybeSource[T](DefaultAttributes.maybeSource, shape("MaybeSource")))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.

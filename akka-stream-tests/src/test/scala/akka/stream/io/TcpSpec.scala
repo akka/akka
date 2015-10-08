@@ -350,7 +350,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
             conn.flow.join(writeButIgnoreRead).run()
           })(Keep.left).run(), 3.seconds)
 
-      val result = Source.lazyEmpty[ByteString]
+      val result = Source.maybe[ByteString]
         .via(Tcp().outgoingConnection(serverAddress.getHostName, serverAddress.getPort))
         .runFold(ByteString.empty)(_ ++ _)
 
@@ -385,7 +385,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
       val serverAddress = temporaryServerAddress()
       val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostName, serverAddress.getPort)(mat2)
 
-      val result = Source.lazyEmpty[ByteString].via(Tcp(system2).outgoingConnection(serverAddress)).runFold(0)(_ + _.size)(mat2)
+      val result = Source.maybe[ByteString].via(Tcp(system2).outgoingConnection(serverAddress)).runFold(0)(_ + _.size)(mat2)
 
       // Getting rid of existing connection actors by using a blunt instrument
       system2.actorSelection(akka.io.Tcp(system2).getManager.path / "selectors" / "$a" / "*") ! Kill
