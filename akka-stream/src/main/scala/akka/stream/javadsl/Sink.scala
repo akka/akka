@@ -162,6 +162,15 @@ object Sink {
   def queue[T](bufferSize: Int, timeout: FiniteDuration): Sink[T, SinkQueue[T]] =
     new Sink(scaladsl.Sink.queue(bufferSize, timeout))
 
+  /**
+   * Crates a `Sink` that is materialized into `Source` to connect with another flow.
+   * This sink gets backpressure from second flow and does not have internal buffer.
+   */
+  def pipedSink[T](): Sink[T, javadsl.Source[T, Unit]] =
+    Sink.publisher[T].mapMaterializedValue(
+      new function.Function[Publisher[T], javadsl.Source[T, Unit]] {
+        def apply(pub: Publisher[T]) = javadsl.Source.from[T](pub)
+      }).named("PipedSink")
 }
 
 /**

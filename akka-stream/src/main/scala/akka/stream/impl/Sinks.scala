@@ -3,17 +3,20 @@
  */
 package akka.stream.impl
 
-import akka.actor.{ Deploy, ActorRef, Props }
-import akka.stream.actor.ActorPublisherMessage.Request
-import akka.stream.impl.StreamLayout.Module
+import akka.actor.{ ActorRef, Deploy, Props }
 import akka.stream._
+import akka.stream.actor.ActorPublisher.Internal.Subscribe
+import akka.stream.actor.ActorPublisherMessage.Request
+import akka.stream.impl.ReactiveStreamsCompliance._
+import akka.stream.impl.StreamLayout.Module
+import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.language.postfixOps
-import scala.util.Try
 
 /**
  * INTERNAL API
