@@ -88,7 +88,7 @@ Sealing Routes
 
 The section above describes how to test a "regular" branch of your route structure, which reacts to incoming requests
 with HTTP response parts or rejections. Sometimes, however, you will want to verify that your service also translates
-:ref:`Rejections` to HTTP responses in the way you expect.
+:ref:`rejections-scala` to HTTP responses in the way you expect.
 
 You do this by wrapping your route with the ``akka.http.scaladsl.server.Route.seal``.
 The ``seal`` wrapper applies the logic of the in-scope :ref:`ExceptionHandler <exception-handling-scala>` and
