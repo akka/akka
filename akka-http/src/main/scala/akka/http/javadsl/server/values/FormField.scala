@@ -6,11 +6,11 @@ package akka.http.javadsl.server
 package values
 
 import java.{ lang ⇒ jl }
+
+import akka.http.impl.server.{ FormFieldImpl, Util }
+import akka.http.scaladsl.unmarshalling._
 import akka.japi.function.Function
 import akka.japi.{ Option ⇒ JOption }
-
-import akka.http.impl.server.{ Util, FormFieldImpl }
-import akka.http.scaladsl.unmarshalling._
 
 import scala.reflect.ClassTag
 
@@ -37,7 +37,7 @@ object FormFields {
   def hexLongValue(name: String): FormField[jl.Long] = FormFieldImpl(name.as(Unmarshaller.HexLong))
 
   /** Unmarshals the `name` field using the provided `convert` function. */
-  def fromString[T](name: String, convert: Function[String, T], clazz: Class[T]): FormField[T] = {
+  def fromString[T](name: String, clazz: Class[T], convert: Function[String, T]): FormField[T] = {
     implicit val tTag: ClassTag[T] = ClassTag(clazz)
     FormFieldImpl(name.as(Util.fromStringUnmarshallerFromFunction(convert)))
   }

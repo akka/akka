@@ -22,12 +22,12 @@ match if the header is not present in the request). This is done using one of th
 Examples
 --------
 
-``Headers.byClass(Class[HttpHeader])``
+Extracting a header by using a specific ``Header`` class (which are pre-defined in ``akka.http.javadsl.model.headers.*``):
 
 .. includecode:: ../../../code/docs/http/javadsl/server/HeaderRequestValsExampleTest.java
    :include: by-class
 
-``Headers.byName(String)``
+Extracting arbitrary headers by their name, for example custom headers (usually starting with ``X-...``):
 
 .. includecode:: ../../../code/docs/http/javadsl/server/HeaderRequestValsExampleTest.java
    :include: by-name
