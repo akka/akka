@@ -23,14 +23,11 @@ a longer amount of time (e.g. looking up the user in a database).
 In case the returned option is ``None`` the request is rejected with a :class:`AuthenticationFailedRejection`,
 which by default is mapped to an ``401 Unauthorized`` response.
 
-The ``authenticate*`` directives themselfs are not tied to any HTTP-specific
-details so that various authentication schemes can be implemented on top of authenticate.
-
 Standard HTTP-based authentication which uses the ``WWW-Authenticate`` header containing challenge data and
 ``Authorization`` header for receiving credentials is implemented in subclasses of ``HttpAuthenticator``.
 
 .. warning::
-  Make sure to use basic authentication only over SSL because credentials are transferred in plaintext.
+  Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
 
 .. _HTTP Basic Authentication: https://en.wikipedia.org/wiki/Basic_auth
 
