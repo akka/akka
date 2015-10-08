@@ -76,7 +76,9 @@ object RequestVals {
    */
   def matchAndExtractHost(regex: Pattern): RequestVal[String] =
     new StandaloneExtractionImpl[String] {
-      def directive: Directive1[String] = HostDirectives.host(regex.pattern().r)
+      // important to use a val here so that invalid patterns are
+      // detected at construction and `IllegalArgumentException` is thrown
+      override val directive: Directive1[String] = HostDirectives.host(regex.pattern().r)
     }
 
   /**
