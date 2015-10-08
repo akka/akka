@@ -5,6 +5,7 @@
 package docs.http.javadsl.server;
 
 import akka.http.javadsl.model.ContentTypes;
+import akka.http.javadsl.model.FormData;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.server.Marshallers;
@@ -14,7 +15,9 @@ import akka.http.javadsl.server.values.FormField;
 import akka.http.javadsl.server.values.FormFields;
 import akka.http.javadsl.server.values.Headers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.japi.Pair;
 import docs.http.scaladsl.server.directives.Person;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class FormFieldRequestValsExampleTest extends JUnitRouteTest {
@@ -33,11 +36,14 @@ public class FormFieldRequestValsExampleTest extends JUnitRouteTest {
       );
 
     // tests:
+    final FormData formData = FormData.create(
+      Pair.create("name", "Blippy"),
+      Pair.create("age", "42"));
     final HttpRequest request =
       HttpRequest
-        .POST("/");
-        // .withFormData(); // FIXME awaits resolution of https://github.com/akka/akka/issues/18665
-    testRoute(route).run(request).assertEntity("Name: ..., age: ...");
+        .POST("/")
+        .withEntity(formData.toEntity());
+    testRoute(route).run(request).assertEntity("Name: Blippy, age: 42");
 
     //#simple
   }
@@ -45,21 +51,22 @@ public class FormFieldRequestValsExampleTest extends JUnitRouteTest {
   @Test
   public void testFormFieldValsUnmarshaling() {
     //#custom-unmarshal
-    FormField<SampleId> sampleId =  FormFields.fromString("id", s -> new SampleId(Integer.valueOf(s)), SampleId.class);
+    FormField<SampleId> sampleId = FormFields.fromString("id", SampleId.class, s -> new SampleId(Integer.valueOf(s)));
 
     final Route route =
       route(
-        handleWith1(sampleId, (ctx, id) ->
-          ctx.complete(String.format("SampleId: %s", id))
+        handleWith1(sampleId, (ctx, sid) ->
+          ctx.complete(String.format("SampleId: %s", sid.id))
         )
       );
 
     // tests:
+    final FormData formData = FormData.create(Pair.create("id", "1337"));
     final HttpRequest request =
       HttpRequest
-        .POST("/");
-        // .withFormData(); // FIXME awaits resolution of https://github.com/akka/akka/issues/18665
-    testRoute(route).run(request).assertEntity("Name: ..., age: ...");
+        .POST("/")
+        .withEntity(formData.toEntity());
+    testRoute(route).run(request).assertEntity("SampleId: 1337");
 
     //#custom-unmarshal
   }
@@ -71,5 +78,6 @@ public class FormFieldRequestValsExampleTest extends JUnitRouteTest {
       this.id = id;
     }
   }
+
 
 }

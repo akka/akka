@@ -5,22 +5,17 @@
 package akka.http.javadsl.server.values
 
 import java.util.AbstractMap.SimpleEntry
+import java.util.{ Collection ⇒ JCollection, Map ⇒ JMap }
 import java.{ lang ⇒ jl }
 
-import java.util.{ Map ⇒ JMap, Collection ⇒ JCollection }
-
+import akka.http.impl.server.{ ParameterImpl, StandaloneExtractionImpl, Util }
+import akka.http.javadsl.server.RequestVal
 import akka.http.scaladsl.server.directives.ParameterDirectives
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.japi.function.Function
-
-import scala.reflect.ClassTag
-
 import akka.japi.{ Option ⇒ JOption }
 
-import akka.http.impl.server.{ Util, StandaloneExtractionImpl, ParameterImpl }
-import akka.http.javadsl.server.RequestVal
-import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
+import scala.reflect.ClassTag
 
 /**
  * A RequestVal representing a query parameter of type T.
@@ -65,7 +60,8 @@ object Parameters {
   def asCollection: RequestVal[JCollection[JMap.Entry[String, String]]] =
     StandaloneExtractionImpl(ParameterDirectives.parameterSeq.map(_.map(e ⇒ new SimpleEntry(e._1, e._2): JMap.Entry[String, String]).asJavaCollection))
 
-  def fromString[T](name: String, convert: Function[String, T], clazz: Class[T]): Parameter[T] = {
+  /** Unmarshals the `name` field using the provided `convert` function. */
+  def fromString[T](name: String, clazz: Class[T], convert: Function[String, T]): Parameter[T] = {
     implicit val tTag: ClassTag[T] = ClassTag(clazz)
     ParameterImpl(name.as(Util.fromStringUnmarshallerFromFunction(convert)))
   }
