@@ -17,9 +17,7 @@ Description
 
 If a query contains a parameter value several times, the map will contain the last one.
 
-See :ref:`which-parameter-directive` for other
-choices.
-
+See :ref:`which-parameter-directive` to understand when to use which directive.
 
 Example
 -------
