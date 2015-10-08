@@ -15,15 +15,19 @@ Signature
 Description
 -----------
 
-The ``listDirectoryContents`` directive renders a response only for directories. To just serve files use
-``getFromDirectory``. To serve files and provide a browseable directory listing use ``getFromBrowsableDirectories``
-instead.
+The ``listDirectoryContents`` directive renders a response only for directories.
 
-The rendering can be overridden by providing a custom ``Marshaller[DirectoryListing]``.
+To just serve files use :ref:`-getFromDirectory-`.
+
+To serve files and provide a browseable directory listing use :ref:`-getFromBrowsableDirectories-` instead.
+
+The rendering can be overridden by providing a custom ``Marshaller[DirectoryListing]``, you can read more about it in
+:ref:`-getFromDirectory-` 's documentation.
 
 Note that it's not required to wrap this directive with ``get`` as this directive will only respond to ``GET`` requests.
 
 Example
 -------
 
-...
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala
+   :snippet: listDirectoryContents-examples
