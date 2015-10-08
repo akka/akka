@@ -98,6 +98,7 @@ class IncludeCode2(Directive):
         text = ''.join(res)
 
         if text == "":
+            # in includecode2 it indeed is a warning, an empty code block will be inserted
             return [document.reporter.warning('Snippet "' + snippet + '" not found!', line=self.lineno)]
 
         retnode = nodes.literal_block(text, text, source=fn)

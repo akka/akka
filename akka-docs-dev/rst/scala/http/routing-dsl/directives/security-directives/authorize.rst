@@ -8,8 +8,6 @@ Applies the given authorization check to the request.
 Signature
 ---------
 
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authorize
-
 .. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
    :snippet: authorize
 

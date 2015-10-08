@@ -91,7 +91,7 @@ with HTTP response parts or rejections. Sometimes, however, you will want to ver
 :ref:`Rejections` to HTTP responses in the way you expect.
 
 You do this by wrapping your route with the ``akka.http.scaladsl.server.Route.seal``.
-The ``seal`` wrapper applies the logic of the in-scope :ref:`ExceptionHandler <Exception Handling>` and
+The ``seal`` wrapper applies the logic of the in-scope :ref:`ExceptionHandler <exception-handling-scala>` and
 :ref:`RejectionHandler <The RejectionHandler>` to all exceptions and rejections coming back from the route,
 and translates them to the respective ``HttpResponse``.
 
