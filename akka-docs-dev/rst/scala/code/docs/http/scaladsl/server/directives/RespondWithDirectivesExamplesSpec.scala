@@ -5,10 +5,7 @@
 package docs.http.scaladsl.server
 package directives
 
-import akka.http.scaladsl.server.UnacceptedResponseContentTypeRejection
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import headers._
 
 class RespondWithDirectivesExamplesSpec extends RoutingSpec {
 
@@ -130,18 +127,4 @@ class RespondWithDirectivesExamplesSpec extends RoutingSpec {
   //    }
   //  }
 
-  // FIXME https://github.com/akka/akka/issues/18626
-  //  "respondWithStatus-examples" in {
-  //    val route =
-  //      path("foo") {
-  //        respondWithStatus(201) {
-  //          complete("beep")
-  //        }
-  //      }
-  //
-  //    Get("/foo") ~> route ~> check {
-  //      status shouldEqual StatusCodes.Created
-  //      responseAs[String] shouldEqual "beep"
-  //    }
-  //  }
 }
