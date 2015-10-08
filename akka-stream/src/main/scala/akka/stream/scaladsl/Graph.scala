@@ -102,7 +102,7 @@ class Merge[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] 
 object MergePreferred {
   import FanInShape._
   final class MergePreferredShape[T](val secondaryPorts: Int, _init: Init[T]) extends UniformFanInShape[T, T](secondaryPorts, _init) {
-    def this(secondaryPorts: Int, name: String) = this(secondaryPorts, Name(name))
+    def this(secondaryPorts: Int, name: String) = this(secondaryPorts, Name[T](name))
     override protected def construct(init: Init[T]): FanInShape[T] = new MergePreferredShape(secondaryPorts, init)
     override def deepCopy(): MergePreferredShape[T] = super.deepCopy().asInstanceOf[MergePreferredShape[T]]
 
@@ -562,7 +562,7 @@ object FlowGraph extends GraphApply {
   class Builder[+M] private[stream] () {
     private var moduleInProgress: Module = EmptyModule
 
-    def addEdge[A, B, M2](from: Outlet[A], via: Graph[FlowShape[A, B], M2], to: Inlet[B]): Unit = {
+    def addEdge[A1, A >: A1, B, B1 >: B, M2](from: Outlet[A1], via: Graph[FlowShape[A, B], M2], to: Inlet[B1]): Unit = {
       val flowCopy = via.module.carbonCopy
       moduleInProgress =
         moduleInProgress
@@ -571,7 +571,7 @@ object FlowGraph extends GraphApply {
           .wire(flowCopy.shape.outlets.head, to)
     }
 
-    def addEdge[T](from: Outlet[T], to: Inlet[T]): Unit = {
+    def addEdge[T, U >: T](from: Outlet[T], to: Inlet[U]): Unit = {
       moduleInProgress = moduleInProgress.wire(from, to)
     }
 
@@ -630,7 +630,7 @@ object FlowGraph extends GraphApply {
      *
      * @return The outlet that will emit the materialized value.
      */
-    def materializedValue: Outlet[M] = {
+    def materializedValue: Outlet[M @uncheckedVariance] = {
       val module = new MaterializedValueSource[Any]
       moduleInProgress = moduleInProgress.compose(module)
       module.shape.outlet.asInstanceOf[Outlet[M]]
@@ -724,7 +724,7 @@ object FlowGraph extends GraphApply {
     trait CombinerBase[T] extends Any {
       def importAndGetPort(b: Builder[_]): Outlet[T]
 
-      def ~>(to: Inlet[T])(implicit b: Builder[_]): Unit = {
+      def ~>[U >: T](to: Inlet[U])(implicit b: Builder[_]): Unit = {
         b.addEdge(importAndGetPort(b), to)
       }
 
@@ -770,7 +770,7 @@ object FlowGraph extends GraphApply {
     trait ReverseCombinerBase[T] extends Any {
       def importAndGetPortReverse(b: Builder[_]): Inlet[T]
 
-      def <~(from: Outlet[T])(implicit b: Builder[_]): Unit = {
+      def <~[U <: T](from: Outlet[U])(implicit b: Builder[_]): Unit = {
         b.addEdge(from, importAndGetPortReverse(b))
       }
 

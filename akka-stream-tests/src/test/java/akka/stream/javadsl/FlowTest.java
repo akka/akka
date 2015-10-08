@@ -646,8 +646,8 @@ public class FlowTest extends StreamTest {
       public Inlet<String> apply(Builder<BoxedUnit> b) throws Exception {
         final UniformFanOutShape<String, String> broadcast = b.graph(Broadcast.<String>create(2, true));
 
-        b.from(broadcast.out(0)).to(out1);
-        b.from(broadcast.out(1)).to(out2);
+        b.from(broadcast.out(0)).to(b.graph(out1));
+        b.from(broadcast.out(1)).to(b.graph(out2));
         return broadcast.in();
       }
     });
