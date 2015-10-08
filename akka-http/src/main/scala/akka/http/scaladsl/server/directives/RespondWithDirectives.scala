@@ -8,12 +8,6 @@ trait RespondWithDirectives {
   import BasicDirectives._
 
   /**
-   * Overrides the response status code with the given one.
-   */
-  def overrideStatusCode(responseStatus: StatusCode): Directive0 =
-    mapResponse(_.copy(status = responseStatus))
-
-  /**
    * Unconditionally adds the given response header to all HTTP responses of its inner Route.
    */
   def respondWithHeader(responseHeader: HttpHeader): Directive0 = respondWithHeaders(responseHeader)
