@@ -50,7 +50,7 @@ object BidiFlowDocSpec {
     // construct and add the bottom flow, going inbound
     val inbound = b.add(Flow[ByteString].map(fromBytes))
     // fuse them together into a BidiShape
-    BidiShape(outbound, inbound)
+    BidiShape.fromFlows(outbound, inbound)
   }
 
   // this is the same as the above
@@ -112,18 +112,18 @@ object BidiFlowDocSpec {
 
     val outbound = b.add(Flow[ByteString].map(addLengthHeader))
     val inbound = b.add(Flow[ByteString].transform(() => new FrameParser))
-    BidiShape(outbound, inbound)
+    BidiShape.fromFlows(outbound, inbound)
   }
   //#framing
 
   val chopUp = BidiFlow() { b =>
     val f = Flow[ByteString].mapConcat(_.map(ByteString(_)))
-    BidiShape(b.add(f), b.add(f))
+    BidiShape.fromFlows(b.add(f), b.add(f))
   }
 
   val accumulate = BidiFlow() { b =>
     val f = Flow[ByteString].grouped(1000).map(_.fold(ByteString.empty)(_ ++ _))
-    BidiShape(b.add(f), b.add(f))
+    BidiShape.fromFlows(b.add(f), b.add(f))
   }
 }
 

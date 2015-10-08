@@ -8,6 +8,7 @@ import akka.stream.{ Outlet, Shape, OutPort, Graph, Attributes }
 import scala.collection.immutable
 import akka.stream.impl.Junctions.FlexiRouteModule
 import akka.stream.impl.Stages.DefaultAttributes
+import scala.annotation.unchecked.uncheckedVariance
 
 object FlexiRoute {
 
@@ -24,7 +25,7 @@ object FlexiRoute {
    * has been completed. `IllegalArgumentException` is thrown if
    * that is not obeyed.
    */
-  final case class DemandFrom[+T](output: Outlet[T]) extends DemandCondition[Outlet[T]]
+  final case class DemandFrom[+T](output: Outlet[T @uncheckedVariance]) extends DemandCondition[Outlet[T @uncheckedVariance]]
 
   object DemandFromAny {
     def apply(outputs: OutPort*): DemandFromAny = new DemandFromAny(outputs.to[immutable.Seq])

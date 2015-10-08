@@ -381,9 +381,9 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
 
     "emit an error if the TLS handshake fails certificate checks" in assertAllStagesStopped {
       val getError = Flow[SslTlsInbound]
-        .map[Either[SslTlsInbound, SSLException]](i => Left(i))
-        .recover { case e: SSLException => Right(e) }
-        .collect { case Right(e) => e }.toMat(Sink.head)(Keep.right)
+        .map[Either[SslTlsInbound, SSLException]](i ⇒ Left(i))
+        .recover { case e: SSLException ⇒ Right(e) }
+        .collect { case Right(e) ⇒ e }.toMat(Sink.head)(Keep.right)
 
       val simple = Flow.wrap(getError, Source.lazyEmpty[SslTlsOutbound])(Keep.left)
 
@@ -399,8 +399,8 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
       val clientErr = simple.join(badClientTls(IgnoreBoth))
         .join(Tcp().outgoingConnection(Await.result(server, 1.second).localAddress)).run()
 
-      Await.result(serverErr.flatMap(identity), 1.second).getMessage should include ("certificate_unknown")
-      Await.result(clientErr, 1.second).getMessage should equal ("General SSLEngine problem")
+      Await.result(serverErr.flatMap(identity), 1.second).getMessage should include("certificate_unknown")
+      Await.result(clientErr, 1.second).getMessage should equal("General SSLEngine problem")
     }
 
     "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {

@@ -94,7 +94,7 @@ public class BidiFlowTest extends StreamTest {
             @Override
             public BidiShape<Integer, Long, ByteString, String> apply(Builder<Future<Integer>> b, SinkShape<Integer> sink)
                 throws Exception {
-              b.from(Source.single(42)).to(sink);
+              b.from(b.graph(Source.single(42))).to(sink);
               final FlowShape<Integer, Long> top = b.graph(Flow
                   .<Integer> empty().map(new Function<Integer, Long>() {
                     @Override
@@ -136,9 +136,9 @@ public class BidiFlowTest extends StreamTest {
                   SinkShape<String> sb) throws Exception {
                 final BidiShape<Integer, Long, ByteString, String> s = b
                     .graph(bidi);
-                b.from(Source.single(1)).to(s.in1());
+                b.from(b.graph(Source.single(1))).toInlet(s.in1());
                 b.from(s.out1()).to(st);
-                b.from(Source.single(bytes)).to(s.in2());
+                b.from(b.graph(Source.single(bytes))).toInlet(s.in2());
                 b.from(s.out2()).to(sb);
               }
             }).run(materializer);
@@ -217,8 +217,8 @@ public class BidiFlowTest extends StreamTest {
                 return ByteString.fromString("Hello " + arg);
               }
             }));
-        b.from(shape.out2()).via(left).to(shape.in1())
-         .from(shape.out1()).via(right).to(shape.in2());
+        b.from(shape.out2()).via(left).toInlet(shape.in1())
+         .from(shape.out1()).via(right).toInlet(shape.in2());
       }
     }).run(materializer);
     assertEquals((Integer) 42, Await.result(f, oneSec));
@@ -241,8 +241,8 @@ public class BidiFlowTest extends StreamTest {
                       }
                     }));
             b.from(bcast).to(sink)
-             .from(Source.single(1)).via(bcast).to(merge)
-             .from(flow).to(merge);
+             .from(b.graph(Source.single(1))).viaFanOut(bcast).toFanIn(merge)
+             .from(flow).toFanIn(merge);
             return new Pair<Inlet<String>, Outlet<Integer>>(flow.inlet(), merge.out());
           }
         });

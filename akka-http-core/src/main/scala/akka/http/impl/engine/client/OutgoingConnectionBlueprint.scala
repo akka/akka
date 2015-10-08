@@ -96,7 +96,7 @@ private[http] object OutgoingConnectionBlueprint {
       responseParsingMerge.out ~> responsePrep ~> terminationFanout.in
       terminationFanout.out(0) ~> terminationMerge.in1
 
-      BidiShape[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse](
+      BidiShape(
         methodBypassFanout.in,
         wrapTls.outlet,
         unwrapTls.inlet,
