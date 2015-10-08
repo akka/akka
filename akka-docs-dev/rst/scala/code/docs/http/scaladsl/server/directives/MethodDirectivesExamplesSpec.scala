@@ -99,4 +99,28 @@ class MethodDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "This HEAD request, clearly is not a GET!"
     }
   }
+
+  "overrideMethodWithParameter-0" in {
+    val route =
+      overrideMethodWithParameter("method") {
+        get {
+          complete("This looks like a GET request.")
+        } ~
+          post {
+            complete("This looks like a POST request.")
+          }
+      }
+
+    Get("/?method=POST") ~> route ~> check {
+      responseAs[String] shouldEqual "This looks like a POST request."
+    }
+    Post("/?method=get") ~> route ~> check {
+      responseAs[String] shouldEqual "This looks like a GET request."
+    }
+
+    Get("/?method=hallo") ~> route ~> check {
+      status shouldEqual StatusCodes.NotImplemented
+    }
+  }
+
 }

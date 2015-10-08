@@ -139,7 +139,6 @@ Directive                                   Description
                                             ``PartialFunction[HttpHeader, T]``
 :ref:`-options-`                            Rejects all non-OPTIONS requests
 :ref:`-overrideMethodWithParameter-`        Changes the request method to the value of the specified query parameter
-:ref:`-overrideStatusCode-`                 Overrides the response status code with the given one
 :ref:`-parameter-`                          Extracts a query parameter value from the request
 :ref:`-parameterMap-`                       Extracts the request's query parameters as a ``Map[String, String]``
 :ref:`-parameterMultiMap-`                  Extracts the request's query parameters as a ``Map[String, List[String]]``
