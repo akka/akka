@@ -192,7 +192,7 @@ class GraphBroadcastSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      val sink = Sink.wrap(FlowGraph.create() { implicit b ⇒
+      val sink = Sink.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         bcast.out(0) ~> Sink(c1)
         bcast.out(1) ~> Sink(c2)

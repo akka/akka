@@ -137,10 +137,10 @@ class CompositionDocSpec extends AkkaSpec {
     //#partial-flow-dsl
     // Convert the partial graph of FlowShape to a Flow to get
     // access to the fluid DSL (for example to be able to call .filter())
-    val flow = Flow.wrap(partial)
+    val flow = Flow.fromGraph(partial)
 
     // Simple way to create a graph backed Source
-    val source = Source.wrap( FlowGraph.create() { implicit builder =>
+    val source = Source.fromGraph( FlowGraph.create() { implicit builder =>
       val merge = builder.add(Merge[Int](2))
       Source.single(0)      ~> merge
       Source(List(2, 3, 4)) ~> merge

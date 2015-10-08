@@ -97,7 +97,7 @@ object Framing {
 
     })
 
-    BidiFlow.wrap(encoder, decoder)(Keep.left)
+    BidiFlow.fromGraphsMat(encoder, decoder)(Keep.left)
   }
 
   private trait IntDecoder {

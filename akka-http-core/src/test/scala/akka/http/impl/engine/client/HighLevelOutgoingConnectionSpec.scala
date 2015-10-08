@@ -47,7 +47,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka
       val connFlow = Http().outgoingConnection(serverHostName, serverPort)
 
       val C = 4
-      val doubleConnection = Flow.wrap(FlowGraph.create() { implicit b ⇒
+      val doubleConnection = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
 
         val bcast = b.add(Broadcast[HttpRequest](C))

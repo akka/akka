@@ -121,7 +121,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
-    Source.wrap(FlowGraph.create() { implicit b ⇒
+    Source.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)
@@ -138,13 +138,6 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
 }
 
 object Source {
-
-  private[this] final val _id: Any ⇒ Any = x ⇒ x
-  private[this] final def id[A]: A ⇒ A = _id.asInstanceOf[A ⇒ A]
-
-  private[stream] def apply[Out, Mat](module: SourceModule[Out, Mat]): Source[Out, Mat] =
-    new Source(module)
-
   /** INTERNAL API */
   private[stream] def shape[T](name: String): SourceShape[T] = SourceShape(Outlet(name + ".out"))
 
@@ -179,7 +172,7 @@ object Source {
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
-  def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
+  def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
     case s: Source[T, M]         ⇒ s
     case s: javadsl.Source[T, M] ⇒ s.asScala
     case other                   ⇒ new Source(other.module)
@@ -195,7 +188,7 @@ object Source {
    * beginning) regardless of when they subscribed.
    */
   def apply[T](iterable: immutable.Iterable[T]): Source[T, Unit] =
-    Source.single(iterable).mapConcat(id).withAttributes(DefaultAttributes.iterableSource)
+    Source.single(iterable).mapConcat(Consts.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -208,7 +201,7 @@ object Source {
       new PublisherSource(
         SingleElementPublisher(future, "FutureSource"),
         DefaultAttributes.futureSource,
-        shape("FutureSource"))).mapAsyncUnordered(1)(id)
+        shape("FutureSource"))).mapAsyncUnordered(1)(Consts.scalaIdentityFunction)
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -218,7 +211,7 @@ object Source {
    * receive new tick elements as soon as it has requested more elements.
    */
   def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): Source[T, Cancellable] =
-    wrap(new TickSource[T](initialDelay, interval, tick))
+    fromGraph(new TickSource[T](initialDelay, interval, tick))
 
   /**
    * Create a `Source` with one element.
@@ -243,7 +236,7 @@ object Source {
             override def toString: String = "repeat(" + element + ")"
           }, "RepeatSource"),
         DefaultAttributes.repeat,
-        shape("RepeatSource"))).mapConcat(id)
+        shape("RepeatSource"))).mapConcat(Consts.scalaIdentityFunction)
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
@@ -332,7 +325,7 @@ object Source {
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
-    Source.wrap(FlowGraph.create() { implicit b ⇒
+    Source.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)

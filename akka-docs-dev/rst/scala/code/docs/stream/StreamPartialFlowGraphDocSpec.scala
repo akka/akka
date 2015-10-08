@@ -51,7 +51,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   "build source from partial flow graph" in {
     //#source-from-partial-flow-graph
-    val pairs = Source.wrap(FlowGraph.create() { implicit b =>
+    val pairs = Source.fromGraph(FlowGraph.create() { implicit b =>
       import FlowGraph.Implicits._
 
       // prepare graph elements
@@ -74,7 +74,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
   "build flow from partial flow graph" in {
     //#flow-from-partial-flow-graph
     val pairUpWithToString =
-      Flow.wrap(FlowGraph.create() { implicit b =>
+      Flow.fromGraph(FlowGraph.create() { implicit b =>
         import FlowGraph.Implicits._
 
         // prepare graph elements

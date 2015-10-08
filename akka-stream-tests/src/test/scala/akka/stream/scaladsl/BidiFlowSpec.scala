@@ -18,15 +18,15 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
   implicit val mat = ActorMaterializer()
 
-  val bidi = BidiFlow(
+  val bidi = BidiFlow.fromGraphs(
     Flow[Int].map(x ⇒ x.toLong + 2).withAttributes(name("top")),
     Flow[ByteString].map(_.decodeString("UTF-8")).withAttributes(name("bottom")))
 
-  val inverse = BidiFlow(
+  val inverse = BidiFlow.fromGraphs(
     Flow[Long].map(x ⇒ x.toInt + 2).withAttributes(name("top")),
     Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
 
-  val bidiMat = BidiFlow.wrap(FlowGraph.create(Sink.head[Int]) { implicit b ⇒
+  val bidiMat = BidiFlow.fromGraph(FlowGraph.create(Sink.head[Int]) { implicit b ⇒
     s ⇒
       Source.single(42) ~> s
 
@@ -87,7 +87,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "combine materialization values" in assertAllStagesStopped {
-      val left = Flow.wrap(FlowGraph.create(Sink.head[Int]) { implicit b ⇒
+      val left = Flow.fromGraph(FlowGraph.create(Sink.head[Int]) { implicit b ⇒
         sink ⇒
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -97,7 +97,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
           flow ~> merge
           FlowShape(flow.inlet, merge.out)
       })
-      val right = Flow.wrap(FlowGraph.create(Sink.head[immutable.Seq[Long]]) { implicit b ⇒
+      val right = Flow.fromGraph(FlowGraph.create(Sink.head[immutable.Seq[Long]]) { implicit b ⇒
         sink ⇒
           val flow = b.add(Flow[Long].grouped(10))
           flow ~> sink

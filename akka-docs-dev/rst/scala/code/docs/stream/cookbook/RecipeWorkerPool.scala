@@ -21,7 +21,7 @@ class RecipeWorkerPool extends RecipeSpec {
       def balancer[In, Out](worker: Flow[In, Out, Any], workerCount: Int): Flow[In, Out, Unit] = {
         import FlowGraph.Implicits._
 
-        Flow.wrap(FlowGraph.create() { implicit b =>
+        Flow.fromGraph(FlowGraph.create() { implicit b =>
           val balancer = b.add(Balance[In](workerCount, waitForAllDownstreams = true))
           val merge = b.add(Merge[Out](workerCount))
 

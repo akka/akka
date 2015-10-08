@@ -462,9 +462,6 @@ object ZipWith extends ZipWithApply
  * '''Cancels when''' any downstream cancels
  */
 object Unzip {
-
-  private final val _identity: Any ⇒ Any = a ⇒ a
-
   /**
    * Create a new `Unzip`.
    */
@@ -497,9 +494,7 @@ object Concat {
   /**
    * Create a new `Concat`.
    */
-  def apply[T](inputCount: Int = 2): Concat[T] = {
-    new Concat(inputCount)
-  }
+  def apply[T](inputCount: Int = 2): Concat[T] = new Concat(inputCount)
 }
 
 /**
@@ -553,7 +548,6 @@ class Concat[T](inputCount: Int) extends GraphStage[UniformFanInShape[T, T]] {
     setHandler(out, new OutHandler {
       override def onPull() = pull(in(activeStream))
     })
-
   }
 }
 
@@ -700,7 +694,6 @@ object FlowGraph extends GraphApply {
 
     /** Converts this Scala DSL element to it's Java DSL counterpart. */
     def asJava: javadsl.FlowGraph.Builder[M] = new javadsl.FlowGraph.Builder()(this)
-
   }
 
   object Implicits {
@@ -724,9 +717,8 @@ object FlowGraph extends GraphApply {
     sealed trait CombinerBase[T] extends Any {
       def importAndGetPort(b: Builder[_]): Outlet[T]
 
-      def ~>(to: Inlet[T])(implicit b: Builder[_]): Unit = {
+      def ~>(to: Inlet[T])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), to)
-      }
 
       def ~>[Out](via: Graph[FlowShape[T, Out], Any])(implicit b: Builder[_]): PortOps[Out, Unit] = {
         val s = b.add(via)
@@ -758,21 +750,18 @@ object FlowGraph extends GraphApply {
         flow.outlet
       }
 
-      def ~>(to: Graph[SinkShape[T], _])(implicit b: Builder[_]): Unit = {
+      def ~>(to: Graph[SinkShape[T], _])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), b.add(to).inlet)
-      }
 
-      def ~>(to: SinkShape[T])(implicit b: Builder[_]): Unit = {
+      def ~>(to: SinkShape[T])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), to.inlet)
-      }
     }
 
     sealed trait ReverseCombinerBase[T] extends Any {
       def importAndGetPortReverse(b: Builder[_]): Inlet[T]
 
-      def <~(from: Outlet[T])(implicit b: Builder[_]): Unit = {
+      def <~(from: Outlet[T])(implicit b: Builder[_]): Unit =
         b.addEdge(from, importAndGetPortReverse(b))
-      }
 
       def <~[In](via: Graph[FlowShape[In, T], _])(implicit b: Builder[_]): ReversePortOps[In] = {
         val s = b.add(via)
@@ -804,13 +793,11 @@ object FlowGraph extends GraphApply {
         flow.inlet
       }
 
-      def <~(from: Graph[SourceShape[T], _])(implicit b: Builder[_]): Unit = {
+      def <~(from: Graph[SourceShape[T], _])(implicit b: Builder[_]): Unit =
         b.addEdge(b.add(from).outlet, importAndGetPortReverse(b))
-      }
 
-      def <~(from: SourceShape[T])(implicit b: Builder[_]): Unit = {
+      def <~(from: SourceShape[T])(implicit b: Builder[_]): Unit =
         b.addEdge(from.outlet, importAndGetPortReverse(b))
-      }
     }
 
     // Although Mat is always Unit, it cannot be removed as a type parameter, otherwise the "override type"

@@ -143,7 +143,7 @@ class FlowDocSpec extends AkkaSpec {
   "various ways of transforming materialized values" in {
     import scala.concurrent.duration._
 
-    val throttler = Flow.wrap(FlowGraph.create(Source(1.second, 1.second, "test")) { implicit builder =>
+    val throttler = Flow.fromGraph(FlowGraph.create(Source(1.second, 1.second, "test")) { implicit builder =>
       tickSource =>
         import FlowGraph.Implicits._
         val zip = builder.add(ZipWith[String, Int, Int](Keep.right))

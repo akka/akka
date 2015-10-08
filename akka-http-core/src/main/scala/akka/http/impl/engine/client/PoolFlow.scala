@@ -70,7 +70,7 @@ private object PoolFlow {
   def apply(connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
             remoteAddress: InetSocketAddress, settings: ConnectionPoolSettings, log: LoggingAdapter)(
               implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, Unit] =
-    Flow.wrap(FlowGraph.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
+    Flow.fromGraph(FlowGraph.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
       import FlowGraph.Implicits._
 

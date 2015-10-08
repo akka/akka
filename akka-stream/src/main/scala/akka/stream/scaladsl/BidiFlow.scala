@@ -122,12 +122,11 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
 }
 
 object BidiFlow {
-
   /**
    * A graph with the shape of a flow logically is a flow, this method makes
    * it so also in type.
    */
-  def wrap[I1, O1, I2, O2, Mat](graph: Graph[BidiShape[I1, O1, I2, O2], Mat]): BidiFlow[I1, O1, I2, O2, Mat] =
+  def fromGraph[I1, O1, I2, O2, Mat](graph: Graph[BidiShape[I1, O1, I2, O2], Mat]): BidiFlow[I1, O1, I2, O2, Mat] =
     graph match {
       case bidi: BidiFlow[I1, O1, I2, O2, Mat]         ⇒ bidi
       case bidi: javadsl.BidiFlow[I1, O1, I2, O2, Mat] ⇒ bidi.asScala
@@ -153,10 +152,10 @@ object BidiFlow {
    * }}}
    *
    */
-  def wrap[I1, O1, I2, O2, M1, M2, M](
+  def fromGraphsMat[I1, O1, I2, O2, M1, M2, M](
     flow1: Graph[FlowShape[I1, O1], M1],
     flow2: Graph[FlowShape[I2, O2], M2])(combine: (M1, M2) ⇒ M): BidiFlow[I1, O1, I2, O2, M] =
-    wrap(FlowGraph.create(flow1, flow2)(combine) {
+    fromGraph(FlowGraph.create(flow1, flow2)(combine) {
       implicit b ⇒ (f1, f2) ⇒ BidiShape(f1.inlet, f1.outlet, f2.inlet, f2.outlet)
     })
 
@@ -178,14 +177,14 @@ object BidiFlow {
    * }}}
    *
    */
-  def apply[I1, O1, I2, O2, M1, M2](flow1: Graph[FlowShape[I1, O1], M1],
-                                    flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, Unit] =
-    wrap(flow1, flow2)(Keep.none)
+  def fromGraphs[I1, O1, I2, O2, M1, M2](flow1: Graph[FlowShape[I1, O1], M1],
+                                         flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, Unit] =
+    fromGraphsMat(flow1, flow2)(Keep.none)
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
    * stage each, expressed by the two functions.
    */
-  def apply[I1, O1, I2, O2](outbound: I1 ⇒ O1, inbound: I2 ⇒ O2): BidiFlow[I1, O1, I2, O2, Unit] =
-    apply(Flow[I1].map(outbound), Flow[I2].map(inbound))
+  def fromFunctions[I1, O1, I2, O2](outbound: I1 ⇒ O1, inbound: I2 ⇒ O2): BidiFlow[I1, O1, I2, O2, Unit] =
+    fromGraphs(Flow[I1].map(outbound), Flow[I2].map(inbound))
 }

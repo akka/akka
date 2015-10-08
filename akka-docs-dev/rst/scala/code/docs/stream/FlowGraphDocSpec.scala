@@ -224,7 +224,7 @@ class FlowGraphDocSpec extends AkkaSpec {
   "access to materialized value" in {
     //#flow-graph-matvalue
     import FlowGraph.Implicits._
-    val foldFlow: Flow[Int, Int, Future[Int]] = Flow.wrap(FlowGraph.create(Sink.fold[Int, Int](0)(_ + _)) {
+    val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(FlowGraph.create(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder ⇒
         fold ⇒
           FlowShape(fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
@@ -236,7 +236,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     //#flow-graph-matvalue-cycle
     import FlowGraph.Implicits._
     // This cannot produce any value:
-    val cyclicFold: Source[Int, Future[Int]] = Source.wrap(FlowGraph.create(Sink.fold[Int, Int](0)(_ + _)) {
+    val cyclicFold: Source[Int, Future[Int]] = Source.fromGraph(FlowGraph.create(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder =>
         fold =>
           // - Fold cannot complete until its upstream mapAsync completes

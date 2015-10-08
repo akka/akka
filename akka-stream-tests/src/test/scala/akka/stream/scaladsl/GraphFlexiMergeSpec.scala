@@ -231,7 +231,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "allow reuse" in {
-      val flow = Flow.wrap(FlowGraph.create() { implicit b ⇒
+      val flow = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
         val merge = b.add(new Fair[String])
 
         Source(() ⇒ Iterator.continually("+")) ~> merge.in(0)
@@ -263,7 +263,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "allow zip reuse" in {
-      val flow = Flow.wrap(FlowGraph.create() { implicit b ⇒
+      val flow = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
         val zip = b.add(new MyZip[String, String])
 
         Source(() ⇒ Iterator.continually("+")) ~> zip.in0

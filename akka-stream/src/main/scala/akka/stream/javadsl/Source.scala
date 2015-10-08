@@ -7,7 +7,7 @@ import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
-import akka.stream.impl.StreamLayout
+import akka.stream.impl.{ Consts, StreamLayout }
 import akka.stream.stage.Stage
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -191,10 +191,11 @@ object Source {
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
-  def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] =
+  def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] =
     g match {
-      case s: Source[T, M] ⇒ s
-      case other           ⇒ new Source(scaladsl.Source.wrap(other))
+      case s: Source[T, M]                 ⇒ s
+      case s if s eq scaladsl.Source.empty ⇒ empty().asInstanceOf[Source[T, M]]
+      case other                           ⇒ new Source(scaladsl.Source.fromGraph(other))
     }
 
   /**
@@ -821,7 +822,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * '''Cancels when''' downstream cancels
    */
   def log(name: String, log: LoggingAdapter): javadsl.Source[Out, Mat] =
-    this.log(name, javaIdentityFunction[Out], log)
+    this.log(name, Consts.javaIdentityFunction[Out], log)
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.
@@ -840,6 +841,6 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * '''Cancels when''' downstream cancels
    */
   def log(name: String): javadsl.Source[Out, Mat] =
-    this.log(name, javaIdentityFunction[Out], null)
+    this.log(name, Consts.javaIdentityFunction[Out], null)
 
 }

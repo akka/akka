@@ -166,7 +166,7 @@ public class CompositionDocTest {
     //#partial-flow-dsl
     // Convert the partial graph of FlowShape to a Flow to get
     // access to the fluid DSL (for example to be able to call .filter())
-    final Flow<Integer, Integer, BoxedUnit> flow = Flow.wrap(partial);
+    final Flow<Integer, Integer, BoxedUnit> flow = Flow.fromGraph(partial);
 
     // Simple way to create a graph backed Source
     final Source<Integer, BoxedUnit> source = Source.factory().create(builder -> {

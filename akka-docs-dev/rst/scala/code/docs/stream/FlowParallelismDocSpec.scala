@@ -38,7 +38,7 @@ class FlowParallelismDocSpec extends AkkaSpec {
     val fryingPan: Flow[ScoopOfBatter, Pancake, Unit] =
       Flow[ScoopOfBatter].map { batter => Pancake() }
 
-    val pancakeChef: Flow[ScoopOfBatter, Pancake, Unit] = Flow.wrap(FlowGraph.create() { implicit builder =>
+    val pancakeChef: Flow[ScoopOfBatter, Pancake, Unit] = Flow.fromGraph(FlowGraph.create() { implicit builder =>
       val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
       val mergePancakes = builder.add(Merge[Pancake](2))
 
@@ -59,7 +59,7 @@ class FlowParallelismDocSpec extends AkkaSpec {
   "Demonstrate parallelized pipelines" in {
     //#parallel-pipeline
     val pancakeChef: Flow[ScoopOfBatter, Pancake, Unit] =
-      Flow.wrap(FlowGraph.create() { implicit builder =>
+      Flow.fromGraph(FlowGraph.create() { implicit builder =>
 
         val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
         val mergePancakes = builder.add(Merge[Pancake](2))
@@ -77,7 +77,7 @@ class FlowParallelismDocSpec extends AkkaSpec {
   "Demonstrate pipelined parallel processing" in {
     //#pipelined-parallel
     val pancakeChefs1: Flow[ScoopOfBatter, HalfCookedPancake, Unit] =
-      Flow.wrap(FlowGraph.create() { implicit builder =>
+      Flow.fromGraph(FlowGraph.create() { implicit builder =>
         val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
         val mergeHalfPancakes = builder.add(Merge[HalfCookedPancake](2))
 
@@ -90,7 +90,7 @@ class FlowParallelismDocSpec extends AkkaSpec {
       })
 
     val pancakeChefs2: Flow[HalfCookedPancake, Pancake, Unit] =
-      Flow.wrap(FlowGraph.create() { implicit builder =>
+      Flow.fromGraph(FlowGraph.create() { implicit builder =>
         val dispatchHalfPancakes = builder.add(Balance[HalfCookedPancake](2))
         val mergePancakes = builder.add(Merge[Pancake](2))
 

@@ -74,7 +74,7 @@ private[http] object OutgoingConnectionBlueprint {
         case (MessageStartError(_, info), _) ⇒ throw IllegalResponseException(info)
       }
 
-    BidiFlow.wrap(FlowGraph.create() { implicit b ⇒
+    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val methodBypassFanout = b.add(Broadcast[HttpRequest](2, eagerCancel = true))
       val responseParsingMerge = b.add(new ResponseParsingMerge(rootParser))

@@ -33,7 +33,7 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
     }
 
     "have a nested flow with a different dispatcher" in {
-      val flow = Flow.wrap(FlowGraph.create() { implicit b ⇒
+      val flow = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
         val bcast1 = b.add(Broadcast[Int](1))
         val bcast2 = b.add(Broadcast[Int](1))
@@ -51,7 +51,7 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
       val probe1 = TestProbe()
       val probe2 = TestProbe()
 
-      val flow1 = Flow.wrap(FlowGraph.create() { implicit b ⇒
+      val flow1 = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
         val bcast1 = b.add(Broadcast[Int](1))
         val bcast2 = b.add(Broadcast[Int](1))
@@ -59,7 +59,7 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
         FlowShape(bcast1.in, bcast2.out(0))
       }).withAttributes(dispatcher("my-dispatcher1"))
 
-      val flow2 = Flow.wrap(FlowGraph.create() { implicit b ⇒
+      val flow2 = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
         val bcast1 = b.add(Broadcast[Int](1))
         val bcast2 = b.add(Broadcast[Int](1))

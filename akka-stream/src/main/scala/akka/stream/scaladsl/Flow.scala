@@ -10,7 +10,7 @@ import akka.stream.impl.SplitDecision._
 import akka.stream.impl.Stages.{ DirectProcessor, MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, TakeWithin }
-import akka.stream.impl.{ Stages, StreamLayout }
+import akka.stream.impl.{ Consts, Stages, StreamLayout }
 import akka.stream.stage._
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
@@ -34,7 +34,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
     if (this.isIdentity) {
-      Flow.wrap(flow.asInstanceOf[Graph[FlowShape[In, T], Mat2]]).mapMaterializedValue(combine(().asInstanceOf[Mat], _))
+      Flow.fromGraph(flow.asInstanceOf[Graph[FlowShape[In, T], Mat2]])
+        .mapMaterializedValue(combine(().asInstanceOf[Mat], _))
     } else {
       val flowCopy = flow.module.carbonCopy
       new Flow(
@@ -80,13 +81,10 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * Sink into the materialized value of the resulting Sink.
    */
   def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Sink[In, Mat3] = {
-    if (isIdentity) {
-      val sinkInstance: Sink[In, Mat2] = if (sink.isInstanceOf[javadsl.Sink[In, Mat2]])
-        sink.asInstanceOf[javadsl.Sink[In, Mat2]].asScala
-      else
-        sink.asInstanceOf[Sink[In, Mat2]]
-      sinkInstance.mapMaterializedValue(combine(().asInstanceOf[Mat], _))
-    } else {
+    if (isIdentity)
+      Sink.fromGraph(sink.asInstanceOf[Graph[SinkShape[In], Mat2]])
+        .mapMaterializedValue(combine(().asInstanceOf[Mat], _))
+    else {
       val sinkCopy = sink.module.carbonCopy
       new Sink(
         module
@@ -219,7 +217,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * and `Publisher` of a [[Sink#publisher]].
    */
   def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(implicit materializer: Materializer): (Mat1, Mat2) =
-    Source.wrap(source).via(this).toMat(sink)(Keep.both).run()
+    Source.fromGraph(source).via(this).toMat(sink)(Keep.both).run()
 
   /**
    * Converts this Flow to a [[RunnableGraph]] that materializes to a Reactive Streams [[org.reactivestreams.Processor]]
@@ -248,8 +246,6 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 object Flow {
   private[this] val identity: Flow[Any, Any, Unit] = new Flow[Any, Any, Unit](Stages.Identity())
 
-  private def shape[I, O](name: String): FlowShape[I, O] = FlowShape(Inlet(name + ".in"), Outlet(name + ".out"))
-
   /**
    * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]
    */
@@ -268,7 +264,7 @@ object Flow {
    * A graph with the shape of a flow logically is a flow, this method makes
    * it so also in type.
    */
-  def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
+  def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
       case f: Flow[I, O, M]         ⇒ f
       case f: javadsl.Flow[I, O, M] ⇒ f.asScala
@@ -278,8 +274,14 @@ object Flow {
   /**
    * Helper to create `Flow` from a pair of sink and source.
    */
-  def wrap[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
-    wrap(FlowGraph.create(sink, source)(f) { implicit b ⇒ (in, out) ⇒ FlowShape(in.inlet, out.outlet) })
+  def fromGraphs[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, Unit] =
+    fromGraphsMat(sink, source)(Keep.none)
+
+  /**
+   * Helper to create `Flow` from a pair of sink and source.
+   */
+  def fromGraphsMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
+    fromGraph(FlowGraph.create(sink, source)(f) { implicit b ⇒ (in, out) ⇒ FlowShape(in.inlet, out.outlet) })
 }
 
 /**
@@ -287,7 +289,7 @@ object Flow {
  */
 final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
   require(module.isRunnable)
-  def shape = ClosedShape
+  override def shape = ClosedShape
 
   /**
    * Transform only the materialized value of this RunnableGraph, leaving all other properties as they were.
@@ -313,8 +315,6 @@ final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Mo
 trait FlowOps[+Out, +Mat] {
   import akka.stream.impl.Stages._
   type Repr[+O, +M] <: FlowOps[O, M]
-
-  private final val _identity = (x: Any) ⇒ x
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
@@ -949,7 +949,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def log(name: String, extract: Out ⇒ Any = _identity)(implicit log: LoggingAdapter = null): Repr[Out, Mat] =
+  def log(name: String, extract: Out ⇒ Any = Consts.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Out, Mat] =
     andThen(Stages.Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
 
   /**

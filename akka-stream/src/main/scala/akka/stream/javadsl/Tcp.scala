@@ -124,7 +124,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
            options: JIterable[SocketOption],
            halfClose: Boolean,
            idleTimeout: Duration): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.wrap(delegate.bind(interface, port, backlog, immutableSeq(options), halfClose, idleTimeout)
+    Source.fromGraph(delegate.bind(interface, port, backlog, immutableSeq(options), halfClose, idleTimeout)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
@@ -137,7 +137,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * completes is the server ready to accept client connections.
    */
   def bind(interface: String, port: Int): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.wrap(delegate.bind(interface, port)
+    Source.fromGraph(delegate.bind(interface, port)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
@@ -163,7 +163,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
                          halfClose: Boolean,
                          connectTimeout: Duration,
                          idleTimeout: Duration): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    Flow.wrap(delegate.outgoingConnection(remoteAddress, localAddress, immutableSeq(options), halfClose, connectTimeout, idleTimeout)
+    Flow.fromGraph(delegate.outgoingConnection(remoteAddress, localAddress, immutableSeq(options), halfClose, connectTimeout, idleTimeout)
       .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec)))
 
   /**
@@ -171,7 +171,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * It represents a prospective TCP client connection to the given endpoint.
    */
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    Flow.wrap(delegate.outgoingConnection(new InetSocketAddress(host, port))
+    Flow.fromGraph(delegate.outgoingConnection(new InetSocketAddress(host, port))
       .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec)))
 
 }

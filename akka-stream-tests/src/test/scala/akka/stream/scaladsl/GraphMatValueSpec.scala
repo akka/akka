@@ -59,7 +59,7 @@ class GraphMatValueSpec extends AkkaSpec {
     }
 
     // Exposes the materialized value as a stream value
-    val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source.wrap(FlowGraph.create(foldSink) { implicit b ⇒
+    val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source.fromGraph(FlowGraph.create(foldSink) { implicit b ⇒
       fold ⇒
         Source(1 to 10) ~> fold
         SourceShape(b.materializedValue)
@@ -77,7 +77,7 @@ class GraphMatValueSpec extends AkkaSpec {
     }
 
     "work properly with nesting and reusing" in {
-      val compositeSource1 = Source.wrap(FlowGraph.create(foldFeedbackSource, foldFeedbackSource)(Keep.both) { implicit b ⇒
+      val compositeSource1 = Source.fromGraph(FlowGraph.create(foldFeedbackSource, foldFeedbackSource)(Keep.both) { implicit b ⇒
         (s1, s2) ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
 
@@ -86,7 +86,7 @@ class GraphMatValueSpec extends AkkaSpec {
           SourceShape(zip.out)
       })
 
-      val compositeSource2 = Source.wrap(FlowGraph.create(compositeSource1, compositeSource1)(Keep.both) { implicit b ⇒
+      val compositeSource2 = Source.fromGraph(FlowGraph.create(compositeSource1, compositeSource1)(Keep.both) { implicit b ⇒
         (s1, s2) ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
           s1.outlet ~> zip.in0

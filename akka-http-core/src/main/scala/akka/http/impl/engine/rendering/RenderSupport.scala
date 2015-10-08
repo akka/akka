@@ -32,7 +32,7 @@ private object RenderSupport {
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
   def CancelSecond[T, Mat](first: Source[T, Mat], second: Source[T, Any]): Source[T, Mat] = {
-    Source.wrap(FlowGraph.create(first) { implicit b ⇒
+    Source.fromGraph(FlowGraph.create(first) { implicit b ⇒
       frst ⇒
         import FlowGraph.Implicits._
         second ~> Sink.cancelled
