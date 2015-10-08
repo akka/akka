@@ -13,7 +13,7 @@ It's a simple alias for a function turning a ``RequestContext`` into a ``Future[
 Generally when a route receives a request (or rather a ``RequestContext`` for it) it can do one of these things:
 
 - Complete the request by returning the value of ``requestContext.complete(...)``
-- Reject the request by returning the value of ``requestContext.reject(...)`` (see :ref:`Rejections`)
+- Reject the request by returning the value of ``requestContext.reject(...)`` (see :ref:`rejections-scala`)
 - Fail the request by returning the value of ``requestContext.fail(...)`` or by just throwing an exception (see :ref:`exception-handling-scala`)
 - Do any kind of asynchronous processing and instantly return a ``Future[RouteResult]`` to be eventually completed later
 

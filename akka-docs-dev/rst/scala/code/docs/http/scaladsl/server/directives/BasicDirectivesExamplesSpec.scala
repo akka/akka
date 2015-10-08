@@ -8,18 +8,17 @@ package directives
 import java.io.File
 
 import akka.event.Logging
-import akka.http.scaladsl.model.HttpEntity.Chunked
-import akka.stream.ActorMaterializer
-import akka.stream.io.SynchronousFileSource
-import akka.stream.scaladsl.{ Sink, Source }
-
-import scala.concurrent.Future
-import scala.util.control.NonFatal
-import akka.util.ByteString
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.RouteResult.Rejected
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.model._
+import akka.stream.ActorMaterializer
+import akka.stream.io.SynchronousFileSource
+import akka.stream.scaladsl.{ Sink, Source }
+import akka.util.ByteString
+
+import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 class BasicDirectivesExamplesSpec extends RoutingSpec {
   "0extract" in {

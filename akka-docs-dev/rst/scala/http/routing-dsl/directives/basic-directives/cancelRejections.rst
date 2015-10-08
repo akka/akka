@@ -3,7 +3,8 @@
 cancelRejections
 ================
 
-...
+Adds a ``TransformationRejection`` cancelling all matching rejections
+to the rejections potentially coming back from the inner route
 
 Signature
 ---------
@@ -14,7 +15,11 @@ Signature
 Description
 -----------
 
-...
+Cancels all rejections created by the inner route for which the condition argument function returns ``true``.
+
+See also :ref:`-cancelRejection-`, for canceling a specific rejection.
+
+Read :ref:`rejections-scala` to learn more about rejections.
 
 Example
 -------

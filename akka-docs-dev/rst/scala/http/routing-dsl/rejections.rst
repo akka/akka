@@ -1,4 +1,4 @@
-.. _Rejections:
+.. _rejections-scala:
 
 Rejections
 ==========

@@ -17,7 +17,7 @@ Description
 Using this directive is an alternative to using a global implicitly defined ``RejectionHandler`` that
 applies to the complete route.
 
-See :ref:`Rejections` for general information about options for handling rejections.
+See :ref:`rejections-scala` for general information about options for handling rejections.
 
 Example
 -------
