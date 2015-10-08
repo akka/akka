@@ -58,9 +58,13 @@ SchemeDirectives
 WebsocketDirectives
   Contains directives to support answering Websocket requests.
 
+TODO this page should be rewritten as the corresponding Scala page
+
 .. toctree::
   :maxdepth: 1
 
   path-directives
+  method-directives/index
+  host-directives/index
 
 .. _`RFC 7234`: http://tools.ietf.org/html/rfc7234
