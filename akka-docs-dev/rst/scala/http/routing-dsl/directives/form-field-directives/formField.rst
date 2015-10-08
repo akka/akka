@@ -3,6 +3,8 @@
 formField
 =========
 
+Allows extracting a single Form field sent in the request.
+
 An alias for :ref:`-formFields-`.
 
 Signature
@@ -15,3 +17,9 @@ Description
 -----------
 
 See :ref:`-formFields-`.
+
+Example
+-------
+
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala
+   :snippet: formField

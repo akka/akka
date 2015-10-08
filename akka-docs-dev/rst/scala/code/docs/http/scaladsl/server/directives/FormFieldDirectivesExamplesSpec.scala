@@ -24,5 +24,23 @@ class FormFieldDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "Request is missing required form field 'color'"
     }
   }
+  "formField" in {
+    val route =
+      formField('color) { color =>
+        complete(s"The color is '$color'")
+      } ~
+      formField('id.as[Int]) { id =>
+        complete(s"The id is '$id'")
+      }
+
+    Post("/", FormData("color" -> "blue")) ~> route ~> check {
+      responseAs[String] shouldEqual "The color is 'blue'"
+    }
+
+    Get("/") ~> Route.seal(route) ~> check {
+      status shouldEqual StatusCodes.BadRequest
+      responseAs[String] shouldEqual "Request is missing required form field 'color'"
+    }
+  }
 
 }
