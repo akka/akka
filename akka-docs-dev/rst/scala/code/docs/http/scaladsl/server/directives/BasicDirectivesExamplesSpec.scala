@@ -10,7 +10,7 @@ import java.io.File
 import akka.event.Logging
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.server.RouteResult.Rejected
+import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import akka.stream.io.SynchronousFileSource
@@ -247,6 +247,79 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
 
     Get("/") ~> route ~> check {
       rejection shouldEqual AuthorizationFailedRejection
+    }
+
+    Get("/abc") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+    }
+  }
+  "recoverRejections" in {
+    val authRejectionsToNothingToSeeHere = recoverRejections { rejections =>
+      if (rejections.exists(_.isInstanceOf[AuthenticationFailedRejection]))
+        Complete(HttpResponse(entity = "Nothing to see here, move along."))
+      else if (rejections == Nil) // see "Empty Rejections" for more details
+        Complete(HttpResponse(StatusCodes.NotFound, entity = "Literally nothing to see here."))
+      else
+        Rejected(rejections)
+    }
+    val neverAuth: Authenticator[String] = creds => None
+    val alwaysAuth: Authenticator[String] = creds => Some("id")
+
+    val route =
+      authRejectionsToNothingToSeeHere {
+        pathPrefix("auth") {
+          path("never") {
+            authenticateBasic("my-realm", neverAuth) { user =>
+              complete("Welcome to the bat-cave!")
+            }
+          } ~
+            path("always") {
+              authenticateBasic("my-realm", alwaysAuth) { user =>
+                complete("Welcome to the secret place!")
+              }
+            }
+        }
+      }
+
+    Get("/auth/never") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "Nothing to see here, move along."
+    }
+    Get("/auth/always") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "Welcome to the secret place!"
+    }
+    Get("/auth/does_not_exist") ~> route ~> check {
+      status shouldEqual StatusCodes.NotFound
+      responseAs[String] shouldEqual "Literally nothing to see here."
+    }
+  }
+  "recoverRejectionsWith" in {
+    val authRejectionsToNothingToSeeHere = recoverRejectionsWith { rejections =>
+      Future {
+        // imagine checking rejections takes a longer time:
+        if (rejections.exists(_.isInstanceOf[AuthenticationFailedRejection]))
+          Complete(HttpResponse(entity = "Nothing to see here, move along."))
+        else
+          Rejected(rejections)
+      }
+    }
+    val neverAuth: Authenticator[String] = creds => None
+
+    val route =
+      authRejectionsToNothingToSeeHere {
+        pathPrefix("auth") {
+          path("never") {
+            authenticateBasic("my-realm", neverAuth) { user =>
+              complete("Welcome to the bat-cave!")
+            }
+          }
+        }
+      }
+
+    Get("/auth/never") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "Nothing to see here, move along."
     }
   }
   "0mapRequest" in {

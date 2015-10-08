@@ -69,7 +69,6 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         getFromBrowseableDirectories("/main", "/backups")
       }
 
-
     Get("/tmp") ~> route ~> check {
       status shouldEqual StatusCodes.OK
     }

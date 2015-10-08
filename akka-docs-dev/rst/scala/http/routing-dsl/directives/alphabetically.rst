@@ -170,9 +170,9 @@ Directive                                   Description
                                             ``RequestContext``, without implicitly consuming a leading slash
 :ref:`-rawPathPrefixTest-`                  Checks whether the unmatchedPath has a prefix matched by the given
                                             ``PathMatcher``
-:ref:`-recoverRejections-`                  Transforms rejections from a previous route with an
+:ref:`-recoverRejections-`                  Transforms rejections from the inner route with an
                                             ``immutable.Seq[Rejection] ⇒ RouteResult`` function
-:ref:`-recoverRejectionsWith-`              Transforms rejections from a previous route with an
+:ref:`-recoverRejectionsWith-`              Transforms rejections from the inner route with an
                                             ``immutable.Seq[Rejection] ⇒ Future[RouteResult]`` function
 :ref:`-redirect-`                           Completes the request with redirection response of the given type to the
                                             given URI

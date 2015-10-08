@@ -29,9 +29,9 @@ class FormFieldDirectivesExamplesSpec extends RoutingSpec {
       formField('color) { color =>
         complete(s"The color is '$color'")
       } ~
-      formField('id.as[Int]) { id =>
-        complete(s"The id is '$id'")
-      }
+        formField('id.as[Int]) { id =>
+          complete(s"The id is '$id'")
+        }
 
     Post("/", FormData("color" -> "blue")) ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue'"
