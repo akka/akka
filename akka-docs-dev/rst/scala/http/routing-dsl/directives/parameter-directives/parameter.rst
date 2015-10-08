@@ -3,6 +3,8 @@
 parameter
 =========
 
+Extracts a *query* parameter value from the request.
+
 An alias for :ref:`-parameters-`.
 
 Signature
@@ -14,7 +16,9 @@ Signature
 Description
 -----------
 
-See :ref:`-parameters-`
+See :ref:`-parameters-` for a detailed description of this directive.
+
+See :ref:`which-parameter-directive` to understand when to use which directive.
 
 Example
 -------
