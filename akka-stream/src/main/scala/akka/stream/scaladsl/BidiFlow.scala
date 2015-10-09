@@ -117,6 +117,12 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
    */
   def reversed: BidiFlow[I2, O2, I1, O1, Mat] = new BidiFlow(module.replaceShape(shape.reversed))
 
+  /**
+   * Transform only the materialized value of this BidiFlow, leaving all other properties as they were.
+   */
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): BidiFlow[I1, O1, I2, O2, Mat2] =
+    new BidiFlow(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
+
   override def withAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(module.withAttributes(attr).nest())
 
