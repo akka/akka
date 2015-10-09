@@ -5,10 +5,9 @@
 package akka.http.scaladsl.marshalling
 
 import java.nio.CharBuffer
-import akka.http.impl.model.parser.CharacterClasses
+
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
-import akka.http.impl.util.StringRendering
 import akka.util.ByteString
 
 trait PredefinedToEntityMarshallers extends MultipartMarshallers {
@@ -53,9 +52,7 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
 
   implicit val FormDataMarshaller: ToEntityMarshaller[FormData] =
     Marshaller.withOpenCharset(`application/x-www-form-urlencoded`) { (formData, charset) ⇒
-      val query = Uri.Query(formData.fields: _*)
-      val string = UriRendering.renderQuery(new StringRendering, query, charset.nioCharset, CharacterClasses.unreserved).get
-      HttpEntity(ContentType(`application/x-www-form-urlencoded`, charset), string)
+      formData.toEntity(charset)
     }
 
   implicit val MessageEntityMarshaller: ToEntityMarshaller[MessageEntity] = Marshaller strict { value ⇒
