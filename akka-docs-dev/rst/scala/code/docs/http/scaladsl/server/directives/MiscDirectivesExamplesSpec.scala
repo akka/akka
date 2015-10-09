@@ -16,6 +16,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
       complete("Client's ip is " + ip.toOption.map(_.getHostAddress).getOrElse("unknown"))
     }
 
+    // tests:
     Get("/").withHeaders(`Remote-Address`(RemoteAddress("192.168.3.12"))) ~> route ~> check {
       responseAs[String] shouldEqual "Client's ip is 192.168.3.12"
     }
@@ -32,6 +33,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
       }
     }
 
+    // tests:
     Get("/even/23") ~> Route.seal(route) ~> check {
       status shouldEqual StatusCodes.NotFound
     }
@@ -48,6 +50,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
           complete("request entity present")
         }
 
+    // tests:
     Post("/", "text") ~> Route.seal(route) ~> check {
       responseAs[String] shouldEqual "request entity present"
     }
@@ -63,6 +66,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/234") ~> route ~> check {
       responseAs[String] shouldEqual "Full URI: http://example.com/234"
     }

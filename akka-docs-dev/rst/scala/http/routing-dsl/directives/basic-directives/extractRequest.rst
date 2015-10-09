@@ -3,8 +3,6 @@
 extractRequest
 ==============
 
-Extracts the complete ``HttpRequest`` instance.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Extracts the complete ``HttpRequest`` instance.
 
 Use ``extractRequest`` to extract just the complete URI of the request. Usually there's little use of
 extracting the complete request because extracting of most of the aspects of HttpRequests is handled by specialized

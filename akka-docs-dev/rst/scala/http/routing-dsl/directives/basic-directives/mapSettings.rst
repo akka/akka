@@ -3,8 +3,6 @@
 mapSettings
 ===========
 
-...
-
 Signature
 ---------
 
@@ -14,10 +12,12 @@ Signature
 Description
 -----------
 
-...
+Transforms the ``RoutingSettings`` with a ``RoutingSettings ⇒ RoutingSettings`` function.
+
+See also :ref:`-withSettings-` or :ref:`-extractSettings-`.
 
 Example
 -------
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0mapSettings
+   :snippet: withSettings-0

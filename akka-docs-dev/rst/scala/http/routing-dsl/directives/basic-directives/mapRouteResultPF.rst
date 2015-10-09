@@ -3,8 +3,6 @@
 mapRouteResultPF
 ================
 
-Changes the message the inner route sends to the responder.
-
 Signature
 ---------
 
@@ -13,6 +11,9 @@ Signature
 
 Description
 -----------
+*Partial Function* version of :ref:`-mapRouteResult-`.
+
+Changes the message the inner route sends to the responder.
 
 The ``mapRouteResult`` directive is used as a building block for :ref:`Custom Directives` to transform the
 :ref:`RouteResult` coming back from the inner route. It's similar to the :ref:`-mapRouteResult-` directive but allows to

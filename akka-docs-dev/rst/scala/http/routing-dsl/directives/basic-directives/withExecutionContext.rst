@@ -24,4 +24,4 @@ Example
 -------
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0withExecutionContext
+   :snippet: withExecutionContext-0

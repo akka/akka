@@ -3,8 +3,6 @@
 extract
 =======
 
-Calculates a value from the request context and provides the value to the inner route.
-
 Signature
 ---------
 

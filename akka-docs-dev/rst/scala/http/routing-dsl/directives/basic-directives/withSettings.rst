@@ -23,4 +23,4 @@ Example
 -------
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0withSettings
+   :snippet: withSettings-0

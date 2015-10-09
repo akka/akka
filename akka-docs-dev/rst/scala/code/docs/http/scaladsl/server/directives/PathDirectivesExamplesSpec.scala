@@ -66,6 +66,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
             }
         }
 
+    // tests:
     Get("/") ~> route ~> check {
       handled shouldEqual false
     }
@@ -94,6 +95,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           }
       }
 
+    // tests:
     Get("/foo") ~> route ~> check {
       responseAs[String] shouldEqual "/foo"
     }
@@ -118,6 +120,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           }
       }
 
+    // tests:
     Get("/foo") ~> route ~> check {
       responseAs[String] shouldEqual "/foo"
     }
@@ -142,6 +145,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           }
       }
 
+    // tests:
     Get("/") ~> route ~> check {
       handled shouldEqual false
     }
@@ -162,6 +166,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           pathPrefix("bar") { completeWithUnmatchedPath }
       }
 
+    // tests:
     Get("/foo/doo") ~> route ~> check {
       responseAs[String] shouldEqual "/doo"
     }
@@ -185,6 +190,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
             }
         }
 
+    // tests:
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "root"
     }
@@ -213,6 +219,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           }
       }
 
+    // tests:
     Get("/start/middle/end") ~> route ~> check {
       responseAs[String] shouldEqual "/middle/"
     }
@@ -229,6 +236,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
       } ~
         complete("unslashed")
 
+    // tests:
     Get("/foo/") ~> route ~> check {
       responseAs[String] shouldEqual "slashed"
     }
@@ -244,6 +252,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           rawPathPrefix("doo") { completeWithUnmatchedPath }
       }
 
+    // tests:
     Get("/foobar/baz") ~> route ~> check {
       responseAs[String] shouldEqual "/baz"
     }
@@ -261,6 +270,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/foobar") ~> route ~> check {
       responseAs[String] shouldEqual "bar"
     }
@@ -293,6 +303,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           }
       }
 
+    // tests:
     // Redirected:
     Get("/foo") ~> route ~> check {
       status shouldEqual StatusCodes.MovedPermanently
@@ -342,6 +353,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           }
       }
 
+    // tests:
     // Redirected:
     Get("/foo/") ~> route ~> check {
       status shouldEqual StatusCodes.MovedPermanently

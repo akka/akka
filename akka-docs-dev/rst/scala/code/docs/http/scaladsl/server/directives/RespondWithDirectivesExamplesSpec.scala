@@ -17,6 +17,7 @@ class RespondWithDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/foo") ~> route ~> check {
       header("Funky-Muppet") shouldEqual Some(RawHeader("Funky-Muppet", "gonzo"))
       responseAs[String] shouldEqual "beep"
@@ -45,6 +46,7 @@ class RespondWithDirectivesExamplesSpec extends RoutingSpec {
       } // x
     // format: ON
 
+    // tests:
     Get("/") ~> route ~> check {
       header("X-Fish-Name") shouldEqual Some(RawHeader("X-Fish-Name", "Blippy"))
       responseAs[String] shouldEqual "Blip!"
@@ -70,61 +72,12 @@ class RespondWithDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/foo") ~> route ~> check {
       header("Funky-Muppet") shouldEqual Some(RawHeader("Funky-Muppet", "gonzo"))
       header[Origin] shouldEqual Some(Origin(HttpOrigin("http://akka.io")))
       responseAs[String] shouldEqual "beep"
     }
   }
-
-  //  FIXME awaiting resolution of https://github.com/akka/akka/issues/18625
-  //  "respondWithMediaType-examples" in {
-  //    import MediaTypes._
-  //
-  //    val route =
-  //      path("foo") {
-  //        respondWithMediaType(`application/json`) {
-  //          complete("[]") // marshalled to `text/plain` here
-  //        }
-  //      }
-  //
-  //    Get("/foo") ~> route ~> check {
-  //      mediaType shouldEqual `application/json`
-  //      responseAs[String] shouldEqual "[]"
-  //    }
-  //
-  //    Get("/foo") ~> Accept(MediaRanges.`text/*`) ~> route ~> check {
-  //      rejection shouldEqual UnacceptedResponseContentTypeRejection(ContentType(`application/json`) :: Nil)
-  //    }
-  //  }
-
-  //  "respondWithSingletonHeader-examples" in {
-  //    val respondWithMuppetHeader =
-  //      respondWithSingletonHeader(RawHeader("Funky-Muppet", "gonzo"))
-  //
-  //    val route =
-  //      path("foo") {
-  //        respondWithMuppetHeader {
-  //          complete("beep")
-  //        }
-  //      } ~
-  //        path("bar") {
-  //          respondWithMuppetHeader {
-  //            respondWithHeader(RawHeader("Funky-Muppet", "kermit")) {
-  //              complete("beep")
-  //            }
-  //          }
-  //        }
-  //
-  //    Get("/foo") ~> route ~> check {
-  //      headers.filter(_.is("funky-muppet")) shouldEqual List(RawHeader("Funky-Muppet", "gonzo"))
-  //      responseAs[String] shouldEqual "beep"
-  //    }
-  //
-  //    Get("/bar") ~> route ~> check {
-  //      headers.filter(_.is("funky-muppet")) shouldEqual List(RawHeader("Funky-Muppet", "kermit"))
-  //      responseAs[String] shouldEqual "beep"
-  //    }
-  //  }
 
 }
