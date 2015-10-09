@@ -317,7 +317,7 @@ private[http] object HttpServerBluePrint {
     val sink = StreamUtils.oneTimePublisherSink[FrameEvent](sinkCell, "frameHandler.in")
     val source = StreamUtils.oneTimeSubscriberSource[FrameEvent](sourceCell, "frameHandler.out")
 
-    val flow = Websocket.framing.join(Flow.fromGraphsMat(sink, source)(Keep.none))
+    val flow = Websocket.framing.join(Flow.fromSinkAndSourceMat(sink, source)(Keep.none))
 
     new WebsocketSetup {
       def websocketFlow: Flow[ByteString, ByteString, Any] = flow

@@ -39,18 +39,18 @@ object Flow {
     }
 
   /**
-   * Helper to create `Flow` from a pair of sink and source.
+   * Helper to create `Flow` from a `Sink`and a `Source`.
    */
-  def fromGraphs[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, Unit] =
-    new Flow(scaladsl.Flow.fromGraphsMat(sink, source)(scaladsl.Keep.none))
+  def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, Unit] =
+    new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(scaladsl.Keep.none))
 
   /**
-   * Helper to create `Flow` from a pair of sink and source.
+   * Helper to create `Flow` from a `Sink`and a `Source`.
    */
-  def fromGraphsMat[I, O, M1, M2, M](
+  def fromSinkAndSourceMat[I, O, M1, M2, M](
     sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2],
     combine: function.Function2[M1, M2, M]): Flow[I, O, M] =
-    new Flow(scaladsl.Flow.fromGraphsMat(sink, source)(combinerToScala(combine)))
+    new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(combinerToScala(combine)))
 }
 
 /** Create a `Flow` which can process elements of type `T`. */

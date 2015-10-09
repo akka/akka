@@ -298,7 +298,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     val incomingConnectionCounter = new AtomicInteger
     val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]
     val incomingConnectionsSub = {
-      val rawBytesInjection = BidiFlow.fromGraphs(
+      val rawBytesInjection = BidiFlow.fromFlows(
         Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) ⇒ mapServerSideOutboundRawBytes(x) }
           .transform(StreamUtils.recover { case NoErrorComplete ⇒ ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))

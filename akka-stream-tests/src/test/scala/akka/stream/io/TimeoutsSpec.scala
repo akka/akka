@@ -142,8 +142,8 @@ class TimeoutsSpec extends AkkaSpec {
       val upstreamWriter = TestPublisher.probe[Int]()
       val downstreamWriter = TestPublisher.probe[String]()
 
-      val upstream = Flow.fromGraphsMat(Sink.ignore, Source(upstreamWriter))(Keep.left)
-      val downstream = Flow.fromGraphsMat(Sink.ignore, Source(downstreamWriter))(Keep.left)
+      val upstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source(upstreamWriter))(Keep.left)
+      val downstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source(downstreamWriter))(Keep.left)
 
       val assembly: RunnableGraph[(Future[Unit], Future[Unit])] = upstream
         .joinMat(Timeouts.idleTimeoutBidi[Int, String](2.seconds))(Keep.left)

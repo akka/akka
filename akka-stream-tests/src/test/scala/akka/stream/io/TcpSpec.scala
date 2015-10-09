@@ -342,7 +342,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
     "properly full-close if requested" in assertAllStagesStopped {
       val serverAddress = temporaryServerAddress()
       val writeButIgnoreRead: Flow[ByteString, ByteString, Unit] =
-        Flow.fromGraphsMat(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
+        Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
       val binding =
         Await.result(

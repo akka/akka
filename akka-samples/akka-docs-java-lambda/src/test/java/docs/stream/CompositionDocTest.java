@@ -144,7 +144,7 @@ public class CompositionDocTest {
   public void partialGraph() throws Exception {
     //#partial-graph
     final Graph<FlowShape<Integer, Integer>, BoxedUnit> partial =
-      FlowGraph.factory().partial(builder -> {
+      FlowGraph.factory().create(builder -> {
         final UniformFanOutShape<Integer, Integer> B = builder.graph(Broadcast.create(2));
         final UniformFanInShape<Integer, Integer> C = builder.graph(Merge.create(2));
         final UniformFanOutShape<Integer, Integer> E = builder.graph(Balance.create(2));

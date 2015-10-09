@@ -18,11 +18,11 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
   implicit val mat = ActorMaterializer()
 
-  val bidi = BidiFlow.fromGraphs(
+  val bidi = BidiFlow.fromFlows(
     Flow[Int].map(x ⇒ x.toLong + 2).withAttributes(name("top")),
     Flow[ByteString].map(_.decodeString("UTF-8")).withAttributes(name("bottom")))
 
-  val inverse = BidiFlow.fromGraphs(
+  val inverse = BidiFlow.fromFlows(
     Flow[Long].map(x ⇒ x.toInt + 2).withAttributes(name("top")),
     Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
 

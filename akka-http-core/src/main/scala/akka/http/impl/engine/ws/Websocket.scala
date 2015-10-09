@@ -29,7 +29,7 @@ private[http] object Websocket {
 
   /** The lowest layer that implements the binary protocol */
   def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, Unit] =
-    BidiFlow.fromGraphsMat(
+    BidiFlow.fromFlowsMat(
       Flow[ByteString].transform(() ⇒ new FrameEventParser),
       Flow[FrameEvent].transform(() ⇒ new FrameEventRenderer))(Keep.none)
       .named("ws-framing")
@@ -45,7 +45,7 @@ private[http] object Websocket {
    */
   def frameHandling(serverSide: Boolean = true,
                     closeTimeout: FiniteDuration): BidiFlow[FrameEvent, FrameHandler.Output, FrameOutHandler.Input, FrameStart, Unit] =
-    BidiFlow.fromGraphsMat(
+    BidiFlow.fromFlowsMat(
       FrameHandler.create(server = serverSide),
       FrameOutHandler.create(serverSide, closeTimeout))(Keep.none)
       .named("ws-frame-handling")

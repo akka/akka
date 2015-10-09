@@ -113,7 +113,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       Ignore(_ == akka.stream.scaladsl.Flow.getClass, _ == "apply", _ == 24, _ ⇒ true),
       Ignore(_ == akka.stream.scaladsl.Sink.getClass, _ == "apply", _ == 24, _ ⇒ true),
       Ignore(_ == akka.stream.scaladsl.BidiFlow.getClass, _ == "apply", _ == 24, _ ⇒ true),
-      Ignore(_ == akka.stream.scaladsl.FlowGraph.getClass, _ == "closed", _ == 24, _ ⇒ true),
+      Ignore(_ == akka.stream.scaladsl.FlowGraph.getClass, _ == "runnable", _ == 24, _ ⇒ true),
       Ignore(_ == akka.stream.scaladsl.FlowGraph.getClass, _ == "create", _ == 24, _ ⇒ true),
       // all generated methods like scaladsl.Sink$.akka$stream$scaladsl$Sink$$newOnCompleteStage$1
       Ignore(_ ⇒ true, _.contains("$"), _ ⇒ true, _ ⇒ true))
@@ -127,8 +127,8 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
   /**
    * Rename
    *   createN => create
-   *   closedN => closed
-   *   partialN => partial
+   *   runnableN => runnable
+   *   createN => create
    */
   private val unspecializeName: PartialFunction[Method, Method] = {
     case m ⇒ m.copy(name = m.name.filter(Character.isLetter))

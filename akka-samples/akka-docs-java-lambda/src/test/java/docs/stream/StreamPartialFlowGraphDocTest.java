@@ -47,7 +47,7 @@ public class StreamPartialFlowGraphDocTest {
       ZipWith.create((Integer left, Integer right) -> Math.max(left, right));
     
     final Graph<UniformFanInShape<Integer, Integer>, BoxedUnit> pickMaxOfThree =
-        FlowGraph.factory().partial(builder -> {
+        FlowGraph.factory().create(builder -> {
           final FanInShape2<Integer, Integer, Integer> zip1 = builder.graph(zip);
           final FanInShape2<Integer, Integer, Integer> zip2 = builder.graph(zip);
           
@@ -60,7 +60,7 @@ public class StreamPartialFlowGraphDocTest {
     final Sink<Integer, Future<Integer>> resultSink = Sink.<Integer>head();
 
     final RunnableGraph<Future<Integer>> g = FlowGraph.factory()
-        .closed(resultSink, (builder, sink) -> {
+        .runnable(resultSink, (builder, sink) -> {
           // import the partial flow graph explicitly
           final UniformFanInShape<Integer, Integer> pm = builder.graph(pickMaxOfThree);
           

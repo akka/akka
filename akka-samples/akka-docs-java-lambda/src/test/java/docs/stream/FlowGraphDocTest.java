@@ -53,7 +53,7 @@ public class FlowGraphDocTest {
     final Flow<Integer, Integer, BoxedUnit> f4 = Flow.of(Integer.class).map(elem -> elem + 30);
 
     final RunnableGraph<Future<List<String>>> result = FlowGraph.factory()
-      .closed(
+      .runnable(
         sink,
         (builder, out) -> {
           final UniformFanOutShape<Integer, Integer> bcast = builder.graph(Broadcast.create(2));
@@ -98,7 +98,7 @@ public class FlowGraphDocTest {
     final Flow<Integer, Integer, BoxedUnit> sharedDoubler = Flow.of(Integer.class).map(elem -> elem * 2);
 
     final RunnableGraph<Pair<Future<Integer>, Future<Integer>>> g = FlowGraph
-      .factory().closed(
+      .factory().runnable(
         topHeadSink, // import this sink into the graph
         bottomHeadSink, // and this as well
         Keep.both(),

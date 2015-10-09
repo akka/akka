@@ -36,11 +36,11 @@ object BidiFlow {
    * }}}
    *
    */
-  def fromGraphsMat[I1, O1, I2, O2, M1, M2, M](
+  def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](
     flow1: Graph[FlowShape[I1, O1], M1],
     flow2: Graph[FlowShape[I2, O2], M2],
     combine: function.Function2[M1, M2, M]): BidiFlow[I1, O1, I2, O2, M] = {
-    new BidiFlow(scaladsl.BidiFlow.fromGraphsMat(flow1, flow2)(combinerToScala(combine)))
+    new BidiFlow(scaladsl.BidiFlow.fromFlowsMat(flow1, flow2)(combinerToScala(combine)))
   }
 
   /**
@@ -61,10 +61,10 @@ object BidiFlow {
    * }}}
    *
    */
-  def fromGraphs[I1, O1, I2, O2, M1, M2](
+  def fromFlows[I1, O1, I2, O2, M1, M2](
     flow1: Graph[FlowShape[I1, O1], M1],
     flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, Unit] =
-    new BidiFlow(scaladsl.BidiFlow.fromGraphs(flow1, flow2))
+    new BidiFlow(scaladsl.BidiFlow.fromFlows(flow1, flow2))
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping

@@ -152,7 +152,7 @@ object BidiFlow {
    * }}}
    *
    */
-  def fromGraphsMat[I1, O1, I2, O2, M1, M2, M](
+  def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](
     flow1: Graph[FlowShape[I1, O1], M1],
     flow2: Graph[FlowShape[I2, O2], M2])(combine: (M1, M2) ⇒ M): BidiFlow[I1, O1, I2, O2, M] =
     fromGraph(FlowGraph.create(flow1, flow2)(combine) {
@@ -177,14 +177,14 @@ object BidiFlow {
    * }}}
    *
    */
-  def fromGraphs[I1, O1, I2, O2, M1, M2](flow1: Graph[FlowShape[I1, O1], M1],
-                                         flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, Unit] =
-    fromGraphsMat(flow1, flow2)(Keep.none)
+  def fromFlows[I1, O1, I2, O2, M1, M2](flow1: Graph[FlowShape[I1, O1], M1],
+                                        flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, Unit] =
+    fromFlowsMat(flow1, flow2)(Keep.none)
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
    * stage each, expressed by the two functions.
    */
   def fromFunctions[I1, O1, I2, O2](outbound: I1 ⇒ O1, inbound: I2 ⇒ O2): BidiFlow[I1, O1, I2, O2, Unit] =
-    fromGraphs(Flow[I1].map(outbound), Flow[I2].map(inbound))
+    fromFlows(Flow[I1].map(outbound), Flow[I2].map(inbound))
 }

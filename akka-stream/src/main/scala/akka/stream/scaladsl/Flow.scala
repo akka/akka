@@ -272,15 +272,15 @@ object Flow {
     }
 
   /**
-   * Helper to create `Flow` from a pair of sink and source.
+   * Helper to create `Flow` from a `Sink`and a `Source`.
    */
-  def fromGraphs[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, Unit] =
-    fromGraphsMat(sink, source)(Keep.none)
+  def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, Unit] =
+    fromSinkAndSourceMat(sink, source)(Keep.none)
 
   /**
-   * Helper to create `Flow` from a pair of sink and source.
+   * Helper to create `Flow` from a `Sink`and a `Source`.
    */
-  def fromGraphsMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
+  def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
     fromGraph(FlowGraph.create(sink, source)(f) { implicit b ⇒ (in, out) ⇒ FlowShape(in.inlet, out.outlet) })
 }
 
