@@ -568,7 +568,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    * @param localAddress  The local address of the endpoint bound by the materialization of the `connections` [[Source]]
    *
    */
-  case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
+  final case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
 
     /**
      * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
@@ -582,7 +582,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   /**
    * Represents one accepted incoming HTTP connection.
    */
-  case class IncomingConnection(
+  final case class IncomingConnection(
     localAddress: InetSocketAddress,
     remoteAddress: InetSocketAddress,
     flow: Flow[HttpResponse, HttpRequest, Unit]) {
@@ -612,12 +612,12 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   /**
    * Represents a prospective outgoing HTTP connection.
    */
-  case class OutgoingConnection(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress)
+  final case class OutgoingConnection(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress)
 
   /**
    * Represents a connection pool to a specific target host and pool configuration.
    */
-  case class HostConnectionPool(setup: HostConnectionPoolSetup)(
+  final case class HostConnectionPool(setup: HostConnectionPoolSetup)(
     private[http] val gatewayFuture: Future[PoolGateway]) extends javadsl.HostConnectionPool { // enable test access
 
     /**
@@ -641,11 +641,11 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 import scala.collection.JavaConverters._
 
 //# https-context-impl
-case class HttpsContext(sslContext: SSLContext,
-                        enabledCipherSuites: Option[immutable.Seq[String]] = None,
-                        enabledProtocols: Option[immutable.Seq[String]] = None,
-                        clientAuth: Option[ClientAuth] = None,
-                        sslParameters: Option[SSLParameters] = None)
+final case class HttpsContext(sslContext: SSLContext,
+                              enabledCipherSuites: Option[immutable.Seq[String]] = None,
+                              enabledProtocols: Option[immutable.Seq[String]] = None,
+                              clientAuth: Option[ClientAuth] = None,
+                              sslParameters: Option[SSLParameters] = None)
   //#
   extends akka.http.javadsl.HttpsContext {
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)

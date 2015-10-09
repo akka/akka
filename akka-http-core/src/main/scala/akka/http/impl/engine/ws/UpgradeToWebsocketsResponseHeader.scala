@@ -5,12 +5,12 @@
 package akka.http.impl.engine.ws
 
 import akka.http.scaladsl.model.headers.CustomHeader
+import akka.http.scaladsl.model.ws.Message
 import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 
-private[http] case class UpgradeToWebsocketResponseHeader(handlerFlow: Flow[FrameEvent, FrameEvent, Any])
-  extends InternalCustomHeader("UpgradeToWebsocketResponseHeader") {
-}
+private[http] final case class UpgradeToWebsocketResponseHeader(handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]])
+  extends InternalCustomHeader("UpgradeToWebsocketResponseHeader")
 
 private[http] abstract class InternalCustomHeader(val name: String) extends CustomHeader {
   override def suppressRendering: Boolean = true
