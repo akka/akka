@@ -815,6 +815,31 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
     new Flow(delegate.concatMat(that)(combinerToScala(matF)))
 
   /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * through will also be sent to the [[Sink]].
+   *
+   * '''Emits when''' element is available and demand exists both from the Sink and the downstream.
+   *
+   * '''Backpressures when''' downstream or Sink backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def alsoTo(that: Graph[SinkShape[Out], _]): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.alsoTo(that))
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * through will also be sent to the [[Sink]].
+   *
+   * @see [[#alsoTo]]
+   */
+  def alsoToMat[M2, M3](that: Graph[SinkShape[Out], M2],
+                        matF: function.Function2[Mat, M2, M3]): javadsl.Flow[In, Out, M3] =
+    new Flow(delegate.alsoToMat(that)(combinerToScala(matF)))
+
+  /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *
@@ -860,14 +885,14 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    */
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
                        matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out @uncheckedVariance Pair T, M2] = {
-    //we need this only to have Flow of javadsl.Pair
-    def block(builder: FlowGraph.Builder[M],
-              source: SourceShape[T]): Pair[Inlet[Out], Outlet[Pair[Out, T]]] = {
-      val zip: FanInShape2[Out, T, Out Pair T] = builder.graph(Zip.create[Out, T])
-      builder.from(source).to(zip.in1)
-      new Pair(zip.in0, zip.out)
+    val f = new function.Function2[FlowGraph.Builder[M], SourceShape[T], Inlet[Out]Pair Outlet[Out Pair T]] {
+      override def apply(b: FlowGraph.Builder[M], s: SourceShape[T]): Inlet[Out] Pair Outlet[Out Pair T] = {
+        val zip = b.graph(Zip.create[Out, T])
+        b.from(s).to(zip.in1)
+        new Pair(zip.in0, zip.out)
+      }
     }
-    this.viaMat(Flow.factory.create(that, combinerToJava(block)), matF)
+    this.viaMat(Flow.factory.create(that, f), matF)
   }
 
   /**
