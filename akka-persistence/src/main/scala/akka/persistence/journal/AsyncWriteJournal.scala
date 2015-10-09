@@ -206,6 +206,16 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * It is possible but not mandatory to reduce number of allocations by returning
    * `Future.successful(Nil)` for the happy path, i.e. when no messages are rejected.
    *
+   * Calls to this method are serialized by the enclosing journal actor. If you spawn
+   * work in asyncronous tasks it is alright that they complete the futures in any order,
+   * but the actual writes for a specific persistenceId should be serialized to avoid 
+   * issues such as events of a later write are visible to consumers (query side, or replay)
+   * before the events of an earlier write are visible. This can also be done with
+   * consistent hashing if it is too fine grained to do it on the persistenceId level.
+   * Normally a `PersistentActor` will only have one outstanding write request to the journal but 
+   * it may emit several write requests when `persistAsync` is used and the max batch size
+   * is reached.
+   *
    * This call is protected with a circuit-breaker.
    */
   def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]]
