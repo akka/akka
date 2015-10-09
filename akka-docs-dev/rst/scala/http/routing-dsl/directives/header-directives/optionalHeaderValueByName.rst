@@ -3,8 +3,6 @@
 optionalHeaderValueByName
 =========================
 
-Optionally extracts the value of the HTTP request header with the given name.
-
 Signature
 ---------
 
@@ -13,8 +11,9 @@ Signature
 
 Description
 -----------
+Optionally extracts the value of the HTTP request header with the given name.
 
-The ``optionalHeaderValueByName`` directive is similar to the ``headerValueByName`` directive but always extracts
+The ``optionalHeaderValueByName`` directive is similar to the :ref:`-headerValueByName-` directive but always extracts
 an ``Option`` value instead of rejecting the request if no matching header could be found.
 
 Example

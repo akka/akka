@@ -3,8 +3,6 @@
 withLog
 =======
 
-Runs its inner route with the given alternative :class:`LoggingAdapter`.
-
 Signature
 ---------
 

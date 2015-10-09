@@ -12,7 +12,7 @@ Signature
 Description
 -----------
 
-Asynchronous variant of :ref:`mapRouteResultPF`.
+Asynchronous variant of :ref:`-mapRouteResultPF-`.
 
 Changes the message the inner route sends to the responder.
 

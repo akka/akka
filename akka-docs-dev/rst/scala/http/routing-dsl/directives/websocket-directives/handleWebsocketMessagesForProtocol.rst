@@ -3,10 +3,6 @@
 handleWebsocketMessagesForProtocol
 ==================================
 
-Handles Websocket requests with the given handler if the given subprotocol is offered in the ``Sec-Websocket-Protocol``
-header of the request and rejects other requests with an ``ExpectedWebsocketRequestRejection`` or an
-``UnsupportedWebsocketSubprotocolRejection``.
-
 Signature
 ---------
 
@@ -15,6 +11,9 @@ Signature
 
 Description
 -----------
+Handles Websocket requests with the given handler if the given subprotocol is offered in the ``Sec-Websocket-Protocol``
+header of the request and rejects other requests with an ``ExpectedWebsocketRequestRejection`` or an
+``UnsupportedWebsocketSubprotocolRejection``.
 
 The directive first checks if the request was a valid Websocket handshake request and if the request offers the passed
 subprotocol name. If yes, the directive completes the request with the passed handler. Otherwise, the request is

@@ -9,9 +9,10 @@ Description
 -----------
 ``FormField`` request values allow extracting fields submitted as ``application/x-www-form-urlencoded`` values or concrete instances from HTTP requests.
 
-The ``RequestVal`` builder is made up of 2 steps, initially you need to pick which Header to extract (``byName`` or
-``byClass``) and then you need to pick if the header is optionally available or required (i.e. the route should not
-match if the header is not present in the request). This is done using one of the below depicted methods::
+The ``FormField`` request value builder is made up of 2 steps, initially you need to pick which what type of value you
+want to extract from the field (for example ``intValue``, which would reject the route if the value is not an ``int``),
+and then **optionally** you may specify if the value is optional (by calling ``optional()`` on the ``RequestVal``)
+or has a default value (by calling ``withDefault()`` on the ``RequestVal``).
 
 Examples
 --------

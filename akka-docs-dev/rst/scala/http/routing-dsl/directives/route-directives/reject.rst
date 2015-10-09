@@ -3,9 +3,6 @@
 reject
 ======
 
-Explicitly rejects the request optionally using the given rejection(s).
-
-
 Signature
 ---------
 
@@ -15,6 +12,7 @@ Signature
 
 Description
 -----------
+Explicitly rejects the request optionally using the given rejection(s).
 
 ``reject`` uses the given rejection instances (which might be the empty ``Seq``) to construct a ``Route`` which simply
 calls ``requestContext.reject``. See the chapter on :ref:`rejections-scala` for more information on what this means.

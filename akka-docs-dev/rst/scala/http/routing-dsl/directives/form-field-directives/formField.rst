@@ -3,10 +3,6 @@
 formField
 =========
 
-Allows extracting a single Form field sent in the request.
-
-An alias for :ref:`-formFields-`.
-
 Signature
 ---------
 
@@ -15,8 +11,9 @@ Signature
 
 Description
 -----------
+Allows extracting a single Form field sent in the request.
 
-See :ref:`-formFields-`.
+See :ref:`-formFields-` for an in-depth description.
 
 Example
 -------

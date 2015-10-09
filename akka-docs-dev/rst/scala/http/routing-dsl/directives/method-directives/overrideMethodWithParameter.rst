@@ -3,8 +3,6 @@
 overrideMethodWithParameter
 ===========================
 
-Changes the request method to the value of the specified query parameter.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Changes the request method to the value of the specified query parameter.
 
 Changes the HTTP method of the request to the value of the specified query string parameter.
 If the query string parameter is not specified this directive has no effect.

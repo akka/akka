@@ -3,8 +3,6 @@
 method
 ======
 
-Matches HTTP requests based on their method.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Matches HTTP requests based on their method.
 
 This directive filters the incoming request by its HTTP method. Only requests with
 the specified method are passed on to the inner route. All others are rejected with a

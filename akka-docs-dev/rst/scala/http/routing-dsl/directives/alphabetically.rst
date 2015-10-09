@@ -20,7 +20,7 @@ Directive                                   Description
                                             a given ``AsyncAuthenticator[T]``
 :ref:`-authenticateOAuth2PF-`               Wraps the inner route with OAuth Bearer Token authentication support using
                                             a given ``AuthenticatorPF[T]``
-:ref:`-authenticateOAuth2AsyncPF-`          Wraps the inner route with OAuth Bearer Token authentication support using
+:ref:`-authenticateOAuth2PFAsync-`          Wraps the inner route with OAuth Bearer Token authentication support using
                                             a given ``AsyncAuthenticatorPF[T]``
 :ref:`-authenticateOrRejectWithChallenge-`  Lifts an authenticator function into a directive
 :ref:`-authorize-`                          Applies the given authorization check to the request

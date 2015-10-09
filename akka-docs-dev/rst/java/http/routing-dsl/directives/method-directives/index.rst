@@ -1,4 +1,4 @@
-.. _MethodDirectives:
+.. _method-directives-java:
 
 MethodDirectives
 ================

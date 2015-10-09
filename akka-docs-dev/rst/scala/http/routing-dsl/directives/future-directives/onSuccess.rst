@@ -3,9 +3,6 @@
 onSuccess
 =========
 
-Evaluates its parameter of type ``Future[T]``, and once the ``Future`` has been completed successfully,
-extracts its result as a value of type ``T`` and passes it to the inner route.
-
 Signature
 ---------
 
@@ -14,10 +11,10 @@ Signature
 
 Description
 -----------
+Evaluates its parameter of type ``Future[T]``, and once the ``Future`` has been completed successfully,
+extracts its result as a value of type ``T`` and passes it to the inner route.
 
-The execution of the inner route passed to a onSuccess directive is deferred until the given future
-has completed successfully, exposing the future's value as a extraction of type ``T``. If the future
-fails its failure throwable is bubbled up to the nearest ``ExceptionHandler``.
+If the future fails its failure throwable is bubbled up to the nearest ``ExceptionHandler``.
 
 To handle the ``Failure`` case manually as well, use :ref:`-onComplete-`, instead.
 

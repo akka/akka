@@ -3,8 +3,6 @@
 authenticateBasicAsync
 ======================
 
-Wraps the inner route with Http Basic authentication support using a given ``AsyncAuthenticator[T]``.
-
 Signature
 ---------
 
@@ -15,8 +13,9 @@ Signature
 
 Description
 -----------
+Wraps the inner route with Http Basic authentication support using a given ``AsyncAuthenticator[T]``.
 
-This variant of the :ref:`authenticateBasic` directive returns a ``Future[Option[T]]`` which allows freeing up the routing
+This variant of the :ref:`-authenticateBasic-` directive returns a ``Future[Option[T]]`` which allows freeing up the routing
 layer of Akka HTTP, freeing it for other requests. It should be used whenever an authentication is expected to take
 a longer amount of time (e.g. looking up the user in a database).
 

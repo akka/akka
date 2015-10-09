@@ -3,8 +3,6 @@
 withSettings
 ============
 
-Runs its inner route with the given alternative :class:`RoutingSettings`.
-
 Signature
 ---------
 
