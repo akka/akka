@@ -14,7 +14,8 @@ import scala.util.Random
 
 trait WSTestSetupBase extends Matchers {
   def send(bytes: ByteString): Unit
-  def expectNextChunk(): ByteString
+  def expectBytes(length: Int): ByteString
+  def expectBytes(bytes: ByteString): Unit
 
   def sendWSFrame(opcode: Opcode,
                   data: ByteString,
@@ -41,24 +42,13 @@ trait WSTestSetupBase extends Matchers {
                     rsv1: Boolean = false,
                     rsv2: Boolean = false,
                     rsv3: Boolean = false): Unit =
-    expectNextChunk() shouldEqual frameHeader(opcode, data.length, fin, mask, rsv1, rsv2, rsv3) ++ data
+    expectBytes(frameHeader(opcode, data.length, fin, mask, rsv1, rsv2, rsv3) ++ data)
 
   def expectWSCloseFrame(closeCode: Int, mask: Boolean = false): Unit =
-    expectNextChunk() shouldEqual closeFrame(closeCode, mask)
+    expectBytes(closeFrame(closeCode, mask))
 
-  var inBuffer = ByteString.empty
-  @tailrec final def expectNetworkData(bytes: Int): ByteString =
-    if (inBuffer.size >= bytes) {
-      val res = inBuffer.take(bytes)
-      inBuffer = inBuffer.drop(bytes)
-      res
-    } else {
-      inBuffer ++= expectNextChunk()
-      expectNetworkData(bytes)
-    }
-
-  def expectNetworkData(data: ByteString): Unit =
-    expectNetworkData(data.size) shouldEqual data
+  def expectNetworkData(length: Int): ByteString = expectBytes(length)
+  def expectNetworkData(data: ByteString): Unit = expectBytes(data)
 
   def expectFrameOnNetwork(opcode: Opcode, data: ByteString, fin: Boolean): Unit = {
     expectFrameHeaderOnNetwork(opcode, data.size, fin)
