@@ -4,10 +4,10 @@
 
 package akka.http.impl.engine.ws
 
-import akka.stream.scaladsl.{ Keep, BidiFlow, Flow }
-import akka.stream.stage.{ SyncDirective, Context, StageState, StatefulStage }
+import java.util.Random
 
-import scala.util.Random
+import akka.stream.scaladsl.{ Keep, BidiFlow, Flow }
+import akka.stream.stage.{ SyncDirective, Context, StatefulStage }
 
 /**
  * Implements Websocket Frame masking.
