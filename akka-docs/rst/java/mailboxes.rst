@@ -153,31 +153,45 @@ Akka comes shipped with a number of mailbox implementations:
   - Bounded: No
 
   - Configuration name: "akka.dispatch.UnboundedControlAwareMailbox"
-
-Aditional implementations exist which can be potencially blocking on pushing into the queue,
-however they can be configured using
-
-* **BoundedMailbox**
-
-  - Backed by a ``java.util.concurrent.LinkedBlockingQueue``
-
-  - Blocking: Yes
-
-  - Bounded: Yes
-
-  - Configuration name: "bounded" or "akka.dispatch.BoundedMailbox"
-
+  
 * **UnboundedPriorityMailbox**
 
   - Backed by a ``java.util.concurrent.PriorityBlockingQueue``
 
   - Delivery order for messages of equal priority is undefined - contrast with the UnboundedStablePriorityMailbox
 
-  - Blocking: Yes
+  - Blocking: No
 
   - Bounded: No
 
-  - Configuration name: ``"akka.dispatch.UnboundedPriorityMailbox"``
+  - Configuration name: "akka.dispatch.UnboundedPriorityMailbox"
+  
+* **UnboundedStablePriorityMailbox**
+
+  - Backed by a ``java.util.concurrent.PriorityBlockingQueue`` wrapped in an ``akka.util.PriorityQueueStabilizer``
+
+  - FIFO order is preserved for messages of equal priority - contrast with the UnboundedPriorityMailbox
+
+  - Blocking: No
+
+  - Bounded: No
+
+  - Configuration name: "akka.dispatch.UnboundedStablePriorityMailbox"
+
+Other bounded mailbox implementations which will block the sender if the capacity is reached and
+configured with non-zero ``mailbox-push-timeout-time``. 
+
+.. note:: The following mailboxes should only be used with zero ``mailbox-push-timeout-time``.
+
+* **BoundedMailbox**
+
+  - Backed by a ``java.util.concurrent.LinkedBlockingQueue``
+
+  - Blocking: Yes if used with non-zero ``mailbox-push-timeout-time``, otherwise No
+
+  - Bounded: Yes
+
+  - Configuration name: "bounded" or "akka.dispatch.BoundedMailbox"
 
 * **BoundedPriorityMailbox**
 
@@ -185,23 +199,11 @@ however they can be configured using
 
   - Delivery order for messages of equal priority is undefined - contrast with the ``BoundedStablePriorityMailbox``
 
-  - Blocking: Yes
+  - Blocking: Yes if used with non-zero ``mailbox-push-timeout-time``, otherwise No
 
   - Bounded: Yes
 
   - Configuration name: ``"akka.dispatch.BoundedPriorityMailbox"``
-
-* **UnboundedStablePriorityMailbox**
-
-  - Backed by a ``java.util.concurrent.PriorityBlockingQueue`` wrapped in an ``akka.util.PriorityQueueStabilizer``
-
-  - FIFO order is preserved for messages of equal priority - contrast with the UnboundedPriorityMailbox
-
-  - Blocking: Yes
-
-  - Bounded: No
-
-  - Configuration name: ``"akka.dispatch.UnboundedStablePriorityMailbox"``
 
 * **BoundedStablePriorityMailbox**
 
@@ -209,11 +211,11 @@ however they can be configured using
 
   - FIFO order is preserved for messages of equal priority - contrast with the BoundedPriorityMailbox
 
-  - Blocking: Yes
+  - Blocking: Yes if used with non-zero ``mailbox-push-timeout-time``, otherwise No
 
   - Bounded: Yes
 
-  - Configuration name: ``"akka.dispatch.BoundedStablePriorityMailbox"``
+  - Configuration name: "akka.dispatch.BoundedStablePriorityMailbox"
 
 * **BoundedControlAwareMailbox**
 
@@ -221,11 +223,11 @@ however they can be configured using
 
   - Backed by two ``java.util.concurrent.ConcurrentLinkedQueue`` and blocking on enqueue if capacity has been reached
 
-  - Blocking: Yes
+  - Blocking: Yes if used with non-zero ``mailbox-push-timeout-time``, otherwise No
 
   - Bounded: Yes
 
-  - Configuration name: ``"akka.dispatch.BoundedControlAwareMailbox"``
+  - Configuration name: "akka.dispatch.BoundedControlAwareMailbox"
 
 Mailbox configuration examples
 ==============================
