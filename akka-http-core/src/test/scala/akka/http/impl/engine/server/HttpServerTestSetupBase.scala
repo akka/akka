@@ -6,6 +6,7 @@ package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
 
+import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.stream.io.{ SendBytes, SslTlsOutbound, SessionBytes }
 
 import scala.concurrent.duration.FiniteDuration
@@ -28,26 +29,34 @@ abstract class HttpServerTestSetupBase {
   implicit def system: ActorSystem
   implicit def materializer: Materializer
 
-  val requests = TestSubscriber.manualProbe[HttpRequest]
-  val responses = TestPublisher.manualProbe[HttpResponse]()
+  val requests = TestSubscriber.probe[HttpRequest]
+  val responses = TestPublisher.probe[HttpResponse]()
 
   def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
   def remoteAddress: Option[InetSocketAddress] = None
 
   val (netIn, netOut) = {
-    val netIn = TestPublisher.manualProbe[ByteString]()
-    val netOut = TestSubscriber.manualProbe[ByteString]
+    val netIn = TestPublisher.probe[ByteString]()
+    val netOut = ByteStringSinkProbe()
 
     FlowGraph.closed(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒
       server ⇒
         import FlowGraph.Implicits._
         Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
-        server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink(netOut)
+        server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> netOut.sink
         server.out2 ~> Sink(requests)
         Source(responses) ~> server.in1
     }.run()
 
     netIn -> netOut
+  }
+
+  def expectResponseWithWipedDate(expected: String): Unit = {
+    val trimmed = expected.stripMarginWithNewline("\r\n")
+    // XXXX = 4 bytes, ISO Date Time String = 29 bytes => need to request 15 bytes more than expected string
+    val expectedSize = ByteString(trimmed, "utf8").length + 25
+    val received = wipeDate(netOut.expectBytes(expectedSize).utf8String)
+    assert(received == trimmed, s"Expected request '$trimmed' but got '$received'")
   }
 
   def wipeDate(string: String) =
@@ -56,20 +65,12 @@ abstract class HttpServerTestSetupBase {
       case s                          ⇒ s
     }.mkString("\n")
 
-  val netInSub = netIn.expectSubscription()
-  val netOutSub = netOut.expectSubscription()
-  val requestsSub = requests.expectSubscription()
-  val responsesSub = responses.expectSubscription()
-
-  def expectRequest: HttpRequest = {
-    requestsSub.request(1)
-    requests.expectNext()
-  }
+  def expectRequest: HttpRequest = requests.requestNext()
   def expectNoRequest(max: FiniteDuration): Unit = requests.expectNoMsg(max)
   def expectNetworkClose(): Unit = netOut.expectComplete()
 
-  def send(data: ByteString): Unit = netInSub.sendNext(data)
-  def send(data: String): Unit = send(ByteString(data, "UTF8"))
+  def send(data: ByteString): Unit = netIn.sendNext(data)
+  def send(string: String): Unit = send(ByteString(string.stripMarginWithNewline("\r\n"), "UTF8"))
 
-  def closeNetworkInput(): Unit = netInSub.sendComplete()
+  def closeNetworkInput(): Unit = netIn.sendComplete()
 }

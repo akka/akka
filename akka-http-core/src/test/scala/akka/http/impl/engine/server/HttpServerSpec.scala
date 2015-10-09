@@ -32,7 +32,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       send("""GET / HTTP/1.1
              |Host: example.com
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
       expectRequest shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
     }
@@ -42,7 +42,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 12
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
@@ -65,10 +65,9 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       send("""GET / HTTP/1.2
              |Host: example.com
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
-      netOutSub.request(1)
-      wipeDate(netOut.expectNext().utf8String) shouldEqual
+      expectResponseWithWipedDate(
         """HTTP/1.1 505 HTTP Version Not Supported
           |Server: akka-http/test
           |Date: XXXX
@@ -76,7 +75,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
           |Content-Type: text/plain; charset=UTF-8
           |Content-Length: 74
           |
-          |The server does not support the HTTP protocol version used in the request.""".stripMarginWithNewline("\r\n")
+          |The server does not support the HTTP protocol version used in the request.""")
     }
 
     "report an invalid Chunked stream" in new TestSetup {
@@ -86,7 +85,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |6
              |abcdef
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
@@ -102,11 +101,10 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
           error.getMessage shouldEqual "Illegal character 'g' in chunk start"
           requests.expectComplete()
 
-          netOutSub.request(1)
-          responsesSub.expectRequest()
-          responsesSub.sendError(error.asInstanceOf[Exception])
+          responses.expectRequest()
+          responses.sendError(error.asInstanceOf[Exception])
 
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          expectResponseWithWipedDate(
             """HTTP/1.1 400 Bad Request
               |Server: akka-http/test
               |Date: XXXX
@@ -114,7 +112,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
               |Content-Type: text/plain; charset=UTF-8
               |Content-Length: 36
               |
-              |Illegal character 'g' in chunk start""".stripMarginWithNewline("\r\n")
+              |Illegal character 'g' in chunk start""")
       }
     }
 
@@ -123,7 +121,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 12
              |
-             |abcdefghijkl""".stripMarginWithNewline("\r\n"))
+             |abcdefghijkl""")
 
       expectRequest shouldEqual
         HttpRequest(
@@ -138,7 +136,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 12
              |
-             |abcdef""".stripMarginWithNewline("\r\n"))
+             |abcdef""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
@@ -161,7 +159,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |6
              |abcdef
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
@@ -182,7 +180,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 12
              |
-             |abcdefghijkl""".stripMarginWithNewline("\r\n"))
+             |abcdefghijkl""")
 
       expectRequest shouldEqual
         HttpRequest(
@@ -195,7 +193,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 12
              |
-             |mnopqrstuvwx""".stripMarginWithNewline("\r\n"))
+             |mnopqrstuvwx""")
 
       expectRequest shouldEqual
         HttpRequest(
@@ -210,7 +208,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 12
              |
-             |abcdef""".stripMarginWithNewline("\r\n"))
+             |abcdef""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
@@ -232,7 +230,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 5
              |
-             |abcde""".stripMarginWithNewline("\r\n"))
+             |abcde""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) ⇒
@@ -247,7 +245,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |6
              |abcdef
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
@@ -270,7 +268,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 5
              |
-             |abcde""".stripMarginWithNewline("\r\n"))
+             |abcde""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) ⇒
@@ -283,7 +281,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 12
              |
-             |abcdef""".stripMarginWithNewline("\r\n"))
+             |abcdef""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
@@ -306,7 +304,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |6
              |abcdef
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
@@ -328,7 +326,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 12
              |
-             |abcdef""".stripMarginWithNewline("\r\n"))
+             |abcdef""")
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ByteString]
@@ -349,7 +347,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |6
              |abcdef
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       inside(expectRequest) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
@@ -368,7 +366,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       expectRequest shouldEqual HttpRequest(GET, uri = "http://example.com/", headers = List(Host("example.com")))
     }
 
@@ -377,7 +375,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       expectRequest shouldEqual HttpRequest(HEAD, uri = "http://example.com/", headers = List(Host("example.com")))
     }
 
@@ -385,19 +383,18 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responsesSub.sendNext(HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain`, ByteString("abcd"))))
-          netOutSub.request(1)
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          responses.sendNext(HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain`, ByteString("abcd"))))
+          expectResponseWithWipedDate(
             """|HTTP/1.1 200 OK
                |Server: akka-http/test
                |Date: XXXX
                |Content-Type: text/plain
                |Content-Length: 4
                |
-               |""".stripMarginWithNewline("\r\n")
+               |""")
       }
     }
 
@@ -405,22 +402,21 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responsesSub.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain`, 4, Source(data))))
-          netOutSub.request(1)
+          responses.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain`, 4, Source(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          expectResponseWithWipedDate(
             """|HTTP/1.1 200 OK
                |Server: akka-http/test
                |Date: XXXX
                |Content-Type: text/plain
                |Content-Length: 4
                |
-               |""".stripMarginWithNewline("\r\n")
+               |""")
       }
     }
 
@@ -428,46 +424,44 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responsesSub.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain`, Source(data))))
-          netOutSub.request(1)
+          responses.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain`, Source(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          expectResponseWithWipedDate(
             """|HTTP/1.1 200 OK
                |Server: akka-http/test
                |Date: XXXX
                |Content-Type: text/plain
                |
-               |""".stripMarginWithNewline("\r\n")
+               |""")
       }
       // No close should happen here since this was a HEAD request
-      netOut.expectNoMsg(50.millis)
+      netOut.expectNoBytes(50.millis)
     }
 
     "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Chunked)" in new TestSetup {
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       val data = TestPublisher.manualProbe[ChunkStreamPart]()
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responsesSub.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain`, Source(data))))
-          netOutSub.request(1)
+          responses.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain`, Source(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          expectResponseWithWipedDate(
             """|HTTP/1.1 200 OK
                |Server: akka-http/test
                |Date: XXXX
                |Transfer-Encoding: chunked
                |Content-Type: text/plain
                |
-               |""".stripMarginWithNewline("\r\n")
+               |""")
       }
     }
 
@@ -476,15 +470,14 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Connection: close
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responsesSub.sendNext(HttpResponse(entity = CloseDelimited(ContentTypes.`text/plain`, Source(data))))
-          netOutSub.request(1)
+          responses.sendNext(HttpResponse(entity = CloseDelimited(ContentTypes.`text/plain`, Source(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
-          netOut.expectNext()
+          netOut.expectBytes(1)
       }
       netOut.expectComplete()
     }
@@ -495,34 +488,33 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Expect: 100-continue
              |Content-Length: 16
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       inside(expectRequest) {
         case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
           val dataSub = dataProbe.expectSubscription()
-          netOutSub.request(2)
-          netOut.expectNoMsg(50.millis)
+          netOut.expectNoBytes(50.millis)
           dataSub.request(1) // triggers `100 Continue` response
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          expectResponseWithWipedDate(
             """HTTP/1.1 100 Continue
               |Server: akka-http/test
               |Date: XXXX
               |
-              |""".stripMarginWithNewline("\r\n")
+              |""")
           dataProbe.expectNoMsg(50.millis)
           send("0123456789ABCDEF")
           dataProbe.expectNext(ByteString("0123456789ABCDEF"))
           dataProbe.expectComplete()
-          responsesSub.sendNext(HttpResponse(entity = "Yeah"))
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          responses.sendNext(HttpResponse(entity = "Yeah"))
+          expectResponseWithWipedDate(
             """HTTP/1.1 200 OK
               |Server: akka-http/test
               |Date: XXXX
               |Content-Type: text/plain; charset=UTF-8
               |Content-Length: 4
               |
-              |Yeah""".stripMarginWithNewline("\r\n")
+              |Yeah""")
       }
     }
 
@@ -532,39 +524,38 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Expect: 100-continue
              |Transfer-Encoding: chunked
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       inside(expectRequest) {
         case HttpRequest(POST, _, _, Chunked(ContentType(`application/octet-stream`, None), data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
           val dataSub = dataProbe.expectSubscription()
-          netOutSub.request(2)
-          netOut.expectNoMsg(50.millis)
+          netOut.expectNoBytes(50.millis)
           dataSub.request(2) // triggers `100 Continue` response
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          expectResponseWithWipedDate(
             """HTTP/1.1 100 Continue
               |Server: akka-http/test
               |Date: XXXX
               |
-              |""".stripMarginWithNewline("\r\n")
+              |""")
           dataProbe.expectNoMsg(50.millis)
           send("""10
                  |0123456789ABCDEF
                  |0
                  |
-                 |""".stripMarginWithNewline("\r\n"))
+                 |""")
           dataProbe.expectNext(Chunk(ByteString("0123456789ABCDEF")))
           dataProbe.expectNext(LastChunk)
           dataProbe.expectComplete()
-          responsesSub.sendNext(HttpResponse(entity = "Yeah"))
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          responses.sendNext(HttpResponse(entity = "Yeah"))
+          expectResponseWithWipedDate(
             """HTTP/1.1 200 OK
               |Server: akka-http/test
               |Date: XXXX
               |Content-Type: text/plain; charset=UTF-8
               |Content-Length: 4
               |
-              |Yeah""".stripMarginWithNewline("\r\n")
+              |Yeah""")
       }
     }
 
@@ -574,12 +565,11 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Expect: 100-continue
              |Content-Length: 16
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
       inside(expectRequest) {
         case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) ⇒
-          netOutSub.request(1)
-          responsesSub.sendNext(HttpResponse(entity = "Yeah"))
-          wipeDate(netOut.expectNext().utf8String) shouldEqual
+          responses.sendNext(HttpResponse(entity = "Yeah"))
+          expectResponseWithWipedDate(
             """HTTP/1.1 200 OK
               |Server: akka-http/test
               |Date: XXXX
@@ -587,7 +577,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
               |Content-Type: text/plain; charset=UTF-8
               |Content-Length: 4
               |
-              |Yeah""".stripMarginWithNewline("\r\n")
+              |Yeah""")
       }
     }
 
@@ -599,18 +589,17 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       expectRequest shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
 
-      netOutSub.request(1)
-      responsesSub.expectRequest()
-      responsesSub.sendError(new RuntimeException("CRASH BOOM BANG"))
+      responses.expectRequest()
+      responses.sendError(new RuntimeException("CRASH BOOM BANG"))
 
-      wipeDate(netOut.expectNext().utf8String) shouldEqual
+      expectResponseWithWipedDate(
         """HTTP/1.1 500 Internal Server Error
           |Server: akka-http/test
           |Date: XXXX
           |Connection: close
           |Content-Length: 0
           |
-          |""".stripMarginWithNewline("\r\n")
+          |""")
     }
 
     "correctly consume and render large requests and responses" in new TestSetup {
@@ -618,22 +607,20 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |Content-Length: 100000
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
       val HttpRequest(POST, _, _, entity, _) = expectRequest
-      responsesSub.expectRequest()
-      responsesSub.sendNext(HttpResponse(entity = entity))
-      responsesSub.sendComplete()
+      responses.sendNext(HttpResponse(entity = entity))
+      responses.sendComplete()
 
-      netOutSub.request(1)
-      wipeDate(netOut.expectNext().utf8String) shouldEqual
+      expectResponseWithWipedDate(
         """HTTP/1.1 200 OK
           |Server: akka-http/test
           |Date: XXXX
           |Content-Type: application/octet-stream
           |Content-Length: 100000
           |
-          |""".stripMarginWithNewline("\r\n")
+          |""")
 
       val random = new Random()
       @tailrec def rec(bytesLeft: Int): Unit =
@@ -641,13 +628,12 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
           val count = math.min(random.nextInt(1000) + 1, bytesLeft)
           val data = random.alphanumeric.take(count).mkString
           send(data)
-          netOutSub.request(1)
-          netOut.expectNext().utf8String shouldEqual data
+          netOut.expectUtf8EncodedString(data)
           rec(bytesLeft - count)
         }
       rec(100000)
 
-      netInSub.sendComplete()
+      netIn.sendComplete()
       requests.expectComplete()
       netOut.expectComplete()
     }
@@ -656,7 +642,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       send("""GET //foo HTTP/1.1
              |Host: example.com
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
       expectRequest shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
     }
@@ -664,7 +650,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
     "use default-host-header for HTTP/1.0 requests" in new TestSetup {
       send("""GET /abc HTTP/1.0
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
       expectRequest shouldEqual HttpRequest(uri = "http://example.com/abc", protocol = HttpProtocols.`HTTP/1.0`)
 
@@ -673,10 +659,9 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
     "fail an HTTP/1.0 request with 400 if no default-host-header is set" in new TestSetup {
       send("""GET /abc HTTP/1.0
              |
-             |""".stripMarginWithNewline("\r\n"))
+             |""")
 
-      netOutSub.request(1)
-      wipeDate(netOut.expectNext().utf8String) shouldEqual
+      expectResponseWithWipedDate(
         """|HTTP/1.1 400 Bad Request
            |Server: akka-http/test
            |Date: XXXX
@@ -684,7 +669,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
            |Content-Type: text/plain; charset=UTF-8
            |Content-Length: 41
            |
-           |Request is missing required `Host` header""".stripMarginWithNewline("\r\n")
+           |Request is missing required `Host` header""")
     }
 
     "support remote-address-header" in new TestSetup {
