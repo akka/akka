@@ -419,7 +419,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
 
     import scala.collection.JavaConverters._
     val gateways = hostPoolCache.values().asScala
-    system.log.info("Initiating orderly shutdown of all active host connections pools...")
+    system.log.debug("Initiating orderly shutdown of all active host connections pools...")
     Future.sequence(gateways.map(_.flatMap(_.shutdown()))).map(_ ⇒ ())
   }
 
