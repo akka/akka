@@ -3,8 +3,6 @@
 extractUri
 ==========
 
-Access the full URI of the request.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Access the full URI of the request.
 
 Use :ref:`SchemeDirectives`, :ref:`HostDirectives`, :ref:`PathDirectives`,  and :ref:`ParameterDirectives` for more
 targeted access to parts of the URI.

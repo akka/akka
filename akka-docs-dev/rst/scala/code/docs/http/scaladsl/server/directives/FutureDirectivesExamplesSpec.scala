@@ -44,6 +44,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/divide/10/2") ~> route ~> check {
       responseAs[String] shouldEqual "The result was 5"
     }
@@ -67,6 +68,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/success") ~> route ~> check {
       responseAs[String] shouldEqual "Ok"
     }
@@ -90,6 +92,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/success") ~> route ~> check {
       responseAs[String] shouldEqual "Ok"
     }

@@ -3,8 +3,6 @@
 handleRejections
 ================
 
-Handles rejections produced by the inner route and handles them using the specified ``RejectionHandler``.
-
 Signature
 ---------
 

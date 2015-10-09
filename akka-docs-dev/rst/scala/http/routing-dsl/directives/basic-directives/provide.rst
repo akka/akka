@@ -3,8 +3,6 @@
 provide
 =======
 
-Provides a constant value to the inner route.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Provides a constant value to the inner route.
 
 The `provide` directive is used as a building block for :ref:`Custom Directives` to provide a single value to the
 inner route. To provide several values  use the :ref:`-tprovide-` directive.

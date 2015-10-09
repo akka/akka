@@ -30,6 +30,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
@@ -66,6 +67,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
@@ -114,6 +116,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
@@ -156,6 +159,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
@@ -200,6 +204,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
@@ -240,6 +245,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     val johnsCred = BasicHttpCredentials("John", "p4ssw0rd")
     Get("/peters-lair") ~> addCredentials(johnsCred) ~> // adds Authorization header
       route ~> check {
@@ -265,6 +271,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     val johnsCred = BasicHttpCredentials("John", "p4ssw0rd")
     Get("/") ~> addCredentials(johnsCred) ~> // adds Authorization header
       route ~> check {

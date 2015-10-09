@@ -12,6 +12,7 @@ class SchemeDirectivesExamplesSpec extends RoutingSpec {
         complete(s"The scheme is '${scheme}'")
       }
 
+    // tests:
     Get("https://www.example.com/") ~> route ~> check {
       responseAs[String] shouldEqual "The scheme is 'https'"
     }
@@ -32,6 +33,7 @@ class SchemeDirectivesExamplesSpec extends RoutingSpec {
           complete(s"Safe and secure!")
         }
 
+    // tests:
     Get("http://www.example.com/hello") ~> route ~> check {
       status shouldEqual MovedPermanently
       header[Location] shouldEqual Some(Location(Uri("https://www.example.com/hello")))

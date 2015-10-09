@@ -19,6 +19,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
         complete(s"The user is $userId")
       }
 
+    // tests:
     Get("/") ~> RawHeader("X-User-Id", "Joe42") ~> route ~> check {
       responseAs[String] shouldEqual "The user is Joe42"
     }
@@ -39,6 +40,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
         complete(s"The port was $port")
       }
 
+    // tests:
     Get("/") ~> Host("example.com", 5043) ~> route ~> check {
       responseAs[String] shouldEqual "The port was 5043"
     }
@@ -67,6 +69,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
           }
         }
 
+    // tests:
     Get("/") ~> Host("example.com", 5043) ~> route ~> check {
       responseAs[String] shouldEqual "The port was 5043"
     }
@@ -89,6 +92,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
           }
         }
 
+    // tests:
     Get("/") ~> RawHeader("X-User-Id", "Joe42") ~> route ~> check {
       responseAs[String] shouldEqual "The user is Joe42"
     }
@@ -106,6 +110,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
         complete(s"The port was $port")
       }
 
+    // tests:
     Get("/") ~> Host("example.com", 5043) ~> route ~> check {
       responseAs[String] shouldEqual "The port was 5043"
     }
@@ -133,6 +138,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
           }
         }
 
+    // tests:
     Get("/") ~> Host("example.com", 5043) ~> route ~> check {
       responseAs[String] shouldEqual "The port was 5043"
     }
@@ -148,6 +154,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
 
     val originHeader = Origin(HttpOrigin("http://localhost:8080"))
 
+    // tests:
     // extract a header if the type is matching
     Get("abc") ~> originHeader ~> route ~> check {
       responseAs[String] shouldEqual "The first origin was http://localhost:8080"
@@ -166,6 +173,8 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
       }
 
     val originHeader = Origin(HttpOrigin("http://localhost:8080"))
+
+    // tests:
     // extract Some(header) if the type is matching
     Get("abc") ~> originHeader ~> route ~> check {
       responseAs[String] shouldEqual "The first origin was http://localhost:8080"

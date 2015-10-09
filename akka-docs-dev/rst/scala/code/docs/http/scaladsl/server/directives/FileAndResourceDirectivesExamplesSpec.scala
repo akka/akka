@@ -20,6 +20,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         getFromFile(".log") // uses implicit ContentTypeResolver
       }
 
+    // tests:
     Get("/logs/example") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
@@ -33,6 +34,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         getFromResource(".log") // uses implicit ContentTypeResolver
       }
 
+    // tests:
     Get("/logs/example") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
@@ -49,6 +51,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
           listDirectoryContents("/tmp")(renderer)
         }
 
+    // tests:
     Get("/logs/example") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
@@ -59,6 +62,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         getFromBrowseableDirectory("/tmp")
       }
 
+    // tests:
     Get("/tmp") ~> route ~> check {
       status shouldEqual StatusCodes.OK
     }
@@ -69,6 +73,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         getFromBrowseableDirectories("/main", "/backups")
       }
 
+    // tests:
     Get("/tmp") ~> route ~> check {
       status shouldEqual StatusCodes.OK
     }
@@ -79,6 +84,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         getFromDirectory("/tmp")
       }
 
+    // tests:
     Get("/tmp/example") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
@@ -89,6 +95,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         getFromResourceDirectory("/examples")
       }
 
+    // tests:
     Get("/examples/example-1") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
