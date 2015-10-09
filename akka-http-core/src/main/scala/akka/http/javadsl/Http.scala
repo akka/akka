@@ -4,7 +4,6 @@
 
 package akka.http.javadsl
 
-import java.lang.{ Iterable ⇒ JIterable }
 import java.net.InetSocketAddress
 import akka.http.impl.util.JavaMapping
 import akka.stream.io.{ SslTlsInbound, SslTlsOutbound }
@@ -16,7 +15,6 @@ import akka.stream.scaladsl.Keep
 import akka.japi.{ Pair, Option, Function }
 import akka.actor.{ ExtendedActorSystem, ActorSystem, ExtensionIdProvider, ExtensionId }
 import akka.event.LoggingAdapter
-import akka.io.Inet
 import akka.stream.Materializer
 import akka.stream.javadsl.{ BidiFlow, Flow, Source }
 
@@ -228,6 +226,12 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     outgoingConnection(host, 80)
 
   /**
+   * Same as [[outgoingConnection]] but with HTTPS encryption.
+   */
+  def outgoingConnectionTls(host: String): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+    outgoingConnectionTls(host, 443)
+
+  /**
    * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    */
@@ -318,7 +322,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * object of type ``T`` from the application which is emitted together with the corresponding response.
    */
   def newHostConnectionPool[T](host: String, port: Int,
-                               options: JIterable[Inet.SocketOption],
                                settings: ConnectionPoolSettings,
                                log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.newHostConnectionPool[T](host, port, settings, log)(materializer))
@@ -330,7 +333,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * for encryption on the connection.
    */
   def newHostConnectionPoolTls[T](host: String, port: Int,
-                                  options: JIterable[Inet.SocketOption],
                                   settings: ConnectionPoolSettings,
                                   httpsContext: Option[HttpsContext],
                                   log: LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
