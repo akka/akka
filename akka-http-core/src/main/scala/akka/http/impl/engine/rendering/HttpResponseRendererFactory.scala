@@ -5,6 +5,7 @@
 package akka.http.impl.engine.rendering
 
 import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebsocketResponseHeader }
+import akka.http.scaladsl.model.ws.Message
 
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
@@ -159,7 +160,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
               r ~~ connHeader ~~ CrLf
               headers
                 .collectFirst { case u: UpgradeToWebsocketResponseHeader ⇒ u }
-                .foreach { header ⇒ closeMode = SwitchToWebsocket(header.handlerFlow) }
+                .foreach { header ⇒ closeMode = SwitchToWebsocket(header.handler) }
             }
             if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
@@ -220,7 +221,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
   sealed trait CloseMode
   case object DontClose extends CloseMode
   case object CloseConnection extends CloseMode
-  case class SwitchToWebsocket(handlerFlow: Flow[FrameEvent, FrameEvent, Any]) extends CloseMode
+  case class SwitchToWebsocket(handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]]) extends CloseMode
 }
 
 /**
@@ -237,5 +238,5 @@ private[http] sealed trait ResponseRenderingOutput
 /** INTERNAL API */
 private[http] object ResponseRenderingOutput {
   private[http] case class HttpData(bytes: ByteString) extends ResponseRenderingOutput
-  private[http] case class SwitchToWebsocket(httpResponseBytes: ByteString, handlerFlow: Flow[FrameEvent, FrameEvent, Any]) extends ResponseRenderingOutput
+  private[http] case class SwitchToWebsocket(httpResponseBytes: ByteString, handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]]) extends ResponseRenderingOutput
 }

@@ -4,15 +4,21 @@
 
 package akka.http.impl.engine.ws
 
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebsocket }
-import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpProtocol, HttpHeader }
-import akka.parboiled2.util.Base64
-import akka.stream.Materializer
-import akka.stream.scaladsl.Flow
+import java.util.Random
 
+import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
+
+import akka.parboiled2.util.Base64
+
+import akka.stream.scaladsl.Flow
+
+import akka.http.impl.util._
+
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebsocket }
+import akka.http.scaladsl.model._
 
 /**
  * Server-side implementation of the Websocket handshake
@@ -22,7 +28,8 @@ import scala.reflect.ClassTag
 private[http] object Handshake {
   val CurrentWebsocketVersion = 13
 
-  /*
+  object Server {
+    /*
       From: http://tools.ietf.org/html/rfc6455#section-4.2.1
 
       1.   An HTTP/1.1 or higher GET request, including a "Request-URI"
@@ -57,69 +64,81 @@ private[http] object Handshake {
             list of values indicating which extensions the client would like
             to speak.  The interpretation of this header field is discussed
             in Section 9.1.
-   */
-  def isWebsocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): Option[UpgradeToWebsocket] = {
-    def find[T <: HttpHeader: ClassTag]: Option[T] =
-      headers.collectFirst {
-        case t: T ⇒ t
-      }
-
-    val host = find[Host]
-    val upgrade = find[Upgrade]
-    val connection = find[Connection]
-    val key = find[`Sec-WebSocket-Key`]
-    val version = find[`Sec-WebSocket-Version`]
-    val origin = find[Origin]
-    val protocol = find[`Sec-WebSocket-Protocol`]
-    val supportedProtocols = protocol.toList.flatMap(_.protocols)
-    val extensions = find[`Sec-WebSocket-Extensions`]
-
-    def isValidKey(key: String): Boolean = Base64.rfc2045().decode(key).length == 16
-
-    if (upgrade.exists(_.hasWebsocket) &&
-      connection.exists(_.hasUpgrade) &&
-      version.exists(_.hasVersion(CurrentWebsocketVersion)) &&
-      key.exists(k ⇒ isValidKey(k.key))) {
-
-      val header = new UpgradeToWebsocketLowLevel {
-        def requestedProtocols: Seq[String] = supportedProtocols
-
-        def handleFrames(handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String]): HttpResponse = {
-          require(subprotocol.forall(chosen ⇒ supportedProtocols.contains(chosen)),
-            s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
-          buildResponse(key.get, handlerFlow, subprotocol)
+    */
+    def isWebsocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): Option[UpgradeToWebsocket] = {
+      def find[T <: HttpHeader: ClassTag]: Option[T] =
+        headers.collectFirst {
+          case t: T ⇒ t
         }
-      }
-      Some(header)
-    } else None
+
+      // val host = find[Host]
+      val upgrade = find[Upgrade]
+      val connection = find[Connection]
+      val key = find[`Sec-WebSocket-Key`]
+      val version = find[`Sec-WebSocket-Version`]
+      // val origin = find[Origin]
+      val protocol = find[`Sec-WebSocket-Protocol`]
+      val supportedProtocols = protocol.toList.flatMap(_.protocols)
+      // FIXME: support extensions
+      // val extensions = find[`Sec-WebSocket-Extensions`]
+
+      def isValidKey(key: String): Boolean = Base64.rfc2045().decode(key).length == 16
+
+      if (upgrade.exists(_.hasWebsocket) &&
+        connection.exists(_.hasUpgrade) &&
+        version.exists(_.hasVersion(CurrentWebsocketVersion)) &&
+        key.exists(k ⇒ isValidKey(k.key))) {
+
+        val header = new UpgradeToWebsocketLowLevel {
+          def requestedProtocols: Seq[String] = supportedProtocols
+
+          def handle(handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]], subprotocol: Option[String]): HttpResponse = {
+            require(subprotocol.forall(chosen ⇒ supportedProtocols.contains(chosen)),
+              s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
+            buildResponse(key.get, handler, subprotocol)
+          }
+
+          def handleFrames(handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String]): HttpResponse =
+            handle(Left(handlerFlow), subprotocol)
+
+          override def handleMessages(handlerFlow: Flow[Message, Message, Any], subprotocol: Option[String] = None): HttpResponse =
+            handle(Right(handlerFlow), subprotocol)
+        }
+        Some(header)
+      } else None
+    }
+
+    /*
+      From: http://tools.ietf.org/html/rfc6455#section-4.2.2
+
+      1.  A Status-Line with a 101 response code as per RFC 2616
+          [RFC2616].  Such a response could look like "HTTP/1.1 101
+          Switching Protocols".
+
+      2.  An |Upgrade| header field with value "websocket" as per RFC
+          2616 [RFC2616].
+
+      3.  A |Connection| header field with value "Upgrade".
+
+      4.  A |Sec-WebSocket-Accept| header field.  The value of this
+          header field is constructed by concatenating /key/, defined
+          above in step 4 in Section 4.2.2, with the string "258EAFA5-
+          E914-47DA-95CA-C5AB0DC85B11", taking the SHA-1 hash of this
+          concatenated value to obtain a 20-byte value and base64-
+          encoding (see Section 4 of [RFC4648]) this 20-byte hash.
+    */
+    def buildResponse(key: `Sec-WebSocket-Key`, handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]], subprotocol: Option[String]): HttpResponse =
+      HttpResponse(
+        StatusCodes.SwitchingProtocols,
+        subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(Seq(p))).toList :::
+          List(
+            UpgradeHeader,
+            ConnectionUpgradeHeader,
+            `Sec-WebSocket-Accept`.forKey(key),
+            UpgradeToWebsocketResponseHeader(handler)))
   }
 
-  /*
-    From: http://tools.ietf.org/html/rfc6455#section-4.2.2
-
-    1.  A Status-Line with a 101 response code as per RFC 2616
-        [RFC2616].  Such a response could look like "HTTP/1.1 101
-        Switching Protocols".
-
-    2.  An |Upgrade| header field with value "websocket" as per RFC
-        2616 [RFC2616].
-
-    3.  A |Connection| header field with value "Upgrade".
-
-    4.  A |Sec-WebSocket-Accept| header field.  The value of this
-        header field is constructed by concatenating /key/, defined
-        above in step 4 in Section 4.2.2, with the string "258EAFA5-
-        E914-47DA-95CA-C5AB0DC85B11", taking the SHA-1 hash of this
-        concatenated value to obtain a 20-byte value and base64-
-        encoding (see Section 4 of [RFC4648]) this 20-byte hash.
-   */
-  def buildResponse(key: `Sec-WebSocket-Key`, handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String]): HttpResponse =
-    HttpResponse(
-      StatusCodes.SwitchingProtocols,
-      subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(Seq(p))).toList :::
-        List(
-          Upgrade(List(UpgradeProtocol("websocket"))),
-          Connection(List("upgrade")),
-          `Sec-WebSocket-Accept`.forKey(key),
-          UpgradeToWebsocketResponseHeader(handlerFlow)))
+  val UpgradeHeader = Upgrade(List(UpgradeProtocol("websocket")))
+  val ConnectionUpgradeHeader = Connection(List("upgrade"))
+  val SecWebsocketVersionHeader = `Sec-WebSocket-Version`(Seq(CurrentWebsocketVersion))
 }

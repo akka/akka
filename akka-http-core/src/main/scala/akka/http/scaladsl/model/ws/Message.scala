@@ -16,7 +16,7 @@ sealed trait Message
 /**
  * A binary
  */
-trait TextMessage extends Message {
+sealed trait TextMessage extends Message {
   /**
    * The contents of this message as a stream.
    */
@@ -38,7 +38,7 @@ object TextMessage {
   final private case class Streamed(textStream: Source[String, _]) extends TextMessage
 }
 //#message-model
-trait BinaryMessage extends Message {
+sealed trait BinaryMessage extends Message {
   /**
    * The contents of this message as a stream.
    */
