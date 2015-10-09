@@ -3,9 +3,6 @@
 extractHost
 ===========
 
-Extracts the hostname part of the Host header value in the request.
-
-
 Signature
 ---------
 
@@ -16,8 +13,7 @@ Signature
 Description
 -----------
 
-Extract the hostname part of the ``Host`` request header and expose it as a ``String`` extraction
-to its inner route.
+Extract the hostname part of the ``Host`` request header and expose it as a ``String`` extraction to its inner route.
 
 
 Example

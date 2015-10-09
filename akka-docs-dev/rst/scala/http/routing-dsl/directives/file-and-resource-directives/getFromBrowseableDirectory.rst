@@ -3,9 +3,6 @@
 getFromBrowseableDirectory
 ==========================
 
-Serves the content of the given directory as a file system browser,
-i.e. files are sent and directories served as *browsable* listings.
-
 Signature
 ---------
 

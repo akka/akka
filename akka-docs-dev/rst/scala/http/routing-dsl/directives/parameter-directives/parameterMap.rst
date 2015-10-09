@@ -3,9 +3,6 @@
 parameterMap
 ============
 
-Extracts all parameters at once as a ``Map[String, String]`` mapping parameter names to
-parameter values.
-
 Signature
 ---------
 
@@ -14,10 +11,11 @@ Signature
 
 Description
 -----------
+Extracts all parameters at once as a ``Map[String, String]`` mapping parameter names to parameter values.
 
 If a query contains a parameter value several times, the map will contain the last one.
 
-See :ref:`which-parameter-directive` to understand when to use which directive.
+See also :ref:`which-parameter-directive` to understand when to use which directive.
 
 Example
 -------

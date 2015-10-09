@@ -3,8 +3,6 @@
 withMaterializer
 ================
 
-Runs its inner route with the given alternative ``Materializer``.
-
 Signature
 ---------
 

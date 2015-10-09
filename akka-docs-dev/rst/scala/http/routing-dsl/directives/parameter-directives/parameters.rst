@@ -3,8 +3,6 @@
 parameters
 ==========
 
-The parameters directive filters on the existence of several query parameters and extract their values.
-
 Signature
 ---------
 
@@ -22,6 +20,8 @@ The signature shown is simplified and written in pseudo-syntax, the real signatu
 
 Description
 -----------
+The parameters directive filters on the existence of several query parameters and extract their values.
+
 Query parameters can be either extracted as a String or can be converted to another type. The parameter name
 can be supplied either as a String or as a Symbol. Parameter extraction can be modified to mark a query parameter
 as required, optional, or repeated, or to filter requests where a parameter has a certain value:

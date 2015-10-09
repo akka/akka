@@ -3,8 +3,6 @@
 authenticateBasicPF
 ===================
 
-Wraps the inner route with Http Basic authentication support using a given ``AuthenticatorPF[T]``.
-
 Signature
 ---------
 
@@ -15,6 +13,7 @@ Signature
 
 Description
 -----------
+Wraps the inner route with Http Basic authentication support using a given ``AuthenticatorPF[T]``.
 
 Provides support for handling `HTTP Basic Authentication`_.
 
@@ -23,7 +22,7 @@ Refer to :ref:`-authenticateBasic-` for a detailed description of this directive
 Its semantics are equivalent to ``authenticateBasicPF`` 's, where not handling a case in the Partial Function (PF)
 leaves the request to be rejected with a :class:`AuthenticationFailedRejection` rejection.
 
-Longer-running authentication tasks (like looking up credentials in a database) should use :ref:`authenticateBasicAsync`
+Longer-running authentication tasks (like looking up credentials in a database) should use :ref:`-authenticateBasicAsync-`
 or :ref:`-authenticateBasicPFAsync-` if you prefer to use the ``PartialFunction`` syntax.
 
 .. warning::

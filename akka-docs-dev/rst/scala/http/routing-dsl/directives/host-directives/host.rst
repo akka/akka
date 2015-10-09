@@ -3,10 +3,6 @@
 host
 ====
 
-Filter requests matching conditions against the hostname part of the Host header value
-in the request.
-
-
 Signature
 ---------
 
@@ -16,6 +12,7 @@ Signature
 
 Description
 -----------
+Filter requests matching conditions against the hostname part of the Host header value in the request.
 
 The ``def host(hostNames: String*)`` overload rejects all requests with a hostname different from the given ones.
 

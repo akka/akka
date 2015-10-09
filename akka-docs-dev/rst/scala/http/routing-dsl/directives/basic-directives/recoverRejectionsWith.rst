@@ -3,10 +3,6 @@
 recoverRejectionsWith
 =====================
 
-Transforms rejections from the inner route with an ``immutable.Seq[Rejection] ⇒ Future[RouteResult]`` function.
-
-Asynchronous version of :ref:`-recoverRejections-`.
-
 Signature
 ---------
 
@@ -18,6 +14,10 @@ Description
 
 **Low level directive** – unless you're sure you need to be working on this low-level you might instead
 want to try the :ref:`-handleRejections-` directive which provides a nicer DSL for building rejection handlers.
+
+Transforms rejections from the inner route with an ``immutable.Seq[Rejection] ⇒ Future[RouteResult]`` function.
+
+Asynchronous version of :ref:`-recoverRejections-`.
 
 See :ref:`-recoverRejections-` (the synchronous equivalent of this directive) for a detailed description.
 

@@ -3,9 +3,6 @@
 handleWebsocketMessages
 =======================
 
-Handles Websocket requests with the given handler and rejects other requests with an
-``ExpectedWebsocketRequestRejection``.
-
 Signature
 ---------
 

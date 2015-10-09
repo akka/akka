@@ -3,10 +3,6 @@
 withRangeSupport
 ================
 
-Transforms the response from its inner route into a ``206 Partial Content``
-response if the client requested only part of the resource with a ``Range`` header.
-
-
 Signature
 ---------
 
@@ -23,6 +19,8 @@ The signature shown is simplified, the real signature uses magnets. [1]_
 
 Description
 -----------
+Transforms the response from its inner route into a ``206 Partial Content``
+response if the client requested only part of the resource with a ``Range`` header.
 
 Augments responses to ``GET`` requests with an ``Accept-Ranges: bytes`` header and converts them into partial responses
 if the request contains a valid ``Range`` request header. The requested byte-ranges are coalesced (merged) if they

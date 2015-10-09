@@ -3,8 +3,6 @@
 authenticateBasic
 =================
 
-Wraps the inner route with Http Basic authentication support using a given ``Authenticator[T]``.
-
 Signature
 ---------
 
@@ -15,6 +13,7 @@ Signature
 
 Description
 -----------
+Wraps the inner route with Http Basic authentication support using a given ``Authenticator[T]``.
 
 Provides support for handling `HTTP Basic Authentication`_.
 

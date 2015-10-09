@@ -1,6 +1,6 @@
-.. _-authenticateOAuth2AsyncPF-:
+.. _-authenticateOAuth2PFAsync-:
 
-authenticateOAuth2AsyncPF
+authenticateOAuth2PFAsync
 =========================
 
 Wraps the inner route with OAuth Bearer Token authentication support using a given ``AsyncAuthenticatorPF[T]``.
@@ -11,7 +11,7 @@ Signature
 .. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authenticator
 
 .. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
-   :snippet: authenticateOAuth2AsyncPF
+   :snippet: authenticateOAuth2PFAsync
 
 Description
 -----------
@@ -38,5 +38,5 @@ For more information on how OAuth2 works see `RFC 6750`_.
 Example
 -------
 
-Usage in code is exactly the same as :ref:`-authenticateBasicAsyncPF-`,
+Usage in code is exactly the same as :ref:`-authenticateBasicPFAsync-`,
 with the difference that one must validate the token as OAuth2 dictates (which is currently not part of Akka HTTP itself).

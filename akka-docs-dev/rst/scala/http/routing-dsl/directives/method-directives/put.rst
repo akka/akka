@@ -3,8 +3,6 @@
 put
 ===
 
-Matches requests with HTTP method ``PUT``.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Matches requests with HTTP method ``PUT``.
 
 This directive filters the incoming request by its HTTP method. Only requests with
 method ``PUT`` are passed on to the inner route. All others are rejected with a

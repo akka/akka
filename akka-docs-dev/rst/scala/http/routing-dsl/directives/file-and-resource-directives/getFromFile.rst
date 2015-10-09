@@ -3,8 +3,6 @@
 getFromFile
 ===========
 
-Completes GET requests with the content of the given file.
-
 Signature
 ---------
 

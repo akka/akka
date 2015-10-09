@@ -3,10 +3,6 @@
 requestEntityEmpty
 ==================
 
-A filter that checks if the request entity is empty and only then passes processing to the inner route.
-Otherwise, the request is rejected.
-
-
 Signature
 ---------
 
@@ -16,8 +12,11 @@ Signature
 
 Description
 -----------
+A filter that checks if the request entity is empty and only then passes processing to the inner route.
+Otherwise, the request is rejected.
 
-The opposite filter is available as ``requestEntityPresent``.
+
+See also :ref:`-requestEntityPresent-` for the opposite effect.
 
 
 Example

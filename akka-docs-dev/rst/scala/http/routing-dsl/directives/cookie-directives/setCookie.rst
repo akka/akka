@@ -3,8 +3,6 @@
 setCookie
 =========
 
-Adds a header to the response to request the update of the cookie with the given name on the client.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Adds a header to the response to request the update of the cookie with the given name on the client.
 
 Use the :ref:`-deleteCookie-` directive to delete a cookie.
 

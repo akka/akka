@@ -3,8 +3,6 @@
 getFromDirectory
 ================
 
-Completes GET requests with the content of a file underneath the given directory.
-
 Signature
 ---------
 

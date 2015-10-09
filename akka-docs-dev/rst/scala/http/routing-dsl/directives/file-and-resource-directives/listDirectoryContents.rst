@@ -3,9 +3,6 @@
 listDirectoryContents
 =====================
 
-Completes GET requests with a unified listing of the contents of all given directories. The actual rendering of the
-directory contents is performed by the in-scope `Marshaller[DirectoryListing]`.
-
 Signature
 ---------
 
@@ -15,11 +12,12 @@ Signature
 Description
 -----------
 
-The ``listDirectoryContents`` directive renders a response only for directories.
+Completes GET requests with a unified listing of the contents of all given directories. The actual rendering of the
+directory contents is performed by the in-scope ``Marshaller[DirectoryListing]``.
 
 To just serve files use :ref:`-getFromDirectory-`.
 
-To serve files and provide a browseable directory listing use :ref:`-getFromBrowsableDirectories-` instead.
+To serve files and provide a browseable directory listing use :ref:`-getFromBrowseableDirectories-` instead.
 
 The rendering can be overridden by providing a custom ``Marshaller[DirectoryListing]``, you can read more about it in
 :ref:`-getFromDirectory-` 's documentation.

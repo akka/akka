@@ -3,8 +3,6 @@
 authenticateOrRejectWithChallenge
 =================================
 
-Lifts an authenticator function into a directive.
-
 Signature
 ---------
 
@@ -15,6 +13,7 @@ Signature
 
 Description
 -----------
+Lifts an authenticator function into a directive.
 
 This directive allows implementing the low level challange-response type of authentication that some services may require.
 

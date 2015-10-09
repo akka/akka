@@ -3,8 +3,6 @@
 authenticateBasicPFAsync
 ========================
 
-Wraps the inner route with Http Basic authentication support using a given ``AsyncAuthenticatorPF[T]``.
-
 Signature
 ---------
 
@@ -15,6 +13,7 @@ Signature
 
 Description
 -----------
+Wraps the inner route with Http Basic authentication support using a given ``AsyncAuthenticatorPF[T]``.
 
 Provides support for handling `HTTP Basic Authentication`_.
 

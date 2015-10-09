@@ -3,8 +3,6 @@
 post
 ====
 
-Matches requests with HTTP method ``POST``.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Matches requests with HTTP method ``POST``.
 
 This directive filters the incoming request by its HTTP method. Only requests with
 method ``POST`` are passed on to the inner route. All others are rejected with a

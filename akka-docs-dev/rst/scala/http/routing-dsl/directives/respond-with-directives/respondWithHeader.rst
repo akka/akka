@@ -3,9 +3,6 @@
 respondWithHeader
 =================
 
-Adds a given HTTP header to all responses coming back from its inner route.
-
-
 Signature
 ---------
 
@@ -15,11 +12,12 @@ Signature
 
 Description
 -----------
+Adds a given HTTP header to all responses coming back from its inner route.
 
 This directive transforms ``HttpResponse`` and ``ChunkedResponseStart`` messages coming back from its inner route by
 adding the given ``HttpHeader`` instance to the headers list.
-If you'd like to add more than one header you can use the :ref:`-respondWithHeaders-` directive instead.
 
+See also :ref:`-respondWithHeaders-` if you'd like to add more than one header.
 
 Example
 -------
