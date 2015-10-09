@@ -357,7 +357,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       val netOut = TestSubscriber.manualProbe[ByteString]
       val netIn = TestPublisher.manualProbe[ByteString]()
 
-      FlowGraph.closed(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒
+      FlowGraph.runnable(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒
         client ⇒
           import FlowGraph.Implicits._
           Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2

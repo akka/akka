@@ -17,7 +17,7 @@ class RecipeManualTrigger extends RecipeSpec {
       val sink = Sink(sub)
 
       //#manually-triggered-stream
-      val graph = FlowGraph.closed() { implicit builder =>
+      val graph = FlowGraph.runnable() { implicit builder =>
         import FlowGraph.Implicits._
         val zip = builder.add(Zip[Message, Trigger]())
         elements ~> zip.in0
@@ -55,7 +55,7 @@ class RecipeManualTrigger extends RecipeSpec {
       val sink = Sink(sub)
 
       //#manually-triggered-stream-zipwith
-      val graph = FlowGraph.closed() { implicit builder =>
+      val graph = FlowGraph.runnable() { implicit builder =>
         import FlowGraph.Implicits._
         val zip = builder.add(ZipWith((msg: Message, trigger: Trigger) => msg))
 

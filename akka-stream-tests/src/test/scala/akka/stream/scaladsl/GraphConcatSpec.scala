@@ -30,7 +30,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
 
         val concat1 = b add Concat[Int]()
         val concat2 = b add Concat[Int]()
@@ -140,7 +140,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       val promise = Promise[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val concat = b add Concat[Int]()
         Source(List(1, 2, 3)) ~> concat.in(0)
         Source(promise.future) ~> concat.in(1)

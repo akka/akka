@@ -19,7 +19,7 @@ abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
 
   override def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
     val subscriber = TestSubscriber.probe[Outputs]()
-    FlowGraph.closed() { implicit b ⇒
+    FlowGraph.runnable() { implicit b ⇒
       import FlowGraph.Implicits._
       val f = fixture(b)
 

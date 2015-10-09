@@ -21,7 +21,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
     "work in the happy case" in {
       val probe = TestSubscriber.manualProbe[Outputs]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val zip = b.add(ZipWith((_: Int) + (_: Int)))
         Source(1 to 4) ~> zip.in0
         Source(10 to 40 by 10) ~> zip.in1
@@ -46,7 +46,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
     "work in the sad case" in {
       val probe = TestSubscriber.manualProbe[Outputs]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val zip = b.add(ZipWith[Int, Int, Int]((_: Int) / (_: Int)))
 
         Source(1 to 4) ~> zip.in0
@@ -107,7 +107,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
 
       case class Person(name: String, surname: String, int: Int)
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val zip = b.add(ZipWith(Person.apply _))
 
         Source.single("Caplin") ~> zip.in0
@@ -128,7 +128,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
     "work with up to 22 inputs" in {
       val probe = TestSubscriber.manualProbe[String]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
 
         val sum19 = (v1: Int, v2: String, v3: Int, v4: String, v5: Int, v6: String, v7: Int, v8: String, v9: Int, v10: String,
           v11: Int, v12: String, v13: Int, v14: String, v15: Int, v16: String, v17: Int, v18: String, v19: Int) ⇒

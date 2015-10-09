@@ -16,7 +16,7 @@ class GraphCyclesSpec extends AkkaSpec {
       // format: OFF
       //#deadlocked
       // WARNING! The graph below deadlocks!
-      FlowGraph.closed() { implicit b =>
+      FlowGraph.runnable() { implicit b =>
         import FlowGraph.Implicits._
 
         val merge = b.add(Merge[Int](2))
@@ -33,7 +33,7 @@ class GraphCyclesSpec extends AkkaSpec {
       // format: OFF
       //#unfair
       // WARNING! The graph below stops consuming from "source" after a few steps
-      FlowGraph.closed() { implicit b =>
+      FlowGraph.runnable() { implicit b =>
         import FlowGraph.Implicits._
 
         val merge = b.add(MergePreferred[Int](1))
@@ -49,7 +49,7 @@ class GraphCyclesSpec extends AkkaSpec {
     "include a dropping cycle" in {
       // format: OFF
       //#dropping
-      FlowGraph.closed() { implicit b =>
+      FlowGraph.runnable() { implicit b =>
         import FlowGraph.Implicits._
 
         val merge = b.add(Merge[Int](2))
@@ -66,7 +66,7 @@ class GraphCyclesSpec extends AkkaSpec {
       // format: OFF
       //#zipping-dead
       // WARNING! The graph below never processes any elements
-      FlowGraph.closed() { implicit b =>
+      FlowGraph.runnable() { implicit b =>
         import FlowGraph.Implicits._
 
         val zip = b.add(ZipWith[Int, Int, Int]((left, right) => right))
@@ -83,7 +83,7 @@ class GraphCyclesSpec extends AkkaSpec {
     "include a live zipping cycle" in {
       // format: OFF
       //#zipping-live
-      FlowGraph.closed() { implicit b =>
+      FlowGraph.runnable() { implicit b =>
         import FlowGraph.Implicits._
 
         val zip = b.add(ZipWith((left: Int, right: Int) => left))

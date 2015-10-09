@@ -462,9 +462,6 @@ object ZipWith extends ZipWithApply
  * '''Cancels when''' any downstream cancels
  */
 object Unzip {
-
-  private final val _identity: Any ⇒ Any = a ⇒ a
-
   /**
    * Create a new `Unzip`.
    */
@@ -497,9 +494,7 @@ object Concat {
   /**
    * Create a new `Concat`.
    */
-  def apply[T](inputCount: Int = 2): Concat[T] = {
-    new Concat(inputCount)
-  }
+  def apply[T](inputCount: Int = 2): Concat[T] = new Concat(inputCount)
 }
 
 /**
@@ -553,7 +548,6 @@ class Concat[T](inputCount: Int) extends GraphStage[UniformFanInShape[T, T]] {
     setHandler(out, new OutHandler {
       override def onPull() = pull(in(activeStream))
     })
-
   }
 }
 
@@ -700,7 +694,6 @@ object FlowGraph extends GraphApply {
 
     /** Converts this Scala DSL element to it's Java DSL counterpart. */
     def asJava: javadsl.FlowGraph.Builder[M] = new javadsl.FlowGraph.Builder()(this)
-
   }
 
   object Implicits {
@@ -721,12 +714,11 @@ object FlowGraph extends GraphApply {
       else junction.in(n)
     }
 
-    trait CombinerBase[T] extends Any {
+    sealed trait CombinerBase[T] extends Any {
       def importAndGetPort(b: Builder[_]): Outlet[T]
 
-      def ~>(to: Inlet[T])(implicit b: Builder[_]): Unit = {
+      def ~>(to: Inlet[T])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), to)
-      }
 
       def ~>[Out](via: Graph[FlowShape[T, Out], Any])(implicit b: Builder[_]): PortOps[Out, Unit] = {
         val s = b.add(via)
@@ -758,21 +750,18 @@ object FlowGraph extends GraphApply {
         flow.outlet
       }
 
-      def ~>(to: Graph[SinkShape[T], _])(implicit b: Builder[_]): Unit = {
+      def ~>(to: Graph[SinkShape[T], _])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), b.add(to).inlet)
-      }
 
-      def ~>(to: SinkShape[T])(implicit b: Builder[_]): Unit = {
+      def ~>(to: SinkShape[T])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), to.inlet)
-      }
     }
 
-    trait ReverseCombinerBase[T] extends Any {
+    sealed trait ReverseCombinerBase[T] extends Any {
       def importAndGetPortReverse(b: Builder[_]): Inlet[T]
 
-      def <~(from: Outlet[T])(implicit b: Builder[_]): Unit = {
+      def <~(from: Outlet[T])(implicit b: Builder[_]): Unit =
         b.addEdge(from, importAndGetPortReverse(b))
-      }
 
       def <~[In](via: Graph[FlowShape[In, T], _])(implicit b: Builder[_]): ReversePortOps[In] = {
         val s = b.add(via)
@@ -804,13 +793,11 @@ object FlowGraph extends GraphApply {
         flow.inlet
       }
 
-      def <~(from: Graph[SourceShape[T], _])(implicit b: Builder[_]): Unit = {
+      def <~(from: Graph[SourceShape[T], _])(implicit b: Builder[_]): Unit =
         b.addEdge(b.add(from).outlet, importAndGetPortReverse(b))
-      }
 
-      def <~(from: SourceShape[T])(implicit b: Builder[_]): Unit = {
+      def <~(from: SourceShape[T])(implicit b: Builder[_]): Unit =
         b.addEdge(from.outlet, importAndGetPortReverse(b))
-      }
     }
 
     // Although Mat is always Unit, it cannot be removed as a type parameter, otherwise the "override type"
@@ -841,7 +828,7 @@ object FlowGraph extends GraphApply {
         throw new UnsupportedOperationException("Cannot use viaMat on a port")
     }
 
-    class DisabledPortOps[Out, Mat](msg: String) extends PortOps[Out, Mat](null, null) {
+    final class DisabledPortOps[Out, Mat](msg: String) extends PortOps[Out, Mat](null, null) {
       override def importAndGetPort(b: Builder[_]): Outlet[Out] = throw new IllegalArgumentException(msg)
 
       override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3) =
@@ -852,28 +839,28 @@ object FlowGraph extends GraphApply {
       override def importAndGetPortReverse(b: Builder[_]): Inlet[In] = inlet
     }
 
-    class DisabledReversePortOps[In](msg: String) extends ReversePortOps[In](null) {
+    final class DisabledReversePortOps[In](msg: String) extends ReversePortOps[In](null) {
       override def importAndGetPortReverse(b: Builder[_]): Inlet[In] = throw new IllegalArgumentException(msg)
     }
 
-    implicit class FanInOps[In, Out](val j: UniformFanInShape[In, Out]) extends AnyVal with CombinerBase[Out] with ReverseCombinerBase[In] {
+    implicit final class FanInOps[In, Out](val j: UniformFanInShape[In, Out]) extends AnyVal with CombinerBase[Out] with ReverseCombinerBase[In] {
       override def importAndGetPort(b: Builder[_]): Outlet[Out] = j.out
       override def importAndGetPortReverse(b: Builder[_]): Inlet[In] = findIn(b, j, 0)
     }
 
-    implicit class FanOutOps[In, Out](val j: UniformFanOutShape[In, Out]) extends AnyVal with ReverseCombinerBase[In] {
+    implicit final class FanOutOps[In, Out](val j: UniformFanOutShape[In, Out]) extends AnyVal with ReverseCombinerBase[In] {
       override def importAndGetPortReverse(b: Builder[_]): Inlet[In] = j.in
     }
 
-    implicit class SinkArrow[T](val s: Graph[SinkShape[T], _]) extends AnyVal with ReverseCombinerBase[T] {
+    implicit final class SinkArrow[T](val s: Graph[SinkShape[T], _]) extends AnyVal with ReverseCombinerBase[T] {
       override def importAndGetPortReverse(b: Builder[_]): Inlet[T] = b.add(s).inlet
     }
 
-    implicit class SinkShapeArrow[T](val s: SinkShape[T]) extends AnyVal with ReverseCombinerBase[T] {
+    implicit final class SinkShapeArrow[T](val s: SinkShape[T]) extends AnyVal with ReverseCombinerBase[T] {
       override def importAndGetPortReverse(b: Builder[_]): Inlet[T] = s.inlet
     }
 
-    implicit class FlowShapeArrow[I, O](val f: FlowShape[I, O]) extends AnyVal with ReverseCombinerBase[I] {
+    implicit final class FlowShapeArrow[I, O](val f: FlowShape[I, O]) extends AnyVal with ReverseCombinerBase[I] {
       override def importAndGetPortReverse(b: Builder[_]): Inlet[I] = f.inlet
 
       def <~>[I2, O2, Mat](bidi: Graph[BidiShape[O, O2, I2, I], Mat])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
@@ -896,7 +883,7 @@ object FlowGraph extends GraphApply {
       }
     }
 
-    implicit class FlowArrow[I, O, M](val f: Graph[FlowShape[I, O], M]) extends AnyVal {
+    implicit final class FlowArrow[I, O, M](val f: Graph[FlowShape[I, O], M]) extends AnyVal {
       def <~>[I2, O2, Mat](bidi: Graph[BidiShape[O, O2, I2, I], Mat])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
         val shape = b.add(bidi)
         val flow = b.add(f)
@@ -920,7 +907,7 @@ object FlowGraph extends GraphApply {
       }
     }
 
-    implicit class BidiFlowShapeArrow[I1, O1, I2, O2](val bidi: BidiShape[I1, O1, I2, O2]) extends AnyVal {
+    implicit final class BidiFlowShapeArrow[I1, O1, I2, O2](val bidi: BidiShape[I1, O1, I2, O2]) extends AnyVal {
       def <~>[I3, O3](other: BidiShape[O1, O3, I3, I2])(implicit b: Builder[_]): BidiShape[O1, O3, I3, I2] = {
         b.addEdge(bidi.out1, other.in1)
         b.addEdge(other.out2, bidi.in2)
@@ -957,11 +944,11 @@ object FlowGraph extends GraphApply {
     implicit def flow2flow[I, O](f: FlowShape[I, O])(implicit b: Builder[_]): PortOps[O, Unit] =
       new PortOps(f.outlet, b)
 
-    implicit class SourceArrow[T](val s: Graph[SourceShape[T], _]) extends AnyVal with CombinerBase[T] {
+    implicit final class SourceArrow[T](val s: Graph[SourceShape[T], _]) extends AnyVal with CombinerBase[T] {
       override def importAndGetPort(b: Builder[_]): Outlet[T] = b.add(s).outlet
     }
 
-    implicit class SourceShapeArrow[T](val s: SourceShape[T]) extends AnyVal with CombinerBase[T] {
+    implicit final class SourceShapeArrow[T](val s: SourceShape[T]) extends AnyVal with CombinerBase[T] {
       override def importAndGetPort(b: Builder[_]): Outlet[T] = s.outlet
     }
   }

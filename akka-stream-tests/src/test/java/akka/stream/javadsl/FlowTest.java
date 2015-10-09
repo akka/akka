@@ -338,15 +338,16 @@ public class FlowTest extends StreamTest {
 
     final Sink<String, Publisher<String>> publisher = Sink.publisher();
     
-    final Source<String, BoxedUnit> source = Source.factory().create(new Function<FlowGraph.Builder<BoxedUnit>, Outlet<String>>() {
-      @Override
-      public Outlet<String> apply(Builder<BoxedUnit> b) throws Exception {
-        final UniformFanInShape<String, String> merge = b.graph(Merge.<String> create(2));
-        b.flow(b.source(in1), f1, merge.in(0));
-        b.flow(b.source(in2), f2, merge.in(1));
-        return merge.out();
-      }
-    });
+    final Source<String, BoxedUnit> source = Source.fromGraph(
+            FlowGraph.factory().create(new Function<FlowGraph.Builder<BoxedUnit>, SourceShape<String>>() {
+              @Override
+              public SourceShape<String> apply(Builder<BoxedUnit> b) throws Exception {
+                final UniformFanInShape<String, String> merge = b.graph(Merge.<String>create(2));
+                b.flow(b.source(in1), f1, merge.in(0));
+                b.flow(b.source(in2), f2, merge.in(1));
+                return new SourceShape<String>(merge.out());
+              }
+            }));
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);
@@ -594,16 +595,17 @@ public class FlowTest extends StreamTest {
     final Sink<String, BoxedUnit> out1 = Sink.cancelled();
     final Sink<String, ?> out2 = Sink.ignore();
 
-    final Sink<String, BoxedUnit> sink = Sink.factory().<String>create(new Function<FlowGraph.Builder<BoxedUnit>, Inlet<String>>() {
-      @Override
-      public Inlet<String> apply(Builder<BoxedUnit> b) throws Exception {
-        final UniformFanOutShape<String, String> broadcast = b.graph(Broadcast.<String>create(2, true));
+    final Sink<String, BoxedUnit> sink = Sink.fromGraph(
+            FlowGraph.factory().create(new Function<FlowGraph.Builder<BoxedUnit>, SinkShape<String>>() {
+              @Override
+              public SinkShape<String> apply(Builder<BoxedUnit> b) throws Exception {
+                final UniformFanOutShape<String, String> broadcast = b.graph(Broadcast.<String>create(2, true));
 
-        b.from(broadcast.out(0)).to(out1);
-        b.from(broadcast.out(1)).to(out2);
-        return broadcast.in();
-      }
-    });
+                b.from(broadcast.out(0)).to(out1);
+                b.from(broadcast.out(1)).to(out2);
+                return new SinkShape<String>(broadcast.in());
+              }
+            }));
 
     final JavaTestKit probe = new JavaTestKit(system);
     Source<String, ActorRef> source = Source.actorRef(1, OverflowStrategy.dropNew());

@@ -33,7 +33,7 @@ object GraphOpsIntegrationSpec {
     }
 
     def apply[In, Out](pipeline: Flow[In, Out, _]): Graph[ShufflePorts[In, Out], Unit] = {
-      FlowGraph.partial() { implicit b ⇒
+      FlowGraph.create() { implicit b ⇒
         val merge = b.add(Merge[In](2))
         val balance = b.add(Balance[Out](2))
         merge.out ~> pipeline ~> balance.in
@@ -57,7 +57,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
   "FlowGraphs" must {
 
     "support broadcast - merge layouts" in {
-      val resultFuture = FlowGraph.closed(Sink.head[Seq[Int]]) { implicit b ⇒
+      val resultFuture = FlowGraph.runnable(Sink.head[Seq[Int]]) { implicit b ⇒
         (sink) ⇒
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -73,7 +73,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
 
     "support balance - merge (parallelization) layouts" in {
       val elements = 0 to 10
-      val out = FlowGraph.closed(Sink.head[Seq[Int]]) { implicit b ⇒
+      val out = FlowGraph.runnable(Sink.head[Seq[Int]]) { implicit b ⇒
         (sink) ⇒
           val balance = b.add(Balance[Int](5))
           val merge = b.add(Merge[Int](5))
@@ -93,7 +93,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
       val seqSink = Sink.head[Seq[Int]]
 
-      val (resultFuture2, resultFuture9, resultFuture10) = FlowGraph.closed(seqSink, seqSink, seqSink)(Tuple3.apply) { implicit b ⇒
+      val (resultFuture2, resultFuture9, resultFuture10) = FlowGraph.runnable(seqSink, seqSink, seqSink)(Tuple3.apply) { implicit b ⇒
         (sink2, sink9, sink10) ⇒
           val b3 = b.add(Broadcast[Int](2))
           val b7 = b.add(Broadcast[Int](2))
@@ -139,7 +139,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
 
     "allow adding of flows to sources and sinks to flows" in {
 
-      val resultFuture = FlowGraph.closed(Sink.head[Seq[Int]]) { implicit b ⇒
+      val resultFuture = FlowGraph.runnable(Sink.head[Seq[Int]]) { implicit b ⇒
         (sink) ⇒
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -157,7 +157,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val s = TestSubscriber.manualProbe[Int]
       val flow = Flow[Int].map(_ * 2)
-      FlowGraph.closed() { implicit builder ⇒
+      FlowGraph.runnable() { implicit builder ⇒
         Source(p) ~> flow ~> Sink(s)
       }.run()
       val sub = s.expectSubscription()
@@ -171,7 +171,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
     "be possible to use as lego bricks" in {
       val shuffler = Shuffle(Flow[Int].map(_ + 1))
 
-      val f: Future[Seq[Int]] = FlowGraph.closed(shuffler, shuffler, shuffler, Sink.head[Seq[Int]])((_, _, _, fut) ⇒ fut) { implicit b ⇒
+      val f: Future[Seq[Int]] = FlowGraph.runnable(shuffler, shuffler, shuffler, Sink.head[Seq[Int]])((_, _, _, fut) ⇒ fut) { implicit b ⇒
         (s1, s2, s3, sink) ⇒
           val merge = b.add(Merge[Int](2))
 

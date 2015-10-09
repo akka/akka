@@ -74,7 +74,7 @@ private[http] object OutgoingConnectionBlueprint {
         case (MessageStartError(_, info), _) ⇒ throw IllegalResponseException(info)
       }
 
-    BidiFlow() { implicit b ⇒
+    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val methodBypassFanout = b.add(Broadcast[HttpRequest](2, eagerCancel = true))
       val responseParsingMerge = b.add(new ResponseParsingMerge(rootParser))
@@ -101,7 +101,7 @@ private[http] object OutgoingConnectionBlueprint {
         wrapTls.outlet,
         unwrapTls.inlet,
         terminationFanout.out(1))
-    }
+    })
   }
 
   // a simple merge stage that simply forwards its first input and ignores its second input

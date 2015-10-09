@@ -14,7 +14,7 @@ trait GraphApply {
    *
    * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
    */
-  def closed()(buildBlock: (FlowGraph.Builder[Unit]) ⇒ Unit): RunnableGraph[Unit] = {
+  def runnable()(buildBlock: (FlowGraph.Builder[Unit]) ⇒ Unit): RunnableGraph[Unit] = {
     val builder = new FlowGraph.Builder
     buildBlock(builder)
     builder.buildRunnable()
@@ -25,7 +25,7 @@ trait GraphApply {
    *
    * Partial graphs are allowed to have unconnected ports.
    */
-  def partial[S <: Shape]()(buildBlock: FlowGraph.Builder[Unit] ⇒ S): Graph[S, Unit] = {
+  def create[S <: Shape]()(buildBlock: FlowGraph.Builder[Unit] ⇒ S): Graph[S, Unit] = {
     val builder = new FlowGraph.Builder
     val s = buildBlock(builder)
     val mod = builder.module.nest().replaceShape(s)
@@ -39,7 +39,7 @@ trait GraphApply {
    *
    * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
    */
-  def closed[Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ Unit): RunnableGraph[Mat] = {
+  def runnable[Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ Unit): RunnableGraph[Mat] = {
     val builder = new FlowGraph.Builder
     val p1 = builder.add(g1)
     buildBlock(builder)(p1)
@@ -52,7 +52,7 @@ trait GraphApply {
    *
    * Partial graphs are allowed to have unconnected ports.
    */
-  def partial[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
+  def create[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
     val builder = new FlowGraph.Builder
     val s1 = builder.add(g1)
     val s = buildBlock(builder)(s1)
@@ -68,7 +68,7 @@ trait GraphApply {
    *
    * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
    */
-  def closed[Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ Unit): RunnableGraph[Mat] = {
+  def runnable[Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ Unit): RunnableGraph[Mat] = {
     val builder = new FlowGraph.Builder
     val curried = combineMat.curried
     val s##1 = builder.add(g##1, (m##1: M##1) ⇒ curried(m##1))
@@ -84,7 +84,7 @@ trait GraphApply {
    *
    * Partial graphs are allowed to have unconnected ports.
    */
-  def partial[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ S): Graph[S, Mat] = {
+  def create[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ S): Graph[S, Mat] = {
     val builder = new FlowGraph.Builder
     val curried = combineMat.curried
     val s##1 = builder.add(g##1, (m##1: M##1) ⇒ curried(m##1))

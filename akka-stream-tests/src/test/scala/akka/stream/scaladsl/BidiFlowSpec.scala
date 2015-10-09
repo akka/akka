@@ -7,12 +7,10 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 import org.scalactic.ConversionCheckedTripleEquals
 import akka.util.ByteString
-import akka.stream.BidiShape
-import akka.stream.ActorMaterializer
+import akka.stream.{ FlowShape, BidiShape, ActorMaterializer, Attributes }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.stream.Attributes
 
 class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   import Attributes._
@@ -20,26 +18,22 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
   implicit val mat = ActorMaterializer()
 
-  val bidi = BidiFlow() { b ⇒
-    val top = b.add(Flow[Int].map(x ⇒ x.toLong + 2).withAttributes(name("top")))
-    val bottom = b.add(Flow[ByteString].map(_.decodeString("UTF-8")).withAttributes(name("bottom")))
-    BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
-  }
+  val bidi = BidiFlow.fromFlows(
+    Flow[Int].map(x ⇒ x.toLong + 2).withAttributes(name("top")),
+    Flow[ByteString].map(_.decodeString("UTF-8")).withAttributes(name("bottom")))
 
-  val inverse = BidiFlow() { b ⇒
-    val top = b.add(Flow[Long].map(x ⇒ x.toInt + 2).withAttributes(name("top")))
-    val bottom = b.add(Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
-    BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
-  }
+  val inverse = BidiFlow.fromFlows(
+    Flow[Long].map(x ⇒ x.toInt + 2).withAttributes(name("top")),
+    Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
 
-  val bidiMat = BidiFlow(Sink.head[Int]) { implicit b ⇒
+  val bidiMat = BidiFlow.fromGraph(FlowGraph.create(Sink.head[Int]) { implicit b ⇒
     s ⇒
       Source.single(42) ~> s
 
       val top = b.add(Flow[Int].map(x ⇒ x.toLong + 2))
       val bottom = b.add(Flow[ByteString].map(_.decodeString("UTF-8")))
       BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
-  }
+  })
 
   val str = "Hello World"
   val bytes = ByteString(str)
@@ -47,7 +41,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   "A BidiFlow" must {
 
     "work top/bottom in isolation" in {
-      val (top, bottom) = FlowGraph.closed(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b ⇒
+      val (top, bottom) = FlowGraph.runnable(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b ⇒
         (st, sb) ⇒
           val s = b.add(bidi)
 
@@ -85,7 +79,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "materialize to its value" in {
-      val f = FlowGraph.closed(bidiMat) { implicit b ⇒
+      val f = FlowGraph.runnable(bidiMat) { implicit b ⇒
         bidi ⇒
           Flow[String].map(Integer.valueOf(_).toInt) <~> bidi <~> Flow[Long].map(x ⇒ ByteString(s"Hello $x"))
       }.run()
@@ -93,7 +87,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "combine materialization values" in assertAllStagesStopped {
-      val left = Flow(Sink.head[Int]) { implicit b ⇒
+      val left = Flow.fromGraph(FlowGraph.create(Sink.head[Int]) { implicit b ⇒
         sink ⇒
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -101,14 +95,14 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
           bcast ~> sink
           Source.single(1) ~> bcast ~> merge
           flow ~> merge
-          (flow.inlet, merge.out)
-      }
-      val right = Flow(Sink.head[immutable.Seq[Long]]) { implicit b ⇒
+          FlowShape(flow.inlet, merge.out)
+      })
+      val right = Flow.fromGraph(FlowGraph.create(Sink.head[immutable.Seq[Long]]) { implicit b ⇒
         sink ⇒
           val flow = b.add(Flow[Long].grouped(10))
           flow ~> sink
-          (flow.inlet, b.add(Source.single(ByteString("10"))))
-      }
+          FlowShape(flow.inlet, b.add(Source.single(ByteString("10"))))
+      })
       val ((l, m), r) = left.joinMat(bidiMat)(Keep.both).joinMat(right)(Keep.both).run()
       Await.result(l, 1.second) should ===(1)
       Await.result(m, 1.second) should ===(42)

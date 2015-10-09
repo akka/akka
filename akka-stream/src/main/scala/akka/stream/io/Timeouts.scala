@@ -26,21 +26,21 @@ object Timeouts {
    * with a [[TimeoutException]].
    */
   def initalTimeout[T](timeout: FiniteDuration): Flow[T, T, Unit] =
-    Flow.wrap(new InitialTimeout[T](timeout))
+    Flow.fromGraph(new InitialTimeout[T](timeout))
 
   /**
    * If the completion of the stream does not happen until the provided timeout, the stream is failed
    * with a [[TimeoutException]].
    */
   def completionTimeout[T](timeout: FiniteDuration): Flow[T, T, Unit] =
-    Flow.wrap(new CompletionTimeout[T](timeout))
+    Flow.fromGraph(new CompletionTimeout[T](timeout))
 
   /**
    * If the time between two processed elements exceed the provided timeout, the stream is failed
    * with a [[TimeoutException]].
    */
   def idleTimeout[T](timeout: FiniteDuration): Flow[T, T, Unit] =
-    Flow.wrap(new IdleTimeout[T](timeout))
+    Flow.fromGraph(new IdleTimeout[T](timeout))
 
   /**
    * If the time between two processed elements *in any direction* exceed the provided timeout, the stream is failed
@@ -52,7 +52,7 @@ object Timeouts {
    * the *joint* frequencies of the elements in both directions.
    */
   def idleTimeoutBidi[A, B](timeout: FiniteDuration): BidiFlow[A, A, B, B, Unit] =
-    BidiFlow.wrap(new IdleTimeoutBidi[A, B](timeout))
+    BidiFlow.fromGraph(new IdleTimeoutBidi[A, B](timeout))
 
   private def idleTimeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
     import scala.concurrent.duration._

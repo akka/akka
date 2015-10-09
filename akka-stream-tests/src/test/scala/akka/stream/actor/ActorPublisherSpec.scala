@@ -350,7 +350,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val sink1 = Sink(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
       val sink2: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe2.ref))
 
-      val senderRef2 = FlowGraph.closed(Source.actorPublisher[Int](senderProps)) { implicit b ⇒
+      val senderRef2 = FlowGraph.runnable(Source.actorPublisher[Int](senderProps)) { implicit b ⇒
         source2 ⇒
           import FlowGraph.Implicits._
 

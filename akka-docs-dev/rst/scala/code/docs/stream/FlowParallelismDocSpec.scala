@@ -1,5 +1,6 @@
 package docs.stream
 
+import akka.stream.FlowShape
 import akka.stream.scaladsl.{ FlowGraph, Merge, Balance, Source, Flow }
 import akka.stream.testkit.AkkaSpec
 
@@ -37,7 +38,7 @@ class FlowParallelismDocSpec extends AkkaSpec {
     val fryingPan: Flow[ScoopOfBatter, Pancake, Unit] =
       Flow[ScoopOfBatter].map { batter => Pancake() }
 
-    val pancakeChef: Flow[ScoopOfBatter, Pancake, Unit] = Flow() { implicit builder =>
+    val pancakeChef: Flow[ScoopOfBatter, Pancake, Unit] = Flow.fromGraph(FlowGraph.create() { implicit builder =>
       val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
       val mergePancakes = builder.add(Merge[Pancake](2))
 
@@ -49,54 +50,57 @@ class FlowParallelismDocSpec extends AkkaSpec {
       // uses of "fryingPan" mean actually different stages in the graph.
       dispatchBatter.out(1) ~> fryingPan ~> mergePancakes.in(1)
 
-      (dispatchBatter.in, mergePancakes.out)
-    }
+      FlowShape(dispatchBatter.in, mergePancakes.out)
+    })
 
     //#parallelism
   }
 
   "Demonstrate parallelized pipelines" in {
     //#parallel-pipeline
-    val pancakeChef: Flow[ScoopOfBatter, Pancake, Unit] = Flow() { implicit builder =>
+    val pancakeChef: Flow[ScoopOfBatter, Pancake, Unit] =
+      Flow.fromGraph(FlowGraph.create() { implicit builder =>
 
-      val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
-      val mergePancakes = builder.add(Merge[Pancake](2))
+        val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
+        val mergePancakes = builder.add(Merge[Pancake](2))
 
-      // Using two pipelines, having two frying pans each, in total using
-      // four frying pans
-      dispatchBatter.out(0) ~> fryingPan1 ~> fryingPan2 ~> mergePancakes.in(0)
-      dispatchBatter.out(1) ~> fryingPan1 ~> fryingPan2 ~> mergePancakes.in(1)
+        // Using two pipelines, having two frying pans each, in total using
+        // four frying pans
+        dispatchBatter.out(0) ~> fryingPan1 ~> fryingPan2 ~> mergePancakes.in(0)
+        dispatchBatter.out(1) ~> fryingPan1 ~> fryingPan2 ~> mergePancakes.in(1)
 
-      (dispatchBatter.in, mergePancakes.out)
-    }
+        FlowShape(dispatchBatter.in, mergePancakes.out)
+      })
     //#parallel-pipeline
   }
 
   "Demonstrate pipelined parallel processing" in {
     //#pipelined-parallel
-    val pancakeChefs1: Flow[ScoopOfBatter, HalfCookedPancake, Unit] = Flow() { implicit builder =>
-      val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
-      val mergeHalfPancakes = builder.add(Merge[HalfCookedPancake](2))
+    val pancakeChefs1: Flow[ScoopOfBatter, HalfCookedPancake, Unit] =
+      Flow.fromGraph(FlowGraph.create() { implicit builder =>
+        val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
+        val mergeHalfPancakes = builder.add(Merge[HalfCookedPancake](2))
 
-      // Two chefs work with one frying pan for each, half-frying the pancakes then putting
-      // them into a common pool
-      dispatchBatter.out(0) ~> fryingPan1 ~> mergeHalfPancakes.in(0)
-      dispatchBatter.out(1) ~> fryingPan1 ~> mergeHalfPancakes.in(1)
+        // Two chefs work with one frying pan for each, half-frying the pancakes then putting
+        // them into a common pool
+        dispatchBatter.out(0) ~> fryingPan1 ~> mergeHalfPancakes.in(0)
+        dispatchBatter.out(1) ~> fryingPan1 ~> mergeHalfPancakes.in(1)
 
-      (dispatchBatter.in, mergeHalfPancakes.out)
-    }
+        FlowShape(dispatchBatter.in, mergeHalfPancakes.out)
+      })
 
-    val pancakeChefs2: Flow[HalfCookedPancake, Pancake, Unit] = Flow() { implicit builder =>
-      val dispatchHalfPancakes = builder.add(Balance[HalfCookedPancake](2))
-      val mergePancakes = builder.add(Merge[Pancake](2))
+    val pancakeChefs2: Flow[HalfCookedPancake, Pancake, Unit] =
+      Flow.fromGraph(FlowGraph.create() { implicit builder =>
+        val dispatchHalfPancakes = builder.add(Balance[HalfCookedPancake](2))
+        val mergePancakes = builder.add(Merge[Pancake](2))
 
-      // Two chefs work with one frying pan for each, finishing the pancakes then putting
-      // them into a common pool
-      dispatchHalfPancakes.out(0) ~> fryingPan2 ~> mergePancakes.in(0)
-      dispatchHalfPancakes.out(1) ~> fryingPan2 ~> mergePancakes.in(1)
+        // Two chefs work with one frying pan for each, finishing the pancakes then putting
+        // them into a common pool
+        dispatchHalfPancakes.out(0) ~> fryingPan2 ~> mergePancakes.in(0)
+        dispatchHalfPancakes.out(1) ~> fryingPan2 ~> mergePancakes.in(1)
 
-      (dispatchHalfPancakes.in, mergePancakes.out)
-    }
+        FlowShape(dispatchHalfPancakes.in, mergePancakes.out)
+      })
 
     val kitchen: Flow[ScoopOfBatter, Pancake, Unit] = pancakeChefs1.via(pancakeChefs2)
     //#pipelined-parallel

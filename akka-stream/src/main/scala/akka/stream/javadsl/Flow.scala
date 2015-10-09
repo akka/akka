@@ -4,8 +4,8 @@
 package akka.stream.javadsl
 
 import akka.event.LoggingAdapter
-import akka.japi.{ Pair, function }
-import akka.stream.impl.StreamLayout
+import akka.japi.{ function, Pair }
+import akka.stream.impl.{ Consts, StreamLayout }
 import akka.stream.{ scaladsl, _ }
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
@@ -17,48 +17,44 @@ import scala.concurrent.duration.FiniteDuration
 
 object Flow {
 
-  val factory: FlowCreate = new FlowCreate {}
-
-  /** Adapt [[scaladsl.Flow]] for use within Java DSL */
-  def adapt[I, O, M](flow: scaladsl.Flow[I, O, M]): javadsl.Flow[I, O, M] =
-    new Flow(flow)
+  private[this] val _identity = new javadsl.Flow(scaladsl.Flow[Any])
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def empty[T](): javadsl.Flow[T, T, Unit] =
-    Flow.create()
-
-  /** Create a `Flow` which can process elements of type `T`. */
-  def create[T](): javadsl.Flow[T, T, Unit] =
-    adapt(scaladsl.Flow[T])
+  def create[T](): javadsl.Flow[T, T, Unit] = fromGraph(scaladsl.Flow[T])
 
   def create[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, Unit] =
-    adapt(scaladsl.Flow(() ⇒ processorFactory.create()))
+    new Flow(scaladsl.Flow(() ⇒ processorFactory.create()))
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] =
-    create[T]()
+  def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] = create[T]()
 
   /**
-   * A graph with the shape of a flow logically is a flow, this method makes
-   * it so also in type.
+   * A graph with the shape of a flow logically is a flow, this method makes it so also in type.
    */
-  def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
+  def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M] ⇒ f
-      case other            ⇒ new Flow(scaladsl.Flow.wrap(other))
+      case f: Flow[I, O, M]                          ⇒ f
+      case f: scaladsl.Flow[I, O, M] if f.isIdentity ⇒ _identity.asInstanceOf[Flow[I, O, M]]
+      case other                                     ⇒ new Flow(scaladsl.Flow.fromGraph(other))
     }
 
   /**
-   * Helper to create `Flow` from a pair of sink and source.
+   * Helper to create `Flow` from a `Sink`and a `Source`.
    */
-  def wrap[I, O, M1, M2, M](
-    sink: Graph[SinkShape[I], M1],
-    source: Graph[SourceShape[O], M2],
-    combine: function.Function2[M1, M2, M]): Flow[I, O, M] = new Flow(scaladsl.Flow.wrap(sink, source)(combine.apply _))
+  def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, Unit] =
+    new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(scaladsl.Keep.none))
+
+  /**
+   * Helper to create `Flow` from a `Sink`and a `Source`.
+   */
+  def fromSinkAndSourceMat[I, O, M1, M2, M](
+    sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2],
+    combine: function.Function2[M1, M2, M]): Flow[I, O, M] =
+    new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(combinerToScala(combine)))
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
-class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
+final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
   import scala.collection.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
@@ -859,16 +855,15 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * @see [[#zip]]
    */
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
-                       matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out @uncheckedVariance Pair T, M2] = {
-    //we need this only to have Flow of javadsl.Pair
-    def block(builder: FlowGraph.Builder[M],
-              source: SourceShape[T]): Pair[Inlet[Out], Outlet[Pair[Out, T]]] = {
-      val zip: FanInShape2[Out, T, Out Pair T] = builder.graph(Zip.create[Out, T])
-      builder.from(source).to(zip.in1)
-      new Pair(zip.in0, zip.out)
-    }
-    this.viaMat(Flow.factory.create(that, combinerToJava(block)), matF)
-  }
+                       matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out @uncheckedVariance Pair T, M2] =
+    this.viaMat(Flow.fromGraph(FlowGraph.factory.create(that,
+      new function.Function2[FlowGraph.Builder[M], SourceShape[T], FlowShape[Out, Out @ uncheckedVariance Pair T]] {
+        def apply(b: FlowGraph.Builder[M], s: SourceShape[T]): FlowShape[Out, Out @uncheckedVariance Pair T] = {
+          val zip: FanInShape2[Out, T, Out Pair T] = b.graph(Zip.create[Out, T])
+          b.from(s).to(zip.in1)
+          FlowShape(zip.in0, zip.out)
+        }
+      })), matF)
 
   /**
    * Put together the elements of current [[Flow]] and the given [[Source]]
@@ -964,7 +959,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * '''Cancels when''' downstream cancels
    */
   def log(name: String, log: LoggingAdapter): javadsl.Flow[In, Out, Mat] =
-    this.log(name, javaIdentityFunction[Out], log)
+    this.log(name, Consts.javaIdentityFunction[Out], log)
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.
@@ -975,7 +970,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Uses an internally created [[LoggingAdapter]] which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
    */
   def log(name: String): javadsl.Flow[In, Out, Mat] =
-    this.log(name, javaIdentityFunction[Out], null)
+    this.log(name, Consts.javaIdentityFunction[Out], null)
 
   /**
    * Converts this Flow to a [[RunnableGraph]] that materializes to a Reactive Streams [[org.reactivestreams.Processor]]

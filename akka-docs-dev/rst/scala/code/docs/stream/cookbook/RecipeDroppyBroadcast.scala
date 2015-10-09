@@ -24,7 +24,7 @@ class RecipeDroppyBroadcast extends RecipeSpec {
       val mySink3 = Sink(sub3)
 
       //#droppy-bcast
-      val graph = FlowGraph.closed(mySink1, mySink2, mySink3)((_, _, _)) { implicit b =>
+      val graph = FlowGraph.runnable(mySink1, mySink2, mySink3)((_, _, _)) { implicit b =>
         (sink1, sink2, sink3) =>
           import FlowGraph.Implicits._
 

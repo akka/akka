@@ -5,6 +5,7 @@ package akka.stream.javadsl
 
 import akka.stream._
 import akka.japi.Pair
+import akka.stream.impl.Consts
 
 /**
  * Merge several streams, taking elements as they arrive from input streams
@@ -191,7 +192,7 @@ object Unzip {
    * Creates a new `Unzip` stage with the specified output types.
    */
   def create[A, B](): Graph[FanOutShape2[A Pair B, A, B], Unit] =
-    UnzipWith.create(JavaIdentityFunction.asInstanceOf[Function[Pair[A, B], Pair[A, B]]])
+    UnzipWith.create(Consts.javaIdentityFunction[Pair[A, B]])
 
   /**
    * Creates a new `Unzip` stage with the specified output types.

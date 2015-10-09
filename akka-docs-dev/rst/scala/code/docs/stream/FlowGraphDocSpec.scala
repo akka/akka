@@ -21,7 +21,7 @@ class FlowGraphDocSpec extends AkkaSpec {
   "build simple graph" in {
     //format: OFF
     //#simple-flow-graph
-    val g = FlowGraph.closed() { implicit builder: FlowGraph.Builder[Unit] =>
+    val g = FlowGraph.runnable() { implicit builder: FlowGraph.Builder[Unit] =>
       import FlowGraph.Implicits._
       val in = Source(1 to 10)
       val out = Sink.ignore
@@ -44,7 +44,7 @@ class FlowGraphDocSpec extends AkkaSpec {
 
   "build simple graph without implicits" in {
     //#simple-flow-graph-no-implicits
-    val g = FlowGraph.closed() { builder: FlowGraph.Builder[Unit] =>
+    val g = FlowGraph.runnable() { builder: FlowGraph.Builder[Unit] =>
       val in = Source(1 to 10)
       val out = Sink.ignore
 
@@ -68,7 +68,7 @@ class FlowGraphDocSpec extends AkkaSpec {
   "flow connection errors" in {
     intercept[IllegalArgumentException] {
       //#simple-graph
-      FlowGraph.closed() { implicit builder =>
+      FlowGraph.runnable() { implicit builder =>
         import FlowGraph.Implicits._
         val source1 = Source(1 to 10)
         val source2 = Source(1 to 10)
@@ -95,7 +95,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     // format: OFF
     val g =
     //#flow-graph-reusing-a-flow
-    FlowGraph.closed(topHeadSink, bottomHeadSink)((_, _)) { implicit builder =>
+    FlowGraph.runnable(topHeadSink, bottomHeadSink)((_, _)) { implicit builder =>
       (topHS, bottomHS) =>
       import FlowGraph.Implicits._
       val broadcast = builder.add(Broadcast[Int](2))
@@ -154,7 +154,7 @@ class FlowGraphDocSpec extends AkkaSpec {
         worker: Flow[In, Out, Any],
         workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], Unit] = {
 
-        FlowGraph.partial() { implicit b ⇒
+        FlowGraph.create() { implicit b ⇒
           import FlowGraph.Implicits._
 
           val priorityMerge = b.add(MergePreferred[In](1))
@@ -189,7 +189,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     val worker1 = Flow[String].map("step 1 " + _)
     val worker2 = Flow[String].map("step 2 " + _)
 
-    FlowGraph.closed() { implicit b =>
+    FlowGraph.runnable() { implicit b =>
       import FlowGraph.Implicits._
 
       val priorityPool1 = b.add(PriorityWorkerPool(worker1, 4))
@@ -224,11 +224,11 @@ class FlowGraphDocSpec extends AkkaSpec {
   "access to materialized value" in {
     //#flow-graph-matvalue
     import FlowGraph.Implicits._
-    val foldFlow: Flow[Int, Int, Future[Int]] = Flow(Sink.fold[Int, Int](0)(_ + _)) {
+    val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(FlowGraph.create(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder ⇒
         fold ⇒
-          (fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
-    }
+          FlowShape(fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
+    })
     //#flow-graph-matvalue
 
     Await.result(Source(1 to 10).via(foldFlow).runWith(Sink.head), 3.seconds) should ===(55)
@@ -236,7 +236,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     //#flow-graph-matvalue-cycle
     import FlowGraph.Implicits._
     // This cannot produce any value:
-    val cyclicFold: Source[Int, Future[Int]] = Source(Sink.fold[Int, Int](0)(_ + _)) {
+    val cyclicFold: Source[Int, Future[Int]] = Source.fromGraph(FlowGraph.create(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder =>
         fold =>
           // - Fold cannot complete until its upstream mapAsync completes
@@ -245,8 +245,8 @@ class FlowGraphDocSpec extends AkkaSpec {
           // As a result this Source will never emit anything, and its materialited
           // Future will never complete
           builder.materializedValue.mapAsync(4)(identity) ~> fold
-          builder.materializedValue.mapAsync(4)(identity).outlet
-    }
+          SourceShape(builder.materializedValue.mapAsync(4)(identity).outlet)
+    })
     //#flow-graph-matvalue-cycle
   }
 

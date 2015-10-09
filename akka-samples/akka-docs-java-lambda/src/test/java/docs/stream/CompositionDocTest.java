@@ -101,7 +101,7 @@ public class CompositionDocTest {
   @Test
   public void complexGraph() throws Exception {
     //#complex-graph
-    FlowGraph.factory().closed(builder -> {
+    FlowGraph.factory().runnable(builder -> {
       final Outlet<Integer> A = builder.source(Source.single(0));
       final UniformFanOutShape<Integer, Integer> B = builder.graph(Broadcast.create(2));
       final UniformFanInShape<Integer, Integer> C = builder.graph(Merge.create(2));
@@ -119,7 +119,7 @@ public class CompositionDocTest {
     //#complex-graph
 
     //#complex-graph-alt
-    FlowGraph.factory().closed(builder -> {
+    FlowGraph.factory().runnable(builder -> {
       final Outlet<Integer> A = builder.source(Source.single(0));
       final UniformFanOutShape<Integer, Integer> B = builder.graph(Broadcast.create(2));
       final UniformFanInShape<Integer, Integer> C = builder.graph(Merge.create(2));
@@ -144,7 +144,7 @@ public class CompositionDocTest {
   public void partialGraph() throws Exception {
     //#partial-graph
     final Graph<FlowShape<Integer, Integer>, BoxedUnit> partial =
-      FlowGraph.factory().partial(builder -> {
+      FlowGraph.factory().create(builder -> {
         final UniformFanOutShape<Integer, Integer> B = builder.graph(Broadcast.create(2));
         final UniformFanInShape<Integer, Integer> C = builder.graph(Merge.create(2));
         final UniformFanOutShape<Integer, Integer> E = builder.graph(Balance.create(2));
@@ -166,7 +166,7 @@ public class CompositionDocTest {
     //#partial-flow-dsl
     // Convert the partial graph of FlowShape to a Flow to get
     // access to the fluid DSL (for example to be able to call .filter())
-    final Flow<Integer, Integer, BoxedUnit> flow = Flow.wrap(partial);
+    final Flow<Integer, Integer, BoxedUnit> flow = Flow.fromGraph(partial);
 
     // Simple way to create a graph backed Source
     final Source<Integer, BoxedUnit> source = Source.factory().create(builder -> {
@@ -195,7 +195,7 @@ public class CompositionDocTest {
     //#embed-closed
     final RunnableGraph<BoxedUnit> closed1 =
       Source.single(0).to(Sink.foreach(System.out::println));
-    final RunnableGraph<BoxedUnit> closed2 = FlowGraph.factory().closed(builder -> {
+    final RunnableGraph<BoxedUnit> closed2 = FlowGraph.factory().runnable(builder -> {
       final ClosedShape embeddedClosed = builder.graph(closed1);
     });
     //#embed-closed

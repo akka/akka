@@ -216,7 +216,7 @@ class FramingSpec extends AkkaSpec {
     }
 
     "support simple framing adapter" in {
-      val rechunkBidi = BidiFlow.wrap(rechunk, rechunk)(Keep.left)
+      val rechunkBidi = BidiFlow.fromFlowsMat(rechunk, rechunk)(Keep.left)
       val codecFlow =
         Framing.simpleFramingProtocol(1024)
           .atop(rechunkBidi)

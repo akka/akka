@@ -38,7 +38,7 @@ abstract class HttpServerTestSetupBase {
     val netIn = TestPublisher.manualProbe[ByteString]()
     val netOut = TestSubscriber.manualProbe[ByteString]
 
-    FlowGraph.closed(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒
+    FlowGraph.runnable(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒
       server ⇒
         import FlowGraph.Implicits._
         Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2

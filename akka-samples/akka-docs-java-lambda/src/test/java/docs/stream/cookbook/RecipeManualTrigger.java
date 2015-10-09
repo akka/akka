@@ -58,7 +58,7 @@ public class RecipeManualTrigger extends RecipeTest {
           Flow.<Pair<Message, Trigger>> create().map(p -> p.first());
 
         final RunnableGraph<Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>>> g =
-          FlowGraph.factory().closed(triggerSource, messageSink,
+          FlowGraph.factory().runnable(triggerSource, messageSink,
             (p, s) -> new Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>>(p, s),
             (builder, source, sink) -> {
           final FanInShape2<Message, Trigger, Pair<Message, Trigger>> zip =
@@ -105,7 +105,7 @@ public class RecipeManualTrigger extends RecipeTest {
 
         //#manually-triggered-stream-zipwith
         final RunnableGraph<Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>>> g =
-          FlowGraph.factory().closed(triggerSource, messageSink,
+          FlowGraph.factory().runnable(triggerSource, messageSink,
             (p, s) -> new Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>>(p, s),
             (builder, source, sink) -> {
           final FanInShape2<Message, Trigger, Message> zipWith =

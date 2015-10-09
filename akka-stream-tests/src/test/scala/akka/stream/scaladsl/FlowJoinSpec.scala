@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ FlowShape, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
@@ -24,7 +24,7 @@ class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INF
       val source = Source(0 to end)
       val probe = TestSubscriber.manualProbe[Seq[Int]]()
 
-      val flow1 = Flow() { implicit b ⇒
+      val flow1 = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
         val merge = b.add(Merge[Int](2))
         val broadcast = b.add(Broadcast[Int](2))
@@ -32,8 +32,8 @@ class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INF
         merge.out ~> broadcast.in
         broadcast.out(0).grouped(1000) ~> Sink(probe)
 
-        (merge.in(1), broadcast.out(1))
-      }
+        FlowShape(merge.in(1), broadcast.out(1))
+      })
 
       val flow2 = Flow[Int].filter(_ % 2 == 1).map(_ * 10).take((end + 1) / 2)
 

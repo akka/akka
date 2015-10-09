@@ -37,7 +37,7 @@ class TimeoutsSpec extends AkkaSpec {
 
     "fail if no initial element passes until timeout" in assertAllStagesStopped {
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source.lazyEmpty[Int]
+      Source.maybe[Int]
         .via(Timeouts.initalTimeout(1.seconds))
         .runWith(Sink(downstreamProbe))
 
@@ -142,8 +142,8 @@ class TimeoutsSpec extends AkkaSpec {
       val upstreamWriter = TestPublisher.probe[Int]()
       val downstreamWriter = TestPublisher.probe[String]()
 
-      val upstream = Flow.wrap(Sink.ignore, Source(upstreamWriter))(Keep.left)
-      val downstream = Flow.wrap(Sink.ignore, Source(downstreamWriter))(Keep.left)
+      val upstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source(upstreamWriter))(Keep.left)
+      val downstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source(downstreamWriter))(Keep.left)
 
       val assembly: RunnableGraph[(Future[Unit], Future[Unit])] = upstream
         .joinMat(Timeouts.idleTimeoutBidi[Int, String](2.seconds))(Keep.left)
@@ -172,7 +172,7 @@ class TimeoutsSpec extends AkkaSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         import FlowGraph.Implicits._
         val timeoutStage = b.add(Timeouts.idleTimeoutBidi[String, Int](2.seconds))
         Source(upWrite) ~> timeoutStage.in1;
@@ -219,7 +219,7 @@ class TimeoutsSpec extends AkkaSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         import FlowGraph.Implicits._
         val timeoutStage = b.add(Timeouts.idleTimeoutBidi[String, Int](2.seconds))
         Source(upWrite) ~> timeoutStage.in1;

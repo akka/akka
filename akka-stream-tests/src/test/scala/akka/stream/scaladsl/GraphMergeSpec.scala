@@ -33,7 +33,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val source3 = Source(List[Int]())
       val probe = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val m1 = b.add(Merge[Int](2))
         val m2 = b.add(Merge[Int](2))
 
@@ -67,7 +67,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
       val probe = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val merge = b.add(Merge[Int](6))
 
         source1 ~> merge.in(0)
@@ -152,7 +152,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val src1 = Source.subscriber[Int]
       val src2 = Source.subscriber[Int]
 
-      val (graphSubscriber1, graphSubscriber2) = FlowGraph.closed(src1, src2)((_, _)) { implicit b ⇒
+      val (graphSubscriber1, graphSubscriber2) = FlowGraph.runnable(src1, src2)((_, _)) { implicit b ⇒
         (s1, s2) ⇒
           val merge = b.add(Merge[Int](2))
           s1.outlet ~> merge.in(0)

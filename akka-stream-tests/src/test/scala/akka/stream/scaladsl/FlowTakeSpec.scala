@@ -41,8 +41,8 @@ class FlowTakeSpec extends AkkaSpec with ScriptedTest {
     }
 
     "complete eagerly when zero or less is taken independently of upstream completion" in {
-      Await.result(Source.lazyEmpty.take(0).runWith(Sink.ignore), 3.second)
-      Await.result(Source.lazyEmpty.take(-1).runWith(Sink.ignore), 3.second)
+      Await.result(Source.maybe[Int].take(0).runWith(Sink.ignore), 3.second)
+      Await.result(Source.maybe[Int].take(-1).runWith(Sink.ignore), 3.second)
     }
 
   }

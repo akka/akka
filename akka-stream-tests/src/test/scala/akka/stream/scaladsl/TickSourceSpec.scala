@@ -68,7 +68,7 @@ class TickSourceSpec extends AkkaSpec {
     "be usable with zip for a simple form of rate limiting" in {
       val c = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         import FlowGraph.Implicits._
         val zip = b.add(Zip[Int, String]())
         Source(1 to 100) ~> zip.in0
