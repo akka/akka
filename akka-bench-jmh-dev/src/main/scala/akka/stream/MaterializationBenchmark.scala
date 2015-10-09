@@ -20,7 +20,7 @@ object MaterializationBenchmark {
   }
 
   val graphWithJunctionsBuilder = (numOfJunctions: Int) =>
-    FlowGraph.closed() { implicit b =>
+    FlowGraph.runnable() { implicit b =>
       import FlowGraph.Implicits._
 
       val broadcast = b.add(Broadcast[Unit](numOfJunctions))
@@ -45,7 +45,7 @@ object MaterializationBenchmark {
       }
     }
 
-    FlowGraph.closed(flow) { implicit b ⇒
+    FlowGraph.runnable(flow) { implicit b ⇒
       flow ⇒
         import FlowGraph.Implicits._
         Source.single(()) ~> flow ~> Sink.ignore
@@ -54,7 +54,7 @@ object MaterializationBenchmark {
 
   val graphWithImportedFlowBuilder = (numOfFlows: Int) => {
     val flow = Flow[Unit].map(identity)
-    FlowGraph.closed() { b ⇒
+    FlowGraph.runnable() { b ⇒
       val source = b.add(Source.single(()))
       var outlet = source
       for (i <- 0 until numOfFlows) {

@@ -25,7 +25,7 @@ class RecipeKeepAlive extends RecipeSpec {
       val tickToKeepAlivePacket: Flow[Tick, ByteString, Unit] = Flow[Tick]
         .conflate(seed = (tick) => keepaliveMessage)((msg, newTick) => msg)
 
-      val graph = FlowGraph.closed() { implicit builder =>
+      val graph = FlowGraph.runnable() { implicit builder =>
         import FlowGraph.Implicits._
         val unfairMerge = builder.add(MergePreferred[ByteString](1))
 

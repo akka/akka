@@ -27,7 +27,7 @@ class GraphPartialSpec extends AkkaSpec {
         FlowShape(bcast.in, zip.out)
       }
 
-      val (_, _, result) = FlowGraph.closed(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
+      val (_, _, result) = FlowGraph.runnable(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
           Source(List(1, 2, 3)) ~> d1.inlet
           d1.outlet ~> d2.inlet
@@ -49,7 +49,7 @@ class GraphPartialSpec extends AkkaSpec {
           FlowShape(bcast.in, zip.out)
       }
 
-      val (sub1, sub2, result) = FlowGraph.closed(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
+      val (sub1, sub2, result) = FlowGraph.runnable(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
           Source(List(1, 2, 3)) ~> d1.inlet
           d1.outlet ~> d2.inlet
@@ -80,7 +80,7 @@ class GraphPartialSpec extends AkkaSpec {
           FlowShape(bcast.in, bcast2.out(1))
       }
 
-      val (sub1, sub2, result) = FlowGraph.closed(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
+      val (sub1, sub2, result) = FlowGraph.runnable(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
           Source(List(1, 2, 3)) ~> d1.inlet
           d1.outlet ~> d2.inlet
@@ -100,7 +100,7 @@ class GraphPartialSpec extends AkkaSpec {
           FlowShape(flow.inlet, flow.outlet)
       }
 
-      val fut = FlowGraph.closed(Sink.head[Int], p)(Keep.left) { implicit b ⇒
+      val fut = FlowGraph.runnable(Sink.head[Int], p)(Keep.left) { implicit b ⇒
         (sink, flow) ⇒
           import FlowGraph.Implicits._
           Source.single(0) ~> flow.inlet

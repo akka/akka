@@ -25,7 +25,7 @@ class GraphMatValueSpec extends AkkaSpec {
 
     "expose the materialized value as source" in {
       val sub = TestSubscriber.manualProbe[Int]()
-      val f = FlowGraph.closed(foldSink) { implicit b ⇒
+      val f = FlowGraph.runnable(foldSink) { implicit b ⇒
         fold ⇒
           Source(1 to 10) ~> fold
           b.materializedValue.mapAsync(4)(identity) ~> Sink(sub)
@@ -41,7 +41,7 @@ class GraphMatValueSpec extends AkkaSpec {
     "expose the materialized value as source multiple times" in {
       val sub = TestSubscriber.manualProbe[Int]()
 
-      val f = FlowGraph.closed(foldSink) { implicit b ⇒
+      val f = FlowGraph.runnable(foldSink) { implicit b ⇒
         fold ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
           Source(1 to 10) ~> fold

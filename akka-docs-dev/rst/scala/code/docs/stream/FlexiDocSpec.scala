@@ -53,7 +53,7 @@ class FlexiDocSpec extends AkkaSpec {
     //format: OFF
     val res =
     //#fleximerge-zip-connecting
-    FlowGraph.closed(Sink.head[(Int, String)]) { implicit b =>
+    FlowGraph.runnable(Sink.head[(Int, String)]) { implicit b =>
       o =>
       import FlowGraph.Implicits._
 
@@ -96,7 +96,7 @@ class FlexiDocSpec extends AkkaSpec {
     }
     //#fleximerge-zip-states
 
-    val res = FlowGraph.closed(Sink.head[(Int, String)]) { implicit b =>
+    val res = FlowGraph.runnable(Sink.head[(Int, String)]) { implicit b =>
       o =>
         import FlowGraph.Implicits._
 
@@ -167,7 +167,7 @@ class FlexiDocSpec extends AkkaSpec {
     }
     //#fleximerge-completion
 
-    FlowGraph.closed() { implicit b =>
+    FlowGraph.runnable() { implicit b =>
       import FlowGraph.Implicits._
       val importantWithBackups = b.add(new ImportantWithBackups[Int])
       Source.single(1) ~> importantWithBackups.important
@@ -278,7 +278,7 @@ class FlexiDocSpec extends AkkaSpec {
     }
     //#flexiroute-completion
 
-    FlowGraph.closed() { implicit b =>
+    FlowGraph.runnable() { implicit b =>
       import FlowGraph.Implicits._
       val route = b.add(new ImportantRoute[Int])
       Source.single(1) ~> route.in

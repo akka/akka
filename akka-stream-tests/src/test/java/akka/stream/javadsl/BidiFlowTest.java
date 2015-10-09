@@ -127,7 +127,7 @@ public class BidiFlowTest extends StreamTest {
   public void mustWorkInIsolation() throws Exception {
     final Pair<Future<Long>, Future<String>> p = FlowGraph
         .factory()
-        .closed(Sink.<Long> head(), Sink.<String> head(),
+        .runnable(Sink.<Long> head(), Sink.<String> head(),
             Keep.<Future<Long>, Future<String>> both(),
             new Procedure3<Builder<Pair<Future<Long>, Future<String>>>, SinkShape<Long>, SinkShape<String>>() {
               @Override
@@ -200,7 +200,7 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustMaterializeToItsValue() throws Exception {
-    final Future<Integer> f = FlowGraph.factory().closed(bidiMat, new Procedure2<Builder<Future<Integer> >, BidiShape<Integer, Long, ByteString, String>>() {
+    final Future<Integer> f = FlowGraph.factory().runnable(bidiMat, new Procedure2<Builder<Future<Integer> >, BidiShape<Integer, Long, ByteString, String>>() {
       @Override
       public void apply(Builder<Future<Integer>> b,
           BidiShape<Integer, Long, ByteString, String> shape) throws Exception {

@@ -110,7 +110,7 @@ class GraphFlowSpec extends AkkaSpec {
           importFlow ⇒ FlowShape(importFlow.inlet, importFlow.outlet)
         })
 
-        FlowGraph.closed() { implicit b ⇒
+        FlowGraph.runnable() { implicit b ⇒
           import FlowGraph.Implicits._
           Source(1 to 5) ~> flow ~> flow ~> Sink(probe)
         }.run()
@@ -194,7 +194,7 @@ class GraphFlowSpec extends AkkaSpec {
             SourceShape(s.outlet.map(_ * 2).outlet)
         })
 
-        FlowGraph.closed(source, source)(Keep.both) { implicit b ⇒
+        FlowGraph.runnable(source, source)(Keep.both) { implicit b ⇒
           (s1, s2) ⇒
             import FlowGraph.Implicits._
             val merge = b.add(Merge[Int](2))
@@ -302,7 +302,7 @@ class GraphFlowSpec extends AkkaSpec {
             SinkShape(flow.inlet)
         })
 
-        val (m1, m2, m3) = FlowGraph.closed(source, flow, sink)(Tuple3.apply) { implicit b ⇒
+        val (m1, m2, m3) = FlowGraph.runnable(source, flow, sink)(Tuple3.apply) { implicit b ⇒
           (src, f, snk) ⇒
             import FlowGraph.Implicits._
             src.outlet.map(_.toInt) ~> f.inlet
@@ -332,7 +332,7 @@ class GraphFlowSpec extends AkkaSpec {
             SinkShape(snk.inlet)
         })
 
-        val (m1, m2) = FlowGraph.closed(source, sink)(Keep.both) { implicit b ⇒
+        val (m1, m2) = FlowGraph.runnable(source, sink)(Keep.both) { implicit b ⇒
           (src, snk) ⇒
             import FlowGraph.Implicits._
             src.outlet ~> snk.inlet

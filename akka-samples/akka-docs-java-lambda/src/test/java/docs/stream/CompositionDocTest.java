@@ -101,7 +101,7 @@ public class CompositionDocTest {
   @Test
   public void complexGraph() throws Exception {
     //#complex-graph
-    FlowGraph.factory().closed(builder -> {
+    FlowGraph.factory().runnable(builder -> {
       final Outlet<Integer> A = builder.source(Source.single(0));
       final UniformFanOutShape<Integer, Integer> B = builder.graph(Broadcast.create(2));
       final UniformFanInShape<Integer, Integer> C = builder.graph(Merge.create(2));
@@ -119,7 +119,7 @@ public class CompositionDocTest {
     //#complex-graph
 
     //#complex-graph-alt
-    FlowGraph.factory().closed(builder -> {
+    FlowGraph.factory().runnable(builder -> {
       final Outlet<Integer> A = builder.source(Source.single(0));
       final UniformFanOutShape<Integer, Integer> B = builder.graph(Broadcast.create(2));
       final UniformFanInShape<Integer, Integer> C = builder.graph(Merge.create(2));
@@ -195,7 +195,7 @@ public class CompositionDocTest {
     //#embed-closed
     final RunnableGraph<BoxedUnit> closed1 =
       Source.single(0).to(Sink.foreach(System.out::println));
-    final RunnableGraph<BoxedUnit> closed2 = FlowGraph.factory().closed(builder -> {
+    final RunnableGraph<BoxedUnit> closed2 = FlowGraph.factory().runnable(builder -> {
       final ClosedShape embeddedClosed = builder.graph(closed1);
     });
     //#embed-closed

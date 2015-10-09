@@ -84,7 +84,7 @@ public class StreamBuffersRateDocTest {
         Flow.of(String.class).conflate(
             first -> 1, (count, elem) -> count + 1);
 
-    FlowGraph.factory().closed(b -> {
+    FlowGraph.factory().runnable(b -> {
       final FanInShape2<String, Integer, Integer> zipper =
           b.graph(ZipWith.create((String tick, Integer count) -> count));
 

@@ -32,7 +32,7 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
       val preferred = Source(Stream.fill(numElements)(1))
       val aux = Source(Stream.fill(numElements)(2))
 
-      val result = FlowGraph.closed(Sink.head[Seq[Int]]) { implicit b ⇒
+      val result = FlowGraph.runnable(Sink.head[Seq[Int]]) { implicit b ⇒
         sink ⇒
           val merge = b.add(MergePreferred[Int](3))
           preferred ~> merge.preferred
@@ -47,7 +47,7 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
     }
 
     "eventually pass through all elements" in {
-      val result = FlowGraph.closed(Sink.head[Seq[Int]]) { implicit b ⇒
+      val result = FlowGraph.runnable(Sink.head[Seq[Int]]) { implicit b ⇒
         sink ⇒
           val merge = b.add(MergePreferred[Int](3))
           Source(1 to 100) ~> merge.preferred
@@ -65,7 +65,7 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
       val s = Source(0 to 3)
 
       (the[IllegalArgumentException] thrownBy {
-        val g = FlowGraph.closed() { implicit b ⇒
+        val g = FlowGraph.runnable() { implicit b ⇒
           val merge = b.add(MergePreferred[Int](1))
 
           s ~> merge.preferred

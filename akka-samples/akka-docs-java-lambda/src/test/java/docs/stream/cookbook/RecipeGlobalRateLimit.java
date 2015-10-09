@@ -196,7 +196,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
         final Source<String, BoxedUnit> source2 = Source.<String> fromIterator(() -> e2).via(limitGlobal(limiter, twoSeconds));
 
         final Sink<String, TestSubscriber.Probe<String>> sink = TestSink.probe(system);
-        final TestSubscriber.Probe<String> probe = FlowGraph.factory().closed(sink, (builder, s) -> {
+        final TestSubscriber.Probe<String> probe = FlowGraph.factory().runnable(sink, (builder, s) -> {
           final int inputPorts = 2;
           final UniformFanInShape<String, String> merge = builder.graph(Merge.create(inputPorts));
           builder.from(source1).to(merge);

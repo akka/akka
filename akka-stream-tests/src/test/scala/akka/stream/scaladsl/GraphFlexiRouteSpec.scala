@@ -151,7 +151,7 @@ object GraphFlexiRouteSpec {
     val s1 = TestSubscriber.manualProbe[String]
     val s2 = TestSubscriber.manualProbe[String]
     val completionProbe = TestProbe()
-    FlowGraph.closed() { implicit b ⇒
+    FlowGraph.runnable() { implicit b ⇒
       val route = b.add(new TestRoute(completionProbe.ref))
       Source(autoPublisher) ~> route.in
       route.out0 ~> Sink(s1)
@@ -182,7 +182,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
     "build simple fair route" in assertAllStagesStopped {
       // we can't know exactly which elements that go to each output, because if subscription/request
       // from one of the downstream is delayed the elements will be pushed to the other output
-      FlowGraph.closed(TestSink.probe[String]) { implicit b ⇒
+      FlowGraph.runnable(TestSink.probe[String]) { implicit b ⇒
         out ⇒
           val merge = b.add(Merge[String](2))
           val route = b.add(new Fair[String])
@@ -197,7 +197,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
     }
 
     "build simple round-robin route" in {
-      val (p1, p2) = FlowGraph.closed(out1, out2)(Keep.both) { implicit b ⇒
+      val (p1, p2) = FlowGraph.runnable(out1, out2)(Keep.both) { implicit b ⇒
         (o1, o2) ⇒
           val route = b.add(new StrictRoundRobin[String])
           in ~> route.in
@@ -229,7 +229,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       val outA = Sink.publisher[Int]
       val outB = Sink.publisher[String]
 
-      val (p1, p2) = FlowGraph.closed(outA, outB)(Keep.both) { implicit b ⇒
+      val (p1, p2) = FlowGraph.runnable(outA, outB)(Keep.both) { implicit b ⇒
         (oa, ob) ⇒
           val route = b.add(new Unzip[Int, String])
           Source(List(1 -> "A", 2 -> "B", 3 -> "C", 4 -> "D")) ~> route.in
@@ -448,7 +448,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
     "handle preStart and postStop" in assertAllStagesStopped {
       val p = TestProbe()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val r = b.add(new StartStopTestRoute(p.ref))
 
         Source(List("1", "2", "3")) ~> r.in
@@ -466,7 +466,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
     "invoke postStop after error" in assertAllStagesStopped {
       val p = TestProbe()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val r = b.add(new StartStopTestRoute(p.ref))
 
         Source(List("1", "fail", "2", "3")) ~> r.in

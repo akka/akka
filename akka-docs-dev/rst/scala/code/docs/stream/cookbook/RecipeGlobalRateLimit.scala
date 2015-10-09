@@ -98,7 +98,7 @@ class RecipeGlobalRateLimit extends RecipeSpec {
 
       val probe = TestSubscriber.manualProbe[String]()
 
-      FlowGraph.closed() { implicit b =>
+      FlowGraph.runnable() { implicit b =>
         import FlowGraph.Implicits._
         val merge = b.add(Merge[String](2))
         source1 ~> merge ~> Sink(probe)

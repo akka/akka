@@ -235,7 +235,7 @@ public class FlowGraphTest extends StreamTest {
       }
     });
     
-    final Future<Integer> future = FlowGraph.factory().closed(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer> >, SinkShape<Integer>>() {
+    final Future<Integer> future = FlowGraph.factory().runnable(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer> >, SinkShape<Integer>>() {
       @Override
       public void apply(Builder<Future<Integer> > b, SinkShape<Integer> out) throws Exception {
         final FanInShape2<Integer, Integer, Integer> zip = b.graph(sumZip);
@@ -263,7 +263,7 @@ public class FlowGraphTest extends StreamTest {
               }
             });
 
-    final Future<Integer> future = FlowGraph.factory().closed(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer>>, SinkShape<Integer>>() {
+    final Future<Integer> future = FlowGraph.factory().runnable(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer>>, SinkShape<Integer>>() {
       @Override
       public void apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
         final FanInShape4<Integer, Integer, Integer, Integer, Integer> zip = b.graph(sumZip);
@@ -285,7 +285,7 @@ public class FlowGraphTest extends StreamTest {
     final Source<Integer, BoxedUnit> in1 = Source.single(1);
     final TestProbe probe = TestProbe.apply(system);
 
-    final Future<Integer> future = FlowGraph.factory().closed(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer>>, SinkShape<Integer>>() {
+    final Future<Integer> future = FlowGraph.factory().runnable(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer>>, SinkShape<Integer>>() {
       @Override
       public void apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
         b.from(Source.single(1)).to(out);

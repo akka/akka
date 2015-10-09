@@ -31,7 +31,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
     val resultSink = Sink.head[Int]
 
-    val g = FlowGraph.closed(resultSink) { implicit b =>
+    val g = FlowGraph.runnable(resultSink) { implicit b =>
       sink =>
         import FlowGraph.Implicits._
 

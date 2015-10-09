@@ -24,7 +24,7 @@ class GraphUnzipSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[String]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.out1 ~> Flow[String].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
@@ -53,7 +53,7 @@ class GraphUnzipSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[String]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.out0 ~> Sink(c1)
@@ -74,7 +74,7 @@ class GraphUnzipSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[String]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.out0 ~> Sink(c1)
@@ -96,7 +96,7 @@ class GraphUnzipSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[String]()
 
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
         Source(p1.getPublisher) ~> unzip.in
         unzip.out0 ~> Sink(c1)
@@ -122,7 +122,7 @@ class GraphUnzipSpec extends AkkaSpec {
 
     "work with zip" in assertAllStagesStopped {
       val c1 = TestSubscriber.manualProbe[(Int, String)]()
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val zip = b.add(Zip[Int, String]())
         val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in

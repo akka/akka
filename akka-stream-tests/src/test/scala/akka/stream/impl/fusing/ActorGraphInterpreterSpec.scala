@@ -214,7 +214,7 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
 
       val takeAll = Flow[Int].grouped(200).toMat(Sink.head)(Keep.right)
 
-      val (f1, f2) = FlowGraph.closed(takeAll, takeAll)(Keep.both) { implicit b ⇒
+      val (f1, f2) = FlowGraph.runnable(takeAll, takeAll)(Keep.both) { implicit b ⇒
         (out1, out2) ⇒
           import FlowGraph.Implicits._
           val bidi = b.add(rotatedBidi)

@@ -16,14 +16,14 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   "Reverse Arrows in the Graph DSL" must {
 
     "work from Inlets" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           s.inlet <~ source
       }.run(), 1.second) should ===(Seq(1, 2, 3))
     }
 
     "work from SinkShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           s <~ source
       }.run(), 1.second) should ===(Seq(1, 2, 3))
@@ -31,7 +31,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
     "work from Sink" in {
       val sub = TestSubscriber.manualProbe[Int]
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         Sink(sub) <~ source
       }.run()
       sub.expectSubscription().request(10)
@@ -40,7 +40,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "not work from Outlets" in {
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val o: Outlet[Int] = b.add(source)
         "o <~ source" shouldNot compile
         sink <~ o
@@ -48,7 +48,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "not work from SourceShape" in {
-      FlowGraph.closed() { implicit b ⇒
+      FlowGraph.runnable() { implicit b ⇒
         val o: SourceShape[Int] = b.add(source)
         "o <~ source" shouldNot compile
         sink <~ o
@@ -60,7 +60,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work from FlowShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val f: FlowShape[Int, Int] = b.add(Flow[Int])
           f <~ source
@@ -69,7 +69,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work from UniformFanInShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](1))
           f <~ source
@@ -78,7 +78,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work from UniformFanOutShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](1))
           f <~ source
@@ -87,7 +87,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work towards Outlets" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val o: Outlet[Int] = b.add(source)
           s <~ o
@@ -95,7 +95,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work towards SourceShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val o: SourceShape[Int] = b.add(source)
           s <~ o
@@ -103,14 +103,14 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work towards Source" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           s <~ source
       }.run(), 1.second) should ===(Seq(1, 2, 3))
     }
 
     "work towards FlowShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val f: FlowShape[Int, Int] = b.add(Flow[Int])
           s <~ f
@@ -119,7 +119,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work towards UniformFanInShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](1))
           s <~ f
@@ -128,7 +128,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "fail towards already full UniformFanInShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](1))
           val src = b.add(source)
@@ -138,7 +138,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work towards UniformFanOutShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](1))
           s <~ f
@@ -147,7 +147,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "fail towards already full UniformFanOutShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](1))
           val src = b.add(source)
@@ -157,14 +157,14 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "work across a Flow" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           s <~ Flow[Int] <~ source
       }.run(), 1.second) should ===(Seq(1, 2, 3))
     }
 
     "work across a FlowShape" in {
-      Await.result(FlowGraph.closed(sink) { implicit b ⇒
+      Await.result(FlowGraph.runnable(sink) { implicit b ⇒
         s ⇒
           s <~ b.add(Flow[Int]) <~ source
       }.run(), 1.second) should ===(Seq(1, 2, 3))

@@ -206,7 +206,7 @@ class FlowDocSpec extends AkkaSpec {
 
     // The result of r11 can be also achieved by using the Graph API
     val r12: RunnableGraph[(Promise[Option[Int]], Cancellable, Future[Int])] =
-      FlowGraph.closed(source, flow, sink)((_, _, _)) { implicit builder =>
+      FlowGraph.runnable(source, flow, sink)((_, _, _)) { implicit builder =>
         (src, f, dst) =>
           import FlowGraph.Implicits._
           src ~> f ~> dst

@@ -41,7 +41,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   "A BidiFlow" must {
 
     "work top/bottom in isolation" in {
-      val (top, bottom) = FlowGraph.closed(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b ⇒
+      val (top, bottom) = FlowGraph.runnable(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b ⇒
         (st, sb) ⇒
           val s = b.add(bidi)
 
@@ -79,7 +79,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "materialize to its value" in {
-      val f = FlowGraph.closed(bidiMat) { implicit b ⇒
+      val f = FlowGraph.runnable(bidiMat) { implicit b ⇒
         bidi ⇒
           Flow[String].map(Integer.valueOf(_).toInt) <~> bidi <~> Flow[Long].map(x ⇒ ByteString(s"Hello $x"))
       }.run()

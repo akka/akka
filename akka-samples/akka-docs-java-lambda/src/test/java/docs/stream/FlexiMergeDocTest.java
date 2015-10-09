@@ -297,7 +297,7 @@ public class FlexiMergeDocTest {
     final Sink<Pair<Integer, String>, Future<Pair<Integer, String>>> head =
             Sink.<Pair<Integer, String>>head();
 
-    final Future<Pair<Integer, String>> future = FlowGraph.factory().closed(head,
+    final Future<Pair<Integer, String>> future = FlowGraph.factory().runnable(head,
             (builder, headSink) -> {
               final FanInShape2<Integer, String, Pair<Integer, String>> zip =
                 builder.graph(new Zip<Integer, String>());
@@ -317,7 +317,7 @@ public class FlexiMergeDocTest {
     final Sink<Pair<Integer, String>, Future<Pair<Integer, String>>> head =
             Sink.<Pair<Integer, String>>head();
 
-    final Future<Pair<Integer, String>> future = FlowGraph.factory().closed(head,
+    final Future<Pair<Integer, String>> future = FlowGraph.factory().runnable(head,
             (builder, headSink) -> {
               final FanInShape2<Integer, String, Pair<Integer, String>> zip = builder.graph(new Zip2<Integer, String>());
               builder.from(Source.repeat(1)).to(zip.in0());
@@ -332,7 +332,7 @@ public class FlexiMergeDocTest {
 
   @Test
   public void demonstrateImportantWithBackup() {
-    FlowGraph.factory().closed((builder) -> {
+    FlowGraph.factory().runnable((builder) -> {
       final FanInShape3<Integer, Integer, Integer, Integer> importantWithBackups = builder.graph(new ImportantWithBackups<Integer>());
 
       builder.from(Source.single(1)).to(importantWithBackups.in0());
