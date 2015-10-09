@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.ws
 
-import java.security.SecureRandom
+import java.util.Random
 
 import akka.util.ByteString
 
@@ -27,6 +27,16 @@ import akka.http.scaladsl.model.ws._
 private[http] object Websocket {
   import FrameHandler._
 
+  /**
+   * A stack of all the higher WS layers between raw frames and the user API.
+   */
+  def stack(serverSide: Boolean,
+            maskingRandomFactory: () ⇒ Random,
+            closeTimeout: FiniteDuration = 3.seconds): BidiFlow[FrameEvent, Message, Message, FrameEvent, Unit] =
+    masking(serverSide, maskingRandomFactory) atop
+      frameHandling(serverSide, closeTimeout) atop
+      messageAPI(serverSide, closeTimeout)
+
   /** The lowest layer that implements the binary protocol */
   def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, Unit] =
     BidiFlow.wrap(
@@ -35,8 +45,8 @@ private[http] object Websocket {
       .named("ws-framing")
 
   /** The layer that handles masking using the rules defined in the specification */
-  def masking(serverSide: Boolean): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, Unit] =
-    Masking(serverSide, () ⇒ new SecureRandom())
+  def masking(serverSide: Boolean, maskingRandomFactory: () ⇒ Random): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, Unit] =
+    Masking(serverSide, maskingRandomFactory)
       .named("ws-masking")
 
   /**
@@ -218,12 +228,6 @@ private[http] object Websocket {
         merge.out)
     }.named("ws-message-api")
   }
-
-  def stack(serverSide: Boolean = true,
-            closeTimeout: FiniteDuration = 3.seconds): BidiFlow[FrameEvent, Message, Message, FrameEvent, Unit] =
-    masking(serverSide) atop
-      frameHandling(serverSide, closeTimeout) atop
-      messageAPI(serverSide, closeTimeout)
 
   object Tick
   case object SwitchToWebsocketToken
