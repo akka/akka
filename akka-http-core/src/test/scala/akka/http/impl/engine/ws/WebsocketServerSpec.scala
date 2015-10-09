@@ -4,7 +4,6 @@
 
 package akka.http.impl.engine.ws
 
-import akka.http.impl.engine.ws.Protocol.Opcode
 import akka.http.scaladsl.model.ws._
 import akka.stream.scaladsl.{ Keep, Sink, Flow, Source }
 import akka.stream.testkit.Utils
@@ -14,8 +13,6 @@ import org.scalatest.{ Matchers, FreeSpec }
 import akka.http.impl.util._
 
 import akka.http.impl.engine.server.HttpServerTestSetupBase
-
-import scala.util.Random
 
 class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSpec { spec ⇒
   import WSTestUtils._
@@ -33,7 +30,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |Origin: http://example.com
               |Sec-WebSocket-Version: 13
               |
-              |""".stripMarginWithNewline("\r\n"))
+              |""")
 
           val request = expectRequest
           val upgrade = request.header[UpgradeToWebsocket]
@@ -43,9 +40,9 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
             Source(List(1, 2, 3, 4, 5)).map(num ⇒ TextMessage.Strict(s"Message $num"))
           val handler = Flow.wrap(Sink.ignore, source)(Keep.none)
           val response = upgrade.get.handleMessages(handler)
-          responsesSub.sendNext(response)
+          responses.sendNext(response)
 
-          wipeDate(expectNextChunk().utf8String) shouldEqual
+          expectResponseWithWipedDate(
             """HTTP/1.1 101 Switching Protocols
               |Upgrade: websocket
               |Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
@@ -53,7 +50,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |Date: XXXX
               |Connection: upgrade
               |
-              |""".stripMarginWithNewline("\r\n")
+              |""")
 
           expectWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
           expectWSFrame(Protocol.Opcode.Text, ByteString("Message 2"), fin = true)
@@ -79,16 +76,16 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |Origin: http://example.com
               |Sec-WebSocket-Version: 13
               |
-              |""".stripMarginWithNewline("\r\n"))
+              |""")
 
           val request = expectRequest
           val upgrade = request.header[UpgradeToWebsocket]
           upgrade.isDefined shouldBe true
 
           val response = upgrade.get.handleMessages(Flow[Message]) // simple echoing
-          responsesSub.sendNext(response)
+          responses.sendNext(response)
 
-          wipeDate(expectNextChunk().utf8String) shouldEqual
+          expectResponseWithWipedDate(
             """HTTP/1.1 101 Switching Protocols
               |Upgrade: websocket
               |Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
@@ -96,7 +93,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |Date: XXXX
               |Connection: upgrade
               |
-              |""".stripMarginWithNewline("\r\n")
+              |""")
 
           sendWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true, mask = true)
           expectWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
@@ -131,9 +128,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
     implicit def system = spec.system
     implicit def materializer = spec.materializer
 
-    def expectNextChunk(): ByteString = {
-      netOutSub.request(1)
-      netOut.expectNext()
-    }
+    def expectBytes(length: Int): ByteString = netOut.expectBytes(length)
+    def expectBytes(bytes: ByteString): Unit = netOut.expectBytes(bytes)
   }
 }
