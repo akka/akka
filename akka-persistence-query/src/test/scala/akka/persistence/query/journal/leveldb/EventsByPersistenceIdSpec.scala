@@ -88,6 +88,16 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
         .expectNext("f-3")
         .expectComplete() // f-4 not seen
     }
+
+    "return empty stream for cleaned journal" in {
+      val ref = setup("g")
+
+      ref ! TestActor.DeleteCmd(3L)
+      expectMsg(s"${3L}-deleted")
+
+      val src = queries.currentEventsByPersistenceId("g", 0L, Long.MaxValue)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
   }
 
   "Leveldb live query EventsByPersistenceId" must {
