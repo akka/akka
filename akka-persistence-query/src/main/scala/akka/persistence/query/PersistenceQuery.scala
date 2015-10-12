@@ -78,9 +78,12 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
     log.debug(s"Create plugin: ${configPath} ${pluginClassName}")
     val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
 
-    system.dynamicAccess.createInstanceFor[ReadJournalProvider](pluginClass, (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
-      .orElse(system.dynamicAccess.createInstanceFor[ReadJournalProvider](pluginClass, (classOf[ExtendedActorSystem], system) :: Nil))
-      .orElse(system.dynamicAccess.createInstanceFor[ReadJournalProvider](pluginClass, Nil))
+    def instantiate(args: collection.immutable.Seq[(Class[_], AnyRef)]) =
+      system.dynamicAccess.createInstanceFor[ReadJournalProvider](pluginClass, args)
+
+    instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
+      .recoverWith { case x: NoSuchMethodException ⇒ instantiate((classOf[ExtendedActorSystem], system) :: Nil) }
+      .recoverWith { case x: NoSuchMethodException ⇒ instantiate(Nil) }
       .recoverWith {
         case ex: Exception ⇒ Failure.apply(new IllegalArgumentException(s"Unable to create read journal plugin instance for path [$configPath], class [$pluginClassName]!", ex))
       }.get
