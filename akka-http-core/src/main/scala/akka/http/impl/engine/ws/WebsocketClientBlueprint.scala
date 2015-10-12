@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.ws
 
+import akka.http.scaladsl.model.ws.WebsocketRequest
+
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 
@@ -32,12 +34,10 @@ object WebsocketClientBlueprint {
   /**
    * Returns a WebsocketClientLayer that can be materialized once.
    */
-  def apply(uri: Uri,
-            extraHeaders: immutable.Seq[HttpHeader],
-            subProtocol: Option[String],
+  def apply(request: WebsocketRequest,
             settings: ClientConnectionSettings,
             log: LoggingAdapter): Http.WebsocketClientLayer =
-    (simpleTls.atopMat(handshake(uri, extraHeaders, subProtocol, settings, log))(Keep.right) atop
+    (simpleTls.atopMat(handshake(request, settings, log))(Keep.right) atop
       Websocket.framing atop
       Websocket.stack(serverSide = false, maskingRandomFactory = settings.websocketRandomFactory)).reversed
 
@@ -45,16 +45,15 @@ object WebsocketClientBlueprint {
    * A bidi flow that injects and inspects the WS handshake and then goes out of the way. This BidiFlow
    * can only be materialized once.
    */
-  def handshake(uri: Uri,
-                extraHeaders: immutable.Seq[HttpHeader],
-                subProtocol: Option[String],
+  def handshake(request: WebsocketRequest,
                 settings: ClientConnectionSettings,
                 log: LoggingAdapter): BidiFlow[ByteString, ByteString, ByteString, ByteString, Future[WebsocketUpgradeResponse]] = {
+    import request._
     val result = Promise[WebsocketUpgradeResponse]()
 
     val valve = StreamUtils.OneTimeValve()
 
-    val (initialRequest, key) = Handshake.Client.buildRequest(uri, extraHeaders, subProtocol.toList, settings.websocketRandomFactory())
+    val (initialRequest, key) = Handshake.Client.buildRequest(uri, extraHeaders, subprotocol.toList, settings.websocketRandomFactory())
     val hostHeader = Host(uri.authority)
     val renderedInitialRequest =
       HttpRequestRendererFactory.renderStrict(RequestRenderingContext(initialRequest, hostHeader), settings, log)
@@ -86,7 +85,7 @@ object WebsocketClientBlueprint {
             case NeedMoreData ⇒ ctx.pull()
             case ResponseStart(status, protocol, headers, entity, close) ⇒
               val response = HttpResponse(status, headers, protocol = protocol)
-              Handshake.Client.validateResponse(response, subProtocol.toList, key) match {
+              Handshake.Client.validateResponse(response, subprotocol.toList, key) match {
                 case Right(NegotiatedWebsocketSettings(protocol)) ⇒
                   result.success(ValidUpgrade(response, protocol))
 
