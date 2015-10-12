@@ -7,6 +7,8 @@ package akka.http.javadsl
 import java.lang.{ Iterable ⇒ JIterable }
 import java.net.InetSocketAddress
 import akka.http.impl.util.JavaMapping
+import akka.http.javadsl.model.ws._
+import akka.stream
 import akka.stream.io.{ SslTlsInbound, SslTlsOutbound }
 
 import scala.language.implicitConversions
@@ -497,6 +499,93 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     delegate.singleRequest(request.asScala, settings, httpsContext, log)(materializer)
 
   /**
+   * Constructs a Websocket [[BidiFlow]].
+   *
+   * The layer is not reusable and must only be materialized once.
+   */
+  def websocketClientLayer(request: WebsocketRequest): BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, Future[WebsocketUpgradeResponse]] =
+    adaptWsBidiFlow(delegate.websocketClientLayer(request.asScala))
+
+  /**
+   * Constructs a Websocket [[BidiFlow]] using the configured default [[ClientConnectionSettings]],
+   * configured using the `akka.http.client` config section.
+   *
+   * The layer is not reusable and must only be materialized once.
+   */
+  def websocketClientLayer(request: WebsocketRequest,
+                           settings: ClientConnectionSettings): BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, Future[WebsocketUpgradeResponse]] =
+    adaptWsBidiFlow(delegate.websocketClientLayer(request.asScala, settings))
+
+  /**
+   * Constructs a Websocket [[BidiFlow]] using the configured default [[ClientConnectionSettings]],
+   * configured using the `akka.http.client` config section.
+   *
+   * The layer is not reusable and must only be materialized once.
+   */
+  def websocketClientLayer(request: WebsocketRequest,
+                           settings: ClientConnectionSettings,
+                           log: LoggingAdapter): BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, Future[WebsocketUpgradeResponse]] =
+    adaptWsBidiFlow(delegate.websocketClientLayer(request.asScala, settings, log))
+
+  /**
+   * Constructs a flow that once materialized establishes a Websocket connection to the given Uri.
+   *
+   * The layer is not reusable and must only be materialized once.
+   */
+  def websocketClientFlow(request: WebsocketRequest): Flow[Message, Message, Future[WebsocketUpgradeResponse]] =
+    adaptWsFlow {
+      delegate.websocketClientFlow(request.asScala)
+    }
+
+  /**
+   * Constructs a flow that once materialized establishes a Websocket connection to the given Uri.
+   *
+   * The layer is not reusable and must only be materialized once.
+   */
+  def websocketClientFlow(request: WebsocketRequest,
+                          localAddress: Option[InetSocketAddress],
+                          settings: ClientConnectionSettings,
+                          httpsContext: Option[HttpsContext],
+                          log: LoggingAdapter): Flow[Message, Message, Future[WebsocketUpgradeResponse]] =
+    adaptWsFlow {
+      delegate.websocketClientFlow(request.asScala, localAddress, settings, httpsContext, log)
+    }
+
+  /**
+   * Runs a single Websocket conversation given a Uri and a flow that represents the client side of the
+   * Websocket conversation.
+   */
+  def singleWebsocketRequest[T](request: WebsocketRequest,
+                                clientFlow: Flow[Message, Message, T],
+                                materializer: Materializer): Pair[Future[WebsocketUpgradeResponse], T] =
+    adaptWsResultTuple {
+      delegate.singleWebsocketRequest(
+        request.asScala,
+        adaptWsFlow[T](clientFlow))(materializer)
+    }
+
+  /**
+   * Runs a single Websocket conversation given a Uri and a flow that represents the client side of the
+   * Websocket conversation.
+   */
+  def singleWebsocketRequest[T](request: WebsocketRequest,
+                                clientFlow: Flow[Message, Message, T],
+                                localAddress: Option[InetSocketAddress],
+                                settings: ClientConnectionSettings,
+                                httpsContext: Option[HttpsContext],
+                                log: LoggingAdapter,
+                                materializer: Materializer): Pair[Future[WebsocketUpgradeResponse], T] =
+    adaptWsResultTuple {
+      delegate.singleWebsocketRequest(
+        request.asScala,
+        adaptWsFlow[T](clientFlow),
+        localAddress,
+        settings,
+        httpsContext,
+        log)(materializer)
+    }
+
+  /**
    * Triggers an orderly shutdown of all host connections pools currently maintained by the [[ActorSystem]].
    * The returned future is completed when all pools that were live at the time of this method call
    * have completed their shutdown process.
@@ -517,7 +606,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def setDefaultClientHttpsContext(context: HttpsContext): Unit =
     delegate.setDefaultClientHttpsContext(context.asInstanceOf[akka.http.scaladsl.HttpsContext])
 
-  private def adaptTupleFlow[T, Mat](scalaFlow: akka.stream.scaladsl.Flow[(scaladsl.model.HttpRequest, T), (Try[scaladsl.model.HttpResponse], T), Mat]): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Mat] = {
+  private def adaptTupleFlow[T, Mat](scalaFlow: stream.scaladsl.Flow[(scaladsl.model.HttpRequest, T), (Try[scaladsl.model.HttpResponse], T), Mat]): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Mat] = {
     implicit val _ = JavaMapping.identity[T]
     JavaMapping.toJava(scalaFlow)(JavaMapping.flowMapping[Pair[HttpRequest, T], (scaladsl.model.HttpRequest, T), Pair[Try[HttpResponse], T], (Try[scaladsl.model.HttpResponse], T), Mat])
   }
@@ -531,4 +620,25 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     new BidiFlow(
       JavaMapping.adapterBidiFlow[HttpRequest, sm.HttpRequest, sm.HttpResponse, HttpResponse]
         .atop(clientLayer))
+
+  private def adaptWsBidiFlow(wsLayer: scaladsl.Http.WebsocketClientLayer): BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, Future[WebsocketUpgradeResponse]] =
+    new BidiFlow(
+      JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message]
+        .atopMat(wsLayer)((_, s) ⇒ adaptWsUpgradeResponse(s)))
+
+  private def adaptWsFlow(wsLayer: stream.scaladsl.Flow[sm.ws.Message, sm.ws.Message, Future[scaladsl.Http.WebsocketUpgradeResponse]]): Flow[Message, Message, Future[WebsocketUpgradeResponse]] =
+    Flow.adapt(JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message].joinMat(wsLayer)(Keep.right).mapMaterializedValue(adaptWsUpgradeResponse _))
+
+  private def adaptWsFlow[Mat](javaFlow: Flow[Message, Message, Mat]): stream.scaladsl.Flow[scaladsl.model.ws.Message, scaladsl.model.ws.Message, Mat] =
+    stream.scaladsl.Flow[scaladsl.model.ws.Message]
+      .map(Message.adapt)
+      .viaMat(javaFlow.asScala)(Keep.right)
+      .map(_.asScala)
+
+  private def adaptWsResultTuple[T](result: (Future[scaladsl.Http.WebsocketUpgradeResponse], T)): Pair[Future[WebsocketUpgradeResponse], T] =
+    result match {
+      case (fut, tMat) ⇒ Pair(adaptWsUpgradeResponse(fut), tMat)
+    }
+  private def adaptWsUpgradeResponse(responseFuture: Future[scaladsl.Http.WebsocketUpgradeResponse]): Future[WebsocketUpgradeResponse] =
+    responseFuture.map(WebsocketUpgradeResponse.adapt)(system.dispatcher)
 }
