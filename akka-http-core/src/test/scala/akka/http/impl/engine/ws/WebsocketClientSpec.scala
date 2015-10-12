@@ -302,7 +302,9 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
     def targetUri: Uri = "ws://example.org/ws"
 
     def clientLayer: Http.WebsocketClientLayer =
-      Http(system).websocketClientLayer(targetUri, subprotocol = requestedSubProtocol, settings = settings)
+      Http(system).websocketClientLayer(
+        WebsocketRequest(targetUri, subprotocol = requestedSubProtocol),
+        settings = settings)
 
     val (netOut, netIn, response) = {
       val netOut = ByteStringSinkProbe()
