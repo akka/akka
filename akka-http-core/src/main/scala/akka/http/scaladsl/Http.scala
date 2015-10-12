@@ -19,7 +19,7 @@ import akka.http.impl.util.{ ReadTheDocumentationException, Java6Compat, StreamU
 import akka.http.impl.engine.ws.WebsocketClientBlueprint
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.model.ws.Message
+import akka.http.scaladsl.model.ws.{ WebsocketRequest, Message }
 import akka.http.scaladsl.util.FastFuture
 import akka.japi
 import akka.stream.Materializer
@@ -422,25 +422,22 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    *
    * The layer is not reusable and must only be materialized once.
    */
-  def websocketClientLayer(uri: Uri,
-                           extraHeaders: immutable.Seq[HttpHeader] = Nil,
-                           subprotocol: Option[String] = None,
+  def websocketClientLayer(request: WebsocketRequest,
                            settings: ClientConnectionSettings = ClientConnectionSettings(system),
                            log: LoggingAdapter = system.log): Http.WebsocketClientLayer =
-    WebsocketClientBlueprint(uri, extraHeaders, subprotocol, settings, log)
+    WebsocketClientBlueprint(request, settings, log)
 
   /**
    * Constructs a flow that once materialized establishes a Websocket connection to the given Uri.
    *
    * The layer is not reusable and must only be materialized once.
    */
-  def websocketClientFlow(uri: Uri,
-                          extraHeaders: immutable.Seq[HttpHeader] = Nil,
-                          subprotocol: Option[String] = None,
+  def websocketClientFlow(request: WebsocketRequest,
                           localAddress: Option[InetSocketAddress] = None,
                           settings: ClientConnectionSettings = ClientConnectionSettings(system),
                           httpsContext: Option[HttpsContext] = None,
                           log: LoggingAdapter = system.log): Flow[Message, Message, Future[WebsocketUpgradeResponse]] = {
+    import request.uri
     require(uri.isAbsolute, s"Websocket request URI must be absolute but was '$uri'")
 
     val ctx = uri.scheme match {
@@ -453,7 +450,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     val host = uri.authority.host.address
     val port = uri.effectivePort
 
-    websocketClientLayer(uri, extraHeaders, subprotocol, settings, log)
+    websocketClientLayer(request, settings, log)
       .joinMat(_outgoingTlsConnectionLayer(host, port, localAddress, settings, ctx, log))(Keep.left)
   }
 
@@ -461,15 +458,13 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * Runs a single Websocket conversation given a Uri and a flow that represents the client side of the
    * Websocket conversation.
    */
-  def singleWebsocketRequest[T](uri: Uri,
+  def singleWebsocketRequest[T](request: WebsocketRequest,
                                 clientFlow: Flow[Message, Message, T],
-                                extraHeaders: immutable.Seq[HttpHeader] = Nil,
-                                subprotocol: Option[String] = None,
                                 localAddress: Option[InetSocketAddress] = None,
                                 settings: ClientConnectionSettings = ClientConnectionSettings(system),
                                 httpsContext: Option[HttpsContext] = None,
                                 log: LoggingAdapter = system.log)(implicit mat: Materializer): (Future[WebsocketUpgradeResponse], T) =
-    websocketClientFlow(uri, extraHeaders, subprotocol, localAddress, settings, httpsContext, log)
+    websocketClientFlow(request, localAddress, settings, httpsContext, log)
       .joinMat(clientFlow)(Keep.both).run()
 
   /**
@@ -695,15 +690,13 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   final case class OutgoingConnection(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress)
 
   /**
-   * Represents the response to a websocket upgrade request.
+   * Represents the response to a websocket upgrade request. Can either be [[ValidUpgrade]] or [[InvalidUpgradeResponse]].
    */
   sealed trait WebsocketUpgradeResponse {
     def response: HttpResponse
   }
+  final case class ValidUpgrade(response: HttpResponse, chosenSubprotocol: Option[String]) extends WebsocketUpgradeResponse
   final case class InvalidUpgradeResponse(response: HttpResponse, cause: String) extends WebsocketUpgradeResponse
-  final case class ValidUpgrade(
-    response: HttpResponse,
-    chosenSubprotocol: Option[String]) extends WebsocketUpgradeResponse
 
   /**
    * Represents a connection pool to a specific target host and pool configuration.
