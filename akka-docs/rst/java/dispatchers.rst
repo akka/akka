@@ -61,7 +61,7 @@ of programmatically provided parameter.
 Types of dispatchers
 --------------------
 
-There are 4 different types of message dispatchers:
+There are 3 different types of message dispatchers:
 
 * Dispatcher
 
