@@ -51,6 +51,7 @@ trait AsyncRecovery {
    * number after recovery as the starting point when persisting new events.
    * This sequence number is also used as `toSequenceNr` in subsequent call
    * to [[#asyncReplayMessages]] unless the user has specified a lower `toSequenceNr`.
+   * Journal must maintain the highest sequence number and never decrease it.
    *
    * This call is protected with a circuit-breaker.
    *

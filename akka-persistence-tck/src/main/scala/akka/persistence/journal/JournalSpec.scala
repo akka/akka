@@ -157,6 +157,31 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
       receiverProbe2.expectNoMsg(200.millis)
     }
 
+    "not reset highestSequenceNr after message deletion" in {
+      journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+      1 to 5 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+
+      journal ! DeleteMessagesTo(pid, 3L, receiverProbe.ref)
+      receiverProbe.expectMsg(DeleteMessagesSuccess(3L))
+
+      journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+      4 to 5 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+    }
+
+    "not reset highestSequenceNr after journal cleanup" in {
+      journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+      1 to 5 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+
+      journal ! DeleteMessagesTo(pid, Long.MaxValue, receiverProbe.ref)
+      receiverProbe.expectMsg(DeleteMessagesSuccess(Long.MaxValue))
+
+      journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+    }
+
     "reject non-serializable events" in {
       // there is no chance that a journal could create a data representation for type of event
       val notSerializableEvent = new Object { override def toString = "not serializable" }
