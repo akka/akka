@@ -47,14 +47,14 @@ public abstract class Host {
     /**
      * Parse the given Host string using the given charset and the default parsing-mode.
      */
-    public static Host create(String string, Charset charset) {
-      return UriJavaAccessor.hostApply(string, charset);
+    public static Host create(String string, Uri.ParsingMode parsingMode) {
+      return UriJavaAccessor.hostApply(string, parsingMode);
     }
 
     /**
      * Parse the given Host string using the given charset and parsing-mode.
      */
     public static Host create(String string, Charset charset, Uri.ParsingMode parsingMode) {
-      return UriJavaAccessor.hostApply(string, charset, parsingMode);
+      return akka.http.scaladsl.model.Uri.Host$.MODULE$.apply(string, charset, parsingMode);
     }
 }

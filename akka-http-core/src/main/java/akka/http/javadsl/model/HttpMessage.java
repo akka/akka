@@ -5,7 +5,6 @@
 package akka.http.javadsl.model;
 
 import akka.japi.Option;
-import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 
 import java.io.File;

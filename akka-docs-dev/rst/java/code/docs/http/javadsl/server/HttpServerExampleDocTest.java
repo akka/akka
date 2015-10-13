@@ -6,7 +6,6 @@ package docs.http.javadsl.server;
 
 import akka.actor.ActorSystem;
 import akka.dispatch.OnFailure;
-import akka.http.impl.util.JavaMapping;
 import akka.http.impl.util.Util;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.IncomingConnection;
@@ -17,9 +16,7 @@ import akka.http.javadsl.model.HttpMethods;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.Uri;
-import akka.http.scaladsl.model.*;
 import akka.http.scaladsl.model.HttpEntity;
-import akka.japi.JavaPartialFunction;
 import akka.japi.function.Function;
 import akka.japi.function.Procedure;
 import akka.stream.ActorMaterializer;
@@ -32,7 +29,6 @@ import akka.stream.stage.PushStage;
 import akka.stream.stage.SyncDirective;
 import akka.stream.stage.TerminationDirective;
 import akka.util.ByteString;
-import scala.Function1;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
@@ -206,7 +202,7 @@ public class HttpServerExampleDocTest {
                                         .withEntity(ContentTypes.TEXT_HTML,
                                             "<html><body>Hello world!</body></html>");
                             else if (uri.path().equals("/hello")) {
-                                String name = Util.getOrElse(uri.parameter("name"), "Mister X");
+                                String name = Util.getOrElse(uri.query().get("name"), "Mister X");
 
                                 return
                                     HttpResponse.create()

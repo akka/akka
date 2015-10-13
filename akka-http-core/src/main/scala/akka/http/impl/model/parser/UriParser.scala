@@ -23,7 +23,7 @@ private[http] class UriParser(val input: ParserInput,
 
   def parseAbsoluteUri(): Uri =
     rule(`absolute-URI` ~ EOI).run() match {
-      case Right(_) => create(_scheme, _userinfo, _host, _port, collapseDotSegments(_path), _query, _fragment)
+      case Right(_) => create(_scheme, _userinfo, _host, _port, collapseDotSegments(_path), _rawQueryString, _fragment)
       case Left(error) => fail(error, "absolute URI")
     }
 
@@ -35,7 +35,7 @@ private[http] class UriParser(val input: ParserInput,
 
   def parseAndResolveUriReference(base: Uri): Uri =
     rule(`URI-reference` ~ EOI).run() match {
-      case Right(_) => resolve(_scheme, _userinfo, _host, _port, _path, _query, _fragment, base)
+      case Right(_) => resolve(_scheme, _userinfo, _host, _port, _path, _rawQueryString, _fragment, base)
       case Left(error) => fail(error, "URI reference")
     }
 
@@ -53,7 +53,7 @@ private[http] class UriParser(val input: ParserInput,
 
   def parseQuery(): Query =
     rule(query ~ EOI).run() match {
-      case Right(_) => _query
+      case Right(query) => query
       case Left(error) => fail(error, "query")
     }
 
@@ -69,7 +69,6 @@ private[http] class UriParser(val input: ParserInput,
   private[this] val `query-char` = uriParsingMode match {
     case Uri.ParsingMode.Strict              ⇒ `strict-query-char`
     case Uri.ParsingMode.Relaxed             ⇒ `relaxed-query-char`
-    case Uri.ParsingMode.RelaxedWithRawQuery ⇒ `raw-query-char`
   }
   private[this] val `fragment-char` = uriParsingMode match {
     case Uri.ParsingMode.Strict ⇒ `query-fragment-char`
@@ -81,12 +80,12 @@ private[http] class UriParser(val input: ParserInput,
   var _host: Host = Host.Empty
   var _port: Int = 0
   var _path: Path = Path.Empty
-  var _query: Query = Query.Empty
+  var _rawQueryString: Option[String] = None
   var _fragment: Option[String] = None
 
   // http://tools.ietf.org/html/rfc3986#appendix-A
 
-  def URI = rule { scheme ~ ':' ~ `hier-part` ~ optional('?' ~ query) ~ optional('#' ~ fragment) }
+  def URI = rule { scheme ~ ':' ~ `hier-part` ~ optional('?' ~ rawQueryString) ~ optional('#' ~ fragment) }
 
   def origin = rule { scheme ~ ':' ~ '/' ~ '/' ~ hostAndPort }
 
@@ -100,9 +99,9 @@ private[http] class UriParser(val input: ParserInput,
 
   def `URI-reference-pushed`: Rule1[Uri] = rule { `URI-reference` ~ push(createUriReference()) }
 
-  def `absolute-URI` = rule { scheme ~ ':' ~ `hier-part` ~ optional('?' ~ query) }
+  def `absolute-URI` = rule { scheme ~ ':' ~ `hier-part` ~ optional('?' ~ rawQueryString) }
 
-  def `relative-ref` = rule { `relative-part` ~ optional('?' ~ query) ~ optional('#' ~ fragment) }
+  def `relative-ref` = rule { `relative-part` ~ optional('?' ~ rawQueryString) ~ optional('#' ~ fragment) }
 
   def `relative-part` = rule(
     '/' ~ '/' ~ authority ~ `path-abempty`
@@ -161,7 +160,12 @@ private[http] class UriParser(val input: ParserInput,
 
   def pchar = rule { `path-segment-char` ~ appendSB() | `pct-encoded` }
 
-  def query = {
+  def rawQueryString = rule {
+    clearSB() ~ oneOrMore(`raw-query-char` ~ appendSB()) ~ run(_rawQueryString = Some(sb.toString)) | run(_rawQueryString = Some(""))
+  }
+
+  // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
+  def query: Rule1[Query] = {
     def part = rule(
       clearSBForDecoding() ~ oneOrMore('+' ~ appendSB(' ') | `query-char` ~ appendSB() | `pct-encoded`) ~ push(getDecodedString())
         | push(""))
@@ -176,9 +180,7 @@ private[http] class UriParser(val input: ParserInput,
       }
     }
 
-    if (uriParsingMode == Uri.ParsingMode.RelaxedWithRawQuery) rule {
-      clearSB() ~ oneOrMore(`query-char` ~ appendSB()) ~ run(_query = Query.Raw(sb.toString)) | run(_query = Query.Empty)
-    } else rule { keyValuePairs ~> (_query = _) }
+    rule { keyValuePairs }
   }
 
   def fragment = rule(
@@ -201,7 +203,7 @@ private[http] class UriParser(val input: ParserInput,
 
   // http://tools.ietf.org/html/rfc7230#section-5.3
   def `request-target` = rule(
-    `absolute-path` ~ optional('?' ~ query) // origin-form
+    `absolute-path` ~ optional('?' ~ rawQueryString) // origin-form
       | `absolute-URI` // absolute-form
       | authority) // authority-form or asterisk-form
 
@@ -209,7 +211,7 @@ private[http] class UriParser(val input: ParserInput,
     rule(`request-target` ~ EOI).run() match {
       case Right(_) =>
         val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
-        create(_scheme, _userinfo, _host, _port, path, _query, _fragment)
+        create(_scheme, _userinfo, _host, _port, path, _rawQueryString, _fragment)
       case Left(error) => fail(error, "request-target")
     }
 
@@ -231,7 +233,7 @@ private[http] class UriParser(val input: ParserInput,
 
   private def createUriReference(): Uri = {
     val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
-    create(_scheme, _userinfo, _host, _port, path, _query, _fragment)
+    create(_scheme, _userinfo, _host, _port, path, _rawQueryString, _fragment)
   }
 }
 
