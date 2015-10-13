@@ -274,6 +274,11 @@ Loggers
 Logging is performed asynchronously through an event bus. Log events are processed by an event handler actor
 and it will receive the log events in the same order as they were emitted. 
 
+.. note::
+  The event handler actor does not have a bounded inbox and is run on the default dispatcher. This means
+  that logging extreme amounts of data may affect your application badly. It can be somewhat mitigated by
+  making sure to use an async logging backend though. (See :ref:`slf4j-directly-scala`)
+
 You can configure which event handlers are created at system start-up and listen to logging events. That is done using the 
 ``loggers`` element in the :ref:`configuration`.
 Here you can also define the log level. More fine grained filtering based on the log source 
@@ -358,6 +363,18 @@ the first case and ``LoggerFactory.getLogger(s: String)`` in the second).
 .. code-block:: scala
 
   val log = Logging(system.eventStream, "my.nice.string")
+
+.. _slf4j-directly-scala:
+
+Using the SLF4J API directly
+----------------------------
+If you use the SLF4J API directly in your application, remember that the logging operations will block
+while the underlying infrastructure writes the log statements.
+
+This can be avoided by configuring the logging implementation to use
+a non-blocking appender. Logback provides `AsyncAppender <http://logback.qos.ch/manual/appenders.html#AsyncAppender>`_
+that does this. It also contains a feature which will drop ``INFO`` and ``DEBUG`` messages if the logging
+load is high.
 
 Logging Thread, Akka Source and Actor System in MDC
 ---------------------------------------------------

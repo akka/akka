@@ -748,7 +748,6 @@ options:
 
 .. includecode:: code/docs/testkit/TestkitDocSpec.scala#logging-receive
 
-.
   If the aforementioned setting is not given in the :ref:`configuration`, this method will
   pass through the given :class:`Receive` function unmodified, meaning that
   there is no runtime cost unless actually enabled.
