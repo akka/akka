@@ -71,7 +71,7 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
         }
       } else {
         (fromSnr to toSnr).map { i ⇒
-          AtomicWrite(PersistentRepr(persistentRepr(i)))
+          AtomicWrite(persistentRepr(i))
         }
       }
 

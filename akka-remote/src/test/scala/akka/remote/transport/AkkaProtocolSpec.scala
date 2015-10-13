@@ -38,7 +38,6 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
         transport-failure-detector {
           implementation-class = "akka.remote.PhiAccrualFailureDetector"
-          threshold = 7.0
           max-sample-size = 100
           min-std-deviation = 100 ms
           acceptable-heartbeat-pause = 3 s
