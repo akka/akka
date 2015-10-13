@@ -580,8 +580,8 @@ See :ref:`futures-scala` for more information on how to await or query a
 future.
 
 The ``onComplete``, ``onSuccess``, or ``onFailure`` methods of the ``Future`` can be
-used to register a callback to get a notification when the Future completes.
-Gives you a way to avoid blocking.
+used to register a callback to get a notification when the Future completes, giving
+you a way to avoid blocking.
 
 .. warning::
 
