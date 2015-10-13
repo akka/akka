@@ -7,6 +7,7 @@ package akka.http.javadsl.model;
 import akka.http.impl.util.Util;
 import akka.http.javadsl.model.headers.Authorization;
 import akka.http.javadsl.model.headers.HttpCredentials;
+import akka.japi.Pair;
 
 public class JavaApiTestCases {
     /** Builds a request for use on the client side */
@@ -22,7 +23,7 @@ public class JavaApiTestCases {
         if (request.method() == HttpMethods.GET) {
             Uri uri = request.getUri();
             if (uri.path().equals("/hello")) {
-                String name = Util.getOrElse(uri.parameter("name"), "Mister X");
+                String name = Util.getOrElse(uri.query().get("name"), "Mister X");
 
                 return
                     HttpResponse.create()
@@ -56,14 +57,14 @@ public class JavaApiTestCases {
 
     /** Build a uri to send a form */
     public static Uri createUriForOrder(String orderId, String price, String amount) {
-        return Uri.create()
-            .path("/order")
-            .addParameter("orderId", orderId)
-            .addParameter("price", price)
-            .addParameter("amount", amount);
+        return Uri.create("/order").query(
+                Query.create(
+                        Pair.create("orderId", orderId),
+                        Pair.create("price", price),
+                        Pair.create("amount", amount)));
     }
 
-    public static Uri addSessionId(Uri uri) {
-        return uri.addParameter("session", "abcdefghijkl");
+    public static Query addSessionId(Query query) {
+        return query.withParam("session", "abcdefghijkl");
     }
 }

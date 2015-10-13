@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model
 
 import java.lang.{ Iterable ⇒ JIterable }
-import akka.http.impl.util
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
@@ -14,7 +13,6 @@ import scala.reflect.{ classTag, ClassTag }
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
 import akka.util.ByteString
-import akka.http.impl.model.JavaUri
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
@@ -267,10 +265,11 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
   override def withUri(path: String): HttpRequest = withUri(Uri(path))
   def withUri(uri: Uri): HttpRequest = copy(uri = uri)
 
+  import JavaMapping.Implicits._
   /** Java API */
-  override def getUri: jm.Uri = util.JavaAccessors.Uri(uri)
+  override def getUri: jm.Uri = uri.asJava
   /** Java API */
-  override def withUri(relativeUri: akka.http.javadsl.model.Uri): HttpRequest = copy(uri = relativeUri.asInstanceOf[JavaUri].uri)
+  override def withUri(uri: jm.Uri): HttpRequest = copy(uri = uri.asScala)
 }
 
 object HttpRequest {
