@@ -57,13 +57,13 @@ object ParameterDirectives extends ParameterDirectives {
   import BasicDirectives._
 
   private val _parameterMap: Directive1[Map[String, String]] =
-    extract(_.request.uri.query.toMap)
+    extract(_.request.uri.query().toMap)
 
   private val _parameterMultiMap: Directive1[Map[String, List[String]]] =
-    extract(_.request.uri.query.toMultiMap)
+    extract(_.request.uri.query().toMultiMap)
 
   private val _parameterSeq: Directive1[immutable.Seq[(String, String)]] =
-    extract(_.request.uri.query.toSeq)
+    extract(_.request.uri.query().toSeq)
 
   sealed trait ParamMagnet {
     type Out
@@ -109,7 +109,7 @@ object ParameterDirectives extends ParameterDirectives {
       extractRequestContext flatMap { ctx ⇒
         import ctx.executionContext
         import ctx.materializer
-        handleParamResult(paramName, fsou(ctx.request.uri.query get paramName))
+        handleParamResult(paramName, fsou(ctx.request.uri.query().get(paramName)))
       }
     implicit def forString(implicit fsu: FSU[String]): ParamDefAux[String, Directive1[String]] =
       extractParameter[String, String] { string ⇒ filter(string, fsu) }
@@ -134,7 +134,7 @@ object ParameterDirectives extends ParameterDirectives {
       extractRequestContext flatMap { ctx ⇒
         import ctx.executionContext
         import ctx.materializer
-        onComplete(fsou(ctx.request.uri.query get paramName)) flatMap {
+        onComplete(fsou(ctx.request.uri.query().get(paramName))) flatMap {
           case Success(value) if value == requiredValue ⇒ pass
           case _                                        ⇒ reject
         }
@@ -150,7 +150,7 @@ object ParameterDirectives extends ParameterDirectives {
       extractRequestContext flatMap { ctx ⇒
         import ctx.executionContext
         import ctx.materializer
-        handleParamResult(paramName, Future.sequence(ctx.request.uri.query.getAll(paramName).map(fsu.apply)))
+        handleParamResult(paramName, Future.sequence(ctx.request.uri.query().getAll(paramName).map(fsu.apply)))
       }
     implicit def forRepVR[T](implicit fsu: FSU[T]): ParamDefAux[RepeatedValueReceptacle[T], Directive1[Iterable[T]]] =
       extractParameter[RepeatedValueReceptacle[T], Iterable[T]] { rvr ⇒ repeatedFilter(rvr.name, fsu) }

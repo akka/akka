@@ -25,7 +25,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
@@ -271,7 +271,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |""" should parseTo(
           HttpRequest(
             GET,
-            "/foobar?q=baz",
+            "/foobar?q=b%61z",
             List(
               `Raw-Request-URI`("/f%6f%6fbar?q=b%61z"),
               Host("ping")),
