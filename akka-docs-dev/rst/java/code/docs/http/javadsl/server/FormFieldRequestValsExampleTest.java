@@ -4,20 +4,13 @@
 
 package docs.http.javadsl.server;
 
-import akka.http.javadsl.model.ContentTypes;
 import akka.http.javadsl.model.FormData;
 import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.headers.RawHeader;
-import akka.http.javadsl.server.Marshallers;
-import akka.http.javadsl.server.RequestVal;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.server.values.FormField;
 import akka.http.javadsl.server.values.FormFields;
-import akka.http.javadsl.server.values.Headers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.japi.Pair;
-import docs.http.scaladsl.server.directives.Person;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class FormFieldRequestValsExampleTest extends JUnitRouteTest {

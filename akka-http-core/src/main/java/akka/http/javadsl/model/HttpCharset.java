@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model;
 
+import java.nio.charset.Charset;
+
 /**
  * Represents a charset in Http. See {@link HttpCharsets} for a set of predefined charsets and
  * static constructors to create custom charsets.
@@ -37,4 +39,9 @@ public abstract class HttpCharset {
      * Returns the predefined alias names for this charset.
      */
     public abstract Iterable<String> getAliases();
+
+    /**
+     * Returns the Charset for this charset if available or throws an exception otherwise.
+     */
+    public abstract Charset nioCharset();
 }

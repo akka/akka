@@ -22,12 +22,25 @@ import Uri._
  * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
  * All members of this class represent the *decoded* URI elements (i.e. without percent-encoding).
  */
-sealed abstract case class Uri(scheme: String, authority: Authority, path: Path, query: Query,
+sealed abstract case class Uri(scheme: String, authority: Authority, path: Path, rawQueryString: Option[String],
                                fragment: Option[String]) {
 
   def isAbsolute: Boolean = !isRelative
   def isRelative: Boolean = scheme.isEmpty
   def isEmpty: Boolean
+
+  /**
+   * Parses the rawQueryString member into a Query instance.
+   */
+  def query(charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Query = rawQueryString match {
+    case Some(q) ⇒ new UriParser(q, charset, mode).parseQuery()
+    case None    ⇒ Query.Empty
+  }
+
+  /**
+   * Returns the query part of the Uri in its decoded form.
+   */
+  def queryString(charset: Charset = UTF8): Option[String] = rawQueryString.map(s ⇒ decode(s, charset))
 
   /**
    * The effective port of this Uri given the currently set authority and scheme values.
@@ -40,8 +53,8 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    * Returns a copy of this Uri with the given components.
    */
   def copy(scheme: String = scheme, authority: Authority = authority, path: Path = path,
-           query: Query = query, fragment: Option[String] = fragment): Uri =
-    Uri(scheme, authority, path, query, fragment)
+           rawQueryString: Option[String] = rawQueryString, fragment: Option[String] = fragment): Uri =
+    Uri(scheme, authority, path, rawQueryString, fragment)
 
   /**
    * Returns a copy of this Uri with the given scheme. The `scheme` change of the Uri has the following
@@ -95,22 +108,12 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
   /**
    * Returns a copy of this Uri with the given query.
    */
-  def withQuery(query: Query): Uri = copy(query = query)
+  def withQuery(query: Query): Uri = copy(rawQueryString = if (query.isEmpty) None else Some(query.toString))
 
   /**
    * Returns a copy of this Uri with a Query created using the given query string.
    */
-  def withQuery(query: String): Uri = copy(query = Query(query))
-
-  /**
-   * Returns a copy of this Uri with a Query created using the given (key, value) tuples.
-   */
-  def withQuery(kvp: (String, String)*): Uri = copy(query = Query(kvp: _*))
-
-  /**
-   * Returns a copy of this Uri with a Query created using the given map.
-   */
-  def withQuery(map: Map[String, String]): Uri = copy(query = Query(map))
+  def withRawQueryString(rawQuery: String): Uri = copy(rawQueryString = Some(rawQuery))
 
   /**
    * Returns a copy of this Uri with the given fragment.
@@ -123,7 +126,7 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    * The given base Uri must be absolute.
    */
   def resolvedAgainst(base: Uri): Uri =
-    resolve(scheme, authority.userinfo, authority.host, authority.port, path, query, fragment, base)
+    resolve(scheme, authority.userinfo, authority.host, authority.port, path, rawQueryString, fragment, base)
 
   /**
    * Converts this URI to an "effective HTTP request URI" as defined by
@@ -131,14 +134,14 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    */
   def toEffectiveHttpRequestUri(hostHeaderHost: Host, hostHeaderPort: Int, securedConnection: Boolean = false,
                                 defaultAuthority: Authority = Authority.Empty): Uri =
-    effectiveHttpRequestUri(scheme, authority.host, authority.port, path, query, fragment, securedConnection,
+    effectiveHttpRequestUri(scheme, authority.host, authority.port, path, rawQueryString, fragment, securedConnection,
       hostHeaderHost, hostHeaderPort, defaultAuthority)
 
   /**
    * Converts this URI into a relative URI by keeping the path, query and fragment, but dropping the scheme and authority.
    */
   def toRelative =
-    Uri(path = if (path.isEmpty) Uri.Path./ else path, query = query, fragment = fragment)
+    Uri(path = if (path.isEmpty) Uri.Path./ else path, queryString = rawQueryString, fragment = fragment)
 
   /**
    * Converts this URI into an HTTP request target "origin-form" as defined by
@@ -148,7 +151,7 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    * be a "relative" URI with a part component starting with a double slash.)
    */
   def toHttpRequestTargetOriginForm =
-    create("", Authority.Empty, if (path.isEmpty) Uri.Path./ else path, query, None)
+    create("", Authority.Empty, if (path.isEmpty) Uri.Path./ else path, rawQueryString, None)
 
   /**
    * Drops the fragment from this URI
@@ -160,7 +163,7 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
 }
 
 object Uri {
-  object Empty extends Uri("", Authority.Empty, Path.Empty, Query.Empty, None) {
+  object Empty extends Uri("", Authority.Empty, Path.Empty, None, None) {
     def isEmpty = true
   }
 
@@ -210,13 +213,13 @@ object Uri {
    * http://tools.ietf.org/html/rfc3986 the method throws an `IllegalUriException`.
    */
   def apply(scheme: String = "", authority: Authority = Authority.Empty, path: Path = Path.Empty,
-            query: Query = Query.Empty, fragment: Option[String] = None): Uri = {
+            queryString: Option[String] = None, fragment: Option[String] = None): Uri = {
     val p = verifyPath(path, scheme, authority.host)
     create(
       scheme = normalizeScheme(scheme),
       authority = authority.normalizedFor(scheme),
       path = if (scheme.isEmpty) p else collapseDotSegments(p),
-      query = query,
+      queryString = queryString,
       fragment = fragment)
   }
 
@@ -227,9 +230,9 @@ object Uri {
    * http://tools.ietf.org/html/rfc3986 the method throws an `IllegalUriException`.
    */
   def from(scheme: String = "", userinfo: String = "", host: String = "", port: Int = 0, path: String = "",
-           query: Query = Query.Empty, fragment: Option[String] = None,
+           queryString: Option[String] = None, fragment: Option[String] = None,
            mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri =
-    apply(scheme, Authority(Host(host, UTF8, mode), normalizePort(port, scheme), userinfo), Path(path), query, fragment)
+    apply(scheme, Authority(Host(host, UTF8, mode), normalizePort(port, scheme), userinfo), Path(path), queryString, fragment)
 
   /**
    * Parses a string into a normalized absolute URI as defined by http://tools.ietf.org/html/rfc3986#section-4.3.
@@ -279,7 +282,7 @@ object Uri {
    * Converts a set of URI components to an "effective HTTP request URI" as defined by
    * http://tools.ietf.org/html/rfc7230#section-5.5.
    */
-  def effectiveHttpRequestUri(scheme: String, host: Host, port: Int, path: Path, query: Query, fragment: Option[String],
+  def effectiveHttpRequestUri(scheme: String, host: Host, port: Int, path: Path, query: Option[String], fragment: Option[String],
                               securedConnection: Boolean, hostHeaderHost: Host, hostHeaderPort: Int,
                               defaultAuthority: Authority = Authority.Empty): Uri = {
     var _scheme = scheme
@@ -324,7 +327,7 @@ object Uri {
     def inetAddresses: immutable.Seq[InetAddress]
 
     def equalsIgnoreCase(other: Host): Boolean
-    override def toString() = UriRendering.HostRenderer.render(new StringRendering, this).get
+    override def toString = UriRendering.HostRenderer.render(new StringRendering, this).get
 
     // default implementations
     def isNamedHost: Boolean = false
@@ -520,7 +523,6 @@ object Uri {
   sealed abstract class Query extends LinearSeq[(String, String)] with LinearSeqOptimized[(String, String), Query] {
     def key: String
     def value: String
-    def isRaw: Boolean
     def +:(kvp: (String, String)) = Query.Cons(kvp._1, kvp._2, this)
     def get(key: String): Option[String] = {
       @tailrec def g(q: Query): Option[String] = if (q.isEmpty) None else if (q.key == key) Some(q.value) else g(q.tail)
@@ -556,18 +558,19 @@ object Uri {
      * Parses the given String into a Query instance.
      * Note that this method will never return Query.Empty, even for the empty String.
      * Empty strings will be parsed to `("", "") +: Query.Empty`
-     * If you want to allow for Query.Empty creation use the apply overload taking an `Option[String`.
+     * If you want to allow for Query.Empty creation use the apply overload taking an `Option[String]`.
      */
-    def apply(string: String, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Query =
-      new UriParser(string, charset, mode).parseQuery()
-    def apply(input: Option[String]): Query = apply(input, Uri.ParsingMode.Relaxed)
-    def apply(input: Option[String], mode: Uri.ParsingMode): Query = input match {
+    def apply(string: String): Query = apply(string: ParserInput, UTF8, Uri.ParsingMode.Relaxed)
+    def apply(input: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Query =
+      new UriParser(input, charset, mode).parseQuery()
+    def apply(input: Option[String]): Query = apply(input, UTF8, Uri.ParsingMode.Relaxed)
+    def apply(input: Option[String], charset: Charset, mode: Uri.ParsingMode): Query = input match {
       case None         ⇒ Query.Empty
-      case Some(string) ⇒ apply(string, mode = mode)
+      case Some(string) ⇒ apply(string, charset, mode)
     }
-    def apply(kvp: (String, String)*): Query =
-      kvp.foldRight(Query.Empty: Query) { case ((key, value), acc) ⇒ Cons(key, value, acc) }
-    def apply(map: Map[String, String]): Query = apply(map.toSeq: _*)
+    def apply(params: (String, String)*): Query =
+      params.foldRight(Query.Empty: Query) { case ((key, value), acc) ⇒ Cons(key, value, acc) }
+    def apply(params: Map[String, String]): Query = apply(params.toSeq: _*)
 
     def newBuilder: mutable.Builder[(String, String), Query] = new mutable.Builder[(String, String), Query] {
       val b = mutable.ArrayBuffer.newBuilder[(String, String)]
@@ -579,22 +582,13 @@ object Uri {
     case object Empty extends Query {
       def key = throw new NoSuchElementException("key of empty path")
       def value = throw new NoSuchElementException("value of empty path")
-      def isRaw = true
       override def isEmpty = true
       override def head = throw new NoSuchElementException("head of empty list")
       override def tail = throw new UnsupportedOperationException("tail of empty query")
     }
     final case class Cons(key: String, value: String, override val tail: Query) extends Query {
-      def isRaw = false
       override def isEmpty = false
       override def head = (key, value)
-    }
-    final case class Raw(value: String) extends Query {
-      def key = ""
-      def isRaw = true
-      override def isEmpty = false
-      override def head = ("", value)
-      override def tail = Empty
     }
   }
 
@@ -608,25 +602,23 @@ object Uri {
   object ParsingMode {
     case object Strict extends ParsingMode
     case object Relaxed extends ParsingMode
-    case object RelaxedWithRawQuery extends ParsingMode
 
     def apply(string: String): ParsingMode =
       string match {
-        case "strict"                 ⇒ Strict
-        case "relaxed"                ⇒ Relaxed
-        case "relaxed-with-raw-query" ⇒ RelaxedWithRawQuery
-        case x                        ⇒ throw new IllegalArgumentException(x + " is not a legal UriParsingMode")
+        case "strict"  ⇒ Strict
+        case "relaxed" ⇒ Relaxed
+        case x         ⇒ throw new IllegalArgumentException(x + " is not a legal UriParsingMode")
       }
   }
 
   // http://tools.ietf.org/html/rfc3986#section-5.2.2
-  private[http] def resolve(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Query,
+  private[http] def resolve(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Option[String],
                             fragment: Option[String], base: Uri): Uri = {
     require(base.isAbsolute, "Resolution base Uri must be absolute")
     if (scheme.isEmpty)
       if (host.isEmpty)
         if (path.isEmpty) {
-          val q = if (query.isEmpty) base.query else query
+          val q = if (query.isEmpty) base.rawQueryString else query
           create(base.scheme, base.authority, base.path, q, fragment)
         } else {
           // http://tools.ietf.org/html/rfc3986#section-5.2.3
@@ -747,14 +739,14 @@ object Uri {
 
   private[http] def fail(summary: String, detail: String = "") = throw IllegalUriException(summary, detail)
 
-  private[http] def create(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Query,
+  private[http] def create(scheme: String, userinfo: String, host: Host, port: Int, path: Path, queryString: Option[String],
                            fragment: Option[String]): Uri =
-    create(scheme, Authority(host, normalizePort(port, scheme), userinfo), path, query, fragment)
+    create(scheme, Authority(host, normalizePort(port, scheme), userinfo), path, queryString, fragment)
 
-  private[http] def create(scheme: String, authority: Authority, path: Path, query: Query,
+  private[http] def create(scheme: String, authority: Authority, path: Path, queryString: Option[String],
                            fragment: Option[String]): Uri =
-    if (path.isEmpty && scheme.isEmpty && authority.isEmpty && query.isEmpty && fragment.isEmpty) Empty
-    else new Uri(scheme, authority, path, query, fragment) { def isEmpty = false }
+    if (path.isEmpty && scheme.isEmpty && authority.isEmpty && queryString.isEmpty && fragment.isEmpty) Empty
+    else new Uri(scheme, authority, path, queryString, fragment) { def isEmpty = false }
 }
 
 object UriRendering {
@@ -803,7 +795,8 @@ object UriRendering {
     if (isAbsolute) r ~~ scheme ~~ ':'
     renderAuthority(r, authority, path, scheme, charset)
     renderPath(r, path, charset, encodeFirstSegmentColons = isRelative)
-    if (query.nonEmpty) renderQuery(r ~~ '?', query, charset) else r
+    rawQueryString.foreach(r ~~ '?' ~~ _)
+    r
   }
 
   def renderAuthority[R <: Rendering](r: R, authority: Authority, scheme: String, charset: Charset): r.type =
@@ -842,7 +835,6 @@ object UriRendering {
           if (value ne Query.EmptyValue) r ~~ '='
           enc(value)
           append(tail)
-        case Query.Raw(value) ⇒ r ~~ value
       }
     append(query)
   }
@@ -879,11 +871,19 @@ abstract class UriJavaAccessor
  * INTERNAL API.
  */
 object UriJavaAccessor {
+  import collection.JavaConverters._
+
   def hostApply(string: String): Host = Uri.Host(string)
-  def hostApply(string: String, charset: Charset): Host = Uri.Host(string, charset)
-  def hostApply(string: String, charset: Charset, pm: Uri.ParsingMode): Host = Uri.Host(string, charset, pm)
+  def hostApply(string: String, mode: Uri.ParsingMode): Host = Uri.Host(string, mode = mode)
+  def hostApply(string: String, charset: Charset): Host = Uri.Host(string, charset = charset)
   def emptyHost: Uri.Host = Uri.Host.Empty
+
+  def queryApply(params: Array[akka.japi.Pair[String, String]]): Uri.Query = Uri.Query(params.map(_.toScala): _*)
+  def queryApply(params: java.util.Map[String, String]): Uri.Query = Uri.Query(params.asScala.toSeq: _*)
+  def queryApply(string: String, mode: Uri.ParsingMode): Uri.Query = Uri.Query(string, mode = mode)
+  def queryApply(string: String, charset: Charset): Uri.Query = Uri.Query(string, charset = charset)
+  def emptyQuery: Uri.Query = Uri.Query.Empty
+
   def pmStrict: Uri.ParsingMode = Uri.ParsingMode.Strict
   def pmRelaxed: Uri.ParsingMode = Uri.ParsingMode.Relaxed
-  def pmRelaxedWithRawQuery: Uri.ParsingMode = Uri.ParsingMode.RelaxedWithRawQuery
 }
