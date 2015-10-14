@@ -3,10 +3,6 @@
 failWith
 ========
 
-Bubbles up the given error through the route structure where it is dealt with by the closest ``handleExceptions``
-directive and its :class:`ExceptionHandler`.
-
-
 Signature
 ---------
 
@@ -16,6 +12,8 @@ Signature
 
 Description
 -----------
+Bubbles up the given error through the route structure where it is dealt with by the closest ``handleExceptions``
+directive and its :class:`ExceptionHandler`.
 
 ``failWith`` explicitly raises an exception that gets bubbled up through the route structure to be picked up by the
 nearest ``handleExceptions`` directive. Using ``failWith`` rather than simply throwing an exception enables the route

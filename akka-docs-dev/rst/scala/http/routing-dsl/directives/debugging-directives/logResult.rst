@@ -3,8 +3,6 @@
 logResult
 =========
 
-Logs the response.
-
 Signature
 ---------
 
@@ -23,8 +21,9 @@ The signature shown is simplified, the real signature uses magnets. [1]_
 
 Description
 -----------
+Logs the response.
 
-See ``logRequest`` for the general description how these directives work. This directive is different
+See :ref:`-logRequest-` for the general description how these directives work. This directive is different
 as it requires a ``LoggingMagnet[Any => Unit]``. Instead of just logging ``HttpResponses``, ``logResult`` is able to
 log any :ref:`RouteResult` coming back from the inner route.
 

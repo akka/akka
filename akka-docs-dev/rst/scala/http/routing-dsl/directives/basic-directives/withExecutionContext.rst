@@ -3,8 +3,6 @@
 withExecutionContext
 ====================
 
-Runs its inner route with the given alternative :class:`ExecutionContext`.
-
 Signature
 ---------
 
@@ -24,4 +22,4 @@ Example
 -------
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0withExecutionContext
+   :snippet: withExecutionContext-0

@@ -3,8 +3,6 @@
 mapUnmatchedPath
 ================
 
-Transforms the unmatchedPath field of the request context for inner routes.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Transforms the unmatchedPath field of the request context for inner routes.
 
 The ``mapUnmatchedPath`` directive is used as a building block for writing :ref:`Custom Directives`. You can use it
 for implementing custom path matching directives.

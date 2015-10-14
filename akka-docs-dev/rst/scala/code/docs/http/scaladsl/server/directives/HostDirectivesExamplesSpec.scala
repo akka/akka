@@ -17,6 +17,7 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
         complete(s"Hostname: $hn")
       }
 
+    // tests:
     Get() ~> Host("company.com", 9090) ~> route ~> check {
       status shouldEqual OK
       responseAs[String] shouldEqual "Hostname: company.com"
@@ -29,6 +30,7 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
         complete("Ok")
       }
 
+    // tests:
     Get() ~> Host("rest.company.com") ~> route ~> check {
       status shouldEqual OK
       responseAs[String] shouldEqual "Ok"
@@ -47,6 +49,7 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
         complete("Ok")
       }
 
+    // tests:
     Get() ~> Host("short.com") ~> route ~> check {
       status shouldEqual OK
       responseAs[String] shouldEqual "Ok"
@@ -66,6 +69,7 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
           complete(s"You came through $captured company")
         }
 
+    // tests:
     Get() ~> Host("api.company.com") ~> route ~> check {
       status shouldEqual OK
       responseAs[String] shouldEqual "Extracted prefix: api"

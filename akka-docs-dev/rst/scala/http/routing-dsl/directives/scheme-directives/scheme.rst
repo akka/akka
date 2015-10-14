@@ -3,8 +3,6 @@
 scheme
 ======
 
-Rejects a request if its Uri scheme does not match a given one.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Rejects a request if its Uri scheme does not match a given one.
 
 The ``scheme`` directive can be used to match requests by their Uri scheme, only passing
 through requests that match the specified scheme and rejecting all others.

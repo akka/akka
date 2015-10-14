@@ -6,7 +6,7 @@ Exception Handling
 Exceptions thrown during route execution bubble up through the route structure to the next enclosing
 :ref:`-handleExceptions-` directive or the top of your route structure.
 
-Similarly to the way that :ref:`Rejections` are handled the :ref:`-handleExceptions-` directive delegates the actual job
+Similarly to the way that :ref:`rejections-scala` are handled the :ref:`-handleExceptions-` directive delegates the actual job
 of converting an exception to its argument, an ExceptionHandler__, which is defined like this::
 
     trait ExceptionHandler extends PartialFunction[Throwable, Route]

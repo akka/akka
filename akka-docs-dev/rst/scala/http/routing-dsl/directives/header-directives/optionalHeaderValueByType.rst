@@ -3,8 +3,6 @@
 optionalHeaderValueByType
 =========================
 
-Optionally extracts the value of the HTTP request header of the given type.
-
 Signature
 ---------
 
@@ -19,8 +17,9 @@ The signature shown is simplified, the real signature uses magnets. [1]_
 
 Description
 -----------
+Optionally extracts the value of the HTTP request header of the given type.
 
-The ``optionalHeaderValueByType`` directive is similar to the ``headerValueByType`` directive but always extracts
+The ``optionalHeaderValueByType`` directive is similar to the :ref:`-headerValueByType-` directive but always extracts
 an ``Option`` value instead of rejecting the request if no matching header could be found.
 
 Example

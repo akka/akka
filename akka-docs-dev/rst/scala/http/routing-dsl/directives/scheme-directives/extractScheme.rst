@@ -3,8 +3,6 @@
 extractScheme
 =============
 
-Extracts the value of the request Uri scheme.
-
 Signature
 ---------
 
@@ -13,9 +11,7 @@ Signature
 
 Description
 -----------
-
-The ``extractScheme`` directive can be used to determine the Uri scheme (i.e. "http", "https", etc.)
-for an incoming request.
+Extracts the Uri scheme (i.e. "``http``", "``https``", etc.) for an incoming request.
 
 For rejecting a request if it doesn't match a specified scheme name, see the :ref:`-scheme-` directive.
 

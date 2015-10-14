@@ -1,4 +1,4 @@
-.. _Directives:
+.. _directives:
 
 Directives
 ==========

@@ -5,7 +5,7 @@
 package docs.http.javadsl.server;
 
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.server.*;
+import akka.http.javadsl.server.Handler1;
 import akka.http.javadsl.server.values.PathMatcher;
 import akka.http.javadsl.server.values.PathMatchers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
@@ -39,12 +39,7 @@ public class PathDirectiveExampleTest extends JUnitRouteTest {
 
         // matches "/admin/user/<user-id>"
         Handler1<Integer> completeWithUserId =
-            new Handler1<Integer>() {
-                @Override
-                public RouteResult apply(RequestContext ctx, Integer userId) {
-                    return ctx.complete("Hello user " + userId);
-                }
-            };
+          (ctx, userId) -> ctx.complete("Hello user " + userId);
         PathMatcher<Integer> userId = PathMatchers.intValue();
         pathPrefix("admin", "user").route(
             path(userId).route(

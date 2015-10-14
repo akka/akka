@@ -5,11 +5,9 @@
 package docs.http.scaladsl.server
 package directives
 
-import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
-import akka.http.scaladsl.server._
-
 import akka.event.Logging
-import akka.http.scaladsl.server.directives.{ LoggingMagnet, LogEntry, DebuggingDirectives }
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
 
 class DebuggingDirectivesExamplesSpec extends RoutingSpec {
   "logRequest-0" in {
@@ -34,6 +32,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     def printRequestMethod(req: HttpRequest): Unit = println(req.method)
     val logRequestPrintln = DebuggingDirectives.logRequest(LoggingMagnet(_ => printRequestMethod))
 
+    // tests:
     Get("/") ~> logRequestPrintln(complete("logged")) ~> check {
       responseAs[String] shouldEqual "logged"
     }
@@ -60,6 +59,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
       println(requestMethodAndResponseStatusAsInfo(req)(res).map(_.obj.toString).getOrElse(""))
     val logRequestResultPrintln = DebuggingDirectives.logRequestResult(LoggingMagnet(_ => printRequestMethodAndResponseStatus))
 
+    // tests:
     Get("/") ~> logRequestResultPrintln(complete("logged")) ~> check {
       responseAs[String] shouldEqual "logged"
     }
@@ -89,6 +89,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     def printResponseStatus(res: Any): Unit = println(responseStatus(res))
     val logResultPrintln = DebuggingDirectives.logResult(LoggingMagnet(_ => printResponseStatus))
 
+    // tests:
     Get("/") ~> logResultPrintln(complete("logged")) ~> check {
       responseAs[String] shouldEqual "logged"
     }

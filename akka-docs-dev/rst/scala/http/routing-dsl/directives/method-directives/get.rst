@@ -3,8 +3,6 @@
 get
 ===
 
-Matches requests with HTTP method ``GET``.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Matches requests with HTTP method ``GET``.
 
 This directive filters the incoming request by its HTTP method. Only requests with
 method ``GET`` are passed on to the inner route. All others are rejected with a

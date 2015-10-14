@@ -3,8 +3,6 @@
 logRequestResult
 ================
 
-Logs request and response.
-
 Signature
 ---------
 
@@ -23,9 +21,11 @@ The signature shown is simplified, the real signature uses magnets. [1]_
 
 Description
 -----------
+Logs both, the request and the response.
 
-This directive is a combination of ``logRequest`` and ``logResult``. See ``logRequest`` for the general description
-how these directives work.
+This directive is a combination of :ref:`-logRequest-` and :ref:`-logResult-`.
+
+See :ref:`-logRequest-` for the general description how these directives work.
 
 Example
 -------

@@ -3,8 +3,6 @@
 mapRequest
 ==========
 
-Transforms the request before it is handled by the inner route.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Transforms the request before it is handled by the inner route.
 
 The ``mapRequest`` directive is used as a building block for :ref:`Custom Directives` to transform a request before it
 is handled by the inner route. Changing the ``request.uri`` parameter has no effect on path matching in the inner route

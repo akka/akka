@@ -3,8 +3,6 @@
 extractSettings
 ===============
 
-Extracts the ``RoutingSettings`` from the :class:`RequestContext`.
-
 Signature
 ---------
 
@@ -23,4 +21,4 @@ Example
 -------
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0extractSettings
+   :snippet: extractSettings-examples

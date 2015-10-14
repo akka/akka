@@ -3,11 +3,6 @@
 pathSuffixTest
 ==============
 
-Checks whether the unmatched path of the ``RequestContext`` has a suffix matched by the given ``PathMatcher``.
-Potentially extracts one or more values (depending on the type of the argument) but doesn't consume its match from
-the unmatched path.
-
-
 Signature
 ---------
 
@@ -17,6 +12,9 @@ Signature
 
 Description
 -----------
+Checks whether the unmatched path of the ``RequestContext`` has a suffix matched by the given ``PathMatcher``.
+Potentially extracts one or more values (depending on the type of the argument) but doesn't consume its match from
+the unmatched path.
 
 This directive is very similar to the :ref:`-pathSuffix-` directive with the one difference that the path suffix
 it matched (if it matched) is *not* consumed. The unmatched path of the ``RequestContext`` is therefore left as

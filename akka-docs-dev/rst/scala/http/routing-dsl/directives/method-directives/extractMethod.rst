@@ -3,8 +3,6 @@
 extractMethod
 =============
 
-Extracts the :class:`HttpMethod` from the request context which can be used programatically in a route.
-
 Signature
 ---------
 
@@ -13,7 +11,6 @@ Signature
 
 Description
 -----------
-
 Extracts the :class:`HttpMethod` from the request context and provides it for use for other directives explicitly.
 
 Example
