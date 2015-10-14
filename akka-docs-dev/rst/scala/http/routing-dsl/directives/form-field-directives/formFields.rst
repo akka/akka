@@ -37,14 +37,14 @@ as required, optional, or repeated, or to filter requests where a form field has
 ``"amount".as[Int]``
     extract value of field "amount" as ``Int``, you need a matching implicit ``Unmarshaller`` in scope for that to work
     (see also :ref:`http-unmarshalling-scala`)
-``"amount".as(deserializer)``
+``"amount".as(unmarshaller)``
     extract value of field "amount" with an explicit ``Unmarshaller``
 ``"distance".*``
     extract multiple occurrences of field "distance" as ``Iterable[String]``
 ``"distance".as[Int].*``
     extract multiple occurrences of field "distance" as ``Iterable[Int]``, you need a matching implicit ``Unmarshaller`` in scope for that to work
     (see also :ref:`http-unmarshalling-scala`)
-``"distance".as(deserializer).*``
+``"distance".as(unmarshaller).*``
     extract multiple occurrences of field "distance" with an explicit ``Unmarshaller``
 
 You can use :ref:`Case Class Extraction` to group several extracted values together into a case-class
@@ -52,15 +52,16 @@ instance.
 
 Requests missing a required field or field value will be rejected with an appropriate rejection.
 
-There's also a singular version, ``formField``. Query parameters can be handled in a similar way, see ``parameters``. If
-you want unified handling for both query parameters and form fields, see ``anyParams``.
+There's also a singular version, :ref:`-formField-`.
+
+Query parameters can be handled in a similar way, see :ref:`-parameters-`.
 
 Unmarshalling
 -------------
 
 Data POSTed from `HTML forms`_ is either of type ``application/x-www-form-urlencoded`` or of type
 ``multipart/form-data``. The value of an url-encoded field is a ``String`` while the value of a
-``multipart/form-data``-encoded field is a "body part" containing an entity. This means that different kind of unmarshallerss are needed depending
+``multipart/form-data``-encoded field is a "body part" containing an entity. This means that different kind of unmarshallers are needed depending
 on what the Content-Type of the request is:
 
  - A ``application/x-www-form-urlencoded`` encoded field needs an implicit ``Unmarshaller[Option[String], T]``
