@@ -14,6 +14,16 @@ import akka.util.ByteString
 import org.scalatest.matchers.Matcher
 
 class CodingDirectivesExamplesSpec extends RoutingSpec {
+  "responseEncodingAccepted" in {
+    val route = responseEncodingAccepted(gzip) { complete("content") }
+
+    Get("/") ~> route ~> check {
+      responseAs[String] shouldEqual "content"
+    }
+    Get("/") ~> `Accept-Encoding`(`identity;q=MIN`) ~> route ~> check {
+      rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
+    }
+  }
   "encodeResponse" in {
     val route = encodeResponse { complete("content") }
 
