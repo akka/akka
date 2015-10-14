@@ -3,9 +3,6 @@
 responseEncodingAccepted
 ========================
 
-Passes the request to the inner route if the request accepts the argument encoding. Otherwise,
-rejects the request with an ``UnacceptedResponseEncodingRejection(encoding)``.
-
 Signature
 ---------
 
@@ -15,4 +12,10 @@ Signature
 Description
 -----------
 
-This directive is the building block for ``encodeResponse`` to reject unsupported encodings.
+Passes the request to the inner route if the request accepts the argument encoding. Otherwise, rejects the request with an ``UnacceptedResponseEncodingRejection(encoding)``.
+
+Example
+-------
+
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
+  :snippet: responseEncodingAccepted
