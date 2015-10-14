@@ -66,7 +66,10 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
 
   "test custom handler example" in {
     import akka.http.scaladsl.server._
-    Get() ~> Route.seal(reject(MissingCookieRejection("abc"))) ~> check {
+    val route = Route.seal(reject(MissingCookieRejection("abc")))
+
+    // tests:
+    Get() ~> route ~> check {
       responseAs[String] === "No cookies, no service!!!"
     }
   }

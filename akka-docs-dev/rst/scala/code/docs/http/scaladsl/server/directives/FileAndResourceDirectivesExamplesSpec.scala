@@ -4,27 +4,14 @@
 
 package docs.http.scaladsl.server.directives
 
-import java.io.File
-
-import akka.event.Logging
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.server.RouteResult.Rejected
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.directives.DirectoryListing
 import akka.http.scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer
-import akka.stream.ActorMaterializer
-import akka.stream.io.SynchronousFileSource
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.util.ByteString
 import docs.http.scaladsl.server.RoutingSpec
 
-import scala.concurrent.Future
-import scala.util.control.NonFatal
-
 class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
-  "0getFromFile" in compileOnlySpec {
+  "getFromFile-examples" in compileOnlySpec {
     import akka.http.scaladsl.server.directives._
     import ContentTypeResolver.Default
 
@@ -33,11 +20,12 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         getFromFile(".log") // uses implicit ContentTypeResolver
       }
 
+    // tests:
     Get("/logs/example") ~> route ~> check {
-      responseAs[String] shouldEqual "The length of the request URI is 25"
+      responseAs[String] shouldEqual "example file contents"
     }
   }
-  "0getFromResource" in compileOnlySpec {
+  "getFromResource-examples" in compileOnlySpec {
     import akka.http.scaladsl.server.directives._
     import ContentTypeResolver.Default
 
@@ -46,11 +34,12 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
         getFromResource(".log") // uses implicit ContentTypeResolver
       }
 
+    // tests:
     Get("/logs/example") ~> route ~> check {
-      responseAs[String] shouldEqual "The length of the request URI is 25"
+      responseAs[String] shouldEqual "example file contents"
     }
   }
-  "0listDirectoryContents" in compileOnlySpec {
+  "listDirectoryContents-examples" in compileOnlySpec {
     val route =
       path("tmp") {
         listDirectoryContents("/tmp")
@@ -62,8 +51,53 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
           listDirectoryContents("/tmp")(renderer)
         }
 
+    // tests:
     Get("/logs/example") ~> route ~> check {
-      responseAs[String] shouldEqual "The length of the request URI is 25"
+      responseAs[String] shouldEqual "example file contents"
+    }
+  }
+  "getFromBrowseableDirectory-examples" in compileOnlySpec {
+    val route =
+      path("tmp") {
+        getFromBrowseableDirectory("/tmp")
+      }
+
+    // tests:
+    Get("/tmp") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+    }
+  }
+  "getFromBrowseableDirectories-examples" in compileOnlySpec {
+    val route =
+      path("tmp") {
+        getFromBrowseableDirectories("/main", "/backups")
+      }
+
+    // tests:
+    Get("/tmp") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+    }
+  }
+  "getFromDirectory-examples" in compileOnlySpec {
+    val route =
+      path("tmp") {
+        getFromDirectory("/tmp")
+      }
+
+    // tests:
+    Get("/tmp/example") ~> route ~> check {
+      responseAs[String] shouldEqual "example file contents"
+    }
+  }
+  "getFromResourceDirectory-examples" in compileOnlySpec {
+    val route =
+      path("examples") {
+        getFromResourceDirectory("/examples")
+      }
+
+    // tests:
+    Get("/examples/example-1") ~> route ~> check {
+      responseAs[String] shouldEqual "example file contents"
     }
   }
 

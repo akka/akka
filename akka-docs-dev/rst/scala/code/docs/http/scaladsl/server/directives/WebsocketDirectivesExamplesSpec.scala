@@ -32,6 +32,7 @@ class WebsocketDirectivesExamplesSpec extends RoutingSpec {
         handleWebsocketMessages(greeter)
       }
 
+    // tests:
     // create a testing probe representing the client-side
     val wsClient = WSProbe()
 
@@ -78,6 +79,7 @@ class WebsocketDirectivesExamplesSpec extends RoutingSpec {
           handleWebsocketMessagesForProtocol(echoService, "echo")
       }
 
+    // tests:
     val wsClient = WSProbe()
 
     // WS creates a Websocket request for testing

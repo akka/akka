@@ -3,8 +3,6 @@
 withMaterializer
 ================
 
-Runs its inner route with the given alternative ``Materializer``.
-
 Signature
 ---------
 
@@ -24,4 +22,4 @@ Example
 -------
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
-   :snippet: 0withMaterializer
+   :snippet: withMaterializer-0

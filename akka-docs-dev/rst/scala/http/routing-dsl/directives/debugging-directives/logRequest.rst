@@ -3,8 +3,6 @@
 logRequest
 ==========
 
-Logs the request.
-
 Signature
 ---------
 

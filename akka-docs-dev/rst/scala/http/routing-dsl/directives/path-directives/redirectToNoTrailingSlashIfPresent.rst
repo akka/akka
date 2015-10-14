@@ -3,11 +3,6 @@
 redirectToNoTrailingSlashIfPresent
 ==================================
 
-If the requested path does end with a trailing ``/`` character,
-redirects to the same path without that trailing slash..
-
-Opposite of :ref:`-redirectToTrailingSlashIfMissing-`.
-
 Signature
 ---------
 
@@ -16,6 +11,8 @@ Signature
 
 Description
 -----------
+If the requested path does end with a trailing ``/`` character,
+redirects to the same path without that trailing slash..
 
 Redirects the HTTP Client to the same resource yet without the trailing ``/``, in case the request contained it.
 When redirecting an HttpResponse with the given redirect response code (i.e. ``MovedPermanently`` or ``TemporaryRedirect``
@@ -26,6 +23,8 @@ Please note that the inner paths **MUST NOT** end with an explicit trailing slas
 for the re-directed-to route to match.
 
 A good read on the subject of how to deal with trailing slashes is available on `Google Webmaster Central - To Slash or not to Slash`_.
+
+See also :ref:`-redirectToTrailingSlashIfMissing-` for the opposite behaviour.
 
 .. _Google Webmaster Central - To Slash or not to Slash: http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html
 

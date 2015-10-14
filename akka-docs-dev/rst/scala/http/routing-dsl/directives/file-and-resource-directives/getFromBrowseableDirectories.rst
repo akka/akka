@@ -3,9 +3,6 @@
 getFromBrowseableDirectories
 ============================
 
-Serves the content of the given directories as a file system browser, i.e. files are sent and directories
-served as browsable listings.
-
 Signature
 ---------
 
@@ -15,9 +12,19 @@ Signature
 Description
 -----------
 
-The ``getFromBrowseableDirectories`` is a combination of serving files from the specified directories (like
-``getFromDirectory``) and listing a browseable directory with ``listDirectoryContents``. Nesting this directive beneath
-``get`` is not necessary as this directive will only respond to ``GET`` requests.
+The ``getFromBrowseableDirectories`` is a combination of serving files from the specified directories
+(like ``getFromDirectory``) and listing a browseable directory with ``listDirectoryContents``.
 
-Use ``getFromBrowseableDirectory`` to serve only one directory. Use ``getFromDirectory`` if directory browsing isn't
-required.
+Nesting this directive beneath ``get`` is not necessary as this directive will only respond to ``GET`` requests.
+
+Use ``getFromBrowseableDirectory`` to serve only one directory.
+
+Use ``getFromDirectory`` if directory browsing isn't required.
+
+For more details refer to :ref:`-getFromBrowseableDirectory-`.
+
+Example
+-------
+
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala
+   :snippet: getFromBrowseableDirectories-examples

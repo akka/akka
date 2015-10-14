@@ -17,6 +17,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
   "encodeResponse" in {
     val route = encodeResponse { complete("content") }
 
+    // tests:
     Get("/") ~> route ~> check {
       response should haveContentEncoding(identity)
     }
@@ -33,6 +34,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
   "encodeResponseWith" in {
     val route = encodeResponseWith(Gzip) { complete("content") }
 
+    // tests:
     Get("/") ~> route ~> check {
       response should haveContentEncoding(gzip)
     }
@@ -60,6 +62,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> route ~> check {
       responseAs[String] shouldEqual "Request content: 'Hello'"
     }
@@ -78,6 +81,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> route ~> check {
       responseAs[String] shouldEqual "Request content: 'Hello'"
     }
@@ -96,6 +100,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> route ~> check {
       responseAs[String] shouldEqual "Request content: 'Hello'"
     }

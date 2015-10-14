@@ -3,8 +3,6 @@
 patch
 =====
 
-Matches requests with HTTP method ``PATCH``.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Matches requests with HTTP method ``PATCH``.
 
 This directive filters the incoming request by its HTTP method. Only requests with
 method ``PATCH`` are passed on to the inner route. All others are rejected with a

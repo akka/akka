@@ -3,9 +3,6 @@
 optionalHeaderValue
 ===================
 
-Traverses the list of request headers with the specified function and extracts the first value the function returns as
-``Some(value)``.
-
 Signature
 ---------
 
@@ -14,8 +11,10 @@ Signature
 
 Description
 -----------
+Traverses the list of request headers with the specified function and extracts the first value the function returns as
+``Some(value)``.
 
-The ``optionalHeaderValue`` directive is similar to the ``headerValue`` directive but always extracts an ``Option``
+The ``optionalHeaderValue`` directive is similar to the :ref:`-headerValue-` directive but always extracts an ``Option``
 value instead of rejecting the request if no matching header could be found.
 
 Example

@@ -3,9 +3,6 @@
 complete
 ========
 
-Completes the request using the given argument(s).
-
-
 Signature
 ---------
 
@@ -26,6 +23,8 @@ The signature shown is simplified, the real signature uses magnets. [1]_
 
 Description
 -----------
+
+Completes the request using the given argument(s).
 
 ``complete`` uses the given arguments to construct a ``Route`` which simply calls ``complete`` on the ``RequestContext``
 with the respective ``HttpResponse`` instance.

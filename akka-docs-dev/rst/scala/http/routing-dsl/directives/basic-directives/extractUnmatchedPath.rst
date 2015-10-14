@@ -3,8 +3,6 @@
 extractUnmatchedPath
 ====================
 
-Extracts the unmatched path from the request context.
-
 Signature
 ---------
 
@@ -13,6 +11,7 @@ Signature
 
 Description
 -----------
+Extracts the unmatched path from the request context.
 
 The ``extractUnmatchedPath`` directive extracts the remaining path that was not yet matched by any of the :ref:`PathDirectives`
 (or any custom ones that change the unmatched path field of the request context). You can use it for building directives

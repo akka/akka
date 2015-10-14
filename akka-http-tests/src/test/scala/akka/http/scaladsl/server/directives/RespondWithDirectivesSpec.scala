@@ -13,19 +13,6 @@ import akka.http.scaladsl.server._
 
 class RespondWithDirectivesSpec extends RoutingSpec {
 
-  "overrideStatusCode" should {
-    "set the given status on successful responses" in {
-      Get() ~> {
-        overrideStatusCode(Created) { completeOk }
-      } ~> check { response shouldEqual HttpResponse(Created) }
-    }
-    "leave rejections unaffected" in {
-      Get() ~> {
-        overrideStatusCode(Created) { reject }
-      } ~> check { rejections shouldEqual Nil }
-    }
-  }
-
   val customHeader = RawHeader("custom", "custom")
   val customHeader2 = RawHeader("custom2", "custom2")
   val existingHeader = RawHeader("custom", "existing")

@@ -3,8 +3,6 @@
 pass
 ====
 
-A directive that passes the request unchanged to its inner route.
-
 Signature
 ---------
 
@@ -13,8 +11,10 @@ Signature
 
 Description
 -----------
+A directive that passes the request unchanged to its inner route.
 
-The directive is usually used as a "neutral element" when combining directives generically.
+
+It is usually used as a "neutral element" when combining directives generically.
 
 
 Example

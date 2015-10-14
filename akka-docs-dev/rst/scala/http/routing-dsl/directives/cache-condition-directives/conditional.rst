@@ -3,10 +3,6 @@
 conditional
 ===========
 
-Wraps its inner route with support for Conditional Requests as defined
-by http://tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26.
-
-
 Signature
 ---------
 
@@ -16,6 +12,10 @@ Signature
 
 Description
 -----------
+
+Wraps its inner route with support for Conditional Requests as defined
+by http://tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26.
+
 
 Depending on the given ``eTag`` and ``lastModified`` values this directive immediately responds with
 ``304 Not Modified`` or ``412 Precondition Failed`` (without calling its inner route) if the request comes with the

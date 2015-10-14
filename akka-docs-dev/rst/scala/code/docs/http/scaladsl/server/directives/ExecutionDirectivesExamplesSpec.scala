@@ -20,6 +20,7 @@ class ExecutionDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/divide/10/5") ~> route ~> check {
       responseAs[String] shouldEqual "The result is 2"
     }
@@ -39,6 +40,7 @@ class ExecutionDirectivesExamplesSpec extends RoutingSpec {
         }
       }
 
+    // tests:
     Get("/handled/existing") ~> route ~> check {
       responseAs[String] shouldEqual "This path exists"
     }

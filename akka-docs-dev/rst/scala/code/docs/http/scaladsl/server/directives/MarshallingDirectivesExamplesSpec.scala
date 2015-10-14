@@ -6,11 +6,9 @@ package docs.http.scaladsl.server
 package directives
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
 import spray.json.DefaultJsonProtocol
-import headers._
-import StatusCodes._
-import MediaTypes.`application/json`
 
 //# person-case-class
 case class Person(name: String, favoriteNumber: Int)
@@ -32,6 +30,7 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
       }
     }
 
+    // tests:
     Post("/", HttpEntity(`application/json`, """{ "name": "Jane", "favoriteNumber" : 42 }""")) ~>
       route ~> check {
         responseAs[String] shouldEqual "Person: Jane - favorite number: 42"
@@ -53,6 +52,7 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
       completeWith(instanceOf[Person]) { completionFunction => findPerson(completionFunction) }
     }
 
+    // tests:
     Get("/") ~> route ~> check {
       mediaType shouldEqual `application/json`
       responseAs[String] should include(""""name": "Jane"""")
@@ -75,6 +75,7 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
       handleWith(updatePerson)
     }
 
+    // tests:
     Post("/", HttpEntity(`application/json`, """{ "name": "Jane", "favoriteNumber" : 42 }""")) ~>
       route ~> check {
         mediaType shouldEqual `application/json`

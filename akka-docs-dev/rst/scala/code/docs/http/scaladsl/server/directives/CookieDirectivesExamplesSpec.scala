@@ -16,6 +16,7 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
         complete(s"The logged in user is '${nameCookie.value}'")
       }
 
+    // tests:
     Get("/") ~> Cookie("userName" -> "paul") ~> route ~> check {
       responseAs[String] shouldEqual "The logged in user is 'paul'"
     }
@@ -34,6 +35,7 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
         case None             => complete("No user logged in")
       }
 
+    // tests:
     Get("/") ~> Cookie("userName" -> "paul") ~> route ~> check {
       responseAs[String] shouldEqual "The logged in user is 'paul'"
     }
@@ -47,6 +49,7 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
         complete("The user was logged out")
       }
 
+    // tests:
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "The user was logged out"
       header[`Set-Cookie`] shouldEqual Some(`Set-Cookie`(HttpCookie("userName", value = "deleted", expires = Some(DateTime.MinValue))))
@@ -58,6 +61,7 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
         complete("The user was logged in")
       }
 
+    // tests:
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "The user was logged in"
       header[`Set-Cookie`] shouldEqual Some(`Set-Cookie`(HttpCookie("userName", value = "paul")))

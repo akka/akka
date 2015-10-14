@@ -16,6 +16,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"The color is '$color'")
       }
 
+    // tests:
     Get("/?color=blue") ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue'"
     }
@@ -31,6 +32,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"The color is '$color' and the background is '$backgroundColor'")
       }
 
+    // tests:
     Get("/?color=blue&backgroundColor=red") ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue' and the background is 'red'"
     }
@@ -46,6 +48,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"The color is '$color' and the background is '$backgroundStr'")
       }
 
+    // tests:
     Get("/?color=blue&backgroundColor=red") ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue' and the background is 'red'"
     }
@@ -59,6 +62,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"The color is '$color' and the background is '$backgroundColor'")
       }
 
+    // tests:
     Get("/?color=blue&backgroundColor=red") ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue' and the background is 'red'"
     }
@@ -72,6 +76,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"The color is '$color'.")
       }
 
+    // tests:
     Get("/?color=blue&action=true") ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue'."
     }
@@ -87,6 +92,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"The color is '$color' and you have $count of it.")
       }
 
+    // tests:
     Get("/?color=blue&count=42") ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue' and you have 42 of it."
     }
@@ -106,6 +112,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         }
       }
 
+    // tests:
     Get("/?color=blue") ~> route ~> check {
       responseAs[String] === "The color is 'blue' and there are no cities."
     }
@@ -128,6 +135,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         }
       }
 
+    // tests:
     Get("/?color=blue") ~> route ~> check {
       responseAs[String] === "The color is 'blue' and there are no distances."
     }
@@ -147,6 +155,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"The parameters are ${params.map(paramString).mkString(", ")}")
       }
 
+    // tests:
     Get("/?color=blue&count=42") ~> route ~> check {
       responseAs[String] shouldEqual "The parameters are color = 'blue', count = '42'"
     }
@@ -160,6 +169,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"There are parameters ${params.map(x => x._1 + " -> " + x._2.size).mkString(", ")}")
       }
 
+    // tests:
     Get("/?color=blue&count=42") ~> route ~> check {
       responseAs[String] shouldEqual "There are parameters color -> 1, count -> 1"
     }
@@ -174,6 +184,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"The parameters are ${params.map(paramString).mkString(", ")}")
       }
 
+    // tests:
     Get("/?color=blue&count=42") ~> route ~> check {
       responseAs[String] shouldEqual "The parameters are color = 'blue', count = '42'"
     }
@@ -187,6 +198,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
         complete(s"The parameters are ${names.mkString(", ")}")
       }
 
+    // tests:
     Get("/?names=Caplin") ~> route ~> check {
       responseAs[String] shouldEqual "The parameters are Caplin"
     }
