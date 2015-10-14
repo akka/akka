@@ -3,9 +3,6 @@
 decodeRequest
 =============
 
-Tries to decode the request with the specified ``Decoder`` or rejects the request with an
-``UnacceptedRequestEncodingRejection(supportedEncoding)``.
-
 Signature
 ---------
 
@@ -15,16 +12,10 @@ Signature
 Description
 -----------
 
-The ``decodeRequest`` directive is the building block for the ``decompressRequest`` directive.
-
-``decodeRequest`` and ``decompressRequest`` are related like this::
-
-    decompressRequest(Gzip)          = decodeRequest(Gzip)
-    decompressRequest(a, b, c)       = decodeRequest(a) | decodeRequest(b) | decodeRequest(c)
-    decompressRequest()              = decodeRequest(Gzip) | decodeRequest(Deflate) | decodeRequest(NoEncoding)
+Decompresses the incoming request if it is ``gzip`` or ``deflate`` compressed. Uncompressed requests are passed through untouched. If the request encoded with another encoding the request is rejected with an ``UnsupportedRequestEncodingRejection``.
 
 Example
 -------
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
-   :snippet: decodeRequest
+   :snippet: "decodeRequest"
