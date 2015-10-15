@@ -106,6 +106,53 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseIntersperse() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<String, ?> source = Source.from(Arrays.asList("0", "1", "2", "3"));
+    final Flow<String, String, ?> flow = Flow.of(String.class).intersperse("[", ",", "]");
+
+    final Future<BoxedUnit> future = source.via(flow).runWith(Sink.foreach(new Procedure<String>() { // Scala Future
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgEquals("[");
+    probe.expectMsgEquals("0");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("1");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("2");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("3");
+    probe.expectMsgEquals("]");
+    Await.ready(future, Duration.apply(200, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  public void mustBeAbleToUseIntersperseAndConcat() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Source<String, ?> source = Source.from(Arrays.asList("0", "1", "2", "3"));
+    final Flow<String, String, ?> flow = Flow.of(String.class).intersperse(",");
+
+    final Future<BoxedUnit> future = Source.single(">> ").concat(source.via(flow)).runWith(Sink.foreach(new Procedure<String>() { // Scala Future
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }), materializer);
+
+    probe.expectMsgEquals(">> ");
+    probe.expectMsgEquals("0");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("1");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("2");
+    probe.expectMsgEquals(",");
+    probe.expectMsgEquals("3");
+    Await.ready(future, Duration.apply(200, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
   public void mustBeAbleToUseTakeWhile() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final Source<Integer, ?> source = Source.from(Arrays.asList(0, 1, 2, 3));

@@ -239,6 +239,49 @@ private[akka] final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, de
 /**
  * INTERNAL API
  */
+private[akka] final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) extends StatefulStage[T, T] {
+  private var needsToEmitStart = start.isDefined
+
+  override def initial: StageState[T, T] =
+    start match {
+      case Some(initial) ⇒ firstWithInitial(initial)
+      case _             ⇒ first
+    }
+
+  def firstWithInitial(initial: T) = new StageState[T, T] {
+    override def onPush(elem: T, ctx: Context[T]) = {
+      needsToEmitStart = false
+      emit(Iterator(initial, elem), ctx, running)
+    }
+  }
+
+  def first = new StageState[T, T] {
+    override def onPush(elem: T, ctx: Context[T]) = {
+      become(running)
+      ctx.push(elem)
+    }
+  }
+
+  def running = new StageState[T, T] {
+    override def onPush(elem: T, ctx: Context[T]): SyncDirective =
+      emit(Iterator(inject, elem), ctx)
+  }
+
+  override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
+    end match {
+      case Some(e) if needsToEmitStart ⇒
+        terminationEmit(Iterator(start.get, end.get), ctx)
+      case Some(e) ⇒
+        terminationEmit(Iterator(end.get), ctx)
+      case _ ⇒
+        terminationEmit(Iterator(), ctx)
+    }
+  }
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] final case class Grouped[T](n: Int) extends PushPullStage[T, immutable.Seq[T]] {
   private val buf = {
     val b = Vector.newBuilder[T]
