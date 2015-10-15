@@ -1,7 +1,7 @@
 .. _dispatchers-java:
 
 Dispatchers
-===================
+===========
 
 An Akka ``MessageDispatcher`` is what makes Akka Actors "tick", it is the engine of the machine so to speak.
 All ``MessageDispatcher`` implementations are also an ``ExecutionContext``, which means that they can be used
@@ -34,6 +34,12 @@ is to configure the dispatcher:
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-dispatcher-config
 
+.. note::
+  Note that the ``parallelism-max`` does not set the upper bound on the total number of threads
+  allocated by the ForkJoinPool. It is a setting specifically talking about the number of *hot*
+  threads the pool keep running in order to reduce the latency of handling a new incoming task.
+  You can read more about parallelism in the JDK's `ForkJoinPool documentation`_.
+
 And here's another example that uses the "thread-pool-executor":
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
@@ -57,6 +63,8 @@ of programmatically provided parameter.
     configuration is in fact a path into your configuration.
     So in this example it's a top-level section, but you could for instance put it as a sub-section,
     where you'd use periods to denote sub-sections, like this: ``"foo.bar.my-dispatcher"``
+
+.. _ForkJoinPool documentation: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ForkJoinPool.html
 
 Types of dispatchers
 --------------------
