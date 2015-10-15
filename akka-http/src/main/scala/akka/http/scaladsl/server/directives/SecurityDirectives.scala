@@ -205,6 +205,7 @@ object Credentials {
     def verify(secret: String): Boolean
   }
 
+  // TODO this does not handle GenericHttpCredentials, is this OK?
   def apply(cred: Option[HttpCredentials]): Credentials = {
     cred match {
       case Some(BasicHttpCredentials(username, receivedSecret)) ⇒

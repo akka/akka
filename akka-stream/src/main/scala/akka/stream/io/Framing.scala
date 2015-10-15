@@ -5,11 +5,13 @@ package akka.stream.io
 
 import java.nio.ByteOrder
 
-import akka.stream.scaladsl.{ Keep, BidiFlow, Flow }
-import akka.stream.stage._
-import akka.util.{ ByteIterator, ByteStringBuilder, ByteString }
+import akka.stream.impl.JsonBracketCounting
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep }
+import akka.stream.stage.{ Context, PushPullStage, SyncDirective, _ }
+import akka.util.{ ByteIterator, ByteString }
 
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
 
 object Framing {
 
@@ -57,6 +59,57 @@ object Framing {
     Flow[ByteString].transform(() ⇒ new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder))
       .named("lengthFieldFraming")
   }
+
+  /**
+   * Returns a Flow that implements a "brace counting" based framing stage for emitting valid JSON chunks.
+   *
+   * Typical examples of data that one may want to frame using this stage include:
+   *
+   * **Very large arrays**:
+   * {{{
+   *   [{"id": 1}, {"id": 2}, [...], {"id": 999}]
+   * }}}
+   *
+   * **Multiple concatenated JSON objects** (with, or without commas between them):
+   *
+   * {{{
+   *   {"id": 1}, {"id": 2}, [...], {"id": 999}
+   * }}}
+   *
+   * The framing works independently of formatting, i.e. it will still emit valid JSON elements even if two
+   * elements are separated by multiple newlines or other whitespace characters. And of course is insensitive
+   * (and does not impact the emitting frame) to the JSON object's internal formatting.
+   *
+   * Framing raw JSON values (such as integers or strings) is supported as well.
+   *
+   * @param maximumObjectLength The maximum length of allowed frames while decoding. If the maximum length is exceeded
+   *                         this Flow will fail the stream.
+   */
+  def json(maximumObjectLength: Int): Flow[ByteString, ByteString, Unit] =
+    Flow[ByteString].transform(() ⇒ new PushPullStage[ByteString, ByteString] {
+      private val buffer = new JsonBracketCounting(maximumObjectLength)
+
+      override def onPush(elem: ByteString, ctx: Context[ByteString]): SyncDirective = {
+        buffer.offer(elem)
+        popBuffer(ctx)
+      }
+
+      override def onPull(ctx: Context[ByteString]): SyncDirective =
+        popBuffer(ctx)
+
+      override def onUpstreamFinish(ctx: Context[ByteString]) = {
+        if (buffer.isEmpty) ctx.finish() else ctx.absorbTermination()
+      }
+
+      def popBuffer(ctx: Context[ByteString]): SyncDirective = {
+        try buffer.poll() match {
+          case Some(json) ⇒ ctx.push(json)
+          case _          ⇒ if (ctx.isFinishing) ctx.finish() else ctx.pull()
+        } catch {
+          case NonFatal(ex) ⇒ ctx.fail(ex)
+        }
+      }
+    }).named("jsonFraming")
 
   /**
    * Returns a BidiFlow that implements a simple framing protocol. This is a convenience wrapper over [[Framing#lengthField]]
@@ -140,7 +193,6 @@ object Framing {
     private val firstSeparatorByte = separatorBytes.head
     private var buffer = ByteString.empty
     private var nextPossibleMatch = 0
-    private var finishing = false
 
     override def onPush(chunk: ByteString, ctx: Context[ByteString]): SyncDirective = {
       buffer ++= chunk
@@ -262,4 +314,12 @@ object Framing {
     override def postStop(): Unit = buffer = null
   }
 
+}
+
+/**
+ * Wrapper around a framing Flow (as provided by [[Framing.delimiter]] for example.
+ * Used for providing a framing implicitly for other components which may need one (such as framed entity streaming in Akka HTTP).
+ */
+trait Framing {
+  def flow: Flow[ByteString, ByteString, Unit]
 }
