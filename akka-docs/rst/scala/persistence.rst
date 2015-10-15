@@ -341,7 +341,7 @@ while still having access to the accumulated state during replays - by loading t
 The result of the ``deleteMessages`` request is signaled to the persistent actor with a ``DeleteMessagesSuccess``
 message if the delete was successful or a ``DeleteMessagesFailure`` message if it failed.
 
-Message deletion doesn't affect highest sequence number of of journal, even if all messages were deleted from journal after``deleteMessages`` invocation.
+Message deletion doesn't affect highest sequence number of of journal, even if all messages were deleted from journal after ``deleteMessages`` invocation.
 
 Persistence status handling
 ---------------------------
