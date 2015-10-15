@@ -91,7 +91,7 @@ public class SerializationDocTest {
       else if (obj instanceof User)
         return USER_MANIFEST;
       else 
-        throw new IllegalArgumentException("Unknow type: " + obj);
+        throw new IllegalArgumentException("Unknown type: " + obj);
     }
 
     // "toBinary" serializes the given object to an Array of Bytes
@@ -103,7 +103,7 @@ public class SerializationDocTest {
         else if (obj instanceof User)
           return ((User) obj).name.getBytes(UTF_8);
         else 
-          throw new IllegalArgumentException("Unknow type: " + obj);
+          throw new IllegalArgumentException("Unknown type: " + obj);
       } catch (UnsupportedEncodingException e) {
         throw new RuntimeException(e.getMessage(), e);
       }
@@ -119,7 +119,7 @@ public class SerializationDocTest {
         else if (manifest.equals(USER_MANIFEST))
           return new User(new String(bytes, UTF_8));
         else 
-          throw new IllegalArgumentException("Unknow manifest: " + manifest);
+          throw new IllegalArgumentException("Unknown manifest: " + manifest);
       } catch (UnsupportedEncodingException e) {
         throw new RuntimeException(e.getMessage(), e);
       }
