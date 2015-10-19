@@ -56,4 +56,6 @@ private[http] object ParserOutput {
   case object NeedMoreData extends MessageOutput
 
   case object NeedNextRequestMethod extends ResponseOutput
+
+  final case class RemainingBytes(bytes: ByteString) extends ResponseOutput
 }

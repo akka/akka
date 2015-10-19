@@ -26,7 +26,4 @@ private[http] abstract class UpgradeToWebsocketLowLevel extends InternalCustomHe
    * INTERNAL API (for now)
    */
   private[http] def handleFrames(handlerFlow: Flow[FrameEvent, FrameEvent, Any], subprotocol: Option[String] = None): HttpResponse
-
-  override def handleMessages(handlerFlow: Flow[Message, Message, Any], subprotocol: Option[String] = None): HttpResponse =
-    handleFrames(Websocket.stack(serverSide = true).join(handlerFlow), subprotocol)
 }

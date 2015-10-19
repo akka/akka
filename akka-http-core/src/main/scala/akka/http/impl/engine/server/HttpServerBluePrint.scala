@@ -5,8 +5,10 @@
 package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
+import java.util.Random
 
 import akka.http.ServerSettings
+import akka.http.scaladsl.model.ws.Message
 import akka.stream.io._
 import org.reactivestreams.{ Subscriber, Publisher }
 import scala.util.control.NonFatal
@@ -145,7 +147,7 @@ private[http] object HttpServerBluePrint {
 
         // protocol routing
         val protocolRouter = b.add(new WebsocketSwitchRouter())
-        val protocolMerge = b.add(new WebsocketMerge(ws.installHandler))
+        val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory))
 
         protocolRouter.out0 ~> http ~> protocolMerge.in0
         protocolRouter.out1 ~> websocket ~> protocolMerge.in1
@@ -355,7 +357,7 @@ private[http] object HttpServerBluePrint {
         }
       }
   }
-  class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit) extends FlexiMerge[ByteString, FanInShape2[ResponseRenderingOutput, ByteString, ByteString]](new FanInShape2("websocketMerge"), Attributes.name("websocketMerge")) {
+  class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random) extends FlexiMerge[ByteString, FanInShape2[ResponseRenderingOutput, ByteString, ByteString]](new FanInShape2("websocketMerge"), Attributes.name("websocketMerge")) {
     def createMergeLogic(s: FanInShape2[ResponseRenderingOutput, ByteString, ByteString]): MergeLogic[ByteString] =
       new MergeLogic[ByteString] {
         var websocketHandlerWasInstalled: Boolean = false
@@ -370,7 +372,13 @@ private[http] object HttpServerBluePrint {
               ctx.emit(bytes); SameState
             case ResponseRenderingOutput.SwitchToWebsocket(responseBytes, handlerFlow) ⇒
               ctx.emit(responseBytes)
-              installHandler(handlerFlow)
+
+              val frameHandler = handlerFlow match {
+                case Left(frameHandler) ⇒ frameHandler
+                case Right(messageHandler) ⇒
+                  Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory).join(messageHandler)
+              }
+              installHandler(frameHandler)
               ctx.changeCompletionHandling(defaultCompletionHandling)
               websocketHandlerWasInstalled = true
               websocket
