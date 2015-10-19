@@ -233,16 +233,19 @@ object Source extends SourceApply {
   /**
    * Create a `Source` that will continually emit the given element.
    */
-  def repeat[T](element: T): Source[T, Unit] =
+  def repeat[T](element: T): Source[T, Unit] = {
+    ReactiveStreamsCompliance.requireNonNullElement(element)
     new Source(
       new PublisherSource(
         SingleElementPublisher(
           new immutable.Iterable[T] {
             override val iterator: Iterator[T] = Iterator.continually(element)
+
             override def toString: String = "repeat(" + element + ")"
           }, "RepeatSource"),
         DefaultAttributes.repeat,
         shape("RepeatSource"))).mapConcat(id)
+  }
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
