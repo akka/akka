@@ -4,6 +4,9 @@
 
 package akka.http
 
+import java.util.Random
+
+import akka.http.impl.engine.ws.Randoms
 import com.typesafe.config.Config
 
 import scala.language.implicitConversions
@@ -31,6 +34,7 @@ final case class ServerSettings(
   backlog: Int,
   socketOptions: immutable.Traversable[SocketOption],
   defaultHostHeader: Host,
+  websocketRandomFactory: () ⇒ Random,
   parserSettings: ParserSettings) {
 
   require(0 < maxConnections, "max-connections must be > 0")
@@ -65,6 +69,7 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
           val info = result.errors.head.withSummary("Configured `default-host-header` is illegal")
           throw new ConfigurationException(info.formatPretty)
       },
+    Randoms.SecureRandomInstances, // can currently only be overridden from code
     ParserSettings.fromSubConfig(root, c.getConfig("parsing")))
 
   def apply(optionalSettings: Option[ServerSettings])(implicit actorRefFactory: ActorRefFactory): ServerSettings =

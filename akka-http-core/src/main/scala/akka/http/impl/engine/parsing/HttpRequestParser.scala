@@ -11,7 +11,7 @@ import scala.annotation.tailrec
 import akka.actor.ActorRef
 import akka.stream.stage.{ Context, PushPullStage }
 import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.{ Keep, Source }
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.http.impl.engine.ws.Handshake
 import akka.http.impl.model.parser.CharacterClasses
@@ -129,7 +129,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
 
         val allHeaders =
           if (method == HttpMethods.GET) {
-            Handshake.isWebsocketUpgrade(headers, hostHeaderPresent) match {
+            Handshake.Server.websocketUpgrade(headers, hostHeaderPresent) match {
               case Some(upgrade) ⇒ upgrade :: allHeaders0
               case None          ⇒ allHeaders0
             }
