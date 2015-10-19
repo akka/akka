@@ -316,6 +316,23 @@ private[http] object StreamUtils {
     }
     Flow[T].transformMaterializing(newForeachStage)
   }
+
+  /**
+   * Similar to Source.lazyEmpty but doesn't rely on materialization. Can only be used once.
+   */
+  trait OneTimeValve {
+    def source[T]: Source[T, Unit]
+    def open(): Unit
+  }
+  object OneTimeValve {
+    def apply(): OneTimeValve = new OneTimeValve {
+      val promise = Promise[Unit]()
+      val _source = Source(promise.future).drop(1) // we are only interested in the completion event
+
+      def source[T]: Source[T, Unit] = _source.asInstanceOf[Source[T, Unit]] // safe, because source won't generate any elements
+      def open(): Unit = promise.success(())
+    }
+  }
 }
 
 /**

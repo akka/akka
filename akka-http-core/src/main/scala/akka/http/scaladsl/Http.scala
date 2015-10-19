@@ -5,8 +5,9 @@
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
+import java.security.SecureRandom
 import java.util.concurrent.ConcurrentHashMap
-import java.util.{ Collection ⇒ JCollection }
+import java.util.{ Collection ⇒ JCollection, Random }
 import javax.net.ssl.{ SSLContext, SSLParameters }
 
 import akka.actor._
@@ -15,13 +16,16 @@ import akka.http._
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.util.{ ReadTheDocumentationException, Java6Compat, StreamUtils }
+import akka.http.impl.engine.ws.WebsocketClientBlueprint
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
+import akka.http.scaladsl.model.ws.{ WebsocketRequest, Message }
 import akka.http.scaladsl.util.FastFuture
 import akka.japi
 import akka.stream.Materializer
 import akka.stream.io._
 import akka.stream.scaladsl._
+import akka.util.ByteString
 import com.typesafe.config.Config
 
 import scala.collection.immutable
@@ -207,11 +211,17 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                                   log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     val hostHeader = if (port == (if (httpsContext.isEmpty) 80 else 443)) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)
+    layer.joinMat(_outgoingTlsConnectionLayer(host, port, localAddress, settings, httpsContext, log))(Keep.right)
+  }
+
+  private def _outgoingTlsConnectionLayer(host: String, port: Int, localAddress: Option[InetSocketAddress],
+                                          settings: ClientConnectionSettings, httpsContext: Option[HttpsContext],
+                                          log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
     val tlsStage = sslTlsStage(httpsContext, Client, Some(host -> port))
     val transportFlow = Tcp().outgoingConnection(new InetSocketAddress(host, port), localAddress,
       settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
 
-    layer.atop(tlsStage).joinMat(transportFlow) { (_, tcpConnFuture) ⇒
+    tlsStage.joinMat(transportFlow) { (_, tcpConnFuture) ⇒
       import system.dispatcher
       tcpConnFuture map { tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress) }
     }
@@ -407,6 +417,57 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     }
 
   /**
+   * Constructs a [[WebsocketClientLayer]] stage using the configured default [[ClientConnectionSettings]],
+   * configured using the `akka.http.client` config section.
+   *
+   * The layer is not reusable and must only be materialized once.
+   */
+  def websocketClientLayer(request: WebsocketRequest,
+                           settings: ClientConnectionSettings = ClientConnectionSettings(system),
+                           log: LoggingAdapter = system.log): Http.WebsocketClientLayer =
+    WebsocketClientBlueprint(request, settings, log)
+
+  /**
+   * Constructs a flow that once materialized establishes a Websocket connection to the given Uri.
+   *
+   * The layer is not reusable and must only be materialized once.
+   */
+  def websocketClientFlow(request: WebsocketRequest,
+                          localAddress: Option[InetSocketAddress] = None,
+                          settings: ClientConnectionSettings = ClientConnectionSettings(system),
+                          httpsContext: Option[HttpsContext] = None,
+                          log: LoggingAdapter = system.log): Flow[Message, Message, Future[WebsocketUpgradeResponse]] = {
+    import request.uri
+    require(uri.isAbsolute, s"Websocket request URI must be absolute but was '$uri'")
+
+    val ctx = uri.scheme match {
+      case "ws"  ⇒ None
+      case "wss" ⇒ effectiveHttpsContext(httpsContext)
+      case scheme @ _ ⇒
+        throw new IllegalArgumentException(s"Illegal URI scheme '$scheme' in '$uri' for Websocket request. " +
+          s"Websocket requests must use either 'ws' or 'wss'")
+    }
+    val host = uri.authority.host.address
+    val port = uri.effectivePort
+
+    websocketClientLayer(request, settings, log)
+      .joinMat(_outgoingTlsConnectionLayer(host, port, localAddress, settings, ctx, log))(Keep.left)
+  }
+
+  /**
+   * Runs a single Websocket conversation given a Uri and a flow that represents the client side of the
+   * Websocket conversation.
+   */
+  def singleWebsocketRequest[T](request: WebsocketRequest,
+                                clientFlow: Flow[Message, Message, T],
+                                localAddress: Option[InetSocketAddress] = None,
+                                settings: ClientConnectionSettings = ClientConnectionSettings(system),
+                                httpsContext: Option[HttpsContext] = None,
+                                log: LoggingAdapter = system.log)(implicit mat: Materializer): (Future[WebsocketUpgradeResponse], T) =
+    websocketClientFlow(request, localAddress, settings, httpsContext, log)
+      .joinMat(clientFlow)(Keep.both).run()
+
+  /**
    * Triggers an orderly shutdown of all host connections pools currently maintained by the [[ActorSystem]].
    * The returned future is completed when all pools that were live at the time of this method call
    * have completed their shutdown process.
@@ -563,12 +624,26 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   //#
 
   /**
+   * The type of the client-side Websocket layer as a stand-alone BidiFlow
+   * that can be put atop the TCP layer to form an HTTP client.
+   *
+   * {{{
+   *                +------+
+   * ws.Message   ~>|      |~> SslTlsOutbound
+   *                | bidi |
+   * ws.Message   <~|      |<~ SslTlsInbound
+   *                +------+
+   * }}}
+   */
+  type WebsocketClientLayer = BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, Future[WebsocketUpgradeResponse]]
+
+  /**
    * Represents a prospective HTTP server binding.
    *
    * @param localAddress  The local address of the endpoint bound by the materialization of the `connections` [[Source]]
    *
    */
-  case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
+  final case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
 
     /**
      * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
@@ -582,7 +657,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   /**
    * Represents one accepted incoming HTTP connection.
    */
-  case class IncomingConnection(
+  final case class IncomingConnection(
     localAddress: InetSocketAddress,
     remoteAddress: InetSocketAddress,
     flow: Flow[HttpResponse, HttpRequest, Unit]) {
@@ -612,12 +687,21 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   /**
    * Represents a prospective outgoing HTTP connection.
    */
-  case class OutgoingConnection(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress)
+  final case class OutgoingConnection(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress)
+
+  /**
+   * Represents the response to a websocket upgrade request. Can either be [[ValidUpgrade]] or [[InvalidUpgradeResponse]].
+   */
+  sealed trait WebsocketUpgradeResponse {
+    def response: HttpResponse
+  }
+  final case class ValidUpgrade(response: HttpResponse, chosenSubprotocol: Option[String]) extends WebsocketUpgradeResponse
+  final case class InvalidUpgradeResponse(response: HttpResponse, cause: String) extends WebsocketUpgradeResponse
 
   /**
    * Represents a connection pool to a specific target host and pool configuration.
    */
-  case class HostConnectionPool(setup: HostConnectionPoolSetup)(
+  final case class HostConnectionPool(setup: HostConnectionPoolSetup)(
     private[http] val gatewayFuture: Future[PoolGateway]) extends javadsl.HostConnectionPool { // enable test access
 
     /**
@@ -641,11 +725,11 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 import scala.collection.JavaConverters._
 
 //# https-context-impl
-case class HttpsContext(sslContext: SSLContext,
-                        enabledCipherSuites: Option[immutable.Seq[String]] = None,
-                        enabledProtocols: Option[immutable.Seq[String]] = None,
-                        clientAuth: Option[ClientAuth] = None,
-                        sslParameters: Option[SSLParameters] = None)
+final case class HttpsContext(sslContext: SSLContext,
+                              enabledCipherSuites: Option[immutable.Seq[String]] = None,
+                              enabledProtocols: Option[immutable.Seq[String]] = None,
+                              clientAuth: Option[ClientAuth] = None,
+                              sslParameters: Option[SSLParameters] = None)
   //#
   extends akka.http.javadsl.HttpsContext {
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)

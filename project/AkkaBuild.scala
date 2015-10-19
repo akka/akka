@@ -1627,6 +1627,7 @@ object Dependencies {
   val httpCore = deps(
     // FIXME switch back to project dependency
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
+    sprayJson % "test", // for WS Autobahn test metadata
     Dependencies.Compile.quasiquotes % "provided", // needed to depend on akka-parsing
     Test.junitIntf, Test.junit, Test.scalatest)
 

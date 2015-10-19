@@ -8,14 +8,17 @@ import java.lang.Iterable
 import java.net.InetSocketAddress
 import java.security.MessageDigest
 import java.util
+
+import scala.reflect.ClassTag
+import scala.util.Try
 import scala.annotation.tailrec
 import scala.collection.immutable
+
 import akka.parboiled2.util.Base64
+
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model._
-
-import scala.reflect.ClassTag
 
 sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
   val name = getClass.getSimpleName.replace("$minus", "-").dropRight(1) // trailing $
@@ -102,6 +105,7 @@ sealed abstract case class Expect private () extends ModeledHeader {
 
 // http://tools.ietf.org/html/rfc7230#section-5.4
 object Host extends ModeledCompanion[Host] {
+  def apply(authority: Uri.Authority): Host = apply(authority.host, authority.port)
   def apply(address: InetSocketAddress): Host = apply(address.getHostStringJava6Compatible, address.getPort)
   def apply(host: String): Host = apply(host, 0)
   def apply(host: String, port: Int): Host = apply(Uri.Host(host), port)
@@ -626,7 +630,12 @@ private[http] final case class `Sec-WebSocket-Extensions`(extensions: immutable.
 /**
  * INTERNAL API
  */
-private[http] object `Sec-WebSocket-Key` extends ModeledCompanion[`Sec-WebSocket-Key`]
+private[http] object `Sec-WebSocket-Key` extends ModeledCompanion[`Sec-WebSocket-Key`] {
+  def apply(keyBytes: Array[Byte]): `Sec-WebSocket-Key` = {
+    require(keyBytes.length == 16, s"Sec-WebSocket-Key keyBytes must have length 16 but had ${keyBytes.length}")
+    `Sec-WebSocket-Key`(Base64.rfc2045().encodeToString(keyBytes, false))
+  }
+}
 /**
  * INTERNAL API
  */
@@ -634,6 +643,12 @@ private[http] final case class `Sec-WebSocket-Key`(key: String) extends ModeledH
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ key
 
   protected def companion = `Sec-WebSocket-Key`
+
+  /**
+   * Checks if the key value is valid according to the Websocket specification, i.e.
+   * if the String is a Base64 representation of 16 bytes.
+   */
+  def isValid: Boolean = Try(Base64.rfc2045().decode(key)).toOption.exists(_.length == 16)
 }
 
 // http://tools.ietf.org/html/rfc6455#section-4.3
