@@ -82,6 +82,8 @@ class RemoteConfigSpec extends AkkaSpec(
       import s._
 
       ConnectionTimeout should ===(15.seconds)
+      ConnectionTimeout should ===(new AkkaProtocolSettings(RARP(system).provider.remoteSettings.config)
+        .HandshakeTimeout)
       WriteBufferHighWaterMark should ===(None)
       WriteBufferLowWaterMark should ===(None)
       SendBufferSize should ===(Some(256000))
