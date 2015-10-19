@@ -62,9 +62,17 @@ object AkkaBuild extends Build {
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       }
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
+    aggregate = Seq[ProjectReference](actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
-      slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf)
+      slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, 
+      multiNodeTestkit, benchJmh, typed, protobuf) ++
+      (
+        if (System.getProperty("akka.build.includeSamples", "false").toBoolean) Seq(samples) else Seq.empty[sbt.Project]
+      ).map(sbt.Project.projectToRef) ++
+      (
+        if (System.getProperty("akka.build.includeContrib", "false").toBoolean) Seq(contrib) else Seq.empty[sbt.Project]
+      ).map(sbt.Project.projectToRef) // implicit conversion does not apply on this collection for some reason (due to ++)
+        
   )
 
   lazy val akkaScalaNightly = Project(
