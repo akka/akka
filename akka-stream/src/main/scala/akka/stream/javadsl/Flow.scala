@@ -5,7 +5,8 @@ package akka.stream.javadsl
 
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
-import akka.stream.impl.StreamLayout
+import akka.stream.impl.Stages.Intersperse
+import akka.stream.impl.{ ReactiveStreamsCompliance, StreamLayout }
 import akka.stream.{ scaladsl, _ }
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
@@ -405,6 +406,65 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    */
   def fold[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.fold(zero)(f.apply))
+
+  /**
+   * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
+   * injects a separator between a List's elements.
+   *
+   * Additionally can inject start and end marker elements to stream.
+   *
+   * Examples:
+   *
+   * {{{
+   * Source<Integer, ?> nums = Source.from(Arrays.asList(0, 1, 2, 3));
+   * nums.intersperse(",");            //   1 , 2 , 3
+   * nums.intersperse("[", ",", "]");  // [ 1 , 2 , 3 ]
+   * }}}
+   *
+   * In case you want to only prepend or only append an element (yet still use the `intercept` feature
+   * to inject a separator between elements, you may want to use the following pattern instead of the 3-argument
+   * version of intersperse (See [[Source.concat]] for semantics details):
+   *
+   * {{{
+   * Source.single(">> ").concat(flow.intersperse(","))
+   * flow.intersperse(",").concat(Source.single("END"))
+   * }}}
+   *
+   * '''Emits when''' upstream emits (or before with the `start` element if provided)
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def intersperse[T >: Out](start: T, inject: T, end: T): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.intersperse(start, inject, end))
+
+  /**
+   * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
+   * injects a separator between a List's elements.
+   *
+   * Additionally can inject start and end marker elements to stream.
+   *
+   * Examples:
+   *
+   * {{{
+   * Source<Integer, ?> nums = Source.from(Arrays.asList(0, 1, 2, 3));
+   * nums.intersperse(",");            //   1 , 2 , 3
+   * nums.intersperse("[", ",", "]");  // [ 1 , 2 , 3 ]
+   * }}}
+   *
+   * '''Emits when''' upstream emits (or before with the `start` element if provided)
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def intersperse[T >: Out](inject: T): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.intersperse(inject))
 
   /**
    * Chunk up this stream into groups of elements received within a time window,

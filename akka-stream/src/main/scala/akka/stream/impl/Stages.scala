@@ -36,6 +36,7 @@ private[stream] object Stages {
     val dropWhile = name("dropWhile")
     val scan = name("scan")
     val fold = name("fold")
+    val intersperse = name("intersperse")
     val buffer = name("buffer")
     val conflate = name("conflate")
     val expand = name("expand")
@@ -173,6 +174,10 @@ private[stream] object Stages {
   }
 
   final case class Fold(zero: Any, f: (Any, Any) ⇒ Any, attributes: Attributes = fold) extends StageModule {
+    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  }
+
+  final case class Intersperse(start: Option[Any], inject: Any, end: Option[Any], attributes: Attributes = intersperse) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }
 

@@ -26,6 +26,8 @@ private[akka] case object EmptyPublisher extends Publisher[Nothing] {
  * INTERNAL API
  */
 private[akka] final case class ErrorPublisher(t: Throwable, name: String) extends Publisher[Nothing] {
+  ReactiveStreamsCompliance.requireNonNullElement(t)
+
   import ReactiveStreamsCompliance._
   override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit =
     try {
@@ -41,6 +43,8 @@ private[akka] final case class ErrorPublisher(t: Throwable, name: String) extend
 
 private[akka] final case class SingleElementPublisher[T](value: T, name: String) extends Publisher[T] {
   import ReactiveStreamsCompliance._
+
+  requireNonNullElement(value)
 
   private[this] class SingleElementSubscription(subscriber: Subscriber[_ >: T]) extends Subscription {
     private[this] var done: Boolean = false
