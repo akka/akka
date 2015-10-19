@@ -6,13 +6,9 @@ package akka.http.impl.engine.ws
 
 import java.util.Random
 
-import akka.http.impl.engine.parsing.ParserOutput.MessageStartError
-
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
-
-import akka.parboiled2.util.Base64
 
 import akka.stream.scaladsl.Flow
 
@@ -91,12 +87,10 @@ private[http] object Handshake {
       // FIXME See #18709
       // val extensions = find[`Sec-WebSocket-Extensions`]
 
-      def isValidKey(key: String): Boolean = Base64.rfc2045().decode(key).length == 16
-
       if (upgrade.exists(_.hasWebsocket) &&
         connection.exists(_.hasUpgrade) &&
         version.exists(_.hasVersion(CurrentWebsocketVersion)) &&
-        key.exists(k ⇒ isValidKey(k.key))) {
+        key.exists(k ⇒ k.isValid)) {
 
         val header = new UpgradeToWebsocketLowLevel {
           def requestedProtocols: Seq[String] = clientSupportedSubprotocols
@@ -156,7 +150,7 @@ private[http] object Handshake {
     def buildRequest(uri: Uri, extraHeaders: immutable.Seq[HttpHeader], subprotocols: Seq[String], random: Random): (HttpRequest, `Sec-WebSocket-Key`) = {
       val keyBytes = new Array[Byte](16)
       random.nextBytes(keyBytes)
-      val key = `Sec-WebSocket-Key`(Base64.rfc2045().encodeToString(keyBytes, false))
+      val key = `Sec-WebSocket-Key`(keyBytes)
       val protocol =
         if (subprotocols.nonEmpty) `Sec-WebSocket-Protocol`(subprotocols) :: Nil
         else Nil
