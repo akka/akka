@@ -116,6 +116,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
     }
     "prevent the selection of an unavailable subprotocol" in pending
     "reject invalid Websocket handshakes" - {
+      "missing `Upgrade: websocket` header" in pending
       "missing `Connection: upgrade` header" in pending
       "missing `Sec-WebSocket-Key header" in pending
       "`Sec-WebSocket-Key` with wrong amount of base64 encoded data" in pending

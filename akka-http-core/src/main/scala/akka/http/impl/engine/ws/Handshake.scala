@@ -6,6 +6,8 @@ package akka.http.impl.engine.ws
 
 import java.util.Random
 
+import akka.http.impl.engine.parsing.ParserOutput.MessageStartError
+
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
@@ -29,57 +31,64 @@ private[http] object Handshake {
   val CurrentWebsocketVersion = 13
 
   object Server {
-    /*
-      From: http://tools.ietf.org/html/rfc6455#section-4.2.1
-
-      1.   An HTTP/1.1 or higher GET request, including a "Request-URI"
-            [RFC2616] that should be interpreted as a /resource name/
-            defined in Section 3 (or an absolute HTTP/HTTPS URI containing
-            the /resource name/).
-
-       2.   A |Host| header field containing the server's authority.
-
-       3.   An |Upgrade| header field containing the value "websocket",
-            treated as an ASCII case-insensitive value.
-
-       4.   A |Connection| header field that includes the token "Upgrade",
-            treated as an ASCII case-insensitive value.
-
-       5.   A |Sec-WebSocket-Key| header field with a base64-encoded (see
-            Section 4 of [RFC4648]) value that, when decoded, is 16 bytes in
-            length.
-
-       6.   A |Sec-WebSocket-Version| header field, with a value of 13.
-
-       7.   Optionally, an |Origin| header field.  This header field is sent
-            by all browser clients.  A connection attempt lacking this
-            header field SHOULD NOT be interpreted as coming from a browser
-            client.
-
-       8.   Optionally, a |Sec-WebSocket-Protocol| header field, with a list
-            of values indicating which protocols the client would like to
-            speak, ordered by preference.
-
-       9.   Optionally, a |Sec-WebSocket-Extensions| header field, with a
-            list of values indicating which extensions the client would like
-            to speak.  The interpretation of this header field is discussed
-            in Section 9.1.
-    */
-    def isWebsocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): Option[UpgradeToWebsocket] = {
+    /**
+     *  Validates a client Websocket handshake. Returns either `Right(UpgradeToWebsocket)` or
+     *  `Left(MessageStartError)`.
+     *
+     *  From: http://tools.ietf.org/html/rfc6455#section-4.2.1
+     *
+     *  1.   An HTTP/1.1 or higher GET request, including a "Request-URI"
+     *        [RFC2616] that should be interpreted as a /resource name/
+     *        defined in Section 3 (or an absolute HTTP/HTTPS URI containing
+     *        the /resource name/).
+     *
+     *   2.   A |Host| header field containing the server's authority.
+     *
+     *   3.   An |Upgrade| header field containing the value "websocket",
+     *        treated as an ASCII case-insensitive value.
+     *
+     *   4.   A |Connection| header field that includes the token "Upgrade",
+     *        treated as an ASCII case-insensitive value.
+     *
+     *   5.   A |Sec-WebSocket-Key| header field with a base64-encoded (see
+     *        Section 4 of [RFC4648]) value that, when decoded, is 16 bytes in
+     *        length.
+     *
+     *   6.   A |Sec-WebSocket-Version| header field, with a value of 13.
+     *
+     *   7.   Optionally, an |Origin| header field.  This header field is sent
+     *        by all browser clients.  A connection attempt lacking this
+     *        header field SHOULD NOT be interpreted as coming from a browser
+     *        client.
+     *
+     *   8.   Optionally, a |Sec-WebSocket-Protocol| header field, with a list
+     *        of values indicating which protocols the client would like to
+     *        speak, ordered by preference.
+     *
+     *   9.   Optionally, a |Sec-WebSocket-Extensions| header field, with a
+     *        list of values indicating which extensions the client would like
+     *        to speak.  The interpretation of this header field is discussed
+     *        in Section 9.1.
+     */
+    def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): Option[UpgradeToWebsocket] = {
       def find[T <: HttpHeader: ClassTag]: Option[T] =
         headers.collectFirst {
           case t: T ⇒ t
         }
 
+      // Host header is validated in general HTTP logic
       // val host = find[Host]
       val upgrade = find[Upgrade]
       val connection = find[Connection]
       val key = find[`Sec-WebSocket-Key`]
       val version = find[`Sec-WebSocket-Version`]
+      // Origin header is optional and, if required, should be validated
+      // on higher levels (routing, application logic)
       // val origin = find[Origin]
       val protocol = find[`Sec-WebSocket-Protocol`]
-      val supportedProtocols = protocol.toList.flatMap(_.protocols)
-      // FIXME: support extensions
+      val clientSupportedSubprotocols = protocol.toList.flatMap(_.protocols)
+      // Extension support is optional in WS and currently unsupported.
+      // FIXME See #18709
       // val extensions = find[`Sec-WebSocket-Extensions`]
 
       def isValidKey(key: String): Boolean = Base64.rfc2045().decode(key).length == 16
@@ -90,10 +99,10 @@ private[http] object Handshake {
         key.exists(k ⇒ isValidKey(k.key))) {
 
         val header = new UpgradeToWebsocketLowLevel {
-          def requestedProtocols: Seq[String] = supportedProtocols
+          def requestedProtocols: Seq[String] = clientSupportedSubprotocols
 
           def handle(handler: Either[Flow[FrameEvent, FrameEvent, Any], Flow[Message, Message, Any]], subprotocol: Option[String]): HttpResponse = {
-            require(subprotocol.forall(chosen ⇒ supportedProtocols.contains(chosen)),
+            require(subprotocol.forall(chosen ⇒ clientSupportedSubprotocols.contains(chosen)),
               s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
             buildResponse(key.get, handler, subprotocol)
           }
@@ -228,7 +237,6 @@ private[http] object Handshake {
         }
 
       def compare(candidate: HttpHeader, caseInsensitive: Boolean): Option[HttpHeader] ⇒ Boolean = {
-
         case Some(`candidate`) if !caseInsensitive ⇒ true
         case Some(header) if caseInsensitive && candidate.value.toRootLowerCase == header.value.toRootLowerCase ⇒ true
         case _ ⇒ false
