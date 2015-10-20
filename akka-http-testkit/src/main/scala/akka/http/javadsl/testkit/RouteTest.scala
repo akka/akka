@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import akka.stream.Materializer
 import akka.http.scaladsl.server
 import akka.http.javadsl.model.HttpRequest
+import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.server.{ HttpApp, AllDirectives, Route, Directives }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.impl.server.RouteImplementation
@@ -34,13 +35,27 @@ abstract class RouteTest extends AllDirectives {
 
   protected def awaitDuration: FiniteDuration = 500.millis
 
-  def runRoute(route: Route, request: HttpRequest): TestResponse =
-    runScalaRoute(ScalaRoute.seal(RouteImplementation(route)), request)
-  def runRouteUnSealed(route: Route, request: HttpRequest): TestResponse =
-    runScalaRoute(RouteImplementation(route), request)
+  protected def defaultHostInfo: DefaultHostInfo = DefaultHostInfo(Host.create("example.com"), false)
 
-  private def runScalaRoute(scalaRoute: ScalaRoute, request: HttpRequest): TestResponse = {
-    val result = scalaRoute(new server.RequestContextImpl(request.asScala, NoLogging, RoutingSettings(system)))
+  def runRoute(route: Route, request: HttpRequest): TestResponse =
+    runRoute(route, request, defaultHostInfo)
+
+  def runRoute(route: Route, request: HttpRequest, defaultHostInfo: DefaultHostInfo): TestResponse =
+    runScalaRoute(ScalaRoute.seal(RouteImplementation(route)), request, defaultHostInfo)
+
+  def runRouteUnSealed(route: Route, request: HttpRequest): TestResponse =
+    runRouteUnSealed(route, request, defaultHostInfo)
+
+  def runRouteUnSealed(route: Route, request: HttpRequest, defaultHostInfo: DefaultHostInfo): TestResponse =
+    runScalaRoute(RouteImplementation(route), request, defaultHostInfo)
+
+  private def runScalaRoute(scalaRoute: ScalaRoute, request: HttpRequest, defaultHostInfo: DefaultHostInfo): TestResponse = {
+    val effectiveRequest = request.asScala
+      .withEffectiveUri(
+        securedConnection = defaultHostInfo.isSecuredConnection(),
+        defaultHostHeader = defaultHostInfo.getHost().asScala)
+
+    val result = scalaRoute(new server.RequestContextImpl(effectiveRequest, NoLogging, RoutingSettings(system)))
 
     result.awaitResult(awaitDuration) match {
       case RouteResult.Complete(response) ⇒ createTestResponse(response)
