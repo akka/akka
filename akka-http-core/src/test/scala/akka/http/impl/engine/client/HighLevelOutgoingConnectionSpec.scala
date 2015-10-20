@@ -6,14 +6,11 @@ package akka.http.impl.engine.client
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
-
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.model._
-import akka.http.impl.util._
 
 class HighLevelOutgoingConnectionSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
@@ -68,6 +65,22 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .runFold(0)(_ + _)
 
       Await.result(result, 10.seconds) shouldEqual C * N * (N + 1) / 2
+    }
+
+    "catch response stream truncation" in {
+      val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
+      Http().bindAndHandleSync({
+        case HttpRequest(_, Uri.Path("/b"), _, _, _) ⇒ HttpResponse(headers = List(headers.Connection("close")))
+        case _                                       ⇒ HttpResponse()
+      }, serverHostName, serverPort)
+
+      val x = Source(List("/a", "/b", "/c"))
+        .map(path ⇒ HttpRequest(uri = path))
+        .via(Http().outgoingConnection(serverHostName, serverPort))
+        .grouped(10)
+        .runWith(Sink.head)
+
+      a[One2OneBidiFlow.OutputTruncationException.type] should be thrownBy Await.result(x, 1.second)
     }
   }
 }
