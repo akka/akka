@@ -49,14 +49,14 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
         TestRoute r = testRoute(new TestHandler().createRoute());
         r.run(HttpRequest.GET("/test"))
             .assertStatusCode(200)
-            .assertEntity("This was a GET request to /test");
+            .assertEntity("This was a GET request to http://example.com/test");
 
         r.run(HttpRequest.POST("/test"))
             .assertStatusCode(404);
 
         r.run(HttpRequest.POST("/abc"))
             .assertStatusCode(200)
-            .assertEntity("This was a POST request to /abc");
+            .assertEntity("This was a POST request to http://example.com/abc");
         //#simple-handler-example-full
     }
 
