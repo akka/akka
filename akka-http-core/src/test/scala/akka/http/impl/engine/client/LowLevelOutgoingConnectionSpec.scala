@@ -238,7 +238,8 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         val InvalidContentLengthException(info) = netOut.expectError()
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to 2 bytes less"
         netInSub.sendComplete()
-        responses.expectComplete()
+        responsesSub.request(1)
+        responses.expectError(One2OneBidiFlow.OutputTruncationException)
       }
 
       "catch the entity stream being longer than the Content-Length" in new TestSetup {
@@ -263,7 +264,8 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         val InvalidContentLengthException(info) = netOut.expectError()
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to more bytes"
         netInSub.sendComplete()
-        responses.expectComplete()
+        responsesSub.request(1)
+        responses.expectError(One2OneBidiFlow.OutputTruncationException)
       }
 
       "catch illegal response starts" in new TestSetup {
