@@ -93,16 +93,25 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
         .expectComplete() // f-4 not seen
     }
 
-    "return empty stream for cleaned journal" in {
-      val ref = setup("g")
+    "return empty stream for cleaned journal from 0 to MaxLong" in {
+      val ref = setup("g1")
 
       ref ! TestActor.DeleteCmd(3L)
       expectMsg(s"${3L}-deleted")
 
-      val src = queries.currentEventsByPersistenceId("g", 0L, Long.MaxValue)
+      val src = queries.currentEventsByPersistenceId("g1", 0L, Long.MaxValue)
       src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
     }
 
+    "return empty stream for cleaned journal from 0 to 0" in {
+      val ref = setup("g2")
+
+      ref ! TestActor.DeleteCmd(3L)
+      expectMsg(s"${3L}-deleted")
+
+      val src = queries.currentEventsByPersistenceId("g2", 0L, 0L)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
 
     "return remaining values after partial journal cleanup" in {
       val ref = setup("h")
@@ -120,6 +129,28 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       val src = queries.currentEventsByPersistenceId("i", 0L, Long.MaxValue)
       src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
     }
+
+    "return empty stream for journal from 0 to 0" in {
+      val ref = setup("k1")
+
+      val src = queries.currentEventsByPersistenceId("k1", 0L, 0L)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
+
+    "return empty stream for empty journal from 0 to 0" in {
+      val ref = setupEmpty("k2")
+
+      val src = queries.currentEventsByPersistenceId("k2", 0L, 0L)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
+
+    "return empty stream for journal from seqNo greater than highestSeqNo" in {
+      val ref = setup("l")
+
+      val src = queries.currentEventsByPersistenceId("l", 4L, 3L)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
+
   }
 
   "Leveldb live query EventsByPersistenceId" must {
