@@ -26,6 +26,8 @@ trait ByteStringSinkProbe {
   def expectComplete(): Unit
   def expectError(): Throwable
   def expectError(cause: Throwable): Unit
+
+  def request(n: Long): Unit
 }
 
 object ByteStringSinkProbe {
@@ -63,5 +65,7 @@ object ByteStringSinkProbe {
       def expectComplete(): Unit = probe.expectComplete()
       def expectError(): Throwable = probe.expectError()
       def expectError(cause: Throwable): Unit = probe.expectError(cause)
+
+      def request(n: Long): Unit = probe.request(n)
     }
 }
