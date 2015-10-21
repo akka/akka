@@ -38,7 +38,7 @@ object ContentTypeRange {
 }
 
 abstract case class ContentType private (mediaType: MediaType, definedCharset: Option[HttpCharset]) extends jm.ContentType with ValueRenderable {
-  def render[R <: Rendering](r: R): r.type = definedCharset match {
+  private[http] def render[R <: Rendering](r: R): r.type = definedCharset match {
     case Some(cs) ⇒ r ~~ mediaType ~~ ContentType.`; charset=` ~~ cs
     case _        ⇒ r ~~ mediaType
   }

@@ -77,7 +77,7 @@ object Timeouts {
         if (!initialHasPassed)
           failStage(new TimeoutException(s"The first element has not yet passed through in $timeout."))
 
-      scheduleOnce("InitialTimeout", timeout)
+      override def preStart(): Unit = scheduleOnce("InitialTimeout", timeout)
     }
 
     override def toString = "InitialTimeoutTimer"
@@ -93,7 +93,7 @@ object Timeouts {
       final override protected def onTimer(key: Any): Unit =
         failStage(new TimeoutException(s"The stream has not been completed in $timeout."))
 
-      scheduleOnce("CompletionTimeoutTimer", timeout)
+      override def preStart(): Unit = scheduleOnce("CompletionTimeoutTimer", timeout)
     }
 
     override def toString = "CompletionTimeout"
@@ -114,7 +114,7 @@ object Timeouts {
         if (nextDeadline.isOverdue())
           failStage(new TimeoutException(s"No elements passed in the last $timeout."))
 
-      schedulePeriodically("IdleTimeoutCheckTimer", interval = idleTimeoutCheckInterval(timeout))
+      override def preStart(): Unit = schedulePeriodically("IdleTimeoutCheckTimer", interval = idleTimeoutCheckInterval(timeout))
     }
 
     override def toString = "IdleTimeout"
@@ -164,7 +164,7 @@ object Timeouts {
         if (nextDeadline.isOverdue())
           failStage(new TimeoutException(s"No elements passed in the last $timeout."))
 
-      schedulePeriodically("IdleTimeoutCheckTimer", idleTimeoutCheckInterval(timeout))
+      override def preStart(): Unit = schedulePeriodically("IdleTimeoutCheckTimer", idleTimeoutCheckInterval(timeout))
     }
   }
 

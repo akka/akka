@@ -6,7 +6,6 @@ package akka.stream.impl
 import akka.actor._
 import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, InPort, Shape }
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
-import akka.stream.scaladsl.FlexiMerge.MergeLogic
 import org.reactivestreams.{ Subscription, Subscriber }
 
 /**
@@ -292,10 +291,3 @@ private[akka] abstract class FanIn(val settings: ActorMaterializerSettings, val 
 
 }
 
-/**
- * INTERNAL API
- */
-private[akka] object FlexiMerge {
-  def props[T, S <: Shape](settings: ActorMaterializerSettings, ports: S, mergeLogic: MergeLogic[T]): Props =
-    Props(new FlexiMergeImpl(settings, ports, mergeLogic)).withDeploy(Deploy.local)
-}
