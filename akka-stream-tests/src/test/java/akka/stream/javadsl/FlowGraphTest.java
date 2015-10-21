@@ -287,12 +287,12 @@ public class FlowGraphTest extends StreamTest {
     final Future<Integer> future = FlowGraph.factory().closed(Sink.<Integer> head(), new Procedure2<Builder<Future<Integer>>, SinkShape<Integer>>() {
       @Override
       public void apply(Builder<Future<Integer>> b, SinkShape<Integer> out) throws Exception {
-        b.from(Source.single(1)).to(out);
-        b.from(b.materializedValue()).to(Sink.foreach(new Procedure<Future<Integer>>(){
+        b.from(b.graph(Source.single(1))).to(out);
+        b.from(b.materializedValue()).to(b.graph(Sink.foreach(new Procedure<Future<Integer>>(){
           public void apply(Future<Integer> mat) throws Exception {
             Patterns.pipe(mat, system.dispatcher()).to(probe.ref());
           }
-        }));
+        })));
       }
     }).run(materializer);
 

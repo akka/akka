@@ -160,7 +160,7 @@ object SslTlsPlacebo {
       val session = SSLContext.getDefault.createSSLEngine.getSession
       val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(bytes) ⇒ bytes })
       val bottom = b.add(scaladsl.Flow[ByteString].map(SessionBytes(session, _)))
-      BidiShape(top, bottom)
+      BidiShape.fromFlows(top, bottom)
     }
   val forJava: javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
     new javadsl.BidiFlow(forScala)

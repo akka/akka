@@ -113,7 +113,7 @@ flatten (Concat)       the current consumed substream has an element available  
 Fan-in stages
 ^^^^^^^^^^^^^
 
-Most of these stages can be expressible as a ``FlexiMerge``. These stages take multiple streams as their input and provide
+Most of these stages can be expressible as a ``GraphStage``. These stages take multiple streams as their input and provide
 a single output combining the elements from all of the inputs in different ways.
 
 **The custom fan-in stages that can be built currently are limited**
@@ -121,17 +121,19 @@ a single output combining the elements from all of the inputs in different ways.
 =====================  =========================================================================================================================   ==============================================================================================================================  =====================================================================================
 Stage                  Emits when                                                                                                                  Backpressures when                                                                                                              Completes when
 =====================  =========================================================================================================================   ==============================================================================================================================  =====================================================================================
-merge                  one of the inputs has an element available                                                                                  downstream backpressures                                                                                                        all upstreams complete
-mergePreferred         one of the inputs has an element available, preferring a defined input if multiple have elements available                  downstream backpressures                                                                                                        all upstreams complete
+merge                  one of the inputs has an element available                                                                                  downstream backpressures                                                                                                        all upstreams complete (*)
+mergePreferred         one of the inputs has an element available, preferring a defined input if multiple have elements available                  downstream backpressures                                                                                                        all upstreams complete (*)
 zip                    all of the inputs has an element available                                                                                  downstream backpressures                                                                                                        any upstream completes
 zipWith                all of the inputs has an element available                                                                                  downstream backpressures                                                                                                        any upstream completes
 concat                 the current stream has an element available; if the current input completes, it tries the next one                          downstream backpressures                                                                                                        all upstreams complete
 =====================  =========================================================================================================================   ==============================================================================================================================  =====================================================================================
 
+(*) This behavior is changeable to completing when any upstream completes by setting ``eagerClose=true``.
+
 Fan-out stages
 ^^^^^^^^^^^^^^
 
-Most of these stages can be expressible as a ``FlexiRoute``. These have one input and multiple outputs. They might
+Most of these stages can be expressible as a ``GraphStage``. These have one input and multiple outputs. They might
 route the elements between different outputs, or emit elements on multiple outputs at the same time.
 
 **The custom fan-out stages that can be built currently are limited**

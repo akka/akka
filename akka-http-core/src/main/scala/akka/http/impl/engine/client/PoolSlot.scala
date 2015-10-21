@@ -33,8 +33,6 @@ private object PoolSlot {
     final case class Disconnected(slotIx: Int, failedRequests: Int) extends SlotEvent
   }
 
-  type Ports = FanOutShape2[RequestContext, ResponseContext, RawSlotEvent]
-
   private val slotProcessorActorName = new SeqActorName("SlotProcessor")
 
   /*
@@ -53,22 +51,25 @@ private object PoolSlot {
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
             remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
-            settings: ConnectionPoolSettings)(implicit system: ActorSystem, fm: Materializer): Graph[Ports, Any] =
+            settings: ConnectionPoolSettings)(implicit system: ActorSystem,
+                                              fm: Materializer): Graph[FanOutShape2[RequestContext, ResponseContext, RawSlotEvent], Any] =
     FlowGraph.partial() { implicit b ⇒
       import FlowGraph.Implicits._
 
       val slotProcessor = b.add {
-        Flow[RequestContext] andThenMat { () ⇒
+        Flow[RequestContext].andThenMat { () ⇒
           val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
             slotProcessorActorName.next())
           (ActorProcessor[RequestContext, List[ProcessorOut]](actor), ())
-        }
+        }.mapConcat(identity)
       }
-      val flattenDouble = Flow[List[ProcessorOut]].mapConcat(_.flatMap(x ⇒ x :: x :: Nil))
-      val split = b.add(new SlotEventSplit)
+      val split = b.add(Broadcast[ProcessorOut](2))
 
-      slotProcessor ~> flattenDouble ~> split.in
-      new Ports(slotProcessor.inlet, split.out0, split.out1)
+      slotProcessor ~> split.in
+
+      new FanOutShape2(slotProcessor.inlet,
+        split.out(0).collect { case ResponseDelivery(r) ⇒ r }.outlet,
+        split.out(1).collect { case r: RawSlotEvent ⇒ r }.outlet)
     }
 
   import ActorSubscriberMessage._
@@ -224,27 +225,5 @@ private object PoolSlot {
       case ev: OnNext                     ⇒ slotProcessor ! FromConnection(ev)
       case ev @ (OnComplete | OnError(_)) ⇒ { slotProcessor ! FromConnection(ev); context.stop(self) }
     }
-  }
-
-  // FIXME: remove when #17038 is cleared
-  private class SlotEventSplit extends FlexiRoute[ProcessorOut, FanOutShape2[ProcessorOut, ResponseContext, RawSlotEvent]](
-    new FanOutShape2("PoolSlot.SlotEventSplit"), Attributes.name("PoolSlot.SlotEventSplit")) {
-    import FlexiRoute._
-
-    def createRouteLogic(s: FanOutShape2[ProcessorOut, ResponseContext, RawSlotEvent]): RouteLogic[ProcessorOut] =
-      new RouteLogic[ProcessorOut] {
-        val initialState: State[_] = State(DemandFromAny(s)) {
-          case (_, _, ResponseDelivery(x)) ⇒
-            State(DemandFrom(s.out0)) { (ctx, _, _) ⇒
-              ctx.emit(s.out0)(x)
-              initialState
-            }
-          case (_, _, x: RawSlotEvent) ⇒
-            State(DemandFrom(s.out1)) { (ctx, _, _) ⇒
-              ctx.emit(s.out1)(x)
-              initialState
-            }
-        }
-      }
   }
 }

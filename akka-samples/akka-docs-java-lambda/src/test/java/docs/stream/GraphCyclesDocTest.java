@@ -50,8 +50,12 @@ public class GraphCyclesDocTest {
       final UniformFanInShape<Integer, Integer> merge = b.graph(Merge.create(2));
       final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
 
-      b.from(source).via(merge).via(printFlow).via(bcast).to(Sink.ignore());
-                    b.to(merge)              .from(bcast);
+      final Outlet<Integer> src = b.source(source);
+      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
+      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
+      
+      b.from(src).viaFanIn(merge).via(printer).viaFanOut(bcast).to(ignore);
+                      b.to(merge)            .fromFanOut(bcast);
     });
     //#deadlocked
   }
@@ -69,8 +73,12 @@ public class GraphCyclesDocTest {
       final MergePreferredShape<Integer> merge = b.graph(MergePreferred.create(1));
       final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
 
-      b.from(source).via(merge).via(printFlow).via(bcast).to(Sink.ignore());
-                    b.to(merge.preferred())  .from(bcast);
+      final Outlet<Integer> src = b.source(source);
+      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
+      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
+      
+      b.from(src).viaFanIn(merge).via(printer).viaFanOut(bcast).to(ignore);
+                      b.to(merge.preferred()).fromFanOut(bcast);
     });
     //#unfair
   }
@@ -89,8 +97,12 @@ public class GraphCyclesDocTest {
       final FlowShape<Integer, Integer> droppyFlow = b.graph(
           Flow.of(Integer.class).buffer(10, OverflowStrategy.dropHead()));
 
-      b.from(source).via(merge).via(printFlow).via(bcast).to(Sink.ignore());
-                   b.to(merge).via(droppyFlow).from(bcast);
+      final Outlet<Integer> src = b.source(source);
+      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
+      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
+      
+      b.from(src).viaFanIn(merge).via(printer).viaFanOut(bcast).to(ignore);
+                   b.to(merge).via(droppyFlow).fromFanOut(bcast);
     });
     //#dropping
   }
@@ -109,9 +121,12 @@ public class GraphCyclesDocTest {
         zip = b.graph(ZipWith.create((Integer left, Integer right) -> left));
       final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
 
-      b.from(source).to(zip.in0());
-      b.from(zip.out()).via(printFlow).via(bcast).to(Sink.ignore());
-        b.to(zip.in1())              .from(bcast);
+      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
+      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
+
+      b.from(b.graph(source)).toInlet(zip.in0());
+      b.from(zip.out()).via(printer).viaFanOut(bcast).to(ignore);
+        b.to(zip.in1())            .fromFanOut(bcast);
     });
     //#zipping-dead
   }
@@ -130,10 +145,13 @@ public class GraphCyclesDocTest {
       final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
       final UniformFanInShape<Integer, Integer> concat = b.graph(Concat.create());
 
-      b.from(source).to(zip.in0());
-      b.from(zip.out()).via(printFlow).via(bcast).to(Sink.ignore());
-        b.to(zip.in1()).via(concat).from(Source.single(1));
-                       b.to(concat)  .from(bcast);
+      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
+      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
+
+      b.from(b.graph(source)).toInlet(zip.in0());
+      b.from(zip.out()).via(printer).viaFanOut(bcast).to(ignore);
+        b.to(zip.in1()).viaFanIn(concat).from(b.graph(Source.single(1)));
+                            b.to(concat)  .fromFanOut(bcast);
     });
     //#zipping-live
   }

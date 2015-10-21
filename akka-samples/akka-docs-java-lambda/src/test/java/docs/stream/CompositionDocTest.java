@@ -111,10 +111,10 @@ public class CompositionDocTest {
       final UniformFanInShape<Integer, Integer> F = builder.graph(Merge.create(2));
       final Inlet<Integer> G = builder.sink(Sink.foreach(System.out::println));
 
-      builder.from(F).to(C);
-      builder.from(A).via(B).via(C).to(F);
-      builder.from(B).via(D).via(E).to(F);
-      builder.from(E).to(G);
+      builder.from(F).toFanIn(C);
+      builder.from(A).viaFanOut(B).viaFanIn(C).toFanIn(F);
+      builder.from(B).via(D).viaFanOut(E).toFanIn(F);
+      builder.from(E).toInlet(G);
     });
     //#complex-graph
 
@@ -129,13 +129,13 @@ public class CompositionDocTest {
       final UniformFanInShape<Integer, Integer> F = builder.graph(Merge.create(2));
       final Inlet<Integer> G = builder.sink(Sink.foreach(System.out::println));
 
-      builder.from(F.out()).to(C.in(0));
-      builder.from(A).to(B.in());
-      builder.from(B.out(0)).to(C.in(1));
-      builder.from(C.out()).to(F.in(0));
-      builder.from(B.out(1)).via(D).to(E.in());
-      builder.from(E.out(0)).to(F.in(1));
-      builder.from(E.out(1)).to(G);
+      builder.from(F.out()).toInlet(C.in(0));
+      builder.from(A).toInlet(B.in());
+      builder.from(B.out(0)).toInlet(C.in(1));
+      builder.from(C.out()).toInlet(F.in(0));
+      builder.from(B.out(1)).via(D).toInlet(E.in());
+      builder.from(E.out(0)).toInlet(F.in(1));
+      builder.from(E.out(1)).toInlet(G);
     });
     //#complex-graph-alt
   }
@@ -150,9 +150,9 @@ public class CompositionDocTest {
         final UniformFanOutShape<Integer, Integer> E = builder.graph(Balance.create(2));
         final UniformFanInShape<Integer, Integer> F = builder.graph(Merge.create(2));
 
-        builder.from(F.out()).to(C.in(0));
-        builder.from(B).via(C).to(F);
-        builder.from(B).via(builder.graph(Flow.of(Integer.class).map(i -> i + 1))).via(E).to(F);
+        builder.from(F.out()).toInlet(C.in(0));
+        builder.from(B).viaFanIn(C).toFanIn(F);
+        builder.from(B).via(builder.graph(Flow.of(Integer.class).map(i -> i + 1))).viaFanOut(E).toFanIn(F);
 
         return new FlowShape(B.in(), E.out(1));
       });
@@ -171,8 +171,8 @@ public class CompositionDocTest {
     // Simple way to create a graph backed Source
     final Source<Integer, BoxedUnit> source = Source.factory().create(builder -> {
       final UniformFanInShape<Integer, Integer> merge = builder.graph(Merge.create(2));
-      builder.from(builder.source(Source.single(0))).to(merge);
-      builder.from(builder.source(Source.from(Arrays.asList(2, 3, 4)))).to(merge);
+      builder.from(builder.source(Source.single(0))).toFanIn(merge);
+      builder.from(builder.source(Source.from(Arrays.asList(2, 3, 4)))).toFanIn(merge);
 
       // Exposing exactly one output port
       return merge.out();

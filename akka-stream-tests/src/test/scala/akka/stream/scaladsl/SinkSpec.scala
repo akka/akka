@@ -93,7 +93,7 @@ class SinkSpec extends AkkaSpec {
 
     "combine to many outputs with simplified API" in {
       val probes = Seq.fill(3)(TestSubscriber.manualProbe[Int]())
-      val sink = Sink.combine(Sink(probes(0)), Sink(probes(1)), Sink(probes(2)))(Broadcast(_))
+      val sink = Sink.combine(Sink(probes(0)), Sink(probes(1)), Sink(probes(2)))(Broadcast[Int](_))
 
       Source(List(0, 1, 2)).runWith(sink)
 
@@ -111,7 +111,7 @@ class SinkSpec extends AkkaSpec {
 
     "combine to two sinks with simplified API" in {
       val probes = Seq.fill(2)(TestSubscriber.manualProbe[Int]())
-      val sink = Sink.combine(Sink(probes(0)), Sink(probes(1)))(Broadcast(_))
+      val sink = Sink.combine(Sink(probes(0)), Sink(probes(1)))(Broadcast[Int](_))
 
       Source(List(0, 1, 2)).runWith(sink)
 

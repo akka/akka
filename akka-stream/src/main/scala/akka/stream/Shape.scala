@@ -4,9 +4,9 @@
 package akka.stream
 
 import akka.util.Collections.EmptyImmutableSeq
-
 import scala.collection.immutable
 import scala.collection.JavaConverters._
+import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * An input port of a StreamLayout.Module. This type logically belongs
@@ -48,8 +48,12 @@ object Inlet {
   def apply[T](toString: String): Inlet[T] = new Inlet[T](toString)
 }
 
-final class Inlet[-T] private (override val toString: String) extends InPort {
+final class Inlet[T] private (override val toString: String) extends InPort {
   def carbonCopy(): Inlet[T] = Inlet(toString)
+  /**
+   * INTERNAL API.
+   */
+  def as[U]: Inlet[U] = this.asInstanceOf[Inlet[U]]
 }
 
 /**
@@ -61,8 +65,12 @@ object Outlet {
   def apply[T](toString: String): Outlet[T] = new Outlet[T](toString)
 }
 
-final class Outlet[+T] private (override val toString: String) extends OutPort {
+final class Outlet[T] private (override val toString: String) extends OutPort {
   def carbonCopy(): Outlet[T] = Outlet(toString)
+  /**
+   * INTERNAL API.
+   */
+  def as[U]: Outlet[U] = this.asInstanceOf[Outlet[U]]
 }
 
 /**
@@ -187,7 +195,7 @@ case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Se
  * A Source [[Shape]] has exactly one output and no inputs, it models a source
  * of data.
  */
-final case class SourceShape[+T](outlet: Outlet[T]) extends Shape {
+final case class SourceShape[+T](outlet: Outlet[T @uncheckedVariance]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = EmptyImmutableSeq
   override val outlets: immutable.Seq[Outlet[_]] = List(outlet)
 
@@ -204,7 +212,7 @@ final case class SourceShape[+T](outlet: Outlet[T]) extends Shape {
  * outside like a pipe (but it can be a complex topology of streams within of
  * course).
  */
-final case class FlowShape[-I, +O](inlet: Inlet[I], outlet: Outlet[O]) extends Shape {
+final case class FlowShape[-I, +O](inlet: Inlet[I @uncheckedVariance], outlet: Outlet[O @uncheckedVariance]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = List(inlet)
   override val outlets: immutable.Seq[Outlet[_]] = List(outlet)
 
@@ -219,7 +227,7 @@ final case class FlowShape[-I, +O](inlet: Inlet[I], outlet: Outlet[O]) extends S
 /**
  * A Sink [[Shape]] has exactly one input and no outputs, it models a data sink.
  */
-final case class SinkShape[-T](inlet: Inlet[T]) extends Shape {
+final case class SinkShape[-T](inlet: Inlet[T @uncheckedVariance]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = List(inlet)
   override val outlets: immutable.Seq[Outlet[_]] = EmptyImmutableSeq
 
@@ -244,10 +252,10 @@ final case class SinkShape[-T](inlet: Inlet[T]) extends Shape {
  *        +------+
  * }}}
  */
-final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1],
-                                                     out1: Outlet[Out1],
-                                                     in2: Inlet[In2],
-                                                     out2: Outlet[Out2]) extends Shape {
+final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1 @uncheckedVariance],
+                                                     out1: Outlet[Out1 @uncheckedVariance],
+                                                     in2: Inlet[In2 @uncheckedVariance],
+                                                     out2: Outlet[Out2 @uncheckedVariance]) extends Shape {
   //#implementation-details-elided
   override val inlets: immutable.Seq[Inlet[_]] = List(in1, in2)
   override val outlets: immutable.Seq[Outlet[_]] = List(out1, out2)
@@ -270,6 +278,6 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1],
 //#bidi-shape
 
 object BidiShape {
-  def apply[I1, O1, I2, O2](top: FlowShape[I1, O1], bottom: FlowShape[I2, O2]): BidiShape[I1, O1, I2, O2] =
+  def fromFlows[I1, O1, I2, O2](top: FlowShape[I1, O1], bottom: FlowShape[I2, O2]): BidiShape[I1, O1, I2, O2] =
     BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
 }

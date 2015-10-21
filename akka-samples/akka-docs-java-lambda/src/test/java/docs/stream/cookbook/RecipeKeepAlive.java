@@ -5,6 +5,7 @@ package docs.stream.cookbook;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.FlowShape;
 import akka.stream.Materializer;
 import akka.stream.javadsl.*;
 import akka.stream.scaladsl.MergePreferred.MergePreferredShape;
@@ -52,9 +53,6 @@ public class RecipeKeepAlive extends RecipeTest {
 
         //@formatter:off
         //#inject-keepalive
-        Flow<Tick, ByteString, BoxedUnit> tickToKeepAlivePacket =
-          Flow.of(Tick.class).conflate(tick -> keepAliveMessage, (msg, newTick) -> msg);
-
         final Tuple3<
             TestPublisher.Probe<Tick>,
             TestPublisher.Probe<ByteString>,
@@ -66,9 +64,12 @@ public class RecipeKeepAlive extends RecipeTest {
               final int secondaryPorts = 1;
               final MergePreferredShape<ByteString> unfairMerge =
                 builder.graph(MergePreferred.create(secondaryPorts));
+              FlowShape<Tick, ByteString> tickToKeepAlivePacket =
+                      builder.graph(Flow.of(Tick.class).conflate(tick -> keepAliveMessage, (msg, newTick) -> msg));
+
               // If data is available then no keepalive is injected
-              builder.from(d).to(unfairMerge.preferred());
-              builder.from(t).via(tickToKeepAlivePacket).to(unfairMerge.in(0));
+              builder.from(d).toInlet(unfairMerge.preferred());
+              builder.from(t).via(tickToKeepAlivePacket).toInlet(unfairMerge.in(0));
               builder.from(unfairMerge.out()).to(s);
             }
           ).run(mat);

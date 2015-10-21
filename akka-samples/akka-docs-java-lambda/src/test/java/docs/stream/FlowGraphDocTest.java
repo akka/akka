@@ -59,9 +59,11 @@ public class FlowGraphDocTest {
           final UniformFanOutShape<Integer, Integer> bcast = builder.graph(Broadcast.create(2));
           final UniformFanInShape<Integer, Integer> merge = builder.graph(Merge.create(2));
 
-          builder.from(in).via(f1).via(bcast).via(f2).via(merge)
-            .via(f3.grouped(1000)).to(out);
-          builder.from(bcast).via(f4).to(merge);
+          final Outlet<Integer> source = builder.source(in);
+          builder.from(source).via(builder.graph(f1))
+            .viaFanOut(bcast).via(builder.graph(f2)).viaFanIn(merge)
+            .via(builder.graph(f3.grouped(1000))).to(out);
+          builder.from(bcast).via(builder.graph(f4)).toFanIn(merge);
         });
     //#simple-flow-graph
     final List<String> list = Await.result(result.run(mat), Duration.create(3, TimeUnit.SECONDS));
@@ -106,8 +108,9 @@ public class FlowGraphDocTest {
           final UniformFanOutShape<Integer, Integer> bcast = b
             .graph(Broadcast.create(2));
 
-          b.from(Source.single(1)).via(bcast).via(sharedDoubler).to(top);
-          b.from(bcast).via(sharedDoubler).to(bottom);
+          b.from(b.graph(Source.single(1))).viaFanOut(bcast)
+            .via(b.graph(sharedDoubler)).to(top);
+          b.from(bcast).via(b.graph(sharedDoubler)).to(bottom);
         });
     //#flow-graph-reusing-a-flow
     final Pair<Future<Integer>, Future<Integer>> pair = g.run(mat);
@@ -131,7 +134,7 @@ public class FlowGraphDocTest {
       (b, fold) -> {
         return new Pair<>(
           fold.inlet(),
-          b.from(b.materializedValue()).via(flatten).out());
+          b.from(b.materializedValue()).via(b.graph(flatten)).out());
       });
       //#flow-graph-matvalue
 
@@ -144,8 +147,8 @@ public class FlowGraphDocTest {
         //   fold completes
         // As a result this Source will never emit anything, and its materialited
         // Future will never complete
-        b.from(b.materializedValue()).via(flatten).to(fold);
-        return b.from(b.materializedValue()).via(flatten).out();
+        b.from(b.materializedValue()).via(b.graph(flatten)).to(fold);
+        return b.from(b.materializedValue()).via(b.graph(flatten)).out();
       });
 
     //#flow-graph-matvalue-cycle

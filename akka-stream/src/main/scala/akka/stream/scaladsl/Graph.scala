@@ -18,8 +18,9 @@ object Merge {
    * Create a new `Merge` with the specified number of input ports.
    *
    * @param inputPorts number of input ports
+   * @param eagerClose if true, the merge will complete as soon as one of its inputs completes.
    */
-  def apply[T](inputPorts: Int): Merge[T] = new Merge(inputPorts)
+  def apply[T](inputPorts: Int, eagerClose: Boolean = false): Merge[T] = new Merge(inputPorts, eagerClose)
 
 }
 
@@ -31,11 +32,11 @@ object Merge {
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' all upstreams complete
+ * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
  *
  * '''Cancels when''' downstream cancels
  */
-class Merge[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] {
+class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Merge.in" + i))
   val out: Outlet[T] = Outlet[T]("Merge.out")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
@@ -65,8 +66,6 @@ class Merge[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] 
       else tryPull(in)
     }
 
-    private def tryPull(in: Inlet[T]): Unit = if (!isClosed(in)) pull(in)
-
     in.foreach { i ⇒
       setHandler(i, new InHandler {
         override def onPush(): Unit = {
@@ -78,10 +77,15 @@ class Merge[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] 
           } else enqueue(i)
         }
 
-        override def onUpstreamFinish() = {
-          runningUpstreams -= 1
-          if (upstreamsClosed && !pending) completeStage()
-        }
+        override def onUpstreamFinish() =
+          if (eagerClose) {
+            in.foreach(cancel)
+            runningUpstreams = 0
+            if (!pending) completeStage()
+          } else {
+            runningUpstreams -= 1
+            if (upstreamsClosed && !pending) completeStage()
+          }
       })
     }
 
@@ -102,7 +106,7 @@ class Merge[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] 
 object MergePreferred {
   import FanInShape._
   final class MergePreferredShape[T](val secondaryPorts: Int, _init: Init[T]) extends UniformFanInShape[T, T](secondaryPorts, _init) {
-    def this(secondaryPorts: Int, name: String) = this(secondaryPorts, Name(name))
+    def this(secondaryPorts: Int, name: String) = this(secondaryPorts, Name[T](name))
     override protected def construct(init: Init[T]): FanInShape[T] = new MergePreferredShape(secondaryPorts, init)
     override def deepCopy(): MergePreferredShape[T] = super.deepCopy().asInstanceOf[MergePreferredShape[T]]
 
@@ -113,8 +117,9 @@ object MergePreferred {
    * Create a new `MergePreferred` with the specified number of secondary input ports.
    *
    * @param secondaryPorts number of secondary input ports
+   * @param eagerClose if true, the merge will complete as soon as one of its inputs completes.
    */
-  def apply[T](secondaryPorts: Int): MergePreferred[T] = new MergePreferred(secondaryPorts)
+  def apply[T](secondaryPorts: Int, eagerClose: Boolean = false): MergePreferred[T] = new MergePreferred(secondaryPorts, eagerClose)
 }
 
 /**
@@ -134,7 +139,7 @@ object MergePreferred {
  *
  * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
-class MergePreferred[T] private (secondaryPorts: Int) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
+class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
   override val shape: MergePreferred.MergePreferredShape[T] =
     new MergePreferred.MergePreferredShape(secondaryPorts, "MergePreferred")
 
@@ -169,8 +174,6 @@ class MergePreferred[T] private (secondaryPorts: Int) extends GraphStage[MergePr
       else tryPull(in)
     }
 
-    private def tryPull(in: Inlet[T]): Unit = if (!isClosed(in)) pull(in)
-
     // FIXME: slow iteration, try to make in a vector and inject into shape instead
     (0 until secondaryPorts).map(in).foreach { i ⇒
       setHandler(i, new InHandler {
@@ -183,10 +186,16 @@ class MergePreferred[T] private (secondaryPorts: Int) extends GraphStage[MergePr
           } else enqueue(i)
         }
 
-        override def onUpstreamFinish() = {
-          runningUpstreams -= 1
-          if (upstreamsClosed && !pending && !priority) completeStage()
-        }
+        override def onUpstreamFinish() =
+          if (eagerClose) {
+            (0 until secondaryPorts).foreach(i ⇒ cancel(in(i)))
+            cancel(preferred)
+            runningUpstreams = 0
+            if (!pending) completeStage()
+          } else {
+            runningUpstreams -= 1
+            if (upstreamsClosed && !pending && !priority) completeStage()
+          }
       })
     }
 
@@ -198,10 +207,15 @@ class MergePreferred[T] private (secondaryPorts: Int) extends GraphStage[MergePr
         }
       }
 
-      override def onUpstreamFinish() = {
-        runningUpstreams -= 1
-        if (upstreamsClosed && !pending && !priority) completeStage()
-      }
+      override def onUpstreamFinish() =
+        if (eagerClose) {
+          (0 until secondaryPorts).foreach(i ⇒ cancel(in(i)))
+          runningUpstreams = 0
+          if (!pending) completeStage()
+        } else {
+          runningUpstreams -= 1
+          if (upstreamsClosed && !pending && !priority) completeStage()
+        }
     })
 
     setHandler(out, new OutHandler {
@@ -562,7 +576,7 @@ object FlowGraph extends GraphApply {
   class Builder[+M] private[stream] () {
     private var moduleInProgress: Module = EmptyModule
 
-    def addEdge[A, B, M2](from: Outlet[A], via: Graph[FlowShape[A, B], M2], to: Inlet[B]): Unit = {
+    def addEdge[A1, A >: A1, B, B1 >: B, M2](from: Outlet[A1], via: Graph[FlowShape[A, B], M2], to: Inlet[B1]): Unit = {
       val flowCopy = via.module.carbonCopy
       moduleInProgress =
         moduleInProgress
@@ -571,7 +585,7 @@ object FlowGraph extends GraphApply {
           .wire(flowCopy.shape.outlets.head, to)
     }
 
-    def addEdge[T](from: Outlet[T], to: Inlet[T]): Unit = {
+    def addEdge[T, U >: T](from: Outlet[T], to: Inlet[U]): Unit = {
       moduleInProgress = moduleInProgress.wire(from, to)
     }
 
@@ -630,7 +644,7 @@ object FlowGraph extends GraphApply {
      *
      * @return The outlet that will emit the materialized value.
      */
-    def materializedValue: Outlet[M] = {
+    def materializedValue: Outlet[M @uncheckedVariance] = {
       val module = new MaterializedValueSource[Any]
       moduleInProgress = moduleInProgress.compose(module)
       module.shape.outlet.asInstanceOf[Outlet[M]]
@@ -724,7 +738,7 @@ object FlowGraph extends GraphApply {
     trait CombinerBase[T] extends Any {
       def importAndGetPort(b: Builder[_]): Outlet[T]
 
-      def ~>(to: Inlet[T])(implicit b: Builder[_]): Unit = {
+      def ~>[U >: T](to: Inlet[U])(implicit b: Builder[_]): Unit = {
         b.addEdge(importAndGetPort(b), to)
       }
 
@@ -770,7 +784,7 @@ object FlowGraph extends GraphApply {
     trait ReverseCombinerBase[T] extends Any {
       def importAndGetPortReverse(b: Builder[_]): Inlet[T]
 
-      def <~(from: Outlet[T])(implicit b: Builder[_]): Unit = {
+      def <~[U <: T](from: Outlet[U])(implicit b: Builder[_]): Unit = {
         b.addEdge(from, importAndGetPortReverse(b))
       }
 

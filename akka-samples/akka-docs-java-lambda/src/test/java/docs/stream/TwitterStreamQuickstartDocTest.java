@@ -281,12 +281,15 @@ public class TwitterStreamQuickstartDocTest {
     //#flow-graph-broadcast
     FlowGraph.factory().closed(b -> {
       final UniformFanOutShape<Tweet, Tweet> bcast = b.graph(Broadcast.create(2));
-      final Flow<Tweet, Author, BoxedUnit> toAuthor = Flow.of(Tweet.class).map(t -> t.author);
-      final Flow<Tweet, Hashtag, BoxedUnit> toTags =
-          Flow.of(Tweet.class).mapConcat(t -> new ArrayList<Hashtag>(t.hashtags()));
+      final FlowShape<Tweet, Author> toAuthor =
+    	  b.graph(Flow.of(Tweet.class).map(t -> t.author));
+      final FlowShape<Tweet, Hashtag> toTags =
+          b.graph(Flow.of(Tweet.class).mapConcat(t -> new ArrayList<Hashtag>(t.hashtags())));
+      final SinkShape<Author> authors = b.graph(writeAuthors);
+      final SinkShape<Hashtag> hashtags = b.graph(writeHashtags);
 
-      b.from(tweets).via(bcast).via(toAuthor).to(writeAuthors);
-                  b.from(bcast).via(toTags).to(writeHashtags);
+      b.from(b.graph(tweets)).viaFanOut(bcast).via(toAuthor).to(authors);
+                                 b.from(bcast).via(toTags).to(hashtags);
     }).run(mat);
     //#flow-graph-broadcast
   }
