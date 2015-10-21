@@ -43,7 +43,7 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
       case UserHandlerCompleted ⇒
         become(new WaitingForPeerCloseFrame())
         ctx.push(FrameEvent.closeFrame(Protocol.CloseCodes.Regular))
-      case UserHandlerErredOut(ex) ⇒
+      case UserHandlerErredOut(_) ⇒
         become(new WaitingForPeerCloseFrame())
         ctx.push(FrameEvent.closeFrame(Protocol.CloseCodes.UnexpectedCondition, "internal error"))
       case Tick ⇒ ctx.pull() // ignore
@@ -60,15 +60,17 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
    */
   private class WaitingForUserHandlerClosed(closeFrame: FrameStart) extends CompletionHandlingState {
     def onPush(elem: AnyRef, ctx: Context[FrameStart]): SyncDirective = elem match {
-      case UserHandlerCompleted ⇒
-        if (serverSide) ctx.pushAndFinish(closeFrame)
-        else {
-          become(new WaitingForTransportClose())
-          ctx.push(closeFrame)
-        }
+      case UserHandlerCompleted | UserHandlerErredOut(_) ⇒ sendOutLastFrame(ctx)
       case start: FrameStart ⇒ ctx.push(start)
-      case _                 ⇒ ctx.pull() // ignore
+      case _ ⇒ ctx.pull() // ignore
     }
+
+    def sendOutLastFrame(ctx: Context[FrameStart]): SyncDirective =
+      if (serverSide) ctx.pushAndFinish(closeFrame)
+      else {
+        become(new WaitingForTransportClose())
+        ctx.push(closeFrame)
+      }
 
     def onComplete(ctx: Context[FrameStart]): TerminationDirective =
       ctx.fail(new IllegalStateException("Mustn't complete before user has completed"))

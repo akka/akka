@@ -594,7 +594,17 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         netOut.expectComplete()
         netIn.expectCancellation()
       }
-      "if user handler fails" in pending
+      "if user handler fails" in new ServerTestSetup {
+        messageOut.sendError(new RuntimeException("Oops, user handler failed!"))
+        expectCloseCodeOnNetwork(Protocol.CloseCodes.UnexpectedCondition)
+
+        expectNoNetworkData() // wait for peer to close regularly
+        pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
+
+        expectComplete(messageIn)
+        netOut.expectComplete()
+        netIn.expectCancellation()
+      }
       "if peer closes with invalid close frame" - {
         "close code outside of the valid range" in new ServerTestSetup {
           pushInput(closeFrame(5700, mask = true))
