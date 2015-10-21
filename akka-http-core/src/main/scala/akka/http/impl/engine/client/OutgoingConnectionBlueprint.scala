@@ -76,7 +76,7 @@ private[http] object OutgoingConnectionBlueprint {
         case (MessageStartError(_, info), _) ⇒ throw IllegalResponseException(info)
       }
 
-    val core = BidiFlow() { implicit b ⇒
+    val core = BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val methodBypassFanout = b.add(Broadcast[HttpRequest](2, eagerCancel = true))
       val responseParsingMerge = b.add(new ResponseParsingMerge(rootParser))
@@ -103,7 +103,7 @@ private[http] object OutgoingConnectionBlueprint {
         wrapTls.outlet,
         unwrapTls.inlet,
         terminationFanout.out(1))
-    }
+    })
 
     One2OneBidiFlow[HttpRequest, HttpResponse](-1) atop core
   }

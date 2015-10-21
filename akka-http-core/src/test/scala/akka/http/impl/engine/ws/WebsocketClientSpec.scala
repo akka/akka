@@ -7,6 +7,7 @@ package akka.http.impl.engine.ws
 import java.util.Random
 
 import akka.http.scaladsl.model.ws.{ InvalidUpgradeResponse, WebsocketUpgradeResponse }
+import akka.stream.ClosedShape
 
 import scala.concurrent.duration._
 
@@ -119,7 +120,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
 
     "don't send out frames before handshake was finished successfully" in new TestSetup {
       def clientImplementation: Flow[Message, Message, Unit] =
-        Flow.wrap(Sink.ignore, Source.single(TextMessage("fast message")))(Keep.none)
+        Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(TextMessage("fast message")))(Keep.none)
 
       expectWireData(UpgradeRequestBytes)
       expectNoWireData()
@@ -311,13 +312,14 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
       val netIn = TestPublisher.probe[ByteString]()
 
       val graph =
-        FlowGraph.closed(clientLayer) { implicit b ⇒
+        RunnableGraph.fromGraph(FlowGraph.create(clientLayer) { implicit b ⇒
           client ⇒
             import FlowGraph.Implicits._
             Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
             client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> netOut.sink
             client.out2 ~> clientImplementation ~> client.in1
-        }
+            ClosedShape
+        })
 
       val response = graph.run()
 
@@ -365,6 +367,6 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
     lazy val messagesIn = TestSubscriber.probe[Message]()
 
     override def clientImplementation: Flow[Message, Message, Unit] =
-      Flow.wrap(Sink(messagesIn), Source(messagesOut))(Keep.none)
+      Flow.fromSinkAndSourceMat(Sink(messagesIn), Source(messagesOut))(Keep.none)
   }
 }

@@ -330,10 +330,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val sink = Sink.publisher[HttpRequest]
       val source = Source.subscriber[HttpResponse]
 
-      val handler = Flow(sink, source)(Keep.both) { implicit b ⇒
-        (snk, src) ⇒
-          (snk.inlet, src.outlet)
-      }
+      val handler = Flow.fromSinkAndSourceMat(sink, source)(Keep.both)
 
       val (pub, sub) = incomingConnection.handleWith(handler)
       val requestSubscriberProbe = TestSubscriber.manualProbe[HttpRequest]()

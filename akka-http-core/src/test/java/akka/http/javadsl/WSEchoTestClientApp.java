@@ -63,7 +63,7 @@ public class WSEchoTestClientApp {
                     .toMat(Sink.<List<String>>head(), Keep.<BoxedUnit, Future<List<String>>>right());
 
             Flow<Message, Message, Future<List<String>>> echoClient =
-                Flow.wrap(echoSink, echoSource, Keep.<Future<List<String>>, BoxedUnit>left());
+                Flow.fromSinkAndSourceMat(echoSink, echoSource, Keep.<Future<List<String>>, BoxedUnit>left());
 
             Future<List<String>> result =
                 Http.get(system).singleWebsocketRequest(
