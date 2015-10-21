@@ -28,13 +28,19 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
   "The server implementation" should {
 
-    "deliver an empty request as soon as all headers are received" in new TestSetup {
-      send("""GET / HTTP/1.1
-             |Host: example.com
-             |
-             |""")
+    "deliver an empty request as soon as all headers are received" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        send(
+          """GET / HTTP/1.1
+               |Host: example.com
+               |
+               |""")
 
-      expectRequest shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
+        expectRequest shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
+
+        closeNetworkInput()
+        expectNetworkClose()
+      }
     }
 
     "deliver a request as soon as all headers are received" in new TestSetup {
