@@ -194,7 +194,7 @@ private[stream] object ActorGraphInterpreter {
 
   }
 
-  class ActorOutputBoundary(actor: ActorRef, id: Int) extends DownstreamBoundaryStageLogic[Any] {
+  private[stream] class ActorOutputBoundary(actor: ActorRef, id: Int) extends DownstreamBoundaryStageLogic[Any] {
     val in: Inlet[Any] = Inlet[Any]("UpstreamBoundary" + id)
     in.id = 0
 
