@@ -30,4 +30,9 @@ public abstract class HttpMethod {
      * Returns if requests with this method may contain an entity.
      */
     public abstract boolean isEntityAccepted();
+
+    /**
+     * Returns the entity acceptance level for this method.
+     */
+    public abstract akka.http.scaladsl.model.RequestEntityAcceptance requestEntityAcceptance();
 }
