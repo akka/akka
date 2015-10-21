@@ -511,7 +511,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           updateLatestGossip(newGossip)
 
           logInfo("Node [{}] is JOINING, roles [{}]", node.address, roles.mkString(", "))
-          if (node != selfUniqueAddress)
+          if (node == selfUniqueAddress) {
+            if (localMembers.isEmpty)
+              leaderActions() // important for deterministic oldest when bootstrapping
+          } else
             sender() ! Welcome(selfUniqueAddress, latestGossip)
 
           publish(latestGossip)

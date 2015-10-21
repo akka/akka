@@ -115,8 +115,7 @@ abstract class TransitionSpec
 
       runOn(first) {
         cluster join myself
-        awaitMemberStatus(myself, Joining)
-        leaderActions()
+        // first joining itself will immediately be moved to Up
         awaitMemberStatus(myself, Up)
         awaitCond(clusterView.isSingletonCluster)
       }

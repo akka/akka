@@ -47,7 +47,11 @@ class Member private[cluster] (
    * cluster. A member that joined after removal of another member may be
    * considered older than the removed member.
    */
-  def isOlderThan(other: Member): Boolean = upNumber < other.upNumber
+  def isOlderThan(other: Member): Boolean =
+    if (upNumber == other.upNumber)
+      Member.addressOrdering.compare(address, other.address) < 0
+    else
+      upNumber < other.upNumber
 
   def copy(status: MemberStatus): Member = {
     val oldStatus = this.status
@@ -123,6 +127,13 @@ object Member {
     }
   }
 
+  /**
+   * Sort members by age, i.e. using [[Member#isOlderThan]].
+   */
+  val ageOrdering: Ordering[Member] = Ordering.fromLessThan[Member] {
+    (a, b) ⇒ a.isOlderThan(b)
+  }
+
   def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] = {
     // group all members by Address => Seq[Member]
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
@@ -141,20 +152,25 @@ object Member {
   /**
    * Picks the Member with the highest "priority" MemberStatus.
    */
-  def highestPriorityOf(m1: Member, m2: Member): Member = (m1.status, m2.status) match {
-    case (Removed, _)  ⇒ m1
-    case (_, Removed)  ⇒ m2
-    case (Down, _)     ⇒ m1
-    case (_, Down)     ⇒ m2
-    case (Exiting, _)  ⇒ m1
-    case (_, Exiting)  ⇒ m2
-    case (Leaving, _)  ⇒ m1
-    case (_, Leaving)  ⇒ m2
-    case (Joining, _)  ⇒ m2
-    case (_, Joining)  ⇒ m1
-    case (WeaklyUp, _) ⇒ m2
-    case (_, WeaklyUp) ⇒ m1
-    case (Up, Up)      ⇒ m1
+  def highestPriorityOf(m1: Member, m2: Member): Member = {
+    if (m1.status == m2.status)
+      // preserve the oldest in case of different upNumber
+      if (m1.isOlderThan(m2)) m1 else m2
+    else (m1.status, m2.status) match {
+      case (Removed, _)  ⇒ m1
+      case (_, Removed)  ⇒ m2
+      case (Down, _)     ⇒ m1
+      case (_, Down)     ⇒ m2
+      case (Exiting, _)  ⇒ m1
+      case (_, Exiting)  ⇒ m2
+      case (Leaving, _)  ⇒ m1
+      case (_, Leaving)  ⇒ m2
+      case (Joining, _)  ⇒ m2
+      case (_, Joining)  ⇒ m1
+      case (WeaklyUp, _) ⇒ m2
+      case (_, WeaklyUp) ⇒ m1
+      case (Up, Up)      ⇒ m1
+    }
   }
 
 }

@@ -275,7 +275,8 @@ object ClusterEvent {
       val newMembers = newGossip.members -- oldGossip.members
       val membersGroupedByAddress = List(newGossip.members, oldGossip.members).flatten.groupBy(_.uniqueAddress)
       val changedMembers = membersGroupedByAddress collect {
-        case (_, newMember :: oldMember :: Nil) if newMember.status != oldMember.status ⇒ newMember
+        case (_, newMember :: oldMember :: Nil) if newMember.status != oldMember.status || newMember.upNumber != oldMember.upNumber ⇒
+          newMember
       }
       val memberEvents = (newMembers ++ changedMembers) collect {
         case m if m.status == WeaklyUp ⇒ MemberWeaklyUp(m)
