@@ -167,7 +167,11 @@ object TestPublisher {
       this
     }
 
-    def expectRequest(): Long = subscription.expectRequest()
+    def expectRequest(): Long = {
+      val req = subscription.expectRequest()
+      pendingRequests += req
+      req
+    }
 
     def expectCancellation(): Self = {
       subscription.expectCancellation()
@@ -559,6 +563,8 @@ object TestSubscriber {
 
     override type Self = Probe[T]
 
+    var pendingRequests: Long = 0
+
     private lazy val subscription = expectSubscription()
 
     /** Asserts that a subscription has been received or will be received */
@@ -566,12 +572,14 @@ object TestSubscriber {
 
     def request(n: Long): Self = {
       subscription.request(n)
+      pendingRequests += n
       this
     }
 
     def requestNext(element: T): Self = {
-      subscription.request(1)
+      if (pendingRequests == 0) request(1)
       expectNext(element)
+      pendingRequests -= 1
       this
     }
 
@@ -581,8 +589,23 @@ object TestSubscriber {
     }
 
     def requestNext(): T = {
-      subscription.request(1)
-      expectNext()
+      if (pendingRequests == 0) request(1)
+      val res = expectNext()
+      pendingRequests -= 1
+      res
+    }
+
+    override def expectComplete(): Probe[T] = {
+      ensureSubscription()
+      super.expectComplete()
+    }
+    override def expectError(): scala.Throwable = {
+      ensureSubscription()
+      super.expectError()
+    }
+    override def expectError(cause: scala.Throwable): Probe.this.Self = {
+      ensureSubscription()
+      super.expectError(cause)
     }
   }
 }
