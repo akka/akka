@@ -124,6 +124,16 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
               |The content please!"""
           }
       }
+
+      "DELETE request without headers and without body" in new TestSetup() {
+        HttpRequest(DELETE, "/abc") should renderTo {
+          """DELETE /abc HTTP/1.1
+            |Host: test.com:8080
+            |User-Agent: akka-http/1.0.0
+            |
+            |"""
+        }
+      }
     }
 
     "proper render a chunked" - {
