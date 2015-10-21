@@ -51,11 +51,14 @@ object WSTestUtils {
     } else
       frameHeader(opcode, data.size, fin, mask = None) ++ data
 
-  def closeFrame(closeCode: Int, mask: Boolean): ByteString =
-    frame(Opcode.Close, closeFrameData(closeCode), fin = true, mask)
+  def closeFrame(closeCode: Int, mask: Boolean, msg: String = ""): ByteString =
+    closeFrame(closeCode, mask, ByteString(msg, "UTF-8"))
 
-  def closeFrameData(closeCode: Int): ByteString =
-    shortBE(closeCode)
+  def closeFrame(closeCode: Int, mask: Boolean, msgBytes: ByteString): ByteString =
+    frame(Opcode.Close, closeFrameData(closeCode, msgBytes), fin = true, mask)
+
+  def closeFrameData(closeCode: Int, msgBytes: ByteString = ByteString.empty): ByteString =
+    shortBE(closeCode) ++ msgBytes
 
   def maskedASCII(str: String, mask: Int): (ByteString, Int) =
     FrameEventParser.mask(ByteString(str, "ASCII"), mask)
