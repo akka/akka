@@ -68,7 +68,7 @@ private[http] object Websocket {
       var inMessage = false
       def onPush(elem: MessagePart, ctx: Context[MessagePart]): SyncDirective = elem match {
         case PeerClosed(code, reason) ⇒
-          if (code.exists(Protocol.CloseCodes.isError)) ctx.fail(new ProtocolException(s"Peer closed connection with code $code"))
+          if (code.exists(Protocol.CloseCodes.isError)) ctx.fail(new PeerClosedConnectionException(code.get, reason))
           else if (inMessage) ctx.fail(new ProtocolException(s"Truncated message, peer closed connection in the middle of message."))
           else ctx.finish()
         case ActivelyCloseWithCode(code, reason) ⇒

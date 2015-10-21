@@ -106,8 +106,7 @@ private[http] object FrameHandler {
           ctx.pull()
         case Opcode.Close ⇒
           become(WaitForPeerTcpClose)
-          val closeCode = FrameEventParser.parseCloseCode(data)
-          ctx.push(PeerClosed(closeCode))
+          ctx.push(PeerClosed.parse(data))
         case Opcode.Other(o) ⇒ closeWithCode(Protocol.CloseCodes.ProtocolError, "Unsupported opcode")
         case other           ⇒ ctx.fail(new IllegalStateException(s"unexpected message of type [${other.getClass.getName}] when expecting ControlFrame"))
       }
@@ -137,7 +136,7 @@ private[http] object FrameHandler {
         elem match {
           case FrameStart(FrameHeader(Opcode.Close, _, length, _, _, _, _), data) ⇒
             become(WaitForPeerTcpClose)
-            ctx.push(PeerClosed(FrameEventParser.parseCloseCode(data)))
+            ctx.push(PeerClosed.parse(data))
           case _ ⇒ ctx.pull() // ignore all other data
         }
     }
@@ -193,6 +192,13 @@ private[http] object FrameHandler {
   }
   final case class PeerClosed(code: Option[Int], reason: String = "") extends MessagePart with BypassEvent {
     def isMessageEnd: Boolean = true
+  }
+  object PeerClosed {
+    def parse(data: ByteString): PeerClosed =
+      FrameEventParser.parseCloseCode(data) match {
+        case Some((code, reason)) ⇒ PeerClosed(Some(code), reason)
+        case None                 ⇒ PeerClosed(None)
+      }
   }
 
   sealed trait BypassEvent extends Output
