@@ -181,7 +181,7 @@ private[akka] class CurrentEventsByPersistenceIdPublisher(
     deliverBuf()
     if (highestSeqNr < toSequenceNr)
       toSeqNr = highestSeqNr
-    if (highestSeqNr == 0L || (buf.isEmpty && currSeqNo > toSequenceNr))
+    if (buf.isEmpty && (currSeqNo > toSequenceNr || currSeqNo == fromSequenceNr))
       onCompleteThenStop()
     else
       self ! Continue // more to fetch
