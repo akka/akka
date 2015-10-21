@@ -15,7 +15,7 @@ import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 
-class HighLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") {
+class HighLevelOutgoingConnectionSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
 
   "The connection-level client implementation" should {

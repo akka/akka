@@ -8,7 +8,6 @@ import java.io.InputStream
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.{ SourceModule, SinkModule, PublisherSink }
-import akka.stream.scaladsl.FlexiMerge._
 import org.reactivestreams.{ Subscription, Processor, Subscriber, Publisher }
 import scala.collection.immutable
 import scala.concurrent.{ Promise, ExecutionContext, Future }
@@ -244,18 +243,6 @@ private[http] object StreamUtils {
     def setValue(value: T): Unit =
       if (!compareAndSet(null.asInstanceOf[T], value))
         throw new IllegalStateException("Value can be only set once.")
-  }
-
-  /** A merge for two streams that just forwards all elements and closes the connection eagerly. */
-  class EagerCloseMerge2[T](name: String) extends FlexiMerge[T, FanInShape2[T, T, T]](new FanInShape2(name), Attributes.name(name)) {
-    def createMergeLogic(s: FanInShape2[T, T, T]): MergeLogic[T] =
-      new MergeLogic[T] {
-        def initialState: State[T] = State[T](ReadAny(s.in0, s.in1)) {
-          case (ctx, port, in) ⇒ ctx.emit(in); SameState
-        }
-
-        override def initialCompletionHandling: CompletionHandling = eagerClose
-      }
   }
 
   // TODO: remove after #16394 is cleared
