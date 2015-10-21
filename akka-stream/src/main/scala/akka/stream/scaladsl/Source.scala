@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.actor.{ ActorRef, Cancellable, Props }
+import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.{ DefaultAttributes, MaterializingStageFactory, StageModule }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStages.TickSource
@@ -288,11 +289,13 @@ object Source extends SourceApply {
 
   /**
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
+   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` must
    * be [[akka.stream.actor.ActorPublisher]].
    */
-  def actorPublisher[T](props: Props): Source[T, ActorRef] =
+  def actorPublisher[T](props: Props): Source[T, ActorRef] = {
+    require(classOf[ActorPublisher[_]].isAssignableFrom(props.actorClass()), "Actor must be ActorPublisher")
     new Source(new ActorPublisherSource(props, DefaultAttributes.actorPublisherSource, shape("ActorPublisherSource")))
+  }
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].

@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.actor.{ ActorRef, Props }
+import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
@@ -198,11 +199,13 @@ object Sink extends SinkApply {
 
   /**
    * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
+   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` must
    * be [[akka.stream.actor.ActorSubscriber]].
    */
-  def actorSubscriber[T](props: Props): Sink[T, ActorRef] =
+  def actorSubscriber[T](props: Props): Sink[T, ActorRef] = {
+    require(classOf[ActorSubscriber].isAssignableFrom(props.actorClass()), "Actor must be ActorSubscriber")
     new Sink(new ActorSubscriberSink(props, DefaultAttributes.actorSubscriberSink, shape("ActorSubscriberSink")))
+  }
 
   /**
    * Creates a `Sink` that is materialized as an [[akka.stream.SinkQueue]].
