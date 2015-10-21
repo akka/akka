@@ -3,7 +3,6 @@
  */
 package akka.stream.impl
 
-import akka.stream.scaladsl.FlexiRoute.RouteLogic
 import akka.stream.{ AbruptTerminationException, Shape, ActorMaterializerSettings }
 
 import scala.collection.immutable
@@ -315,12 +314,4 @@ private[akka] class Unzip(_settings: ActorMaterializerSettings) extends FanOut(_
             s"can only handle Tuple2 and akka.japi.Pair!")
     }
   })
-}
-
-/**
- * INTERNAL API
- */
-private[akka] object FlexiRoute {
-  def props[T, S <: Shape](settings: ActorMaterializerSettings, ports: S, routeLogic: RouteLogic[T]): Props =
-    Props(new FlexiRouteImpl(settings, ports, routeLogic)).withDeploy(Deploy.local)
 }

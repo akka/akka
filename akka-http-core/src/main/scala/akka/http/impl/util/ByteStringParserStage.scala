@@ -37,7 +37,7 @@ private[akka] abstract class ByteStringParserStage[Out] extends StatefulStage[By
    * As [[read]] may be called several times for the same prefix of data, make sure not to
    * manipulate any state during reading from the ByteReader.
    */
-  trait ByteReadingState extends IntermediateState {
+  private[akka] trait ByteReadingState extends IntermediateState {
     def read(reader: ByteReader, ctx: Context[Out]): SyncDirective
 
     def onPush(data: ByteString, ctx: Context[Out]): SyncDirective =
@@ -50,7 +50,7 @@ private[akka] abstract class ByteStringParserStage[Out] extends StatefulStage[By
           pull(ctx)
       }
   }
-  case class TryAgain(previousData: ByteString, byteReadingState: ByteReadingState) extends IntermediateState {
+  private case class TryAgain(previousData: ByteString, byteReadingState: ByteReadingState) extends IntermediateState {
     def onPush(data: ByteString, ctx: Context[Out]): SyncDirective = {
       become(byteReadingState)
       byteReadingState.onPush(previousData ++ data, ctx)

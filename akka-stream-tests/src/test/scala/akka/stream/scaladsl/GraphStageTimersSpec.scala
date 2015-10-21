@@ -148,8 +148,9 @@ class GraphStageTimersSpec extends AkkaSpec {
 
     class TestStage2 extends SimpleLinearGraphStage[Int] {
       override def createLogic = new SimpleLinearStageLogic {
-        schedulePeriodically("tick", 100.millis)
         var tickCount = 0
+
+        override def preStart(): Unit = schedulePeriodically("tick", 100.millis)
 
         setHandler(out, new OutHandler {
           override def onPull() = () // Do nothing
@@ -195,7 +196,7 @@ class GraphStageTimersSpec extends AkkaSpec {
 
       Source(upstream).via(new SimpleLinearGraphStage[Int] {
         override def createLogic = new SimpleLinearStageLogic {
-          scheduleOnce("tick", 100.millis)
+          override def preStart(): Unit = scheduleOnce("tick", 100.millis)
 
           setHandler(in, new InHandler {
             override def onPush() = () // Ingore

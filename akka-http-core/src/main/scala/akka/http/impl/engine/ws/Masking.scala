@@ -25,14 +25,14 @@ private[http] object Masking {
     if (condition) Flow[FrameEvent].transform(() ⇒ new Unmasking())
     else Flow[FrameEvent]
 
-  class Masking(random: Random) extends Masker {
+  private class Masking(random: Random) extends Masker {
     def extractMask(header: FrameHeader): Int = random.nextInt()
     def setNewMask(header: FrameHeader, mask: Int): FrameHeader = {
       if (header.mask.isDefined) throw new ProtocolException("Frame mustn't already be masked")
       header.copy(mask = Some(mask))
     }
   }
-  class Unmasking extends Masker {
+  private class Unmasking extends Masker {
     def extractMask(header: FrameHeader): Int = header.mask match {
       case Some(mask) ⇒ mask
       case None       ⇒ throw new ProtocolException("Frame wasn't masked")
@@ -41,7 +41,7 @@ private[http] object Masking {
   }
 
   /** Implements both masking and unmasking which is mostly symmetric (because of XOR) */
-  abstract class Masker extends StatefulStage[FrameEvent, FrameEvent] {
+  private abstract class Masker extends StatefulStage[FrameEvent, FrameEvent] {
     def extractMask(header: FrameHeader): Int
     def setNewMask(header: FrameHeader, mask: Int): FrameHeader
 
@@ -58,7 +58,7 @@ private[http] object Masking {
             ctx.fail(new IllegalStateException("unexpected FrameData (need FrameStart first)"))
         }
     }
-    class Running(initialMask: Int) extends State {
+    private class Running(initialMask: Int) extends State {
       var mask = initialMask
 
       def onPush(part: FrameEvent, ctx: Context[FrameEvent]): SyncDirective = {

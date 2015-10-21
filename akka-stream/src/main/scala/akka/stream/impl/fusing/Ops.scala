@@ -865,7 +865,7 @@ private[stream] class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinea
     final override protected def onTimer(key: Any): Unit =
       completeStage()
 
-    scheduleOnce("TakeWithinTimer", timeout)
+    override def preStart(): Unit = scheduleOnce("TakeWithinTimer", timeout)
   }
 
   override def toString = "TakeWithin"
@@ -885,7 +885,7 @@ private[stream] class DropWithin[T](timeout: FiniteDuration) extends SimpleLinea
 
     final override protected def onTimer(key: Any): Unit = allow = true
 
-    scheduleOnce("DropWithinTimer", timeout)
+    override def preStart(): Unit = scheduleOnce("DropWithinTimer", timeout)
   }
 
   override def toString = "DropWithin"
