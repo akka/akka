@@ -298,12 +298,10 @@ class ConnectionPoolSpec extends AkkaSpec("""
     val incomingConnectionCounter = new AtomicInteger
     val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]
     val incomingConnectionsSub = {
-      val rawBytesInjection = BidiFlow() { b ⇒
-        val top = b.add(Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) ⇒ mapServerSideOutboundRawBytes(x) }
-          .transform(StreamUtils.recover { case NoErrorComplete ⇒ ByteString.empty }))
-        val bottom = b.add(Flow[ByteString].map(SessionBytes(null, _)))
-        BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
-      }
+      val rawBytesInjection = BidiFlow.fromFlows(
+        Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) ⇒ mapServerSideOutboundRawBytes(x) }
+          .transform(StreamUtils.recover { case NoErrorComplete ⇒ ByteString.empty }),
+        Flow[ByteString].map(SessionBytes(null, _)))
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink(incomingConnections)
       // TODO getHostString in Java7
       Tcp().bind(serverEndpoint.getHostName, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)

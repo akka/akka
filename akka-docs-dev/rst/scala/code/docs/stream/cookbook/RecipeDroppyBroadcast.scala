@@ -1,6 +1,6 @@
 package docs.stream.cookbook
 
-import akka.stream.OverflowStrategy
+import akka.stream.{ ClosedShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 
@@ -24,7 +24,7 @@ class RecipeDroppyBroadcast extends RecipeSpec {
       val mySink3 = Sink(sub3)
 
       //#droppy-bcast
-      val graph = FlowGraph.closed(mySink1, mySink2, mySink3)((_, _, _)) { implicit b =>
+      val graph = RunnableGraph.fromGraph(FlowGraph.create(mySink1, mySink2, mySink3)((_, _, _)) { implicit b =>
         (sink1, sink2, sink3) =>
           import FlowGraph.Implicits._
 
@@ -34,7 +34,8 @@ class RecipeDroppyBroadcast extends RecipeSpec {
           bcast.buffer(10, OverflowStrategy.dropHead) ~> sink1
           bcast.buffer(10, OverflowStrategy.dropHead) ~> sink2
           bcast.buffer(10, OverflowStrategy.dropHead) ~> sink3
-      }
+          ClosedShape
+      })
       //#droppy-bcast
 
       graph.run()

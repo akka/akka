@@ -6,7 +6,7 @@ package akka.http.impl.engine.client
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
+import akka.stream.{ FlowShape, ActorMaterializer }
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 import akka.http.scaladsl.{ Http, TestUtils }
@@ -44,7 +44,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
       val connFlow = Http().outgoingConnection(serverHostName, serverPort)
 
       val C = 4
-      val doubleConnection = Flow() { implicit b ⇒
+      val doubleConnection = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
 
         val bcast = b.add(Broadcast[HttpRequest](C))
@@ -52,8 +52,8 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
 
         for (i ← 0 until C)
           bcast.out(i) ~> connFlow ~> merge.in(i)
-        (bcast.in, merge.out)
-      }
+        FlowShape(bcast.in, merge.out)
+      })
 
       val N = 100
       val result = Source(() ⇒ Iterator.from(1))

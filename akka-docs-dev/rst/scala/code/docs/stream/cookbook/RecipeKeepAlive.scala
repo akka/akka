@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.stream.ClosedShape
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.util.ByteString
@@ -25,14 +26,15 @@ class RecipeKeepAlive extends RecipeSpec {
       val tickToKeepAlivePacket: Flow[Tick, ByteString, Unit] = Flow[Tick]
         .conflate(seed = (tick) => keepaliveMessage)((msg, newTick) => msg)
 
-      val graph = FlowGraph.closed() { implicit builder =>
+      val graph = RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
         import FlowGraph.Implicits._
         val unfairMerge = builder.add(MergePreferred[ByteString](1))
 
         // If data is available then no keepalive is injected
         dataStream ~> unfairMerge.preferred
         ticks ~> tickToKeepAlivePacket ~> unfairMerge ~> sink
-      }
+        ClosedShape
+      })
       //#inject-keepalive
 
       graph.run()

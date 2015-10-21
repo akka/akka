@@ -9,7 +9,7 @@ import akka.stream.io.{ SessionBytes, SslTlsOutbound, SendBytes }
 import org.scalatest.Inside
 import akka.util.ByteString
 import akka.event.NoLogging
-import akka.stream.ActorMaterializer
+import akka.stream.{ ClosedShape, ActorMaterializer }
 import akka.stream.testkit._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpEntity._
@@ -359,14 +359,15 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       val netOut = TestSubscriber.manualProbe[ByteString]
       val netIn = TestPublisher.manualProbe[ByteString]()
 
-      FlowGraph.closed(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒
         client ⇒
           import FlowGraph.Implicits._
           Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
           client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink(netOut)
           Source(requests) ~> client.in1
           client.out2 ~> Sink(responses)
-      }.run()
+          ClosedShape
+      }).run()
 
       netOut -> netIn
     }
