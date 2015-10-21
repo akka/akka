@@ -48,7 +48,7 @@ public class RecipeSimpleDrop extends RecipeTest {
           .<Message> probe(system)
           .via(droppyStream)
           .toMat(TestSink.probe(system),
-            (pub, sub) -> new Pair(pub, sub))
+            (pub, sub) -> new Pair<>(pub, sub))
           .run(mat);
         final TestPublisher.Probe<Message> pub = pubSub.first();
         final TestSubscriber.Probe<Message> sub = pubSub.second();

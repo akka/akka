@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import akka.stream.javadsl.FlowGraph;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -110,13 +111,13 @@ public class BidiFlowDocTest {
   @SuppressWarnings("unused")
   //#codec
   public final BidiFlow<Message, ByteString, ByteString, Message, BoxedUnit> codecVerbose =
-      BidiFlow.factory().create(b -> {
+      BidiFlow.fromGraph(FlowGraph.create(b -> {
         final FlowShape<Message, ByteString> top =
-            b.graph(Flow.<Message> empty().map(BidiFlowDocTest::toBytes));
+                b.add(Flow.of(Message.class).map(BidiFlowDocTest::toBytes));
         final FlowShape<ByteString, Message> bottom =
-            b.graph(Flow.<ByteString> empty().map(BidiFlowDocTest::fromBytes));
+                b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::fromBytes));
         return new BidiShape<>(top, bottom);
-      });
+      }));
 
   public final BidiFlow<Message, ByteString, ByteString, Message, BoxedUnit> codec =
       BidiFlow.fromFunctions(BidiFlowDocTest::toBytes, BidiFlowDocTest::fromBytes);
@@ -186,13 +187,13 @@ public class BidiFlowDocTest {
   }
   
   public final BidiFlow<ByteString, ByteString, ByteString, ByteString, BoxedUnit> framing =
-      BidiFlow.factory().create(b -> {
+      BidiFlow.fromGraph(FlowGraph.create(b -> {
         final FlowShape<ByteString, ByteString> top =
-            b.graph(Flow.<ByteString> empty().map(BidiFlowDocTest::addLengthHeader));
+                b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::addLengthHeader));
         final FlowShape<ByteString, ByteString> bottom =
-            b.graph(Flow.<ByteString> empty().transform(() -> new FrameParser()));
+                b.add(Flow.of(ByteString.class).transform(() -> new FrameParser()));
         return new BidiShape<>(top, bottom);
-      });
+      }));
   //#framing
   
   @Test
@@ -214,7 +215,7 @@ public class BidiFlowDocTest {
 
     // test it by plugging it into its own inverse and closing the right end
     final Flow<Message, Message, BoxedUnit> pingpong = 
-        Flow.<Message> empty().collect(new PFBuilder<Message, Message>()
+        Flow.of(Message.class).collect(new PFBuilder<Message, Message>()
             .match(Ping.class, p -> new Pong(p.id))
             .build()
             );

@@ -5,8 +5,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 
-import akka.stream.{ OverflowStrategy, ActorMaterializerSettings }
-import akka.stream.ActorMaterializer
+import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 
@@ -24,12 +23,13 @@ class GraphBroadcastSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         Source(List(1, 2, 3)) ~> bcast.in
         bcast.out(0) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c1)
         bcast.out(1) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
-      }.run()
+        ClosedShape
+      }).run()
 
       val sub1 = c1.expectSubscription()
       val sub2 = c2.expectSubscription()
@@ -53,7 +53,7 @@ class GraphBroadcastSpec extends AkkaSpec {
       val headSink = Sink.head[Seq[Int]]
 
       import system.dispatcher
-      val result = FlowGraph.closed(
+      val result = RunnableGraph.fromGraph(FlowGraph.create(
         headSink,
         headSink,
         headSink,
@@ -68,7 +68,8 @@ class GraphBroadcastSpec extends AkkaSpec {
               bcast.out(2).grouped(5) ~> p3.inlet
               bcast.out(3).grouped(5) ~> p4.inlet
               bcast.out(4).grouped(5) ~> p5.inlet
-          }.run()
+              ClosedShape
+          }).run()
 
       Await.result(result, 3.seconds) should be(List.fill(5)(List(1, 2, 3)))
     }
@@ -83,7 +84,7 @@ class GraphBroadcastSpec extends AkkaSpec {
         (f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22) ⇒
           Future.sequence(List(f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22))
 
-      val result = FlowGraph.closed(
+      val result = RunnableGraph.fromGraph(FlowGraph.create(
         headSink, headSink, headSink, headSink, headSink,
         headSink, headSink, headSink, headSink, headSink,
         headSink, headSink, headSink, headSink, headSink,
@@ -115,7 +116,8 @@ class GraphBroadcastSpec extends AkkaSpec {
               bcast.out(19).grouped(5) ~> p20.inlet
               bcast.out(20).grouped(5) ~> p21.inlet
               bcast.out(21).grouped(5) ~> p22.inlet
-        }.run()
+              ClosedShape
+        }).run()
 
       Await.result(result, 3.seconds) should be(List.fill(22)(List(1, 2, 3)))
     }
@@ -124,12 +126,13 @@ class GraphBroadcastSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         Source(List(1, 2, 3)) ~> bcast.in
         bcast.out(0) ~> Flow[Int] ~> Sink(c1)
         bcast.out(1) ~> Flow[Int] ~> Sink(c2)
-      }.run()
+        ClosedShape
+      }).run()
 
       val sub1 = c1.expectSubscription()
       sub1.cancel()
@@ -145,12 +148,13 @@ class GraphBroadcastSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         Source(List(1, 2, 3)) ~> bcast.in
         bcast.out(0) ~> Flow[Int].named("identity-a") ~> Sink(c1)
         bcast.out(1) ~> Flow[Int].named("identity-b") ~> Sink(c2)
-      }.run()
+        ClosedShape
+      }).run()
 
       val sub1 = c1.expectSubscription()
       val sub2 = c2.expectSubscription()
@@ -167,12 +171,13 @@ class GraphBroadcastSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         Source(p1.getPublisher) ~> bcast.in
         bcast.out(0) ~> Flow[Int] ~> Sink(c1)
         bcast.out(1) ~> Flow[Int] ~> Sink(c2)
-      }.run()
+        ClosedShape
+      }).run()
 
       val bsub = p1.expectSubscription()
       val sub1 = c1.expectSubscription()
@@ -195,12 +200,12 @@ class GraphBroadcastSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      val sink = Sink() { implicit b ⇒
+      val sink = Sink.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         bcast.out(0) ~> Sink(c1)
         bcast.out(1) ~> Sink(c2)
-        bcast.in
-      }
+        SinkShape(bcast.in)
+      })
 
       val s = Source.subscriber[Int].to(sink).run()
 

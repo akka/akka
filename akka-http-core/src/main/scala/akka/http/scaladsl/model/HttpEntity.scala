@@ -75,7 +75,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
   def withContentType(contentType: ContentType): HttpEntity
 
   /** Java API */
-  def getDataBytes: stream.javadsl.Source[ByteString, _] = stream.javadsl.Source.adapt(dataBytes)
+  def getDataBytes: stream.javadsl.Source[ByteString, _] = stream.javadsl.Source.fromGraph(dataBytes)
 
   /** Java API */
   def getContentLengthOption: japi.Option[JLong] =
@@ -296,7 +296,7 @@ object HttpEntity {
     override def productPrefix = "HttpEntity.Chunked"
 
     /** Java API */
-    def getChunks: stream.javadsl.Source[jm.ChunkStreamPart, Any] = stream.javadsl.Source.adapt(chunks)
+    def getChunks: stream.javadsl.Source[jm.ChunkStreamPart, Any] = stream.javadsl.Source.fromGraph(chunks)
   }
   object Chunked {
     /**

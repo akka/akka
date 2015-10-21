@@ -25,14 +25,16 @@ class GraphZipSpec extends TwoStreamsSetup {
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[(Int, String)]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val zip = b.add(Zip[Int, String]())
 
         Source(1 to 4) ~> zip.in0
         Source(List("A", "B", "C", "D", "E", "F")) ~> zip.in1
 
         zip.out ~> Sink(probe)
-      }.run()
+
+        ClosedShape
+      }).run()
 
       val subscription = probe.expectSubscription()
 

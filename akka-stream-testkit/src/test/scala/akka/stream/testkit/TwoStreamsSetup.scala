@@ -1,6 +1,6 @@
 package akka.stream.testkit
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Inlet, Outlet }
+import akka.stream._
 import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
 import scala.collection.immutable
@@ -19,15 +19,15 @@ abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
 
   override def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
     val subscriber = TestSubscriber.probe[Outputs]()
-    FlowGraph.closed() { implicit b ⇒
+    RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val f = fixture(b)
 
       Source(p1) ~> f.left
       Source(p2) ~> f.right
       f.out ~> Sink(subscriber)
-
-    }.run()
+      ClosedShape
+    }).run()
 
     subscriber
   }

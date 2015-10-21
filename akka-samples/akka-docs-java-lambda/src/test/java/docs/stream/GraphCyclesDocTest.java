@@ -46,17 +46,17 @@ public class GraphCyclesDocTest {
         return s;
       });
 
-    FlowGraph.factory().closed(b -> {
-      final UniformFanInShape<Integer, Integer> merge = b.graph(Merge.create(2));
-      final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
-
-      final Outlet<Integer> src = b.source(source);
-      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
-      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
+    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+      final UniformFanInShape<Integer, Integer> merge = b.add(Merge.create(2));
+      final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
+      final Outlet<Integer> src = b.add(source).outlet();
+      final FlowShape<Integer, Integer> printer = b.add(printFlow);
+      final SinkShape<Integer> ignore = b.add(Sink.ignore());
       
       b.from(src).viaFanIn(merge).via(printer).viaFanOut(bcast).to(ignore);
                       b.to(merge)            .fromFanOut(bcast);
-    });
+      return ClosedShape.getInstance();
+    }));
     //#deadlocked
   }
 
@@ -69,17 +69,17 @@ public class GraphCyclesDocTest {
         });
     //#unfair
     // WARNING! The graph below stops consuming from "source" after a few steps
-    FlowGraph.factory().closed(b -> {
-      final MergePreferredShape<Integer> merge = b.graph(MergePreferred.create(1));
-      final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
-
-      final Outlet<Integer> src = b.source(source);
-      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
-      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
+    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+      final MergePreferredShape<Integer> merge = b.add(MergePreferred.create(1));
+      final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
+      final Outlet<Integer> src = b.add(source).outlet();
+      final FlowShape<Integer, Integer> printer = b.add(printFlow);
+      final SinkShape<Integer> ignore = b.add(Sink.ignore());
       
       b.from(src).viaFanIn(merge).via(printer).viaFanOut(bcast).to(ignore);
                       b.to(merge.preferred()).fromFanOut(bcast);
-    });
+      return ClosedShape.getInstance();
+    }));
     //#unfair
   }
 
@@ -91,19 +91,19 @@ public class GraphCyclesDocTest {
           return s;
         });
     //#dropping
-    FlowGraph.factory().closed(b -> {
-      final UniformFanInShape<Integer, Integer> merge = b.graph(Merge.create(2));
-      final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
-      final FlowShape<Integer, Integer> droppyFlow = b.graph(
-          Flow.of(Integer.class).buffer(10, OverflowStrategy.dropHead()));
-
-      final Outlet<Integer> src = b.source(source);
-      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
-      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
+    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+      final UniformFanInShape<Integer, Integer> merge = b.add(Merge.create(2));
+      final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
+      final FlowShape<Integer, Integer> droppyFlow = b.add(
+        Flow.of(Integer.class).buffer(10, OverflowStrategy.dropHead()));
+      final Outlet<Integer> src = b.add(source).outlet();
+      final FlowShape<Integer, Integer> printer = b.add(printFlow);
+      final SinkShape<Integer> ignore = b.add(Sink.ignore());
       
       b.from(src).viaFanIn(merge).via(printer).viaFanOut(bcast).to(ignore);
                    b.to(merge).via(droppyFlow).fromFanOut(bcast);
-    });
+      return ClosedShape.getInstance();
+    }));
     //#dropping
   }
 
@@ -116,18 +116,18 @@ public class GraphCyclesDocTest {
         });
     //#zipping-dead
     // WARNING! The graph below never processes any elements
-    FlowGraph.factory().closed(b -> {
-      final FanInShape2<Integer, Integer, Integer>
-        zip = b.graph(ZipWith.create((Integer left, Integer right) -> left));
-      final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
+    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+      final FanInShape2<Integer, Integer, Integer> zip =
+        b.add(ZipWith.create((Integer left, Integer right) -> left));
+      final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
+      final FlowShape<Integer, Integer> printer = b.add(printFlow);
+      final SinkShape<Integer> ignore = b.add(Sink.ignore());
 
-      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
-      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
-
-      b.from(b.graph(source)).toInlet(zip.in0());
+      b.from(b.add(source)).toInlet(zip.in0());
       b.from(zip.out()).via(printer).viaFanOut(bcast).to(ignore);
         b.to(zip.in1())            .fromFanOut(bcast);
-    });
+      return ClosedShape.getInstance();
+    }));
     //#zipping-dead
   }
 
@@ -139,20 +139,20 @@ public class GraphCyclesDocTest {
           return s;
         });
     //#zipping-live
-    FlowGraph.factory().closed(b -> {
-      final FanInShape2<Integer, Integer, Integer>
-        zip = b.graph(ZipWith.create((Integer left, Integer right) -> left));
-      final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
-      final UniformFanInShape<Integer, Integer> concat = b.graph(Concat.create());
+    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+      final FanInShape2<Integer, Integer, Integer> zip =
+        b.add(ZipWith.create((Integer left, Integer right) -> left));
+      final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
+      final UniformFanInShape<Integer, Integer> concat = b.add(Concat.create());
+      final FlowShape<Integer, Integer> printer = b.add(printFlow);
+      final SinkShape<Integer> ignore = b.add(Sink.ignore());
 
-      final FlowShape<Integer, Integer> printer = b.graph(printFlow);
-      final SinkShape<Integer> ignore = b.graph(Sink.ignore());
-
-      b.from(b.graph(source)).toInlet(zip.in0());
+      b.from(b.add(source)).toInlet(zip.in0());
       b.from(zip.out()).via(printer).viaFanOut(bcast).to(ignore);
-        b.to(zip.in1()).viaFanIn(concat).from(b.graph(Source.single(1)));
-                            b.to(concat)  .fromFanOut(bcast);
-    });
+        b.to(zip.in1()).viaFanIn(concat).from(b.add(Source.single(1)));
+                            b.to(concat).fromFanOut(bcast);
+      return ClosedShape.getInstance();
+    }));
     //#zipping-live
   }
 

@@ -385,15 +385,16 @@ public class FlowTest extends StreamTest {
 
     final Sink<String, Publisher<String>> publisher = Sink.publisher();
     
-    final Source<String, BoxedUnit> source = Source.factory().create(new Function<FlowGraph.Builder<BoxedUnit>, Outlet<String>>() {
-      @Override
-      public Outlet<String> apply(Builder<BoxedUnit> b) throws Exception {
-        final UniformFanInShape<String, String> merge = b.graph(Merge.<String> create(2));
-        b.flow(b.source(in1), f1, merge.in(0));
-        b.flow(b.source(in2), f2, merge.in(1));
-        return merge.out();
-      }
-    });
+    final Source<String, BoxedUnit> source = Source.fromGraph(
+            FlowGraph.create(new Function<FlowGraph.Builder<BoxedUnit>, SourceShape<String>>() {
+              @Override
+              public SourceShape<String> apply(Builder<BoxedUnit> b) throws Exception {
+                final UniformFanInShape<String, String> merge = b.add(Merge.<String>create(2));
+                b.from(b.add(in1)).via(b.add(f1)).toInlet(merge.in(0));
+                b.from(b.add(in2)).via(b.add(f2)).toInlet(merge.in(1));
+                return new SourceShape<String>(merge.out());
+              }
+            }));
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);
@@ -409,23 +410,25 @@ public class FlowTest extends StreamTest {
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<Integer> input2 = Arrays.asList(1, 2, 3);
 
-    final Builder<BoxedUnit> b = FlowGraph.<BoxedUnit>builder();
-    final Outlet<String> in1 = b.source(Source.from(input1));
-    final Outlet<Integer> in2 = b.source(Source.from(input2));
-    final FanInShape2<String, Integer, Pair<String, Integer>> zip = b.graph(Zip.<String, Integer> create());
-    final Inlet<Pair<String, Integer>> out = b.sink(Sink
-        .foreach(new Procedure<Pair<String, Integer>>() {
-          @Override
-          public void apply(Pair<String, Integer> param) throws Exception {
-            probe.getRef().tell(param, ActorRef.noSender());
-          }
-        }));
-    
-    b.edge(in1, zip.in0());
-    b.edge(in2, zip.in1());
-    b.edge(zip.out(), out);
-    
-    b.run(materializer);
+    RunnableGraph.fromGraph(FlowGraph.create(new Function<Builder<BoxedUnit>, ClosedShape>(){
+      public ClosedShape apply(Builder<BoxedUnit> b) {
+        final Outlet<String> in1 = b.add(Source.from(input1)).outlet();
+        final Outlet<Integer> in2 = b.add(Source.from(input2)).outlet();
+        final FanInShape2<String, Integer, Pair<String, Integer>> zip = b.add(Zip.<String, Integer>create());
+        final SinkShape<Pair<String, Integer>> out =
+          b.add(Sink.foreach(new Procedure<Pair<String, Integer>>() {
+            @Override
+            public void apply(Pair<String, Integer> param) throws Exception {
+              probe.getRef().tell(param, ActorRef.noSender());
+            }
+          }));
+
+        b.from(in1).toInlet(zip.in0());
+        b.from(in2).toInlet(zip.in1());
+        b.from(zip.out()).to(out);
+        return ClosedShape.getInstance();
+      }
+    })).run(materializer);
 
     List<Object> output = Arrays.asList(probe.receiveN(3));
     @SuppressWarnings("unchecked")
@@ -638,19 +641,18 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToBroadcastEagerCancel() throws Exception {
-    final Sink<String, BoxedUnit> out1 = Sink.cancelled();
-    final Sink<String, ?> out2 = Sink.ignore();
-
-    final Sink<String, BoxedUnit> sink = Sink.factory().<String>create(new Function<FlowGraph.Builder<BoxedUnit>, Inlet<String>>() {
-      @Override
-      public Inlet<String> apply(Builder<BoxedUnit> b) throws Exception {
-        final UniformFanOutShape<String, String> broadcast = b.graph(Broadcast.<String>create(2, true));
-
-        b.from(broadcast.out(0)).to(b.graph(out1));
-        b.from(broadcast.out(1)).to(b.graph(out2));
-        return broadcast.in();
-      }
-    });
+    final Sink<String, BoxedUnit> sink = Sink.fromGraph(
+      FlowGraph.create(new Function<FlowGraph.Builder<BoxedUnit>, SinkShape<String>>() {
+        @Override
+        public SinkShape<String> apply(Builder<BoxedUnit> b) throws Exception {
+          final UniformFanOutShape<String, String> broadcast = b.add(Broadcast.<String>create(2, true));
+          final SinkShape<String> out1 = b.add(Sink.<String>cancelled());
+          final SinkShape<String> out2 = b.add(Sink.<String>ignore());
+          b.from(broadcast.out(0)).to(out1);
+          b.from(broadcast.out(1)).to(out2);
+          return new SinkShape<String>(broadcast.in());
+        }
+      }));
 
     final JavaTestKit probe = new JavaTestKit(system);
     Source<String, ActorRef> source = Source.actorRef(1, OverflowStrategy.dropNew());

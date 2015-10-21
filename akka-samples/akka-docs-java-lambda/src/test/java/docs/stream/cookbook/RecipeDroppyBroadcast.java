@@ -4,6 +4,7 @@
 package docs.stream.cookbook;
 
 import akka.actor.ActorSystem;
+import akka.stream.*;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.OverflowStrategy;
@@ -61,15 +62,16 @@ public class RecipeDroppyBroadcast extends RecipeTest {
         final Source<Integer, BoxedUnit> myData = Source.from(nums);
 
         //#droppy-bcast2
-        FlowGraph.factory().closed(builder -> {
+        RunnableGraph.fromGraph(FlowGraph.create(builder -> {
           final int outputCount = 3;
           final UniformFanOutShape<Integer, Integer> bcast =
-            builder.graph(Broadcast.create(outputCount));
-          builder.from(builder.source(myData)).toFanOut(bcast);
-          builder.from(bcast).toInlet(builder.sink(droppySink(mySink1, 10)));
-          builder.from(bcast).toInlet(builder.sink(droppySink(mySink2, 10)));
-          builder.from(bcast).toInlet(builder.sink(droppySink(mySink3, 10)));
-        });
+            builder.add(Broadcast.create(outputCount));
+          builder.from(builder.add(myData)).toFanOut(bcast);
+          builder.from(bcast).to(builder.add(droppySink(mySink1, 10)));
+          builder.from(bcast).to(builder.add(droppySink(mySink2, 10)));
+          builder.from(bcast).to(builder.add(droppySink(mySink3, 10)));
+          return ClosedShape.getInstance();
+        }));
         //#droppy-bcast2
       }
     };

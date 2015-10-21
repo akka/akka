@@ -38,7 +38,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
 
           val source =
             Source(List(1, 2, 3, 4, 5)).map(num ⇒ TextMessage.Strict(s"Message $num"))
-          val handler = Flow.wrap(Sink.ignore, source)(Keep.none)
+          val handler = Flow.fromSinkAndSourceMat(Sink.ignore, source)(Keep.none)
           val response = upgrade.get.handleMessages(handler)
           responses.sendNext(response)
 

@@ -21,6 +21,7 @@ import scala.concurrent.Promise;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
+import scala.Option;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.dispatch.Futures;
@@ -211,17 +212,18 @@ public class FlowDocTest {
 
     FiniteDuration oneSecond = FiniteDuration.apply(1, TimeUnit.SECONDS);
     Flow<Integer, Integer, Cancellable> throttler =
-      Flow.factory().create(Source.from(oneSecond, oneSecond, ""),
-         (b, tickSource) -> {
-            FanInShape2<String, Integer, Integer> zip = b.graph(ZipWith.create(Keep.right()));
-            b.from(tickSource).toInlet(zip.in0());
-            return new Pair<>(zip.in1(), zip.out());
-         });
+      Flow.fromGraph(FlowGraph.create(
+        Source.from(oneSecond, oneSecond, ""),
+        (b, tickSource) -> {
+          FanInShape2<String, Integer, Integer> zip = b.add(ZipWith.create(Keep.right()));
+          b.from(tickSource).toInlet(zip.in0());
+          return new FlowShape<>(zip.in1(), zip.out());
+        }));
 
     //#flow-mat-combine
 
     // An empty source that can be shut down explicitly from the outside
-    Source<Integer, Promise<BoxedUnit>> source = Source.<Integer>lazyEmpty();
+    Source<Integer, Promise<Option<Integer>>> source = Source.<Integer>maybe();
 
     // A flow that internally throttles elements to 1/second, and returns a Cancellable
     // which can be used to shut down the stream
@@ -232,7 +234,7 @@ public class FlowDocTest {
 
 
     // By default, the materialized value of the leftmost stage is preserved
-    RunnableGraph<Promise<BoxedUnit>> r1 = source.via(flow).to(sink);
+    RunnableGraph<Promise<Option<Integer>>> r1 = source.via(flow).to(sink);
 
     // Simple selection of materialized values by using Keep.right
     RunnableGraph<Cancellable> r2 = source.viaMat(flow, Keep.right()).to(sink);
@@ -241,17 +243,17 @@ public class FlowDocTest {
     // Using runWith will always give the materialized values of the stages added
     // by runWith() itself
     Future<Integer> r4 = source.via(flow).runWith(sink, mat);
-    Promise<BoxedUnit> r5 = flow.to(sink).runWith(source, mat);
-    Pair<Promise<BoxedUnit>, Future<Integer>> r6 = flow.runWith(source, sink, mat);
+    Promise<Option<Integer>> r5 = flow.to(sink).runWith(source, mat);
+    Pair<Promise<Option<Integer>>, Future<Integer>> r6 = flow.runWith(source, sink, mat);
 
     // Using more complext combinations
-    RunnableGraph<Pair<Promise<BoxedUnit>, Cancellable>> r7 =
+    RunnableGraph<Pair<Promise<Option<Integer>>, Cancellable>> r7 =
     source.viaMat(flow, Keep.both()).to(sink);
 
-    RunnableGraph<Pair<Promise<BoxedUnit>, Future<Integer>>> r8 =
+    RunnableGraph<Pair<Promise<Option<Integer>>, Future<Integer>>> r8 =
     source.via(flow).toMat(sink, Keep.both());
 
-    RunnableGraph<Pair<Pair<Promise<BoxedUnit>, Cancellable>, Future<Integer>>> r9 =
+    RunnableGraph<Pair<Pair<Promise<Option<Integer>>, Cancellable>, Future<Integer>>> r9 =
     source.viaMat(flow, Keep.both()).toMat(sink, Keep.both());
 
     RunnableGraph<Pair<Cancellable, Future<Integer>>> r10 =
@@ -263,7 +265,7 @@ public class FlowDocTest {
 
     RunnableGraph<Cancellable> r11 =
     r9.mapMaterializedValue( (nestedTuple) -> {
-      Promise<BoxedUnit> p = nestedTuple.first().first();
+      Promise<Option<Integer>> p = nestedTuple.first().first();
       Cancellable c = nestedTuple.first().second();
       Future<Integer> f = nestedTuple.second();
 

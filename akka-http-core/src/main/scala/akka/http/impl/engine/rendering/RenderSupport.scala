@@ -5,6 +5,7 @@
 package akka.http.impl.engine.rendering
 
 import akka.parboiled2.CharUtils
+import akka.stream.SourceShape
 import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream.scaladsl._
@@ -31,12 +32,12 @@ private object RenderSupport {
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
   def CancelSecond[T, Mat](first: Source[T, Mat], second: Source[T, Any]): Source[T, Mat] = {
-    Source(first) { implicit b ⇒
+    Source.fromGraph(FlowGraph.create(first) { implicit b ⇒
       frst ⇒
         import FlowGraph.Implicits._
         second ~> Sink.cancelled
-        frst.outlet
-    }
+        SourceShape(frst.outlet)
+    })
   }
 
   def renderEntityContentType(r: Rendering, entity: HttpEntity) =

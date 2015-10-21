@@ -15,14 +15,6 @@ import scala.util.Try
 
 /** Java API */
 object Sink {
-
-  val factory: SinkCreate = new SinkCreate {}
-
-  /** Adapt [[scaladsl.Sink]] for use within Java DSL */
-  //FIXME: Is this needed now?
-  def adapt[O, M](sink: scaladsl.Sink[O, M]): javadsl.Sink[O, M] =
-    new Sink(sink)
-
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
    * output (or the given `zero` value) and the element as input.
@@ -133,10 +125,10 @@ object Sink {
    * A graph with the shape of a sink logically is a sink, this method makes
    * it so also in type.
    */
-  def wrap[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
+  def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
       case s: Sink[T, M] ⇒ s
-      case other         ⇒ new Sink(scaladsl.Sink.wrap(other))
+      case other         ⇒ new Sink(scaladsl.Sink.fromGraph(other))
     }
 
   /**

@@ -84,7 +84,7 @@ public class RecipeLoggingElements extends RecipeTest {
         mySource.log("custom", adapter);
         //#log-custom
 
-        new DebugFilter("customLogger", "[custom] Element: ", false, false, 3).intercept(new AbstractFunction0() {
+        new DebugFilter("customLogger", "[custom] Element: ", false, false, 3).intercept(new AbstractFunction0  () {
           public Void apply() {
             mySource.log("custom", adapter).runWith(Sink.ignore(), mat);
             return null;
