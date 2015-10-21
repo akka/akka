@@ -39,7 +39,7 @@ private[http] object Websocket {
 
   /** The lowest layer that implements the binary protocol */
   def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, Unit] =
-    BidiFlow.wrap(
+    BidiFlow.fromFlowsMat(
       Flow[ByteString].transform(() ⇒ new FrameEventParser),
       Flow[FrameEvent].transform(() ⇒ new FrameEventRenderer))(Keep.none)
       .named("ws-framing")
@@ -56,7 +56,7 @@ private[http] object Websocket {
   def frameHandling(serverSide: Boolean = true,
                     closeTimeout: FiniteDuration,
                     log: LoggingAdapter): BidiFlow[FrameEvent, FrameHandler.Output, FrameOutHandler.Input, FrameStart, Unit] =
-    BidiFlow.wrap(
+    BidiFlow.fromFlowsMat(
       FrameHandler.create(server = serverSide),
       FrameOutHandler.create(serverSide, closeTimeout, log))(Keep.none)
       .named("ws-frame-handling")
@@ -121,7 +121,7 @@ private[http] object Websocket {
       MessageToFrameRenderer.create(serverSide)
         .named("ws-render-messages")
 
-    BidiFlow() { implicit b ⇒
+    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
 
       val split = b.add(BypassRouter)
@@ -146,7 +146,7 @@ private[http] object Websocket {
         messagePreparation.outlet,
         messageRendering.inlet,
         merge.out)
-    }.named("ws-message-api")
+    }.named("ws-message-api"))
   }
 
   private object BypassRouter extends GraphStage[FanOutShape2[Output, BypassEvent, MessagePart]] {

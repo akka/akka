@@ -8,24 +8,10 @@ import akka.stream.impl.StreamLayout.Module
 import akka.stream.{ Graph, Attributes, Shape }
 
 trait GraphApply {
-
-  /**
-   * Creates a new fully connected graph by passing a [[FlowGraph.Builder]] to the given create function.
-   *
-   * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
-   */
-  def closed()(buildBlock: (FlowGraph.Builder[Unit]) ⇒ Unit): RunnableGraph[Unit] = {
-    val builder = new FlowGraph.Builder
-    buildBlock(builder)
-    builder.buildRunnable()
-  }
-
   /**
    * Creates a new [[Graph]] by passing a [[FlowGraph.Builder]] to the given create function.
-   *
-   * Partial graphs are allowed to have unconnected ports.
    */
-  def partial[S <: Shape]()(buildBlock: FlowGraph.Builder[Unit] ⇒ S): Graph[S, Unit] = {
+  def create[S <: Shape]()(buildBlock: FlowGraph.Builder[Unit] ⇒ S): Graph[S, Unit] = {
     val builder = new FlowGraph.Builder
     val s = buildBlock(builder)
     val mod = builder.module.nest().replaceShape(s)
@@ -34,25 +20,10 @@ trait GraphApply {
   }
 
   /**
-   * Creates a new fully connected graph by importing the given graph `g1` (using `builder.graph()`) and passing its resulting [[Shape]]
-   * along with the[[FlowGraph.Builder]] to the given create function.
-   *
-   * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
+   * Creates a new [[Graph]] by importing the given graph `g1` and passing its [[Shape]]
+   * along with the [[FlowGraph.Builder]] to the given create function.
    */
-  def closed[Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ Unit): RunnableGraph[Mat] = {
-    val builder = new FlowGraph.Builder
-    val p1 = builder.add(g1)
-    buildBlock(builder)(p1)
-    builder.buildRunnable()
-  }
-
-  /**
-   * Creates a new [[Graph]] by importing the given graph `g1` (using `builder.graph()`) and passing its resulting [[Shape]]
-   * along with the[[FlowGraph.Builder]] to the given create function.
-   *
-   * Partial graphs are allowed to have unconnected ports.
-   */
-  def partial[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
+  def create[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
     val builder = new FlowGraph.Builder
     val s1 = builder.add(g1)
     val s = buildBlock(builder)(s1)
@@ -62,29 +33,13 @@ trait GraphApply {
   }
 
 
-  [2..#/**
-   * Creates a new fully connected graph by importing the given graphs (using `builder.graph()`) and passing their resulting [[Shape]]s
-   * along with the[[FlowGraph.Builder]] to the given create function.
-   *
-   * The created graph must have all ports connected, otherwise an [[IllegalArgumentException]] is thrown.
-   */
-  def closed[Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ Unit): RunnableGraph[Mat] = {
-    val builder = new FlowGraph.Builder
-    val curried = combineMat.curried
-    val s##1 = builder.add(g##1, (m##1: M##1) ⇒ curried(m##1))
-    [2..#val s1 = builder.add(g1, (f: M1 ⇒ Any, m1: M1) ⇒ f(m1))#
-    ]
-    buildBlock(builder)([#s1#])
-    builder.buildRunnable()
-  }
+  [2..#
 
   /**
-   * Creates a new [[Graph]] by importing the given graphs (using `builder.graph()`) and passing their resulting [[Shape]]s
-   * along with the[[FlowGraph.Builder]] to the given create function.
-   *
-   * Partial graphs are allowed to have unconnected ports.
+   * Creates a new [[Graph]] by importing the given graphs and passing their [[Shape]]s
+   * along with the [[FlowGraph.Builder]] to the given create function.
    */
-  def partial[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ S): Graph[S, Mat] = {
+  def create[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ S): Graph[S, Mat] = {
     val builder = new FlowGraph.Builder
     val curried = combineMat.curried
     val s##1 = builder.add(g##1, (m##1: M##1) ⇒ curried(m##1))
@@ -97,15 +52,13 @@ trait GraphApply {
   }#
 
   ]
-
-
 }
 
 /**
  * INTERNAL API
  */
 private[stream] object GraphApply {
-  class GraphImpl[S <: Shape, Mat](override val shape: S, private[stream] override val module: StreamLayout.Module)
+  final class GraphImpl[S <: Shape, Mat](override val shape: S, private[stream] override val module: StreamLayout.Module)
     extends Graph[S, Mat] {
 
     override def withAttributes(attr: Attributes): Graph[S, Mat] =
@@ -113,5 +66,4 @@ private[stream] object GraphApply {
 
     override def named(name: String): Graph[S, Mat] = withAttributes(Attributes.name(name))
   }
-
 }

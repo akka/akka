@@ -116,7 +116,7 @@ private[http] object HttpServerBluePrint {
         .flatten(FlattenStrategy.concat)
         .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
 
-    BidiFlow(requestParsingFlow, rendererPipeline, oneHundredContinueSource)((_, _, _) ⇒ ()) { implicit b ⇒
+    BidiFlow.fromGraph(FlowGraph.create(requestParsingFlow, rendererPipeline, oneHundredContinueSource)((_, _, _) ⇒ ()) { implicit b ⇒
       (requestParsing, renderer, oneHundreds) ⇒
         import FlowGraph.Implicits._
 
@@ -172,7 +172,7 @@ private[http] object HttpServerBluePrint {
           wrapTls.outlet,
           unwrapTls.inlet,
           requestsIn)
-    }
+    })
   }
 
   class BypassMerge(settings: ServerSettings, log: LoggingAdapter)
@@ -319,7 +319,7 @@ private[http] object HttpServerBluePrint {
     val sink = StreamUtils.oneTimePublisherSink[FrameEvent](sinkCell, "frameHandler.in")
     val source = StreamUtils.oneTimeSubscriberSource[FrameEvent](sourceCell, "frameHandler.out")
 
-    val flow = Websocket.framing.join(Flow.wrap(sink, source)(Keep.none))
+    val flow = Websocket.framing.join(Flow.fromSinkAndSourceMat(sink, source)(Keep.none))
 
     new WebsocketSetup {
       def websocketFlow: Flow[ByteString, ByteString, Any] = flow

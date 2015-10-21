@@ -1,6 +1,6 @@
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowShape }
+import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings, FlowShape }
 import akka.stream.testkit.AkkaSpec
 
 import scala.concurrent.{ Await, Future }
@@ -18,7 +18,7 @@ class GraphPartialSpec extends AkkaSpec {
     import FlowGraph.Implicits._
 
     "be able to build and reuse simple partial graphs" in {
-      val doubler = FlowGraph.partial() { implicit b ⇒
+      val doubler = FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         val zip = b.add(ZipWith((a: Int, b: Int) ⇒ a + b))
 
@@ -27,18 +27,19 @@ class GraphPartialSpec extends AkkaSpec {
         FlowShape(bcast.in, zip.out)
       }
 
-      val (_, _, result) = FlowGraph.closed(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
+      val (_, _, result) = RunnableGraph.fromGraph(FlowGraph.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
           Source(List(1, 2, 3)) ~> d1.inlet
           d1.outlet ~> d2.inlet
           d2.outlet.grouped(100) ~> sink.inlet
-      }.run()
+          ClosedShape
+      }).run()
 
       Await.result(result, 3.seconds) should be(List(4, 8, 12))
     }
 
     "be able to build and reuse simple materializing partial graphs" in {
-      val doubler = FlowGraph.partial(Sink.head[Seq[Int]]) { implicit b ⇒
+      val doubler = FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
         sink ⇒
           val bcast = b.add(Broadcast[Int](3))
           val zip = b.add(ZipWith((a: Int, b: Int) ⇒ a + b))
@@ -49,12 +50,13 @@ class GraphPartialSpec extends AkkaSpec {
           FlowShape(bcast.in, zip.out)
       }
 
-      val (sub1, sub2, result) = FlowGraph.closed(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
+      val (sub1, sub2, result) = RunnableGraph.fromGraph(FlowGraph.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
           Source(List(1, 2, 3)) ~> d1.inlet
           d1.outlet ~> d2.inlet
           d2.outlet.grouped(100) ~> sink.inlet
-      }.run()
+          ClosedShape
+      }).run()
 
       Await.result(result, 3.seconds) should be(List(4, 8, 12))
       Await.result(sub1, 3.seconds) should be(List(1, 2, 3))
@@ -64,7 +66,7 @@ class GraphPartialSpec extends AkkaSpec {
     "be able to build and reuse complex materializing partial graphs" in {
       val summer = Sink.fold[Int, Int](0)(_ + _)
 
-      val doubler = FlowGraph.partial(summer, summer)(Tuple2.apply) { implicit b ⇒
+      val doubler = FlowGraph.create(summer, summer)(Tuple2.apply) { implicit b ⇒
         (s1, s2) ⇒
           val bcast = b.add(Broadcast[Int](3))
           val bcast2 = b.add(Broadcast[Int](2))
@@ -80,12 +82,13 @@ class GraphPartialSpec extends AkkaSpec {
           FlowShape(bcast.in, bcast2.out(1))
       }
 
-      val (sub1, sub2, result) = FlowGraph.closed(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
+      val (sub1, sub2, result) = RunnableGraph.fromGraph(FlowGraph.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
           Source(List(1, 2, 3)) ~> d1.inlet
           d1.outlet ~> d2.inlet
           d2.outlet.grouped(100) ~> sink.inlet
-      }.run()
+          ClosedShape
+      }).run()
 
       Await.result(result, 3.seconds) should be(List(4, 8, 12))
       Await.result(sub1._1, 3.seconds) should be(6)
@@ -95,17 +98,18 @@ class GraphPartialSpec extends AkkaSpec {
     }
 
     "be able to expose the ports of imported graphs" in {
-      val p = FlowGraph.partial(Flow[Int].map(_ + 1)) { implicit b ⇒
+      val p = FlowGraph.create(Flow[Int].map(_ + 1)) { implicit b ⇒
         flow ⇒
           FlowShape(flow.inlet, flow.outlet)
       }
 
-      val fut = FlowGraph.closed(Sink.head[Int], p)(Keep.left) { implicit b ⇒
+      val fut = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Int], p)(Keep.left) { implicit b ⇒
         (sink, flow) ⇒
           import FlowGraph.Implicits._
           Source.single(0) ~> flow.inlet
           flow.outlet ~> sink.inlet
-      }.run()
+          ClosedShape
+      }).run()
 
       Await.result(fut, 3.seconds) should be(1)
 

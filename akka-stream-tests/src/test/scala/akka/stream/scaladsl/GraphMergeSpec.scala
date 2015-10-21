@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Inlet, Outlet }
+import akka.stream._
 
 import scala.concurrent.duration._
 
@@ -33,7 +33,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val source3 = Source(List[Int]())
       val probe = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val m1 = b.add(Merge[Int](2))
         val m2 = b.add(Merge[Int](2))
 
@@ -43,7 +43,8 @@ class GraphMergeSpec extends TwoStreamsSetup {
         source2 ~> m1.in(1)
         source3 ~> m2.in(1)
 
-      }.run()
+        ClosedShape
+      }).run()
 
       val subscription = probe.expectSubscription()
 
@@ -67,7 +68,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
       val probe = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val merge = b.add(Merge[Int](6))
 
         source1 ~> merge.in(0)
@@ -78,7 +79,8 @@ class GraphMergeSpec extends TwoStreamsSetup {
         source6 ~> merge.in(5)
         merge.out ~> Sink(probe)
 
-      }.run()
+        ClosedShape
+      }).run()
 
       val subscription = probe.expectSubscription()
 
@@ -152,13 +154,14 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val src1 = Source.subscriber[Int]
       val src2 = Source.subscriber[Int]
 
-      val (graphSubscriber1, graphSubscriber2) = FlowGraph.closed(src1, src2)((_, _)) { implicit b ⇒
+      val (graphSubscriber1, graphSubscriber2) = RunnableGraph.fromGraph(FlowGraph.create(src1, src2)((_, _)) { implicit b ⇒
         (s1, s2) ⇒
           val merge = b.add(Merge[Int](2))
           s1.outlet ~> merge.in(0)
           s2.outlet ~> merge.in(1)
           merge.out ~> Sink(down)
-      }.run()
+          ClosedShape
+      }).run()
 
       val downstream = down.expectSubscription()
       downstream.cancel()

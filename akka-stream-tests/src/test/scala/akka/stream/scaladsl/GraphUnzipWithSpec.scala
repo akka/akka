@@ -48,14 +48,15 @@ class GraphUnzipWithSpec extends AkkaSpec {
     val leftSubscriber = TestSubscriber.probe[LeftOutput]()
     val rightSubscriber = TestSubscriber.probe[RightOutput]()
 
-    FlowGraph.closed() { implicit b ⇒
+    RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
       val f = fixture(b)
 
       Source(p) ~> f.in
       f.left ~> Sink(leftSubscriber)
       f.right ~> Sink(rightSubscriber)
 
-    }.run()
+      ClosedShape
+    }).run()
 
     (leftSubscriber, rightSubscriber)
   }
@@ -96,13 +97,15 @@ class GraphUnzipWithSpec extends AkkaSpec {
       val leftProbe = TestSubscriber.manualProbe[LeftOutput]()
       val rightProbe = TestSubscriber.manualProbe[RightOutput]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val unzip = b.add(UnzipWith(f))
         Source(1 to 4) ~> unzip.in
 
         unzip.out0 ~> Flow[LeftOutput].buffer(4, OverflowStrategy.backpressure) ~> Sink(leftProbe)
         unzip.out1 ~> Flow[RightOutput].buffer(4, OverflowStrategy.backpressure) ~> Sink(rightProbe)
-      }.run()
+
+        ClosedShape
+      }).run()
 
       val leftSubscription = leftProbe.expectSubscription()
       val rightSubscription = rightProbe.expectSubscription()
@@ -144,14 +147,16 @@ class GraphUnzipWithSpec extends AkkaSpec {
       val leftProbe = TestSubscriber.manualProbe[LeftOutput]()
       val rightProbe = TestSubscriber.manualProbe[RightOutput]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) ⇒ (1 / b, 1 + "/" + b)))
 
         Source(-2 to 2) ~> unzip.in
 
         unzip.out0 ~> Sink(leftProbe)
         unzip.out1 ~> Sink(rightProbe)
-      }.run()
+
+        ClosedShape
+      }).run()
 
       val leftSubscription = leftProbe.expectSubscription()
       val rightSubscription = rightProbe.expectSubscription()
@@ -187,7 +192,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
 
       case class Person(name: String, surname: String, int: Int)
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val unzip = b.add(UnzipWith((a: Person) ⇒ Person.unapply(a).get))
 
         Source.single(Person("Caplin", "Capybara", 3)) ~> unzip.in
@@ -195,7 +200,9 @@ class GraphUnzipWithSpec extends AkkaSpec {
         unzip.out0 ~> Sink(probe0)
         unzip.out1 ~> Sink(probe1)
         unzip.out2 ~> Sink(probe2)
-      }.run()
+
+        ClosedShape
+      }).run()
 
       val subscription0 = probe0.expectSubscription()
       val subscription1 = probe1.expectSubscription()
@@ -221,7 +228,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
       val probe15 = TestSubscriber.manualProbe[String]()
       val probe19 = TestSubscriber.manualProbe[String]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
 
         val split20 = (a: (List[Int])) ⇒
           (a(0), a(0).toString,
@@ -268,7 +275,8 @@ class GraphUnzipWithSpec extends AkkaSpec {
 
         unzip.out19 ~> Sink(probe19)
 
-      }.run()
+        ClosedShape
+      }).run()
 
       probe0.expectSubscription().request(1)
       probe5.expectSubscription().request(1)

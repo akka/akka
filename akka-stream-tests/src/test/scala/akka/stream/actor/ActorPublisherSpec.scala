@@ -4,7 +4,7 @@
 package akka.stream.actor
 
 import akka.actor.{ ActorRef, PoisonPill, Props }
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ActorAttributes }
+import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings, ActorAttributes }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -350,7 +350,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val sink1 = Sink(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
       val sink2: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe2.ref))
 
-      val senderRef2 = FlowGraph.closed(Source.actorPublisher[Int](senderProps)) { implicit b ⇒
+      val senderRef2 = RunnableGraph.fromGraph(FlowGraph.create(Source.actorPublisher[Int](senderProps)) { implicit b ⇒
         source2 ⇒
           import FlowGraph.Implicits._
 
@@ -364,7 +364,8 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
 
           bcast.out(0).map(_ + "mark") ~> sink1
           bcast.out(1) ~> sink2
-      }.run()
+          ClosedShape
+      }).run()
 
       (0 to 10).foreach {
         senderRef1 ! _

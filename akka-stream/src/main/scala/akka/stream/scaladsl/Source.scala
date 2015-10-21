@@ -122,7 +122,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
-    Source.wrap(FlowGraph.partial() { implicit b ⇒
+    Source.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)
@@ -138,14 +138,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
     })
 }
 
-object Source extends SourceApply {
-
-  private[this] final val _id: Any ⇒ Any = x ⇒ x
-  private[this] final def id[A]: A ⇒ A = _id.asInstanceOf[A ⇒ A]
-
-  private[stream] def apply[Out, Mat](module: SourceModule[Out, Mat]): Source[Out, Mat] =
-    new Source(module)
-
+object Source {
   /** INTERNAL API */
   private[stream] def shape[T](name: String): SourceShape[T] = SourceShape(Outlet(name + ".out"))
 
@@ -180,9 +173,10 @@ object Source extends SourceApply {
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
-  def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
-    case s: Source[T, M] ⇒ s
-    case other           ⇒ new Source(other.module)
+  def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
+    case s: Source[T, M]         ⇒ s
+    case s: javadsl.Source[T, M] ⇒ s.asScala
+    case other                   ⇒ new Source(other.module)
   }
 
   /**
@@ -195,7 +189,7 @@ object Source extends SourceApply {
    * beginning) regardless of when they subscribed.
    */
   def apply[T](iterable: immutable.Iterable[T]): Source[T, Unit] =
-    Source.single(iterable).mapConcat(id).withAttributes(DefaultAttributes.iterableSource)
+    Source.single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -208,7 +202,7 @@ object Source extends SourceApply {
       new PublisherSource(
         SingleElementPublisher(future, "FutureSource"),
         DefaultAttributes.futureSource,
-        shape("FutureSource"))).mapAsyncUnordered(1)(id)
+        shape("FutureSource"))).mapAsyncUnordered(1)(ConstantFun.scalaIdentityFunction)
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -218,7 +212,7 @@ object Source extends SourceApply {
    * receive new tick elements as soon as it has requested more elements.
    */
   def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): Source[T, Cancellable] =
-    wrap(new TickSource[T](initialDelay, interval, tick))
+    fromGraph(new TickSource[T](initialDelay, interval, tick))
 
   /**
    * Create a `Source` with one element.
@@ -245,7 +239,7 @@ object Source extends SourceApply {
             override def toString: String = "repeat(" + element + ")"
           }, "RepeatSource"),
         DefaultAttributes.repeat,
-        shape("RepeatSource"))).mapConcat(id)
+        shape("RepeatSource"))).mapConcat(ConstantFun.scalaIdentityFunction)
   }
 
   /**
@@ -260,16 +254,18 @@ object Source extends SourceApply {
         shape("EmptySource")))
 
   /**
-   * Create a `Source` with no elements, which does not complete its downstream,
-   * until externally triggered to do so.
-   *
-   * It materializes a [[scala.concurrent.Promise]] which will be completed
-   * when the downstream stage of this source cancels. This promise can also
-   * be used to externally trigger completion, which the source then signals
-   * to its downstream.
+   * Create a `Source` which materializes a [[scala.concurrent.Promise]] which controls what element
+   * will be emitted by the Source.
+   * If the materialized promise is completed with a Some, that value will be produced downstream,
+   * followed by completion.
+   * If the materialized promise is completed with a None, no value will be produced downstream and completion will
+   * be signalled immediately.
+   * If the materialized promise is completed with a failure, then the returned source will terminate with that error.
+   * If the downstream of this source cancels before the promise has been completed, then the promise will be completed
+   * with None.
    */
-  def lazyEmpty[T]: Source[T, Promise[Unit]] =
-    new Source(new LazyEmptySource[T](DefaultAttributes.lazyEmptySource, shape("LazyEmptySource")))
+  def maybe[T]: Source[T, Promise[Option[T]]] =
+    new Source(new MaybeSource[T](DefaultAttributes.maybeSource, shape("MaybeSource")))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
@@ -337,7 +333,7 @@ object Source extends SourceApply {
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
-    Source.wrap(FlowGraph.partial() { implicit b ⇒
+    Source.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)

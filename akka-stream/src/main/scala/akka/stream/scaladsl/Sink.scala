@@ -31,7 +31,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
    * of the `Source`, e.g. the `Subscriber` of a [[Source#subscriber]].
    */
   def runWith[Mat2](source: Graph[SourceShape[In], Mat2])(implicit materializer: Materializer): Mat2 =
-    Source.wrap(source).to(this).run()
+    Source.fromGraph(source).to(this).run()
 
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
     new Sink(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
@@ -45,7 +45,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
   def asJava: javadsl.Sink[In, Mat] = new javadsl.Sink(this)
 }
 
-object Sink extends SinkApply {
+object Sink {
 
   /** INTERNAL API */
   private[stream] def shape[T](name: String): SinkShape[T] = SinkShape(Inlet(name + ".in"))
@@ -54,10 +54,11 @@ object Sink extends SinkApply {
    * A graph with the shape of a sink logically is a sink, this method makes
    * it so also in type.
    */
-  def wrap[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
+  def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
-      case s: Sink[T, M] ⇒ s
-      case other         ⇒ new Sink(other.module)
+      case s: Sink[T, M]         ⇒ s
+      case s: javadsl.Sink[T, M] ⇒ s.asScala
+      case other                 ⇒ new Sink(other.module)
     }
 
   /**
@@ -112,7 +113,7 @@ object Sink extends SinkApply {
    */
   def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(strategy: Int ⇒ Graph[UniformFanOutShape[T, U], Unit]): Sink[T, Unit] =
 
-    Sink.wrap(FlowGraph.partial() { implicit b ⇒
+    Sink.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val d = b.add(strategy(rest.size + 2))
       d.out(0) ~> first
