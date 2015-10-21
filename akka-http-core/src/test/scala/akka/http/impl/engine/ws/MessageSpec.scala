@@ -17,6 +17,11 @@ import Protocol.Opcode
 class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   import WSTestUtils._
 
+  val InvalidUtf8TwoByteSequence: ByteString = ByteString(
+    (128 + 64).toByte, // start two byte sequence
+    0 // but don't finish it
+    )
+
   "The Websocket implementation should" - {
     "collect messages from frames" - {
       "for binary messages" - {
@@ -518,7 +523,29 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         netOut.expectComplete()
 
       }
-      "after receiving error close frame" in pending
+      "after receiving error close frame with close code and without reason" in new ServerTestSetup {
+        pushInput(closeFrame(Protocol.CloseCodes.UnexpectedCondition, mask = true))
+        val error = expectError(messageIn).asInstanceOf[PeerClosedConnectionException]
+        error.closeCode shouldEqual Protocol.CloseCodes.UnexpectedCondition
+        error.closeReason shouldEqual ""
+
+        expectCloseCodeOnNetwork(Protocol.CloseCodes.UnexpectedCondition)
+        messageOut.sendError(error)
+        netOut.expectComplete()
+        netIn.expectCancellation()
+      }
+      "after receiving error close frame with close code and with reason" in new ServerTestSetup {
+        pushInput(closeFrame(Protocol.CloseCodes.UnexpectedCondition, mask = true,
+          msg = "This alien landing came quite unexpected. Communication has been garbled."))
+        val error = expectError(messageIn).asInstanceOf[PeerClosedConnectionException]
+        error.closeCode shouldEqual Protocol.CloseCodes.UnexpectedCondition
+        error.closeReason shouldEqual "This alien landing came quite unexpected. Communication has been garbled."
+
+        expectCloseCodeOnNetwork(Protocol.CloseCodes.UnexpectedCondition)
+        messageOut.sendError(error)
+        netOut.expectComplete()
+        netIn.expectCancellation()
+      }
       "after peer closes connection without sending a close frame" in new ServerTestSetup {
         netIn.expectRequest()
         netIn.sendComplete()
@@ -570,9 +597,11 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
       "if user handler fails" in pending
       "if peer closes with invalid close frame" - {
         "close code outside of the valid range" in new ServerTestSetup {
-          pushInput(frameHeader(Opcode.Close, 1, mask = Some(Random.nextInt()), fin = true) ++ ByteString("x"))
+          pushInput(closeFrame(5700, mask = true))
 
-          val error = expectError(messageIn)
+          val error = expectError(messageIn).asInstanceOf[PeerClosedConnectionException]
+          error.closeCode shouldEqual Protocol.CloseCodes.ProtocolError
+          error.closeReason shouldEqual "Peer sent illegal close frame (invalid close code '5700')."
 
           expectCloseCodeOnNetwork(Protocol.CloseCodes.ProtocolError)
           netOut.expectComplete()
@@ -581,13 +610,25 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "close data of size 1" in new ServerTestSetup {
           pushInput(frameHeader(Opcode.Close, 1, mask = Some(Random.nextInt()), fin = true) ++ ByteString("x"))
 
-          val error = expectError(messageIn)
+          val error = expectError(messageIn).asInstanceOf[PeerClosedConnectionException]
+          error.closeCode shouldEqual Protocol.CloseCodes.ProtocolError
+          error.closeReason shouldEqual "Peer sent illegal close frame (close code must be length 2 but was 1)."
 
           expectCloseCodeOnNetwork(Protocol.CloseCodes.ProtocolError)
           netOut.expectComplete()
           netIn.expectCancellation()
         }
-        "reason is no valid utf8 data" in pending
+        "close message is invalid UTF8" in new ServerTestSetup {
+          pushInput(closeFrame(Protocol.CloseCodes.UnexpectedCondition, mask = true, msgBytes = InvalidUtf8TwoByteSequence))
+
+          val error = expectError(messageIn).asInstanceOf[PeerClosedConnectionException]
+          error.closeCode shouldEqual Protocol.CloseCodes.ProtocolError
+          error.closeReason shouldEqual "Peer sent illegal close frame (close reason message is invalid UTF8)."
+
+          expectCloseCodeOnNetwork(Protocol.CloseCodes.ProtocolError)
+          netOut.expectComplete()
+          netIn.expectCancellation()
+        }
       }
       "timeout if user handler closes and peer doesn't send a close frame" in new ServerTestSetup {
         override protected def closeTimeout: FiniteDuration = 100.millis
@@ -679,19 +720,13 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         expectProtocolErrorOnNetwork()
       }
       "invalid utf8 encoding for single frame message" in new ClientTestSetup {
-        val data = ByteString(
-          (128 + 64).toByte, // start two byte sequence
-          0 // but don't finish it
-          )
+        val data = InvalidUtf8TwoByteSequence
 
         pushInput(frameHeader(Opcode.Text, 2, fin = true) ++ data)
         expectCloseCodeOnNetwork(Protocol.CloseCodes.InconsistentData)
       }
       "invalid utf8 encoding for streamed frame" in new ClientTestSetup {
-        val data = ByteString(
-          (128 + 64).toByte, // start two byte sequence
-          0 // but don't finish it
-          )
+        val data = InvalidUtf8TwoByteSequence
 
         pushInput(frameHeader(Opcode.Text, 0, fin = false) ++
           frameHeader(Opcode.Continuation, 2, fin = true) ++
