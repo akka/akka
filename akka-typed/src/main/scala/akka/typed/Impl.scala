@@ -8,6 +8,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
 import akka.event.LoggingReceive
+import akka.actor.DeathPactException
 
 /**
  * INTERNAL API. Mapping the execution of a [[Behavior]] onto a good old untyped
@@ -20,16 +21,27 @@ private[typed] class ActorAdapter[T](_initialBehavior: () ⇒ Behavior[T]) exten
   val ctx = new ActorContextAdapter[T](context)
 
   def receive = LoggingReceive {
-    case akka.actor.Terminated(ref) ⇒ next(behavior.management(ctx, Terminated(ActorRef(ref))))
-    case akka.actor.ReceiveTimeout  ⇒ next(behavior.management(ctx, ReceiveTimeout))
-    case msg                        ⇒ next(behavior.message(ctx, msg.asInstanceOf[T]))
+    case akka.actor.Terminated(ref) ⇒
+      val msg = Terminated(ActorRef(ref))
+      next(behavior.management(ctx, msg), msg)
+    case akka.actor.ReceiveTimeout ⇒
+      next(behavior.management(ctx, ReceiveTimeout), ReceiveTimeout)
+    case msg ⇒
+      val m = msg.asInstanceOf[T]
+      next(behavior.message(ctx, m), m)
   }
 
-  private def next(b: Behavior[T]): Unit = {
+  private def next(b: Behavior[T], msg: Any): Unit = {
+    if (isUnhandled(b)) unhandled(msg)
     behavior = canonicalize(ctx, b, behavior)
     if (!isAlive(behavior)) {
       context.stop(self)
     }
+  }
+
+  override def unhandled(msg: Any): Unit = msg match {
+    case Terminated(ref) ⇒ throw new DeathPactException(ref.untypedRef)
+    case other           ⇒ super.unhandled(other)
   }
 
   override val supervisorStrategy = a.OneForOneStrategy() {
@@ -37,7 +49,7 @@ private[typed] class ActorAdapter[T](_initialBehavior: () ⇒ Behavior[T]) exten
       import Failed._
       import akka.actor.{ SupervisorStrategy ⇒ s }
       val f = Failed(ex, ActorRef(sender()))
-      next(behavior.management(ctx, f))
+      next(behavior.management(ctx, f), f)
       f.getDecision match {
         case Resume  ⇒ s.Resume
         case Restart ⇒ s.Restart
@@ -47,13 +59,13 @@ private[typed] class ActorAdapter[T](_initialBehavior: () ⇒ Behavior[T]) exten
   }
 
   override def preStart(): Unit =
-    next(behavior.management(ctx, PreStart))
+    next(behavior.management(ctx, PreStart), PreStart)
   override def preRestart(reason: Throwable, message: Option[Any]): Unit =
-    next(behavior.management(ctx, PreRestart(reason)))
+    next(behavior.management(ctx, PreRestart(reason)), PreRestart(reason))
   override def postRestart(reason: Throwable): Unit =
-    next(behavior.management(ctx, PostRestart(reason)))
+    next(behavior.management(ctx, PostRestart(reason)), PostRestart(reason))
   override def postStop(): Unit =
-    next(behavior.management(ctx, PostStop))
+    next(behavior.management(ctx, PostStop), PostStop)
 }
 
 /**

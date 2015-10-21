@@ -63,6 +63,9 @@ object ActorContextSpec {
   final case class BecomeInert(replyTo: ActorRef[BecameInert.type]) extends Command
   case object BecameInert extends Event
 
+  final case class BecomeCareless(replyTo: ActorRef[BecameCareless.type]) extends Command
+  case object BecameCareless extends Event
+
   def subject(monitor: ActorRef[GotSignal]): Behavior[Command] =
     FullTotal {
       case Sig(ctx, signal) ⇒
@@ -130,6 +133,14 @@ object ActorContextSpec {
             case Msg(_, Throw(ex)) ⇒
               throw ex
             case _ ⇒ Same
+          }
+        case BecomeCareless(replyTo) ⇒
+          replyTo ! BecameCareless
+          Full {
+            case Sig(_, Terminated(_)) ⇒ Unhandled
+            case Sig(_, sig) ⇒
+              monitor ! GotSignal(sig)
+              Same
           }
       }
     }
@@ -423,6 +434,29 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           child
       }.expectTermination(500.millis) { (t, child) ⇒
         t should ===(Terminated(child))
+      }
+    })
+
+    def `13 must terminate upon not handling Terminated`(): Unit = sync(setup("ctx13") { (ctx, startWith) ⇒
+      val self = ctx.self
+      startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+        case (subj, child) ⇒
+          subj ! Watch(child, self)
+      }.expectMessageKeep(500.millis) {
+        case (msg, (subj, child)) ⇒
+          msg should ===(Watched)
+          subj ! BecomeCareless(self)
+      }.expectMessageKeep(500.millis) {
+        case (msg, (subj, child)) ⇒
+          msg should ===(BecameCareless)
+          child ! Stop
+      }.expectFailureKeep(500.millis) {
+        case (f, (subj, child)) ⇒
+          f.child should ===(subj)
+          Failed.Stop
+      }.expectMessage(500.millis) {
+        case (msg, (subj, child)) ⇒
+          msg should ===(GotSignal(PostStop))
       }
     })
 
