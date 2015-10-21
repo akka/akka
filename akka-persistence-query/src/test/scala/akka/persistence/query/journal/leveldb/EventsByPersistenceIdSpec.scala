@@ -33,7 +33,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
   val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   def setup(persistenceId: String): ActorRef = {
-    val ref = system.actorOf(TestActor.props(persistenceId))
+    val ref = setupEmpty(persistenceId)
     ref ! s"$persistenceId-1"
     ref ! s"$persistenceId-2"
     ref ! s"$persistenceId-3"
@@ -41,6 +41,10 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     expectMsg(s"$persistenceId-2-done")
     expectMsg(s"$persistenceId-3-done")
     ref
+  }
+
+  def setupEmpty(persistenceId: String): ActorRef = {
+    system.actorOf(TestActor.props(persistenceId))
   }
 
   "Leveldb query EventsByPersistenceId" must {
@@ -88,6 +92,65 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
         .expectNext("f-3")
         .expectComplete() // f-4 not seen
     }
+
+    "return empty stream for cleaned journal from 0 to MaxLong" in {
+      val ref = setup("g1")
+
+      ref ! TestActor.DeleteCmd(3L)
+      expectMsg(s"${3L}-deleted")
+
+      val src = queries.currentEventsByPersistenceId("g1", 0L, Long.MaxValue)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
+
+    "return empty stream for cleaned journal from 0 to 0" in {
+      val ref = setup("g2")
+
+      ref ! TestActor.DeleteCmd(3L)
+      expectMsg(s"${3L}-deleted")
+
+      val src = queries.currentEventsByPersistenceId("g2", 0L, 0L)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
+
+    "return remaining values after partial journal cleanup" in {
+      val ref = setup("h")
+
+      ref ! TestActor.DeleteCmd(2L)
+      expectMsg(s"${2L}-deleted")
+
+      val src = queries.currentEventsByPersistenceId("h", 0L, Long.MaxValue)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectNext("h-3") expectComplete()
+    }
+
+    "return empty stream for empty journal" in {
+      val ref = setupEmpty("i")
+
+      val src = queries.currentEventsByPersistenceId("i", 0L, Long.MaxValue)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
+
+    "return empty stream for journal from 0 to 0" in {
+      val ref = setup("k1")
+
+      val src = queries.currentEventsByPersistenceId("k1", 0L, 0L)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
+
+    "return empty stream for empty journal from 0 to 0" in {
+      val ref = setupEmpty("k2")
+
+      val src = queries.currentEventsByPersistenceId("k2", 0L, 0L)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
+
+    "return empty stream for journal from seqNo greater than highestSeqNo" in {
+      val ref = setup("l")
+
+      val src = queries.currentEventsByPersistenceId("l", 4L, 3L)
+      src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
+    }
+
   }
 
   "Leveldb live query EventsByPersistenceId" must {

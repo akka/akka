@@ -183,7 +183,7 @@ private[akka] class CurrentEventsByTagPublisher(
     deliverBuf()
     if (highestSeqNr < toOffset)
       _toOffset = highestSeqNr
-    if (highestSeqNr == 0L || (buf.isEmpty && currOffset > toOffset))
+    if (buf.isEmpty && (currOffset > toOffset || currOffset == fromOffset))
       onCompleteThenStop()
     else
       self ! Continue // more to fetch
