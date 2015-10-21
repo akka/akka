@@ -142,7 +142,7 @@ package util {
       var bytes = ByteString.newBuilder
       private var emptyStream = false
 
-      scheduleOnce("ToStrictTimeoutTimer", timeout)
+      override def preStart(): Unit = scheduleOnce("ToStrictTimeoutTimer", timeout)
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = {

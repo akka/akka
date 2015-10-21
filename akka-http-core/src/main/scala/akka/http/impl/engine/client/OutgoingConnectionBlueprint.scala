@@ -19,6 +19,9 @@ import akka.http.scaladsl.model.{ IllegalResponseException, HttpMethod, HttpRequ
 import akka.http.impl.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
 import akka.http.impl.engine.parsing._
 import akka.http.impl.util._
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.InHandler
 
 /**
  * INTERNAL API
@@ -64,7 +67,6 @@ private[http] object OutgoingConnectionBlueprint {
 
     import ParserOutput._
     val responsePrep = Flow[List[ResponseOutput]]
-      .transform(StreamUtils.recover { case x: ResponseParsingError ⇒ x.error :: Nil }) // FIXME after #16565
       .mapConcat(identityFunc)
       .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
       .via(headAndTailFlow)
@@ -80,7 +82,7 @@ private[http] object OutgoingConnectionBlueprint {
       val responseParsingMerge = b.add(new ResponseParsingMerge(rootParser))
 
       val terminationFanout = b.add(Broadcast[HttpResponse](2))
-      val terminationMerge = b.add(new TerminationMerge)
+      val terminationMerge = b.add(TerminationMerge)
 
       val logger = b.add(Flow[ByteString].transform(() ⇒ errorLogger(log, "Outgoing request stream error")).named("errorLogger"))
       val wrapTls = b.add(Flow[ByteString].map(SendBytes))
@@ -96,7 +98,7 @@ private[http] object OutgoingConnectionBlueprint {
       responseParsingMerge.out ~> responsePrep ~> terminationFanout.in
       terminationFanout.out(0) ~> terminationMerge.in1
 
-      BidiShape[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse](
+      BidiShape(
         methodBypassFanout.in,
         wrapTls.outlet,
         unwrapTls.inlet,
@@ -106,126 +108,109 @@ private[http] object OutgoingConnectionBlueprint {
 
   // a simple merge stage that simply forwards its first input and ignores its second input
   // (the terminationBackchannelInput), but applies a special completion handling
-  class TerminationMerge
-    extends FlexiMerge[HttpRequest, FanInShape2[HttpRequest, HttpResponse, HttpRequest]](new FanInShape2("TerminationMerge"), Attributes.name("TerminationMerge")) {
-    import FlexiMerge._
+  private object TerminationMerge extends GraphStage[FanInShape2[HttpRequest, HttpResponse, HttpRequest]] {
+    private val requests = Inlet[HttpRequest]("requests")
+    private val responses = Inlet[HttpResponse]("responses")
+    private val out = Outlet[HttpRequest]("out")
 
-    def createMergeLogic(p: PortT) = new MergeLogic[HttpRequest] {
+    val shape = new FanInShape2(requests, responses, out)
 
-      val requestInput = p.in0
-      val terminationBackchannelInput = p.in1
+    override def createLogic = new GraphStageLogic(shape) {
+      passAlong(requests, out, doFinish = false, doFail = true)
+      setHandler(out, eagerTerminateOutput)
 
-      override def initialState = State[Any](ReadAny(p)) {
-        case (ctx, _, request: HttpRequest) ⇒ { ctx.emit(request); SameState }
-        case _                              ⇒ SameState // simply drop all responses, we are only interested in the completion of the response input
+      setHandler(responses, new InHandler {
+        override def onPush(): Unit = pull(responses)
+      })
+
+      override def preStart(): Unit = {
+        pull(requests)
+        pull(responses)
       }
-
-      override def initialCompletionHandling = CompletionHandling(
-        onUpstreamFinish = {
-          case (ctx, `requestInput`) ⇒ SameState
-          case (ctx, `terminationBackchannelInput`) ⇒
-            ctx.finish()
-            SameState
-          case (_, _) ⇒ SameState
-        },
-        onUpstreamFailure = defaultCompletionHandling.onUpstreamFailure)
     }
   }
 
   import ParserOutput._
 
   /**
-   * A FlexiMerge that follows this logic:
+   * A merge that follows this logic:
    * 1. Wait on the methodBypass for the method of the request corresponding to the next response to be received
    * 2. Read from the dataInput until exactly one response has been fully received
    * 3. Go back to 1.
    */
-  class ResponseParsingMerge(rootParser: HttpResponseParser)
-    extends FlexiMerge[List[ResponseOutput], FanInShape2[ByteString, HttpMethod, List[ResponseOutput]]](new FanInShape2("ResponseParsingMerge"), Attributes.name("ResponsePersingMerge")) {
-    import FlexiMerge._
+  class ResponseParsingMerge(rootParser: HttpResponseParser) extends GraphStage[FanInShape2[ByteString, HttpMethod, List[ResponseOutput]]] {
+    private val dataInput = Inlet[ByteString]("data")
+    private val methodBypassInput = Inlet[HttpMethod]("method")
+    private val out = Outlet[List[ResponseOutput]]("out")
 
-    def createMergeLogic(p: PortT) = new MergeLogic[List[ResponseOutput]] {
-      val dataInput = p.in0
-      val methodBypassInput = p.in1
+    val shape = new FanInShape2(dataInput, methodBypassInput, out)
+
+    override def createLogic = new GraphStageLogic(shape) {
       // each connection uses a single (private) response parser instance for all its responses
       // which builds a cache of all header instances seen on that connection
       val parser = rootParser.createShallowCopy()
       var methodBypassCompleted = false
-      private val stay = (ctx: MergeLogicContext) ⇒ SameState
-      private val gotoResponseReading = (ctx: MergeLogicContext) ⇒ {
-        ctx.changeCompletionHandling(responseReadingCompletionHandling)
-        responseReadingState
+      var waitingForMethod = true
+
+      setHandler(methodBypassInput, new InHandler {
+        override def onPush(): Unit = {
+          val method = grab(methodBypassInput)
+          parser.setRequestMethodForNextResponse(method)
+          val output = parser.onPush(ByteString.empty)
+          drainParser(output)
+        }
+        override def onUpstreamFinish(): Unit =
+          if (waitingForMethod) completeStage()
+          else methodBypassCompleted = true
+      })
+
+      setHandler(dataInput, new InHandler {
+        override def onPush(): Unit = {
+          val bytes = grab(dataInput)
+          val output = parser.onPush(bytes)
+          drainParser(output)
+        }
+        override def onUpstreamFinish(): Unit =
+          if (waitingForMethod) completeStage()
+          else {
+            if (parser.onUpstreamFinish()) {
+              completeStage()
+            } else {
+              emit(out, parser.onPull() :: Nil, () ⇒ completeStage())
+            }
+          }
+      })
+
+      setHandler(out, eagerTerminateOutput)
+
+      val getNextMethod = () ⇒
+        if (methodBypassCompleted) completeStage()
+        else {
+          pull(methodBypassInput)
+          waitingForMethod = true
+        }
+
+      val getNextData = () ⇒ {
+        waitingForMethod = false
+        pull(dataInput)
       }
-      private val gotoInitial = (ctx: MergeLogicContext) ⇒ {
-        if (methodBypassCompleted) {
-          ctx.finish()
-          SameState
-        } else {
-          ctx.changeCompletionHandling(initialCompletionHandling)
-          initialState
-        }
-      }
 
-      override val initialState: State[HttpMethod] =
-        State(Read(methodBypassInput)) {
-          case (ctx, _, method) ⇒
-            parser.setRequestMethodForNextResponse(method)
-            drainParser(parser.onPush(ByteString.empty), ctx,
-              onNeedNextMethod = stay,
-              onNeedMoreData = gotoResponseReading)
-        }
-
-      val responseReadingState: State[ByteString] =
-        State(Read(dataInput)) {
-          case (ctx, _, bytes) ⇒
-            drainParser(parser.onPush(bytes), ctx,
-              onNeedNextMethod = gotoInitial,
-              onNeedMoreData = stay)
-        }
-
-      @tailrec def drainParser(current: ResponseOutput, ctx: MergeLogicContext,
-                               onNeedNextMethod: MergeLogicContext ⇒ State[_],
-                               onNeedMoreData: MergeLogicContext ⇒ State[_],
-                               b: ListBuffer[ResponseOutput] = ListBuffer.empty): State[_] = {
-        def emit(output: List[ResponseOutput]): Unit = if (output.nonEmpty) ctx.emit(output)
+      @tailrec def drainParser(current: ResponseOutput, b: ListBuffer[ResponseOutput] = ListBuffer.empty): Unit = {
+        def e(output: List[ResponseOutput], andThen: () ⇒ Unit): Unit =
+          if (output.nonEmpty) emit(out, output, andThen)
+          else andThen()
         current match {
           case NeedNextRequestMethod ⇒
-            emit(b.result())
-            onNeedNextMethod(ctx)
+            e(b.result(), getNextMethod)
           case StreamEnd ⇒
-            emit(b.result())
-            ctx.finish()
-            SameState
+            e(b.result(), () ⇒ completeStage())
           case NeedMoreData ⇒
-            emit(b.result())
-            onNeedMoreData(ctx)
-          case x ⇒ drainParser(parser.onPull(), ctx, onNeedNextMethod, onNeedMoreData, b += x)
+            e(b.result(), getNextData)
+          case x ⇒ drainParser(parser.onPull(), b += x)
         }
       }
 
-      override val initialCompletionHandling = CompletionHandling(
-        onUpstreamFinish = (ctx, _) ⇒ { ctx.finish(); SameState },
-        onUpstreamFailure = defaultCompletionHandling.onUpstreamFailure)
-
-      val responseReadingCompletionHandling = CompletionHandling(
-        onUpstreamFinish = {
-          case (ctx, `methodBypassInput`) ⇒
-            methodBypassCompleted = true
-            SameState
-          case (ctx, `dataInput`) ⇒
-            if (parser.onUpstreamFinish()) {
-              ctx.finish()
-            } else {
-              // not pretty but because the FlexiMerge doesn't let us emit from here (#16565)
-              // we need to funnel the error through the error channel
-              ctx.fail(new ResponseParsingError(parser.onPull().asInstanceOf[ErrorOutput]))
-            }
-            SameState
-          case (_, _) ⇒ SameState
-        },
-        onUpstreamFailure = defaultCompletionHandling.onUpstreamFailure)
+      override def preStart(): Unit = getNextMethod()
     }
   }
-
-  private class ResponseParsingError(val error: ErrorOutput) extends RuntimeException
 }

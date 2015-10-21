@@ -18,8 +18,6 @@ import akka.actor.{ Deploy, ActorRef, Props }
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage.PushPullStage
-import akka.stream.scaladsl.FlexiMerge.{ Read, ReadAny, MergeLogic }
-import akka.stream.scaladsl.FlexiRoute.{ DemandFrom, RouteLogic }
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ ResponseRenderingOutput, ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.impl.engine.TokenSourceActor
@@ -29,6 +27,11 @@ import akka.http.impl.util._
 import akka.http.impl.engine.ws._
 import Websocket.SwitchToWebsocketToken
 import ParserOutput._
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.OutHandler
+import akka.stream.stage.InHandler
+import akka.http.impl.engine.rendering.ResponseRenderingContext
 
 /**
  * INTERNAL API
@@ -101,9 +104,9 @@ private[http] object HttpServerBluePrint {
     // we need to make sure that only one element per incoming request is queueing up in front of
     // the bypassMerge.bypassInput. Otherwise the rising backpressure against the bypassFanout
     // would eventually prevent us from reading the remaining request chunks from the transportIn
-    val bypass = Flow[RequestOutput].filter {
-      case (_: RequestStart | _: MessageStartError) ⇒ true
-      case _                                        ⇒ false
+    val bypass = Flow[RequestOutput].collect {
+      case r: RequestStart      ⇒ r
+      case m: MessageStartError ⇒ m
     }
 
     val rendererPipeline =
@@ -146,14 +149,14 @@ private[http] object HttpServerBluePrint {
         val websocket = b.add(ws.websocketFlow)
 
         // protocol routing
-        val protocolRouter = b.add(new WebsocketSwitchRouter())
+        val protocolRouter = b.add(WebsocketSwitchRouter)
         val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory))
 
         protocolRouter.out0 ~> http ~> protocolMerge.in0
         protocolRouter.out1 ~> websocket ~> protocolMerge.in1
 
         // protocol switching
-        val wsSwitchTokenMerge = b.add(new CloseIfFirstClosesMerge2[AnyRef]("protocolSwitchWsTokenMerge"))
+        val wsSwitchTokenMerge = b.add(WsSwitchTokenMerge)
         // feed back switch signal to the protocol router
         switchSource ~> wsSwitchTokenMerge.in1
         wsSwitchTokenMerge.out ~> protocolRouter.in
@@ -173,78 +176,75 @@ private[http] object HttpServerBluePrint {
   }
 
   class BypassMerge(settings: ServerSettings, log: LoggingAdapter)
-    extends FlexiMerge[ResponseRenderingContext, FanInShape3[RequestOutput, OneHundredContinue.type, HttpResponse, ResponseRenderingContext]](new FanInShape3("BypassMerge"), Attributes.name("BypassMerge")) {
-    import FlexiMerge._
+    extends GraphStage[FanInShape3[MessageStart with RequestOutput, OneHundredContinue.type, HttpResponse, ResponseRenderingContext]] {
+    private val bypassInput = Inlet[MessageStart with RequestOutput]("bypassInput")
+    private val oneHundredContinue = Inlet[OneHundredContinue.type]("100continue")
+    private val applicationInput = Inlet[HttpResponse]("applicationInput")
+    private val out = Outlet[ResponseRenderingContext]("bypassOut")
 
-    def createMergeLogic(p: PortT) = new MergeLogic[ResponseRenderingContext] {
+    override val shape = new FanInShape3(bypassInput, oneHundredContinue, applicationInput, out)
+
+    override def createLogic = new GraphStageLogic(shape) {
       var requestStart: RequestStart = _
 
-      val bypassInput: Inlet[RequestOutput] = p.in0
-      val oneHundredContinueInput: Inlet[OneHundredContinue.type] = p.in1
-      val applicationInput: Inlet[HttpResponse] = p.in2
-
-      override val initialState: State[RequestOutput] = State[RequestOutput](Read(bypassInput)) {
-        case (ctx, _, requestStart: RequestStart) ⇒
-          this.requestStart = requestStart
-          ctx.changeCompletionHandling(waitingForApplicationResponseCompletionHandling)
-          waitingForApplicationResponse
-        case (ctx, _, MessageStartError(status, info)) ⇒ finishWithError(ctx, status, info)
-        case _                                         ⇒ throw new IllegalStateException
-      }
-
-      override val initialCompletionHandling = eagerClose
-
-      val waitingForApplicationResponse =
-        State[Any](ReadAny(oneHundredContinueInput.asInstanceOf[Inlet[Any]] :: applicationInput.asInstanceOf[Inlet[Any]] :: Nil)) {
-          case (ctx, _, response: HttpResponse) ⇒
-            // see the comment on [[OneHundredContinue]] for an explanation of the closing logic here (and more)
-            val close = requestStart.closeRequested || requestStart.expect100ContinueResponsePending
-            ctx.emit(ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close))
-            if (close) finish(ctx) else {
-              ctx.changeCompletionHandling(eagerClose)
-              initialState
-            }
-
-          case (ctx, _, OneHundredContinue) ⇒
-            require(requestStart.expect100ContinueResponsePending)
-            ctx.emit(ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
-            requestStart = requestStart.copy(expect100ContinueResponsePending = false)
-            SameState
-
-          case (ctx, _, msg) ⇒
-            ctx.fail(new IllegalStateException(s"unexpected message of type [${msg.getClass}], expecting only HttpResponse or OneHundredContinue"))
-            SameState
+      setHandler(bypassInput, new InHandler {
+        override def onPush(): Unit = {
+          grab(bypassInput) match {
+            case r: RequestStart ⇒
+              requestStart = r
+              pull(applicationInput)
+              if (r.expect100ContinueResponsePending)
+                read(oneHundredContinue) { cont ⇒
+                  emit(out, ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
+                  requestStart = requestStart.copy(expect100ContinueResponsePending = false)
+                }
+            case MessageStartError(status, info) ⇒ finishWithError(status, info)
+          }
         }
+        override def onUpstreamFinish(): Unit =
+          requestStart match {
+            case null ⇒ completeStage()
+            case r    ⇒ requestStart = r.copy(closeRequested = true)
+          }
+      })
 
-      val waitingForApplicationResponseCompletionHandling = CompletionHandling(
-        onUpstreamFinish = {
-          case (ctx, `bypassInput`) ⇒ { requestStart = requestStart.copy(closeRequested = true); SameState }
-          case (ctx, _)             ⇒ { ctx.finish(); SameState }
-        },
-        onUpstreamFailure = {
-          case (ctx, _, EntityStreamException(errorInfo)) ⇒
-            // the application has forwarded a request entity stream error to the response stream
-            finishWithError(ctx, StatusCodes.BadRequest, errorInfo)
-          case (ctx, _, error) ⇒ { ctx.fail(error); SameState }
-        })
+      setHandler(applicationInput, new InHandler {
+        override def onPush(): Unit = {
+          val response = grab(applicationInput)
+          // see the comment on [[OneHundredContinue]] for an explanation of the closing logic here (and more)
+          val close = requestStart.closeRequested || requestStart.expect100ContinueResponsePending
+          abortReading(oneHundredContinue)
+          emit(out, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
+            if (close) () ⇒ completeStage() else pullBypass)
+        }
+        override def onUpstreamFailure(ex: Throwable): Unit =
+          ex match {
+            case EntityStreamException(errorInfo) ⇒
+              // the application has forwarded a request entity stream error to the response stream
+              finishWithError(StatusCodes.BadRequest, errorInfo)
+            case _ ⇒ failStage(ex)
+          }
+      })
 
-      def finishWithError(ctx: MergeLogicContextBase, status: StatusCode, info: ErrorInfo): State[Any] = {
+      def finishWithError(status: StatusCode, info: ErrorInfo): Unit = {
         logParsingError(info withSummaryPrepended s"Illegal request, responding with status '$status'",
           log, settings.parserSettings.errorLoggingVerbosity)
         val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
-        // FIXME this is a workaround that is supposed to be solved by issue #16753
-        ctx match {
-          case fullCtx: MergeLogicContext ⇒
-            // note that this will throw IllegalArgumentException if no demand available
-            fullCtx.emit(ResponseRenderingContext(HttpResponse(status, entity = msg), closeRequested = true))
-          case other ⇒ throw new IllegalStateException(s"Unexpected MergeLogicContext [${other.getClass.getName}]")
-        }
-        finish(ctx)
+        emit(out, ResponseRenderingContext(HttpResponse(status, entity = msg), closeRequested = true), () ⇒ completeStage())
       }
 
-      def finish(ctx: MergeLogicContextBase): State[Any] = {
-        ctx.finish() // shouldn't this return a `State` rather than `Unit`?
-        SameState // it seems weird to stay in the same state after completion
+      setHandler(oneHundredContinue, ignoreTerminateInput) // RK: not sure if this is always correct
+      setHandler(out, eagerTerminateOutput)
+
+      val pullBypass = () ⇒
+        if (isClosed(bypassInput)) completeStage()
+        else {
+          pull(bypassInput)
+          requestStart = null
+        }
+
+      override def preStart(): Unit = {
+        pull(bypassInput)
       }
     }
   }
@@ -308,11 +308,11 @@ private[http] object HttpServerBluePrint {
       }
   }
 
-  trait WebsocketSetup {
+  private trait WebsocketSetup {
     def websocketFlow: Flow[ByteString, ByteString, Any]
     def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: Materializer): Unit
   }
-  def websocketSetup: WebsocketSetup = {
+  private def websocketSetup: WebsocketSetup = {
     val sinkCell = new StreamUtils.OneTimeWriteCell[Publisher[FrameEvent]]
     val sourceCell = new StreamUtils.OneTimeWriteCell[Subscriber[FrameEvent]]
 
@@ -331,85 +331,95 @@ private[http] object HttpServerBluePrint {
           .run()
     }
   }
-  class WebsocketSwitchRouter
-    extends FlexiRoute[AnyRef, FanOutShape2[AnyRef, ByteString, ByteString]](new FanOutShape2("websocketSplit"), Attributes.name("websocketSplit")) {
 
-    override def createRouteLogic(shape: FanOutShape2[AnyRef, ByteString, ByteString]): RouteLogic[AnyRef] =
-      new RouteLogic[AnyRef] {
-        def initialState: State[_] = http
+  private object WebsocketSwitchRouter extends GraphStage[FanOutShape2[AnyRef, ByteString, ByteString]] {
+    private val in = Inlet[AnyRef]("in")
+    private val httpOut = Outlet[ByteString]("httpOut")
+    private val wsOut = Outlet[ByteString]("wsOut")
 
-        def http: State[_] = State[Any](DemandFrom(shape.out0)) { (ctx, _, element) ⇒
-          element match {
-            case b: ByteString ⇒
-              // route to HTTP processing
-              ctx.emit(shape.out0)(b)
-              SameState
+    override val shape = new FanOutShape2(in, httpOut, wsOut)
 
-            case SwitchToWebsocketToken ⇒
-              // switch to websocket protocol
-              websockets
+    override def createLogic = new GraphStageLogic(shape) {
+      var target = httpOut
+
+      setHandler(in, new InHandler {
+        override def onPush(): Unit = {
+          grab(in) match {
+            case b: ByteString          ⇒ emit(target, b, pullIn)
+            case SwitchToWebsocketToken ⇒ target = wsOut; pullIn()
           }
         }
-        def websockets: State[_] = State[Any](DemandFrom(shape.out1)) { (ctx, _, element) ⇒
-          // route to Websocket processing
-          ctx.emit(shape.out1)(element.asInstanceOf[ByteString])
-          SameState
+      })
+
+      setHandler(httpOut, conditionalTerminateOutput(() ⇒ target == httpOut))
+      setHandler(wsOut, conditionalTerminateOutput(() ⇒ target == wsOut))
+
+      val pullIn = () ⇒ pull(in)
+
+      override def preStart(): Unit = pullIn()
+    }
+  }
+
+  private class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random) extends GraphStage[FanInShape2[ResponseRenderingOutput, ByteString, ByteString]] {
+    private val httpIn = Inlet[ResponseRenderingOutput]("httpIn")
+    private val wsIn = Inlet[ByteString]("wsIn")
+    private val out = Outlet[ByteString]("out")
+
+    override val shape = new FanInShape2(httpIn, wsIn, out)
+
+    override def createLogic = new GraphStageLogic(shape) {
+      var websocketHandlerWasInstalled = false
+
+      setHandler(httpIn, conditionalTerminateInput(() ⇒ !websocketHandlerWasInstalled))
+      setHandler(wsIn, conditionalTerminateInput(() ⇒ websocketHandlerWasInstalled))
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit =
+          if (websocketHandlerWasInstalled) read(wsIn)(transferBytes)
+          else read(httpIn)(transferHttpData)
+      })
+
+      val transferBytes = (b: ByteString) ⇒ push(out, b)
+      val transferHttpData = (r: ResponseRenderingOutput) ⇒ {
+        import ResponseRenderingOutput._
+        r match {
+          case HttpData(bytes) ⇒ push(out, bytes)
+          case SwitchToWebsocket(bytes, handlerFlow) ⇒
+            push(out, bytes)
+            val frameHandler = handlerFlow match {
+              case Left(frameHandler) ⇒ frameHandler
+              case Right(messageHandler) ⇒
+                Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory).join(messageHandler)
+            }
+            installHandler(frameHandler)
+            websocketHandlerWasInstalled = true
         }
       }
-  }
-  class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random) extends FlexiMerge[ByteString, FanInShape2[ResponseRenderingOutput, ByteString, ByteString]](new FanInShape2("websocketMerge"), Attributes.name("websocketMerge")) {
-    def createMergeLogic(s: FanInShape2[ResponseRenderingOutput, ByteString, ByteString]): MergeLogic[ByteString] =
-      new MergeLogic[ByteString] {
-        var websocketHandlerWasInstalled: Boolean = false
-        def httpIn = s.in0
-        def wsIn = s.in1
 
-        def initialState: State[_] = http
-
-        def http: State[_] = State[ResponseRenderingOutput](Read(httpIn)) { (ctx, in, element) ⇒
-          element match {
-            case ResponseRenderingOutput.HttpData(bytes) ⇒
-              ctx.emit(bytes); SameState
-            case ResponseRenderingOutput.SwitchToWebsocket(responseBytes, handlerFlow) ⇒
-              ctx.emit(responseBytes)
-
-              val frameHandler = handlerFlow match {
-                case Left(frameHandler) ⇒ frameHandler
-                case Right(messageHandler) ⇒
-                  Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory).join(messageHandler)
-              }
-              installHandler(frameHandler)
-              ctx.changeCompletionHandling(defaultCompletionHandling)
-              websocketHandlerWasInstalled = true
-              websocket
-          }
-        }
-
-        def websocket: State[_] = State[ByteString](Read(wsIn)) { (ctx, in, bytes) ⇒
-          ctx.emit(bytes)
-          SameState
-        }
-
-        override def postStop(): Unit = if (!websocketHandlerWasInstalled) installDummyHandler()
+      override def postStop(): Unit = {
         // Install a dummy handler to make sure no processors leak because they have
         // never been subscribed to, see #17494 and #17551.
-        def installDummyHandler(): Unit = installHandler(Flow[FrameEvent])
+        if (!websocketHandlerWasInstalled) installHandler(Flow[FrameEvent])
       }
+    }
   }
-  /** A merge for two streams that just forwards all elements and closes the connection when the first input closes. */
-  class CloseIfFirstClosesMerge2[T](name: String) extends FlexiMerge[T, FanInShape2[T, T, T]](new FanInShape2(name), Attributes.name(name)) {
-    def createMergeLogic(s: FanInShape2[T, T, T]): MergeLogic[T] =
-      new MergeLogic[T] {
-        def initialState: State[T] = State[T](ReadAny(s.in0, s.in1)) {
-          case (ctx, port, in) ⇒ ctx.emit(in); SameState
-        }
 
-        override def initialCompletionHandling: CompletionHandling =
-          defaultCompletionHandling.copy(
-            onUpstreamFinish = { (ctx, in) ⇒
-              if (in == s.in0) ctx.finish()
-              SameState
-            })
+  /** A merge for two streams that just forwards all elements and closes the connection when the first input closes. */
+  private object WsSwitchTokenMerge extends GraphStage[FanInShape2[ByteString, Websocket.SwitchToWebsocketToken.type, AnyRef]] {
+    private val bytes = Inlet[ByteString]("bytes")
+    private val token = Inlet[Websocket.SwitchToWebsocketToken.type]("token")
+    private val out = Outlet[AnyRef]("out")
+
+    override val shape = new FanInShape2(bytes, token, out)
+
+    override def createLogic = new GraphStageLogic(shape) {
+      passAlong(bytes, out, doFinish = true, doFail = true)
+      passAlong(token, out, doFinish = false, doFail = true)
+      setHandler(out, eagerTerminateOutput)
+      override def preStart(): Unit = {
+        pull(bytes)
+        pull(token)
       }
+    }
   }
 }

@@ -293,10 +293,10 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     }
   }
 
-  def parseTo(events: FrameEvent*): Matcher[ByteString] =
+  private def parseTo(events: FrameEvent*): Matcher[ByteString] =
     parseMultipleTo(events: _*).compose(Seq(_))
 
-  def parseMultipleTo(events: FrameEvent*): Matcher[Seq[ByteString]] =
+  private def parseMultipleTo(events: FrameEvent*): Matcher[Seq[ByteString]] =
     equal(events).matcher[Seq[FrameEvent]].compose {
       (chunks: Seq[ByteString]) ⇒
         val result = parseToEvents(chunks)
@@ -306,10 +306,10 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         result
     }
 
-  def parseToEvents(bytes: Seq[ByteString]): immutable.Seq[FrameEvent] =
+  private def parseToEvents(bytes: Seq[ByteString]): immutable.Seq[FrameEvent] =
     Source(bytes.toVector).transform(newParser).runFold(Vector.empty[FrameEvent])(_ :+ _)
       .awaitResult(1.second)
-  def renderToByteString(events: immutable.Seq[FrameEvent]): ByteString =
+  private def renderToByteString(events: immutable.Seq[FrameEvent]): ByteString =
     Source(events).transform(newRenderer).runFold(ByteString.empty)(_ ++ _)
       .awaitResult(1.second)
 
@@ -317,6 +317,6 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   protected def newRenderer(): Stage[FrameEvent, ByteString] = new FrameEventRenderer
 
   import scala.language.implicitConversions
-  implicit def headerToEvent(header: FrameHeader): FrameEvent =
+  private implicit def headerToEvent(header: FrameHeader): FrameEvent =
     FrameStart(header, ByteString.empty)
 }
