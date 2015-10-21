@@ -20,7 +20,7 @@ import akka.util.{ ByteStringBuilder, ByteString }
  * An entity that can render itself
  */
 private[http] trait Renderable {
-  def render[R <: Rendering](r: R): r.type
+  private[http] def render[R <: Rendering](r: R): r.type
 }
 
 /**

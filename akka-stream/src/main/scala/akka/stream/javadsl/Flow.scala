@@ -948,7 +948,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
     val f = new function.Function2[FlowGraph.Builder[M], SourceShape[T], Inlet[Out]Pair Outlet[Out Pair T]] {
       override def apply(b: FlowGraph.Builder[M], s: SourceShape[T]): Inlet[Out] Pair Outlet[Out Pair T] = {
         val zip = b.graph(Zip.create[Out, T])
-        b.from(s).to(zip.in1)
+        b.from(s).toInlet(zip.in1)
         new Pair(zip.in0, zip.out)
       }
     }

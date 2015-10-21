@@ -9,7 +9,6 @@ import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
 import akka.stream.actor.ActorSubscriber
-import akka.stream.impl.Junctions._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphModule, ActorInterpreter }
 import akka.stream.impl.io.SslTlsCipherActor
@@ -135,9 +134,6 @@ private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
               assignPort(outlet, publisher)
             }
             mat
-
-          case junction: JunctionModule ⇒
-            materializeJunction(junction, effectiveAttributes, effectiveSettings(effectiveAttributes))
         }
       }
 
@@ -151,48 +147,6 @@ private[akka] case class ActorMaterializerImpl(val system: ActorSystem,
           ActorProcessorFactory[Any, Any](
             actorOf(opprops, stageName(effectiveAttributes), effectiveSettings.dispatcher)) -> mat
       }
-
-      private def materializeJunction(op: JunctionModule,
-                                      effectiveAttributes: Attributes,
-                                      effectiveSettings: ActorMaterializerSettings): Unit = {
-        op match {
-          case fanin: FanInModule ⇒
-            val (props, inputs, output) = fanin match {
-              case f: FlexiMergeModule[t, p] ⇒
-                val flexi = f.flexi(f.shape)
-                (FlexiMerge.props(effectiveSettings, f.shape, flexi), f.shape.inlets, f.shape.outlets.head)
-
-            }
-            val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
-            val publisher = new ActorPublisher[Any](impl)
-            // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
-            impl ! ExposedPublisher(publisher)
-            for ((in, id) ← inputs.zipWithIndex) {
-              assignPort(in, FanIn.SubInput[Any](impl, id))
-            }
-            assignPort(output, publisher)
-
-          case fanout: FanOutModule ⇒
-            val (props, in, outs) = fanout match {
-
-              case r: FlexiRouteModule[t, p] ⇒
-                val flexi = r.flexi(r.shape)
-                (FlexiRoute.props(effectiveSettings, r.shape, flexi), r.shape.inlets.head: InPort, r.shape.outlets)
-            }
-            val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
-            val size = outs.size
-            def factory(id: Int) =
-              new ActorPublisher[Any](impl) { override val wakeUpMsg = FanOut.SubstreamSubscribePending(id) }
-            val publishers =
-              if (outs.size < 8) Vector.tabulate(size)(factory)
-              else List.tabulate(size)(factory)
-
-            impl ! FanOut.ExposedPublishers(publishers)
-            publishers.iterator.zip(outs.iterator).foreach { case (pub, out) ⇒ assignPort(out, pub) }
-            assignPort(in, ActorSubscriber[Any](impl))
-        }
-      }
-
     }
 
     session.materialize().asInstanceOf[Mat]

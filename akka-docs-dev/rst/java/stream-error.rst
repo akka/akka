@@ -10,7 +10,7 @@ strategies, but the semantics have been adapted to the domain of stream processi
 
 .. warning::
 
-  *ZipWith*, *FlexiMerge*, *FlexiRoute* junction, *ActorPublisher* source and *ActorSubscriber* sink
+  *ZipWith*, *GraphStage* junction, *ActorPublisher* source and *ActorSubscriber* sink
   components do not honour the supervision strategy attribute yet.
 
 Supervision Strategies

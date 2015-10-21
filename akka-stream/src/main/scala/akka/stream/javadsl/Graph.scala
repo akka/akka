@@ -5,6 +5,7 @@ package akka.stream.javadsl
 
 import akka.stream._
 import akka.japi.Pair
+import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * Merge several streams, taking elements as they arrive from input streams
@@ -14,7 +15,7 @@ import akka.japi.Pair
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' all upstreams complete
+ * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
  *
  * '''Cancels when''' downstream cancels
  */
@@ -31,6 +32,23 @@ object Merge {
    */
   def create[T](clazz: Class[T], inputPorts: Int): Graph[UniformFanInShape[T, T], Unit] = create(inputPorts)
 
+  /**
+   * Create a new `Merge` stage with the specified output type.
+   *
+   * @param eagerClose set to true in order to make this stage eagerly
+   *                   finish as soon as one of its inputs completes
+   */
+  def create[T](inputPorts: Int, eagerClose: Boolean): Graph[UniformFanInShape[T, T], Unit] =
+    scaladsl.Merge(inputPorts, eagerClose = eagerClose)
+
+  /**
+   * Create a new `Merge` stage with the specified output type.
+   *
+   * @param eagerClose set to true in order to make this stage eagerly
+   *                   finish as soon as one of its inputs completes
+   */
+  def create[T](clazz: Class[T], inputPorts: Int, eagerClose: Boolean): Graph[UniformFanInShape[T, T], Unit] =
+    create(inputPorts, eagerClose)
 }
 
 /**
@@ -42,7 +60,7 @@ object Merge {
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' all upstreams complete
+ * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
  *
  * '''Cancels when''' downstream cancels
  */
@@ -57,6 +75,24 @@ object MergePreferred {
    * Create a new `MergePreferred` stage with the specified output type.
    */
   def create[T](clazz: Class[T], secondaryPorts: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] = create(secondaryPorts)
+
+  /**
+   * Create a new `MergePreferred` stage with the specified output type.
+   *
+   * @param eagerClose set to true in order to make this stage eagerly
+   *                   finish as soon as one of its inputs completes
+   */
+  def create[T](secondaryPorts: Int, eagerClose: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
+    scaladsl.MergePreferred(secondaryPorts, eagerClose = eagerClose)
+
+  /**
+   * Create a new `MergePreferred` stage with the specified output type.
+   *
+   * @param eagerClose set to true in order to make this stage eagerly
+   *                   finish as soon as one of its inputs completes
+   */
+  def create[T](clazz: Class[T], secondaryPorts: Int, eagerClose: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], Unit] =
+    create(secondaryPorts, eagerClose)
 
 }
 
@@ -277,49 +313,41 @@ object FlowGraph {
      *
      * @return The outlet that will emit the materialized value.
      */
-    def materializedValue: Outlet[Mat] = delegate.materializedValue
+    def materializedValue: Outlet[Mat @uncheckedVariance] = delegate.materializedValue
 
     def run(mat: Materializer): Unit = delegate.buildRunnable().run()(mat)
 
     def from[T](out: Outlet[T]): ForwardOps[T] = new ForwardOps(out)
-    def from[T, M](src: Graph[SourceShape[T], M]): ForwardOps[T] = new ForwardOps(delegate.add(src).outlet)
     def from[T](src: SourceShape[T]): ForwardOps[T] = new ForwardOps(src.outlet)
     def from[I, O](f: FlowShape[I, O]): ForwardOps[O] = new ForwardOps(f.outlet)
     def from[I, O](j: UniformFanInShape[I, O]): ForwardOps[O] = new ForwardOps(j.out)
     def from[I, O](j: UniformFanOutShape[I, O]): ForwardOps[O] = new ForwardOps(findOut(delegate, j, 0))
 
     def to[T](in: Inlet[T]): ReverseOps[T] = new ReverseOps(in)
-    def to[T, M](dst: Graph[SinkShape[T], M]): ReverseOps[T] = new ReverseOps(delegate.add(dst).inlet)
     def to[T](dst: SinkShape[T]): ReverseOps[T] = new ReverseOps(dst.inlet)
     def to[I, O](f: FlowShape[I, O]): ReverseOps[I] = new ReverseOps(f.inlet)
     def to[I, O](j: UniformFanInShape[I, O]): ReverseOps[I] = new ReverseOps(findIn(delegate, j, 0))
     def to[I, O](j: UniformFanOutShape[I, O]): ReverseOps[I] = new ReverseOps(j.in)
 
     final class ForwardOps[T](out: Outlet[T]) {
-      def to(in: Inlet[T]): Builder[Mat] = { out ~> in; self }
-      def to[M](dst: Graph[SinkShape[T], M]): Builder[Mat] = { out ~> dst; self }
-      def to(dst: SinkShape[T]): Builder[Mat] = { out ~> dst; self }
-      def to[U](f: FlowShape[T, U]): Builder[Mat] = { out ~> f; self }
-      def to[U](j: UniformFanInShape[T, U]): Builder[Mat] = { out ~> j; self }
-      def to[U](j: UniformFanOutShape[T, U]): Builder[Mat] = { out ~> j; self }
-      def via[U, M](f: Graph[FlowShape[T, U], M]): ForwardOps[U] = from((out ~> f).outlet)
-      def via[U](f: FlowShape[T, U]): ForwardOps[U] = from((out ~> f).outlet)
-      def via[U](j: UniformFanInShape[T, U]): ForwardOps[U] = from((out ~> j).outlet)
-      def via[U](j: UniformFanOutShape[T, U]): ForwardOps[U] = from((out ~> j).outlet)
+      def toInlet(in: Inlet[_ >: T]): Builder[Mat] = { out ~> in; self }
+      def to(dst: SinkShape[_ >: T]): Builder[Mat] = { out ~> dst; self }
+      def toFanIn[U](j: UniformFanInShape[_ >: T, U]): Builder[Mat] = { out ~> j; self }
+      def toFanOut[U](j: UniformFanOutShape[_ >: T, U]): Builder[Mat] = { out ~> j; self }
+      def via[U, M](f: FlowShape[_ >: T, U]): ForwardOps[U] = from((out ~> f).outlet)
+      def viaFanIn[U](j: UniformFanInShape[_ >: T, U]): ForwardOps[U] = from((out ~> j).outlet)
+      def viaFanOut[U](j: UniformFanOutShape[_ >: T, U]): ForwardOps[U] = from((out ~> j).outlet)
       def out(): Outlet[T] = out
     }
 
     final class ReverseOps[T](out: Inlet[T]) {
-      def from(dst: Outlet[T]): Builder[Mat] = { out <~ dst; self }
-      def from[M](dst: Graph[SourceShape[T], M]): Builder[Mat] = { out <~ dst; self }
-      def from(dst: SourceShape[T]): Builder[Mat] = { out <~ dst; self }
-      def from[U](f: FlowShape[U, T]): Builder[Mat] = { out <~ f; self }
-      def from[U](j: UniformFanInShape[U, T]): Builder[Mat] = { out <~ j; self }
-      def from[U](j: UniformFanOutShape[U, T]): Builder[Mat] = { out <~ j; self }
-      def via[U, M](f: Graph[FlowShape[U, T], M]): ReverseOps[U] = to((out <~ f).inlet)
-      def via[U](f: FlowShape[U, T]): ReverseOps[U] = to((out <~ f).inlet)
-      def via[U](j: UniformFanInShape[U, T]): ReverseOps[U] = to((out <~ j).inlet)
-      def via[U](j: UniformFanOutShape[U, T]): ReverseOps[U] = to((out <~ j).inlet)
+      def fromOutlet(dst: Outlet[_ <: T]): Builder[Mat] = { out <~ dst; self }
+      def from(dst: SourceShape[_ <: T]): Builder[Mat] = { out <~ dst; self }
+      def fromFanIn[U](j: UniformFanInShape[U, _ <: T]): Builder[Mat] = { out <~ j; self }
+      def fromFanOut[U](j: UniformFanOutShape[U, _ <: T]): Builder[Mat] = { out <~ j; self }
+      def via[U](f: FlowShape[U, _ <: T]): ReverseOps[U] = to((out <~ f).inlet)
+      def viaFanIn[U](j: UniformFanInShape[U, _ <: T]): ReverseOps[U] = to((out <~ j).inlet)
+      def viaFanOut[U](j: UniformFanOutShape[U, _ <: T]): ReverseOps[U] = to((out <~ j).inlet)
     }
   }
 }

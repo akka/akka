@@ -6,8 +6,8 @@ package docs.http.scaladsl.server
 package directives
 
 import akka.event.Logging
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.server.directives.{ DebuggingDirectives, LogEntry, LoggingMagnet }
 
 class DebuggingDirectivesExamplesSpec extends RoutingSpec {
   "logRequest-0" in {
