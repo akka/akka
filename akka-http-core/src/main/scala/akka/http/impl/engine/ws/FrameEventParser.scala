@@ -152,11 +152,16 @@ object FrameEventParser {
     (ByteString(buffer), newMask)
   }
 
-  def parseCloseCode(data: ByteString): Option[Int] =
+  def parseCloseCode(data: ByteString): Option[(Int, String)] = {
+    def invalid(reason: String) = Some((Protocol.CloseCodes.ProtocolError, s"Peer sent illegal close frame ($reason)."))
+
     if (data.length >= 2) {
       val code = ((data(0) & 0xff) << 8) | (data(1) & 0xff)
-      if (Protocol.CloseCodes.isValid(code)) Some(code)
-      else Some(Protocol.CloseCodes.ProtocolError)
-    } else if (data.length == 1) Some(Protocol.CloseCodes.ProtocolError) // must be >= length 2 if not empty
+      val message = Utf8Decoder.decode(data.drop(2))
+      if (!Protocol.CloseCodes.isValid(code)) invalid(s"invalid close code '$code'")
+      else if (message.isFailure) invalid("close reason message is invalid UTF8")
+      else Some((code, message.get))
+    } else if (data.length == 1) invalid("close code must be length 2 but was 1") // must be >= length 2 if not empty
     else None
+  }
 }

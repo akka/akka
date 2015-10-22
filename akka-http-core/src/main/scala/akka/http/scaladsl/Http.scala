@@ -19,7 +19,7 @@ import akka.http.impl.util.{ ReadTheDocumentationException, Java6Compat, StreamU
 import akka.http.impl.engine.ws.WebsocketClientBlueprint
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.model.ws.{ WebsocketRequest, Message }
+import akka.http.scaladsl.model.ws.{ WebsocketUpgradeResponse, WebsocketRequest, Message }
 import akka.http.scaladsl.util.FastFuture
 import akka.japi
 import akka.stream.Materializer
@@ -688,15 +688,6 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    * Represents a prospective outgoing HTTP connection.
    */
   final case class OutgoingConnection(localAddress: InetSocketAddress, remoteAddress: InetSocketAddress)
-
-  /**
-   * Represents the response to a websocket upgrade request. Can either be [[ValidUpgrade]] or [[InvalidUpgradeResponse]].
-   */
-  sealed trait WebsocketUpgradeResponse {
-    def response: HttpResponse
-  }
-  final case class ValidUpgrade(response: HttpResponse, chosenSubprotocol: Option[String]) extends WebsocketUpgradeResponse
-  final case class InvalidUpgradeResponse(response: HttpResponse, cause: String) extends WebsocketUpgradeResponse
 
   /**
    * Represents a connection pool to a specific target host and pool configuration.

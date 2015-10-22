@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.ws
 
+import akka.event.LoggingAdapter
 import akka.stream.scaladsl.Flow
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.stage._
@@ -17,7 +18,7 @@ import akka.http.impl.engine.ws.FrameHandler.UserHandlerErredOut
  *
  * INTERNAL API
  */
-private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDuration) extends StatefulStage[FrameOutHandler.Input, FrameStart] {
+private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDuration, log: LoggingAdapter) extends StatefulStage[FrameOutHandler.Input, FrameStart] {
   def initial: StageState[AnyRef, FrameStart] = Idle
   def closeTimeout: Timestamp = Timestamp.now + _closeTimeout
 
@@ -43,7 +44,8 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
       case UserHandlerCompleted ⇒
         become(new WaitingForPeerCloseFrame())
         ctx.push(FrameEvent.closeFrame(Protocol.CloseCodes.Regular))
-      case UserHandlerErredOut(ex) ⇒
+      case UserHandlerErredOut(e) ⇒
+        log.error(e, s"Websocket handler failed with ${e.getMessage}")
         become(new WaitingForPeerCloseFrame())
         ctx.push(FrameEvent.closeFrame(Protocol.CloseCodes.UnexpectedCondition, "internal error"))
       case Tick ⇒ ctx.pull() // ignore
@@ -60,15 +62,20 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
    */
   private class WaitingForUserHandlerClosed(closeFrame: FrameStart) extends CompletionHandlingState {
     def onPush(elem: AnyRef, ctx: Context[FrameStart]): SyncDirective = elem match {
-      case UserHandlerCompleted ⇒
-        if (serverSide) ctx.pushAndFinish(closeFrame)
-        else {
-          become(new WaitingForTransportClose())
-          ctx.push(closeFrame)
-        }
+      case UserHandlerCompleted ⇒ sendOutLastFrame(ctx)
+      case UserHandlerErredOut(e) ⇒
+        log.error(e, s"Websocket handler failed while waiting for handler completion with ${e.getMessage}")
+        sendOutLastFrame(ctx)
       case start: FrameStart ⇒ ctx.push(start)
       case _                 ⇒ ctx.pull() // ignore
     }
+
+    def sendOutLastFrame(ctx: Context[FrameStart]): SyncDirective =
+      if (serverSide) ctx.pushAndFinish(closeFrame)
+      else {
+        become(new WaitingForTransportClose())
+        ctx.push(closeFrame)
+      }
 
     def onComplete(ctx: Context[FrameStart]): TerminationDirective =
       ctx.fail(new IllegalStateException("Mustn't complete before user has completed"))
@@ -138,6 +145,6 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
 private[http] object FrameOutHandler {
   type Input = AnyRef
 
-  def create(serverSide: Boolean, closeTimeout: FiniteDuration): Flow[Input, FrameStart, Unit] =
-    Flow[Input].transform(() ⇒ new FrameOutHandler(serverSide, closeTimeout))
+  def create(serverSide: Boolean, closeTimeout: FiniteDuration, log: LoggingAdapter): Flow[Input, FrameStart, Unit] =
+    Flow[Input].transform(() ⇒ new FrameOutHandler(serverSide, closeTimeout, log))
 }
