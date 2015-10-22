@@ -628,7 +628,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message]
         .atopMat(wsLayer)((_, s) ⇒ adaptWsUpgradeResponse(s)))
 
-  private def adaptWsFlow(wsLayer: stream.scaladsl.Flow[sm.ws.Message, sm.ws.Message, Future[scaladsl.Http.WebsocketUpgradeResponse]]): Flow[Message, Message, Future[WebsocketUpgradeResponse]] =
+  private def adaptWsFlow(wsLayer: stream.scaladsl.Flow[sm.ws.Message, sm.ws.Message, Future[scaladsl.model.ws.WebsocketUpgradeResponse]]): Flow[Message, Message, Future[WebsocketUpgradeResponse]] =
     Flow.adapt(JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message].joinMat(wsLayer)(Keep.right).mapMaterializedValue(adaptWsUpgradeResponse _))
 
   private def adaptWsFlow[Mat](javaFlow: Flow[Message, Message, Mat]): stream.scaladsl.Flow[scaladsl.model.ws.Message, scaladsl.model.ws.Message, Mat] =
@@ -637,10 +637,10 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .viaMat(javaFlow.asScala)(Keep.right)
       .map(_.asScala)
 
-  private def adaptWsResultTuple[T](result: (Future[scaladsl.Http.WebsocketUpgradeResponse], T)): Pair[Future[WebsocketUpgradeResponse], T] =
+  private def adaptWsResultTuple[T](result: (Future[scaladsl.model.ws.WebsocketUpgradeResponse], T)): Pair[Future[WebsocketUpgradeResponse], T] =
     result match {
       case (fut, tMat) ⇒ Pair(adaptWsUpgradeResponse(fut), tMat)
     }
-  private def adaptWsUpgradeResponse(responseFuture: Future[scaladsl.Http.WebsocketUpgradeResponse]): Future[WebsocketUpgradeResponse] =
+  private def adaptWsUpgradeResponse(responseFuture: Future[scaladsl.model.ws.WebsocketUpgradeResponse]): Future[WebsocketUpgradeResponse] =
     responseFuture.map(WebsocketUpgradeResponse.adapt)(system.dispatcher)
 }
