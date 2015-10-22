@@ -829,7 +829,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     Source(netIn)
       .via(printEvent("netIn"))
       .transform(() ⇒ new FrameEventParser)
-      .via(Websocket.stack(serverSide, maskingRandomFactory = Randoms.SecureRandomInstances, closeTimeout = closeTimeout).join(messageHandler))
+      .via(Websocket.stack(serverSide, maskingRandomFactory = Randoms.SecureRandomInstances, closeTimeout = closeTimeout, log = system.log).join(messageHandler))
       .via(printEvent("frameRendererIn"))
       .transform(() ⇒ new FrameEventRenderer)
       .via(printEvent("frameRendererOut"))

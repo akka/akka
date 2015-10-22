@@ -6,6 +6,7 @@ package akka.http.impl.engine.ws
 
 import java.util.Random
 
+import akka.event.LoggingAdapter
 import akka.util.ByteString
 
 import scala.concurrent.duration._
@@ -30,9 +31,10 @@ private[http] object Websocket {
    */
   def stack(serverSide: Boolean,
             maskingRandomFactory: () ⇒ Random,
-            closeTimeout: FiniteDuration = 3.seconds): BidiFlow[FrameEvent, Message, Message, FrameEvent, Unit] =
+            closeTimeout: FiniteDuration = 3.seconds,
+            log: LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, Unit] =
     masking(serverSide, maskingRandomFactory) atop
-      frameHandling(serverSide, closeTimeout) atop
+      frameHandling(serverSide, closeTimeout, log) atop
       messageAPI(serverSide, closeTimeout)
 
   /** The lowest layer that implements the binary protocol */
@@ -52,10 +54,11 @@ private[http] object Websocket {
    * from frames, decoding text messages, close handling, etc.
    */
   def frameHandling(serverSide: Boolean = true,
-                    closeTimeout: FiniteDuration): BidiFlow[FrameEvent, FrameHandler.Output, FrameOutHandler.Input, FrameStart, Unit] =
+                    closeTimeout: FiniteDuration,
+                    log: LoggingAdapter): BidiFlow[FrameEvent, FrameHandler.Output, FrameOutHandler.Input, FrameStart, Unit] =
     BidiFlow.wrap(
       FrameHandler.create(server = serverSide),
-      FrameOutHandler.create(serverSide, closeTimeout))(Keep.none)
+      FrameOutHandler.create(serverSide, closeTimeout, log))(Keep.none)
       .named("ws-frame-handling")
 
   /**

@@ -150,7 +150,7 @@ private[http] object HttpServerBluePrint {
 
         // protocol routing
         val protocolRouter = b.add(WebsocketSwitchRouter)
-        val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory))
+        val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory, log))
 
         protocolRouter.out0 ~> http ~> protocolMerge.in0
         protocolRouter.out1 ~> websocket ~> protocolMerge.in1
@@ -360,7 +360,7 @@ private[http] object HttpServerBluePrint {
     }
   }
 
-  private class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random) extends GraphStage[FanInShape2[ResponseRenderingOutput, ByteString, ByteString]] {
+  private class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random, log: LoggingAdapter) extends GraphStage[FanInShape2[ResponseRenderingOutput, ByteString, ByteString]] {
     private val httpIn = Inlet[ResponseRenderingOutput]("httpIn")
     private val wsIn = Inlet[ByteString]("wsIn")
     private val out = Outlet[ByteString]("out")
@@ -389,7 +389,7 @@ private[http] object HttpServerBluePrint {
             val frameHandler = handlerFlow match {
               case Left(frameHandler) ⇒ frameHandler
               case Right(messageHandler) ⇒
-                Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory).join(messageHandler)
+                Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory, log = log).join(messageHandler)
             }
             installHandler(frameHandler)
             websocketHandlerWasInstalled = true
