@@ -4,9 +4,8 @@
 
 package akka.http.impl.engine.ws
 
-import akka.http.scaladsl.model.ws.WebsocketRequest
+import akka.http.scaladsl.model.ws._
 
-import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 
 import akka.util.ByteString
@@ -19,8 +18,7 @@ import akka.stream.scaladsl._
 
 import akka.http.ClientConnectionSettings
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.Http.{ InvalidUpgradeResponse, ValidUpgrade, WebsocketUpgradeResponse }
-import akka.http.scaladsl.model.{ HttpHeader, HttpResponse, HttpMethods, Uri }
+import akka.http.scaladsl.model.{ HttpResponse, HttpMethods }
 import akka.http.scaladsl.model.headers.Host
 
 import akka.http.impl.engine.parsing.HttpMessageParser.StateResult
@@ -39,7 +37,7 @@ object WebsocketClientBlueprint {
             log: LoggingAdapter): Http.WebsocketClientLayer =
     (simpleTls.atopMat(handshake(request, settings, log))(Keep.right) atop
       Websocket.framing atop
-      Websocket.stack(serverSide = false, maskingRandomFactory = settings.websocketRandomFactory)).reversed
+      Websocket.stack(serverSide = false, maskingRandomFactory = settings.websocketRandomFactory, log = log)).reversed
 
   /**
    * A bidi flow that injects and inspects the WS handshake and then goes out of the way. This BidiFlow

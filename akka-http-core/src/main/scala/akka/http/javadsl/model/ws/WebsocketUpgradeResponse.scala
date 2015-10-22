@@ -6,7 +6,7 @@ package akka.http.javadsl.model.ws
 
 import akka.http.javadsl.model.HttpResponse
 import akka.http.scaladsl
-import akka.http.scaladsl.Http.{ InvalidUpgradeResponse, ValidUpgrade }
+import akka.http.scaladsl.model.ws.{ InvalidUpgradeResponse, ValidUpgrade }
 import akka.japi.Option
 
 /**
@@ -36,12 +36,12 @@ trait WebsocketUpgradeResponse {
 
 object WebsocketUpgradeResponse {
   import akka.http.impl.util.JavaMapping.Implicits._
-  def adapt(scalaResponse: scaladsl.Http.WebsocketUpgradeResponse): WebsocketUpgradeResponse =
+  def adapt(scalaResponse: scaladsl.model.ws.WebsocketUpgradeResponse): WebsocketUpgradeResponse =
     scalaResponse match {
       case ValidUpgrade(response, chosen) ⇒
         new WebsocketUpgradeResponse {
           def isValid: Boolean = true
-          def response: HttpResponse = response
+          def response: HttpResponse = scalaResponse.response
           def chosenSubprotocol: Option[String] = chosen.asJava
           def invalidationReason: String =
             throw new UnsupportedOperationException("invalidationReason must not be called for valid response")
@@ -49,7 +49,7 @@ object WebsocketUpgradeResponse {
       case InvalidUpgradeResponse(response, cause) ⇒
         new WebsocketUpgradeResponse {
           def isValid: Boolean = false
-          def response: HttpResponse = response
+          def response: HttpResponse = scalaResponse.response
           def chosenSubprotocol: Option[String] = throw new UnsupportedOperationException("chosenSubprotocol must not be called for valid response")
           def invalidationReason: String = cause
         }
