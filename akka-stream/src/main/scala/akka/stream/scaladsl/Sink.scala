@@ -22,7 +22,7 @@ import scala.util.{ Failure, Success, Try }
  * Can be used as a `Subscriber`
  */
 final class Sink[-In, +Mat](private[stream] override val module: Module)
-  extends Graph[SinkShape[In], Mat] {
+  extends InternalGraph[SinkShape[In], Mat] {
 
   override val shape: SinkShape[In] = module.shape.asInstanceOf[SinkShape[In]]
 

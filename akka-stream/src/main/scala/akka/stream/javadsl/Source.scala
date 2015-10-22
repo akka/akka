@@ -246,7 +246,7 @@ object Source {
  * A `Source` is a set of stream processing steps that has one open output and an attached input.
  * Can be used as a `Publisher`
  */
-class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[SourceShape[Out], Mat] {
+class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends InternalGraph[SourceShape[Out], Mat] {
   import scala.collection.JavaConverters._
 
   override def shape: SourceShape[Out] = delegate.shape

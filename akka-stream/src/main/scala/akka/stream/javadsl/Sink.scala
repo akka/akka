@@ -170,7 +170,7 @@ object Sink {
  * A `Sink` is a set of stream processing steps that has one open input and an attached output.
  * Can be used as a `Subscriber`
  */
-class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
+class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends InternalGraph[SinkShape[In], Mat] {
 
   override def shape: SinkShape[In] = delegate.shape
   private[stream] def module: StreamLayout.Module = delegate.module
