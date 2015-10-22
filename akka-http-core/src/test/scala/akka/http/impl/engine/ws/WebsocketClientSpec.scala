@@ -6,7 +6,7 @@ package akka.http.impl.engine.ws
 
 import java.util.Random
 
-import akka.http.scaladsl.Http.{ InvalidUpgradeResponse, WebsocketUpgradeResponse }
+import akka.http.scaladsl.model.ws.{ InvalidUpgradeResponse, WebsocketUpgradeResponse }
 
 import scala.concurrent.duration._
 
@@ -14,7 +14,7 @@ import akka.http.ClientConnectionSettings
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{ ProductVersion, `User-Agent` }
 import akka.http.scaladsl.model.ws._
-import akka.http.scaladsl.model.{ HttpResponse, Uri }
+import akka.http.scaladsl.model.Uri
 import akka.stream.io._
 import akka.stream.scaladsl._
 import akka.stream.testkit.{ TestSubscriber, TestPublisher }
