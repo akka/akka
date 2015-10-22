@@ -22,10 +22,12 @@ trait HostDirectives {
    */
   def host(hostNames: String*): Directive0 = host(hostNames.contains(_))
 
+  //#require-host
   /**
    * Rejects all requests for whose host name the given predicate function returns false.
    */
   def host(predicate: String ⇒ Boolean): Directive0 = extractHost.require(predicate)
+  //#
 
   /**
    * Rejects all requests with a host name that doesn't have a prefix matching the given regular expression.
