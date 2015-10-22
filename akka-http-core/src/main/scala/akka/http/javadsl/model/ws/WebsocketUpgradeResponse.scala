@@ -6,7 +6,7 @@ package akka.http.javadsl.model.ws
 
 import akka.http.javadsl.model.HttpResponse
 import akka.http.scaladsl
-import akka.http.scaladsl.Http.{ InvalidUpgradeResponse, ValidUpgrade }
+import akka.http.scaladsl.model.ws.{ InvalidUpgradeResponse, ValidUpgrade }
 import akka.japi.Option
 
 /**
@@ -36,7 +36,7 @@ trait WebsocketUpgradeResponse {
 
 object WebsocketUpgradeResponse {
   import akka.http.impl.util.JavaMapping.Implicits._
-  def adapt(scalaResponse: scaladsl.Http.WebsocketUpgradeResponse): WebsocketUpgradeResponse =
+  def adapt(scalaResponse: scaladsl.model.ws.WebsocketUpgradeResponse): WebsocketUpgradeResponse =
     scalaResponse match {
       case ValidUpgrade(response, chosen) ⇒
         new WebsocketUpgradeResponse {
