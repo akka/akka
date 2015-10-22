@@ -59,6 +59,7 @@ trait HeaderDirectives {
   def headerValueByType[T <: HttpHeader](magnet: ClassMagnet[T]): Directive1[T] =
     headerValuePF(magnet.extractPF) | reject(MissingHeaderRejection(magnet.runtimeClass.getSimpleName))
 
+  //#optional-header
   /**
    * Extracts an optional HTTP header value using the given function.
    * If the given function throws an exception the request is rejected
@@ -68,6 +69,7 @@ trait HeaderDirectives {
     headerValue(f).map(Some(_): Option[T]).recoverPF {
       case Nil ⇒ provide(None)
     }
+  //#
 
   /**
    * Extracts an optional HTTP header value using the given partial function.
