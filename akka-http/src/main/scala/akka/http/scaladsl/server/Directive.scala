@@ -13,6 +13,7 @@ import akka.http.scaladsl.util.FastFuture._
 /**
  * A directive that provides a tuple of values of type `L` to create an inner route.
  */
+//#basic
 abstract class Directive[L](implicit val ev: Tuple[L]) {
 
   /**
@@ -22,7 +23,7 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
    * which is added by an implicit conversion (see `Directive.addDirectiveApply`).
    */
   def tapply(f: L ⇒ Route): Route
-
+//#
   /**
    * Joins two directives into one which runs the second directive if the first one rejects.
    */
@@ -88,7 +89,10 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
    */
   def recoverPF[R >: L: Tuple](recovery: PartialFunction[immutable.Seq[Rejection], Directive[R]]): Directive[R] =
     recover { rejections ⇒ recovery.applyOrElse(rejections, (rejs: Seq[Rejection]) ⇒ RouteDirectives.reject(rejs: _*)) }
+
+//#basic
 }
+//#
 
 object Directive {
 
