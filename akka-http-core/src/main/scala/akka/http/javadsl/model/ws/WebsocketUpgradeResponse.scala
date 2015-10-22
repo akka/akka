@@ -41,7 +41,7 @@ object WebsocketUpgradeResponse {
       case ValidUpgrade(response, chosen) ⇒
         new WebsocketUpgradeResponse {
           def isValid: Boolean = true
-          def response: HttpResponse = response
+          def response: HttpResponse = scalaResponse.response
           def chosenSubprotocol: Option[String] = chosen.asJava
           def invalidationReason: String =
             throw new UnsupportedOperationException("invalidationReason must not be called for valid response")
@@ -49,7 +49,7 @@ object WebsocketUpgradeResponse {
       case InvalidUpgradeResponse(response, cause) ⇒
         new WebsocketUpgradeResponse {
           def isValid: Boolean = false
-          def response: HttpResponse = response
+          def response: HttpResponse = scalaResponse.response
           def chosenSubprotocol: Option[String] = throw new UnsupportedOperationException("chosenSubprotocol must not be called for valid response")
           def invalidationReason: String = cause
         }
