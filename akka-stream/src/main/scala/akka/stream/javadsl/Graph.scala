@@ -6,6 +6,7 @@ package akka.stream.javadsl
 import akka.stream._
 import akka.japi.Pair
 import scala.annotation.unchecked.uncheckedVariance
+import akka.stream.impl.ConstantFun
 
 /**
  * Merge several streams, taking elements as they arrive from input streams
@@ -227,7 +228,7 @@ object Unzip {
    * Creates a new `Unzip` stage with the specified output types.
    */
   def create[A, B](): Graph[FanOutShape2[A Pair B, A, B], Unit] =
-    UnzipWith.create(JavaIdentityFunction.asInstanceOf[Function[Pair[A, B], Pair[A, B]]])
+    UnzipWith.create(ConstantFun.javaIdentityFunction[Pair[A, B]])
 
   /**
    * Creates a new `Unzip` stage with the specified output types.
@@ -269,9 +270,7 @@ object Concat {
 
 // flow graph //
 
-object FlowGraph {
-
-  val factory: GraphCreate = new GraphCreate {}
+object FlowGraph extends GraphCreate {
 
   /**
    * Start building a [[FlowGraph]].
@@ -284,20 +283,12 @@ object FlowGraph {
   final class Builder[+Mat]()(private implicit val delegate: scaladsl.FlowGraph.Builder[Mat]) { self ⇒
     import akka.stream.scaladsl.FlowGraph.Implicits._
 
-    def flow[A, B, M](from: Outlet[A], via: Graph[FlowShape[A, B], M], to: Inlet[B]): Unit = delegate.addEdge(from, via, to)
-
-    def edge[T](from: Outlet[T], to: Inlet[T]): Unit = delegate.addEdge(from, to)
-
     /**
      * Import a graph into this module, performing a deep copy, discarding its
      * materialized value and returning the copied Ports that are now to be
      * connected.
      */
-    def graph[S <: Shape](graph: Graph[S, _]): S = delegate.add(graph)
-
-    def source[T](source: Graph[SourceShape[T], _]): Outlet[T] = delegate.add(source).outlet
-
-    def sink[T](sink: Graph[SinkShape[T], _]): Inlet[T] = delegate.add(sink).inlet
+    def add[S <: Shape](graph: Graph[S, _]): S = delegate.add(graph)
 
     /**
      * Returns an [[Outlet]] that gives access to the materialized value of this graph. Once the graph is materialized
@@ -314,8 +305,6 @@ object FlowGraph {
      * @return The outlet that will emit the materialized value.
      */
     def materializedValue: Outlet[Mat @uncheckedVariance] = delegate.materializedValue
-
-    def run(mat: Materializer): Unit = delegate.buildRunnable().run()(mat)
 
     def from[T](out: Outlet[T]): ForwardOps[T] = new ForwardOps(out)
     def from[T](src: SourceShape[T]): ForwardOps[T] = new ForwardOps(src.outlet)
@@ -334,7 +323,7 @@ object FlowGraph {
       def to(dst: SinkShape[_ >: T]): Builder[Mat] = { out ~> dst; self }
       def toFanIn[U](j: UniformFanInShape[_ >: T, U]): Builder[Mat] = { out ~> j; self }
       def toFanOut[U](j: UniformFanOutShape[_ >: T, U]): Builder[Mat] = { out ~> j; self }
-      def via[U, M](f: FlowShape[_ >: T, U]): ForwardOps[U] = from((out ~> f).outlet)
+      def via[U](f: FlowShape[_ >: T, U]): ForwardOps[U] = from((out ~> f).outlet)
       def viaFanIn[U](j: UniformFanInShape[_ >: T, U]): ForwardOps[U] = from((out ~> j).outlet)
       def viaFanOut[U](j: UniformFanOutShape[_ >: T, U]): ForwardOps[U] = from((out ~> j).outlet)
       def out(): Outlet[T] = out

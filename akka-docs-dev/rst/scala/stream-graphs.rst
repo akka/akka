@@ -60,9 +60,6 @@ will be inferred.
 
 Notice the ``import FlowGraph.Implicits._`` which brings into scope the ``~>`` operator (read as "edge", "via" or "to")
 and its inverted counterpart ``<~`` (for noting down flows in the opposite direction where appropriate).
-It is also possible to construct graphs without the ``~>`` operator in case you prefer to use the graph builder explicitly:
-
-.. includecode:: code/docs/stream/FlowGraphDocSpec.scala#simple-flow-graph-no-implicits
 
 By looking at the snippets above, it should be apparent that the :class:`FlowGraph.Builder` object is *mutable*.
 It is used (implicitly) by the ``~>`` operator, also making it a mutable operation as well.

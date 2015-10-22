@@ -19,7 +19,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   "build with open ports" in {
     //#simple-partial-flow-graph
-    val pickMaxOfThree = FlowGraph.partial() { implicit b =>
+    val pickMaxOfThree = FlowGraph.create() { implicit b =>
       import FlowGraph.Implicits._
 
       val zip1 = b.add(ZipWith[Int, Int, Int](math.max _))
@@ -31,7 +31,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
     val resultSink = Sink.head[Int]
 
-    val g = FlowGraph.closed(resultSink) { implicit b =>
+    val g = RunnableGraph.fromGraph(FlowGraph.create(resultSink) { implicit b =>
       sink =>
         import FlowGraph.Implicits._
 
@@ -42,7 +42,8 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
         Source.single(2) ~> pm3.in(1)
         Source.single(3) ~> pm3.in(2)
         pm3.out ~> sink.inlet
-    }
+        ClosedShape
+    })
 
     val max: Future[Int] = g.run()
     Await.result(max, 300.millis) should equal(3)
@@ -51,7 +52,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   "build source from partial flow graph" in {
     //#source-from-partial-flow-graph
-    val pairs = Source() { implicit b =>
+    val pairs = Source.fromGraph(FlowGraph.create() { implicit b =>
       import FlowGraph.Implicits._
 
       // prepare graph elements
@@ -63,8 +64,8 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
       ints.filter(_ % 2 == 0) ~> zip.in1
 
       // expose port
-      zip.out
-    }
+      SourceShape(zip.out)
+    })
 
     val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head)
     //#source-from-partial-flow-graph
@@ -73,20 +74,21 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   "build flow from partial flow graph" in {
     //#flow-from-partial-flow-graph
-    val pairUpWithToString = Flow() { implicit b =>
-      import FlowGraph.Implicits._
+    val pairUpWithToString =
+      Flow.fromGraph(FlowGraph.create() { implicit b =>
+        import FlowGraph.Implicits._
 
-      // prepare graph elements
-      val broadcast = b.add(Broadcast[Int](2))
-      val zip = b.add(Zip[Int, String]())
+        // prepare graph elements
+        val broadcast = b.add(Broadcast[Int](2))
+        val zip = b.add(Zip[Int, String]())
 
-      // connect the graph
-      broadcast.out(0).map(identity) ~> zip.in0
-      broadcast.out(1).map(_.toString) ~> zip.in1
+        // connect the graph
+        broadcast.out(0).map(identity) ~> zip.in0
+        broadcast.out(1).map(_.toString) ~> zip.in1
 
-      // expose ports
-      (broadcast.in, zip.out)
-    }
+        // expose ports
+        FlowShape(broadcast.in, zip.out)
+      })
 
     //#flow-from-partial-flow-graph
 

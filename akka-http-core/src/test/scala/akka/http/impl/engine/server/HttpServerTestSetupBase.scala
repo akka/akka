@@ -15,8 +15,8 @@ import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.util.ByteString
 
-import akka.stream.Materializer
-import akka.stream.scaladsl.{ Flow, Sink, Source, FlowGraph }
+import akka.stream.{ ClosedShape, Materializer }
+import akka.stream.scaladsl._
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 
 import akka.http.impl.util._
@@ -39,14 +39,15 @@ abstract class HttpServerTestSetupBase {
     val netIn = TestPublisher.probe[ByteString]()
     val netOut = ByteStringSinkProbe()
 
-    FlowGraph.closed(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒
+    RunnableGraph.fromGraph(FlowGraph.create(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒
       server ⇒
         import FlowGraph.Implicits._
         Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
         server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> netOut.sink
         server.out2 ~> Sink(requests)
         Source(responses) ~> server.in1
-    }.run()
+        ClosedShape
+    }).run()
 
     netIn -> netOut
   }

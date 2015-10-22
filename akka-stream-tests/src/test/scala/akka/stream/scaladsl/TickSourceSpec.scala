@@ -7,10 +7,9 @@ import akka.actor.Cancellable
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.ActorMaterializer
+import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.ActorMaterializerSettings
 
 class TickSourceSpec extends AkkaSpec {
 
@@ -68,13 +67,14 @@ class TickSourceSpec extends AkkaSpec {
     "be usable with zip for a simple form of rate limiting" in {
       val c = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
         val zip = b.add(Zip[Int, String]())
         Source(1 to 100) ~> zip.in0
         Source(1.second, 1.second, "tick") ~> zip.in1
         zip.out ~> Flow[(Int, String)].map { case (n, _) ⇒ n } ~> Sink(c)
-      }.run()
+        ClosedShape
+      }).run()
 
       val sub = c.expectSubscription()
       sub.request(1000)

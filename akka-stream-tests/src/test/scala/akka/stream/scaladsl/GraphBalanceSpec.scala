@@ -4,9 +4,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
 
-import akka.stream.ActorMaterializer
-
-import akka.stream.ActorMaterializerSettings
+import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
@@ -25,12 +23,13 @@ class GraphBalanceSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
         Source(List(1, 2, 3)) ~> balance.in
         balance.out(0) ~> Sink(c1)
         balance.out(1) ~> Sink(c2)
-      }.run()
+        ClosedShape
+      }).run()
 
       val sub1 = c1.expectSubscription()
       val sub2 = c2.expectSubscription()
@@ -48,13 +47,14 @@ class GraphBalanceSpec extends AkkaSpec {
 
     "support waiting for demand from all downstream subscriptions" in {
       val s1 = TestSubscriber.manualProbe[Int]()
-      val p2 = FlowGraph.closed(Sink.publisher[Int]) { implicit b ⇒
+      val p2 = RunnableGraph.fromGraph(FlowGraph.create(Sink.publisher[Int]) { implicit b ⇒
         p2Sink ⇒
           val balance = b.add(Balance[Int](2, waitForAllDownstreams = true))
           Source(List(1, 2, 3)) ~> balance.in
           balance.out(0) ~> Sink(s1)
           balance.out(1) ~> p2Sink
-      }.run()
+          ClosedShape
+      }).run()
 
       val sub1 = s1.expectSubscription()
       sub1.request(1)
@@ -78,14 +78,15 @@ class GraphBalanceSpec extends AkkaSpec {
     "support waiting for demand from all non-cancelled downstream subscriptions" in assertAllStagesStopped {
       val s1 = TestSubscriber.manualProbe[Int]()
 
-      val (p2, p3) = FlowGraph.closed(Sink.publisher[Int], Sink.publisher[Int])(Keep.both) { implicit b ⇒
+      val (p2, p3) = RunnableGraph.fromGraph(FlowGraph.create(Sink.publisher[Int], Sink.publisher[Int])(Keep.both) { implicit b ⇒
         (p2Sink, p3Sink) ⇒
           val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
           Source(List(1, 2, 3)) ~> balance.in
           balance.out(0) ~> Sink(s1)
           balance.out(1) ~> p2Sink
           balance.out(2) ~> p3Sink
-      }.run()
+          ClosedShape
+      }).run()
 
       val sub1 = s1.expectSubscription()
       sub1.request(1)
@@ -112,7 +113,7 @@ class GraphBalanceSpec extends AkkaSpec {
     "work with 5-way balance" in {
 
       val sink = Sink.head[Seq[Int]]
-      val (s1, s2, s3, s4, s5) = FlowGraph.closed(sink, sink, sink, sink, sink)(Tuple5.apply) {
+      val (s1, s2, s3, s4, s5) = RunnableGraph.fromGraph(FlowGraph.create(sink, sink, sink, sink, sink)(Tuple5.apply) {
         implicit b ⇒
           (f1, f2, f3, f4, f5) ⇒
             val balance = b.add(Balance[Int](5, waitForAllDownstreams = true))
@@ -122,7 +123,8 @@ class GraphBalanceSpec extends AkkaSpec {
             balance.out(2).grouped(15) ~> f3
             balance.out(3).grouped(15) ~> f4
             balance.out(4).grouped(15) ~> f5
-      }.run()
+            ClosedShape
+      }).run()
 
       Set(s1, s2, s3, s4, s5) flatMap (Await.result(_, 3.seconds)) should be((0 to 14).toSet)
     }
@@ -131,14 +133,15 @@ class GraphBalanceSpec extends AkkaSpec {
       val numElementsForSink = 10000
       val outputs = Sink.fold[Int, Int](0)(_ + _)
 
-      val results = FlowGraph.closed(outputs, outputs, outputs)(List(_, _, _)) { implicit b ⇒
+      val results = RunnableGraph.fromGraph(FlowGraph.create(outputs, outputs, outputs)(List(_, _, _)) { implicit b ⇒
         (o1, o2, o3) ⇒
           val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
           Source.repeat(1).take(numElementsForSink * 3) ~> balance.in
           balance.out(0) ~> o1
           balance.out(1) ~> o2
           balance.out(2) ~> o3
-      }.run()
+          ClosedShape
+      }).run()
 
       import system.dispatcher
       val sum = Future.sequence(results).map { res ⇒
@@ -150,14 +153,15 @@ class GraphBalanceSpec extends AkkaSpec {
 
     "fairly balance between three outputs" in {
       val probe = TestSink.probe[Int]
-      val (p1, p2, p3) = FlowGraph.closed(probe, probe, probe)(Tuple3.apply) { implicit b ⇒
+      val (p1, p2, p3) = RunnableGraph.fromGraph(FlowGraph.create(probe, probe, probe)(Tuple3.apply) { implicit b ⇒
         (o1, o2, o3) ⇒
           val balance = b.add(Balance[Int](3))
           Source(1 to 7) ~> balance.in
           balance.out(0) ~> o1
           balance.out(1) ~> o2
           balance.out(2) ~> o3
-      }.run()
+          ClosedShape
+      }).run()
 
       p1.requestNext(1)
       p2.requestNext(2)
@@ -176,12 +180,13 @@ class GraphBalanceSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
         Source(List(1, 2, 3)) ~> balance.in
         balance.out(0) ~> Sink(c1)
         balance.out(1) ~> Sink(c2)
-      }.run()
+        ClosedShape
+      }).run()
 
       val sub1 = c1.expectSubscription()
       sub1.cancel()
@@ -197,12 +202,13 @@ class GraphBalanceSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
         Source(List(1, 2, 3)) ~> balance.in
         balance.out(0) ~> Sink(c1)
         balance.out(1) ~> Sink(c2)
-      }.run()
+        ClosedShape
+      }).run()
 
       val sub1 = c1.expectSubscription()
       val sub2 = c2.expectSubscription()
@@ -219,12 +225,13 @@ class GraphBalanceSpec extends AkkaSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      FlowGraph.closed() { implicit b ⇒
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
         Source(p1.getPublisher) ~> balance.in
         balance.out(0) ~> Sink(c1)
         balance.out(1) ~> Sink(c2)
-      }.run()
+        ClosedShape
+      }).run()
 
       val bsub = p1.expectSubscription()
       val sub1 = c1.expectSubscription()

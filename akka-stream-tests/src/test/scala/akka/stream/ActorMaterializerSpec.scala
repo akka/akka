@@ -26,7 +26,7 @@ class ActorMaterializerSpec extends AkkaSpec with ImplicitSender {
 
       val m = ActorMaterializer.create(system)
 
-      val f = Source.lazyEmpty[Int].runFold(0)(_ + _)(m)
+      val f = Source.maybe[Int].runFold(0)(_ + _)(m)
 
       m.shutdown()
 
@@ -43,7 +43,7 @@ class ActorMaterializerSpec extends AkkaSpec with ImplicitSender {
     "shut down the supervisor actor it encapsulates" in {
       val m = ActorMaterializer.create(system).asInstanceOf[ActorMaterializerImpl]
 
-      Source.lazyEmpty[Any].to(Sink.ignore).run()(m)
+      Source.maybe[Any].to(Sink.ignore).run()(m)
       m.supervisor ! StreamSupervisor.GetChildren
       expectMsgType[StreamSupervisor.Children]
       m.shutdown()

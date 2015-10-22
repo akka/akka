@@ -7,7 +7,7 @@ import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
-import akka.stream.impl.StreamLayout
+import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream.stage.Stage
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -20,32 +20,27 @@ import scala.language.{ higherKinds, implicitConversions }
 
 /** Java API */
 object Source {
-
-  val factory: SourceCreate = new SourceCreate {}
-
-  /** Adapt [[scaladsl.Source]] for use within JavaDSL */
-  // FIXME: is this needed now?
-  def adapt[O, M](source: scaladsl.Source[O, M]): Source[O, M] =
-    new Source(source)
+  private[this] val _empty = new Source[Any, Unit](scaladsl.Source.empty)
 
   /**
    * Create a `Source` with no elements, i.e. an empty stream that is completed immediately
    * for every connected `Sink`.
    */
-  def empty[O](): Source[O, Unit] =
-    new Source(scaladsl.Source.empty)
+  def empty[O](): Source[O, Unit] = _empty.asInstanceOf[Source[O, Unit]]
 
   /**
-   * Create a `Source` with no elements, which does not complete its downstream,
-   * until externally triggered to do so.
-   *
-   * It materializes a [[scala.concurrent.Promise]] which will be completed
-   * when the downstream stage of this source cancels. This promise can also
-   * be used to externally trigger completion, which the source then signals
-   * to its downstream.
+   * Create a `Source` which materializes a [[scala.concurrent.Promise]] which controls what element
+   * will be emitted by the Source.
+   * If the materialized promise is completed with a Some, that value will be produced downstream,
+   * followed by completion.
+   * If the materialized promise is completed with a None, no value will be produced downstream and completion will
+   * be signalled immediately.
+   * If the materialized promise is completed with a failure, then the returned source will terminate with that error.
+   * If the downstream of this source cancels before the promise has been completed, then the promise will be completed
+   * with None.
    */
-  def lazyEmpty[T](): Source[T, Promise[Unit]] =
-    new Source[T, Promise[Unit]](scaladsl.Source.lazyEmpty)
+  def maybe[T]: Source[T, Promise[Option[T]]] =
+    new Source(scaladsl.Source.maybe[T])
 
   /**
    * Helper to create [[Source]] from `Publisher`.
@@ -198,10 +193,11 @@ object Source {
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
-  def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] =
+  def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] =
     g match {
-      case s: Source[T, M] ⇒ s
-      case other           ⇒ new Source(scaladsl.Source.wrap(other))
+      case s: Source[T, M]                 ⇒ s
+      case s if s eq scaladsl.Source.empty ⇒ empty().asInstanceOf[Source[T, M]]
+      case other                           ⇒ new Source(scaladsl.Source.fromGraph(other))
     }
 
   /**
@@ -247,9 +243,11 @@ object Source {
  * Can be used as a `Publisher`
  */
 class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[SourceShape[Out], Mat] {
+
   import scala.collection.JavaConverters._
 
   override def shape: SourceShape[Out] = delegate.shape
+
   private[stream] def module: StreamLayout.Module = delegate.module
 
   /** Converts this Java DSL element to its Scala DSL counterpart. */
@@ -277,13 +275,13 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    */
   def to[M](sink: Graph[SinkShape[Out], M]): javadsl.RunnableGraph[Mat] =
-    new RunnableGraphAdapter(delegate.to(sink))
+    RunnableGraph.fromGraph(delegate.to(sink))
 
   /**
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    */
   def toMat[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableGraph[M2] =
-    new RunnableGraphAdapter(delegate.toMat(sink)(combinerToScala(combine)))
+    RunnableGraph.fromGraph(delegate.toMat(sink)(combinerToScala(combine)))
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
@@ -411,7 +409,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    */
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
                        matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
-    this.viaMat(Flow.empty[Out].zipMat(that, Keep.right[Unit, M]), matF)
+    this.viaMat(Flow.create[Out].zipMat(that, Keep.right[Unit, M]), matF)
 
   /**
    * Put together the elements of current [[Source]] and the given one
@@ -909,7 +907,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * '''Cancels when''' downstream cancels
    */
   def log(name: String, log: LoggingAdapter): javadsl.Source[Out, Mat] =
-    this.log(name, javaIdentityFunction[Out], log)
+    this.log(name, ConstantFun.javaIdentityFunction[Out], log)
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.
@@ -928,6 +926,6 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * '''Cancels when''' downstream cancels
    */
   def log(name: String): javadsl.Source[Out, Mat] =
-    this.log(name, javaIdentityFunction[Out], null)
+    this.log(name, ConstantFun.javaIdentityFunction[Out], null)
 
 }

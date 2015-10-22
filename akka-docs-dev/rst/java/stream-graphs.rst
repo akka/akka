@@ -85,8 +85,8 @@ Constructing and combining Partial Flow Graphs
 Sometimes it is not possible (or needed) to construct the entire computation graph in one place, but instead construct
 all of its different phases in different places and in the end connect them all into a complete graph and run it.
 
-This can be achieved using ``FlowGraph.factory().partial()`` instead of
-``FlowGraph.factory().closed()``, which will return a ``Graph`` instead of a
+This can be achieved using ``FlowGraph.create()`` instead of
+``FlowGraph.runnable()``, which will return a ``Graph`` instead of a
 ``RunnableGraph``.  The reason of representing it as a different type is that a
 :class:`RunnableGraph` requires all ports to be connected, and if they are not
 it will throw an exception at construction time, which helps to avoid simple

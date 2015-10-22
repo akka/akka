@@ -109,7 +109,7 @@ object WebsocketClientBlueprint {
       }
     }
 
-    BidiFlow() { implicit b ⇒
+    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
 
       val networkIn = b.add(Flow[ByteString].transform(() ⇒ new UpgradeStage))
@@ -126,11 +126,11 @@ object WebsocketClientBlueprint {
         networkIn.outlet,
         wsIn.inlet,
         httpRequestBytesAndThenWSBytes.out)
-    } mapMaterializedValue (_ ⇒ result.future)
+    }) mapMaterializedValue (_ ⇒ result.future)
   }
 
   def simpleTls: BidiFlow[SslTlsInbound, ByteString, ByteString, SendBytes, Unit] =
-    BidiFlow.wrap(
+    BidiFlow.fromFlowsMat(
       Flow[SslTlsInbound].collect { case SessionBytes(_, bytes) ⇒ bytes },
       Flow[ByteString].map(SendBytes))(Keep.none)
 }

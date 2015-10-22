@@ -73,7 +73,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
     connections runForeach { connection =>
 
-      val serverLogic = Flow() { implicit b =>
+      val serverLogic = Flow.fromGraph(FlowGraph.create() { implicit b =>
         import FlowGraph.Implicits._
 
         // server logic, parses incoming commands
@@ -109,8 +109,8 @@ class StreamTcpDocSpec extends AkkaSpec {
         // then we continue using the echo-logic Flow
         echo.outlet ~> concat.in(1)
 
-        (echo.inlet, concat.out)
-      }
+        FlowShape(echo.inlet, concat.out)
+      })
 
       connection.handleWith(serverLogic)
     }

@@ -50,7 +50,7 @@ object EchoTestClientApp extends App {
       .grouped(10000)
       .toMat(Sink.head)(Keep.right)
 
-  def echoClient = Flow.wrap(sink, source)(Keep.left)
+  def echoClient = Flow.fromSinkAndSourceMat(sink, source)(Keep.left)
 
   val (upgrade, res) = Http().singleWebsocketRequest("wss://echo.websocket.org", echoClient)
   res onComplete {

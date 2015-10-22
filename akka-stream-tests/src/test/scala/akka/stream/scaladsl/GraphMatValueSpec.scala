@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ ClosedShape, SourceShape, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 
 import scala.concurrent.Await
@@ -25,11 +25,12 @@ class GraphMatValueSpec extends AkkaSpec {
 
     "expose the materialized value as source" in {
       val sub = TestSubscriber.manualProbe[Int]()
-      val f = FlowGraph.closed(foldSink) { implicit b ⇒
+      val f = RunnableGraph.fromGraph(FlowGraph.create(foldSink) { implicit b ⇒
         fold ⇒
           Source(1 to 10) ~> fold
           b.materializedValue.mapAsync(4)(identity) ~> Sink(sub)
-      }.run()
+          ClosedShape
+      }).run()
 
       val r1 = Await.result(f, 3.seconds)
       sub.expectSubscription().request(1)
@@ -41,7 +42,7 @@ class GraphMatValueSpec extends AkkaSpec {
     "expose the materialized value as source multiple times" in {
       val sub = TestSubscriber.manualProbe[Int]()
 
-      val f = FlowGraph.closed(foldSink) { implicit b ⇒
+      val f = RunnableGraph.fromGraph(FlowGraph.create(foldSink) { implicit b ⇒
         fold ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
           Source(1 to 10) ~> fold
@@ -49,7 +50,8 @@ class GraphMatValueSpec extends AkkaSpec {
           b.materializedValue.mapAsync(4)(identity) ~> zip.in1
 
           zip.out ~> Sink(sub)
-      }.run()
+          ClosedShape
+      }).run()
 
       val r1 = Await.result(f, 3.seconds)
       sub.expectSubscription().request(1)
@@ -59,11 +61,11 @@ class GraphMatValueSpec extends AkkaSpec {
     }
 
     // Exposes the materialized value as a stream value
-    val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source(foldSink) { implicit b ⇒
+    val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source.fromGraph(FlowGraph.create(foldSink) { implicit b ⇒
       fold ⇒
         Source(1 to 10) ~> fold
-        b.materializedValue
-    }
+        SourceShape(b.materializedValue)
+    })
 
     "allow exposing the materialized value as port" in {
       val (f1, f2) = foldFeedbackSource.mapAsync(4)(identity).map(_ + 100).toMat(Sink.head)(Keep.both).run()
@@ -77,23 +79,22 @@ class GraphMatValueSpec extends AkkaSpec {
     }
 
     "work properly with nesting and reusing" in {
-      val compositeSource1 = Source(foldFeedbackSource, foldFeedbackSource)(Keep.both) { implicit b ⇒
+      val compositeSource1 = Source.fromGraph(FlowGraph.create(foldFeedbackSource, foldFeedbackSource)(Keep.both) { implicit b ⇒
         (s1, s2) ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
 
           s1.outlet.mapAsync(4)(identity) ~> zip.in0
           s2.outlet.mapAsync(4)(identity).map(_ * 100) ~> zip.in1
-          zip.out
-      }
+          SourceShape(zip.out)
+      })
 
-      val compositeSource2 = Source(compositeSource1, compositeSource1)(Keep.both) { implicit b ⇒
+      val compositeSource2 = Source.fromGraph(FlowGraph.create(compositeSource1, compositeSource1)(Keep.both) { implicit b ⇒
         (s1, s2) ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
-
           s1.outlet ~> zip.in0
           s2.outlet.map(_ * 10000) ~> zip.in1
-          zip.out
-      }
+          SourceShape(zip.out)
+      })
 
       val (((f1, f2), (f3, f4)), result) = compositeSource2.toMat(Sink.head)(Keep.both).run()
 

@@ -28,7 +28,7 @@ object One2OneBidiFlow {
    *    has signalled completion. Note that no error is triggered in this case!
    */
   def apply[I, O](maxPending: Int): BidiFlow[I, I, O, O, Unit] =
-    BidiFlow.wrap(new One2OneBidi[I, O](maxPending))
+    BidiFlow.fromGraph(new One2OneBidi[I, O](maxPending))
 
   class One2OneBidi[I, O](maxPending: Int) extends GraphStage[BidiShape[I, I, O, O]] {
     val inIn = Inlet[I]("inIn")

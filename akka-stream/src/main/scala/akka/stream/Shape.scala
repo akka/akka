@@ -177,7 +177,7 @@ object ClosedShape extends ClosedShape {
   /**
    * Java API: obtain ClosedShape instance
    */
-  def getInstance: Shape = this
+  def getInstance: ClosedShape = this
 }
 
 /**

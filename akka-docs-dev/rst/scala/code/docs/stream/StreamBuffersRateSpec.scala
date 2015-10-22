@@ -1,9 +1,8 @@
 package docs.stream
 
-import akka.stream.{ OverflowStrategy, ActorMaterializerSettings, ActorMaterializer }
+import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
-import akka.stream.Attributes
 
 class StreamBuffersRateSpec extends AkkaSpec {
   implicit val mat = ActorMaterializer()
@@ -40,7 +39,7 @@ class StreamBuffersRateSpec extends AkkaSpec {
     import scala.concurrent.duration._
     case class Tick()
 
-    FlowGraph.closed() { implicit b =>
+    RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
       import FlowGraph.Implicits._
 
       val zipper = b.add(ZipWith[Tick, Int, Int]((tick, count) => count))
@@ -51,7 +50,8 @@ class StreamBuffersRateSpec extends AkkaSpec {
         .conflate(seed = (_) => 1)((count, _) => count + 1) ~> zipper.in1
 
       zipper.out ~> Sink.foreach(println)
-    }
+      ClosedShape
+    })
     //#buffering-abstraction-leak
   }
 

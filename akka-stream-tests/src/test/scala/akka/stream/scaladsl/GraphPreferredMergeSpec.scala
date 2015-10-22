@@ -32,7 +32,7 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
       val preferred = Source(Stream.fill(numElements)(1))
       val aux = Source(Stream.fill(numElements)(2))
 
-      val result = FlowGraph.closed(Sink.head[Seq[Int]]) { implicit b ⇒
+      val result = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
         sink ⇒
           val merge = b.add(MergePreferred[Int](3))
           preferred ~> merge.preferred
@@ -41,13 +41,14 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
           aux ~> merge.in(0)
           aux ~> merge.in(1)
           aux ~> merge.in(2)
-      }.run()
+          ClosedShape
+      }).run()
 
       Await.result(result, 3.seconds).filter(_ == 1).size should be(numElements)
     }
 
     "eventually pass through all elements" in {
-      val result = FlowGraph.closed(Sink.head[Seq[Int]]) { implicit b ⇒
+      val result = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
         sink ⇒
           val merge = b.add(MergePreferred[Int](3))
           Source(1 to 100) ~> merge.preferred
@@ -56,7 +57,8 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
           Source(101 to 200) ~> merge.in(0)
           Source(201 to 300) ~> merge.in(1)
           Source(301 to 400) ~> merge.in(2)
-      }.run()
+          ClosedShape
+      }).run()
 
       Await.result(result, 3.seconds).toSet should ===((1 to 400).toSet)
     }
@@ -65,7 +67,7 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
       val s = Source(0 to 3)
 
       (the[IllegalArgumentException] thrownBy {
-        val g = FlowGraph.closed() { implicit b ⇒
+        val g = RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
           val merge = b.add(MergePreferred[Int](1))
 
           s ~> merge.preferred
@@ -73,7 +75,8 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
           s ~> merge.in(0)
 
           merge.out ~> Sink.head[Int]
-        }
+          ClosedShape
+        })
       }).getMessage should include("[MergePreferred.preferred] is already connected")
     }
 
