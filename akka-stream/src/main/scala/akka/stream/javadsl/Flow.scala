@@ -4,9 +4,8 @@
 package akka.stream.javadsl
 
 import akka.event.LoggingAdapter
-import akka.japi.{ Pair, function }
-import akka.stream.impl.Stages.Intersperse
-import akka.stream.impl.{ ReactiveStreamsCompliance, StreamLayout }
+import akka.japi.{ function, Pair }
+import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream.{ scaladsl, _ }
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
@@ -18,48 +17,44 @@ import scala.concurrent.duration.FiniteDuration
 
 object Flow {
 
-  val factory: FlowCreate = new FlowCreate {}
-
-  /** Adapt [[scaladsl.Flow]] for use within Java DSL */
-  def adapt[I, O, M](flow: scaladsl.Flow[I, O, M]): javadsl.Flow[I, O, M] =
-    new Flow(flow)
+  private[this] val _identity = new javadsl.Flow(scaladsl.Flow[Any])
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def empty[T](): javadsl.Flow[T, T, Unit] =
-    Flow.create()
-
-  /** Create a `Flow` which can process elements of type `T`. */
-  def create[T](): javadsl.Flow[T, T, Unit] =
-    adapt(scaladsl.Flow[T])
+  def create[T](): javadsl.Flow[T, T, Unit] = fromGraph(scaladsl.Flow[T])
 
   def create[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, Unit] =
-    adapt(scaladsl.Flow(() ⇒ processorFactory.create()))
+    new Flow(scaladsl.Flow(() ⇒ processorFactory.create()))
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] =
-    create[T]()
+  def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] = create[T]()
 
   /**
-   * A graph with the shape of a flow logically is a flow, this method makes
-   * it so also in type.
+   * A graph with the shape of a flow logically is a flow, this method makes it so also in type.
    */
-  def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
+  def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M] ⇒ f
-      case other            ⇒ new Flow(scaladsl.Flow.wrap(other))
+      case f: Flow[I, O, M]                          ⇒ f
+      case f: scaladsl.Flow[I, O, M] if f.isIdentity ⇒ _identity.asInstanceOf[Flow[I, O, M]]
+      case other                                     ⇒ new Flow(scaladsl.Flow.fromGraph(other))
     }
 
   /**
-   * Helper to create `Flow` from a pair of sink and source.
+   * Helper to create `Flow` from a `Sink`and a `Source`.
    */
-  def wrap[I, O, M1, M2, M](
-    sink: Graph[SinkShape[I], M1],
-    source: Graph[SourceShape[O], M2],
-    combine: function.Function2[M1, M2, M]): Flow[I, O, M] = new Flow(scaladsl.Flow.wrap(sink, source)(combine.apply _))
+  def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, Unit] =
+    new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(scaladsl.Keep.none))
+
+  /**
+   * Helper to create `Flow` from a `Sink`and a `Source`.
+   */
+  def fromSinkAndSourceMat[I, O, M1, M2, M](
+    sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2],
+    combine: function.Function2[M1, M2, M]): Flow[I, O, M] =
+    new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(combinerToScala(combine)))
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
-class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
+final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
   import scala.collection.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
@@ -131,13 +126,13 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]]
    */
   def join[M](flow: Graph[FlowShape[Out, In], M]): javadsl.RunnableGraph[Mat] =
-    new RunnableGraphAdapter(delegate.join(flow))
+    RunnableGraph.fromGraph(delegate.join(flow))
 
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]]
    */
   def joinMat[M, M2](flow: Graph[FlowShape[Out, In], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableGraph[M2] =
-    new RunnableGraphAdapter(delegate.joinMat(flow)(combinerToScala(combine)))
+    RunnableGraph.fromGraph(delegate.joinMat(flow)(combinerToScala(combine)))
 
   /**
    * Join this [[Flow]] to a [[BidiFlow]] to close off the “top” of the protocol stack:
@@ -944,16 +939,15 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * @see [[#zip]]
    */
   def zipMat[T, M, M2](that: Graph[SourceShape[T], M],
-                       matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out @uncheckedVariance Pair T, M2] = {
-    val f = new function.Function2[FlowGraph.Builder[M], SourceShape[T], Inlet[Out]Pair Outlet[Out Pair T]] {
-      override def apply(b: FlowGraph.Builder[M], s: SourceShape[T]): Inlet[Out] Pair Outlet[Out Pair T] = {
-        val zip = b.graph(Zip.create[Out, T])
-        b.from(s).toInlet(zip.in1)
-        new Pair(zip.in0, zip.out)
-      }
-    }
-    this.viaMat(Flow.factory.create(that, f), matF)
-  }
+                       matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out @uncheckedVariance Pair T, M2] =
+    this.viaMat(Flow.fromGraph(FlowGraph.create(that,
+      new function.Function2[FlowGraph.Builder[M], SourceShape[T], FlowShape[Out, Out @ uncheckedVariance Pair T]] {
+        def apply(b: FlowGraph.Builder[M], s: SourceShape[T]): FlowShape[Out, Out @uncheckedVariance Pair T] = {
+          val zip: FanInShape2[Out, T, Out Pair T] = b.add(Zip.create[Out, T])
+          b.from(s).toInlet(zip.in1)
+          FlowShape(zip.in0, zip.out)
+        }
+      })), matF)
 
   /**
    * Put together the elements of current [[Flow]] and the given [[Source]]
@@ -1049,7 +1043,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * '''Cancels when''' downstream cancels
    */
   def log(name: String, log: LoggingAdapter): javadsl.Flow[In, Out, Mat] =
-    this.log(name, javaIdentityFunction[Out], log)
+    this.log(name, ConstantFun.javaIdentityFunction[Out], log)
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.
@@ -1060,7 +1054,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Uses an internally created [[LoggingAdapter]] which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
    */
   def log(name: String): javadsl.Flow[In, Out, Mat] =
-    this.log(name, javaIdentityFunction[Out], null)
+    this.log(name, ConstantFun.javaIdentityFunction[Out], null)
 
   /**
    * Converts this Flow to a [[RunnableGraph]] that materializes to a Reactive Streams [[org.reactivestreams.Processor]]
@@ -1070,16 +1064,50 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * @return A [[RunnableGraph]] that materializes to a Processor when run() is called on it.
    */
   def toProcessor: RunnableGraph[Processor[In @uncheckedVariance, Out @uncheckedVariance]] = {
-    new RunnableGraphAdapter(delegate.toProcessor)
+    RunnableGraph.fromGraph(delegate.toProcessor)
   }
 }
 
+object RunnableGraph {
+  /**
+   * A graph with a closed shape is logically a runnable graph, this method makes
+   * it so also in type.
+   */
+  def fromGraph[Mat](graph: Graph[ClosedShape, Mat]): RunnableGraph[Mat] =
+    graph match {
+      case r: RunnableGraph[Mat] ⇒ r
+      case other                 ⇒ new RunnableGraphAdapter[Mat](scaladsl.RunnableGraph.fromGraph(graph))
+    }
+
+  /** INTERNAL API */
+  private final class RunnableGraphAdapter[Mat](runnable: scaladsl.RunnableGraph[Mat]) extends RunnableGraph[Mat] {
+    def shape = ClosedShape
+    def module = runnable.module
+    override def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableGraphAdapter[Mat2] =
+      new RunnableGraphAdapter(runnable.mapMaterializedValue(f.apply _))
+
+    override def run(materializer: Materializer): Mat = runnable.run()(materializer)
+
+    override def withAttributes(attr: Attributes): RunnableGraphAdapter[Mat] = {
+      val newRunnable = runnable.withAttributes(attr)
+      if (newRunnable eq runnable) this
+      else new RunnableGraphAdapter(newRunnable)
+    }
+
+    override def named(name: String): RunnableGraphAdapter[Mat] = {
+      val newRunnable = runnable.named(name)
+      if (newRunnable eq runnable) this
+      else new RunnableGraphAdapter(newRunnable)
+    }
+  }
+}
 /**
  * Java API
  *
  * Flow with attached input and output, can be executed.
  */
-trait RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
+abstract class RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
+
   /**
    * Run this flow and return the materialized values of the flow.
    */
@@ -1088,19 +1116,4 @@ trait RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
    * Transform only the materialized value of this RunnableGraph, leaving all other properties as they were.
    */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableGraph[Mat2]
-}
-
-/** INTERNAL API */
-private[akka] class RunnableGraphAdapter[Mat](runnable: scaladsl.RunnableGraph[Mat]) extends RunnableGraph[Mat] {
-  def shape = ClosedShape
-  def module = runnable.module
-  override def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableGraph[Mat2] =
-    new RunnableGraphAdapter(runnable.mapMaterializedValue(f.apply _))
-  override def run(materializer: Materializer): Mat = runnable.run()(materializer)
-
-  override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
-    new RunnableGraphAdapter(runnable.withAttributes(attr))
-
-  override def named(name: String): RunnableGraph[Mat] =
-    new RunnableGraphAdapter(runnable.named(name))
 }

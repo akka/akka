@@ -23,12 +23,12 @@ object GraphStageTimersSpec {
 
   class SideChannel {
     @volatile var asyncCallback: AsyncCallback[Any] = _
-    @volatile var stopPromise: Promise[Unit] = _
+    @volatile var stopPromise: Promise[Option[Nothing]] = _
 
     def isReady: Boolean = asyncCallback ne null
     def !(msg: Any) = asyncCallback.invoke(msg)
 
-    def stopStage(): Unit = stopPromise.trySuccess(())
+    def stopStage(): Unit = stopPromise.trySuccess(None)
   }
 
 }
@@ -81,7 +81,7 @@ class GraphStageTimersSpec extends AkkaSpec {
 
     def setupIsolatedStage: SideChannel = {
       val channel = new SideChannel
-      val stopPromise = Source.lazyEmpty[Int].via(new TestStage(testActor, channel)).to(Sink.ignore).run()
+      val stopPromise = Source.maybe[Nothing].via(new TestStage(testActor, channel)).to(Sink.ignore).run()
       channel.stopPromise = stopPromise
       awaitCond(channel.isReady)
       channel

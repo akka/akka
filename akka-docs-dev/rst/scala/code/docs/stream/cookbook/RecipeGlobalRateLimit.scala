@@ -2,6 +2,7 @@ package docs.stream.cookbook
 
 import akka.actor.{ Props, ActorRef, Actor }
 import akka.actor.Actor.Receive
+import akka.stream.ClosedShape
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 
@@ -98,12 +99,13 @@ class RecipeGlobalRateLimit extends RecipeSpec {
 
       val probe = TestSubscriber.manualProbe[String]()
 
-      FlowGraph.closed() { implicit b =>
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
         import FlowGraph.Implicits._
         val merge = b.add(Merge[String](2))
         source1 ~> merge ~> Sink(probe)
         source2 ~> merge
-      }.run()
+        ClosedShape
+      }).run()
 
       probe.expectSubscription().request(1000)
 

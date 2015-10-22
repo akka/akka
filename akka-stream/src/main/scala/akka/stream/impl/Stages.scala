@@ -67,7 +67,7 @@ private[stream] object Stages {
     val tickSource = name("tickSource")
     val singleSource = name("singleSource")
     val emptySource = name("emptySource")
-    val lazyEmptySource = name("lazyEmptySource")
+    val maybeSource = name("MaybeSource")
     val failedSource = name("failedSource")
     val concatSource = name("concatSource")
     val concatMatSource = name("concatMatSource")

@@ -3,8 +3,6 @@
  */
 package akka.stream.impl
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import akka.actor._
 import akka.stream._
 import akka.stream.impl.AcknowledgePublisher.{ Ok, Rejected }
@@ -16,7 +14,6 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ Future, Promise }
 import scala.language.postfixOps
-import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API
@@ -78,31 +75,13 @@ private[akka] final class PublisherSource[Out](p: Publisher[Out], val attributes
 /**
  * INTERNAL API
  */
-private[akka] final class LazyEmptySource[Out](val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, Promise[Unit]](shape) {
-  import ReactiveStreamsCompliance._
-
+private[akka] final class MaybeSource[Out](val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, Promise[Option[Out]]](shape) {
   override def create(context: MaterializationContext) = {
-    val p = Promise[Unit]()
-
-    val pub = new Publisher[Unit] {
-      override def subscribe(s: Subscriber[_ >: Unit]) = {
-        requireNonNullSubscriber(s)
-        tryOnSubscribe(s, new Subscription {
-          override def request(n: Long): Unit = ()
-          override def cancel(): Unit = p.trySuccess(())
-        })
-        p.future.onComplete {
-          case Success(_)  ⇒ tryOnComplete(s)
-          case Failure(ex) ⇒ tryOnError(s, ex) // due to external signal
-        }(context.materializer.executionContext)
-      }
-    }
-
-    pub.asInstanceOf[Publisher[Out]] → p
+    val p = Promise[Option[Out]]()
+    new MaybePublisher[Out](p, attributes.nameOrDefault("MaybeSource"))(context.materializer.executionContext) → p
   }
-
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Promise[Unit]] = new LazyEmptySource[Out](attributes, shape)
-  override def withAttributes(attr: Attributes): Module = new LazyEmptySource(attr, amendShape(attr))
+  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Promise[Option[Out]]] = new MaybeSource[Out](attributes, shape)
+  override def withAttributes(attr: Attributes): Module = new MaybeSource(attr, amendShape(attr))
 }
 
 /**

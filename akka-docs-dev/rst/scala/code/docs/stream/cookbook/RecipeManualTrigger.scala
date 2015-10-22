@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.stream.ClosedShape
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import scala.concurrent.duration._
@@ -17,13 +18,14 @@ class RecipeManualTrigger extends RecipeSpec {
       val sink = Sink(sub)
 
       //#manually-triggered-stream
-      val graph = FlowGraph.closed() { implicit builder =>
+      val graph = RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
         import FlowGraph.Implicits._
         val zip = builder.add(Zip[Message, Trigger]())
         elements ~> zip.in0
         triggerSource ~> zip.in1
         zip.out ~> Flow[(Message, Trigger)].map { case (msg, trigger) => msg } ~> sink
-      }
+        ClosedShape
+      })
       //#manually-triggered-stream
 
       graph.run()
@@ -55,14 +57,15 @@ class RecipeManualTrigger extends RecipeSpec {
       val sink = Sink(sub)
 
       //#manually-triggered-stream-zipwith
-      val graph = FlowGraph.closed() { implicit builder =>
+      val graph = RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
         import FlowGraph.Implicits._
         val zip = builder.add(ZipWith((msg: Message, trigger: Trigger) => msg))
 
         elements ~> zip.in0
         triggerSource ~> zip.in1
         zip.out ~> sink
-      }
+        ClosedShape
+      })
       //#manually-triggered-stream-zipwith
 
       graph.run()

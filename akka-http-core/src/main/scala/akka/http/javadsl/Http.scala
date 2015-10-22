@@ -86,7 +86,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * [[ServerBinding]].
    */
   def bind(interface: String, port: Int, materializer: Materializer): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(interface, port)(materializer)
+    new Source(delegate.bind(interface, port)(materializer)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
@@ -105,7 +105,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
            httpsContext: Option[HttpsContext],
            log: LoggingAdapter,
            materializer: Materializer): Source[IncomingConnection, Future[ServerBinding]] =
-    Source.adapt(delegate.bind(interface, port, settings, httpsContext, log)(materializer)
+    new Source(delegate.bind(interface, port, settings, httpsContext, log)(materializer)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
@@ -238,7 +238,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    */
   def outgoingConnection(host: String, port: Int): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    Flow.wrap {
+    Flow.fromGraph {
       akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
         .viaMat(delegate.outgoingConnection(host, port))(Keep.right)
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec))
@@ -248,7 +248,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Same as [[outgoingConnection]] but with HTTPS encryption.
    */
   def outgoingConnectionTls(host: String, port: Int): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    Flow.wrap {
+    Flow.fromGraph {
       akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
         .viaMat(delegate.outgoingConnectionTls(host, port))(Keep.right)
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec))
@@ -262,7 +262,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
                          localAddress: Option[InetSocketAddress],
                          settings: ClientConnectionSettings,
                          log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    Flow.wrap {
+    Flow.fromGraph {
       akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
         .viaMat(delegate.outgoingConnection(host, port, localAddress.asScala, settings, log))(Keep.right)
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec))
@@ -279,7 +279,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
                             settings: ClientConnectionSettings,
                             httpsContext: Option[HttpsContext],
                             log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    Flow.wrap {
+    Flow.fromGraph {
       akka.stream.scaladsl.Flow[HttpRequest].map(_.asScala)
         .viaMat(delegate.outgoingConnectionTls(host, port, localAddress.asScala, settings,
           httpsContext.map(_.asInstanceOf[akka.http.scaladsl.HttpsContext]), log))(Keep.right)
@@ -629,7 +629,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
         .atopMat(wsLayer)((_, s) ⇒ adaptWsUpgradeResponse(s)))
 
   private def adaptWsFlow(wsLayer: stream.scaladsl.Flow[sm.ws.Message, sm.ws.Message, Future[scaladsl.model.ws.WebsocketUpgradeResponse]]): Flow[Message, Message, Future[WebsocketUpgradeResponse]] =
-    Flow.adapt(JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message].joinMat(wsLayer)(Keep.right).mapMaterializedValue(adaptWsUpgradeResponse _))
+    Flow.fromGraph(JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message].joinMat(wsLayer)(Keep.right).mapMaterializedValue(adaptWsUpgradeResponse _))
 
   private def adaptWsFlow[Mat](javaFlow: Flow[Message, Message, Mat]): stream.scaladsl.Flow[scaladsl.model.ws.Message, scaladsl.model.ws.Message, Mat] =
     stream.scaladsl.Flow[scaladsl.model.ws.Message]

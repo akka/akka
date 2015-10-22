@@ -130,17 +130,17 @@ public class StreamTcpDocTest {
             .map(s -> ByteString.fromString(s));
 
       final Flow<ByteString, ByteString, BoxedUnit> serverLogic =
-          Flow.factory().create(builder -> {
+          Flow.fromGraph(FlowGraph.create(builder -> {
             final UniformFanInShape<ByteString, ByteString> concat =
-                builder.graph(Concat.create());
-            final FlowShape<ByteString, ByteString> echo = builder.graph(echoFlow);
+                builder.add(Concat.create());
+            final FlowShape<ByteString, ByteString> echo = builder.add(echoFlow);
 
             builder
-              .from(builder.graph(welcome)).toFanIn(concat)
+              .from(builder.add(welcome)).toFanIn(concat)
               .from(echo).toFanIn(concat);
 
-            return new Pair<>(echo.inlet(), concat.out());
-      });
+            return new FlowShape<>(echo.inlet(), concat.out());
+      }));
 
       connection.handleWith(serverLogic, mat);
     }, mat);

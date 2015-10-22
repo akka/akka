@@ -84,14 +84,14 @@ public class StreamBuffersRateDocTest {
         Flow.of(String.class).conflate(
             first -> 1, (count, elem) -> count + 1);
 
-    FlowGraph.factory().closed(b -> {
+    RunnableGraph.fromGraph(FlowGraph.create(b -> {
       final FanInShape2<String, Integer, Integer> zipper =
-          b.graph(ZipWith.create((String tick, Integer count) -> count));
-
-      b.from(b.graph(msgSource)).via(b.graph(conflate)).toInlet(zipper.in1());
-      b.from(b.graph(tickSource)).toInlet(zipper.in0());
-      b.from(zipper.out()).to(b.graph(Sink.foreach(elem -> System.out.println(elem))));
-    }).run(mat);
+          b.add(ZipWith.create((String tick, Integer count) -> count));
+      b.from(b.add(msgSource)).via(b.add(conflate)).toInlet(zipper.in1());
+      b.from(b.add(tickSource)).toInlet(zipper.in0());
+      b.from(zipper.out()).to(b.add(Sink.foreach(elem -> System.out.println(elem))));
+      return ClosedShape.getInstance();
+    })).run(mat);
     //#buffering-abstraction-leak
   }
 

@@ -9,6 +9,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.UniformFanInShape;
 import akka.stream.UniformFanOutShape;
+import akka.stream.FlowShape;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 import org.junit.AfterClass;
@@ -44,19 +45,19 @@ public class RecipeWorkerPool extends RecipeTest {
   //#worker-pool
   public static <In, Out> Flow<In, Out, BoxedUnit> balancer(
       Flow<In, Out, BoxedUnit> worker, int workerCount) {
-    return Flow.factory().create(b -> {
-      boolean waitForAllDownstreams = true;
-      final UniformFanOutShape<In, In> balance =
-        b.graph(Balance.<In> create(workerCount, waitForAllDownstreams));
-      final UniformFanInShape<Out, Out> merge =
-        b.graph(Merge.<Out> create(workerCount));
+    return Flow.fromGraph(FlowGraph.create(b -> {
+        boolean waitForAllDownstreams = true;
+        final UniformFanOutShape<In, In> balance =
+                b.add(Balance.<In>create(workerCount, waitForAllDownstreams));
+        final UniformFanInShape<Out, Out> merge =
+                b.add(Merge.<Out>create(workerCount));
 
-      for (int i = 0; i < workerCount; i++) {
-        b.flow(balance.out(i), worker, merge.in(i));
-      }
+        for (int i = 0; i < workerCount; i++) {
+            b.from(balance.out(i)).via(b.add(worker)).toInlet(merge.in(i));
+        }
 
-      return new Pair(balance.in(), merge.out());
-    });
+        return new FlowShape<>(balance.in(), merge.out());
+    }));
   }
   //#worker-pool
 

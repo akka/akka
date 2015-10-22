@@ -35,84 +35,83 @@ public class BidiFlowTest extends StreamTest {
       "FlowTest", AkkaSpec.testConf());
 
   private final BidiFlow<Integer, Long, ByteString, String, BoxedUnit> bidi = BidiFlow
-      .factory()
-      .create(
-          new Function<FlowGraph.Builder<BoxedUnit>, BidiShape<Integer, Long, ByteString, String>>() {
-            @Override
-            public BidiShape<Integer, Long, ByteString, String> apply(Builder<BoxedUnit> b)
-                throws Exception {
-              final FlowShape<Integer, Long> top = b.graph(Flow
-                  .<Integer> empty().map(new Function<Integer, Long>() {
-                    @Override
-                    public Long apply(Integer arg) {
-                      return (long) ((int) arg) + 2;
-                    }
-                  }));
-              final FlowShape<ByteString, String> bottom = b.graph(Flow
-                  .<ByteString> empty().map(new Function<ByteString, String>() {
-                    @Override
-                    public String apply(ByteString arg) {
-                      return arg.decodeString("UTF-8");
-                    }
-                  }));
-              return new BidiShape<Integer, Long, ByteString, String>(top
-                  .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
-            }
-          });
+      .fromGraph(FlowGraph.create(
+              new Function<FlowGraph.Builder<BoxedUnit>, BidiShape<Integer, Long, ByteString, String>>() {
+                  @Override
+                  public BidiShape<Integer, Long, ByteString, String> apply(Builder<BoxedUnit> b)
+                          throws Exception {
+                      final FlowShape<Integer, Long> top = b.add(Flow
+                        .of(Integer.class).map(new Function<Integer, Long>() {
+                          @Override
+                          public Long apply(Integer arg) {
+                            return (long) ((int) arg) + 2;
+                          }
+                        }));
+                      final FlowShape<ByteString, String> bottom = b.add(Flow
+                        .of(ByteString.class).map(new Function<ByteString, String>() {
+                          @Override
+                          public String apply(ByteString arg) {
+                            return arg.decodeString("UTF-8");
+                          }
+                        }));
+                      return new BidiShape<Integer, Long, ByteString, String>(top
+                              .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
+                  }
+              }));
 
   private final BidiFlow<Long, Integer, String, ByteString, BoxedUnit> inverse = BidiFlow
-      .factory()
-      .create(
-          new Function<FlowGraph.Builder<BoxedUnit>, BidiShape<Long, Integer, String, ByteString>>() {
-            @Override
-            public BidiShape<Long, Integer, String, ByteString> apply(Builder<BoxedUnit> b)
-                throws Exception {
-              final FlowShape<Long, Integer> top = b.graph(Flow.<Long> empty()
-                  .map(new Function<Long, Integer>() {
-                    @Override
-                    public Integer apply(Long arg) {
-                      return (int) ((long) arg) + 2;
-                    }
-                  }));
-              final FlowShape<String, ByteString> bottom = b.graph(Flow
-                  .<String> empty().map(new Function<String, ByteString>() {
-                    @Override
-                    public ByteString apply(String arg) {
-                      return ByteString.fromString(arg);
-                    }
-                  }));
-              return new BidiShape<Long, Integer, String, ByteString>(top
-                  .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
-            }
-          });
+      .fromGraph(
+              FlowGraph.create(
+                      new Function<FlowGraph.Builder<BoxedUnit>, BidiShape<Long, Integer, String, ByteString>>() {
+                          @Override
+                          public BidiShape<Long, Integer, String, ByteString> apply(Builder<BoxedUnit> b)
+                                  throws Exception {
+                              final FlowShape<Long, Integer> top = b.add(Flow.of(Long.class)
+                                .map(new Function<Long, Integer>() {
+                                  @Override
+                                  public Integer apply(Long arg) {
+                                    return (int) ((long) arg) + 2;
+                                  }
+                                }));
+                              final FlowShape<String, ByteString> bottom = b.add(Flow
+                                .of(String.class).map(new Function<String, ByteString>() {
+                                  @Override
+                                  public ByteString apply(String arg) {
+                                    return ByteString.fromString(arg);
+                                  }
+                                }));
+                              return new BidiShape<Long, Integer, String, ByteString>(top
+                                      .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
+                          }
+                      }));
 
-  private final BidiFlow<Integer, Long, ByteString, String, Future<Integer>> bidiMat = BidiFlow
-      .factory()
-      .create(
-          Sink.<Integer> head(),
-          new Function2<FlowGraph.Builder<Future<Integer>>, SinkShape<Integer>, BidiShape<Integer, Long, ByteString, String>>() {
-            @Override
-            public BidiShape<Integer, Long, ByteString, String> apply(Builder<Future<Integer>> b, SinkShape<Integer> sink)
-                throws Exception {
-              b.from(b.graph(Source.single(42))).to(sink);
-              final FlowShape<Integer, Long> top = b.graph(Flow
-                  .<Integer> empty().map(new Function<Integer, Long>() {
-                    @Override
-                    public Long apply(Integer arg) {
-                      return (long) ((int) arg) + 2;
-                    }
-                  }));
-              final FlowShape<ByteString, String> bottom = b.graph(Flow
-                  .<ByteString> empty().map(new Function<ByteString, String>() {
-                    @Override
-                    public String apply(ByteString arg) {
-                      return arg.decodeString("UTF-8");
-                    }
-                  }));
-              return new BidiShape<Integer, Long, ByteString, String>(top
-                  .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
-            }
-          });
+  private final BidiFlow<Integer, Long, ByteString, String, Future<Integer>> bidiMat =
+    BidiFlow.fromGraph(
+      FlowGraph.create(
+        Sink.<Integer>head(),
+        new Function2<FlowGraph.Builder<Future<Integer>>, SinkShape<Integer>, BidiShape<Integer, Long, ByteString, String>>() {
+          @Override
+          public BidiShape<Integer, Long, ByteString, String> apply(Builder<Future<Integer>> b, SinkShape<Integer> sink)
+            throws Exception {
+            b.from(b.add(Source.single(42))).to(sink);
+            final FlowShape<Integer, Long> top = b.add(Flow
+              .of(Integer.class).map(new Function<Integer, Long>() {
+                @Override
+                public Long apply(Integer arg) {
+                  return (long) ((int) arg) + 2;
+                }
+              }));
+            final FlowShape<ByteString, String> bottom = b.add(Flow
+              .of(ByteString.class).map(new Function<ByteString, String>() {
+                @Override
+                public String apply(ByteString arg) {
+                  return arg.decodeString("UTF-8");
+                }
+              }));
+            return new BidiShape<Integer, Long, ByteString, String>(top
+              .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
+          }
+        }));
 
   private final String str = "Hello World";
   private final ByteString bytes = ByteString.fromString(str);
@@ -126,22 +125,23 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkInIsolation() throws Exception {
-    final Pair<Future<Long>, Future<String>> p = FlowGraph
-        .factory()
-        .closed(Sink.<Long> head(), Sink.<String> head(),
-            Keep.<Future<Long>, Future<String>> both(),
-            new Procedure3<Builder<Pair<Future<Long>, Future<String>>>, SinkShape<Long>, SinkShape<String>>() {
-              @Override
-              public void apply(Builder<Pair<Future<Long>, Future<String>>> b, SinkShape<Long> st,
-                  SinkShape<String> sb) throws Exception {
-                final BidiShape<Integer, Long, ByteString, String> s = b
-                    .graph(bidi);
-                b.from(b.graph(Source.single(1))).toInlet(s.in1());
-                b.from(s.out1()).to(st);
-                b.from(b.graph(Source.single(bytes))).toInlet(s.in2());
-                b.from(s.out2()).to(sb);
-              }
-            }).run(materializer);
+    final Pair<Future<Long>, Future<String>> p =
+      RunnableGraph.fromGraph(FlowGraph
+        .create(Sink.<Long> head(), Sink.<String> head(),
+          Keep.<Future<Long>, Future<String>> both(),
+          new Function3<Builder<Pair<Future<Long>, Future<String>>>, SinkShape<Long>, SinkShape<String>, ClosedShape>() {
+            @Override
+            public ClosedShape apply(Builder<Pair<Future<Long>, Future<String>>> b, SinkShape<Long> st,
+                SinkShape<String> sb) throws Exception {
+            final BidiShape<Integer, Long, ByteString, String> s =
+              b.add(bidi);
+              b.from(b.add(Source.single(1))).toInlet(s.in1());
+              b.from(s.out1()).to(st);
+              b.from(b.add(Source.single(bytes))).toInlet(s.in2());
+              b.from(s.out2()).to(sb);
+              return ClosedShape.getInstance();
+            }
+          })).run(materializer);
 
     final Long rt = Await.result(p.first(), oneSec);
     final String rb = Await.result(p.second(), oneSec);
@@ -152,7 +152,7 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkAsAFlowThatIsOpenOnTheLeft() throws Exception {
-    final Flow<Integer, String, BoxedUnit> f = bidi.join(Flow.<Long> empty().map(
+    final Flow<Integer, String, BoxedUnit> f = bidi.join(Flow.of(Long.class).map(
         new Function<Long, ByteString>() {
           @Override public ByteString apply(Long arg) {
             return ByteString.fromString("Hello " + arg);
@@ -164,7 +164,7 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkAsAFlowThatIsOpenOnTheRight() throws Exception {
-    final Flow<ByteString, Long, BoxedUnit> f = Flow.<String> empty().map(
+    final Flow<ByteString, Long, BoxedUnit> f = Flow.of(String.class).map(
         new Function<String, Integer>() {
           @Override public Integer apply(String arg) {
             return Integer.valueOf(arg);
@@ -177,7 +177,7 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkWhenAtopItsInverse() throws Exception {
-    final Flow<Integer,String,BoxedUnit> f = bidi.atop(inverse).join(Flow.<Integer> empty().map(
+    final Flow<Integer,String,BoxedUnit> f = bidi.atop(inverse).join(Flow.of(Integer.class).map(
         new Function<Integer, String>() {
           @Override public String apply(Integer arg) {
             return arg.toString();
@@ -189,7 +189,7 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustWorkWhenReversed() throws Exception {
-    final Flow<Integer,String,BoxedUnit> f = Flow.<Integer> empty().map(
+    final Flow<Integer,String,BoxedUnit> f = Flow.of(Integer.class).map(
         new Function<Integer, String>() {
           @Override public String apply(Integer arg) {
             return arg.toString();
@@ -201,61 +201,66 @@ public class BidiFlowTest extends StreamTest {
 
   @Test
   public void mustMaterializeToItsValue() throws Exception {
-    final Future<Integer> f = FlowGraph.factory().closed(bidiMat, new Procedure2<Builder<Future<Integer> >, BidiShape<Integer, Long, ByteString, String>>() {
+    final Future<Integer> f = RunnableGraph.fromGraph(
+      FlowGraph.create(bidiMat,
+        new Function2<Builder<Future<Integer> >, BidiShape<Integer, Long, ByteString, String>, ClosedShape>() {
       @Override
-      public void apply(Builder<Future<Integer>> b,
+      public ClosedShape apply(Builder<Future<Integer>> b,
           BidiShape<Integer, Long, ByteString, String> shape) throws Exception {
-        final FlowShape<String, Integer> left = b.graph(Flow.<String> empty().map(
-            new Function<String, Integer>() {
-              @Override public Integer apply(String arg) {
-                return Integer.valueOf(arg);
-              }
-            }));
-        final FlowShape<Long, ByteString> right = b.graph(Flow.<Long> empty().map(
-            new Function<Long, ByteString>() {
-              @Override public ByteString apply(Long arg) {
-                return ByteString.fromString("Hello " + arg);
-              }
-            }));
+        final FlowShape<String, Integer> left = b.add(Flow.of(String.class).map(
+          new Function<String, Integer>() {
+            @Override
+            public Integer apply(String arg) {
+              return Integer.valueOf(arg);
+            }
+          }));
+        final FlowShape<Long, ByteString> right = b.add(Flow.of(Long.class).map(
+          new Function<Long, ByteString>() {
+            @Override
+            public ByteString apply(Long arg) {
+              return ByteString.fromString("Hello " + arg);
+            }
+          }));
         b.from(shape.out2()).via(left).toInlet(shape.in1())
          .from(shape.out1()).via(right).toInlet(shape.in2());
+        return ClosedShape.getInstance();
       }
-    }).run(materializer);
+    })).run(materializer);
     assertEquals((Integer) 42, Await.result(f, oneSec));
   }
 
   @Test
   public void mustCombineMaterializationValues() throws Exception {
-    final Flow<String, Integer, Future<Integer>> left = Flow.factory().create(
-        Sink.<Integer> head(), new Function2<Builder<Future<Integer> >, SinkShape<Integer>, Pair<Inlet<String>, Outlet<Integer>>>() {
-          @Override
-          public Pair<Inlet<String>, Outlet<Integer>> apply(Builder<Future<Integer>> b,
-              SinkShape<Integer> sink) throws Exception {
-            final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.<Integer> create(2));
-            final UniformFanInShape<Integer, Integer> merge = b.graph(Merge.<Integer> create(2));
-            final FlowShape<String, Integer> flow = b.graph(Flow.<String> empty().map(
-                new Function<String, Integer>() {
-                      @Override
-                      public Integer apply(String arg) {
-                        return Integer.valueOf(arg);
-                      }
-                    }));
-            b.from(bcast).to(sink)
-             .from(b.graph(Source.single(1))).viaFanOut(bcast).toFanIn(merge)
-             .from(flow).toFanIn(merge);
-            return new Pair<Inlet<String>, Outlet<Integer>>(flow.inlet(), merge.out());
-          }
-        });
-    final Flow<Long, ByteString, Future<List<Long>>> right = Flow.factory().create(
-        Sink.<List<Long>> head(), new Function2<Builder<Future<List<Long>>>, SinkShape<List<Long>>, Pair<Inlet<Long>, Outlet<ByteString>>>() {
-          @Override
-          public Pair<Inlet<Long>, Outlet<ByteString>> apply(Builder<Future<List<Long>>> b,
-              SinkShape<List<Long>> sink) throws Exception {
-            final FlowShape<Long, List<Long>> flow = b.graph(Flow.<Long> empty().grouped(10));
-            b.from(flow).to(sink);
-            return new Pair<Inlet<Long>, Outlet<ByteString>>(flow.inlet(), b.source(Source.single(ByteString.fromString("10"))));
-          }
-        });
+    final Flow<String, Integer, Future<Integer>> left = Flow.fromGraph(FlowGraph.create(
+            Sink.<Integer>head(), new Function2<Builder<Future<Integer>>, SinkShape<Integer>, FlowShape<String, Integer>>() {
+                @Override
+                public FlowShape<String, Integer> apply(Builder<Future<Integer>> b,
+                                                        SinkShape<Integer> sink) throws Exception {
+                    final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.<Integer>create(2));
+                    final UniformFanInShape<Integer, Integer> merge = b.add(Merge.<Integer>create(2));
+                    final FlowShape<String, Integer> flow = b.add(Flow.of(String.class).map(
+                      new Function<String, Integer>() {
+                        @Override
+                        public Integer apply(String arg) {
+                          return Integer.valueOf(arg);
+                        }
+                      }));
+                    b.from(bcast).to(sink)
+                            .from(b.add(Source.single(1))).viaFanOut(bcast).toFanIn(merge)
+                            .from(flow).toFanIn(merge);
+                    return new FlowShape<String, Integer>(flow.inlet(), merge.out());
+                }
+            }));
+    final Flow<Long, ByteString, Future<List<Long>>> right = Flow.fromGraph(FlowGraph.create(
+            Sink.<List<Long>>head(), new Function2<Builder<Future<List<Long>>>, SinkShape<List<Long>>, FlowShape<Long, ByteString>>() {
+                @Override
+                public FlowShape<Long, ByteString> apply(Builder<Future<List<Long>>> b,
+                                                         SinkShape<List<Long>> sink) throws Exception {
+                    final FlowShape<Long, List<Long>> flow = b.add(Flow.of(Long.class).grouped(10));
+                    b.from(flow).to(sink);
+                    return new FlowShape<Long, ByteString>(flow.inlet(), b.add(Source.single(ByteString.fromString("10"))).outlet());
+                }
+            }));
     final Pair<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> result =
         left.joinMat(bidiMat, Keep.<Future<Integer>, Future<Integer>> both()).joinMat(right, Keep.<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> both()).run(materializer);
     final Future<Integer> l = result.first().first();

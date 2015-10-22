@@ -21,7 +21,7 @@ class FlowGraphDocSpec extends AkkaSpec {
   "build simple graph" in {
     //format: OFF
     //#simple-flow-graph
-    val g = FlowGraph.closed() { implicit builder: FlowGraph.Builder[Unit] =>
+    val g = RunnableGraph.fromGraph(FlowGraph.create() { implicit builder: FlowGraph.Builder[Unit] =>
       import FlowGraph.Implicits._
       val in = Source(1 to 10)
       val out = Sink.ignore
@@ -32,8 +32,9 @@ class FlowGraphDocSpec extends AkkaSpec {
       val f1, f2, f3, f4 = Flow[Int].map(_ + 10)
 
       in ~> f1 ~> bcast ~> f2 ~> merge ~> f3 ~> out
-                  bcast ~> f4 ~> merge
-    }
+      bcast ~> f4 ~> merge
+      ClosedShape
+    })
     //#simple-flow-graph
     //format: ON
 
@@ -42,33 +43,10 @@ class FlowGraphDocSpec extends AkkaSpec {
     //#simple-graph-run
   }
 
-  "build simple graph without implicits" in {
-    //#simple-flow-graph-no-implicits
-    val g = FlowGraph.closed() { builder: FlowGraph.Builder[Unit] =>
-      val in = Source(1 to 10)
-      val out = Sink.ignore
-
-      val broadcast = builder.add(Broadcast[Int](2))
-      val merge = builder.add(Merge[Int](2))
-
-      val f1 = Flow[Int].map(_ + 10)
-      val f3 = Flow[Int].map(_.toString)
-      val f2 = Flow[Int].map(_ + 20)
-
-      builder.addEdge(builder.add(in), broadcast.in)
-      builder.addEdge(broadcast.out(0), f1, merge.in(0))
-      builder.addEdge(broadcast.out(1), f2, merge.in(1))
-      builder.addEdge(merge.out, f3, builder.add(out))
-    }
-    //#simple-flow-graph-no-implicits
-
-    g.run()
-  }
-
   "flow connection errors" in {
     intercept[IllegalArgumentException] {
       //#simple-graph
-      FlowGraph.closed() { implicit builder =>
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
         import FlowGraph.Implicits._
         val source1 = Source(1 to 10)
         val source2 = Source(1 to 10)
@@ -78,9 +56,10 @@ class FlowGraphDocSpec extends AkkaSpec {
         source1 ~> zip.in0
         source2 ~> zip.in1
         // unconnected zip.out (!) => "must have at least 1 outgoing edge"
-      }
+        ClosedShape
+      })
       //#simple-graph
-    }.getMessage should include("unconnected ports: ZipWith2.out")
+    }.getMessage should include("ZipWith2.out")
   }
 
   "reusing a flow in a graph" in {
@@ -95,7 +74,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     // format: OFF
     val g =
     //#flow-graph-reusing-a-flow
-    FlowGraph.closed(topHeadSink, bottomHeadSink)((_, _)) { implicit builder =>
+    RunnableGraph.fromGraph(FlowGraph.create(topHeadSink, bottomHeadSink)((_, _)) { implicit builder =>
       (topHS, bottomHS) =>
       import FlowGraph.Implicits._
       val broadcast = builder.add(Broadcast[Int](2))
@@ -103,7 +82,8 @@ class FlowGraphDocSpec extends AkkaSpec {
 
       broadcast.out(0) ~> sharedDoubler ~> topHS.inlet
       broadcast.out(1) ~> sharedDoubler ~> bottomHS.inlet
-    }
+      ClosedShape
+    })
     //#flow-graph-reusing-a-flow
     // format: ON
     val (topFuture, bottomFuture) = g.run()
@@ -153,7 +133,7 @@ class FlowGraphDocSpec extends AkkaSpec {
         worker: Flow[In, Out, Any],
         workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], Unit] = {
 
-        FlowGraph.partial() { implicit b ⇒
+        FlowGraph.create() { implicit b ⇒
           import FlowGraph.Implicits._
 
           val priorityMerge = b.add(MergePreferred[In](1))
@@ -188,7 +168,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     val worker1 = Flow[String].map("step 1 " + _)
     val worker2 = Flow[String].map("step 2 " + _)
 
-    FlowGraph.closed() { implicit b =>
+    RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
       import FlowGraph.Implicits._
 
       val priorityPool1 = b.add(PriorityWorkerPool(worker1, 4))
@@ -201,7 +181,8 @@ class FlowGraphDocSpec extends AkkaSpec {
       Source(1 to 100).map("one-step, priority " + _) ~> priorityPool2.priorityJobsIn
 
       priorityPool2.resultsOut ~> Sink.foreach(println)
-    }.run()
+      ClosedShape
+    }).run()
     //#flow-graph-components-use
 
     //#flow-graph-components-shape2
@@ -223,11 +204,11 @@ class FlowGraphDocSpec extends AkkaSpec {
   "access to materialized value" in {
     //#flow-graph-matvalue
     import FlowGraph.Implicits._
-    val foldFlow: Flow[Int, Int, Future[Int]] = Flow(Sink.fold[Int, Int](0)(_ + _)) {
+    val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(FlowGraph.create(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder ⇒
         fold ⇒
-          (fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
-    }
+          FlowShape(fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
+    })
     //#flow-graph-matvalue
 
     Await.result(Source(1 to 10).via(foldFlow).runWith(Sink.head), 3.seconds) should ===(55)
@@ -235,7 +216,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     //#flow-graph-matvalue-cycle
     import FlowGraph.Implicits._
     // This cannot produce any value:
-    val cyclicFold: Source[Int, Future[Int]] = Source(Sink.fold[Int, Int](0)(_ + _)) {
+    val cyclicFold: Source[Int, Future[Int]] = Source.fromGraph(FlowGraph.create(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder =>
         fold =>
           // - Fold cannot complete until its upstream mapAsync completes
@@ -244,8 +225,8 @@ class FlowGraphDocSpec extends AkkaSpec {
           // As a result this Source will never emit anything, and its materialited
           // Future will never complete
           builder.materializedValue.mapAsync(4)(identity) ~> fold
-          builder.materializedValue.mapAsync(4)(identity).outlet
-    }
+          SourceShape(builder.materializedValue.mapAsync(4)(identity).outlet)
+    })
     //#flow-graph-matvalue-cycle
   }
 

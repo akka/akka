@@ -13,7 +13,6 @@ import org.junit.Test;
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.japi.*;
 import akka.testkit.JavaTestKit;
 
 public class FlowParallelismDocTest {
@@ -61,22 +60,22 @@ public class FlowParallelismDocTest {
       Flow.of(ScoopOfBatter.class).map(batter -> new Pancake());
 
     Flow<ScoopOfBatter, Pancake, BoxedUnit> pancakeChef =
-      Flow.factory().create(b -> {
+      Flow.fromGraph(FlowGraph.create(b -> {
         final UniformFanInShape<Pancake, Pancake> mergePancakes =
-          b.graph(Merge.create(2));
+          b.add(Merge.create(2));
         final UniformFanOutShape<ScoopOfBatter, ScoopOfBatter> dispatchBatter =
-          b.graph(Balance.create(2));
+          b.add(Balance.create(2));
 
         // Using two frying pans in parallel, both fully cooking a pancake from the batter.
         // We always put the next scoop of batter to the first frying pan that becomes available.
-        b.from(dispatchBatter.out(0)).via(b.graph(fryingPan)).toInlet(mergePancakes.in(0));
+        b.from(dispatchBatter.out(0)).via(b.add(fryingPan)).toInlet(mergePancakes.in(0));
         // Notice that we used the "fryingPan" flow without importing it via builder.add().
         // Flows used this way are auto-imported, which in this case means that the two
         // uses of "fryingPan" mean actually different stages in the graph.
-        b.from(dispatchBatter.out(1)).via(b.graph(fryingPan)).toInlet(mergePancakes.in(1));
+        b.from(dispatchBatter.out(1)).via(b.add(fryingPan)).toInlet(mergePancakes.in(1));
 
-        return new Pair(dispatchBatter.in(), mergePancakes.out());
-      });
+        return new FlowShape<>(dispatchBatter.in(), mergePancakes.out());
+      }));
     //#parallelism
   }
 
@@ -84,26 +83,26 @@ public class FlowParallelismDocTest {
   public void parallelPipeline() {
     //#parallel-pipeline
     Flow<ScoopOfBatter, Pancake, BoxedUnit> pancakeChef =
-      Flow.factory().create(b -> {
+      Flow.fromGraph(FlowGraph.create(b -> {
         final UniformFanInShape<Pancake, Pancake> mergePancakes =
-          b.graph(Merge.create(2));
+          b.add(Merge.create(2));
         final UniformFanOutShape<ScoopOfBatter, ScoopOfBatter> dispatchBatter =
-          b.graph(Balance.create(2));
+          b.add(Balance.create(2));
 
         // Using two pipelines, having two frying pans each, in total using
         // four frying pans
         b.from(dispatchBatter.out(0))
-          .via(b.graph(fryingPan1))
-          .via(b.graph(fryingPan2))
+          .via(b.add(fryingPan1))
+          .via(b.add(fryingPan2))
           .toInlet(mergePancakes.in(0));
 
         b.from(dispatchBatter.out(1))
-          .via(b.graph(fryingPan1))
-          .via(b.graph(fryingPan2))
+          .via(b.add(fryingPan1))
+          .via(b.add(fryingPan2))
           .toInlet(mergePancakes.in(1));
 
-        return new Pair(dispatchBatter.in(), mergePancakes.out());
-      });
+        return new FlowShape<>(dispatchBatter.in(), mergePancakes.out());
+      }));
     //#parallel-pipeline
   }
 
@@ -111,34 +110,34 @@ public class FlowParallelismDocTest {
   public void pipelinedParallel() {
     //#pipelined-parallel
     Flow<ScoopOfBatter, HalfCookedPancake, BoxedUnit> pancakeChefs1 =
-      Flow.factory().create(b -> {
+      Flow.fromGraph(FlowGraph.create(b -> {
         final UniformFanInShape<HalfCookedPancake, HalfCookedPancake> mergeHalfCooked =
-          b.graph(Merge.create(2));
+          b.add(Merge.create(2));
         final UniformFanOutShape<ScoopOfBatter, ScoopOfBatter> dispatchBatter =
-          b.graph(Balance.create(2));
+          b.add(Balance.create(2));
 
         // Two chefs work with one frying pan for each, half-frying the pancakes then putting
         // them into a common pool
-        b.from(dispatchBatter.out(0)).via(b.graph(fryingPan1)).toInlet(mergeHalfCooked.in(0));
-        b.from(dispatchBatter.out(1)).via(b.graph(fryingPan1)).toInlet(mergeHalfCooked.in(1));
+        b.from(dispatchBatter.out(0)).via(b.add(fryingPan1)).toInlet(mergeHalfCooked.in(0));
+        b.from(dispatchBatter.out(1)).via(b.add(fryingPan1)).toInlet(mergeHalfCooked.in(1));
 
-        return new Pair(dispatchBatter.in(), mergeHalfCooked.out());
-      });
+        return new FlowShape<>(dispatchBatter.in(), mergeHalfCooked.out());
+      }));
 
     Flow<HalfCookedPancake, Pancake, BoxedUnit> pancakeChefs2 =
-      Flow.factory().create(b -> {
+      Flow.fromGraph(FlowGraph.create(b -> {
         final UniformFanInShape<Pancake, Pancake> mergePancakes =
-          b.graph(Merge.create(2));
+          b.add(Merge.create(2));
         final UniformFanOutShape<HalfCookedPancake, HalfCookedPancake> dispatchHalfCooked =
-          b.graph(Balance.create(2));
+          b.add(Balance.create(2));
 
         // Two chefs work with one frying pan for each, finishing the pancakes then putting
         // them into a common pool
-        b.from(dispatchHalfCooked.out(0)).via(b.graph(fryingPan2)).toInlet(mergePancakes.in(0));
-        b.from(dispatchHalfCooked.out(1)).via(b.graph(fryingPan2)).toInlet(mergePancakes.in(1));
+        b.from(dispatchHalfCooked.out(0)).via(b.add(fryingPan2)).toInlet(mergePancakes.in(0));
+        b.from(dispatchHalfCooked.out(1)).via(b.add(fryingPan2)).toInlet(mergePancakes.in(1));
 
-        return new Pair(dispatchHalfCooked.in(), mergePancakes.out());
-      });
+        return new FlowShape<>(dispatchHalfCooked.in(), mergePancakes.out());
+      }));
 
     Flow<ScoopOfBatter, Pancake, BoxedUnit> kitchen =
         pancakeChefs1.via(pancakeChefs2);

@@ -65,7 +65,7 @@ class One2OneBidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
       Source(1 to 1000)
         .log("", seen.set)
-        .via(One2OneBidiFlow[Int, Int](MAX_PENDING) join Flow.wrap(Sink.ignore, Source(out))(Keep.left))
+        .via(One2OneBidiFlow[Int, Int](MAX_PENDING) join Flow.fromSinkAndSourceMat(Sink.ignore, Source(out))(Keep.left))
         .runWith(Sink.ignore)
 
       Thread.sleep(50)
@@ -82,6 +82,6 @@ class One2OneBidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     val outIn = TestPublisher.probe[Int]()
     val outOut = TestSubscriber.probe[Int]()
 
-    Source(inIn).via(One2OneBidiFlow[Int, Int](maxPending) join Flow.wrap(Sink(inOut), Source(outIn))(Keep.left)).runWith(Sink(outOut))
+    Source(inIn).via(One2OneBidiFlow[Int, Int](maxPending) join Flow.fromSinkAndSourceMat(Sink(inOut), Source(outIn))(Keep.left)).runWith(Sink(outOut))
   }
 }

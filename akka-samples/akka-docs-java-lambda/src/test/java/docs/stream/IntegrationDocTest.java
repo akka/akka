@@ -401,7 +401,7 @@ public class IntegrationDocTest {
         //#blocking-mapAsync
         final MessageDispatcher blockingEc = system.dispatchers().lookup("blocking-dispatcher");
 
-        final RunnableGraph sendTextMessages =
+        final RunnableGraph<BoxedUnit> sendTextMessages =
           phoneNumbers
             .mapAsync(4, phoneNo  ->
               Futures.future(() ->
@@ -479,7 +479,7 @@ public class IntegrationDocTest {
         //#save-tweets
         final Source<Tweet, BoxedUnit> akkaTweets = tweets.filter(t -> t.hashtags().contains(AKKA));
 
-        final RunnableGraph saveTweets =
+        final RunnableGraph<BoxedUnit> saveTweets =
           akkaTweets
             .mapAsync(4, tweet -> ask(database, new Save(tweet), 300))
             .to(Sink.ignore());

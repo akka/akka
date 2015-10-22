@@ -6,8 +6,7 @@ package docs.stream
 //#imports
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.OverflowStrategy
+import akka.stream.{ ClosedShape, ActorMaterializer, OverflowStrategy }
 import akka.stream.scaladsl._
 
 import scala.concurrent.Await
@@ -119,14 +118,15 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     // format: OFF
     //#flow-graph-broadcast
-    val g = FlowGraph.closed() { implicit b =>
+    val g = RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
       import FlowGraph.Implicits._
 
       val bcast = b.add(Broadcast[Tweet](2))
       tweets ~> bcast.in
       bcast.out(0) ~> Flow[Tweet].map(_.author) ~> writeAuthors 
       bcast.out(1) ~> Flow[Tweet].mapConcat(_.hashtags.toList) ~> writeHashtags
-    }
+      ClosedShape
+    })
     g.run()
     //#flow-graph-broadcast
     // format: ON

@@ -20,7 +20,7 @@ object MaterializationBenchmark {
   }
 
   val graphWithJunctionsBuilder = (numOfJunctions: Int) =>
-    FlowGraph.closed() { implicit b =>
+    RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
       import FlowGraph.Implicits._
 
       val broadcast = b.add(Broadcast[Unit](numOfJunctions))
@@ -34,39 +34,39 @@ object MaterializationBenchmark {
 
       Source.single(()) ~> broadcast
       outlet ~> Sink.ignore
-    }
+      ClosedShape
+    })
 
   val graphWithNestedImportsBuilder = (numOfNestedGraphs: Int) => {
     var flow: Graph[FlowShape[Unit, Unit], Unit] = Flow[Unit].map(identity)
     for (_ <- 1 to numOfNestedGraphs) {
-      flow = FlowGraph.partial(flow) { b ⇒
+      flow = FlowGraph.create(flow) { b ⇒
         flow ⇒
           FlowShape(flow.inlet, flow.outlet)
       }
     }
 
-    FlowGraph.closed(flow) { implicit b ⇒
+    RunnableGraph.fromGraph(FlowGraph.create(flow) { implicit b ⇒
       flow ⇒
         import FlowGraph.Implicits._
         Source.single(()) ~> flow ~> Sink.ignore
-    }
+      ClosedShape
+    })
   }
 
-  val graphWithImportedFlowBuilder = (numOfFlows: Int) => {
-    val flow = Flow[Unit].map(identity)
-    FlowGraph.closed() { b ⇒
-      val source = b.add(Source.single(()))
-      var outlet = source
+  val graphWithImportedFlowBuilder = (numOfFlows: Int) =>
+    RunnableGraph.fromGraph(FlowGraph.create(Source.single(())) { implicit b ⇒ source ⇒
+      import FlowGraph.Implicits._
+      val flow = Flow[Unit].map(identity)
+      var outlet: Outlet[Unit] = source.outlet
       for (i <- 0 until numOfFlows) {
         val flowShape = b.add(flow)
-        b.addEdge(outlet, flowShape.inlet)
+        outlet ~> flowShape
         outlet = flowShape.outlet
       }
-
-      val sink = b.add(Sink.ignore)
-      b.addEdge(outlet, sink)
-    }
-  }
+      outlet ~> Sink.ignore
+      ClosedShape
+    })
 }
 
 @State(Scope.Benchmark)

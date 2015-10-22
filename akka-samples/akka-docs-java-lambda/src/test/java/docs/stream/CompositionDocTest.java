@@ -5,6 +5,7 @@ package docs.stream;
 
 import java.util.Arrays;
 
+import akka.stream.ClosedShape;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -19,6 +20,7 @@ import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
 import scala.concurrent.*;
 import scala.runtime.BoxedUnit;
+import scala.Option;
 
 public class CompositionDocTest {
 
@@ -101,33 +103,36 @@ public class CompositionDocTest {
   @Test
   public void complexGraph() throws Exception {
     //#complex-graph
-    FlowGraph.factory().closed(builder -> {
-      final Outlet<Integer> A = builder.source(Source.single(0));
-      final UniformFanOutShape<Integer, Integer> B = builder.graph(Broadcast.create(2));
-      final UniformFanInShape<Integer, Integer> C = builder.graph(Merge.create(2));
+    RunnableGraph.fromGraph(
+      FlowGraph.create(builder -> {
+      final Outlet<Integer> A = builder.add(Source.single(0)).outlet();
+      final UniformFanOutShape<Integer, Integer> B = builder.add(Broadcast.create(2));
+      final UniformFanInShape<Integer, Integer> C = builder.add(Merge.create(2));
       final FlowShape<Integer, Integer> D =
-        builder.graph(Flow.of(Integer.class).map(i -> i + 1));
-      final UniformFanOutShape<Integer, Integer> E = builder.graph(Balance.create(2));
-      final UniformFanInShape<Integer, Integer> F = builder.graph(Merge.create(2));
-      final Inlet<Integer> G = builder.sink(Sink.foreach(System.out::println));
+        builder.add(Flow.of(Integer.class).map(i -> i + 1));
+      final UniformFanOutShape<Integer, Integer> E = builder.add(Balance.create(2));
+      final UniformFanInShape<Integer, Integer> F = builder.add(Merge.create(2));
+      final Inlet<Integer> G = builder.add(Sink.<Integer> foreach(System.out::println)).inlet();
 
       builder.from(F).toFanIn(C);
       builder.from(A).viaFanOut(B).viaFanIn(C).toFanIn(F);
       builder.from(B).via(D).viaFanOut(E).toFanIn(F);
       builder.from(E).toInlet(G);
-    });
+      return ClosedShape.getInstance();
+    }));
     //#complex-graph
 
     //#complex-graph-alt
-    FlowGraph.factory().closed(builder -> {
-      final Outlet<Integer> A = builder.source(Source.single(0));
-      final UniformFanOutShape<Integer, Integer> B = builder.graph(Broadcast.create(2));
-      final UniformFanInShape<Integer, Integer> C = builder.graph(Merge.create(2));
+    RunnableGraph.fromGraph(
+      FlowGraph.create(builder -> {
+      final SourceShape<Integer> A = builder.add(Source.single(0));
+      final UniformFanOutShape<Integer, Integer> B = builder.add(Broadcast.create(2));
+      final UniformFanInShape<Integer, Integer> C = builder.add(Merge.create(2));
       final FlowShape<Integer, Integer> D =
-        builder.graph(Flow.of(Integer.class).map(i -> i + 1));
-      final UniformFanOutShape<Integer, Integer> E = builder.graph(Balance.create(2));
-      final UniformFanInShape<Integer, Integer> F = builder.graph(Merge.create(2));
-      final Inlet<Integer> G = builder.sink(Sink.foreach(System.out::println));
+        builder.add(Flow.of(Integer.class).map(i -> i + 1));
+      final UniformFanOutShape<Integer, Integer> E = builder.add(Balance.create(2));
+      final UniformFanInShape<Integer, Integer> F = builder.add(Merge.create(2));
+      final SinkShape<Integer> G = builder.add(Sink.foreach(System.out::println));
 
       builder.from(F.out()).toInlet(C.in(0));
       builder.from(A).toInlet(B.in());
@@ -135,8 +140,9 @@ public class CompositionDocTest {
       builder.from(C.out()).toInlet(F.in(0));
       builder.from(B.out(1)).via(D).toInlet(E.in());
       builder.from(E.out(0)).toInlet(F.in(1));
-      builder.from(E.out(1)).toInlet(G);
-    });
+      builder.from(E.out(1)).to(G);
+      return ClosedShape.getInstance();
+    }));
     //#complex-graph-alt
   }
 
@@ -144,17 +150,17 @@ public class CompositionDocTest {
   public void partialGraph() throws Exception {
     //#partial-graph
     final Graph<FlowShape<Integer, Integer>, BoxedUnit> partial =
-      FlowGraph.factory().partial(builder -> {
-        final UniformFanOutShape<Integer, Integer> B = builder.graph(Broadcast.create(2));
-        final UniformFanInShape<Integer, Integer> C = builder.graph(Merge.create(2));
-        final UniformFanOutShape<Integer, Integer> E = builder.graph(Balance.create(2));
-        final UniformFanInShape<Integer, Integer> F = builder.graph(Merge.create(2));
+      FlowGraph.create(builder -> {
+        final UniformFanOutShape<Integer, Integer> B = builder.add(Broadcast.create(2));
+        final UniformFanInShape<Integer, Integer> C = builder.add(Merge.create(2));
+        final UniformFanOutShape<Integer, Integer> E = builder.add(Balance.create(2));
+        final UniformFanInShape<Integer, Integer> F = builder.add(Merge.create(2));
 
         builder.from(F.out()).toInlet(C.in(0));
         builder.from(B).viaFanIn(C).toFanIn(F);
-        builder.from(B).via(builder.graph(Flow.of(Integer.class).map(i -> i + 1))).viaFanOut(E).toFanIn(F);
+        builder.from(B).via(builder.add(Flow.of(Integer.class).map(i -> i + 1))).viaFanOut(E).toFanIn(F);
 
-        return new FlowShape(B.in(), E.out(1));
+        return new FlowShape<Integer, Integer>(B.in(), E.out(1));
       });
 
     //#partial-graph
@@ -166,17 +172,18 @@ public class CompositionDocTest {
     //#partial-flow-dsl
     // Convert the partial graph of FlowShape to a Flow to get
     // access to the fluid DSL (for example to be able to call .filter())
-    final Flow<Integer, Integer, BoxedUnit> flow = Flow.wrap(partial);
+    final Flow<Integer, Integer, BoxedUnit> flow = Flow.fromGraph(partial);
 
     // Simple way to create a graph backed Source
-    final Source<Integer, BoxedUnit> source = Source.factory().create(builder -> {
-      final UniformFanInShape<Integer, Integer> merge = builder.graph(Merge.create(2));
-      builder.from(builder.source(Source.single(0))).toFanIn(merge);
-      builder.from(builder.source(Source.from(Arrays.asList(2, 3, 4)))).toFanIn(merge);
-
-      // Exposing exactly one output port
-      return merge.out();
-    });
+    final Source<Integer, BoxedUnit> source = Source.fromGraph(
+      FlowGraph.create(builder -> {
+        final UniformFanInShape<Integer, Integer> merge = builder.add(Merge.create(2));
+        builder.from(builder.add(Source.single(0))).toFanIn(merge);
+        builder.from(builder.add(Source.from(Arrays.asList(2, 3, 4)))).toFanIn(merge);
+        // Exposing exactly one output port
+        return new SourceShape<Integer>(merge.out());
+      })
+    );
 
     // Building a Sink with a nested Flow, using the fluid DSL
     final Sink<Integer, BoxedUnit> sink = Flow.of(Integer.class)
@@ -195,29 +202,32 @@ public class CompositionDocTest {
     //#embed-closed
     final RunnableGraph<BoxedUnit> closed1 =
       Source.single(0).to(Sink.foreach(System.out::println));
-    final RunnableGraph<BoxedUnit> closed2 = FlowGraph.factory().closed(builder -> {
-      final ClosedShape embeddedClosed = builder.graph(closed1);
-    });
+    final RunnableGraph<BoxedUnit> closed2 =
+      RunnableGraph.fromGraph(
+        FlowGraph.create(builder -> {
+          final ClosedShape embeddedClosed = builder.add(closed1);
+          return embeddedClosed; // Could return ClosedShape.getInstance()
+    }));
     //#embed-closed
   }
 
   //#mat-combine-4a
   static class MyClass {
-    private Promise<BoxedUnit> p;
+    private Promise<Option<Integer>> p;
     private OutgoingConnection conn;
 
-    public MyClass(Promise<BoxedUnit> p, OutgoingConnection conn) {
+    public MyClass(Promise<Option<Integer>> p, OutgoingConnection conn) {
       this.p = p;
       this.conn = conn;
     }
 
     public void close() {
-      p.success(scala.runtime.BoxedUnit.UNIT);
+      p.success(Option.empty());
     }
   }
 
   static class Combiner {
-    static Future<MyClass> f(Promise<BoxedUnit> p,
+    static Future<MyClass> f(Promise<Option<Integer>> p,
         Pair<Future<OutgoingConnection>, Future<String>> rest) {
       return rest.first().map(new Mapper<OutgoingConnection, MyClass>() {
         public MyClass apply(OutgoingConnection c) {
@@ -232,13 +242,13 @@ public class CompositionDocTest {
   public void materializedValues() throws Exception {
     //#mat-combine-1
     // Materializes to Promise<BoxedUnit>                                     (red)
-    final Source<Integer, Promise<BoxedUnit>> source = Source.<Integer> lazyEmpty();
+    final Source<Integer, Promise<Option<Integer>>> source = Source.<Integer>maybe();
 
     // Materializes to BoxedUnit                                              (black)
     final Flow<Integer, Integer, BoxedUnit> flow1 = Flow.of(Integer.class).take(100);
 
-    // Materializes to Promise<BoxedUnit>                                     (red)
-    final Source<Integer, Promise<BoxedUnit>> nestedSource =
+    // Materializes to Promise<Option<>>                                     (red)
+    final Source<Integer, Promise<Option<Integer>>> nestedSource =
       source.viaMat(flow1, Keep.left()).named("nestedSource");
       //#mat-combine-1
 

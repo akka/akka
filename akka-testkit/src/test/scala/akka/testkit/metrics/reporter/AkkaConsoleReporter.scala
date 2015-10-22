@@ -6,6 +6,7 @@ package akka.testkit.metrics.reporter
 import java.io.PrintStream
 import java.util
 import java.util.concurrent.TimeUnit
+import akka.event.Logging
 import com.codahale.metrics._
 import akka.testkit.metrics._
 import scala.reflect.ClassTag
@@ -39,7 +40,7 @@ class AkkaConsoleReporter(
 
   def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T ⇒ Unit)(implicit clazz: ClassTag[T]) {
     if (!metrics.isEmpty) {
-      printWithBanner(s"  ${simpleName(metrics.head._2.getClass)}", '-')
+      printWithBanner(s"  ${Logging.simpleName(metrics.head._2.getClass)}", '-')
       for ((key, metric) ← metrics) {
         print(s"""  $key""".stripMargin)
         printer(metric)
@@ -132,13 +133,6 @@ class AkkaConsoleReporter(
       i += 1
     }
     print(sb.toString())
-  }
-
-  /** Required for getting simple names of refined instances */
-  private def simpleName(clazz: Class[_]): String = {
-    val n = clazz.getName
-    val i = n.lastIndexOf('.')
-    n.substring(i + 1)
   }
 
 }
