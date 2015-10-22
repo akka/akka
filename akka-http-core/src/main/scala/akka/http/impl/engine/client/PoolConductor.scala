@@ -64,12 +64,12 @@ private object PoolConductor {
                                   +---------+
 
   */
-  def apply(slotCount: Int, maxRetries: Int, pipeliningLimit: Int, log: LoggingAdapter): Graph[Ports, Any] =
+  def apply(slotCount: Int, pipeliningLimit: Int, log: LoggingAdapter): Graph[Ports, Any] =
     FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
 
       val retryMerge = b.add(MergePreferred[RequestContext](1, eagerClose = true))
-      val slotSelector = b.add(new SlotSelector(slotCount, maxRetries, pipeliningLimit, log))
+      val slotSelector = b.add(new SlotSelector(slotCount, pipeliningLimit, log))
       val route = b.add(new Route(slotCount))
       val retrySplit = b.add(Broadcast[RawSlotEvent](2))
       val flatten = Flow[RawSlotEvent].mapAsyncUnordered(slotCount) {
@@ -106,7 +106,7 @@ private object PoolConductor {
   private case class Busy(openRequests: Int) extends SlotState { require(openRequests > 0) }
   private object Busy extends Busy(1)
 
-  private class SlotSelector(slotCount: Int, maxRetries: Int, pipeliningLimit: Int, log: LoggingAdapter)
+  private class SlotSelector(slotCount: Int, pipeliningLimit: Int, log: LoggingAdapter)
     extends GraphStage[FanInShape2[RequestContext, SlotEvent, SwitchCommand]] {
 
     private val ctxIn = Inlet[RequestContext]("requestContext")
