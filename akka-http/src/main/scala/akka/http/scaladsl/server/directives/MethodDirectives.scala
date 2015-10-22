@@ -54,6 +54,7 @@ trait MethodDirectives {
    */
   def extractMethod: Directive1[HttpMethod] = _extractMethod
 
+  //#method
   /**
    * Rejects all requests whose HTTP method does not match the given one.
    */
@@ -62,6 +63,7 @@ trait MethodDirectives {
       case `httpMethod` ⇒ pass
       case _            ⇒ reject(MethodRejection(httpMethod))
     } & cancelRejections(classOf[MethodRejection])
+  //#
 
   /**
    * Changes the HTTP method of the request to the value of the specified query string parameter. If the query string
