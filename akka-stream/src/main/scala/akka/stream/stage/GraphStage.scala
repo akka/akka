@@ -12,7 +12,7 @@ import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.mutable.ArrayBuffer
 
-abstract class GraphStageWithMaterializedValue[S <: Shape, M] extends Graph[S, M] {
+abstract class GraphStageWithMaterializedValue[S <: Shape, M] extends InternalGraph[S, M] {
   def shape: S
   def createLogicAndMaterializedValue: (GraphStageLogic, M)
 
@@ -42,7 +42,7 @@ abstract class GraphStageWithMaterializedValue[S <: Shape, M] extends Graph[S, M
    * This method throws an [[UnsupportedOperationException]] by default. The subclass can override this method
    * and provide a correct implementation that creates an exact copy of the stage with the provided new attributes.
    */
-  final override def withAttributes(attr: Attributes): Graph[S, M] = new Graph[S, M] {
+  final override def withAttributes(attr: Attributes): Graph[S, M] = new InternalGraph[S, M] {
     override def shape = GraphStageWithMaterializedValue.this.shape
     override private[stream] def module = GraphStageWithMaterializedValue.this.module.withAttributes(attr)
 

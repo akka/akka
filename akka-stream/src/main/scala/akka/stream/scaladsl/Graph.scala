@@ -589,6 +589,8 @@ object FlowGraph extends GraphApply {
       moduleInProgress = moduleInProgress.wire(from, to)
     }
 
+    private def shape[S <: Shape](g: Graph[S, _]): S = g.asInstanceOf[InternalGraph[S, _]].shape
+
     /**
      * Import a graph into this module, performing a deep copy, discarding its
      * materialized value and returning the copied Ports that are now to be
@@ -598,7 +600,7 @@ object FlowGraph extends GraphApply {
       if (StreamLayout.Debug) StreamLayout.validate(graph.module)
       val copy = graph.module.carbonCopy
       moduleInProgress = moduleInProgress.compose(copy)
-      graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
+      shape(graph).copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
     }
 
     /**
@@ -611,7 +613,7 @@ object FlowGraph extends GraphApply {
       if (StreamLayout.Debug) StreamLayout.validate(graph.module)
       val copy = graph.module.carbonCopy
       moduleInProgress = moduleInProgress.compose(copy.transformMaterializedValue(transform.asInstanceOf[Any ⇒ Any]))
-      graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
+      shape(graph).copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
     }
 
     /**
@@ -624,7 +626,7 @@ object FlowGraph extends GraphApply {
       if (StreamLayout.Debug) StreamLayout.validate(graph.module)
       val copy = graph.module.carbonCopy
       moduleInProgress = moduleInProgress.compose(copy, combine)
-      graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
+      shape(graph).copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
     }
 
     def add[T](s: Source[T, _]): Outlet[T] = add(s: Graph[SourceShape[T], _]).outlet

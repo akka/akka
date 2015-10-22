@@ -3,13 +3,10 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.Graph
-import akka.stream.BidiShape
+import akka.stream._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.FlowShape
-import akka.stream.Attributes
 
-final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val module: Module) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
+final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val module: Module) extends InternalGraph[BidiShape[I1, O1, I2, O2], Mat] {
   override val shape = module.shape.asInstanceOf[BidiShape[I1, O1, I2, O2]]
 
   /**

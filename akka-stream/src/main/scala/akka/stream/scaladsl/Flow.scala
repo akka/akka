@@ -24,7 +24,7 @@ import scala.language.higherKinds
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
 final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
-  extends FlowOps[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
+  extends FlowOps[Out, Mat] with InternalGraph[FlowShape[In, Out], Mat] {
 
   override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]
 
@@ -288,7 +288,7 @@ object Flow extends FlowApply {
 /**
  * Flow with attached input and output, can be executed.
  */
-case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
+case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Module) extends InternalGraph[ClosedShape, Mat] {
   require(module.isRunnable)
   def shape = ClosedShape
 

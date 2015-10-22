@@ -25,7 +25,7 @@ import scala.language.higherKinds
  * a Reactive Streams `Publisher` (at least conceptually).
  */
 final class Source[+Out, +Mat](private[stream] override val module: Module)
-  extends FlowOps[Out, Mat] with Graph[SourceShape[Out], Mat] {
+  extends FlowOps[Out, Mat] with InternalGraph[SourceShape[Out], Mat] {
 
   override type Repr[+O, +M] = Source[O, M]
 

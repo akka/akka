@@ -59,7 +59,7 @@ object Flow {
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
-class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
+class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends InternalGraph[FlowShape[In, Out], Mat] {
   import scala.collection.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
@@ -1079,7 +1079,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
  *
  * Flow with attached input and output, can be executed.
  */
-trait RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
+trait RunnableGraph[+Mat] extends InternalGraph[ClosedShape, Mat] {
   /**
    * Run this flow and return the materialized values of the flow.
    */
