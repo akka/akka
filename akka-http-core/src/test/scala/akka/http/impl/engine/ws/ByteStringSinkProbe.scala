@@ -5,7 +5,7 @@
 package akka.http.impl.engine.ws
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{ Source, Sink }
+import akka.stream.scaladsl.Sink
 import akka.stream.testkit.TestSubscriber
 import akka.util.ByteString
 
@@ -23,6 +23,7 @@ trait ByteStringSinkProbe {
   def expectNoBytes(): Unit
   def expectNoBytes(timeout: FiniteDuration): Unit
 
+  def expectSubscriptionAndComplete(): Unit
   def expectComplete(): Unit
   def expectError(): Throwable
   def expectError(cause: Throwable): Unit
@@ -62,6 +63,7 @@ object ByteStringSinkProbe {
       def expectUtf8EncodedString(string: String): Unit =
         expectBytes(ByteString(string, "utf8"))
 
+      def expectSubscriptionAndComplete(): Unit = probe.expectSubscriptionAndComplete()
       def expectComplete(): Unit = probe.expectComplete()
       def expectError(): Throwable = probe.expectError()
       def expectError(cause: Throwable): Unit = probe.expectError(cause)
