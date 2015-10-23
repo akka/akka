@@ -338,7 +338,13 @@ public class RouterDocTest {
       getContext().actorOf(new RoundRobinPool(5).withResizer(resizer).props(
         Props.create(Worker.class)), "router30");
     //#resize-pool-2  
-      
+
+    //#optimal-size-exploring-resize-pool
+    ActorRef router31 =
+      getContext().actorOf(FromConfig.getInstance().props(
+        Props.create(Worker.class)), "router31");
+    //#optimal-size-exploring-resize-pool
+
     public void onReceive(Object msg) {}
   }
 

@@ -227,6 +227,19 @@ akka.actor.deployment {
 }
 #//#config-resize-pool
 
+#//#config-optimal-size-exploring-resize-pool
+akka.actor.deployment {
+  /parent/router31 {
+    router = round-robin-pool
+    optimal-size-exploring-resizer {
+      enabled = on
+      action-interval = 5s
+      downsize-after-underutilized-for = 72h
+    }
+  }
+}
+#//#config-optimal-size-exploring-resize-pool
+
 #//#config-pool-dispatcher
 akka.actor.deployment {
   /poolWithDispatcher {
@@ -461,6 +474,11 @@ router-dispatcher {}
       context.actorOf(RoundRobinPool(5, Some(resizer)).props(Props[Worker]),
         "router30")
     //#resize-pool-2  
+
+    //#optimal-size-exploring-resize-pool
+    val router31: ActorRef =
+      context.actorOf(FromConfig.props(Props[Worker]), "router31")
+    //#optimal-size-exploring-resize-pool
 
     def receive = {
       case _ =>
