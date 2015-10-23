@@ -4,18 +4,19 @@
 
 package akka.http.impl.util
 
-import java.io.InputStream
-import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
-import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.{ SourceModule, SinkModule, PublisherSink }
-import org.reactivestreams.{ Subscription, Processor, Subscriber, Publisher }
-import scala.collection.immutable
-import scala.concurrent.{ Promise, ExecutionContext, Future }
-import akka.util.ByteString
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
+
 import akka.http.scaladsl.model.RequestEntity
 import akka.stream._
+import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
 import akka.stream.scaladsl._
 import akka.stream.stage._
+import akka.util.ByteString
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+
+import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
  * INTERNAL API
@@ -305,7 +306,7 @@ private[http] object StreamUtils {
   }
 
   /**
-   * Similar to Source.lazyEmpty but doesn't rely on materialization. Can only be used once.
+   * Similar to Source.maybe but doesn't rely on materialization. Can only be used once.
    */
   trait OneTimeValve {
     def source[T]: Source[T, Unit]

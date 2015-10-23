@@ -5,9 +5,8 @@
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
-import java.security.SecureRandom
 import java.util.concurrent.ConcurrentHashMap
-import java.util.{ Collection ⇒ JCollection, Random }
+import java.util.{ Collection ⇒ JCollection }
 import javax.net.ssl.{ SSLContext, SSLParameters }
 
 import akka.actor._
@@ -15,8 +14,8 @@ import akka.event.LoggingAdapter
 import akka.http._
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
-import akka.http.impl.util.{ ReadTheDocumentationException, Java6Compat, StreamUtils }
 import akka.http.impl.engine.ws.WebsocketClientBlueprint
+import akka.http.impl.util.{ Java6Compat, ReadTheDocumentationException, StreamUtils }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ WebsocketUpgradeResponse, WebsocketRequest, Message }
@@ -25,7 +24,6 @@ import akka.japi
 import akka.stream.Materializer
 import akka.stream.io._
 import akka.stream.scaladsl._
-import akka.util.ByteString
 import com.typesafe.config.Config
 
 import scala.collection.immutable

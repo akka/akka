@@ -10,6 +10,7 @@ import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.stream.io.{ SendBytes, SslTlsOutbound, SessionBytes }
 
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.event.NoLogging
@@ -32,7 +33,8 @@ abstract class HttpServerTestSetupBase {
   val requests = TestSubscriber.probe[HttpRequest]
   val responses = TestPublisher.probe[HttpResponse]()
 
-  def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
+  def settings = ServerSettings(system)
+    .copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
   def remoteAddress: Option[InetSocketAddress] = None
 
   val (netIn, netOut) = {
@@ -68,6 +70,8 @@ abstract class HttpServerTestSetupBase {
 
   def expectRequest: HttpRequest = requests.requestNext()
   def expectNoRequest(max: FiniteDuration): Unit = requests.expectNoMsg(max)
+  def expectSubscribe(): Unit = netOut.expectComplete()
+  def expectSubscribeAndNetworkClose(): Unit = netOut.expectSubscriptionAndComplete()
   def expectNetworkClose(): Unit = netOut.expectComplete()
 
   def send(data: ByteString): Unit = netIn.sendNext(data)
