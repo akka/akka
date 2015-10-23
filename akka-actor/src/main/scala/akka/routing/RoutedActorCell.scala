@@ -147,7 +147,6 @@ private[akka] class RoutedActorCell(
  * INTERNAL API
  */
 private[akka] class RouterActor extends Actor {
-
   val cell = context match {
     case x: RoutedActorCell ⇒ x
     case _ ⇒
