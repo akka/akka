@@ -9,6 +9,6 @@ OSGi.agent
 
 Dependencies.agent
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-agent").value
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-agent").value
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)

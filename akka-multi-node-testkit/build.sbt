@@ -5,4 +5,4 @@ AkkaBuild.defaultSettings
 
 Formatting.formatSettings
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit").value
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-multi-node-testkit").value
