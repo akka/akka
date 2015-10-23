@@ -9,8 +9,6 @@ OSGi.contrib
 
 Dependencies.contrib
 
-MimaKeys.reportBinaryIssues := () // disable bin comp check
-
 description := """|
                   |This subproject provides a home to modules contributed by external
                   |developers which may or may not move into the officially supported code

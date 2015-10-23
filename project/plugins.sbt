@@ -17,7 +17,8 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.6.0")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.7")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.7-32-g3bebac4")
+resolvers += Resolver.url("2m-sbt-plugins", url("https://dl.bintray.com/2m/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
 
@@ -35,7 +36,7 @@ libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
 
 // for advanced PR validation features
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.4")
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.5")
 
 libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
 

@@ -9,6 +9,4 @@ Formatting.formatSettings
 
 Dependencies.persistenceTck
 
-MimaKeys.previousArtifact := None
-
 fork in Test := true
