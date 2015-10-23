@@ -7,6 +7,6 @@ Formatting.formatSettings
 
 Dependencies.kernel
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-kernel").value
+MimaKeys.previousArtifacts := akkaPreviousArtifacts("akka-kernel").value
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)

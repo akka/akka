@@ -25,8 +25,6 @@ Dependencies.docs
 
 unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
 
-MimaKeys.reportBinaryIssues := () // disable bin comp check
-
 additionalTasks in ValidatePR += generate in Sphinx
 
 AkkaBuild.dontPublishSettings
