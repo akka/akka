@@ -248,6 +248,22 @@ object PersistentActorSpec {
         persistAsync(event) { evt ⇒ sender() ! s"${evt.data}-b-${sendMsgCounter.incrementAndGet()}" }
     }
   }
+  class PersistAllNilPersistentActor(name: String) extends ExamplePersistentActor(name) {
+
+    val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd(data: String) if data contains "defer" ⇒
+        deferAsync("before-nil")(sender() ! _)
+        persistAll(Nil)(_ ⇒ sender() ! "Nil")
+        deferAsync("after-nil")(sender() ! _)
+        sender() ! data
+
+      case Cmd(data: String) if data contains "persist" ⇒
+        persist("before-nil")(sender() ! _)
+        persistAll(Nil)(_ ⇒ sender() ! "Nil")
+        deferAsync("after-nil")(sender() ! _)
+        sender() ! data
+    }
+  }
   class AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActor(name: String) extends ExamplePersistentActor(name) {
 
     var counter = 0
@@ -784,6 +800,17 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg("x-a-1")
       expectMsg("x-b-2")
       expectNoMsg(100.millis)
+    }
+    "support calling persistAll with Nil" in {
+      val persistentActor = namedPersistentActor[PersistAllNilPersistentActor]
+      persistentActor ! Cmd("defer-x")
+      expectMsg("before-nil")
+      expectMsg("after-nil")
+      expectMsg("defer-x")
+      persistentActor ! Cmd("persist-x")
+      expectMsg("persist-x")
+      expectMsg("before-nil")
+      expectMsg("after-nil")
     }
     "support a mix of persist calls (sync, async, sync) and persist calls in expected order" in {
       val persistentActor = namedPersistentActor[AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActor]
