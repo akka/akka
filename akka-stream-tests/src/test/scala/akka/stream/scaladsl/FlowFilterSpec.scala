@@ -36,9 +36,19 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
 
       probe.expectNext(1)
       probe.expectComplete()
-
     }
 
+  }
+
+  "A FilterNot" must {
+    "filter based on inverted predicate" in {
+      def script = Script(TestConfig.RandomTestRange map
+        { _ ⇒
+          val x = random.nextInt()
+          Seq(x) -> (if ((x & 1) == 1) Seq(x) else Seq())
+        }: _*)
+      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.filterNot(_ % 2 == 0)))
+    }
   }
 
 }
