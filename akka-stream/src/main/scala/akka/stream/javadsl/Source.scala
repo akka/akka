@@ -507,6 +507,12 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     new Source(delegate.filter(p.test))
 
   /**
+   * Only pass on those elements that NOT satisfy the given predicate.
+   */
+  def filterNot(p: function.Predicate[Out]): javadsl.Source[Out, Mat] =
+    new Source(delegate.filterNot(p.test))
+
+  /**
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
