@@ -311,6 +311,20 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.filter(p.test))
 
   /**
+   * Only pass on those elements that NOT satisfy the given predicate.
+   *
+   * '''Emits when''' the given predicate returns false for the element
+   *
+   * '''Backpressures when''' the given predicate returns false for the element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def filterNot(p: function.Predicate[Out]): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.filterNot(p.test))
+
+  /**
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.

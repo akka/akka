@@ -492,6 +492,20 @@ trait FlowOps[+Out, +Mat] {
   def filter(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(Filter(p.asInstanceOf[Any ⇒ Boolean]))
 
   /**
+   * Only pass on those elements that NOT satisfy the given predicate.
+   *
+   * '''Emits when''' the given predicate returns false for the element
+   *
+   * '''Backpressures when''' the given predicate returns false for the element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def filterNot(p: Out ⇒ Boolean): Repr[Out, Mat] =
+    via(Flow[Out].filter(!p(_)).withAttributes(name("filterNot")))
+
+  /**
    * Terminate processing (and cancel the upstream publisher) after predicate
    * returns false for the first time. Due to input buffering some elements may have been
    * requested from upstream publishers that will then not be processed downstream
