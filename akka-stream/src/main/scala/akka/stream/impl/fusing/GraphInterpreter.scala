@@ -87,7 +87,7 @@ private[stream] object GraphInterpreter {
    * corresponding segments of these arrays matches the exact same order of the ports in the [[Shape]].
    *
    */
-  final class GraphAssembly(val stages: Array[GraphStageWithMaterializedValue[_, _]],
+  final class GraphAssembly(val stages: Array[GraphStageWithMaterializedValue[Shape, Any]],
                             val ins: Array[Inlet[_]],
                             val inOwners: Array[Int],
                             val outs: Array[Outlet[_]],
@@ -113,7 +113,7 @@ private[stream] object GraphInterpreter {
       var i = 0
       while (i < stages.length) {
         // Port initialization loops, these must come first
-        val shape = stages(i).asInstanceOf[GraphStageWithMaterializedValue[Shape, _]].shape
+        val shape = stages(i).shape
 
         var idx = 0
         val inletItr = shape.inlets.iterator
@@ -185,7 +185,7 @@ private[stream] object GraphInterpreter {
      */
     final def apply(inlets: immutable.Seq[Inlet[_]],
                     outlets: immutable.Seq[Outlet[_]],
-                    stages: GraphStageWithMaterializedValue[_, _]*): GraphAssembly = {
+                    stages: GraphStageWithMaterializedValue[Shape, _]*): GraphAssembly = {
       // add the contents of an iterator to an array starting at idx
       @tailrec def add[T](i: Iterator[T], a: Array[T], idx: Int): Array[T] =
         if (i.hasNext) {
@@ -317,7 +317,7 @@ private[stream] final class GraphInterpreter(
 
   // Counts how many active connections a stage has. Once it reaches zero, the stage is automatically stopped.
   private[this] val shutdownCounter = Array.tabulate(assembly.stages.length) { i ⇒
-    val shape = assembly.stages(i).shape.asInstanceOf[Shape]
+    val shape = assembly.stages(i).shape
     shape.inlets.size + shape.outlets.size
   }
 
