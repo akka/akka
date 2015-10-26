@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model
 
+import javax.net.ssl.SSLContext
+
 import akka.http.javadsl.model.headers.Cookie
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
@@ -55,6 +57,14 @@ class JavaApiTestCaseSpecs extends FreeSpec with MustMatchers {
     "addSessionId" in {
       val origin = Uri.create("/order?orderId=123")
       JavaApiTestCases.addSessionId(origin) must be(Uri.create("/order?orderId=123&session=abcdefghijkl"))
+    }
+    "create HttpsContext" in {
+      import akka.japi.{ Option ⇒ JOption }
+      akka.http.javadsl.HttpsContext.create(SSLContext.getDefault,
+        JOption.none,
+        JOption.none,
+        JOption.none,
+        JOption.none) mustNot be(null)
     }
   }
 }
