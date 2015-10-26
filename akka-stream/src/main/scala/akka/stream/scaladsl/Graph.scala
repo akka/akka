@@ -570,15 +570,9 @@ object FlowGraph extends GraphApply {
   class Builder[+M] private[stream] () {
     private var moduleInProgress: Module = EmptyModule
 
-    private[FlowGraph] def addEdge[A1, A >: A1, B, B1 >: B, M2](from: Outlet[A1], via: Graph[FlowShape[A, B], M2], to: Inlet[B1]): Unit = {
-      val flowCopy = via.module.carbonCopy
-      moduleInProgress =
-        moduleInProgress
-          .compose(flowCopy)
-          .wire(from, flowCopy.shape.inlets.head)
-          .wire(flowCopy.shape.outlets.head, to)
-    }
-
+    /**
+     * INTERNAL API
+     */
     private[FlowGraph] def addEdge[T, U >: T](from: Outlet[T], to: Inlet[U]): Unit =
       moduleInProgress = moduleInProgress.wire(from, to)
 
@@ -619,9 +613,6 @@ object FlowGraph extends GraphApply {
       moduleInProgress = moduleInProgress.compose(copy, combine)
       graph.shape.copyFromPorts(copy.shape.inlets, copy.shape.outlets).asInstanceOf[S]
     }
-
-    def add[T](s: Source[T, _]): Outlet[T] = add(s: Graph[SourceShape[T], _]).outlet
-    def add[T](s: Sink[T, _]): Inlet[T] = add(s: Graph[SinkShape[T], _]).inlet
 
     /**
      * Returns an [[Outlet]] that gives access to the materialized value of this graph. Once the graph is materialized
