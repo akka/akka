@@ -32,7 +32,7 @@ public class HeaderRequestValsExampleTest extends JUnitRouteTest {
     final HttpRequest request =
       HttpRequest
         .GET("http://akka.io/")
-      .addHeader(Host.create("akka.io", 80));
+      .addHeader(Host.create("akka.io"));
     testRoute(route).run(request).assertEntity("Host header was: akka.io");
 
     //#by-class

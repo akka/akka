@@ -5,6 +5,7 @@
 package akka.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.server.values.PathMatcher;
 import org.junit.Test;
 
@@ -337,9 +338,9 @@ public class PathDirectivesTest extends JUnitRouteTest {
                 redirectToTrailingSlashIfMissing(StatusCodes.FOUND, complete("Ok"))
             );
 
-        route.run(HttpRequest.GET("/home"))
+        route.run(HttpRequest.GET("/home").addHeader(Host.create("example.com")))
             .assertStatusCode(302)
-            .assertHeaderExists("Location", "/home/");
+            .assertHeaderExists("Location", "http://example.com/home/");
 
         route.run(HttpRequest.GET("/home/"))
             .assertStatusCode(200)
@@ -353,9 +354,9 @@ public class PathDirectivesTest extends JUnitRouteTest {
                 redirectToNoTrailingSlashIfPresent(StatusCodes.FOUND, complete("Ok"))
             );
 
-        route.run(HttpRequest.GET("/home/"))
+        route.run(HttpRequest.GET("/home/").addHeader(Host.create("example.com")))
             .assertStatusCode(302)
-            .assertHeaderExists("Location", "/home");
+            .assertHeaderExists("Location", "http://example.com/home");
 
         route.run(HttpRequest.GET("/home"))
             .assertStatusCode(200)
