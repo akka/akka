@@ -303,11 +303,13 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * @param handler handler for each persisted `events`
    */
   def persistAll[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
-    events.foreach { event ⇒
-      pendingStashingPersistInvocations += 1
-      pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+    if (events.nonEmpty) {
+      events.foreach { event ⇒
+        pendingStashingPersistInvocations += 1
+        pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+      }
+      eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
     }
-    eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
   }
 
   @deprecated("use persistAll instead", "2.4")
@@ -350,12 +352,13 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
-  def persistAllAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
-    events.foreach { event ⇒
-      pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+  def persistAllAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
+    if (events.nonEmpty) {
+      events.foreach { event ⇒
+        pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+      }
+      eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
     }
-    eventBatch = AtomicWrite(events.map(PersistentRepr.apply(_, sender = sender()))) :: eventBatch
-  }
 
   @deprecated("use persistAllAsync instead", "2.4")
   def persistAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
