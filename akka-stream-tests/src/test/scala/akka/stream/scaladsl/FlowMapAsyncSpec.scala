@@ -25,11 +25,13 @@ import scala.util.Success
 object FlowMapAsyncSpec {
   class MapAsyncOne[In, Out](f: In ⇒ Future[Out])(implicit ec: ExecutionContext) extends AsyncStage[In, Out, Try[Out]] {
     private var elemInFlight: Out = _
+    private var holdingUpstream = false
 
     override def onPush(elem: In, ctx: AsyncContext[Out, Try[Out]]) = {
       val future = f(elem)
       val cb = ctx.getAsyncCallback
       future.onComplete(cb.invoke)
+      holdingUpstream = true
       ctx.holdUpstream()
     }
 
@@ -50,7 +52,7 @@ object FlowMapAsyncSpec {
       }
 
     override def onUpstreamFinish(ctx: AsyncContext[Out, Try[Out]]) =
-      if (ctx.isHoldingUpstream) ctx.absorbTermination()
+      if (holdingUpstream) ctx.absorbTermination()
       else ctx.finish()
 
     private def pushIt(elem: Out, ctx: AsyncContext[Out, Try[Out]]) =

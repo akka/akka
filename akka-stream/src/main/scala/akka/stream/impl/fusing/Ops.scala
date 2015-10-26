@@ -787,7 +787,7 @@ private[stream] class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphS
   val out = Outlet[immutable.Seq[T]]("out")
   val shape = FlowShape(in, out)
 
-  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     private val buf: VectorBuilder[T] = new VectorBuilder
     // True if:
     // - buf is nonEmpty
@@ -855,11 +855,15 @@ private[stream] class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphS
 
 private[stream] class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
-  override def createLogic: GraphStageLogic = new SimpleLinearStageLogic {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     setHandler(in, new InHandler {
       override def onPush(): Unit = push(out, grab(in))
       override def onUpstreamFinish(): Unit = completeStage()
       override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
+    })
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = pull(in)
     })
 
     final override protected def onTimer(key: Any): Unit =
@@ -874,13 +878,17 @@ private[stream] class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinea
 private[stream] class DropWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
   private var allow = false
 
-  override def createLogic: GraphStageLogic = new SimpleLinearStageLogic {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     setHandler(in, new InHandler {
       override def onPush(): Unit =
         if (allow) push(out, grab(in))
         else pull(in)
       override def onUpstreamFinish(): Unit = completeStage()
       override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
+    })
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = pull(in)
     })
 
     final override protected def onTimer(key: Any): Unit = allow = true

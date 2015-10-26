@@ -154,7 +154,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
     val conn = StreamTcp.IncomingConnection(
       connected.localAddress,
       connected.remoteAddress,
-      Flow[ByteString].andThenMat(() ⇒ (processor, ())))
+      Flow.fromProcessor(() ⇒ processor))
     primaryOutputs.enqueueOutputElement(conn)
   }
 

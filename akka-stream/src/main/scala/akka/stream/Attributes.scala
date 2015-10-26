@@ -7,7 +7,7 @@ import akka.event.Logging
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.stream.impl.Stages.StageModule
+import akka.stream.impl.Stages.SymbolicStage
 import akka.japi.function
 
 /**
@@ -100,10 +100,6 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
    */
   private[akka] def logLevels: Option[LogLevels] =
     attributeList.collectFirst { case l: LogLevels ⇒ l }
-
-  private[akka] def transform(node: StageModule): StageModule =
-    if ((this eq Attributes.none) || (this eq node.attributes)) node
-    else node.withAttributes(attributes = this and node.attributes)
 
 }
 

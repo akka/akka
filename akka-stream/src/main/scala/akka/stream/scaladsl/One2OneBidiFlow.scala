@@ -39,7 +39,7 @@ object One2OneBidiFlow {
 
     override def toString = "One2OneBidi"
 
-    override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       private var pending = 0
       private var pullsSuppressed = 0
 

@@ -3,11 +3,10 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
+import akka.stream.impl.Stages.{ StageModule, SymbolicStage }
 import akka.stream.impl._
 import akka.stream.impl.StreamLayout._
 import akka.stream._
-import Attributes.name
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
@@ -41,7 +40,7 @@ class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) extends Gr
   val out: Outlet[T] = Outlet[T]("Merge.out")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
-  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
     private var initialized = false
 
     private val pendingQueue = Array.ofDim[Inlet[T]](inputPorts)
@@ -148,7 +147,7 @@ class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: Boolea
   def preferred: Inlet[T] = shape.preferred
 
   // FIXME: Factor out common stuff with Merge
-  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
     private var initialized = false
 
     private val pendingQueue = Array.ofDim[Inlet[T]](secondaryPorts)
@@ -266,7 +265,7 @@ class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) extends G
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Broadcast.out" + i))
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape(in, out: _*)
 
-  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
     private var pendingCount = outputPorts
     private val pending = Array.fill[Boolean](outputPorts)(true)
     private var downstreamsRunning = outputPorts
@@ -364,7 +363,7 @@ class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) extends G
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Balance.out" + i))
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
-  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
     private val pendingQueue = Array.ofDim[Outlet[T]](outputPorts)
     private var pendingHead: Int = 0
     private var pendingTail: Int = 0
@@ -531,7 +530,7 @@ class Concat[T](inputCount: Int) extends GraphStage[UniformFanInShape[T, T]] {
   val out: Outlet[T] = Outlet[T]("Concat.out")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
-  override def createLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
     var activeStream: Int = 0
 
     {
@@ -634,7 +633,7 @@ object FlowGraph extends GraphApply {
       module.shape.outlet.asInstanceOf[Outlet[M]]
     }
 
-    private[stream] def andThen(port: OutPort, op: StageModule): Unit = {
+    private[stream] def deprecatedAndThen(port: OutPort, op: StageModule): Unit = {
       moduleInProgress =
         moduleInProgress
           .compose(op)
@@ -759,17 +758,6 @@ object FlowGraph extends GraphApply {
       override def withAttributes(attr: Attributes): Repr[Out, Mat] =
         throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
 
-      override private[scaladsl] def andThen[U](op: StageModule): Repr[U, Mat] = {
-        b.andThen(outlet, op)
-        new PortOps(op.shape.outlet.asInstanceOf[Outlet[U]], b)
-      }
-
-      override private[scaladsl] def andThenMat[U, Mat2](op: MaterializingStageFactory): Repr[U, Mat2] = {
-        // We don't track materialization here
-        b.andThen(outlet, op)
-        new PortOps(op.shape.outlet.asInstanceOf[Outlet[U]], b)
-      }
-
       override def importAndGetPort(b: Builder[_]): Outlet[Out] = outlet
 
       override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T, Mat] =
@@ -777,6 +765,12 @@ object FlowGraph extends GraphApply {
 
       override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3) =
         throw new UnsupportedOperationException("Cannot use viaMat on a port")
+
+      override private[scaladsl] def deprecatedAndThen[U](op: StageModule): PortOps[U, Mat] = {
+        b.deprecatedAndThen(outlet, op)
+        new PortOps(op.shape.outlet.asInstanceOf[Outlet[U]], b)
+      }
+
     }
 
     final class DisabledPortOps[Out, Mat](msg: String) extends PortOps[Out, Mat](null, null) {

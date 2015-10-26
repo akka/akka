@@ -4,9 +4,9 @@ import java.util.concurrent.{ TimeUnit, TimeoutException }
 
 import akka.actor.{ Cancellable, ActorSystem }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.{ FlowShape, Outlet, Inlet, BidiShape }
+import akka.stream._
 import akka.stream.scaladsl.{ BidiFlow, Flow }
-import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
+import akka.stream.stage._
 
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
 
@@ -63,7 +63,7 @@ object Timeouts {
 
   private class InitialTimeout[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
-    override def createLogic: GraphStageLogic = new SimpleLinearStageLogic {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       private var initialHasPassed = false
 
       setHandler(in, new InHandler {
@@ -71,6 +71,10 @@ object Timeouts {
           initialHasPassed = true
           push(out, grab(in))
         }
+      })
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = pull(in)
       })
 
       final override protected def onTimer(key: Any): Unit =
@@ -85,9 +89,13 @@ object Timeouts {
 
   private class CompletionTimeout[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
-    override def createLogic: GraphStageLogic = new SimpleLinearStageLogic {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       setHandler(in, new InHandler {
         override def onPush(): Unit = push(out, grab(in))
+      })
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = pull(in)
       })
 
       final override protected def onTimer(key: Any): Unit =
@@ -102,12 +110,16 @@ object Timeouts {
   private class IdleTimeout[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
     private var nextDeadline: Deadline = Deadline.now + timeout
 
-    override def createLogic: GraphStageLogic = new SimpleLinearStageLogic {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           nextDeadline = Deadline.now + timeout
           push(out, grab(in))
         }
+      })
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = pull(in)
       })
 
       final override protected def onTimer(key: Any): Unit =
@@ -129,7 +141,7 @@ object Timeouts {
 
     override def toString = "IdleTimeoutBidi"
 
-    override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       private var nextDeadline: Deadline = Deadline.now + timeout
 
       setHandler(in1, new InHandler {

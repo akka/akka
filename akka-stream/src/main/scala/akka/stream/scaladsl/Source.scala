@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
-import akka.stream.impl.Stages.{ DefaultAttributes, MaterializingStageFactory, StageModule }
+import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStages.TickSource
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
@@ -32,7 +32,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   override val shape: SourceShape[Out] = module.shape.asInstanceOf[SourceShape[Out]]
 
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    if (flow.module.isInstanceOf[Stages.Identity]) this.asInstanceOf[Source[T, Mat3]]
+    if (flow.module eq Stages.identityGraph.module) this.asInstanceOf[Source[T, Mat3]]
     else {
       val flowCopy = flow.module.carbonCopy
       new Source(
@@ -64,18 +64,11 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
     new Source(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /** INTERNAL API */
-  override private[scaladsl] def andThen[U](op: StageModule): Repr[U, Mat] = {
+  override private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U, Mat] = {
     // No need to copy here, op is a fresh instance
     new Source(
       module
         .fuse(op, shape.outlet, op.inPort)
-        .replaceShape(SourceShape(op.outPort)))
-  }
-
-  override private[scaladsl] def andThenMat[U, Mat2](op: MaterializingStageFactory): Repr[U, Mat2] = {
-    new Source(
-      module
-        .fuse(op, shape.outlet, op.inPort, Keep.right)
         .replaceShape(SourceShape(op.outPort)))
   }
 

@@ -156,7 +156,7 @@ private[http] object Websocket {
 
     val shape = new FanOutShape2(in, bypass, user)
 
-    def createLogic = new GraphStageLogic(shape) {
+    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
 
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
@@ -187,7 +187,7 @@ private[http] object Websocket {
 
     val shape = new FanInShape3(bypass, user, tick, out)
 
-    def createLogic = new GraphStageLogic(shape) {
+    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
 
       passAlong(bypass, out, doFinish = true, doFail = true)
       passAlong(user, out, doFinish = false, doFail = false)
@@ -210,7 +210,7 @@ private[http] object Websocket {
 
     val shape = new FlowShape(in, out)
 
-    def createLogic = new GraphStageLogic(shape) {
+    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pull(in)
       })

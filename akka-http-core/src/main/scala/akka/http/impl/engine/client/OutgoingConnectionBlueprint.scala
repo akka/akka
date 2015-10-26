@@ -117,7 +117,7 @@ private[http] object OutgoingConnectionBlueprint {
 
     val shape = new FanInShape2(requests, responses, out)
 
-    override def createLogic = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       passAlong(requests, out, doFinish = false, doFail = true)
       setHandler(out, eagerTerminateOutput)
 
@@ -147,7 +147,7 @@ private[http] object OutgoingConnectionBlueprint {
 
     val shape = new FanInShape2(dataInput, methodBypassInput, out)
 
-    override def createLogic = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       // each connection uses a single (private) response parser instance for all its responses
       // which builds a cache of all header instances seen on that connection
       val parser = rootParser.createShallowCopy()
