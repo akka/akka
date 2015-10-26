@@ -60,7 +60,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
         val inOwners = ins.map { in ⇒ stages.indexWhere(_.shape.inlets.contains(in)) }
         val outOwners = outs.map { out ⇒ stages.indexWhere(_.shape.outlets.contains(out)) }
 
-        val assembly = GraphAssembly(
+        val assembly = new GraphAssembly(
           stages.toArray,
           (ins ++ Vector.fill(downstreams.size)(null)).toArray,
           (inOwners ++ Vector.fill(downstreams.size)(-1)).toArray,
@@ -171,7 +171,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       })
     }
 
-    private val assembly = GraphAssembly(
+    private val assembly = new GraphAssembly(
       stages = Array.empty,
       ins = Array(null),
       inOwners = Array(-1),

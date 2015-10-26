@@ -16,27 +16,11 @@ abstract class GraphStageWithMaterializedValue[S <: Shape, M] extends Graph[S, M
   def shape: S
   def createLogicAndMaterializedValue: (GraphStageLogic, M)
 
-  final override private[stream] lazy val module: Module = {
-    val connectionCount = shape.inlets.size + shape.outlets.size
-    val assembly = GraphAssembly(
-      Array(this),
-      Array.ofDim(connectionCount),
-      Array.fill(connectionCount)(-1),
-      Array.ofDim(connectionCount),
-      Array.fill(connectionCount)(-1))
-
-    for ((inlet, i) ← shape.inlets.iterator.zipWithIndex) {
-      assembly.ins(i) = inlet
-      assembly.inOwners(i) = 0
-    }
-
-    for ((outlet, i) ← shape.outlets.iterator.zipWithIndex) {
-      assembly.outs(i + shape.inlets.size) = outlet
-      assembly.outOwners(i + shape.inlets.size) = 0
-    }
-
-    GraphModule(assembly, shape, Attributes.none)
-  }
+  final override private[stream] lazy val module: Module =
+    GraphModule(
+      GraphAssembly(shape.inlets, shape.outlets, Array(this): _*),
+      shape,
+      Attributes.none)
 
   /**
    * This method throws an [[UnsupportedOperationException]] by default. The subclass can override this method
