@@ -5,16 +5,16 @@ package akka.stream.impl
 
 import akka.event.LoggingAdapter
 import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Supervision.Decider
-import akka.stream.impl.SplitDecision.SplitDecision
-import akka.stream.impl.StreamLayout._
-import akka.stream._
 import akka.stream.Attributes._
+import akka.stream.Supervision.Decider
+import akka.stream._
+import akka.stream.impl.SplitDecision.{ Continue, SplitAfter, SplitBefore, SplitDecision }
+import akka.stream.impl.StreamLayout._
 import akka.stream.stage.AbstractStage.PushPullGraphStage
-import akka.stream.stage.{ GraphStageLogic, GraphStage, Stage }
+import akka.stream.stage.Stage
 import org.reactivestreams.Processor
+
 import scala.collection.immutable
-import scala.concurrent.Future
 
 /**
  * INTERNAL API
@@ -224,6 +224,12 @@ private[stream] object Stages {
 
   final case class Split(p: Any ⇒ SplitDecision, attributes: Attributes = split) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  }
+
+  object Split {
+    def when(f: Any ⇒ Boolean) = Split(el ⇒ if (f(el)) SplitBefore else Continue, name("splitWhen"))
+
+    def after(f: Any ⇒ Boolean) = Split(el ⇒ if (f(el)) SplitAfter else Continue, name("splitAfter"))
   }
 
   final case class ConcatAll(attributes: Attributes = concatAll) extends StageModule {
