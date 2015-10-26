@@ -740,14 +740,3 @@ final case class HttpsContext(sslContext: SSLContext,
   /** Java API */
   def getSslParameters: japi.Option[SSLParameters] = sslParameters
 }
-
-object HttpsContext {
-  /** INTERNAL API **/
-  private[http] def create(sslContext: SSLContext,
-                           enabledCipherSuites: japi.Option[JCollection[String]],
-                           enabledProtocols: japi.Option[JCollection[String]],
-                           clientAuth: japi.Option[ClientAuth],
-                           sslParameters: japi.Option[SSLParameters]) =
-    HttpsContext(sslContext, enabledCipherSuites.map(_.asScala.toList), enabledProtocols.map(_.asScala.toList),
-      clientAuth, sslParameters)
-}
