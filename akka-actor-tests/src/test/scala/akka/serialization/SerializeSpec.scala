@@ -416,6 +416,24 @@ class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTes
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class DefaultSerializationWarningSpec extends AkkaSpec(
+  ConfigFactory.parseString("akka.actor.warn-about-java-serializer-usage = on")) {
+
+  val ser = SerializationExtension(system)
+
+  "Using the default Java serializer" must {
+
+    "log a warning" in {
+      EventFilter.warning(message = "Using the default Java serializer for class.*") intercept {
+        ser.serializerFor(classOf[java.lang.Integer])
+      }
+    }
+
+  }
+
+}
+
 protected[akka] trait TestSerializable
 
 protected[akka] class TestSerializer extends Serializer {
