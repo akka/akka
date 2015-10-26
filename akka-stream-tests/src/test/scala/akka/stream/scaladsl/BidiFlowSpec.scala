@@ -103,7 +103,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
         sink ⇒
           val flow = b.add(Flow[Long].grouped(10))
           flow ~> sink
-          FlowShape(flow.inlet, b.add(Source.single(ByteString("10"))))
+          FlowShape(flow.inlet, b.add(Source.single(ByteString("10"))).outlet)
       })
       val ((l, m), r) = left.joinMat(bidiMat)(Keep.both).joinMat(right)(Keep.both).run()
       Await.result(l, 1.second) should ===(1)
