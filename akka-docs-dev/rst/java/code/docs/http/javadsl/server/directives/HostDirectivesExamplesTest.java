@@ -18,9 +18,6 @@ import org.junit.Test;
 
 public class HostDirectivesExamplesTest extends JUnitRouteTest {
 
-  //FIXME The GET requests should work with HttpRequest.GET("/").addHeader(Host.create
-  //      instead of absolute paths. That is tracked by issue: https://github.com/akka/akka/issues/18661
-
   @Test
   public void testListOfHost() {
     //#host1
@@ -28,7 +25,7 @@ public class HostDirectivesExamplesTest extends JUnitRouteTest {
         Arrays.asList("api.company.com", "rest.company.com"),
         completeWithStatus(StatusCodes.OK));
 
-    testRoute(matchListOfHosts).run(HttpRequest.GET("http://api.company.com/"))
+    testRoute(matchListOfHosts).run(HttpRequest.GET("/").addHeader(Host.create("api.company.com")))
         .assertStatusCode(StatusCodes.OK);
     //#host1
   }
@@ -39,10 +36,10 @@ public class HostDirectivesExamplesTest extends JUnitRouteTest {
     final Route shortOnly = host(hostname -> hostname.length() < 10,
         completeWithStatus(StatusCodes.OK));
 
-    testRoute(shortOnly).run(HttpRequest.GET("http://short.com/"))
+    testRoute(shortOnly).run(HttpRequest.GET("/").addHeader(Host.create("short.com")))
         .assertStatusCode(StatusCodes.OK);
 
-    testRoute(shortOnly).run(HttpRequest.GET("http://verylonghostname.com/"))
+    testRoute(shortOnly).run(HttpRequest.GET("/").addHeader(Host.create("verylonghostname.com")))
         .assertStatusCode(StatusCodes.NOT_FOUND);
     //#host2
   }
@@ -55,7 +52,7 @@ public class HostDirectivesExamplesTest extends JUnitRouteTest {
     final Route route = handleWith1(host,
         (ctx, hn) -> ctx.complete("Hostname: " + hn));
 
-    testRoute(route).run(HttpRequest.GET("http://company.com:9090/"))
+    testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("company.com", 9090)))
         .assertEntity("Hostname: company.com");
     //#extractHostname
   }
@@ -79,10 +76,10 @@ public class HostDirectivesExamplesTest extends JUnitRouteTest {
 
     final Route route = route(hostPrefixRoute, hostPartRoute);
 
-    testRoute(route).run(HttpRequest.GET("http://api.company.com/"))
+    testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("api.company.com")))
         .assertStatusCode(StatusCodes.OK).assertEntity("Extracted prefix: api");
 
-    testRoute(route).run(HttpRequest.GET("http://public.mycompany.com/"))
+    testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("public.mycompany.com")))
         .assertStatusCode(StatusCodes.OK)
         .assertEntity("You came through my company");
     //#matchAndExtractHost
