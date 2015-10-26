@@ -43,7 +43,7 @@ class GraphInterpreterSpec extends GraphInterpreterSpecKit {
       val sink = new DownstreamProbe[Int]("sink")
 
       // Constructing an assembly by hand and resolving ambiguities
-      val assembly = GraphAssembly(
+      val assembly = new GraphAssembly(
         stages = Array(identity, identity),
         ins = Array(identity.in, identity.in, null),
         inOwners = Array(0, 1, -1),
