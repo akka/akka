@@ -34,8 +34,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
     if (requestMethodForCurrentResponse.isDefined) {
       var cursor = parseProtocol(input, offset)
       if (byteChar(input, cursor) == ' ') {
-        cursor = parseStatusCode(input, cursor + 1)
-        cursor = parseReason(input, cursor)()
+        cursor = parseStatus(input, cursor + 1)
         parseHeaderLines(input, cursor)
       } else badProtocol
     } else {
@@ -50,13 +49,13 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
 
   def badProtocol = throw new ParsingException("The server-side HTTP version is not supported")
 
-  def parseStatusCode(input: ByteString, cursor: Int): Int = {
+  def parseStatus(input: ByteString, cursor: Int): Int = {
     def badStatusCode = throw new ParsingException("Illegal response status code")
-    def intValue(offset: Int): Int = {
-      val c = byteChar(input, cursor + offset)
-      if (CharacterClasses.DIGIT(c)) c - '0' else badStatusCode
-    }
-    if (byteChar(input, cursor + 3) == ' ') {
+    def parseStatusCode() = {
+      def intValue(offset: Int): Int = {
+        val c = byteChar(input, cursor + offset)
+        if (CharacterClasses.DIGIT(c)) c - '0' else badStatusCode
+      }
       val code = intValue(0) * 100 + intValue(1) * 10 + intValue(2)
       statusCode = code match {
         case 200 ⇒ StatusCodes.OK
@@ -65,16 +64,21 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
           case None    ⇒ customStatusCodes(code) getOrElse badStatusCode
         }
       }
-      cursor + 4
+    }
+    if (byteChar(input, cursor + 3) == ' ') {
+      parseStatusCode()
+      val startIdx = cursor + 4
+      @tailrec def skipReason(idx: Int): Int =
+        if (idx - startIdx <= maxResponseReasonLength)
+          if (byteChar(input, idx) == '\r' && byteChar(input, idx + 1) == '\n') idx + 2
+          else skipReason(idx + 1)
+        else throw new ParsingException("Response reason phrase exceeds the configured limit of " +
+          maxResponseReasonLength + " characters")
+      skipReason(startIdx)
+    } else if (byteChar(input, cursor + 3) == '\r' && byteChar(input, cursor + 4) == '\n') {
+      throw new ParsingException("Status code misses trailing space")
     } else badStatusCode
   }
-
-  @tailrec private def parseReason(input: ByteString, startIx: Int)(cursor: Int = startIx): Int =
-    if (cursor - startIx <= maxResponseReasonLength)
-      if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n') cursor + 2
-      else parseReason(input, startIx)(cursor + 1)
-    else throw new ParsingException("Response reason phrase exceeds the configured limit of " +
-      maxResponseReasonLength + " characters")
 
   // http://tools.ietf.org/html/rfc7230#section-3.3
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
