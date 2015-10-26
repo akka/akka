@@ -77,7 +77,7 @@ public class StreamFileDocTest {
       Sink<ByteString, Future<Long>> byteStringFutureSink =
       //#custom-dispatcher-code
       SynchronousFileSink.create(file)
-        .withAttributes(ActorAttributes.dispatcher("custom-file-io-dispatcher"));
+        .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"));
       //#custom-dispatcher-code
     } finally {
       file.delete();

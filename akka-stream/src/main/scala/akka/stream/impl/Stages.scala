@@ -77,6 +77,7 @@ private[stream] object Stages {
     val synchronousFileSource = name("synchronousFileSource")
     val inputStreamSource = name("inputStreamSource")
     val acknowledgeSource = name("acknowledgeSource")
+    val outputStreamSource = name("outputStreamSource")
 
     val subscriberSink = name("subscriberSink")
     val cancelledSink = name("cancelledSink")
@@ -89,6 +90,7 @@ private[stream] object Stages {
     val synchronousFileSink = name("synchronousFileSink")
     val outputStreamSink = name("outputStreamSink")
     val acknowledgeSink = name("acknowledgeSink")
+    val inputStreamSink = name("inputStreamSink")
   }
 
   import DefaultAttributes._

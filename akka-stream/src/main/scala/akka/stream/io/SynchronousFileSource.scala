@@ -19,7 +19,7 @@ object SynchronousFileSource {
    * Emitted elements are `chunkSize` sized [[ByteString]] elements.
    *
    * This source is backed by an Actor which will use the dedicated thread-pool base dispatcher.
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.file-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
@@ -32,7 +32,7 @@ object SynchronousFileSource {
    * Emitted elements are [[ByteString]] elements, chunked by default by [[DefaultChunkSize]] bytes.
    *
    * This source is backed by an Actor which will use the dedicated thread-pool base dispatcher.
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.file-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
@@ -44,7 +44,7 @@ object SynchronousFileSource {
    * Emitted elements are `chunkSize` sized [[ByteString]] elements.
    *
    * This source is backed by an Actor which will use the dedicated thread-pool base dispatcher.
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.file-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
