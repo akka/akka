@@ -55,19 +55,25 @@ private[akka] class AcknowledgePublisher(bufferSize: Int, overflowStrategy: Over
         enqueueAndSendAck(elem)
       else overflowStrategy match {
         case DropHead ⇒
+          log.debug("Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
           buffer.dropHead()
           enqueueAndSendAck(elem)
         case DropTail ⇒
+          log.debug("Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
           buffer.dropTail()
           enqueueAndSendAck(elem)
         case DropBuffer ⇒
+          log.debug("Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
           buffer.clear()
           enqueueAndSendAck(elem)
         case DropNew ⇒
+          log.debug("Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
           sendAck(false)
         case Fail ⇒
+          log.error("Failing because buffer is full and overflowStrategy is: [Fail]")
           onErrorThenStop(new Fail.BufferOverflowException(s"Buffer overflow (max capacity was: $bufferSize)!"))
         case Backpressure ⇒
+          log.debug("Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
           sendAck(false) //does not allow to send more than buffer size
       }
   }
