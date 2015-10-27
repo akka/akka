@@ -243,7 +243,7 @@ public class ReactiveStreamsDocTest {
                   }
                 };
 
-        final Flow<Integer, Integer, BoxedUnit> flow = Flow.create(factory);
+        final Flow<Integer, Integer, BoxedUnit> flow = Flow.fromProcessor(factory);
 
         //#use-processor
       }

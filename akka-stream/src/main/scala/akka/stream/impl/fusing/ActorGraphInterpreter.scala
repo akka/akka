@@ -315,7 +315,7 @@ private[stream] class ActorGraphInterpreter(
   // Limits the number of events processed by the interpreter before scheduling a self-message for fairness with other
   // actors.
   // TODO: Better heuristic here (take into account buffer size, connection count, 4 events per element, have a max)
-  val eventLimit = settings.maxInputBufferSize * (inputs.length + outputs.length) * 2
+  val eventLimit = 1 //settings.maxInputBufferSize * (inputs.length + outputs.length) * 2
   // Limits the number of events processed by the interpreter on an abort event.
   // TODO: Better heuristic here
   private val abortLimit = eventLimit * 2

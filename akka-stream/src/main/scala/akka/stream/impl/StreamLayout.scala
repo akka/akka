@@ -648,12 +648,14 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     }
   }
 
+  protected def initialAttributes: Attributes
+
   final def materialize(): Any = {
     require(topLevel ne EmptyModule, "An empty module cannot be materialized (EmptyModule was given)")
     require(
       topLevel.isRunnable,
       s"The top level module cannot be materialized because it has unconnected ports: ${(topLevel.inPorts ++ topLevel.outPorts).mkString(", ")}")
-    try materializeModule(topLevel, topLevel.attributes)
+    try materializeModule(topLevel, initialAttributes and topLevel.attributes)
     catch {
       case NonFatal(cause) ⇒
         // PANIC!!! THE END OF THE MATERIALIZATION IS NEAR!

@@ -695,7 +695,7 @@ private[akka] final case class Log[T](name: String, extract: T ⇒ Any, logAdapt
   // TODO more optimisations can be done here - prepare logOnPush function etc
 
   override def preStart(ctx: LifecycleContext): Unit = {
-    logLevels = ctx.attributes.logLevels.getOrElse(DefaultLogLevels)
+    logLevels = ctx.attributes.getAttribute(classOf[LogLevels]).getOrElse(DefaultLogLevels)
     log = logAdapter match {
       case Some(l) ⇒ l
       case _ ⇒

@@ -78,6 +78,12 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
         name
       }
 
+      override protected def initialAttributes = Attributes(
+        Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
+          ActorAttributes.Dispatcher(settings.dispatcher) ::
+          ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
+          Nil)
+
       override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes): Any = {
 
         def newMaterializationContext() =

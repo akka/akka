@@ -16,7 +16,7 @@ import akka.japi.function
  *
  * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
  */
-final case class Attributes private (attributeList: immutable.Seq[Attributes.Attribute] = Nil) {
+final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
   import Attributes._
 
@@ -44,14 +44,20 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
     }
 
   /**
-   * Get first attribute of a given `Class` or subclass thereof.
+   * Get the last attribute of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
   def getAttribute[T <: Attribute](c: Class[T], default: T): T =
-    attributeList.find(c.isInstance) match {
-      case Some(a) ⇒ c.cast(a)
+    getAttribute(c) match {
+      case Some(a) ⇒ a
       case None    ⇒ default
     }
+
+  /**
+   * Get the last attribute of a given `Class` or subclass thereof.
+   */
+  def getAttribute[T <: Attribute](c: Class[T]): Option[T] =
+    attributeList.foldLeft(List.empty[T])((acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) :: acc else acc).headOption
 
   /**
    * Adds given attributes to the end of these attributes.
@@ -59,7 +65,7 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
   def and(other: Attributes): Attributes =
     if (attributeList.isEmpty) other
     else if (other.attributeList.isEmpty) this
-    else Attributes(attributeList ++ other.attributeList)
+    else Attributes(attributeList ::: other.attributeList)
 
   /**
    * INTERNAL API
@@ -76,12 +82,7 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
           case Name(n) ⇒
             if (buf ne null) concatNames(i, null, buf.append('-').append(n))
             else if (first ne null) {
-              val b = new StringBuilder(
-                (first.length() + n.length()) match {
-                  case x if x < 0                ⇒ throw new IllegalStateException("Names too long to concatenate")
-                  case y if y > Int.MaxValue / 2 ⇒ Int.MaxValue
-                  case z                         ⇒ Math.max(Integer.highestOneBit(z) * 2, 32)
-                })
+              val b = new StringBuilder((first.length() + n.length()) * 2)
               concatNames(i, null, b.append(first).append('-').append(n))
             } else concatNames(i, n, null)
           case _ ⇒ concatNames(i, first, buf)
@@ -94,12 +95,6 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
       case some ⇒ some
     }
   }
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] def logLevels: Option[LogLevels] =
-    attributeList.collectFirst { case l: LogLevels ⇒ l }
 
 }
 
