@@ -60,20 +60,26 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
         buffer.enqueue(elem)
       else overflowStrategy match {
         case DropHead ⇒
+          log.debug("Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
           buffer.dropHead()
           buffer.enqueue(elem)
         case DropTail ⇒
+          log.debug("Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
           buffer.dropTail()
           buffer.enqueue(elem)
         case DropBuffer ⇒
+          log.debug("Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
           buffer.clear()
           buffer.enqueue(elem)
         case DropNew ⇒
-        // do not enqueue new element if the buffer is full
+          // do not enqueue new element if the buffer is full
+          log.debug("Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
         case Fail ⇒
+          log.error("Failing because buffer is full and overflowStrategy is: [Fail]")
           onErrorThenStop(new Fail.BufferOverflowException(s"Buffer overflow (max capacity was: $bufferSize)!"))
         case Backpressure ⇒
-        // there is a precondition check in Source.actorRefSource factory method
+          // there is a precondition check in Source.actorRefSource factory method
+          log.debug("Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
       }
   }
 
