@@ -23,6 +23,7 @@ private[stream] object Stages {
     val stageFactory = name("stageFactory")
     val fused = name("fused")
     val map = name("map")
+    val log = name("log")
     val filter = name("filter")
     val collect = name("collect")
     val recover = name("recover")
@@ -117,7 +118,7 @@ private[stream] object Stages {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }
 
-  final case class Log(name: String, extract: Any ⇒ Any, loggingAdapter: Option[LoggingAdapter], attributes: Attributes = map) extends StageModule {
+  final case class Log(name: String, extract: Any ⇒ Any, loggingAdapter: Option[LoggingAdapter], attributes: Attributes = log) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }
 
