@@ -515,12 +515,14 @@ class ShardRegion(
       else {
         sendGracefulShutdownToCoordinator()
         requestShardBufferHomes()
+        tryCompleteGracefulShutdown()
       }
 
     case GracefulShutdown ⇒
       log.debug("Starting graceful shutdown of region and all its shards")
       gracefulShutdownInProgress = true
       sendGracefulShutdownToCoordinator()
+      tryCompleteGracefulShutdown()
 
     case _ ⇒ unhandled(cmd)
   }
@@ -569,8 +571,7 @@ class ShardRegion(
         }
       }
 
-      if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty)
-        context.stop(self) // all shards have been rebalanced, complete graceful shutdown
+      tryCompleteGracefulShutdown()
     }
   }
 
@@ -600,6 +601,10 @@ class ShardRegion(
       case (shardId, ref) ⇒ (ref ? msg).mapTo[T].map(t ⇒ (shardId, t))
     })
   }
+
+  private def tryCompleteGracefulShutdown() =
+    if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty)
+      context.stop(self) // all shards have been rebalanced, complete graceful shutdown
 
   def register(): Unit = {
     coordinatorSelection.foreach(_ ! registrationMessage)
