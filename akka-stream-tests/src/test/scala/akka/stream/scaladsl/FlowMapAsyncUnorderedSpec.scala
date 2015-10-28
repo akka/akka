@@ -54,13 +54,11 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
         n
       }).to(Sink(c)).run()
       val sub = c.expectSubscription()
-      // first four run immediately
-      probe.expectMsgAllOf(1, 2, 3, 4)
       c.expectNoMsg(200.millis)
       probe.expectNoMsg(Duration.Zero)
       sub.request(1)
       var got = Set(c.expectNext())
-      probe.expectMsg(5)
+      probe.expectMsgAllOf(1, 2, 3, 4, 5)
       probe.expectNoMsg(500.millis)
       sub.request(25)
       probe.expectMsgAllOf(6 to 20: _*)
@@ -176,7 +174,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
         .to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
-      for (elem ← List("a", "c")) c.expectNext(elem)
+      c.expectNextUnordered("a", "c")
       c.expectComplete()
     }
 

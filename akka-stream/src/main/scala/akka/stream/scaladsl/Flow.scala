@@ -9,7 +9,7 @@ import akka.stream._
 import akka.stream.impl.SplitDecision._
 import akka.stream.impl.Stages.{ SymbolicGraphStage, StageModule, DirectProcessor, SymbolicStage }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
-import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, TakeWithin }
+import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, TakeWithin, MapAsyncUnordered }
 import akka.stream.impl.{ ReactiveStreamsCompliance, ConstantFun, Stages, StreamLayout }
 import akka.stream.impl.{ Stages, StreamLayout }
 import akka.stream.stage.AbstractStage.{ PushPullGraphStageWithMaterializedValue, PushPullGraphStage }
@@ -478,7 +478,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] = andThen(MapAsyncUnordered(parallelism, f))
+  def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] = via(MapAsyncUnordered(parallelism, f))
 
   /**
    * Only pass on those elements that satisfy the given predicate.

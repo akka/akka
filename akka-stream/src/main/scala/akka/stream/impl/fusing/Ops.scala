@@ -10,7 +10,6 @@ import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ FixedSizeBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
@@ -18,6 +17,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
+import akka.stream.ActorAttributes.SupervisionStrategy
 
 /**
  * INTERNAL API
@@ -622,64 +622,69 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
 /**
  * INTERNAL API
  */
-private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: In ⇒ Future[Out], decider: Supervision.Decider)
-  extends AsyncStage[In, Out, Try[Out]] {
+private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: In ⇒ Future[Out])
+  extends GraphStage[FlowShape[In, Out]] {
 
-  private var callback: AsyncCallback[Try[Out]] = _
-  private var inFlight = 0
-  private val buffer = FixedSizeBuffer[Out](parallelism)
+  private val in = Inlet[In]("in")
+  private val out = Outlet[Out]("out")
 
-  private def todo = inFlight + buffer.used
+  override val shape = FlowShape(in, out)
 
-  override def preStart(ctx: AsyncContext[Out, Try[Out]]): Unit =
-    callback = ctx.getAsyncCallback
+  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
+    val decider =
+      inheritedAttributes.getAttribute(classOf[SupervisionStrategy])
+        .map(_.decider).getOrElse(Supervision.stoppingDecider)
 
-  override def decide(ex: Throwable) = decider(ex)
+    var inFlight = 0
+    val buffer = FixedSizeBuffer[Out](parallelism)
+    def todo = inFlight + buffer.used
 
-  override def onPush(elem: In, ctx: AsyncContext[Out, Try[Out]]) = {
-    val future = f(elem)
-    inFlight += 1
-    future.onComplete(callback.invoke)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
-    if (todo == parallelism) ctx.holdUpstream()
-    else ctx.pull()
-  }
+    def failOrPull(ex: Throwable) =
+      if (decider(ex) == Supervision.Stop) failStage(ex)
+      else if (isClosed(in) && todo == 0) completeStage()
+      else if (!hasBeenPulled(in)) tryPull(in)
 
-  override def onPull(ctx: AsyncContext[Out, Try[Out]]) =
-    if (buffer.isEmpty) {
-      if (ctx.isFinishing && inFlight == 0) ctx.finish() else ctx.holdDownstream()
-    } else {
-      val elem = buffer.dequeue()
-      if (ctx.isHoldingUpstream) ctx.pushAndPull(elem)
-      else ctx.push(elem)
-    }
-
-  override def onAsyncInput(input: Try[Out], ctx: AsyncContext[Out, Try[Out]]) = {
-    def ignoreOrFail(ex: Throwable) =
-      if (decider(ex) == Supervision.Stop) ctx.fail(ex)
-      else if (ctx.isHoldingUpstream) ctx.pull()
-      else if (ctx.isFinishing && todo == 0) ctx.finish()
-      else ctx.ignore()
-
-    inFlight -= 1
-    input match {
-      case Failure(ex) ⇒ ignoreOrFail(ex)
-      case Success(elem) ⇒
-        if (elem == null) {
-          val ex = ReactiveStreamsCompliance.elementMustNotBeNullException
-          ignoreOrFail(ex)
-        } else if (ctx.isHoldingDownstream) {
-          if (ctx.isHoldingUpstream) ctx.pushAndPull(elem)
-          else ctx.push(elem)
-        } else {
-          buffer.enqueue(elem)
-          ctx.ignore()
+    val futureCB =
+      getAsyncCallback((result: Try[Out]) ⇒ {
+        inFlight -= 1
+        result match {
+          case Failure(ex) ⇒ failOrPull(ex)
+          case Success(elem) ⇒
+            if (elem == null) {
+              val ex = ReactiveStreamsCompliance.elementMustNotBeNullException
+              failOrPull(ex)
+            } else if (isAvailable(out)) {
+              if (!hasBeenPulled(in)) tryPull(in)
+              push(out, elem)
+            } else buffer.enqueue(elem)
         }
-    }
-  }
+      }).invoke _
 
-  override def onUpstreamFinish(ctx: AsyncContext[Out, Try[Out]]) =
-    if (todo > 0) ctx.absorbTermination()
-    else ctx.finish()
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = {
+        try {
+          val future = f(grab(in))
+          inFlight += 1
+          future.onComplete(futureCB)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+        } catch {
+          case NonFatal(ex) ⇒
+            if (decider(ex) == Supervision.Stop) failStage(ex)
+        }
+        if (todo < parallelism) tryPull(in)
+      }
+      override def onUpstreamFinish(): Unit = {
+        if (todo == 0) completeStage()
+      }
+    })
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = {
+        if (!hasBeenPulled(in)) tryPull(in)
+        if (!buffer.isEmpty) push(out, buffer.dequeue())
+        else if (isClosed(in) && todo == 0) completeStage()
+      }
+    })
+  }
 }
 
 /**
