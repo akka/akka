@@ -350,7 +350,7 @@ private[stream] class ActorGraphInterpreter(
       resumeScheduled = false
       if (interpreter.isSuspended) runBatch()
     case AsyncInput(logic, event, handler) ⇒
-      if (GraphInterpreter.Debug) println(s"ASYNC $event")
+      if (GraphInterpreter.Debug) println(s"ASYNC $event ($handler) [$logic]")
       if (!interpreter.isStageCompleted(logic.stageId)) {
         try handler(event)
         catch {

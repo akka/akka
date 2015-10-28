@@ -295,6 +295,14 @@ private[stream] final class GraphInterpreter(
   private[this] var queueHead: Int = 0
   private[this] var queueTail: Int = 0
 
+  private def queueStatus: String = {
+    val contents = (queueHead until queueTail).map(idx ⇒ {
+      val conn = eventQueue(idx & mask)
+      (conn, portStates(conn), connectionSlots(conn))
+    })
+    s"(${eventQueue.length}, $queueHead, $queueTail)(${contents.mkString(", ")})"
+  }
+
   /**
    * Assign the boundary logic to a given connection. This will serve as the interface to the external world
    * (outside the interpreter) to process and inject events.
@@ -381,12 +389,22 @@ private[stream] final class GraphInterpreter(
     if (assembly.outOwners(connection) == Boundary) "UpstreamBoundary"
     else assembly.stages(assembly.outOwners(connection)).toString
 
+  // Debug name for a connections input part
+  private def inLogicName(connection: Int): String =
+    if (assembly.inOwners(connection) == Boundary) "DownstreamBoundary"
+    else logics(assembly.inOwners(connection)).toString
+
+  // Debug name for a connections ouput part
+  private def outLogicName(connection: Int): String =
+    if (assembly.outOwners(connection) == Boundary) "UpstreamBoundary"
+    else logics(assembly.outOwners(connection)).toString
+
   /**
    * Executes pending events until the given limit is met. If there were remaining events, isSuspended will return
    * true.
    */
   def execute(eventLimit: Int): Unit = {
-    if (GraphInterpreter.Debug) println("---------------- EXECUTE")
+    if (Debug) println("---------------- EXECUTE")
     var eventsRemaining = eventLimit
     var connection = dequeue()
     while (eventsRemaining > 0 && connection != NoEvent) {
@@ -399,14 +417,15 @@ private[stream] final class GraphInterpreter(
       eventsRemaining -= 1
       if (eventsRemaining > 0) connection = dequeue()
     }
+    if (Debug) println(s"---------------- $queueStatus")
     // TODO: deadlock detection
   }
 
   // Decodes and processes a single event for the given connection
   private def processEvent(connection: Int): Unit = {
 
-    def processElement(elem: Any): Unit = {
-      if (GraphInterpreter.Debug) println(s"PUSH ${outOwnerName(connection)} -> ${inOwnerName(connection)}, $elem (${inHandlers(connection)})")
+    def processElement(): Unit = {
+      if (Debug) println(s"PUSH ${outOwnerName(connection)} -> ${inOwnerName(connection)}, ${connectionSlots(connection)} (${inHandlers(connection)}) [${inLogicName(connection)}]")
       activeStageId = assembly.inOwners(connection)
       portStates(connection) ^= PushEndFlip
       inHandlers(connection).onPush()
@@ -417,11 +436,11 @@ private[stream] final class GraphInterpreter(
     // Manual fast decoding, fast paths are PUSH and PULL
     //   PUSH
     if ((code & (Pushing | InClosed | OutClosed)) == Pushing) {
-      processElement(connectionSlots(connection))
+      processElement()
 
       // PULL
     } else if ((code & (Pulling | OutClosed | InClosed)) == Pulling) {
-      if (GraphInterpreter.Debug) println(s"PULL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)})")
+      if (Debug) println(s"PULL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)}) [${outLogicName(connection)}]")
       portStates(connection) ^= PullEndFlip
       activeStageId = assembly.outOwners(connection)
       outHandlers(connection).onPull()
@@ -429,7 +448,7 @@ private[stream] final class GraphInterpreter(
       // CANCEL
     } else if ((code & (OutClosed | InClosed)) == InClosed) {
       val stageId = assembly.outOwners(connection)
-      if (GraphInterpreter.Debug) println(s"CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)})")
+      if (Debug) println(s"CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)}) [${outLogicName(connection)}]")
       portStates(connection) |= OutClosed
       activeStageId = assembly.outOwners(connection)
       outHandlers(connection).onDownstreamFinish()
@@ -441,7 +460,7 @@ private[stream] final class GraphInterpreter(
 
       if ((code & Pushing) == 0) {
         // Normal completion (no push pending)
-        if (GraphInterpreter.Debug) println(s"COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${inHandlers(connection)})")
+        if (Debug) println(s"COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${inHandlers(connection)}) [${inLogicName(connection)}]")
         portStates(connection) |= InClosed
         activeStageId = assembly.inOwners(connection)
         if ((portStates(connection) & InFailed) == 0) inHandlers(connection).onUpstreamFinish()
@@ -449,16 +468,8 @@ private[stream] final class GraphInterpreter(
         completeConnection(stageId)
       } else {
         // Push is pending, first process push, then re-enqueue closing event
-        // Non-failure case
-        val code = portStates(connection) & (InClosed | InFailed)
-        if (code == 0) {
-          processElement(connectionSlots(connection))
-          enqueue(connection)
-        } else if (code == InFailed) {
-          // Failure case
-          processElement(connectionSlots(connection).asInstanceOf[Failed].previousElem)
-          enqueue(connection)
-        }
+        processElement()
+        enqueue(connection)
       }
 
     }
@@ -476,6 +487,7 @@ private[stream] final class GraphInterpreter(
   }
 
   private def enqueue(connection: Int): Unit = {
+    if (Debug && queueTail - queueHead > mask) new Exception(s"internal queue full ($queueStatus) + $connection").printStackTrace()
     eventQueue(queueTail & mask) = connection
     queueTail += 1
   }
@@ -526,34 +538,28 @@ private[stream] final class GraphInterpreter(
 
   private[stream] def complete(connection: Int): Unit = {
     val currentState = portStates(connection)
-    portStates(connection) = portStates(connection) | OutClosed
-    if ((currentState & InClosed) == 0) {
-      if ((currentState & Pushing) != 0) {} // FIXME: Fold into previous condition
-      else if (connectionSlots(connection) != Empty)
-        enqueue(connection)
-      else
-        enqueue(connection)
-    }
+    portStates(connection) = currentState | OutClosed
+    if ((currentState & (InClosed | Pushing | Pulling)) == 0) enqueue(connection)
     completeConnection(assembly.outOwners(connection))
   }
 
   private[stream] def fail(connection: Int, ex: Throwable): Unit = {
-    portStates(connection) |= (OutClosed | InFailed)
-    if ((portStates(connection) & InClosed) == 0) {
+    val currentState = portStates(connection)
+    portStates(connection) = currentState | (OutClosed | InFailed)
+    if ((currentState & InClosed) == 0) {
       connectionSlots(connection) = Failed(ex, connectionSlots(connection))
-      enqueue(connection)
+      if ((currentState & (Pulling | Pushing)) == 0) enqueue(connection)
     }
-
     completeConnection(assembly.outOwners(connection))
   }
 
   private[stream] def cancel(connection: Int): Unit = {
-    portStates(connection) |= InClosed
-    if ((portStates(connection) & OutClosed) == 0) {
+    val currentState = portStates(connection)
+    portStates(connection) = currentState | InClosed
+    if ((currentState & OutClosed) == 0) {
       connectionSlots(connection) = Empty
-      enqueue(connection)
+      if ((currentState & (Pulling | Pushing)) == 0) enqueue(connection)
     }
-
     completeConnection(assembly.inOwners(connection))
   }
 

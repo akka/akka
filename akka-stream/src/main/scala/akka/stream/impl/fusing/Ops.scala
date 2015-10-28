@@ -548,6 +548,8 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
+    override def toString = s"MapAsync.Logic(buffer=$buffer)"
+
     val decider =
       inheritedAttributes.getAttribute(classOf[SupervisionStrategy])
         .map(_.decider).getOrElse(Supervision.stoppingDecider)
