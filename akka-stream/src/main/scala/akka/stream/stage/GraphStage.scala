@@ -12,13 +12,12 @@ import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.mutable.ArrayBuffer
 
-abstract class GraphStageWithMaterializedValue[S <: Shape, M] extends Graph[S, M] {
-  def shape: S
+abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
   def createLogicAndMaterializedValue: (GraphStageLogic, M)
 
   final override private[stream] lazy val module: Module =
     GraphModule(
-      GraphAssembly(shape.inlets, shape.outlets, Array(this): _*),
+      GraphAssembly(shape.inlets, shape.outlets, this),
       shape,
       Attributes.none)
 
