@@ -595,7 +595,7 @@ private[stream] object MaterializerSession {
 /**
  * INTERNAL API
  */
-private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Module) {
+private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Module, val initialAttributes: Attributes) {
   import StreamLayout._
 
   private var subscribersStack: List[mutable.Map[InPort, Subscriber[Any]]] =
@@ -647,8 +647,6 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
       case (original, exposed) ⇒ assignPort(exposed, scopePublishers(original))
     }
   }
-
-  protected def initialAttributes: Attributes
 
   final def materialize(): Any = {
     require(topLevel ne EmptyModule, "An empty module cannot be materialized (EmptyModule was given)")

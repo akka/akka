@@ -171,12 +171,10 @@ class StreamLayoutSpec extends AkkaSpec {
     override def onNext(t: Any): Unit = ()
   }
 
-  class FlatTestMaterializer(_module: Module) extends MaterializerSession(_module) {
+  class FlatTestMaterializer(_module: Module) extends MaterializerSession(_module, Attributes()) {
     var publishers = Vector.empty[TestPublisher]
     var subscribers = Vector.empty[TestSubscriber]
     
-    override protected def initialAttributes = Attributes()
-
     override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes): Unit = {
       for (inPort ← atomic.inPorts) {
         val subscriber = TestSubscriber(atomic, inPort)

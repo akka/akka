@@ -57,7 +57,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * Get the last attribute of a given `Class` or subclass thereof.
    */
   def getAttribute[T <: Attribute](c: Class[T]): Option[T] =
-    attributeList.foldLeft(List.empty[T])((acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) :: acc else acc).headOption
+    Option(attributeList.foldLeft(null.asInstanceOf[T])((acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) else acc))
 
   /**
    * Adds given attributes to the end of these attributes.
