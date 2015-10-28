@@ -25,7 +25,7 @@ object Flow {
   def fromProcessor[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, Unit] =
     new Flow(scaladsl.Flow.fromProcessor(() ⇒ processorFactory.create()))
 
-  def fromProcessorMat[I, O, Mat](processorFactory: function.Creator[Pair[Processor[I, O], Mat]]): javadsl.Flow[I, O, Unit] =
+  def fromProcessorMat[I, O, Mat](processorFactory: function.Creator[Pair[Processor[I, O], Mat]]): javadsl.Flow[I, O, Mat] =
     new Flow(scaladsl.Flow.fromProcessorMat { () ⇒
       val javaPair = processorFactory.create()
       (javaPair.first, javaPair.second)

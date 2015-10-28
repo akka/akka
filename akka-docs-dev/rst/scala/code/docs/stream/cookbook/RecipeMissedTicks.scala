@@ -2,8 +2,9 @@ package docs.stream.cookbook
 
 import akka.stream.scaladsl._
 import akka.stream.testkit._
-
 import scala.concurrent.duration._
+import akka.testkit.TestLatch
+import scala.concurrent.Await
 
 class RecipeMissedTicks extends RecipeSpec {
 
@@ -22,8 +23,12 @@ class RecipeMissedTicks extends RecipeSpec {
         Flow[Tick].conflate(seed = (_) => 0)(
           (missedTicks, tick) => missedTicks + 1)
       //#missed-ticks
+      val latch = TestLatch(3)
+      val realMissedTicks: Flow[Tick, Int, Unit] =
+        Flow[Tick].conflate(seed = (_) => 0)(
+          (missedTicks, tick) => { latch.countDown(); missedTicks + 1 })
 
-      tickStream.via(missedTicks).to(sink).run()
+      tickStream.via(realMissedTicks).to(sink).run()
 
       pub.sendNext(())
       pub.sendNext(())
@@ -31,6 +36,8 @@ class RecipeMissedTicks extends RecipeSpec {
       pub.sendNext(())
 
       val subscription = sub.expectSubscription()
+      Await.ready(latch, 1.second)
+
       subscription.request(1)
       sub.expectNext(3)
 

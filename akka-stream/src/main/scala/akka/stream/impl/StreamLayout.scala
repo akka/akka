@@ -595,7 +595,7 @@ private[stream] object MaterializerSession {
 /**
  * INTERNAL API
  */
-private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Module) {
+private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Module, val initialAttributes: Attributes) {
   import StreamLayout._
 
   private var subscribersStack: List[mutable.Map[InPort, Subscriber[Any]]] =
@@ -653,7 +653,7 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     require(
       topLevel.isRunnable,
       s"The top level module cannot be materialized because it has unconnected ports: ${(topLevel.inPorts ++ topLevel.outPorts).mkString(", ")}")
-    try materializeModule(topLevel, topLevel.attributes)
+    try materializeModule(topLevel, initialAttributes and topLevel.attributes)
     catch {
       case NonFatal(cause) ⇒
         // PANIC!!! THE END OF THE MATERIALIZATION IS NEAR!

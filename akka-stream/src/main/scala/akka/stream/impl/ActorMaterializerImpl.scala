@@ -44,6 +44,12 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
 
   private[this] def createFlowName(): String = s"$namePrefix-${nextFlowNameCount()}"
 
+  private val initialAttributes = Attributes(
+    Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
+      ActorAttributes.Dispatcher(settings.dispatcher) ::
+      ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
+      Nil)
+
   override def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings = {
     import Attributes._
     import ActorAttributes._
@@ -69,7 +75,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
       throw new IllegalStateException("Attempted to call materialize() after the ActorMaterializer has been shut down.")
     if (StreamLayout.Debug) StreamLayout.validate(runnableGraph.module)
 
-    val session = new MaterializerSession(runnableGraph.module) {
+    val session = new MaterializerSession(runnableGraph.module, initialAttributes) {
       private val flowName = createFlowName()
       private var nextId = 0
       private def stageName(attr: Attributes): String = {
