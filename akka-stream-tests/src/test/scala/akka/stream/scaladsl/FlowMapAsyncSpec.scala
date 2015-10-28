@@ -104,11 +104,9 @@ class FlowMapAsyncSpec extends AkkaSpec {
         n
       }).to(Sink(c)).run()
       val sub = c.expectSubscription()
-      // running 8 in parallel
-      probe.receiveN(8).toSet should be((1 to 8).toSet)
       probe.expectNoMsg(500.millis)
       sub.request(1)
-      probe.expectMsg(9)
+      probe.receiveN(9).toSet should be((1 to 9).toSet)
       probe.expectNoMsg(500.millis)
       sub.request(2)
       probe.receiveN(2).toSet should be(Set(10, 11))
