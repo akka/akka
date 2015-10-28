@@ -35,15 +35,15 @@ sealed trait Stage[-In, +Out]
  */
 private[stream] object AbstractStage {
 
-  private class PushPullGraphLogic[In, Out, Ext](
+  private class PushPullGraphLogic[In, Out](
     private val shape: FlowShape[In, Out],
     val attributes: Attributes,
     val stage: AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext])
-    extends GraphStageLogic(shape) with AsyncContext[Out, Ext] {
+    extends GraphStageLogic(shape) with DetachedContext[Out] {
 
     final override def materializer: Materializer = interpreter.materializer
 
-    private def ctx: AsyncContext[Out, Ext] = this
+    private def ctx: DetachedContext[Out] = this
 
     private var currentStage: AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext] = stage
 
@@ -154,15 +154,6 @@ private[stream] object AbstractStage {
     final override def holdDownstream(): DownstreamDirective = null
 
     final override def holdUpstream(): UpstreamDirective = null
-
-    final override def ignore(): AsyncDirective = null
-
-    override def getAsyncCallback: AsyncCallback[Ext] = {
-      getAsyncCallback { msg ⇒
-        try { currentStage.asInstanceOf[AsyncStage[In, Out, Ext]].onAsyncInput(msg, this) }
-        catch { case NonFatal(ex) ⇒ onSupervision(ex) }
-      }
-    }
 
     override def preStart(): Unit = currentStage.preStart(ctx)
     override def postStop(): Unit = currentStage.postStop()
@@ -386,26 +377,6 @@ abstract class DetachedStage[In, Out]
    * `onPull` when it is know how to recover from such exceptions.
    */
   override def decide(t: Throwable): Supervision.Directive = super.decide(t)
-}
-
-/**
- * This is a variant of [[DetachedStage]] that can receive asynchronous input
- * from external sources, for example timers or Future results. In order to
- * do this, obtain an [[AsyncCallback]] from the [[AsyncContext]] and attach
- * it to the asynchronous event. When the event fires an asynchronous notification
- * will be dispatched that eventually will lead to `onAsyncInput` being invoked
- * with the provided data item.
- */
-abstract class AsyncStage[In, Out, Ext]
-  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, AsyncContext[Out, Ext], AsyncContext[Out, Ext]] {
-  private[stream] override def isDetached = true
-
-  /**
-   * Implement this method to define the action to be taken in response to an
-   * asynchronous notification that was previously registered using
-   * [[AsyncContext#getAsyncCallback]].
-   */
-  def onAsyncInput(event: Ext, ctx: AsyncContext[Out, Ext]): Directive
 }
 
 /**
@@ -710,28 +681,3 @@ trait AsyncCallback[T] {
    */
   def invoke(t: T): Unit
 }
-
-/**
- * This kind of context is available to [[AsyncStage]]. It implements the same
- * interface as for [[DetachedStage]] with the addition of being able to obtain
- * [[AsyncCallback]] objects that allow the registration of asynchronous
- * notifications.
- */
-trait AsyncContext[Out, Ext] extends DetachedContext[Out] {
-  /**
-   * Obtain a callback object that can be used asynchronously to re-enter the
-   * current [[AsyncStage]] with an asynchronous notification. After the
-   * notification has been invoked, eventually [[AsyncStage#onAsyncInput]]
-   * will be called with the given data item.
-   *
-   * This object can be cached and reused within the same [[AsyncStage]].
-   */
-  def getAsyncCallback: AsyncCallback[Ext]
-  /**
-   * In response to an asynchronous notification an [[AsyncStage]] may choose
-   * to neither push nor pull nor terminate, which is represented as this
-   * directive.
-   */
-  def ignore(): AsyncDirective
-}
-
