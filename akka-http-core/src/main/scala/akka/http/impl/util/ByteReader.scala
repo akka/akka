@@ -31,7 +31,7 @@ private[akka] class ByteReader(input: ByteString) {
     } else throw NeedMoreData
   def readShortLE(): Int = readByte() | (readByte() << 8)
   def readIntLE(): Int = readShortLE() | (readShortLE() << 16)
-  def readLongLE(): Long = (readIntBE() & 0xffffffffL) | ((readIntLE() & 0xffffffffL) << 32)
+  def readLongLE(): Long = (readIntLE() & 0xffffffffL) | ((readIntLE() & 0xffffffffL) << 32)
 
   def readShortBE(): Int = (readByte() << 8) | readByte()
   def readIntBE(): Int = (readShortBE() << 16) | readShortBE()

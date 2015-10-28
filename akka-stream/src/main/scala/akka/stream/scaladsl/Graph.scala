@@ -173,15 +173,12 @@ class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: Boolea
       else tryPull(in)
     }
 
-    // FIXME: slow iteration, try to make in a vector and inject into shape instead
-    (0 until secondaryPorts).map(in).foreach { i ⇒
+    shape.inSeq.foreach { i ⇒
       setHandler(i, new InHandler {
         override def onPush(): Unit = {
           if (isAvailable(out)) {
-            if (!pending) {
-              push(out, grab(i))
-              tryPull(i)
-            }
+            push(out, grab(i))
+            tryPull(i)
           } else enqueue(i)
         }
 
@@ -221,9 +218,8 @@ class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: Boolea
       override def onPull(): Unit = {
         if (!initialized) {
           initialized = true
-          // FIXME: slow iteration, try to make in a vector and inject into shape instead
           tryPull(preferred)
-          (0 until secondaryPorts).map(in).foreach(tryPull)
+          shape.inSeq.foreach(tryPull)
         } else if (priority) {
           push(out, grab(preferred))
           tryPull(preferred)

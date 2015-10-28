@@ -41,6 +41,8 @@ class RecipeKeepAlive extends RecipeSpec {
 
       val subscription = sub.expectSubscription()
 
+      // FIXME RK: remove (because I think this cannot deterministically be tested and it might also not do what it should anymore)
+
       tickPub.sendNext(())
 
       // pending data will overcome the keepalive
