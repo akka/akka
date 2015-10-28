@@ -24,7 +24,7 @@ object SynchronousFileSink {
    *
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    *
-   * This source is backed by an Actor which will use the dedicated `akka.stream.file-io-dispatcher`,
+   * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
    * unless configured otherwise by using [[ActorAttributes]].
    */
   def apply(f: File, append: Boolean = false): Sink[ByteString, Future[Long]] =
@@ -38,7 +38,7 @@ object SynchronousFileSink {
    *
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    *
-   * This source is backed by an Actor which will use the dedicated `akka.stream.file-io-dispatcher`,
+   * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
    * unless configured otherwise by using [[ActorAttributes]].
    */
   def create(f: File): javadsl.Sink[ByteString, Future[java.lang.Long]] =
@@ -51,7 +51,7 @@ object SynchronousFileSink {
    *
    * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
    *
-   * This source is backed by an Actor which will use the dedicated `akka.stream.file-io-dispatcher`,
+   * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
    * unless configured otherwise by using [[ActorAttributes]].
    */
   def appendTo(f: File): javadsl.Sink[ByteString, Future[java.lang.Long]] =
