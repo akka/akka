@@ -57,7 +57,7 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
   "configure dispatcher in code" in {
     //#custom-dispatcher-code
     SynchronousFileSink(file)
-      .withAttributes(ActorAttributes.dispatcher("custom-file-io-dispatcher"))
+      .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"))
     //#custom-dispatcher-code
   }
 
