@@ -386,8 +386,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     while (i < portToConn.length) {
       if (i < inCount)
         interpreter.cancel(portToConn(i))
-      else
-        interpreter.complete(portToConn(i))
+      else handlers(i) match {
+        case e: Emitting[_] ⇒ e.addFollowUp(new EmittingCompletion(e.out, e.previous))
+        case _              ⇒ interpreter.complete(portToConn(i))
+      }
       i += 1
     }
   }
@@ -592,16 +594,21 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       case _              ⇒ setHandler(out, next)
     }
 
-  private abstract class Emitting[T](protected val out: Outlet[T], val previous: OutHandler, andThen: () ⇒ Unit) extends OutHandler {
+  private abstract class Emitting[T](val out: Outlet[T], val previous: OutHandler, andThen: () ⇒ Unit) extends OutHandler {
     private var followUps: mutable.Queue[Emitting[T]] = null
+    private def as[U] = this.asInstanceOf[Emitting[U]]
 
     protected def followUp(): Unit = {
       setHandler(out, previous)
       andThen()
       if (followUps != null) {
-        val next = followUps.dequeue()
-        if (followUps.nonEmpty) next.followUps = followUps
-        setHandler(out, next)
+        getHandler(out) match {
+          case e: Emitting[_] ⇒ followUps foreach (f ⇒ e.as[T].addFollowUp(f))
+          case _ ⇒
+            val next = followUps.dequeue()
+            if (followUps.nonEmpty) next.followUps = followUps
+            setHandler(out, next)
+        }
       }
     }
 
@@ -630,6 +637,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         followUp()
       }
     }
+  }
+
+  private class EmittingCompletion[T](_out: Outlet[T], _previous: OutHandler) extends Emitting(_out, _previous, DoNothing) {
+    override def onPull(): Unit = complete(out)
   }
 
   /**

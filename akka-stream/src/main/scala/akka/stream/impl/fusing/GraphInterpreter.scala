@@ -404,7 +404,7 @@ private[stream] final class GraphInterpreter(
    * true.
    */
   def execute(eventLimit: Int): Unit = {
-    if (Debug) println("---------------- EXECUTE")
+    if (Debug) println(s"---------------- EXECUTE (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
     var eventsRemaining = eventLimit
     var connection = dequeue()
     while (eventsRemaining > 0 && connection != NoEvent) {
@@ -417,7 +417,7 @@ private[stream] final class GraphInterpreter(
       eventsRemaining -= 1
       if (eventsRemaining > 0) connection = dequeue()
     }
-    if (Debug) println(s"---------------- $queueStatus")
+    if (Debug) println(s"---------------- $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
     // TODO: deadlock detection
   }
 
@@ -487,7 +487,7 @@ private[stream] final class GraphInterpreter(
   }
 
   private def enqueue(connection: Int): Unit = {
-    if (Debug && queueTail - queueHead > mask) new Exception(s"internal queue full ($queueStatus) + $connection").printStackTrace()
+    if (Debug) if (queueTail - queueHead > mask) new Exception(s"internal queue full ($queueStatus) + $connection").printStackTrace()
     eventQueue(queueTail & mask) = connection
     queueTail += 1
   }
@@ -538,29 +538,32 @@ private[stream] final class GraphInterpreter(
 
   private[stream] def complete(connection: Int): Unit = {
     val currentState = portStates(connection)
+    if (Debug) println(s"  complete($connection) [$currentState]")
     portStates(connection) = currentState | OutClosed
     if ((currentState & (InClosed | Pushing | Pulling)) == 0) enqueue(connection)
-    completeConnection(assembly.outOwners(connection))
+    if ((currentState & (InClosed | OutClosed)) == 0) completeConnection(assembly.outOwners(connection))
   }
 
   private[stream] def fail(connection: Int, ex: Throwable): Unit = {
     val currentState = portStates(connection)
+    if (Debug) println(s"  fail($connection, $ex) [$currentState]")
     portStates(connection) = currentState | (OutClosed | InFailed)
     if ((currentState & InClosed) == 0) {
       connectionSlots(connection) = Failed(ex, connectionSlots(connection))
       if ((currentState & (Pulling | Pushing)) == 0) enqueue(connection)
     }
-    completeConnection(assembly.outOwners(connection))
+    if ((currentState & (InClosed | OutClosed)) == 0) completeConnection(assembly.outOwners(connection))
   }
 
   private[stream] def cancel(connection: Int): Unit = {
     val currentState = portStates(connection)
+    if (Debug) println(s"  cancel($connection) [$currentState]")
     portStates(connection) = currentState | InClosed
     if ((currentState & OutClosed) == 0) {
       connectionSlots(connection) = Empty
       if ((currentState & (Pulling | Pushing)) == 0) enqueue(connection)
     }
-    completeConnection(assembly.inOwners(connection))
+    if ((currentState & (InClosed | OutClosed)) == 0) completeConnection(assembly.inOwners(connection))
   }
 
 }
