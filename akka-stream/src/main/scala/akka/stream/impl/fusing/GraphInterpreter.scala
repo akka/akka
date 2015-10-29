@@ -302,6 +302,7 @@ private[stream] final class GraphInterpreter(
     })
     s"(${eventQueue.length}, $queueHead, $queueTail)(${contents.mkString(", ")})"
   }
+  private def Name: String = f"${System.identityHashCode(this)}%08X"
 
   /**
    * Assign the boundary logic to a given connection. This will serve as the interface to the external world
@@ -327,7 +328,7 @@ private[stream] final class GraphInterpreter(
    * Dynamic handler changes are communicated from a GraphStageLogic by this method.
    */
   def setHandler(connection: Int, handler: InHandler): Unit = {
-    if (GraphInterpreter.Debug) println(s"SETHANDLER ${inOwnerName(connection)} (in) $handler")
+    if (Debug) println(s"$Name SETHANDLER ${inOwnerName(connection)} (in) $handler")
     inHandlers(connection) = handler
   }
 
@@ -335,7 +336,7 @@ private[stream] final class GraphInterpreter(
    * Dynamic handler changes are communicated from a GraphStageLogic by this method.
    */
   def setHandler(connection: Int, handler: OutHandler): Unit = {
-    if (GraphInterpreter.Debug) println(s"SETHANDLER ${outOwnerName(connection)} (out) $handler")
+    if (Debug) println(s"$Name SETHANDLER ${outOwnerName(connection)} (out) $handler")
     outHandlers(connection) = handler
   }
 
@@ -414,7 +415,7 @@ private[stream] final class GraphInterpreter(
    * true.
    */
   def execute(eventLimit: Int): Unit = {
-    if (Debug) println(s"---------------- EXECUTE (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
+    if (Debug) println(s"$Name ---------------- EXECUTE (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
     var eventsRemaining = eventLimit
     var connection = dequeue()
     while (eventsRemaining > 0 && connection != NoEvent) {
@@ -428,7 +429,7 @@ private[stream] final class GraphInterpreter(
       eventsRemaining -= 1
       if (eventsRemaining > 0) connection = dequeue()
     }
-    if (Debug) println(s"---------------- $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
+    if (Debug) println(s"$Name ---------------- $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
     // TODO: deadlock detection
   }
 
@@ -439,7 +440,7 @@ private[stream] final class GraphInterpreter(
       else logics(id)
 
     def processElement(): Unit = {
-      if (Debug) println(s"PUSH ${outOwnerName(connection)} -> ${inOwnerName(connection)}, ${connectionSlots(connection)} (${inHandlers(connection)}) [${inLogicName(connection)}]")
+      if (Debug) println(s"$Name PUSH ${outOwnerName(connection)} -> ${inOwnerName(connection)}, ${connectionSlots(connection)} (${inHandlers(connection)}) [${inLogicName(connection)}]")
       activeStage = safeLogics(assembly.inOwners(connection))
       portStates(connection) ^= PushEndFlip
       inHandlers(connection).onPush()
@@ -457,7 +458,7 @@ private[stream] final class GraphInterpreter(
 
       // PULL
     } else if ((code & (Pulling | OutClosed | InClosed)) == Pulling) {
-      if (Debug) println(s"PULL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)}) [${outLogicName(connection)}]")
+      if (Debug) println(s"$Name PULL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)}) [${outLogicName(connection)}]")
       portStates(connection) ^= PullEndFlip
       activeStage = safeLogics(assembly.outOwners(connection))
       outHandlers(connection).onPull()
@@ -466,7 +467,7 @@ private[stream] final class GraphInterpreter(
     } else if ((code & (OutClosed | InClosed)) == InClosed) {
       val stageId = assembly.outOwners(connection)
       activeStage = safeLogics(stageId)
-      if (Debug) println(s"CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)}) [${outLogicName(connection)}]")
+      if (Debug) println(s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)}) [${outLogicName(connection)}]")
       portStates(connection) |= OutClosed
       completeConnection(stageId)
       outHandlers(connection).onDownstreamFinish()
@@ -475,7 +476,7 @@ private[stream] final class GraphInterpreter(
 
       if ((code & Pushing) == 0) {
         // Normal completion (no push pending)
-        if (Debug) println(s"COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${inHandlers(connection)}) [${inLogicName(connection)}]")
+        if (Debug) println(s"$Name COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${inHandlers(connection)}) [${inLogicName(connection)}]")
         portStates(connection) |= InClosed
         val stageId = assembly.inOwners(connection)
         activeStage = safeLogics(stageId)
@@ -503,7 +504,7 @@ private[stream] final class GraphInterpreter(
   }
 
   private def enqueue(connection: Int): Unit = {
-    if (Debug) if (queueTail - queueHead > mask) new Exception(s"internal queue full ($queueStatus) + $connection").printStackTrace()
+    if (Debug) if (queueTail - queueHead > mask) new Exception(s"$Name internal queue full ($queueStatus) + $connection").printStackTrace()
     eventQueue(queueTail & mask) = connection
     queueTail += 1
   }
@@ -553,7 +554,7 @@ private[stream] final class GraphInterpreter(
 
   private[stream] def complete(connection: Int): Unit = {
     val currentState = portStates(connection)
-    if (Debug) println(s"  complete($connection) [$currentState]")
+    if (Debug) println(s"$Name   complete($connection) [$currentState]")
     portStates(connection) = currentState | OutClosed
     if ((currentState & (InClosed | Pushing | Pulling)) == 0) enqueue(connection)
     if ((currentState & OutClosed) == 0) completeConnection(assembly.outOwners(connection))
@@ -561,7 +562,7 @@ private[stream] final class GraphInterpreter(
 
   private[stream] def fail(connection: Int, ex: Throwable): Unit = {
     val currentState = portStates(connection)
-    if (Debug) println(s"  fail($connection, $ex) [$currentState]")
+    if (Debug) println(s"$Name   fail($connection, $ex) [$currentState]")
     portStates(connection) = currentState | (OutClosed | InFailed)
     if ((currentState & InClosed) == 0) {
       connectionSlots(connection) = Failed(ex, connectionSlots(connection))
@@ -572,7 +573,7 @@ private[stream] final class GraphInterpreter(
 
   private[stream] def cancel(connection: Int): Unit = {
     val currentState = portStates(connection)
-    if (Debug) println(s"  cancel($connection) [$currentState]")
+    if (Debug) println(s"$Name   cancel($connection) [$currentState]")
     portStates(connection) = currentState | InClosed
     if ((currentState & OutClosed) == 0) {
       connectionSlots(connection) = Empty
