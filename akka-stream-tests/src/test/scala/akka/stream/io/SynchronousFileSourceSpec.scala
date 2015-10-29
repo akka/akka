@@ -180,7 +180,9 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       } finally shutdown(sys)
     }
 
+    //FIXME: overriding dispatcher should be made available with dispatcher alias support in materializer (#17929)
     "allow overriding the dispatcher using Attributes" in {
+      pending
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val mat = ActorMaterializer()(sys)
       implicit val timeout = Timeout(500.millis)

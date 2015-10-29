@@ -4,9 +4,9 @@
 package akka.stream
 
 import akka.event.Logging
-
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.reflect.{ classTag, ClassTag }
 import akka.stream.impl.Stages.SymbolicStage
 import akka.japi.function
 
@@ -44,7 +44,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     }
 
   /**
-   * Get the last attribute of a given `Class` or subclass thereof.
+   * Java API: Get the last (most specific) attribute of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
   def getAttribute[T <: Attribute](c: Class[T], default: T): T =
@@ -54,10 +54,23 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     }
 
   /**
-   * Get the last attribute of a given `Class` or subclass thereof.
+   * Java API: Get the last (most specific) attribute of a given `Class` or subclass thereof.
    */
   def getAttribute[T <: Attribute](c: Class[T]): Option[T] =
     Option(attributeList.foldLeft(null.asInstanceOf[T])((acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) else acc))
+
+  /**
+   * Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
+   * If no such attribute exists the `default` value is returned.
+   */
+  def get[T <: Attribute : ClassTag](default: T) =
+    getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
+
+  /**
+   * Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
+   */
+  def get[T <: Attribute : ClassTag] =
+    getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]])
 
   /**
    * Adds given attributes to the end of these attributes.
@@ -66,6 +79,12 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     if (attributeList.isEmpty) other
     else if (other.attributeList.isEmpty) this
     else Attributes(attributeList ::: other.attributeList)
+
+  /**
+   * Adds given attribute to the end of these attributes.
+   */
+  def and(other: Attribute): Attributes =
+    Attributes(attributeList :+ other)
 
   /**
    * INTERNAL API

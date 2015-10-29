@@ -174,7 +174,7 @@ class StreamLayoutSpec extends AkkaSpec {
   class FlatTestMaterializer(_module: Module) extends MaterializerSession(_module, Attributes()) {
     var publishers = Vector.empty[TestPublisher]
     var subscribers = Vector.empty[TestSubscriber]
-    
+
     override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes): Unit = {
       for (inPort ← atomic.inPorts) {
         val subscriber = TestSubscriber(atomic, inPort)
