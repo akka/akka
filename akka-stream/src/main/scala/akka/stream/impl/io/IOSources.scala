@@ -6,6 +6,7 @@ package akka.stream.impl.io
 import java.io.{ File, InputStream }
 
 import akka.stream._
+import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.util.ByteString
@@ -26,7 +27,7 @@ private[akka] final class SynchronousFileSource(f: File, chunkSize: Int, val att
 
     val bytesReadPromise = Promise[Long]()
     val props = SynchronousFilePublisher.props(f, bytesReadPromise, chunkSize, settings.initialInputBufferSize, settings.maxInputBufferSize)
-    val dispatcher = IOSettings.fileIoDispatcher(context)
+    val dispatcher = context.effectiveAttributes.get[Dispatcher](IOSettings.IODispatcher).dispatcher
 
     val ref = mat.actorOf(context, props.withDispatcher(dispatcher))
 

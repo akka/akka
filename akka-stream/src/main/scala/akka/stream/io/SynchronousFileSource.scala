@@ -10,9 +10,10 @@ import akka.util.ByteString
 import scala.concurrent.Future
 
 object SynchronousFileSource {
+  import akka.stream.impl.io.IOSettings._
   import akka.stream.impl.io.SynchronousFileSource
-  final val DefaultChunkSize = 8192
-  final val DefaultAttributes = Attributes.name("synchronousFileSource")
+
+  final val DefaultAttributes = SyncFileSourceName and IODispatcher
 
   /**
    * Creates a synchronous (Java 6 compatible) Source from a Files contents.
@@ -24,7 +25,7 @@ object SynchronousFileSource {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def apply(f: File, chunkSize: Int = DefaultChunkSize): Source[ByteString, Future[Long]] =
+  def apply(f: File, chunkSize: Int = SyncFileSourceDefaultChunkSize): Source[ByteString, Future[Long]] =
     new Source(new SynchronousFileSource(f, chunkSize, DefaultAttributes, Source.shape("SynchronousFileSource")).nest()) // TO DISCUSS: I had to add wrap() here to make the name available
 
   /**
@@ -37,7 +38,7 @@ object SynchronousFileSource {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def create(f: File): javadsl.Source[ByteString, Future[java.lang.Long]] = create(f, DefaultChunkSize)
+  def create(f: File): javadsl.Source[ByteString, Future[java.lang.Long]] = create(f, SyncFileSourceDefaultChunkSize)
 
   /**
    * Creates a synchronous (Java 6 compatible) Source from a Files contents.

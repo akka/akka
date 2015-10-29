@@ -120,7 +120,7 @@ private[stream] object Stages {
     // FIXME: No supervision hooked in yet.
 
     protected def supervision(attributes: Attributes): Decider =
-      attributes.getAttribute(classOf[SupervisionStrategy], SupervisionStrategy(Supervision.stoppingDecider)).decider
+      attributes.get[SupervisionStrategy](SupervisionStrategy(Supervision.stoppingDecider)).decider
 
   }
 
