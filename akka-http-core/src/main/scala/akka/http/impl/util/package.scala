@@ -11,7 +11,7 @@ import language.higherKinds
 import java.nio.charset.Charset
 import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.config.Config
-import akka.stream.scaladsl.{ FlattenStrategy, Flow, Source }
+import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.stage._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
@@ -54,7 +54,7 @@ package object util {
           .filter(_._1.nonEmpty)
           .map { case (prefix, tail) ⇒ (prefix.head, tail) }
       }
-      .flatten(FlattenStrategy.concat)
+      .flattenConcat()
 
   private[http] def printEvent[T](marker: String): Flow[T, T, Unit] =
     Flow[T].transform(() ⇒ new PushPullStage[T, T] {
