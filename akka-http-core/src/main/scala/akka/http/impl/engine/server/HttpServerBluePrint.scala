@@ -7,31 +7,26 @@ package akka.http.impl.engine.server
 import java.net.InetSocketAddress
 import java.util.Random
 
-import akka.http.ServerSettings
-import akka.http.scaladsl.model.ws.Message
-import akka.stream.io._
-import org.reactivestreams.{ Subscriber, Publisher }
-import scala.util.control.NonFatal
-import akka.util.ByteString
+import akka.actor.{ ActorRef, Deploy, Props }
 import akka.event.LoggingAdapter
-import akka.actor.{ Deploy, ActorRef, Props }
-import akka.stream._
-import akka.stream.scaladsl._
-import akka.stream.stage.PushPullStage
-import akka.http.impl.engine.parsing._
-import akka.http.impl.engine.rendering.{ ResponseRenderingOutput, ResponseRenderingContext, HttpResponseRendererFactory }
+import akka.http.ServerSettings
 import akka.http.impl.engine.TokenSourceActor
+import akka.http.impl.engine.parsing.ParserOutput._
+import akka.http.impl.engine.parsing._
+import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
+import akka.http.impl.engine.ws.Websocket.SwitchToWebsocketToken
+import akka.http.impl.engine.ws._
+import akka.http.impl.util._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.impl.util._
-import akka.http.impl.engine.ws._
-import Websocket.SwitchToWebsocketToken
-import ParserOutput._
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.OutHandler
-import akka.stream.stage.InHandler
-import akka.http.impl.engine.rendering.ResponseRenderingContext
+import akka.stream._
+import akka.stream.io._
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import akka.util.ByteString
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
