@@ -74,18 +74,18 @@ private[akka] class StreamTcpManager extends Actor {
   }
 
   def receive: Receive = {
-    case Connect(processorPromise, localAddressPromise, remoteAddress, localAddress, halfClose, options, connectTimeout, _) ⇒
+    case Connect(processorPromise, localAddressPromise, remoteAddress, localAddress, halfClose, options, connectTimeout, idleTimeout) ⇒
       val connTimeout = connectTimeout match {
         case x: FiniteDuration ⇒ Some(x)
         case _                 ⇒ None
       }
-      val processorActor = context.actorOf(TcpStreamActor.outboundProps(processorPromise, localAddressPromise, halfClose,
+      val processorActor = context.actorOf(TcpStreamActor.outboundProps(processorPromise, localAddressPromise, halfClose, idleTimeout,
         Tcp.Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
         materializerSettings = ActorMaterializerSettings(context.system)), name = encName("client", remoteAddress))
       processorActor ! ExposedProcessor(ActorProcessor[ByteString, ByteString](processorActor))
 
-    case Bind(localAddressPromise, unbindPromise, flowSubscriber, endpoint, backlog, halfClose, options, _) ⇒
-      val props = TcpListenStreamActor.props(localAddressPromise, unbindPromise, flowSubscriber, halfClose,
+    case Bind(localAddressPromise, unbindPromise, flowSubscriber, endpoint, backlog, halfClose, options, idleTimeout) ⇒
+      val props = TcpListenStreamActor.props(localAddressPromise, unbindPromise, flowSubscriber, halfClose, idleTimeout,
         Tcp.Bind(context.system.deadLetters, endpoint, backlog, options, pullMode = true),
         ActorMaterializerSettings(context.system))
         .withDispatcher(context.props.dispatcher)

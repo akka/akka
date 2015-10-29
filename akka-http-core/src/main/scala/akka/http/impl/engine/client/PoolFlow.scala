@@ -74,7 +74,7 @@ private object PoolFlow {
       import settings._
       import FlowGraph.Implicits._
 
-      val conductor = b.add(PoolConductor(maxConnections, maxRetries, pipeliningLimit, log))
+      val conductor = b.add(PoolConductor(maxConnections, pipeliningLimit, log))
       val slots = Vector
         .tabulate(maxConnections)(PoolSlot(_, connectionFlow, remoteAddress, settings))
         .map(b.add(_))

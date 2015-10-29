@@ -3,26 +3,23 @@
  */
 package akka.stream.scaladsl
 
-import java.net.{ InetSocketAddress, URLEncoder }
-import akka.stream.impl.StreamLayout.Module
-import scala.collection.immutable
-import scala.concurrent.{ Promise, ExecutionContext, Future }
-import scala.concurrent.duration.Duration
-import scala.util.{ Failure, Success }
-import scala.util.control.NoStackTrace
+import java.net.InetSocketAddress
+
 import akka.actor._
 import akka.io.Inet.SocketOption
 import akka.io.{ Tcp ⇒ IoTcp }
 import akka.stream._
-import akka.stream.impl._
 import akka.stream.impl.ReactiveStreamsCompliance._
-import akka.stream.scaladsl._
+import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl._
+import akka.stream.impl.io.{ DelayedInitProcessor, StreamTcpManager }
+import akka.stream.io.Timeouts
 import akka.util.ByteString
-import org.reactivestreams.{ Publisher, Processor, Subscriber, Subscription }
-import akka.stream.impl.io.TcpStreamActor
-import akka.stream.impl.io.TcpListenStreamActor
-import akka.stream.impl.io.DelayedInitProcessor
-import akka.stream.impl.io.StreamTcpManager
+import org.reactivestreams.{ Processor, Publisher, Subscriber }
+
+import scala.collection.immutable
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.{ Future, Promise }
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -206,7 +203,10 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
                          connectTimeout: Duration = Duration.Inf,
                          idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
-    val remoteAddr = remoteAddress
+    val timeoutHandling = idleTimeout match {
+      case d: FiniteDuration ⇒ Flow[ByteString].join(Timeouts.idleTimeoutBidi[ByteString, ByteString](d))
+      case _                 ⇒ Flow[ByteString]
+    }
 
     Flow[ByteString].andThenMat(() ⇒ {
       val processorPromise = Promise[Processor[ByteString, ByteString]]()
@@ -216,7 +216,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       import system.dispatcher
       val outgoingConnection = localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))
       (new DelayedInitProcessor[ByteString, ByteString](processorPromise.future), outgoingConnection)
-    })
+    }).via(timeoutHandling)
 
   }
 
