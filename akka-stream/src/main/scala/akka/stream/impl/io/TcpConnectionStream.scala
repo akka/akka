@@ -13,6 +13,7 @@ import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, Stre
 import org.reactivestreams.Processor
 import akka.stream.impl._
 
+import scala.concurrent.duration.Duration
 import scala.util.control.NoStackTrace
 
 /**
@@ -24,9 +25,10 @@ private[akka] object TcpStreamActor {
   def outboundProps(processorPromise: Promise[Processor[ByteString, ByteString]],
                     localAddressPromise: Promise[InetSocketAddress],
                     halfClose: Boolean,
+                    idleTimeout: Duration,
                     connectCmd: Connect,
                     materializerSettings: ActorMaterializerSettings): Props =
-    Props(new OutboundTcpStreamActor(processorPromise, localAddressPromise, halfClose, connectCmd,
+    Props(new OutboundTcpStreamActor(processorPromise, localAddressPromise, halfClose, idleTimeout, connectCmd,
       materializerSettings)).withDispatcher(materializerSettings.dispatcher).withDeploy(Deploy.local)
 
   def inboundProps(connection: ActorRef, halfClose: Boolean, settings: ActorMaterializerSettings): Props =
@@ -302,6 +304,7 @@ private[akka] class InboundTcpStreamActor(
 private[akka] class OutboundTcpStreamActor(processorPromise: Promise[Processor[ByteString, ByteString]],
                                            localAddressPromise: Promise[InetSocketAddress],
                                            _halfClose: Boolean,
+                                           idleTimeout: Duration,
                                            val connectCmd: Connect, _settings: ActorMaterializerSettings)
   extends TcpStreamActor(_settings, _halfClose) {
   import context.system

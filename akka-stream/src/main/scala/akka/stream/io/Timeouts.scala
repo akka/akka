@@ -2,11 +2,10 @@ package akka.stream.io
 
 import java.util.concurrent.{ TimeUnit, TimeoutException }
 
-import akka.actor.{ Cancellable, ActorSystem }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.{ FlowShape, Outlet, Inlet, BidiShape }
 import akka.stream.scaladsl.{ BidiFlow, Flow }
-import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
+import akka.stream.stage._
+import akka.stream.{ BidiShape, Inlet, Outlet }
 
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.scaladsl
@@ -8,6 +8,7 @@ import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStream
 import java.net.Socket
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.{ ClientConnectionSettings, ServerSettings }
+import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
 import scala.concurrent.{ Promise, Future, Await }
@@ -24,7 +25,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 
-import scala.util.Success
+import scala.util.{ Failure, Try, Success }
 
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -136,6 +137,43 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       diff should be > 1000000000L // the diff must be at least the time to complete the first request and to close the first connection
 
       Await.result(b1.unbind(), 1.second)
+    }
+
+    "close connection with idle client after idleTimeout" in {
+      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val s = ServerSettings(system)
+      val theIdleTimeout = 300.millis
+      val settings = s.copy(timeouts = s.timeouts.copy(idleTimeout = theIdleTimeout))
+
+      val receivedRequest = Promise[Long]()
+
+      def handle(req: HttpRequest): Future[HttpResponse] = {
+        receivedRequest.complete(Success(System.nanoTime()))
+        Promise().future // never complete the request with a response; 're waiting for the timeout to happen, nothing else
+      }
+
+      val binding = Http().bindAndHandleAsync(handle, hostname, port, settings = settings)
+      val b1 = Await.result(binding, 3.seconds)
+
+      def runIdleRequest(uri: Uri): Future[HttpResponse] = {
+        val itNeverEnds = Chunked.fromData(ContentTypes.`text/plain`, Source.maybe[ByteString])
+        Http().outgoingConnection(hostname, port)
+          .runWith(Source.single(HttpRequest(PUT, uri, entity = itNeverEnds)), Sink.head)
+          ._2
+      }
+
+      val clientsResponseFuture = runIdleRequest("/")
+
+      // await for the server to get the request
+      val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds)
+
+      // waiting for the timeout to happen on the client
+      Try(Await.result(clientsResponseFuture, 2.second)).recoverWith {
+        case _: StreamTcpException ⇒ Success(System.nanoTime())
+        case other: Throwable      ⇒ Failure(other)
+      }.get
+      val diff = System.nanoTime() - serverReceivedRequestAtNanos
+      diff should be > theIdleTimeout.toNanos
     }
 
     "log materialization errors in `bindAndHandle`" which {

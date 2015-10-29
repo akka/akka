@@ -4,18 +4,19 @@
 package akka.stream.impl.io
 
 import java.net.InetSocketAddress
-import scala.concurrent.{ Future, Promise }
+
 import akka.actor._
-import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
-import akka.stream.{ Materializer, ActorMaterializerSettings }
+import akka.io.{ IO, Tcp }
 import akka.stream.impl._
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.{ Tcp ⇒ StreamTcp }
+import akka.stream.io.Timeouts
+import akka.stream.scaladsl.{ Flow, Tcp ⇒ StreamTcp }
+import akka.stream.{ ActorMaterializerSettings, BindFailedException, ConnectionException }
 import akka.util.ByteString
 import org.reactivestreams.Subscriber
-import akka.stream.ConnectionException
-import akka.stream.BindFailedException
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
@@ -25,8 +26,9 @@ private[akka] object TcpListenStreamActor {
             unbindPromise: Promise[() ⇒ Future[Unit]],
             flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
             halfClose: Boolean,
+            idleTimeout: Duration,
             bindCmd: Tcp.Bind, materializerSettings: ActorMaterializerSettings): Props = {
-    Props(new TcpListenStreamActor(localAddressPromise, unbindPromise, flowSubscriber, halfClose, bindCmd, materializerSettings))
+    Props(new TcpListenStreamActor(localAddressPromise, unbindPromise, flowSubscriber, halfClose, bindCmd, idleTimeout, materializerSettings))
       .withDeploy(Deploy.local)
   }
 }
@@ -38,7 +40,9 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
                                          unbindPromise: Promise[() ⇒ Future[Unit]],
                                          flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
                                          halfClose: Boolean,
-                                         bindCmd: Tcp.Bind, settings: ActorMaterializerSettings) extends Actor
+                                         bindCmd: Tcp.Bind,
+                                         idleTimeout: Duration,
+                                         settings: ActorMaterializerSettings) extends Actor
   with Pump with ActorLogging {
   import ReactiveStreamsCompliance._
   import context.system
@@ -151,10 +155,17 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
     val tcpStreamActor = context.watch(context.actorOf(TcpStreamActor.inboundProps(connection, halfClose, settings)))
     val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
+
+    import scala.concurrent.duration._
+    val handler = (idleTimeout match {
+      case d: FiniteDuration ⇒ Flow[ByteString].join(Timeouts.idleTimeoutBidi[ByteString, ByteString](d))
+      case _                 ⇒ Flow[ByteString]
+    }).andThenMat(() ⇒ (processor, ()))
+
     val conn = StreamTcp.IncomingConnection(
       connected.localAddress,
       connected.remoteAddress,
-      Flow[ByteString].andThenMat(() ⇒ (processor, ())))
+      handler)
     primaryOutputs.enqueueOutputElement(conn)
   }
 
