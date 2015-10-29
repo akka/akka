@@ -276,7 +276,7 @@ private[stream] final class GraphInterpreter(
   // of the class for a full description.
   val portStates = Array.fill[Int](assembly.connectionCount)(InReady)
 
-  private[this] var activeStageId = Boundary
+  private[this] var activeStage: GraphStageLogic = _
 
   // The number of currently running stages. Once this counter reaches zero, the interpreter is considered to be
   // completed
@@ -364,6 +364,7 @@ private[stream] final class GraphInterpreter(
       } catch {
         case NonFatal(e) ⇒ logic.failStage(e)
       }
+      stageHasRun(logic)
       i += 1
     }
   }
@@ -374,30 +375,39 @@ private[stream] final class GraphInterpreter(
   def finish(): Unit = {
     var i = 0
     while (i < logics.length) {
-      if (!isStageCompleted(i)) finalizeStage(logics(i))
+      val logic = logics(i)
+      if (!isStageCompleted(logic)) finalizeStage(logic)
       i += 1
     }
   }
 
   // Debug name for a connections input part
-  private def inOwnerName(connection: Int): String =
-    if (assembly.inOwners(connection) == Boundary) "DownstreamBoundary"
-    else assembly.stages(assembly.inOwners(connection)).toString
+  private def inOwnerName(connection: Int): String = {
+    val stageId = assembly.inOwners(connection)
+    if (stageId == Boundary) "DownstreamBoundary"
+    else assembly.stages(stageId).toString
+  }
 
   // Debug name for a connections ouput part
-  private def outOwnerName(connection: Int): String =
-    if (assembly.outOwners(connection) == Boundary) "UpstreamBoundary"
-    else assembly.stages(assembly.outOwners(connection)).toString
+  private def outOwnerName(connection: Int): String = {
+    val stageId = assembly.outOwners(connection)
+    if (stageId == Boundary) "UpstreamBoundary"
+    else assembly.stages(stageId).toString
+  }
 
   // Debug name for a connections input part
-  private def inLogicName(connection: Int): String =
-    if (assembly.inOwners(connection) == Boundary) "DownstreamBoundary"
-    else logics(assembly.inOwners(connection)).toString
+  private def inLogicName(connection: Int): String = {
+    val stageId = assembly.inOwners(connection)
+    if (stageId == Boundary) "DownstreamBoundary"
+    else logics(stageId).toString
+  }
 
   // Debug name for a connections ouput part
-  private def outLogicName(connection: Int): String =
-    if (assembly.outOwners(connection) == Boundary) "UpstreamBoundary"
-    else logics(assembly.outOwners(connection)).toString
+  private def outLogicName(connection: Int): String = {
+    val stageId = assembly.outOwners(connection)
+    if (stageId == Boundary) "UpstreamBoundary"
+    else logics(stageId).toString
+  }
 
   /**
    * Executes pending events until the given limit is met. If there were remaining events, isSuspended will return
@@ -411,13 +421,10 @@ private[stream] final class GraphInterpreter(
       try processEvent(connection)
       catch {
         case NonFatal(e) ⇒
-          if (activeStageId == Boundary) throw e
-          else logics(activeStageId).failStage(e)
+          if (activeStage == null) throw e
+          else activeStage.failStage(e)
       }
-      if (isStageCompleted(activeStageId)) {
-        runningStages -= 1
-        finalizeStage(logics(activeStageId))
-      }
+      stageHasRun(activeStage)
       eventsRemaining -= 1
       if (eventsRemaining > 0) connection = dequeue()
     }
@@ -427,17 +434,20 @@ private[stream] final class GraphInterpreter(
 
   // Decodes and processes a single event for the given connection
   private def processEvent(connection: Int): Unit = {
+    def safeLogics(id: Int) =
+      if (id == Boundary) null
+      else logics(id)
 
     def processElement(): Unit = {
       if (Debug) println(s"PUSH ${outOwnerName(connection)} -> ${inOwnerName(connection)}, ${connectionSlots(connection)} (${inHandlers(connection)}) [${inLogicName(connection)}]")
-      activeStageId = assembly.inOwners(connection)
+      activeStage = safeLogics(assembly.inOwners(connection))
       portStates(connection) ^= PushEndFlip
       inHandlers(connection).onPush()
     }
 
     // this must be the state after returning without delivering any signals, to avoid double-finalization of some unlucky stage
     // (this can happen if a stage completes voluntarily while connection close events are still queued)
-    activeStageId = Boundary
+    activeStage = null
     val code = portStates(connection)
 
     // Manual fast decoding, fast paths are PUSH and PULL
@@ -449,15 +459,16 @@ private[stream] final class GraphInterpreter(
     } else if ((code & (Pulling | OutClosed | InClosed)) == Pulling) {
       if (Debug) println(s"PULL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)}) [${outLogicName(connection)}]")
       portStates(connection) ^= PullEndFlip
-      activeStageId = assembly.outOwners(connection)
+      activeStage = safeLogics(assembly.outOwners(connection))
       outHandlers(connection).onPull()
 
       // CANCEL
     } else if ((code & (OutClosed | InClosed)) == InClosed) {
-      activeStageId = assembly.outOwners(connection)
+      val stageId = assembly.outOwners(connection)
+      activeStage = safeLogics(stageId)
       if (Debug) println(s"CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)}) [${outLogicName(connection)}]")
       portStates(connection) |= OutClosed
-      completeConnection(activeStageId)
+      completeConnection(stageId)
       outHandlers(connection).onDownstreamFinish()
     } else if ((code & (OutClosed | InClosed)) == OutClosed) {
       // COMPLETIONS
@@ -466,8 +477,9 @@ private[stream] final class GraphInterpreter(
         // Normal completion (no push pending)
         if (Debug) println(s"COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${inHandlers(connection)}) [${inLogicName(connection)}]")
         portStates(connection) |= InClosed
-        activeStageId = assembly.inOwners(connection)
-        completeConnection(activeStageId)
+        val stageId = assembly.inOwners(connection)
+        activeStage = safeLogics(stageId)
+        completeConnection(stageId)
         if ((portStates(connection) & InFailed) == 0) inHandlers(connection).onUpstreamFinish()
         else inHandlers(connection).onUpstreamFailure(connectionSlots(connection).asInstanceOf[Failed].ex)
       } else {
@@ -496,8 +508,14 @@ private[stream] final class GraphInterpreter(
     queueTail += 1
   }
 
+  def stageHasRun(logic: GraphStageLogic): Unit =
+    if (isStageCompleted(logic)) {
+      runningStages -= 1
+      finalizeStage(logic)
+    }
+
   // Returns true if the given stage is alredy completed
-  def isStageCompleted(stageId: Int): Boolean = stageId != Boundary && shutdownCounter(stageId) == 0
+  def isStageCompleted(stage: GraphStageLogic): Boolean = stage != null && shutdownCounter(stage.stageId) == 0
 
   // Register that a connection in which the given stage participated has been completed and therefore the stage
   // itself might stop, too.

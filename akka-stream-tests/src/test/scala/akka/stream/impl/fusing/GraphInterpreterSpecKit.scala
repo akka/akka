@@ -22,11 +22,13 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
     def step(): Unit = interpreter.execute(eventLimit = 1)
 
     object Upstream extends UpstreamBoundaryStageLogic[Int] {
-      override def out = Outlet[Int]("up")
+      override val out = Outlet[Int]("up")
+      out.id = 0
     }
 
     object Downstream extends DownstreamBoundaryStageLogic[Int] {
-      override def in = Inlet[Int]("down")
+      override val in = Inlet[Int]("down")
+      in.id = 0
     }
 
     class AssemblyBuilder(stages: Seq[GraphStage[_ <: Shape]]) {

@@ -184,7 +184,7 @@ private[akka] object StreamLayout {
         downstreams,
         upstreams,
         Transform(f, if (this.isSealed) Atomic(this) else this.materializedValueComputation),
-        attributes)
+        if (this.isSealed) Attributes.none else attributes)
     }
 
     /**
@@ -225,7 +225,7 @@ private[akka] object StreamLayout {
         upstreams ++ that.upstreams,
         // would like to optimize away this allocation for Keep.{left,right} but that breaks side-effecting transformations
         Combine(f.asInstanceOf[(Any, Any) ⇒ Any], matComputation1, matComputation2),
-        attributes)
+        Attributes.none)
     }
 
     /**
