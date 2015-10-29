@@ -61,7 +61,7 @@ private[http] object OutgoingConnectionBlueprint {
     val requestRendering: Flow[HttpRequest, ByteString, Unit] = Flow[HttpRequest]
       .map(RequestRenderingContext(_, hostHeader))
       .via(Flow[RequestRenderingContext].map(requestRendererFactory.renderToSource).named("renderer"))
-      .flatten(FlattenStrategy.concat)
+      .flattenConcat()
 
     val methodBypass = Flow[HttpRequest].map(_.method)
 
