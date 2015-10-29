@@ -351,7 +351,7 @@ public class SourceTest extends StreamTest {
     mainInputs.add(Source.from(input2));
 
     Future<List<Integer>> future = Source.from(mainInputs)
-      .flatten(akka.stream.javadsl.FlattenStrategy.<Integer, BoxedUnit>concat()).grouped(6)
+      .<Integer>flattenConcat().grouped(6)
       .runWith(Sink.<List<Integer>>head(), materializer);
 
     List<Integer> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
