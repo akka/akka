@@ -649,7 +649,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Obtain a callback object that can be used asynchronously to re-enter the
-   * current [[AsyncStage]] with an asynchronous notification. The [[invoke()]] method of the returned
+   * current [[GraphStage]] with an asynchronous notification. The [[invoke()]] method of the returned
    * [[AsyncCallback]] is safe to be called from other threads and it will in the background thread-safely
    * delegate to the passed callback function. I.e. [[invoke()]] will be called by the external world and
    * the passed handler will be invoked eventually in a thread-safe way by the execution environment.
@@ -678,6 +678,19 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Invoked after processing of external events stopped because the stage is about to stop or fail.
    */
   def postStop(): Unit = ()
+}
+
+/**
+ * An asynchronous callback holder that is attached to a [[GraphStageLogic]].
+ * Invoking [[AsyncCallback#invoke]] will eventually lead to the registered handler
+ * being called.
+ */
+trait AsyncCallback[T] {
+  /**
+   * Dispatch an asynchronous notification. This method is thread-safe and
+   * may be invoked from external execution contexts.
+   */
+  def invoke(t: T): Unit
 }
 
 abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shape) {

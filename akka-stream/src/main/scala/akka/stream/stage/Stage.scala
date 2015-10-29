@@ -668,16 +668,3 @@ trait DetachedContext[Out] extends Context[Out] {
   def pushAndPull(elem: Out): FreeDirective
 
 }
-
-/**
- * An asynchronous callback holder that is attached to an [[AsyncContext]].
- * Invoking [[AsyncCallback#invoke]] will eventually lead to [[AsyncStage#onAsyncInput]]
- * being called.
- */
-trait AsyncCallback[T] {
-  /**
-   * Dispatch an asynchronous notification. This method is thread-safe and
-   * may be invoked from external execution contexts.
-   */
-  def invoke(t: T): Unit
-}
