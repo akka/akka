@@ -414,6 +414,10 @@ private[stream] final class GraphInterpreter(
           if (activeStageId == Boundary) throw e
           else logics(activeStageId).failStage(e)
       }
+      if (isStageCompleted(activeStageId)) {
+        runningStages -= 1
+        finalizeStage(logics(activeStageId))
+      }
       eventsRemaining -= 1
       if (eventsRemaining > 0) connection = dequeue()
     }
@@ -431,6 +435,9 @@ private[stream] final class GraphInterpreter(
       inHandlers(connection).onPush()
     }
 
+    // this must be the state after returning without delivering any signals, to avoid double-finalization of some unlucky stage
+    // (this can happen if a stage completes voluntarily while connection close events are still queued)
+    activeStageId = Boundary
     val code = portStates(connection)
 
     // Manual fast decoding, fast paths are PUSH and PULL
@@ -447,25 +454,22 @@ private[stream] final class GraphInterpreter(
 
       // CANCEL
     } else if ((code & (OutClosed | InClosed)) == InClosed) {
-      val stageId = assembly.outOwners(connection)
+      activeStageId = assembly.outOwners(connection)
       if (Debug) println(s"CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${outHandlers(connection)}) [${outLogicName(connection)}]")
       portStates(connection) |= OutClosed
-      activeStageId = assembly.outOwners(connection)
+      completeConnection(activeStageId)
       outHandlers(connection).onDownstreamFinish()
-      completeConnection(stageId)
     } else if ((code & (OutClosed | InClosed)) == OutClosed) {
       // COMPLETIONS
-
-      val stageId = assembly.inOwners(connection)
 
       if ((code & Pushing) == 0) {
         // Normal completion (no push pending)
         if (Debug) println(s"COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${inHandlers(connection)}) [${inLogicName(connection)}]")
         portStates(connection) |= InClosed
         activeStageId = assembly.inOwners(connection)
+        completeConnection(activeStageId)
         if ((portStates(connection) & InFailed) == 0) inHandlers(connection).onUpstreamFinish()
         else inHandlers(connection).onUpstreamFailure(connectionSlots(connection).asInstanceOf[Failed].ex)
-        completeConnection(stageId)
       } else {
         // Push is pending, first process push, then re-enqueue closing event
         processElement()
@@ -500,14 +504,7 @@ private[stream] final class GraphInterpreter(
   private def completeConnection(stageId: Int): Unit = {
     if (stageId != Boundary) {
       val activeConnections = shutdownCounter(stageId)
-      if (activeConnections > 0) {
-        shutdownCounter(stageId) = activeConnections - 1
-        // This was the last active connection keeping this stage alive
-        if (activeConnections == 1) {
-          runningStages -= 1
-          finalizeStage(logics(stageId))
-        }
-      }
+      if (activeConnections > 0) shutdownCounter(stageId) = activeConnections - 1
     }
   }
 
@@ -541,7 +538,7 @@ private[stream] final class GraphInterpreter(
     if (Debug) println(s"  complete($connection) [$currentState]")
     portStates(connection) = currentState | OutClosed
     if ((currentState & (InClosed | Pushing | Pulling)) == 0) enqueue(connection)
-    if ((currentState & (InClosed | OutClosed)) == 0) completeConnection(assembly.outOwners(connection))
+    if ((currentState & OutClosed) == 0) completeConnection(assembly.outOwners(connection))
   }
 
   private[stream] def fail(connection: Int, ex: Throwable): Unit = {
@@ -552,7 +549,7 @@ private[stream] final class GraphInterpreter(
       connectionSlots(connection) = Failed(ex, connectionSlots(connection))
       if ((currentState & (Pulling | Pushing)) == 0) enqueue(connection)
     }
-    if ((currentState & (InClosed | OutClosed)) == 0) completeConnection(assembly.outOwners(connection))
+    if ((currentState & OutClosed) == 0) completeConnection(assembly.outOwners(connection))
   }
 
   private[stream] def cancel(connection: Int): Unit = {
@@ -563,7 +560,7 @@ private[stream] final class GraphInterpreter(
       connectionSlots(connection) = Empty
       if ((currentState & (Pulling | Pushing)) == 0) enqueue(connection)
     }
-    if ((currentState & (InClosed | OutClosed)) == 0) completeConnection(assembly.inOwners(connection))
+    if ((currentState & InClosed) == 0) completeConnection(assembly.inOwners(connection))
   }
 
 }
