@@ -15,7 +15,7 @@ import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 import akka.stream.Materializer
 import akka.stream.io.SynchronousFileSource
-import akka.stream.scaladsl.{ FlattenStrategy, Source }
+import akka.stream.scaladsl.{ Source }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.engine.rendering.BodyPartRenderer
@@ -40,7 +40,7 @@ sealed trait Multipart {
     val chunks =
       parts
         .transform(() ⇒ BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
-        .flatten(FlattenStrategy.concat)
+        .flattenConcat()
     HttpEntity.Chunked(mediaType withBoundary boundary, chunks)
   }
 }
