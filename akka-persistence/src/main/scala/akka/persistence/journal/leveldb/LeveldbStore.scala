@@ -63,7 +63,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
               case _ ⇒ (p, Set.empty[String])
             }
             if (tags.nonEmpty && hasTagSubscribers)
-              allTags ++= tags
+              allTags = allTags union tags
 
             require(!p2.persistenceId.startsWith(tagPersistenceIdPrefix),
               s"persistenceId [${p.persistenceId}] must not start with $tagPersistenceIdPrefix")

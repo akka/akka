@@ -342,7 +342,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
         def routeeAddresses = (routees map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }).toSet
 
         routees foreach { case ActorRefRoutee(ref) ⇒ watch(ref) }
-        val notUsedAddress = ((roles map address).toSet -- routeeAddresses).head
+        val notUsedAddress = ((roles map address).toSet diff routeeAddresses).head
         val downAddress = routeeAddresses.find(_ != address(first)).get
         val downRouteeRef = routees.collectFirst {
           case ActorRefRoutee(ref) if ref.path.address == downAddress ⇒ ref

@@ -303,7 +303,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    * Wait until the specified nodes have seen the same gossip overview.
    */
   def awaitSeenSameState(addresses: Address*): Unit =
-    awaitAssert((addresses.toSet -- clusterView.seenBy) should ===(Set.empty))
+    awaitAssert((addresses.toSet diff clusterView.seenBy) should ===(Set.empty))
 
   /**
    * Leader according to the address ordering of the roles.

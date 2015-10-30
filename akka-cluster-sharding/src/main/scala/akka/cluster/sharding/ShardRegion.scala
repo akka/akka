@@ -318,7 +318,7 @@ class ShardRegion(
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
-    changeMembers(immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
+    changeMembers(immutable.SortedSet.empty(ageOrdering) union state.members.filter(m ⇒
       m.status == MemberStatus.Up && matchingRole(m)))
   }
 

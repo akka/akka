@@ -72,7 +72,7 @@ private[cluster] class ClusterRemoteWatcher(
     case state: CurrentClusterState ⇒
       clusterNodes = state.members.collect { case m if m.address != selfAddress ⇒ m.address }
       clusterNodes foreach takeOverResponsibility
-      unreachable --= clusterNodes
+      unreachable = unreachable diff clusterNodes
     case MemberUp(m)                      ⇒ memberUp(m)
     case MemberWeaklyUp(m)                ⇒ memberUp(m)
     case MemberRemoved(m, previousStatus) ⇒ memberRemoved(m, previousStatus)

@@ -80,7 +80,7 @@ private[cluster] class Reachability private (
 
         val observerRowsMap: Map[UniqueAddress, Map[UniqueAddress, Reachability.Record]] = mapBuilder.toMap
         val allTerminated: Set[UniqueAddress] = terminatedBuilder.result()
-        val allUnreachable: Set[UniqueAddress] = unreachableBuilder.result() -- allTerminated
+        val allUnreachable: Set[UniqueAddress] = unreachableBuilder.result() diff allTerminated
 
         (observerRowsMap, allUnreachable, allTerminated)
       }
@@ -88,7 +88,7 @@ private[cluster] class Reachability private (
 
     val allUnreachableOrTerminated: Set[UniqueAddress] =
       if (allTerminated.isEmpty) allUnreachable
-      else allUnreachable ++ allTerminated
+      else allUnreachable union allTerminated
 
   }
 
