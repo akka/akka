@@ -102,8 +102,8 @@ This is how it can be used as input :class:`Source` to a :class:`Flow`:
 
 .. includecode:: code/docs/stream/ActorPublisherDocSpec.scala#actor-publisher-usage
 
-You can only attach one subscriber to this publisher. Use a ``Broadcast``
-element or attach a ``Sink.fanoutPublisher`` to enable multiple subscribers.
+A publisher that is created with ``Sink.publisher`` supports a specified number of subscribers. Additional
+subscription attempts will be rejected with an :class:`IllegalStateException`.
 
 ActorSubscriber
 ^^^^^^^^^^^^^^^
@@ -412,15 +412,14 @@ by using the Publisher-:class:`Sink`:
 A publisher that is created with ``Sink.publisher`` only supports one subscriber. A second
 subscription attempt will be rejected with an :class:`IllegalStateException`.
 
-A publisher that supports multiple subscribers can be created with ``Sink.fanoutPublisher``
-instead:
+A publisher that supports multiple subscribers is created as follows:
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala
   :include: author-alert-subscriber,author-storage-subscriber
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala#source-fanoutPublisher
 
-The buffer size controls how far apart the slowest subscriber can be from the fastest subscriber
+The input buffer size of the stage controls how far apart the slowest subscriber can be from the fastest subscriber
 before slowing down the stream.
 
 To make the picture complete, it is also possible to expose a :class:`Sink` as a :class:`Subscriber`

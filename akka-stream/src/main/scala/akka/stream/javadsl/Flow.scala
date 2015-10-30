@@ -181,17 +181,17 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.joinMat(bidi)(combinerToScala(combine)))
 
   /**
-   * Connect the `KeyedSource` to this `Flow` and then connect it to the `KeyedSink` and run it.
+   * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
    *
-   * The returned tuple contains the materialized values of the `KeyedSource` and `KeyedSink`,
+   * The returned tuple contains the materialized values of the `Source` and `Sink`,
    * e.g. the `Subscriber` of a `Source.subscriber` and `Publisher` of a `Sink.publisher`.
    *
-   * @tparam T materialized type of given KeyedSource
-   * @tparam U materialized type of given KeyedSink
+   * @tparam T materialized type of given Source
+   * @tparam U materialized type of given Sink
    */
   def runWith[T, U](source: Graph[SourceShape[In], T], sink: Graph[SinkShape[Out], U], materializer: Materializer): akka.japi.Pair[T, U] = {
-    val p = delegate.runWith(source, sink)(materializer)
-    akka.japi.Pair(p._1.asInstanceOf[T], p._2.asInstanceOf[U])
+    val (som, sim) = delegate.runWith(source, sink)(materializer)
+    akka.japi.Pair(som, sim)
   }
 
   /**
