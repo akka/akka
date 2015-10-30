@@ -251,7 +251,7 @@ object ClusterSingletonManager {
       }
 
       def handleInitial(state: CurrentClusterState): Unit = {
-        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
+        membersByAge = immutable.SortedSet.empty(ageOrdering) union state.members.filter(m ⇒
           (m.status == MemberStatus.Up || m.status == MemberStatus.Leaving) && matchingRole(m))
         val safeToBeOldest = !state.members.exists { m ⇒ (m.status == MemberStatus.Down || m.status == MemberStatus.Exiting) }
         val initial = InitialOldestState(membersByAge.headOption.map(_.address), safeToBeOldest)

@@ -3,8 +3,8 @@
  */
 package akka.cluster
 
-// TODO remove metrics 
-// FIXME this test is not migrated to metrics extension 
+// TODO remove metrics
+// FIXME this test is not migrated to metrics extension
 
 import language.postfixOps
 import scala.annotation.tailrec
@@ -981,7 +981,7 @@ abstract class StressSpec
                 timeout = remainingOrDefault)
               awaitAllReachable()
             }
-            val nextAddresses = clusterView.members.map(_.address) -- usedAddresses
+            val nextAddresses = clusterView.members.map(_.address) diff usedAddresses
             runOn(usedRoles: _*) {
               nextAddresses.size should ===(numberOfNodesJoinRemove)
             }

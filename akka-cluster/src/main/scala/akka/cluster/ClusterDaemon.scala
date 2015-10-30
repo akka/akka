@@ -926,11 +926,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       // handle changes
 
       // replace changed members
-      val newMembers = changedMembers ++ localMembers -- removedUnreachable
+      val newMembers = changedMembers union localMembers diff removedUnreachable
 
       // removing REMOVED nodes from the `seen` table
       val removed = removedUnreachable.map(_.uniqueAddress)
-      val newSeen = localSeen -- removed
+      val newSeen = localSeen diff removed
       // removing REMOVED nodes from the `reachability` table
       val newReachability = localOverview.reachability.remove(removed)
       val newOverview = localOverview copy (seen = newSeen, reachability = newReachability)
@@ -988,7 +988,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
     if (changedMembers.nonEmpty) {
       // replace changed members
-      val newMembers = changedMembers ++ localMembers
+      val newMembers = changedMembers union localMembers
       val newGossip = localGossip.copy(members = newMembers)
       updateLatestGossip(newGossip)
 

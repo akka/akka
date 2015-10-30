@@ -272,7 +272,7 @@ object ClusterEvent {
   private[cluster] def diffMemberEvents(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[MemberEvent] =
     if (newGossip eq oldGossip) Nil
     else {
-      val newMembers = newGossip.members -- oldGossip.members
+      val newMembers = newGossip.members diff oldGossip.members
       val membersGroupedByAddress = List(newGossip.members, oldGossip.members).flatten.groupBy(_.uniqueAddress)
       val changedMembers = membersGroupedByAddress collect {
         case (_, newMember :: oldMember :: Nil) if newMember.status != oldMember.status || newMember.upNumber != oldMember.upNumber ⇒
@@ -285,7 +285,7 @@ object ClusterEvent {
         // no events for other transitions
       }
 
-      val removedMembers = oldGossip.members -- newGossip.members
+      val removedMembers = oldGossip.members diff newGossip.members
       val removedEvents = removedMembers.map(m ⇒ MemberRemoved(m.copy(status = Removed), m.status))
 
       (new VectorBuilder[MemberEvent]() ++= memberEvents ++= removedEvents).result()
@@ -305,7 +305,7 @@ object ClusterEvent {
    */
   private[cluster] def diffRolesLeader(oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): Set[RoleLeaderChanged] = {
     for {
-      role ← (oldGossip.allRoles ++ newGossip.allRoles)
+      role ← (oldGossip.allRoles union newGossip.allRoles)
       newLeader = newGossip.roleLeader(role, selfUniqueAddress)
       if newLeader != oldGossip.roleLeader(role, selfUniqueAddress)
     } yield RoleLeaderChanged(role, newLeader.map(_.address))

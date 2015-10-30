@@ -46,7 +46,7 @@ abstract class TransitionSpec
   def nonLeader(roles: RoleName*) = roles.toSeq.sorted.tail
 
   def memberStatus(address: Address): MemberStatus = {
-    val statusOption = (clusterView.members ++ clusterView.unreachableMembers).collectFirst {
+    val statusOption = (clusterView.members union clusterView.unreachableMembers).collectFirst {
       case m if m.address == address ⇒ m.status
     }
     statusOption.getOrElse(Removed)
@@ -91,7 +91,7 @@ abstract class TransitionSpec
           clusterView.latestStats.gossipStats.receivedGossipCount != oldCount // received gossip
         }
         // gossip chat will synchronize the views
-        awaitCond((Set(fromRole, toRole) -- seenLatestGossip).isEmpty)
+        awaitCond((Set(fromRole, toRole) diff seenLatestGossip).isEmpty)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
       runOn(fromRole) {
@@ -99,7 +99,7 @@ abstract class TransitionSpec
         // send gossip
         cluster.clusterCore ! InternalClusterAction.SendGossipTo(toRole)
         // gossip chat will synchronize the views
-        awaitCond((Set(fromRole, toRole) -- seenLatestGossip).isEmpty)
+        awaitCond((Set(fromRole, toRole) diff seenLatestGossip).isEmpty)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
       runOn(roles.filterNot(r ⇒ r == fromRole || r == toRole): _*) {

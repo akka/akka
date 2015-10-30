@@ -168,7 +168,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
   def handleInitial(state: CurrentClusterState): Unit = {
     trackChange {
       () ⇒
-        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
+        membersByAge = immutable.SortedSet.empty(ageOrdering) union state.members.collect {
           case m if m.status == MemberStatus.Up && matchingRole(m) ⇒ m
         }
     }

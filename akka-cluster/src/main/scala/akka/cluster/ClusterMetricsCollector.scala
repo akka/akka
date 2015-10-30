@@ -404,7 +404,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
     if (timestamp >= that.timestamp) this // that is older
     else {
       // equality is based on the name of the Metric and Set doesn't replace existing element
-      copy(metrics = that.metrics ++ metrics, timestamp = that.timestamp)
+      copy(metrics = that.metrics union metrics, timestamp = that.timestamp)
     }
   }
 
@@ -742,7 +742,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
   }
 
   override def metrics: Set[Metric] = {
-    super.metrics.filterNot(_.name == SystemLoadAverage) ++ Set(systemLoadAverage, cpuCombined).flatten
+    super.metrics.filterNot(_.name == SystemLoadAverage) union Set(systemLoadAverage, cpuCombined).flatten
   }
 
   /**
