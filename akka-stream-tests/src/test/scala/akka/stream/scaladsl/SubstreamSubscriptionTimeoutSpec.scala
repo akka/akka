@@ -150,7 +150,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
   private def watchGroupByActor(flowNr: Int): ActorRef = {
     implicit val t = Timeout(300.millis)
     import akka.pattern.ask
-    val path = s"/user/$$a/flow-${flowNr}-1-publisherSource-groupBy"
+    val path = s"/user/$$a/flow-${flowNr}-1-groupBy"
     val gropByPath = system.actorSelection(path)
     val groupByActor = try {
       Await.result((gropByPath ? Identify("")).mapTo[ActorIdentity], 300.millis).ref.get

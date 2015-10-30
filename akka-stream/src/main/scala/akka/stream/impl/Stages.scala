@@ -152,14 +152,6 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Recover(pf)
   }
 
-  final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Future[Out], attributes: Attributes = mapAsync) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.MapAsync(parallelism, f, supervision(attr))
-  }
-
-  final case class MapAsyncUnordered[In, Out](parallelism: Int, f: In ⇒ Future[Out], attributes: Attributes = mapAsyncUnordered) extends SymbolicStage[In, Out] {
-    override def create(attr: Attributes): Stage[In, Out] = fusing.MapAsyncUnordered(parallelism, f, supervision(attr))
-  }
-
   final case class Grouped[T](n: Int, attributes: Attributes = grouped) extends SymbolicStage[T, immutable.Seq[T]] {
     require(n > 0, "n must be greater than 0")
     override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Grouped(n)

@@ -386,8 +386,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     while (i < portToConn.length) {
       if (i < inCount)
         interpreter.cancel(portToConn(i))
-      else
-        interpreter.complete(portToConn(i))
+      else handlers(i) match {
+        case e: Emitting[_] ⇒ e.addFollowUp(new EmittingCompletion(e.out, e.previous))
+        case _              ⇒ interpreter.complete(portToConn(i))
+      }
       i += 1
     }
   }
@@ -592,16 +594,21 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       case _              ⇒ setHandler(out, next)
     }
 
-  private abstract class Emitting[T](protected val out: Outlet[T], val previous: OutHandler, andThen: () ⇒ Unit) extends OutHandler {
+  private abstract class Emitting[T](val out: Outlet[T], val previous: OutHandler, andThen: () ⇒ Unit) extends OutHandler {
     private var followUps: mutable.Queue[Emitting[T]] = null
+    private def as[U] = this.asInstanceOf[Emitting[U]]
 
     protected def followUp(): Unit = {
       setHandler(out, previous)
       andThen()
       if (followUps != null) {
-        val next = followUps.dequeue()
-        if (followUps.nonEmpty) next.followUps = followUps
-        setHandler(out, next)
+        getHandler(out) match {
+          case e: Emitting[_] ⇒ followUps foreach (f ⇒ e.as[T].addFollowUp(f))
+          case _ ⇒
+            val next = followUps.dequeue()
+            if (followUps.nonEmpty) next.followUps = followUps
+            setHandler(out, next)
+        }
       }
     }
 
@@ -632,6 +639,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
   }
 
+  private class EmittingCompletion[T](_out: Outlet[T], _previous: OutHandler) extends Emitting(_out, _previous, DoNothing) {
+    override def onPull(): Unit = complete(out)
+  }
+
   /**
    * Install a handler on the given inlet that emits received elements on the
    * given outlet before pulling for more data. `doTerminate` controls whether
@@ -649,7 +660,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Obtain a callback object that can be used asynchronously to re-enter the
-   * current [[AsyncStage]] with an asynchronous notification. The [[invoke()]] method of the returned
+   * current [[GraphStage]] with an asynchronous notification. The [[invoke()]] method of the returned
    * [[AsyncCallback]] is safe to be called from other threads and it will in the background thread-safely
    * delegate to the passed callback function. I.e. [[invoke()]] will be called by the external world and
    * the passed handler will be invoked eventually in a thread-safe way by the execution environment.
@@ -678,6 +689,19 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Invoked after processing of external events stopped because the stage is about to stop or fail.
    */
   def postStop(): Unit = ()
+}
+
+/**
+ * An asynchronous callback holder that is attached to a [[GraphStageLogic]].
+ * Invoking [[AsyncCallback#invoke]] will eventually lead to the registered handler
+ * being called.
+ */
+trait AsyncCallback[T] {
+  /**
+   * Dispatch an asynchronous notification. This method is thread-safe and
+   * may be invoked from external execution contexts.
+   */
+  def invoke(t: T): Unit
 }
 
 abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shape) {

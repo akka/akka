@@ -7,6 +7,7 @@ package directives
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{ Route, ValidationRejection }
+import akka.testkit.EventFilter
 
 class RouteDirectivesExamplesSpec extends RoutingSpec {
 
@@ -83,7 +84,7 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
     }
   }
 
-  "failwith-examples" in {
+  "failwith-examples" in EventFilter[RuntimeException](start = "Error during processing of request", occurrences = 1).intercept {
     val route =
       path("foo") {
         failWith(new RuntimeException("Oops."))

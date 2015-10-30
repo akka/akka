@@ -40,7 +40,7 @@ private[http] object Websocket {
   /** The lowest layer that implements the binary protocol */
   def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, Unit] =
     BidiFlow.fromFlowsMat(
-      Flow[ByteString].transform(() ⇒ new FrameEventParser),
+      Flow[ByteString].via(FrameEventParser),
       Flow[FrameEvent].transform(() ⇒ new FrameEventRenderer))(Keep.none)
       .named("ws-framing")
 

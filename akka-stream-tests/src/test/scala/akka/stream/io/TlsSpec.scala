@@ -12,7 +12,7 @@ import scala.util.Random
 
 import akka.actor.ActorSystem
 import akka.pattern.{ after ⇒ later }
-import akka.stream.{ ClosedShape, ActorMaterializer }
+import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
@@ -52,35 +52,28 @@ object TlsSpec {
    * independent of the traffic going through. The purpose is to include the last seen
    * element in the exception message to help in figuring out what went wrong.
    */
-  class Timeout(duration: FiniteDuration)(implicit system: ActorSystem) extends AsyncStage[ByteString, ByteString, Unit] {
-    private var last: ByteString = _
+  class Timeout(duration: FiniteDuration)(implicit system: ActorSystem) extends GraphStage[FlowShape[ByteString, ByteString]] {
 
-    override def preStart(ctx: AsyncContext[ByteString, Unit]) = {
-      val cb = ctx.getAsyncCallback
-      system.scheduler.scheduleOnce(duration)(cb.invoke(()))(system.dispatcher)
-    }
+    private val in = Inlet[ByteString]("in")
+    private val out = Outlet[ByteString]("out")
+    override val shape = FlowShape(in, out)
 
-    override def onAsyncInput(u: Unit, ctx: AsyncContext[ByteString, Unit]) =
-      ctx.fail(new TimeoutException(s"timeout expired, last element was $last"))
+    override def createLogic(attr: Attributes) = new TimerGraphStageLogic(shape) {
+      override def preStart(): Unit = scheduleOnce((), duration)
 
-    override def onPush(elem: ByteString, ctx: AsyncContext[ByteString, Unit]) = {
-      last = elem
-      if (ctx.isHoldingDownstream) ctx.pushAndPull(elem)
-      else ctx.holdUpstream()
-    }
-
-    override def onPull(ctx: AsyncContext[ByteString, Unit]) =
-      if (ctx.isFinishing) ctx.pushAndFinish(last)
-      else if (ctx.isHoldingUpstream) ctx.pushAndPull(last)
-      else ctx.holdDownstream()
-
-    override def onUpstreamFinish(ctx: AsyncContext[ByteString, Unit]) =
-      if (ctx.isHoldingUpstream) ctx.absorbTermination()
-      else ctx.finish()
-
-    override def onDownstreamFinish(ctx: AsyncContext[ByteString, Unit]) = {
-      system.log.debug("cancelled")
-      ctx.finish()
+      var last: ByteString = _
+      setHandler(in, new InHandler {
+        override def onPush(): Unit = {
+          last = grab(in)
+          push(out, last)
+        }
+      })
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = pull(in)
+      })
+      override def onTimer(x: Any): Unit = {
+        failStage(new TimeoutException(s"timeout expired, last element was $last"))
+      }
     }
   }
 
@@ -363,7 +356,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
             .via(debug)
             .collect { case SessionBytes(_, b) ⇒ b }
             .scan(ByteString.empty)(_ ++ _)
-            .transform(() ⇒ new Timeout(6.seconds))
+            .via(new Timeout(6.seconds))
             .dropWhile(_.size < scenario.output.size)
             .runWith(Sink.head)
 

@@ -10,6 +10,7 @@ import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _ }
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils.TE
+import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 
 trait GraphInterpreterSpecKit extends AkkaSpec {
 
@@ -19,6 +20,16 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
 
     def stepAll(): Unit = interpreter.execute(eventLimit = Int.MaxValue)
     def step(): Unit = interpreter.execute(eventLimit = 1)
+
+    object Upstream extends UpstreamBoundaryStageLogic[Int] {
+      override val out = Outlet[Int]("up")
+      out.id = 0
+    }
+
+    object Downstream extends DownstreamBoundaryStageLogic[Int] {
+      override val in = Inlet[Int]("down")
+      in.id = 0
+    }
 
     class AssemblyBuilder(stages: Seq[GraphStage[_ <: Shape]]) {
       var upstreams = Vector.empty[(UpstreamBoundaryStageLogic[_], Inlet[_])]
@@ -40,19 +51,23 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
         this
       }
 
-      def init(): Unit = {
+      def buildAssembly(): GraphAssembly = {
         val ins = upstreams.map(_._2) ++ connections.map(_._2)
         val outs = connections.map(_._1) ++ downstreams.map(_._1)
         val inOwners = ins.map { in ⇒ stages.indexWhere(_.shape.inlets.contains(in)) }
         val outOwners = outs.map { out ⇒ stages.indexWhere(_.shape.outlets.contains(out)) }
 
-        val assembly = GraphAssembly(
+        GraphAssembly(
           stages.toArray,
           Array.fill(stages.size)(Attributes.none),
           (ins ++ Vector.fill(downstreams.size)(null)).toArray,
           (inOwners ++ Vector.fill(downstreams.size)(-1)).toArray,
           (Vector.fill(upstreams.size)(null) ++ outs).toArray,
           (Vector.fill(upstreams.size)(-1) ++ outOwners).toArray)
+      }
+
+      def init(): Unit = {
+        val assembly = buildAssembly()
 
         val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
         _interpreter = new GraphInterpreter(assembly, NoMaterializer, Logging(system, classOf[TestSetup]), inHandlers, outHandlers, logics, (_, _, _) ⇒ ())
@@ -74,7 +89,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       _interpreter = new GraphInterpreter(assembly, NoMaterializer, Logging(system, classOf[TestSetup]), inHandlers, outHandlers, logics, (_, _, _) ⇒ ())
     }
 
-    def builder(stages: GraphStage[_ <: Shape]*): AssemblyBuilder = new AssemblyBuilder(stages.toSeq)
+    def builder(stages: GraphStage[_ <: Shape]*): AssemblyBuilder = new AssemblyBuilder(stages)
   }
 
   abstract class TestSetup extends Builder {
