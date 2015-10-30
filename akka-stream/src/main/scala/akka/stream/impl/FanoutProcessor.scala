@@ -1,13 +1,17 @@
 package akka.stream.impl
 
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Deploy, Props, Actor, ActorRef }
 import akka.stream.ActorMaterializerSettings
 import org.reactivestreams.Subscriber
 
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBufferSize: Int, self: ActorRef, val pump: Pump)
+private[akka] abstract class FanoutOutputs(val maxNumberOfSubscribers: Int,
+                                           val maxBufferSize: Int,
+                                           val initialBufferSize: Int,
+                                           self: ActorRef,
+                                           val pump: Pump)
   extends DefaultOutputTransferStates
   with SubscriberManagement[Any] {
 
@@ -88,16 +92,18 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
 
 }
 
+private[akka] object FanoutProcessorImpl {
+  def props(actorMaterializerSettings: ActorMaterializerSettings, maxNumberOfSubscribers: Int): Props =
+    Props(new FanoutProcessorImpl(actorMaterializerSettings, maxNumberOfSubscribers)).withDeploy(Deploy.local)
+}
 /**
  * INTERNAL API
  */
-private[akka] class FanoutProcessorImpl(
-  _settings: ActorMaterializerSettings,
-  initialFanoutBufferSize: Int,
-  maximumFanoutBufferSize: Int) extends ActorProcessorImpl(_settings) {
+private[akka] class FanoutProcessorImpl(_settings: ActorMaterializerSettings, maxNumberOfSubscribers: Int)
+  extends ActorProcessorImpl(_settings) {
 
   override val primaryOutputs: FanoutOutputs =
-    new FanoutOutputs(maximumFanoutBufferSize, initialFanoutBufferSize, self, this) {
+    new FanoutOutputs(maxNumberOfSubscribers, settings.maxInputBufferSize, settings.initialInputBufferSize, self, this) {
       override def afterShutdown(): Unit = afterFlush()
     }
 

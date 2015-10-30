@@ -62,6 +62,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
 
   def initialBufferSize: Int
   def maxBufferSize: Int
+  def maxNumberOfSubscribers: Int
 
   /**
    * called when we are ready to consume more elements from our upstream
@@ -231,12 +232,18 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
 
   private def addSubscription(subscriber: Subscriber[_ >: T]): Unit = {
     import ReactiveStreamsCompliance._
-    val newSubscription = createSubscription(subscriber)
-    subscriptions ::= newSubscription
-    buffer.initCursor(newSubscription)
-    try tryOnSubscribe(subscriber, newSubscription)
-    catch {
-      case _: SpecViolation ⇒ unregisterSubscriptionInternal(newSubscription)
+    if (maxNumberOfSubscribers < 1 || subscriptions.size >= maxNumberOfSubscribers) {
+      tryOnSubscribe(subscriber, CancelledSubscription)
+      tryOnError(subscriber,
+        new IllegalStateException(s"Max number of Subscribers exceeded. [${maxNumberOfSubscribers}]"))
+    } else {
+      val newSubscription = createSubscription(subscriber)
+      subscriptions ::= newSubscription
+      buffer.initCursor(newSubscription)
+      try tryOnSubscribe(subscriber, newSubscription)
+      catch {
+        case _: SpecViolation ⇒ unregisterSubscriptionInternal(newSubscription)
+      }
     }
   }
 
