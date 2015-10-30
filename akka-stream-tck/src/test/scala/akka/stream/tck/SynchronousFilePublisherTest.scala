@@ -39,7 +39,7 @@ class SynchronousFilePublisherTest extends AkkaPublisherVerification[ByteString]
   def createPublisher(elements: Long): Publisher[ByteString] =
     SynchronousFileSource(file, chunkSize = 512)
       .take(elements)
-      .runWith(Sink.publisher)
+      .runWith(Sink.publisher(1))
 
   @AfterClass
   def after = file.delete()

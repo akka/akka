@@ -11,7 +11,7 @@ import org.reactivestreams._
 class IterablePublisherTest extends AkkaPublisherVerification[Int] {
 
   override def createPublisher(elements: Long): Publisher[Int] = {
-    Source(iterable(elements)).runWith(Sink.publisher)
+    Source(iterable(elements)).runWith(Sink.publisher(1))
   }
 
 }

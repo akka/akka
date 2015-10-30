@@ -370,10 +370,10 @@ private[stream] final class VirtualProcessor[T] extends Processor[T, T] {
             tryOnSubscribe(s, sub)
             sub.closeLatch() // allow onNext only now
             terminationStatus.getAndSet(Allowed) match {
-              case null       ⇒ // nothing happened yet
-              case Completed  ⇒ tryOnComplete(s)
-              case Failed(ex) ⇒ tryOnError(s, ex)
-              case Allowed    ⇒ // all good
+              case null                        ⇒ // nothing happened yet
+              case VirtualProcessor.Completed  ⇒ tryOnComplete(s)
+              case VirtualProcessor.Failed(ex) ⇒ tryOnError(s, ex)
+              case VirtualProcessor.Allowed    ⇒ // all good
             }
           } catch {
             case NonFatal(ex) ⇒ sub.cancel()

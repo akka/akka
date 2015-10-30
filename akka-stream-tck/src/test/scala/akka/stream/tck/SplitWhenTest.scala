@@ -18,7 +18,7 @@ class SplitWhenTest extends AkkaPublisherVerification[Int] {
     else {
       val futureSource = Source(iterable(elements)).splitWhen(elem ⇒ false).runWith(Sink.head)
       val source = Await.result(futureSource, 3.seconds)
-      source.runWith(Sink.publisher)
+      source.runWith(Sink.publisher(1))
     }
 
 }

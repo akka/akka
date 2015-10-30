@@ -45,10 +45,14 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
-   * that can handle one [[org.reactivestreams.Subscriber]].
+   * that can handle `maxNumberOfSubscribers` [[org.reactivestreams.Subscriber]]s.
+   *
+   * If `maxNumberOfSubscribers` is greater than 1, the size of the `inputBuffer` configured for this stage
+   * becomes the maximum number of elements that the fastest [[org.reactivestreams.Subscriber]] can be ahead
+   * of the slowest one before slowing the processing down due to back pressure.
    */
-  def publisher[In](): Sink[In, Publisher[In]] =
-    new Sink(scaladsl.Sink.publisher)
+  def publisher[In](maxNumberOfSubscribers: Int): Sink[In, Publisher[In]] =
+    new Sink(scaladsl.Sink.publisher(maxNumberOfSubscribers))
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
@@ -72,13 +76,6 @@ object Sink {
    */
   def foreachParallel[T](parallel: Int)(f: function.Procedure[T])(ec: ExecutionContext): Sink[T, Future[Unit]] =
     new Sink(scaladsl.Sink.foreachParallel(parallel)(f.apply)(ec))
-
-  /**
-   * A `Sink` that materializes into a [[org.reactivestreams.Publisher]]
-   * that can handle more than one [[org.reactivestreams.Subscriber]].
-   */
-  def fanoutPublisher[T](initialBufferSize: Int, maximumBufferSize: Int): Sink[T, Publisher[T]] =
-    new Sink(scaladsl.Sink.fanoutPublisher(initialBufferSize, maximumBufferSize))
 
   /**
    * A `Sink` that when the flow is completed, either through a failure or normal

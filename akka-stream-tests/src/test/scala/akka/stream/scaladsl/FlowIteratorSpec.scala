@@ -31,7 +31,7 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
       override def iterator: Iterator[Int] =
         (1 to 3).iterator.map(x ⇒ if (x == 2) throw new IllegalStateException("not two") else x)
     }
-    val p = Source(iterable).runWith(Sink.publisher)
+    val p = Source(iterable).runWith(Sink.publisher(1))
     val c = TestSubscriber.manualProbe[Int]()
     p.subscribe(c)
     val sub = c.expectSubscription()
@@ -48,7 +48,7 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
     val iterable = new immutable.Iterable[Int] {
       override def iterator: Iterator[Int] = throw new IllegalStateException("no good iterator")
     }
-    val p = Source(iterable).runWith(Sink.publisher)
+    val p = Source(iterable).runWith(Sink.publisher(1))
     val c = TestSubscriber.manualProbe[Int]()
     p.subscribe(c)
     c.expectSubscriptionAndError().getMessage should be("no good iterator")
@@ -62,7 +62,7 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
         override def next(): Int = -1
       }
     }
-    val p = Source(iterable).runWith(Sink.publisher)
+    val p = Source(iterable).runWith(Sink.publisher(1))
     val c = TestSubscriber.manualProbe[Int]()
     p.subscribe(c)
     c.expectSubscriptionAndError().getMessage should be("no next")
@@ -84,7 +84,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
   testName must {
     "produce elements" in assertAllStagesStopped {
-      val p = createSource(3).runWith(Sink.publisher)
+      val p = createSource(3).runWith(Sink.publisher(1))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -98,7 +98,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "complete empty" in assertAllStagesStopped {
-      val p = createSource(0).runWith(Sink.publisher)
+      val p = createSource(0).runWith(Sink.publisher(1))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       c.expectSubscriptionAndComplete()
@@ -106,7 +106,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements with multiple subscribers" in assertAllStagesStopped {
-      val p = createSource(3).runWith(Sink.fanoutPublisher(2, 4))
+      val p = createSource(3).runWith(Sink.publisher(Int.MaxValue))
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
       p.subscribe(c1)
@@ -130,7 +130,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements to later subscriber" in assertAllStagesStopped {
-      val p = createSource(3).runWith(Sink.fanoutPublisher(2, 4))
+      val p = createSource(3).runWith(Sink.publisher(Int.MaxValue))
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
       p.subscribe(c1)
@@ -153,7 +153,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements with one transformation step" in assertAllStagesStopped {
-      val p = createSource(3).map(_ * 2).runWith(Sink.publisher)
+      val p = createSource(3).map(_ * 2).runWith(Sink.publisher(1))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -165,7 +165,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements with two transformation steps" in assertAllStagesStopped {
-      val p = createSource(4).filter(_ % 2 == 0).map(_ * 2).runWith(Sink.publisher)
+      val p = createSource(4).filter(_ % 2 == 0).map(_ * 2).runWith(Sink.publisher(1))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -176,7 +176,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "not produce after cancel" in assertAllStagesStopped {
-      val p = createSource(3).runWith(Sink.publisher)
+      val p = createSource(3).runWith(Sink.publisher(1))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
