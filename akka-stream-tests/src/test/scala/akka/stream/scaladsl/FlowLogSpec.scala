@@ -4,12 +4,16 @@
 package akka.stream.scaladsl
 
 import akka.event.{ DummyClassForStringSources, Logging }
+import akka.stream.ActorAttributes._
 import akka.stream.Attributes.LogLevels
+import akka.stream.Supervision._
 import akka.stream.testkit.{ AkkaSpec, ScriptedTest }
 import akka.stream.javadsl
 import akka.stream.{ ActorMaterializer, Materializer, Attributes }
 import akka.testkit.TestProbe
+import scala.concurrent.duration._
 
+import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 
 class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
@@ -140,6 +144,13 @@ class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
           .withAttributes(logAttrs)
           .runWith(Sink.ignore)
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[flow-6e] Upstream failed, cause: FlowLogSpec$TestException: Boom!"))
+      }
+
+      "follow supervision strategy when exception thrown" in {
+        val ex = new RuntimeException() with NoStackTrace
+        val future = Source(1 to 5).log("hi", n ⇒ throw ex)
+          .withAttributes(supervisionStrategy(resumingDecider)).runWith(Sink.fold(0)(_ + _))
+        Await.result(future, 500.millis) shouldEqual 0
       }
     }
 

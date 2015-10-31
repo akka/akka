@@ -686,7 +686,9 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
 /**
  * INTERNAL API
  */
-private[akka] final case class Log[T](name: String, extract: T ⇒ Any, logAdapter: Option[LoggingAdapter]) extends PushStage[T, T] {
+private[akka] final case class Log[T](name: String, extract: T ⇒ Any,
+                                      logAdapter: Option[LoggingAdapter],
+                                      decider: Supervision.Decider) extends PushStage[T, T] {
 
   import Log._
 
@@ -744,6 +746,7 @@ private[akka] final case class Log[T](name: String, extract: T ⇒ Any, logAdapt
 
   private def isEnabled(l: LogLevel): Boolean = l.asInt != OffInt
 
+  override def decide(t: Throwable): Supervision.Directive = decider(t)
 }
 
 /**
