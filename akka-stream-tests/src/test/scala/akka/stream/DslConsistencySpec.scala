@@ -26,20 +26,16 @@ class DslConsistencySpec extends WordSpec with Matchers {
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
       Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
       Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
-      Set("asScala", "asJava")
+      Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat")
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
     sFlowClass -> Set("of"),
     sSourceClass -> Set("adapt", "from"),
     sSinkClass -> Set("adapt"),
 
-    // TODO timerTransform is to be removed or replaced.  See https://github.com/akka/akka/issues/16393
-    jFlowClass -> Set("timerTransform"),
-    jSourceClass -> Set("timerTransform"),
     jSinkClass -> Set(),
 
-    sRunnableGraphClass -> Set("builder"),
-    jRunnableGraphClass → Set("graph", "cyclesAllowed"))
+    sRunnableGraphClass -> Set("builder"))
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
 

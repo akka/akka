@@ -57,8 +57,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       requestIn.sendNext(HttpRequest(uri = "/") -> 42)
 
-      acceptIncomingConnection()
       responseOutSub.request(1)
+      acceptIncomingConnection()
       val (Success(response), 42) = responseOut.expectNext()
       response.headers should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
     }
@@ -116,8 +116,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
 
       requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
-      acceptIncomingConnection()
       responseOutSub.request(1)
+      acceptIncomingConnection()
       val (Success(response1), 42) = responseOut.expectNext()
       connNr(response1) shouldEqual 1
 
@@ -222,8 +222,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       requestIn.sendNext(HttpRequest(uri = "/") -> 42)
 
-      acceptIncomingConnection()
       responseOutSub.request(1)
+      acceptIncomingConnection()
       val (Success(_), 42) = responseOut.expectNext()
     }
   }
@@ -346,7 +346,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     def flowTestBench[T, Mat](poolFlow: Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat]) = {
       val requestIn = TestPublisher.probe[(HttpRequest, T)]()
       val responseOut = TestSubscriber.manualProbe[(Try[HttpResponse], T)]
-      val hcp = Source(requestIn).viaMat(poolFlow)(Keep.right).toMat(Sink(responseOut))(Keep.left).run()
+      val hcp = Source(requestIn).viaMat(poolFlow)(Keep.right).to(Sink(responseOut)).run()
       val responseOutSub = responseOut.expectSubscription()
       (requestIn, responseOut, responseOutSub, hcp)
     }

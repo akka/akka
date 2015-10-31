@@ -24,8 +24,8 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
-
 import scala.util.{ Failure, Try, Success }
+import java.net.BindException
 
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -56,7 +56,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       sub.cancel()
     }
 
-    "report failure if bind fails" in {
+    "report failure if bind fails" in EventFilter[BindException](occurrences = 2).intercept {
       val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
       val binding = Http().bind(hostname, port)
       val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
@@ -173,7 +173,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         case other: Throwable      ⇒ Failure(other)
       }.get
       val diff = System.nanoTime() - serverReceivedRequestAtNanos
-      diff should be > theIdleTimeout.toNanos
+      val fudge = 100 * 1000 * 1000 // 100ms to account for signal propagation between idleStage and handler
+      diff should be > (theIdleTimeout.toNanos - fudge)
     }
 
     "log materialization errors in `bindAndHandle`" which {

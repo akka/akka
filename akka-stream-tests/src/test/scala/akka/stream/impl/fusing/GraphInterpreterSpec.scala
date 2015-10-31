@@ -3,6 +3,7 @@
  */
 package akka.stream.impl.fusing
 
+import akka.stream.Attributes
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.{ Merge, Broadcast, Balance, Zip }
 import GraphInterpreter._
@@ -45,6 +46,7 @@ class GraphInterpreterSpec extends GraphInterpreterSpecKit {
       // Constructing an assembly by hand and resolving ambiguities
       val assembly = new GraphAssembly(
         stages = Array(identity, identity),
+        originalAttributes = Array(Attributes.none, Attributes.none),
         ins = Array(identity.in, identity.in, null),
         inOwners = Array(0, 1, -1),
         outs = Array(null, identity.out, identity.out),

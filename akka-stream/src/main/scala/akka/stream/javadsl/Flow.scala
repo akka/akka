@@ -22,8 +22,14 @@ object Flow {
   /** Create a `Flow` which can process elements of type `T`. */
   def create[T](): javadsl.Flow[T, T, Unit] = fromGraph(scaladsl.Flow[T])
 
-  def create[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, Unit] =
-    new Flow(scaladsl.Flow(() ⇒ processorFactory.create()))
+  def fromProcessor[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, Unit] =
+    new Flow(scaladsl.Flow.fromProcessor(() ⇒ processorFactory.create()))
+
+  def fromProcessorMat[I, O, Mat](processorFactory: function.Creator[Pair[Processor[I, O], Mat]]): javadsl.Flow[I, O, Mat] =
+    new Flow(scaladsl.Flow.fromProcessorMat { () ⇒
+      val javaPair = processorFactory.create()
+      (javaPair.first, javaPair.second)
+    })
 
   /** Create a `Flow` which can process elements of type `T`. */
   def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] = create[T]()

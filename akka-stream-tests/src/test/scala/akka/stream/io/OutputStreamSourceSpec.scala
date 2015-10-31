@@ -49,10 +49,10 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     class OutputStreamSourceTestStage(val timeout: FiniteDuration)
       extends OutputStreamSourceStage(timeout) {
 
-      override def createLogicAndMaterializedValue = {
-        val (logic, inputStream) = super.createLogicAndMaterializedValue
-        val outHandler = logic.outHandlers(out.id)
-        logic.outHandlers(out.id) = new OutHandler {
+      override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+        val (logic, inputStream) = super.createLogicAndMaterializedValue(inheritedAttributes)
+        val outHandler = logic.handlers(out.id).asInstanceOf[OutHandler]
+        logic.handlers(out.id) = new OutHandler {
           override def onDownstreamFinish(): Unit = {
             probe.ref ! OutputStreamSourceTestMessages.Finish
             outHandler.onDownstreamFinish()

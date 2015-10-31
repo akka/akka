@@ -16,6 +16,7 @@ import akka.stream.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
 import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import scala.concurrent.Await;
@@ -179,7 +180,7 @@ public class FlowTest extends StreamTest {
   }
 
 
-  @Test
+  @Ignore("StatefulStage to be converted to GraphStage when Java Api is available (#18817)") @Test
   public void mustBeAbleToUseTransform() {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
@@ -204,15 +205,15 @@ public class FlowTest extends StreamTest {
                   return emit(Arrays.asList(element, element).iterator(), ctx);
                 }
               }
-              
+
             };
           }
-          
+
           @Override
           public TerminationDirective onUpstreamFinish(Context<Integer> ctx) {
             return terminationEmit(Collections.singletonList(sum).iterator(), ctx);
           }
-          
+
         };
       }
     });
@@ -355,12 +356,12 @@ public class FlowTest extends StreamTest {
     return new akka.japi.function.Creator<Stage<T, T>>() {
       @Override
       public PushPullStage<T, T> create() throws Exception {
-        return new PushPullStage<T, T>() {  
+        return new PushPullStage<T, T>() {
           @Override
           public SyncDirective onPush(T element, Context<T> ctx) {
             return ctx.push(element);
           }
-          
+
           @Override
           public SyncDirective onPull(Context<T> ctx) {
             return ctx.pull();
@@ -374,17 +375,17 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseMerge() throws Exception {
     final Flow<String, String, BoxedUnit> f1 =
         Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f1");
-    final Flow<String, String, BoxedUnit> f2 = 
+    final Flow<String, String, BoxedUnit> f2 =
         Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f2");
     @SuppressWarnings("unused")
-    final Flow<String, String, BoxedUnit> f3 = 
+    final Flow<String, String, BoxedUnit> f3 =
         Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f3");
 
     final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, BoxedUnit> in2 = Source.from(Arrays.asList("d", "e", "f"));
 
     final Sink<String, Publisher<String>> publisher = Sink.publisher();
-    
+
     final Source<String, BoxedUnit> source = Source.fromGraph(
             FlowGraph.create(new Function<FlowGraph.Builder<BoxedUnit>, SourceShape<String>>() {
               @Override

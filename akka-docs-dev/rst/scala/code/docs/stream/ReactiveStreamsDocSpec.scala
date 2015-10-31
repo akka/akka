@@ -139,7 +139,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     // An example Processor factory
     def createProcessor: Processor[Int, Int] = Flow[Int].toProcessor.run()
 
-    val flow: Flow[Int, Int, Unit] = Flow(() => createProcessor)
+    val flow: Flow[Int, Int, Unit] = Flow.fromProcessor(() => createProcessor)
     //#use-processor
 
   }

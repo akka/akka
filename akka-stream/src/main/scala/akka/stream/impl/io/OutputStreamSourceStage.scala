@@ -7,6 +7,7 @@ import java.io.{ IOException, OutputStream }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue }
 
+import akka.stream.Attributes
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.io.OutputStreamSourceStage._
 import akka.stream.stage._
@@ -35,7 +36,7 @@ private[akka] class OutputStreamSourceStage(timeout: FiniteDuration) extends Sou
   val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
   require(maxBuffer > 0, "Buffer size must be greater than 0")
 
-  override def createLogicAndMaterializedValue: (GraphStageLogic, OutputStream) = {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, OutputStream) = {
     val dataQueue = new LinkedBlockingQueue[ByteString](maxBuffer)
 
     var flush: Option[Promise[Unit]] = None

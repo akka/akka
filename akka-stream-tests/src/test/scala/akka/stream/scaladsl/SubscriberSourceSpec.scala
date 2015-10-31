@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 
 import scala.concurrent.Await
 
-class SubscriberSourceSpec extends AkkaSpec("akka.loglevel=DEBUG\nakka.actor.debug.lifecycle=on") {
+class SubscriberSourceSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer()
 

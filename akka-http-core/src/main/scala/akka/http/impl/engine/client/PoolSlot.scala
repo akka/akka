@@ -57,10 +57,10 @@ private object PoolSlot {
       import FlowGraph.Implicits._
 
       val slotProcessor = b.add {
-        Flow[RequestContext].andThenMat { () ⇒
+        Flow.fromProcessor { () ⇒
           val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
             slotProcessorActorName.next())
-          (ActorProcessor[RequestContext, List[ProcessorOut]](actor), ())
+          ActorProcessor[RequestContext, List[ProcessorOut]](actor)
         }.mapConcat(identity)
       }
       val split = b.add(Broadcast[ProcessorOut](2))

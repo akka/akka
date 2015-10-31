@@ -208,7 +208,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       case _                 ⇒ Flow[ByteString]
     }
 
-    Flow[ByteString].andThenMat(() ⇒ {
+    Flow[ByteString].deprecatedAndThenMat(() ⇒ {
       val processorPromise = Promise[Processor[ByteString, ByteString]]()
       val localAddressPromise = Promise[InetSocketAddress]()
       manager ! StreamTcpManager.Connect(processorPromise, localAddressPromise, remoteAddress, localAddress, halfClose, options,

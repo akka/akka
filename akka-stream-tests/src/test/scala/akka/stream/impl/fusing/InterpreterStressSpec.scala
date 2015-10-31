@@ -3,18 +3,27 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.Supervision
+import akka.stream.{ Attributes, Shape, Supervision }
+import akka.stream.stage.AbstractStage.PushPullGraphStage
+import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.stream.testkit.AkkaSpec
 
-class InterpreterStressSpec extends InterpreterSpecKit {
+class InterpreterStressSpec extends AkkaSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
 
   val chainLength = 1000 * 1000
   val halfLength = chainLength / 2
   val repetition = 100
 
+  val f = (x: Int) ⇒ x + 1
+
+  val map: GraphStageWithMaterializedValue[Shape, Any] =
+    new PushPullGraphStage[Int, Int, Unit]((_) ⇒ Map(f, stoppingDecider), Attributes.none)
+      .asInstanceOf[GraphStageWithMaterializedValue[Shape, Any]]
+
   "Interpreter" must {
 
-    "work with a massive chain of maps" in new TestSetup(Seq.fill(chainLength)(Map((x: Int) ⇒ x + 1, stoppingDecider))) {
+    "work with a massive chain of maps" in new OneBoundedSetup[Int](Array.fill(chainLength)(map).asInstanceOf[Array[GraphStageWithMaterializedValue[Shape, Any]]]) {
       lastEvents() should be(Set.empty)
       val tstamp = System.nanoTime()
 
@@ -32,11 +41,11 @@ class InterpreterStressSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnComplete))
 
       val time = (System.nanoTime() - tstamp) / (1000.0 * 1000.0 * 1000.0)
-      // FIXME: Not a real benchmark, should be replaced by a proper JMH bench
+      // Not a real benchmark, just for sanity check
       info(s"Chain finished in $time seconds ${(chainLength * repetition) / (time * 1000 * 1000)} million maps/s")
     }
 
-    "work with a massive chain of maps with early complete" in new TestSetup(Seq.fill(halfLength)(Map((x: Int) ⇒ x + 1, stoppingDecider)) ++
+    "work with a massive chain of maps with early complete" in new OneBoundedSetup[Int](Iterable.fill(halfLength)(Map((x: Int) ⇒ x + 1, stoppingDecider)) ++
       Seq(Take(repetition / 2)) ++
       Seq.fill(halfLength)(Map((x: Int) ⇒ x + 1, stoppingDecider))) {
 
@@ -60,11 +69,11 @@ class InterpreterStressSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(Cancel, OnComplete, OnNext(0 + chainLength)))
 
       val time = (System.nanoTime() - tstamp) / (1000.0 * 1000.0 * 1000.0)
-      // FIXME: Not a real benchmark, should be replaced by a proper JMH bench
+      // Not a real benchmark, just for sanity check
       info(s"Chain finished in $time seconds ${(chainLength * repetition) / (time * 1000 * 1000)} million maps/s")
     }
 
-    "work with a massive chain of takes" in new TestSetup(Seq.fill(chainLength)(Take(1))) {
+    "work with a massive chain of takes" in new OneBoundedSetup[Int](Iterable.fill(chainLength)(Take(1))) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -75,7 +84,7 @@ class InterpreterStressSpec extends InterpreterSpecKit {
 
     }
 
-    "work with a massive chain of drops" in new TestSetup(Seq.fill(chainLength / 1000)(Drop(1))) {
+    "work with a massive chain of drops" in new OneBoundedSetup[Int](Iterable.fill(chainLength / 1000)(Drop(1))) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -93,12 +102,10 @@ class InterpreterStressSpec extends InterpreterSpecKit {
 
     }
 
-    "work with a massive chain of conflates by overflowing to the heap" in new TestSetup(Seq.fill(100000)(Conflate(
+    "work with a massive chain of conflates by overflowing to the heap" in new OneBoundedSetup[Int](Iterable.fill(100000)(Conflate(
       (in: Int) ⇒ in,
       (agg: Int, in: Int) ⇒ agg + in,
-      Supervision.stoppingDecider)),
-      forkLimit = 100,
-      overflowToHeap = true) {
+      Supervision.stoppingDecider))) {
 
       lastEvents() should be(Set(RequestOne))
 
