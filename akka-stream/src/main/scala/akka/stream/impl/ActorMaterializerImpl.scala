@@ -8,14 +8,11 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
-import akka.stream.actor.ActorSubscriber
+import akka.stream._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphModule }
 import akka.stream.impl.io.SslTlsCipherActor
-import akka.stream._
 import akka.stream.io.SslTls.TlsModule
-import akka.stream.stage.Stage
-import akka.stream.Attributes._
 import org.reactivestreams._
 
 import scala.concurrent.duration.FiniteDuration
