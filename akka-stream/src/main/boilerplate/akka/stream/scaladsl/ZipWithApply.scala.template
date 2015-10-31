@@ -30,7 +30,7 @@ class ZipWith1[[#A1#], O] (zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape
   [#val in0: Inlet[A1] = shape.in0#
   ]
 
-  override def createLogic: GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
     var pending = 1
 
     private def pushAll(): Unit = push(out, zipper([#grab(in0)#]))

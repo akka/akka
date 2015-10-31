@@ -4,11 +4,14 @@
 package akka.stream.impl
 
 import akka.event.LoggingAdapter
+import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.Supervision.Decider
 import akka.stream.impl.SplitDecision.SplitDecision
 import akka.stream.impl.StreamLayout._
-import akka.stream.{ OverflowStrategy, Attributes }
+import akka.stream._
 import akka.stream.Attributes._
-import akka.stream.stage.Stage
+import akka.stream.stage.AbstractStage.PushPullGraphStage
+import akka.stream.stage.{ GraphStageLogic, GraphStage, Stage }
 import org.reactivestreams.Processor
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -96,111 +99,120 @@ private[stream] object Stages {
 
   import DefaultAttributes._
 
+  // FIXME: To be deprecated as soon as stream-of-stream operations are stages
   sealed trait StageModule extends FlowModule[Any, Any, Any] {
-    def attributes: Attributes
     def withAttributes(attributes: Attributes): StageModule
     override def carbonCopy: Module = withAttributes(attributes)
   }
 
-  final case class StageFactory(mkStage: () ⇒ Stage[_, _], attributes: Attributes = stageFactory) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  /*
+   * Stage that is backed by a GraphStage but can be symbolically introspected
+   */
+  case class SymbolicGraphStage[-In, +Out, Ext](symbolicStage: SymbolicStage[In, Out])
+    extends PushPullGraphStage[In, Out, Ext](
+      symbolicStage.create,
+      symbolicStage.attributes) {
   }
 
-  final case class MaterializingStageFactory(
-    mkStageAndMaterialized: () ⇒ (Stage[_, _], Any),
-    attributes: Attributes = stageFactory) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  val identityGraph = SymbolicGraphStage[Any, Any, Any](Identity)
+
+  sealed trait SymbolicStage[-In, +Out] {
+    def attributes: Attributes
+    def create(effectiveAttributes: Attributes): Stage[In, Out]
+
+    // FIXME: No supervision hooked in yet.
+
+    protected def supervision(attributes: Attributes): Decider =
+      attributes.get[SupervisionStrategy](SupervisionStrategy(Supervision.stoppingDecider)).decider
+
   }
 
-  final case class Identity(attributes: Attributes = identityOp) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  object Identity extends SymbolicStage[Any, Any] {
+    override val attributes: Attributes = identityOp
+
+    def apply[T]: SymbolicStage[T, T] = this.asInstanceOf[SymbolicStage[T, T]]
+
+    override def create(attr: Attributes): Stage[Any, Any] = fusing.Map(identity, supervision(attr))
   }
 
-  final case class Map(f: Any ⇒ Any, attributes: Attributes = map) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Map[In, Out](f: In ⇒ Out, attributes: Attributes = map) extends SymbolicStage[In, Out] {
+    override def create(attr: Attributes): Stage[In, Out] = fusing.Map(f, supervision(attr))
   }
 
-  final case class Log(name: String, extract: Any ⇒ Any, loggingAdapter: Option[LoggingAdapter], attributes: Attributes = log) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Log[T](name: String, extract: T ⇒ Any, loggingAdapter: Option[LoggingAdapter], attributes: Attributes = log) extends SymbolicStage[T, T] {
+    override def create(attr: Attributes): Stage[T, T] = fusing.Log(name, extract, loggingAdapter)
   }
 
-  final case class Filter(p: Any ⇒ Boolean, attributes: Attributes = filter) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Filter[T](p: T ⇒ Boolean, attributes: Attributes = filter) extends SymbolicStage[T, T] {
+    override def create(attr: Attributes): Stage[T, T] = fusing.Filter(p, supervision(attr))
   }
 
-  final case class Collect(pf: PartialFunction[Any, Any], attributes: Attributes = collect) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Collect[In, Out](pf: PartialFunction[In, Out], attributes: Attributes = collect) extends SymbolicStage[In, Out] {
+    override def create(attr: Attributes): Stage[In, Out] = fusing.Collect(pf, supervision(attr))
   }
 
-  final case class Recover(pf: PartialFunction[Any, Any], attributes: Attributes = recover) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Recover[In, Out >: In](pf: PartialFunction[Throwable, Out], attributes: Attributes = recover) extends SymbolicStage[In, Out] {
+    override def create(attr: Attributes): Stage[In, Out] = fusing.Recover(pf)
   }
 
-  final case class MapAsync(parallelism: Int, f: Any ⇒ Future[Any], attributes: Attributes = mapAsync) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-  }
-
-  final case class MapAsyncUnordered(parallelism: Int, f: Any ⇒ Future[Any], attributes: Attributes = mapAsyncUnordered) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-  }
-
-  final case class Grouped(n: Int, attributes: Attributes = grouped) extends StageModule {
+  final case class Grouped[T](n: Int, attributes: Attributes = grouped) extends SymbolicStage[T, immutable.Seq[T]] {
     require(n > 0, "n must be greater than 0")
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+    override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Grouped(n)
   }
 
-  final case class Sliding(n: Int, step: Int, attributes: Attributes = sliding) extends StageModule {
+  final case class Sliding[T](n: Int, step: Int, attributes: Attributes = sliding) extends SymbolicStage[T, immutable.Seq[T]] {
     require(n > 0, "n must be greater than 0")
     require(step > 0, "step must be greater than 0")
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+
+    override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Sliding(n, step)
   }
 
-  final case class Take(n: Long, attributes: Attributes = take) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Take[T](n: Long, attributes: Attributes = take) extends SymbolicStage[T, T] {
+    override def create(attr: Attributes): Stage[T, T] = fusing.Take(n)
   }
 
-  final case class Drop(n: Long, attributes: Attributes = drop) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Drop[T](n: Long, attributes: Attributes = drop) extends SymbolicStage[T, T] {
+    override def create(attr: Attributes): Stage[T, T] = fusing.Drop(n)
   }
 
-  final case class TakeWhile(p: Any ⇒ Boolean, attributes: Attributes = takeWhile) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-
+  final case class TakeWhile[T](p: T ⇒ Boolean, attributes: Attributes = takeWhile) extends SymbolicStage[T, T] {
+    override def create(attr: Attributes): Stage[T, T] = fusing.TakeWhile(p, supervision(attr))
   }
 
-  final case class DropWhile(p: Any ⇒ Boolean, attributes: Attributes = dropWhile) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class DropWhile[T](p: T ⇒ Boolean, attributes: Attributes = dropWhile) extends SymbolicStage[T, T] {
+    override def create(attr: Attributes): Stage[T, T] = fusing.DropWhile(p, supervision(attr))
   }
 
-  final case class Scan(zero: Any, f: (Any, Any) ⇒ Any, attributes: Attributes = scan) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = scan) extends SymbolicStage[In, Out] {
+    override def create(attr: Attributes): Stage[In, Out] = fusing.Scan(zero, f, supervision(attr))
   }
 
-  final case class Fold(zero: Any, f: (Any, Any) ⇒ Any, attributes: Attributes = fold) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Intersperse[T](start: Option[T], inject: T, end: Option[T], attributes: Attributes = intersperse) extends SymbolicStage[T, T] {
+    override def create(attr: Attributes) = fusing.Intersperse(start, inject, end)
   }
 
-  final case class Intersperse(start: Option[Any], inject: Any, end: Option[Any], attributes: Attributes = intersperse) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = fold) extends SymbolicStage[In, Out] {
+    override def create(attr: Attributes): Stage[In, Out] = fusing.Fold(zero, f, supervision(attr))
   }
 
-  final case class Buffer(size: Int, overflowStrategy: OverflowStrategy, attributes: Attributes = buffer) extends StageModule {
+  final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy, attributes: Attributes = buffer) extends SymbolicStage[T, T] {
     require(size > 0, s"Buffer size must be larger than zero but was [$size]")
-
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+    override def create(attr: Attributes): Stage[T, T] = fusing.Buffer(size, overflowStrategy)
   }
 
-  final case class Conflate(seed: Any ⇒ Any, aggregate: (Any, Any) ⇒ Any, attributes: Attributes = conflate) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out, attributes: Attributes = conflate) extends SymbolicStage[In, Out] {
+    override def create(attr: Attributes): Stage[In, Out] = fusing.Conflate(seed, aggregate, supervision(attr))
   }
 
-  final case class Expand(seed: Any ⇒ Any, extrapolate: Any ⇒ (Any, Any), attributes: Attributes = expand) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class Expand[In, Out, Seed](seed: In ⇒ Seed, extrapolate: Seed ⇒ (Out, Seed), attributes: Attributes = expand) extends SymbolicStage[In, Out] {
+    override def create(attr: Attributes): Stage[In, Out] = fusing.Expand(seed, extrapolate)
   }
 
-  final case class MapConcat(f: Any ⇒ immutable.Iterable[Any], attributes: Attributes = mapConcat) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
+  final case class MapConcat[In, Out](f: In ⇒ immutable.Iterable[Out], attributes: Attributes = mapConcat) extends SymbolicStage[In, Out] {
+    override def create(attr: Attributes): Stage[In, Out] = fusing.MapConcat(f, supervision(attr))
   }
+
+  // FIXME: These are not yet proper stages, therefore they use the deprecated StageModule infrastructure
 
   final case class GroupBy(f: Any ⇒ Any, attributes: Attributes = groupBy) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)

@@ -55,10 +55,10 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     class InputStreamSinkTestStage(val timeout: FiniteDuration)
       extends InputStreamSinkStage(timeout) {
 
-      override def createLogicAndMaterializedValue = {
-        val (logic, inputStream) = super.createLogicAndMaterializedValue
-        val inHandler = logic.inHandlers(in.id)
-        logic.inHandlers(in.id) = new InHandler {
+      override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+        val (logic, inputStream) = super.createLogicAndMaterializedValue(inheritedAttributes)
+        val inHandler = logic.handlers(in.id).asInstanceOf[InHandler]
+        logic.handlers(in.id) = new InHandler {
           override def onPush(): Unit = {
             probe.ref ! InputStreamSinkTestMessages.Push
             inHandler.onPush()

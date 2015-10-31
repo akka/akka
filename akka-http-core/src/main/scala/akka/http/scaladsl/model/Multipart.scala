@@ -194,7 +194,7 @@ object Multipart {
      * To create an instance with several parts or for multiple files, use
      * ``FormData(BodyPart.fromFile("field1", ...), BodyPart.fromFile("field2", ...)``
      */
-    def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = SynchronousFileSource.DefaultChunkSize): FormData =
+    def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = -1): FormData =
       FormData(Source.single(BodyPart.fromFile(name, contentType, file, chunkSize)))
 
     /**
@@ -237,7 +237,7 @@ object Multipart {
       /**
        * Creates a BodyPart backed by a File that will be streamed using a SynchronousFileSource.
        */
-      def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = SynchronousFileSource.DefaultChunkSize): BodyPart =
+      def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = -1): BodyPart =
         BodyPart(name, HttpEntity(contentType, file, chunkSize), Map("filename" -> file.getName))
 
       def unapply(value: BodyPart): Option[(String, BodyPartEntity, Map[String, String], immutable.Seq[HttpHeader])] =

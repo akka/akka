@@ -179,7 +179,7 @@ private[http] object HttpServerBluePrint {
 
     override val shape = new FanInShape3(bypassInput, oneHundredContinue, applicationInput, out)
 
-    override def createLogic = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       var requestStart: RequestStart = _
 
       setHandler(bypassInput, new InHandler {
@@ -334,7 +334,7 @@ private[http] object HttpServerBluePrint {
 
     override val shape = new FanOutShape2(in, httpOut, wsOut)
 
-    override def createLogic = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       var target = httpOut
 
       setHandler(in, new InHandler {
@@ -362,7 +362,7 @@ private[http] object HttpServerBluePrint {
 
     override val shape = new FanInShape2(httpIn, wsIn, out)
 
-    override def createLogic = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       var websocketHandlerWasInstalled = false
 
       setHandler(httpIn, conditionalTerminateInput(() ⇒ !websocketHandlerWasInstalled))
@@ -407,7 +407,7 @@ private[http] object HttpServerBluePrint {
 
     override val shape = new FanInShape2(bytes, token, out)
 
-    override def createLogic = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       passAlong(bytes, out, doFinish = true, doFail = true)
       passAlong(token, out, doFinish = false, doFail = true)
       setHandler(out, eagerTerminateOutput)

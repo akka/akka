@@ -7,10 +7,12 @@ import akka.event.LoggingAdapter
 import akka.stream.Attributes._
 import akka.stream._
 import akka.stream.impl.SplitDecision._
-import akka.stream.impl.Stages.{ DirectProcessor, MaterializingStageFactory, StageModule }
+import akka.stream.impl.Stages.{ SymbolicGraphStage, StageModule, DirectProcessor, SymbolicStage }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
-import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, TakeWithin }
+import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, TakeWithin, MapAsync, MapAsyncUnordered }
 import akka.stream.impl.{ ReactiveStreamsCompliance, ConstantFun, Stages, StreamLayout }
+import akka.stream.impl.{ Stages, StreamLayout }
+import akka.stream.stage.AbstractStage.{ PushPullGraphStageWithMaterializedValue, PushPullGraphStage }
 import akka.stream.stage._
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
@@ -30,7 +32,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   override type Repr[+O, +M] = Flow[In @uncheckedVariance, O, M]
 
-  private[stream] def isIdentity: Boolean = this.module.isInstanceOf[Stages.Identity]
+  private[stream] def isIdentity: Boolean = this.module eq Stages.identityGraph.module
 
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
     if (this.isIdentity) {
@@ -182,19 +184,15 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   }
 
   /** INTERNAL API */
-  override private[stream] def andThen[U](op: StageModule): Repr[U, Mat] = {
+  // FIXME: Only exists to keep old stuff alive
+  private[stream] override def deprecatedAndThen[U](op: StageModule): Repr[U, Mat] = {
     //No need to copy here, op is a fresh instance
-    if (op.isInstanceOf[Stages.Identity]) this.asInstanceOf[Repr[U, Mat]]
-    else if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat]]
+    if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat]]
     else new Flow(module.fuse(op, shape.outlet, op.inPort).replaceShape(FlowShape(shape.inlet, op.outPort)))
   }
 
-  private[stream] def andThenMat[U, Mat2](op: MaterializingStageFactory): Repr[U, Mat2] = {
-    if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat2]]
-    else new Flow(module.fuse(op, shape.outlet, op.inPort, Keep.right).replaceShape(FlowShape(shape.inlet, op.outPort)))
-  }
-
-  private[akka] def andThenMat[U, Mat2, O >: Out](processorFactory: () ⇒ (Processor[O, U], Mat2)): Repr[U, Mat2] = {
+  // FIXME: Only exists to keep old stuff alive
+  private[akka] def deprecatedAndThenMat[U, Mat2, O >: Out](processorFactory: () ⇒ (Processor[O, U], Mat2)): Repr[U, Mat2] = {
     val op = Stages.DirectProcessor(processorFactory.asInstanceOf[() ⇒ (Processor[Any, Any], Any)])
     if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat2]]
     else new Flow[In, U, Mat2](module.fuse(op, shape.outlet, op.inPort, Keep.right).replaceShape(FlowShape(shape.inlet, op.outPort)))
@@ -244,14 +242,20 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 }
 
 object Flow {
-  private[this] val identity: Flow[Any, Any, Unit] = new Flow[Any, Any, Unit](Stages.Identity())
+  private[this] val identity: Flow[Any, Any, Unit] = new Flow[Any, Any, Unit](SymbolicGraphStage(Stages.Identity).module)
 
   /**
    * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]
    */
-  def apply[I, O](processorFactory: () ⇒ Processor[I, O]): Flow[I, O, Unit] = {
-    val untypedFactory = processorFactory.asInstanceOf[() ⇒ Processor[Any, Any]]
-    Flow[I].andThen(DirectProcessor(() ⇒ (untypedFactory(), ())))
+  def fromProcessor[I, O](processorFactory: () ⇒ Processor[I, O]): Flow[I, O, Unit] = {
+    fromProcessorMat(() ⇒ (processorFactory(), ()))
+  }
+
+  /**
+   * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]] and returns a materialized value.
+   */
+  def fromProcessorMat[I, O, Mat](processorFactory: () ⇒ (Processor[I, O], Mat)): Flow[I, O, Mat] = {
+    Flow[I].deprecatedAndThenMat(processorFactory)
   }
 
   /**
@@ -377,7 +381,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T, Mat] = andThen(Recover(pf.asInstanceOf[PartialFunction[Any, Any]]))
+  def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T, Mat] = andThen(Recover(pf))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -392,7 +396,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def map[T](f: Out ⇒ T): Repr[T, Mat] = andThen(Map(f.asInstanceOf[Any ⇒ Any]))
+  def map[T](f: Out ⇒ T): Repr[T, Mat] = andThen(Map(f))
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -412,7 +416,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T, Mat] = andThen(MapConcat(f.asInstanceOf[Any ⇒ immutable.Iterable[Any]]))
+  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T, Mat] = andThen(MapConcat(f))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -443,8 +447,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] =
-    andThen(MapAsync(parallelism, f.asInstanceOf[Any ⇒ Future[Any]]))
+  def mapAsync[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] = via(MapAsync(parallelism, f))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -475,8 +478,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] =
-    andThen(MapAsyncUnordered(parallelism, f.asInstanceOf[Any ⇒ Future[Any]]))
+  def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] = via(MapAsyncUnordered(parallelism, f))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
@@ -489,7 +491,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def filter(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(Filter(p.asInstanceOf[Any ⇒ Boolean]))
+  def filter(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(Filter(p))
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
@@ -522,7 +524,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' predicate returned false or downstream cancels
    */
-  def takeWhile(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(TakeWhile(p.asInstanceOf[Any ⇒ Boolean]))
+  def takeWhile(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(TakeWhile(p))
 
   /**
    * Discard elements at the beginning of the stream while predicate is true.
@@ -536,7 +538,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def dropWhile(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(DropWhile(p.asInstanceOf[Any ⇒ Boolean]))
+  def dropWhile(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(DropWhile(p))
 
   /**
    * Transform this stream by applying the given partial function to each of the elements
@@ -551,7 +553,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def collect[T](pf: PartialFunction[Out, T]): Repr[T, Mat] = andThen(Collect(pf.asInstanceOf[PartialFunction[Any, Any]]))
+  def collect[T](pf: PartialFunction[Out, T]): Repr[T, Mat] = andThen(Collect(pf))
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -604,7 +606,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T, Mat] = andThen(Scan(zero, f.asInstanceOf[(Any, Any) ⇒ Any]))
+  def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T, Mat] = andThen(Scan(zero, f))
 
   /**
    * Similar to `scan` but only emits its result when the upstream completes,
@@ -623,7 +625,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T, Mat] = andThen(Fold(zero, f.asInstanceOf[(Any, Any) ⇒ Any]))
+  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T, Mat] = andThen(Fold(zero, f))
 
   /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
@@ -778,8 +780,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
-  def takeWithin(d: FiniteDuration): Repr[Out, Mat] =
-    via(new TakeWithin[Out](d).withAttributes(name("takeWithin")))
+  def takeWithin(d: FiniteDuration): Repr[Out, Mat] = via(new TakeWithin[Out](d).withAttributes(name("takeWithin")))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -800,8 +801,7 @@ trait FlowOps[+Out, +Mat] {
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
-  def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S, Mat] =
-    andThen(Conflate(seed.asInstanceOf[Any ⇒ Any], aggregate.asInstanceOf[(Any, Any) ⇒ Any]))
+  def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S, Mat] = andThen(Conflate(seed, aggregate))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
@@ -827,8 +827,7 @@ trait FlowOps[+Out, +Mat] {
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: Out ⇒ S)(extrapolate: S ⇒ (U, S)): Repr[U, Mat] =
-    andThen(Expand(seed.asInstanceOf[Any ⇒ Any], extrapolate.asInstanceOf[Any ⇒ (Any, Any)]))
+  def expand[S, U](seed: Out ⇒ S)(extrapolate: S ⇒ (U, S)): Repr[U, Mat] = andThen(Expand(seed, extrapolate))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -849,8 +848,7 @@ trait FlowOps[+Out, +Mat] {
    * @param size The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out, Mat] =
-    andThen(Buffer(size, overflowStrategy))
+  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out, Mat] = andThen(Buffer(size, overflowStrategy))
 
   /**
    * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
@@ -858,10 +856,10 @@ trait FlowOps[+Out, +Mat] {
    * operator that performs the transformation.
    */
   def transform[T](mkStage: () ⇒ Stage[Out, T]): Repr[T, Mat] =
-    andThen(StageFactory(mkStage))
+    via(new PushPullGraphStage((attr) ⇒ mkStage(), Attributes.none))
 
   private[akka] def transformMaterializing[T, M](mkStageAndMaterialized: () ⇒ (Stage[Out, T], M)): Repr[T, M] =
-    andThenMat(MaterializingStageFactory(mkStageAndMaterialized))
+    viaMat(new PushPullGraphStageWithMaterializedValue[Out, T, Unit, M]((attr) ⇒ mkStageAndMaterialized(), Attributes.none))(Keep.right)
 
   /**
    * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements)
@@ -886,7 +884,7 @@ trait FlowOps[+Out, +Mat] {
    *
    */
   def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, Unit]), Mat] =
-    andThen(PrefixAndTail(n))
+    deprecatedAndThen(PrefixAndTail(n))
 
   /**
    * This operation demultiplexes the incoming stream into separate output
@@ -918,7 +916,7 @@ trait FlowOps[+Out, +Mat] {
    *
    */
   def groupBy[K, U >: Out](f: Out ⇒ K): Repr[(K, Source[U, Unit]), Mat] =
-    andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
+    deprecatedAndThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -962,7 +960,7 @@ trait FlowOps[+Out, +Mat] {
    */
   def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Out, Mat]#Repr[Source[U, Unit], Mat] = {
     val f = p.asInstanceOf[Any ⇒ Boolean]
-    withAttributes(name("splitWhen")).andThen(Split(el ⇒ if (f(el)) SplitBefore else Continue))
+    withAttributes(name("splitWhen")).deprecatedAndThen(Split(el ⇒ if (f(el)) SplitBefore else Continue))
   }
 
   /**
@@ -999,7 +997,7 @@ trait FlowOps[+Out, +Mat] {
    */
   def splitAfter[U >: Out](p: Out ⇒ Boolean): Repr[Out, Mat]#Repr[Source[U, Unit], Mat] = {
     val f = p.asInstanceOf[Any ⇒ Boolean]
-    withAttributes(name("splitAfter")).andThen(Split(el ⇒ if (f(el)) SplitAfter else Continue))
+    withAttributes(name("splitAfter")).deprecatedAndThen(Split(el ⇒ if (f(el)) SplitAfter else Continue))
   }
 
   /**
@@ -1016,7 +1014,7 @@ trait FlowOps[+Out, +Mat] {
    *
    */
   def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U, Mat] = strategy match {
-    case scaladsl.FlattenStrategy.Concat | javadsl.FlattenStrategy.Concat ⇒ andThen(ConcatAll())
+    case scaladsl.FlattenStrategy.Concat | javadsl.FlattenStrategy.Concat ⇒ deprecatedAndThen(ConcatAll())
     case _ ⇒
       throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
   }
@@ -1211,8 +1209,9 @@ trait FlowOps[+Out, +Mat] {
   def withAttributes(attr: Attributes): Repr[Out, Mat]
 
   /** INTERNAL API */
-  private[scaladsl] def andThen[U](op: StageModule): Repr[U, Mat]
+  private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T, Mat] =
+    via(SymbolicGraphStage(op))
 
-  private[scaladsl] def andThenMat[U, Mat2](op: MaterializingStageFactory): Repr[U, Mat2]
+  private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U, Mat]
 }
 

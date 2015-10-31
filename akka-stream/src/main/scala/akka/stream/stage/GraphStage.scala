@@ -5,15 +5,18 @@ package akka.stream.stage
 
 import akka.actor.{ Cancellable, DeadLetterSuppression }
 import akka.stream._
+import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.{ GraphModule, GraphInterpreter }
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.mutable.ArrayBuffer
+import scala.annotation.tailrec
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
-  def createLogicAndMaterializedValue: (GraphStageLogic, M)
+
+  def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
 
   final override private[stream] lazy val module: Module =
     GraphModule(
@@ -39,9 +42,10 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
  * logic that ties the ports together.
  */
 abstract class GraphStage[S <: Shape] extends GraphStageWithMaterializedValue[S, Unit] {
-  final override def createLogicAndMaterializedValue = (createLogic, Unit)
+  final override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) =
+    (createLogic(inheritedAttributes), Unit)
 
-  def createLogic: GraphStageLogic
+  def createLogic(inheritedAttributes: Attributes): GraphStageLogic
 }
 
 /**
@@ -91,7 +95,7 @@ object GraphStageLogic {
    */
   class ConditionalTerminateInput(predicate: () ⇒ Boolean) extends InHandler {
     override def onPush(): Unit = ()
-    override def onUpstreamFinish(): Unit = if (predicate()) ownerStageLogic.completeStage()
+    override def onUpstreamFinish(): Unit = if (predicate()) inOwnerStageLogic.completeStage()
   }
 
   /**
@@ -125,7 +129,7 @@ object GraphStageLogic {
    */
   class ConditionalTerminateOutput(predicate: () ⇒ Boolean) extends OutHandler {
     override def onPull(): Unit = ()
-    override def onDownstreamFinish(): Unit = if (predicate()) ownerStageLogic.completeStage()
+    override def onDownstreamFinish(): Unit = if (predicate()) outOwnerStageLogic.completeStage()
   }
 
   private object DoNothing extends (() ⇒ Unit) {
@@ -146,24 +150,11 @@ object GraphStageLogic {
  *  The stage logic is always stopped once all its input and output ports have been closed, i.e. it is not possible to
  *  keep the stage alive for further processing once it does not have any open ports.
  */
-abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
+abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: Int) {
   import GraphInterpreter._
-  import TimerMessages._
   import GraphStageLogic._
 
   def this(shape: Shape) = this(shape.inlets.size, shape.outlets.size)
-
-  private val keyToTimers = mutable.Map[Any, Timer]()
-  private val timerIdGen = Iterator from 1
-
-  private var _timerAsyncCallback: AsyncCallback[Scheduled] = _
-  private def getTimerAsyncCallback: AsyncCallback[Scheduled] = {
-    if (_timerAsyncCallback eq null)
-      _timerAsyncCallback = getAsyncCallback(onInternalTimer)
-
-    _timerAsyncCallback
-  }
-
   /**
    * INTERNAL API
    */
@@ -172,20 +163,14 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
   /**
    * INTERNAL API
    */
-  private[stream] var inHandlers = Array.ofDim[InHandler](inCount)
-  /**
-   * INTERNAL API
-   */
-  private[stream] var outHandlers = Array.ofDim[OutHandler](outCount)
+  // Using common array to reduce overhead for small port counts
+  private[stream] var handlers = Array.ofDim[Any](inCount + outCount)
 
   /**
    * INTERNAL API
    */
-  private[stream] var inToConn = Array.ofDim[Int](inHandlers.length)
-  /**
-   * INTERNAL API
-   */
-  private[stream] var outToConn = Array.ofDim[Int](outHandlers.length)
+  // Using common array to reduce overhead for small port counts
+  private[stream] var portToConn = Array.ofDim[Int](handlers.length)
 
   /**
    * INTERNAL API
@@ -243,32 +228,35 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
    * Assigns callbacks for the events for an [[Inlet]]
    */
   final protected def setHandler(in: Inlet[_], handler: InHandler): Unit = {
-    handler.ownerStageLogic = this
-    inHandlers(in.id) = handler
-    if (_interpreter != null) _interpreter.setHandler(inToConn(in.id), handler)
+    handler.inOwnerStageLogic = this
+    handlers(in.id) = handler
+    if (_interpreter != null) _interpreter.setHandler(conn(in), handler)
   }
 
   /**
    * Retrieves the current callback for the events on the given [[Inlet]]
    */
   final protected def getHandler(in: Inlet[_]): InHandler = {
-    inHandlers(in.id)
+    handlers(in.id).asInstanceOf[InHandler]
   }
 
   /**
    * Assigns callbacks for the events for an [[Outlet]]
    */
   final protected def setHandler(out: Outlet[_], handler: OutHandler): Unit = {
-    handler.ownerStageLogic = this
-    outHandlers(out.id) = handler
-    if (_interpreter != null) _interpreter.setHandler(outToConn(out.id), handler)
+    handler.outOwnerStageLogic = this
+    handlers(out.id + inCount) = handler
+    if (_interpreter != null) _interpreter.setHandler(conn(out), handler)
   }
+
+  private def conn(in: Inlet[_]): Int = portToConn(in.id)
+  private def conn(out: Outlet[_]): Int = portToConn(out.id + inCount)
 
   /**
    * Retrieves the current callback for the events on the given [[Outlet]]
    */
   final protected def getHandler(out: Outlet[_]): OutHandler = {
-    outHandlers(out.id)
+    handlers(out.id + inCount).asInstanceOf[OutHandler]
   }
 
   private def getNonEmittingHandler(out: Outlet[_]): OutHandler =
@@ -276,9 +264,6 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
       case e: Emitting[_] ⇒ e.previous
       case other          ⇒ other
     }
-
-  private def conn[T](in: Inlet[T]): Int = inToConn(in.id)
-  private def conn[T](out: Outlet[T]): Int = outToConn(out.id)
 
   /**
    * Requests an element on the given port. Calling this method twice before an element arrived will fail.
@@ -374,10 +359,11 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
    * used to check if the port is ready to be pushed or not.
    */
   final protected def push[T](out: Outlet[T], elem: T): Unit = {
-    if ((interpreter.portStates(conn(out)) & (OutReady | OutClosed)) == OutReady) {
+    if ((interpreter.portStates(conn(out)) & (OutReady | OutClosed)) == OutReady && (elem != null)) {
       interpreter.push(conn(out), elem)
     } else {
       // Detailed error information should not add overhead to the hot path
+      ReactiveStreamsCompliance.requireNonNullElement(elem)
       require(isAvailable(out), "Cannot push port twice")
       require(!isClosed(out), "Cannot pull closed port")
     }
@@ -399,13 +385,13 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
    */
   final def completeStage(): Unit = {
     var i = 0
-    while (i < inToConn.length) {
-      interpreter.cancel(inToConn(i))
-      i += 1
-    }
-    i = 0
-    while (i < outToConn.length) {
-      interpreter.complete(outToConn(i))
+    while (i < portToConn.length) {
+      if (i < inCount)
+        interpreter.cancel(portToConn(i))
+      else handlers(i) match {
+        case e: Emitting[_] ⇒ e.addFollowUp(new EmittingCompletion(e.out, e.previous))
+        case _              ⇒ interpreter.complete(portToConn(i))
+      }
       i += 1
     }
   }
@@ -416,13 +402,11 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
    */
   final def failStage(ex: Throwable): Unit = {
     var i = 0
-    while (i < inToConn.length) {
-      interpreter.cancel(inToConn(i))
-      i += 1
-    }
-    i = 0
-    while (i < outToConn.length) {
-      interpreter.fail(outToConn(i), ex)
+    while (i < portToConn.length) {
+      if (i < inCount)
+        interpreter.cancel(portToConn(i))
+      else
+        interpreter.fail(portToConn(i), ex)
       i += 1
     }
   }
@@ -612,22 +596,53 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
       case _              ⇒ setHandler(out, next)
     }
 
-  private abstract class Emitting[T](protected val out: Outlet[T], val previous: OutHandler, andThen: () ⇒ Unit) extends OutHandler {
-    private var followUps: mutable.Queue[Emitting[T]] = null
+  private abstract class Emitting[T](val out: Outlet[T], val previous: OutHandler, andThen: () ⇒ Unit) extends OutHandler {
+    private var followUps: Emitting[T] = _
+    private var followUpsTail: Emitting[T] = _
+    private def as[U] = this.asInstanceOf[Emitting[U]]
 
     protected def followUp(): Unit = {
       setHandler(out, previous)
       andThen()
       if (followUps != null) {
-        val next = followUps.dequeue()
-        if (followUps.nonEmpty) next.followUps = followUps
-        setHandler(out, next)
+        getHandler(out) match {
+          case e: Emitting[_] ⇒ e.as[T].addFollowUps(this)
+          case _ ⇒
+            val next = dequeue()
+            if (next.isInstanceOf[EmittingCompletion[_]]) complete(out)
+            else setHandler(out, next)
+        }
       }
     }
 
     def addFollowUp(e: Emitting[T]): Unit =
-      if (followUps == null) followUps = mutable.Queue(e)
-      else followUps.enqueue(e)
+      if (followUps == null) {
+        followUps = e
+        followUpsTail = e
+      } else {
+        followUpsTail.followUps = e
+        followUpsTail = e
+      }
+
+    private def addFollowUps(e: Emitting[T]): Unit =
+      if (followUps == null) {
+        followUps = e.followUps
+        followUpsTail = e.followUpsTail
+      } else {
+        followUpsTail.followUps = e.followUps
+        followUpsTail = e.followUpsTail
+      }
+
+    /**
+     * Dequeue `this` from the head of the queue, meaning that this object will
+     * not be retained (setHandler will install the followUp). For this reason
+     * the followUpsTail knowledge needs to be passed on to the next runner.
+     */
+    private def dequeue(): Emitting[T] = {
+      val ret = followUps
+      ret.followUpsTail = followUpsTail
+      ret
+    }
 
     override def onDownstreamFinish(): Unit = previous.onDownstreamFinish()
   }
@@ -652,6 +667,10 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
     }
   }
 
+  private class EmittingCompletion[T](_out: Outlet[T], _previous: OutHandler) extends Emitting(_out, _previous, DoNothing) {
+    override def onPull(): Unit = complete(out)
+  }
+
   /**
    * Install a handler on the given inlet that emits received elements on the
    * given outlet before pulling for more data. `doTerminate` controls whether
@@ -659,9 +678,10 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
    */
   final protected def passAlong[Out, In <: Out](from: Inlet[In], to: Outlet[Out], doFinish: Boolean, doFail: Boolean): Unit =
     setHandler(from, new InHandler {
+      val puller = () ⇒ tryPull(from)
       override def onPush(): Unit = {
         val elem = grab(from)
-        emit(to, elem, () ⇒ tryPull(from))
+        emit(to, elem, puller)
       }
       override def onUpstreamFinish(): Unit = if (doFinish) super.onUpstreamFinish()
       override def onUpstreamFailure(ex: Throwable): Unit = if (doFail) super.onUpstreamFailure(ex)
@@ -669,7 +689,7 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
 
   /**
    * Obtain a callback object that can be used asynchronously to re-enter the
-   * current [[AsyncStage]] with an asynchronous notification. The [[invoke()]] method of the returned
+   * current [[GraphStage]] with an asynchronous notification. The [[invoke()]] method of the returned
    * [[AsyncCallback]] is safe to be called from other threads and it will in the background thread-safely
    * delegate to the passed callback function. I.e. [[invoke()]] will be called by the external world and
    * the passed handler will be invoked eventually in a thread-safe way by the execution environment.
@@ -683,6 +703,50 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
     }
   }
 
+  // Internal hooks to avoid reliance on user calling super in preStart
+  protected[stream] def beforePreStart(): Unit = ()
+
+  // Internal hooks to avoid reliance on user calling super in postStop
+  protected[stream] def afterPostStop(): Unit = ()
+
+  /**
+   * Invoked before any external events are processed, at the startup of the stage.
+   */
+  def preStart(): Unit = ()
+
+  /**
+   * Invoked after processing of external events stopped because the stage is about to stop or fail.
+   */
+  def postStop(): Unit = ()
+}
+
+/**
+ * An asynchronous callback holder that is attached to a [[GraphStageLogic]].
+ * Invoking [[AsyncCallback#invoke]] will eventually lead to the registered handler
+ * being called.
+ */
+trait AsyncCallback[T] {
+  /**
+   * Dispatch an asynchronous notification. This method is thread-safe and
+   * may be invoked from external execution contexts.
+   */
+  def invoke(t: T): Unit
+}
+
+abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shape) {
+  import TimerMessages._
+
+  private val keyToTimers = mutable.Map[Any, Timer]()
+  private val timerIdGen = Iterator from 1
+
+  private var _timerAsyncCallback: AsyncCallback[Scheduled] = _
+  private def getTimerAsyncCallback: AsyncCallback[Scheduled] = {
+    if (_timerAsyncCallback eq null)
+      _timerAsyncCallback = getAsyncCallback(onInternalTimer)
+
+    _timerAsyncCallback
+  }
+
   private def onInternalTimer(scheduled: Scheduled): Unit = {
     val Id = scheduled.timerId
     keyToTimers.get(scheduled.timerKey) match {
@@ -694,12 +758,18 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
   }
 
   /**
-   * Schedule timer to call [[#onTimer]] periodically with the given interval.
-   * Any existing timer with the same key will automatically be canceled before
-   * adding the new timer.
+   * Will be called when the scheduled timer is triggered.
+   * @param timerKey key of the scheduled timer
    */
-  final protected def schedulePeriodically(timerKey: Any, interval: FiniteDuration): Unit =
-    schedulePeriodicallyWithInitialDelay(timerKey, interval, interval)
+  protected def onTimer(timerKey: Any): Unit = ()
+
+  // Internal hooks to avoid reliance on user calling super in postStop
+  protected[stream] override def afterPostStop(): Unit = {
+    if (keyToTimers ne null) {
+      keyToTimers.foreach { case (_, Timer(_, task)) ⇒ task.cancel() }
+      keyToTimers.clear()
+    }
+  }
 
   /**
    * Schedule timer to call [[#onTimer]] periodically with the given interval after the specified
@@ -751,30 +821,13 @@ abstract class GraphStageLogic private[stream] (inCount: Int, outCount: Int) {
   final protected def isTimerActive(timerKey: Any): Boolean = keyToTimers contains timerKey
 
   /**
-   * Will be called when the scheduled timer is triggered.
-   * @param timerKey key of the scheduled timer
+   * Schedule timer to call [[#onTimer]] periodically with the given interval.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
    */
-  protected def onTimer(timerKey: Any): Unit = ()
+  final protected def schedulePeriodically(timerKey: Any, interval: FiniteDuration): Unit =
+    schedulePeriodicallyWithInitialDelay(timerKey, interval, interval)
 
-  // Internal hooks to avoid reliance on user calling super in preStart
-  protected[stream] def beforePreStart(): Unit = {
-  }
-
-  // Internal hooks to avoid reliance on user calling super in postStop
-  protected[stream] def afterPostStop(): Unit = {
-    keyToTimers.foreach { case (_, Timer(_, task)) ⇒ task.cancel() }
-    keyToTimers.clear()
-  }
-
-  /**
-   * Invoked before any external events are processed, at the startup of the stage.
-   */
-  def preStart(): Unit = ()
-
-  /**
-   * Invoked after processing of external events stopped because the stage is about to stop or fail.
-   */
-  def postStop(): Unit = ()
 }
 
 /**
@@ -784,7 +837,7 @@ trait InHandler {
   /**
    * INTERNAL API
    */
-  private[stream] var ownerStageLogic: GraphStageLogic = _
+  private[stream] var inOwnerStageLogic: GraphStageLogic = _
 
   /**
    * Called when the input port has a new element available. The actual element can be retrieved via the
@@ -795,12 +848,12 @@ trait InHandler {
   /**
    * Called when the input port is finished. After this callback no other callbacks will be called for this port.
    */
-  def onUpstreamFinish(): Unit = ownerStageLogic.completeStage()
+  def onUpstreamFinish(): Unit = inOwnerStageLogic.completeStage()
 
   /**
    * Called when the input port has failed. After this callback no other callbacks will be called for this port.
    */
-  def onUpstreamFailure(ex: Throwable): Unit = ownerStageLogic.failStage(ex)
+  def onUpstreamFailure(ex: Throwable): Unit = inOwnerStageLogic.failStage(ex)
 }
 
 /**
@@ -810,7 +863,7 @@ trait OutHandler {
   /**
    * INTERNAL API
    */
-  private[stream] var ownerStageLogic: GraphStageLogic = _
+  private[stream] var outOwnerStageLogic: GraphStageLogic = _
 
   /**
    * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push()]]
@@ -822,5 +875,5 @@ trait OutHandler {
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
    * be called for this port.
    */
-  def onDownstreamFinish(): Unit = ownerStageLogic.completeStage()
+  def onDownstreamFinish(): Unit = outOwnerStageLogic.completeStage()
 }

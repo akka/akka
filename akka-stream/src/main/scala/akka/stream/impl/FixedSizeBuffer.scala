@@ -26,6 +26,7 @@ private[akka] object FixedSizeBuffer {
     else new ModuloFixedSizeBuffer(size)
 
   sealed abstract class FixedSizeBuffer[T](val size: Int) {
+    override def toString = s"Buffer($size, $readIdx, $writeIdx)(${(readIdx until writeIdx).map(get).mkString(", ")})"
     private val buffer = new Array[AnyRef](size)
 
     protected var readIdx = 0

@@ -13,7 +13,12 @@ import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.JavaTestKit;
+import akka.testkit.TestLatch;
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
+
+import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -39,14 +44,18 @@ public class RecipeSimpleDrop extends RecipeTest {
   public void work() throws Exception {
     new JavaTestKit(system) {
       {
+    	@SuppressWarnings("unused")
         //#simple-drop
         final Flow<Message, Message, BoxedUnit> droppyStream =
           Flow.of(Message.class).conflate(i -> i, (lastMessage, newMessage) -> newMessage);
         //#simple-drop
+    	final TestLatch latch = new TestLatch(2, system);
+        final Flow<Message, Message, BoxedUnit> realDroppyStream =
+                Flow.of(Message.class).conflate(i -> i, (lastMessage, newMessage) -> { latch.countDown(); return newMessage; });
 
         final Pair<TestPublisher.Probe<Message>, TestSubscriber.Probe<Message>> pubSub = TestSource
           .<Message> probe(system)
-          .via(droppyStream)
+          .via(realDroppyStream)
           .toMat(TestSink.probe(system),
             (pub, sub) -> new Pair<>(pub, sub))
           .run(mat);
@@ -56,6 +65,9 @@ public class RecipeSimpleDrop extends RecipeTest {
         pub.sendNext(new Message("1"));
         pub.sendNext(new Message("2"));
         pub.sendNext(new Message("3"));
+        
+        Await.ready(latch, Duration.create(1, TimeUnit.SECONDS));
+        
         sub.requestNext(new Message("3"));
 
         pub.sendComplete();

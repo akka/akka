@@ -3,7 +3,10 @@
  */
 package akka.stream.stage
 
-import akka.stream.{ Attributes, Materializer, Supervision }
+import akka.stream._
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.util.control.NonFatal
 
 /**
  * General interface for stream transformation.
@@ -25,75 +28,168 @@ import akka.stream.{ Attributes, Materializer, Supervision }
  * @see [[akka.stream.scaladsl.Flow#transform]]
  * @see [[akka.stream.javadsl.Flow#transform]]
  */
-sealed trait Stage[-In, Out]
+sealed trait Stage[-In, +Out]
 
 /**
  * INTERNAL API
  */
 private[stream] object AbstractStage {
-  final val UpstreamBall = 1
-  final val DownstreamBall = 2
-  final val PrecedingWasPull = 0x4000
-  final val NoTerminationPending = 0x8000
-  final val BothBalls = UpstreamBall | DownstreamBall
-  final val BothBallsAndNoTerminationPending = UpstreamBall | DownstreamBall | NoTerminationPending
+
+  private class PushPullGraphLogic[In, Out](
+    private val shape: FlowShape[In, Out],
+    val attributes: Attributes,
+    val stage: AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext])
+    extends GraphStageLogic(shape) with DetachedContext[Out] {
+
+    final override def materializer: Materializer = interpreter.materializer
+
+    private def ctx: DetachedContext[Out] = this
+
+    private var currentStage: AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext] = stage
+
+    {
+      // No need to refer to the handle in a private val
+      val handler = new InHandler with OutHandler {
+        override def onPush(): Unit =
+          try { currentStage.onPush(grab(shape.inlet), ctx) } catch { case NonFatal(ex) ⇒ onSupervision(ex) }
+
+        override def onPull(): Unit = currentStage.onPull(ctx)
+
+        override def onUpstreamFinish(): Unit = currentStage.onUpstreamFinish(ctx)
+
+        override def onUpstreamFailure(ex: Throwable): Unit = currentStage.onUpstreamFailure(ex, ctx)
+
+        override def onDownstreamFinish(): Unit = currentStage.onDownstreamFinish(ctx)
+      }
+
+      setHandler(shape.inlet, handler)
+      setHandler(shape.outlet, handler)
+    }
+
+    private def onSupervision(ex: Throwable): Unit = {
+      currentStage.decide(ex) match {
+        case Supervision.Stop ⇒
+          failStage(ex)
+        case Supervision.Resume ⇒
+          resetAfterSupervise()
+        case Supervision.Restart ⇒
+          resetAfterSupervise()
+          currentStage.postStop()
+          currentStage = currentStage.restart().asInstanceOf[AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext]]
+          currentStage.preStart(ctx)
+      }
+    }
+
+    private def resetAfterSupervise(): Unit = {
+      val mustPull = currentStage.isDetached || isAvailable(shape.outlet)
+      if (!hasBeenPulled(shape.inlet) && mustPull) pull(shape.inlet)
+    }
+
+    override protected[stream] def beforePreStart(): Unit = {
+      super.beforePreStart()
+      if (currentStage.isDetached) pull(shape.inlet)
+    }
+
+    final override def push(elem: Out): DownstreamDirective = {
+      push(shape.outlet, elem)
+      null
+    }
+
+    final override def pull(): UpstreamDirective = {
+      pull(shape.inlet)
+      null
+    }
+
+    final override def finish(): FreeDirective = {
+      completeStage()
+      null
+    }
+
+    final override def pushAndFinish(elem: Out): DownstreamDirective = {
+      push(shape.outlet, elem)
+      completeStage()
+      null
+    }
+
+    final override def fail(cause: Throwable): FreeDirective = {
+      failStage(cause)
+      null
+    }
+
+    final override def isFinishing: Boolean = isClosed(shape.inlet)
+
+    final override def absorbTermination(): TerminationDirective = {
+      if (isClosed(shape.outlet)) {
+        val ex = new UnsupportedOperationException("It is not allowed to call absorbTermination() from onDownstreamFinish.")
+        // This MUST be logged here, since the downstream has cancelled, i.e. there is noone to send onError to, the
+        // stage is just about to finish so noone will catch it anyway just the interpreter
+
+        interpreter.log.error(ex.getMessage)
+        throw ex // We still throw for correctness (although a finish() would also work here)
+      }
+      if (isAvailable(shape.outlet)) currentStage.onPull(ctx)
+      null
+    }
+
+    override def pushAndPull(elem: Out): FreeDirective = {
+      push(shape.outlet, elem)
+      pull(shape.inlet)
+      null
+    }
+
+    final override def holdUpstreamAndPush(elem: Out): UpstreamDirective = {
+      push(shape.outlet, elem)
+      null
+    }
+
+    final override def holdDownstreamAndPull(): DownstreamDirective = {
+      pull(shape.inlet)
+      null
+    }
+
+    final override def isHoldingDownstream: Boolean = isAvailable(shape.outlet)
+
+    final override def isHoldingUpstream: Boolean = !(isClosed(shape.inlet) || hasBeenPulled(shape.inlet))
+
+    final override def holdDownstream(): DownstreamDirective = null
+
+    final override def holdUpstream(): UpstreamDirective = null
+
+    override def preStart(): Unit = currentStage.preStart(ctx)
+    override def postStop(): Unit = currentStage.postStop()
+
+    override def toString: String = s"PushPullGraphLogic($currentStage)"
+  }
+
+  class PushPullGraphStageWithMaterializedValue[-In, +Out, Ext, +Mat](
+    val factory: (Attributes) ⇒ (Stage[In, Out], Mat),
+    stageAttributes: Attributes)
+    extends GraphStageWithMaterializedValue[FlowShape[In, Out], Mat] {
+
+    val name = stageAttributes.nameOrDefault()
+    val shape = FlowShape(Inlet[In](name + ".in"), Outlet[Out](name + ".out"))
+
+    override def toString = name
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Mat) = {
+      val effectiveAttributes = inheritedAttributes and stageAttributes
+      val stageAndMat = factory(effectiveAttributes)
+      val stage: AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext] =
+        stageAndMat._1.asInstanceOf[AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext]]
+      (new PushPullGraphLogic(shape, effectiveAttributes, stage), stageAndMat._2)
+    }
+  }
+
+  class PushPullGraphStage[-In, +Out, Ext](_factory: (Attributes) ⇒ Stage[In, Out], _stageAttributes: Attributes)
+    extends PushPullGraphStageWithMaterializedValue[In, Out, Ext, Unit]((att: Attributes) ⇒ (_factory(att), ()), _stageAttributes)
 }
 
 abstract class AbstractStage[-In, Out, PushD <: Directive, PullD <: Directive, Ctx <: Context[Out], LifeCtx <: LifecycleContext] extends Stage[In, Out] {
-  /**
-   * INTERNAL API
-   */
-  private[stream] var bits = AbstractStage.NoTerminationPending
-
-  /**
-   * INTERNAL API
-   */
-  private[stream] var context: Ctx = _
 
   /**
    * INTERNAL API
    */
   private[stream] def isDetached: Boolean = false
-
-  /**
-   * INTERNAL API
-   */
-  private[stream] def enterAndPush(elem: Out): Unit = {
-    val c = context
-    c.enter()
-    c.push(elem)
-    c.execute()
-  }
-
-  /**
-   * INTERNAL API
-   */
-  private[stream] def enterAndPull(): Unit = {
-    val c = context
-    c.enter()
-    c.pull()
-    c.execute()
-  }
-
-  /**
-   * INTERNAL API
-   */
-  private[stream] def enterAndFinish(): Unit = {
-    val c = context
-    c.enter()
-    c.finish()
-    c.execute()
-  }
-
-  /**
-   * INTERNAL API
-   */
-  private[stream] def enterAndFail(e: Throwable): Unit = {
-    val c = context
-    c.enter()
-    c.fail(e)
-    c.execute()
-  }
 
   /**
    * User overridable callback.
@@ -283,26 +379,6 @@ abstract class DetachedStage[In, Out]
    * `onPull` when it is know how to recover from such exceptions.
    */
   override def decide(t: Throwable): Supervision.Directive = super.decide(t)
-}
-
-/**
- * This is a variant of [[DetachedStage]] that can receive asynchronous input
- * from external sources, for example timers or Future results. In order to
- * do this, obtain an [[AsyncCallback]] from the [[AsyncContext]] and attach
- * it to the asynchronous event. When the event fires an asynchronous notification
- * will be dispatched that eventually will lead to `onAsyncInput` being invoked
- * with the provided data item.
- */
-abstract class AsyncStage[In, Out, Ext]
-  extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, AsyncContext[Out, Ext], AsyncContext[Out, Ext]] {
-  private[stream] override def isDetached = true
-
-  /**
-   * Implement this method to define the action to be taken in response to an
-   * asynchronous notification that was previously registered using
-   * [[AsyncContext#getAsyncCallback]].
-   */
-  def onAsyncInput(event: Ext, ctx: AsyncContext[Out, Ext]): Directive
 }
 
 /**
@@ -508,27 +584,6 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
 }
 
 /**
- * INTERNAL API
- *
- * `BoundaryStage` implementations are meant to communicate with the external world. These stages do not have most of the
- * safety properties enforced and should be used carefully. One important ability of BoundaryStages that they can take
- * off an execution signal by calling `ctx.exit()`. This is typically used immediately after an external signal has
- * been produced (for example an actor message). BoundaryStages can also kickstart execution by calling `enter()` which
- * returns a context they can use to inject signals into the interpreter. There is no checks in place to enforce that
- * the number of signals taken out by exit() and the number of signals returned via enter() are the same -- using this
- * stage type needs extra care from the implementer.
- *
- * BoundaryStages are the elements that make the interpreter *tick*, there is no other way to start the interpreter
- * than using a BoundaryStage.
- */
-private[akka] abstract class BoundaryStage extends AbstractStage[Any, Any, Directive, Directive, BoundaryContext, LifecycleContext] {
-  final override def decide(t: Throwable): Supervision.Directive = Supervision.Stop
-
-  final override def restart(): BoundaryStage =
-    throw new UnsupportedOperationException("BoundaryStage doesn't support restart")
-}
-
-/**
  * Return type from [[Context]] methods.
  */
 sealed trait Directive
@@ -555,16 +610,6 @@ trait LifecycleContext {
  * Passed to the callback methods of [[PushPullStage]] and [[StatefulStage]].
  */
 sealed trait Context[Out] extends LifecycleContext {
-  /**
-   * INTERNAL API
-   */
-  private[stream] def enter(): Unit
-
-  /**
-   * INTERNAL API
-   */
-  private[stream] def execute(): Unit
-
   /**
    * Push one element to downstreams.
    */
@@ -625,48 +670,3 @@ trait DetachedContext[Out] extends Context[Out] {
   def pushAndPull(elem: Out): FreeDirective
 
 }
-
-/**
- * An asynchronous callback holder that is attached to an [[AsyncContext]].
- * Invoking [[AsyncCallback#invoke]] will eventually lead to [[AsyncStage#onAsyncInput]]
- * being called.
- */
-trait AsyncCallback[T] {
-  /**
-   * Dispatch an asynchronous notification. This method is thread-safe and
-   * may be invoked from external execution contexts.
-   */
-  def invoke(t: T): Unit
-}
-
-/**
- * This kind of context is available to [[AsyncStage]]. It implements the same
- * interface as for [[DetachedStage]] with the addition of being able to obtain
- * [[AsyncCallback]] objects that allow the registration of asynchronous
- * notifications.
- */
-trait AsyncContext[Out, Ext] extends DetachedContext[Out] {
-  /**
-   * Obtain a callback object that can be used asynchronously to re-enter the
-   * current [[AsyncStage]] with an asynchronous notification. After the
-   * notification has been invoked, eventually [[AsyncStage#onAsyncInput]]
-   * will be called with the given data item.
-   *
-   * This object can be cached and reused within the same [[AsyncStage]].
-   */
-  def getAsyncCallback: AsyncCallback[Ext]
-  /**
-   * In response to an asynchronous notification an [[AsyncStage]] may choose
-   * to neither push nor pull nor terminate, which is represented as this
-   * directive.
-   */
-  def ignore(): AsyncDirective
-}
-
-/**
- * INTERNAL API
- */
-private[akka] trait BoundaryContext extends Context[Any] {
-  def exit(): FreeDirective
-}
-

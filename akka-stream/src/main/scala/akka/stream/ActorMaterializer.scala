@@ -31,11 +31,11 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None, optimizations: Optimizations = Optimizations.none)(implicit context: ActorRefFactory): ActorMaterializer = {
+  def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(implicit context: ActorRefFactory): ActorMaterializer = {
     val system = actorSystemOf(context)
 
     val settings = materializerSettings getOrElse ActorMaterializerSettings(system)
-    apply(settings, namePrefix.getOrElse("flow"), optimizations)(context)
+    apply(settings, namePrefix.getOrElse("flow"))(context)
   }
 
   /**
@@ -49,7 +49,7 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String, optimizations: Optimizations)(implicit context: ActorRefFactory): ActorMaterializer = {
+  def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String)(implicit context: ActorRefFactory): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
     val system = actorSystemOf(context)
 
@@ -60,8 +60,7 @@ object ActorMaterializer {
       context.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher)),
       haveShutDown,
       FlowNameCounter(system).counter,
-      namePrefix,
-      optimizations)
+      namePrefix)
   }
 
   /**
@@ -199,11 +198,10 @@ object ActorMaterializerSettings {
     supervisionDecider: Supervision.Decider,
     subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
     debugLogging: Boolean,
-    outputBurstLimit: Int,
-    optimizations: Optimizations) =
+    outputBurstLimit: Int) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, optimizations)
+      outputBurstLimit)
 
   /**
    * Create [[ActorMaterializerSettings]].
@@ -228,8 +226,7 @@ object ActorMaterializerSettings {
       supervisionDecider = Supervision.stoppingDecider,
       subscriptionTimeoutSettings = StreamSubscriptionTimeoutSettings(config),
       debugLogging = config.getBoolean("debug-logging"),
-      outputBurstLimit = config.getInt("output-burst-limit"),
-      optimizations = Optimizations.none)
+      outputBurstLimit = config.getInt("output-burst-limit"))
 
   /**
    * Java API
@@ -263,8 +260,7 @@ final class ActorMaterializerSettings(
   val supervisionDecider: Supervision.Decider,
   val subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
   val debugLogging: Boolean,
-  val outputBurstLimit: Int,
-  val optimizations: Optimizations) {
+  val outputBurstLimit: Int) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
@@ -278,11 +274,10 @@ final class ActorMaterializerSettings(
     supervisionDecider: Supervision.Decider = this.supervisionDecider,
     subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings = this.subscriptionTimeoutSettings,
     debugLogging: Boolean = this.debugLogging,
-    outputBurstLimit: Int = this.outputBurstLimit,
-    optimizations: Optimizations = this.optimizations) =
+    outputBurstLimit: Int = this.outputBurstLimit) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, optimizations)
+      outputBurstLimit)
 
   def withInputBuffer(initialSize: Int, maxSize: Int): ActorMaterializerSettings =
     copy(initialInputBufferSize = initialSize, maxInputBufferSize = maxSize)
@@ -315,9 +310,6 @@ final class ActorMaterializerSettings(
 
   def withDebugLogging(enable: Boolean): ActorMaterializerSettings =
     copy(debugLogging = enable)
-
-  def withOptimizations(optimizations: Optimizations): ActorMaterializerSettings =
-    copy(optimizations = optimizations)
 
   private def requirePowerOfTwo(n: Integer, name: String): Unit = {
     require(n > 0, s"$name must be > 0")
@@ -365,11 +357,3 @@ object StreamSubscriptionTimeoutTerminationMode {
 
 }
 
-final object Optimizations {
-  val none: Optimizations = Optimizations(collapsing = false, elision = false, simplification = false, fusion = false)
-  val all: Optimizations = Optimizations(collapsing = true, elision = true, simplification = true, fusion = true)
-}
-
-final case class Optimizations(collapsing: Boolean, elision: Boolean, simplification: Boolean, fusion: Boolean) {
-  def isEnabled: Boolean = collapsing || elision || simplification || fusion
-}

@@ -9,7 +9,7 @@ import akka.stream._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class GraphPreferredMergeSpec extends TwoStreamsSetup {
+class GraphMergePreferredSpec extends TwoStreamsSetup {
   import FlowGraph.Implicits._
 
   override type Outputs = Int

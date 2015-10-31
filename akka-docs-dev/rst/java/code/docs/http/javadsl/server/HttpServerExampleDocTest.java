@@ -159,8 +159,8 @@ public class HttpServerExampleDocTest {
                 Flow.of(HttpRequest.class)
                     .via(failureDetection)
                     .map(request -> {
-                      Source<ByteString, ?> bytes = request.entity().getDataBytes();
-                      HttpEntity.Chunked entity = HttpEntities.create(ContentTypes.TEXT_PLAIN, (Source<ByteString, Object>) bytes);
+                      Source<ByteString, Object> bytes = request.entity().getDataBytes();
+                      HttpEntity.Chunked entity = HttpEntities.create(ContentTypes.TEXT_PLAIN, bytes);
 
                       return HttpResponse.create()
                         .withEntity(entity);

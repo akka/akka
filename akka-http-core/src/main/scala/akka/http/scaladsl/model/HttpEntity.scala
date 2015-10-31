@@ -75,7 +75,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
   def withContentType(contentType: ContentType): HttpEntity
 
   /** Java API */
-  def getDataBytes: stream.javadsl.Source[ByteString, _] = stream.javadsl.Source.fromGraph(dataBytes)
+  def getDataBytes: stream.javadsl.Source[ByteString, AnyRef] = stream.javadsl.Source.fromGraph(dataBytes.asInstanceOf[Source[ByteString, AnyRef]])
 
   /** Java API */
   def getContentLengthOption: japi.Option[JLong] =
@@ -147,9 +147,11 @@ object HttpEntity {
   def apply(contentType: ContentType, data: Source[ByteString, Any]): Chunked =
     Chunked.fromData(contentType, data)
 
-  def apply(contentType: ContentType, file: File, chunkSize: Int = SynchronousFileSource.DefaultChunkSize): UniversalEntity = {
+  def apply(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity = {
     val fileLength = file.length
-    if (fileLength > 0) Default(contentType, fileLength, SynchronousFileSource(file, chunkSize))
+    if (fileLength > 0)
+      Default(contentType, fileLength,
+        if (chunkSize > 0) SynchronousFileSource(file, chunkSize) else SynchronousFileSource(file))
     else empty(contentType)
   }
 
