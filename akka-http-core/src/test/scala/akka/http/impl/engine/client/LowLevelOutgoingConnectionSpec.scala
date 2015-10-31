@@ -62,7 +62,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         val sub = probe.expectSubscription()
-        sub.expectRequest(4)
+        sub.expectRequest()
         sub.sendNext(ByteString("ABC"))
         expectWireData("ABC")
         sub.sendNext(ByteString("DEF"))
@@ -228,7 +228,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         val sub = probe.expectSubscription()
-        sub.expectRequest(4)
+        sub.expectRequest()
         sub.sendNext(ByteString("ABC"))
         expectWireData("ABC")
         sub.sendNext(ByteString("DEF"))
@@ -254,7 +254,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         val sub = probe.expectSubscription()
-        sub.expectRequest(4)
+        sub.expectRequest()
         sub.sendNext(ByteString("ABC"))
         expectWireData("ABC")
         sub.sendNext(ByteString("DEF"))

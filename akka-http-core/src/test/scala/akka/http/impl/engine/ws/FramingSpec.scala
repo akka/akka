@@ -307,13 +307,12 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     }
 
   private def parseToEvents(bytes: Seq[ByteString]): immutable.Seq[FrameEvent] =
-    Source(bytes.toVector).transform(newParser).runFold(Vector.empty[FrameEvent])(_ :+ _)
+    Source(bytes.toVector).via(FrameEventParser).runFold(Vector.empty[FrameEvent])(_ :+ _)
       .awaitResult(1.second)
   private def renderToByteString(events: immutable.Seq[FrameEvent]): ByteString =
     Source(events).transform(newRenderer).runFold(ByteString.empty)(_ ++ _)
       .awaitResult(1.second)
 
-  protected def newParser(): Stage[ByteString, FrameEvent] = new FrameEventParser
   protected def newRenderer(): Stage[FrameEvent, ByteString] = new FrameEventRenderer
 
   import scala.language.implicitConversions

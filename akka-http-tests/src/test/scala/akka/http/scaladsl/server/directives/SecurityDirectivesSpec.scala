@@ -9,6 +9,7 @@ import scala.concurrent.Future
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsRejected, CredentialsMissing }
+import akka.testkit.EventFilter
 
 class SecurityDirectivesSpec extends RoutingSpec {
   val dontBasicAuth = authenticateBasicAsync[String]("MyRealm", _ ⇒ Future.successful(None))
@@ -60,11 +61,13 @@ class SecurityDirectivesSpec extends RoutingSpec {
     }
     "properly handle exceptions thrown in its inner route" in {
       object TestException extends RuntimeException
-      Get() ~> Authorization(BasicHttpCredentials("Alice", "")) ~> {
-        Route.seal {
-          doBasicAuth { _ ⇒ throw TestException }
-        }
-      } ~> check { status shouldEqual StatusCodes.InternalServerError }
+      EventFilter[TestException.type](occurrences = 1).intercept {
+        Get() ~> Authorization(BasicHttpCredentials("Alice", "")) ~> {
+          Route.seal {
+            doBasicAuth { _ ⇒ throw TestException }
+          }
+        } ~> check { status shouldEqual StatusCodes.InternalServerError }
+      }
     }
   }
   "bearer token authentication" should {
@@ -108,11 +111,13 @@ class SecurityDirectivesSpec extends RoutingSpec {
     }
     "properly handle exceptions thrown in its inner route" in {
       object TestException extends RuntimeException
-      Get() ~> Authorization(OAuth2BearerToken("myToken")) ~> {
-        Route.seal {
-          doOAuth2Auth { _ ⇒ throw TestException }
-        }
-      } ~> check { status shouldEqual StatusCodes.InternalServerError }
+      EventFilter[TestException.type](occurrences = 1).intercept {
+        Get() ~> Authorization(OAuth2BearerToken("myToken")) ~> {
+          Route.seal {
+            doOAuth2Auth { _ ⇒ throw TestException }
+          }
+        } ~> check { status shouldEqual StatusCodes.InternalServerError }
+      }
     }
   }
   "authentication directives" should {
