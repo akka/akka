@@ -7,12 +7,16 @@ package akka.http.impl.engine.ws
 import akka.http.impl.engine.ws.Protocol.Opcode
 import akka.util.ByteString
 
+private[http] sealed trait FrameEventOrError
+
+private[http] final case class FrameError(p: ProtocolException) extends FrameEventOrError
+
 /**
  * The low-level Websocket framing model.
  *
  * INTERNAL API
  */
-private[http] sealed trait FrameEvent {
+private[http] sealed trait FrameEvent extends FrameEventOrError {
   def data: ByteString
   def lastPart: Boolean
   def withData(data: ByteString): FrameEvent

@@ -8,7 +8,6 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.stream.scaladsl.Sink
 import org.scalatest.FreeSpec
-
 import scala.concurrent.{ Future, Promise }
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling._
@@ -18,8 +17,8 @@ import akka.http.impl.util._
 import headers._
 import StatusCodes._
 import MediaTypes._
-
 import scala.xml.NodeSeq
+import akka.testkit.EventFilter
 
 class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
 
@@ -47,7 +46,7 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       "for successful futures and marshalling" in {
         Get() ~> complete(Promise.successful("yes").future) ~> check { responseAs[String] shouldEqual "yes" }
       }
-      "for failed futures and marshalling" in {
+      "for failed futures and marshalling" in EventFilter[RuntimeException](occurrences = 1).intercept {
         object TestException extends RuntimeException
         Get() ~> complete(Promise.failed[String](TestException).future) ~>
           check {
