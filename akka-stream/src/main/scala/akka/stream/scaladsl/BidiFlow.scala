@@ -5,9 +5,12 @@ package akka.stream.scaladsl
 
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.Timeouts
+
+import scala.concurrent.duration.FiniteDuration
 
 final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val module: Module) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
-  override val shape = module.shape.asInstanceOf[BidiShape[I1, O1, I2, O2]]
+  override def shape = module.shape.asInstanceOf[BidiShape[I1, O1, I2, O2]]
 
   /**
    * Add the given BidiFlow as the next step in a bidirectional transformation
@@ -193,4 +196,16 @@ object BidiFlow {
    */
   def fromFunctions[I1, O1, I2, O2](outbound: I1 ⇒ O1, inbound: I2 ⇒ O2): BidiFlow[I1, O1, I2, O2, Unit] =
     fromFlows(Flow[I1].map(outbound), Flow[I2].map(inbound))
+
+  /**
+   * If the time between two processed elements *in any direction* exceed the provided timeout, the stream is failed
+   * with a [[scala.concurrent.TimeoutException]].
+   *
+   * There is a difference between this stage and having two idleTimeout Flows assembled into a BidiStage.
+   * If the timeout is configured to be 1 seconds, then this stage will not fail even though there are elements flowing
+   * every second in one direction, but no elements are flowing in the other direction. I.e. this stage considers
+   * the *joint* frequencies of the elements in both directions.
+   */
+  def bidirectionalIdleTimeout[I, O](timeout: FiniteDuration): BidiFlow[I, I, O, O, Unit] =
+    fromGraph(new Timeouts.IdleBidi(timeout))
 }

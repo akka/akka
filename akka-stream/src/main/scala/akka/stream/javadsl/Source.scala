@@ -846,6 +846,27 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
   def flatten[U](strategy: FlattenStrategy[Out, U]): javadsl.Source[U, Mat] =
     new Source(delegate.flatten(strategy))
 
+  /**
+   * If the first element has not passed through this stage before the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   */
+  def initialTimeout(timeout: FiniteDuration): javadsl.Source[Out, Mat] =
+    new Source(delegate.initialTimeout(timeout))
+
+  /**
+   * If the completion of the stream does not happen until the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   */
+  def completionTimeout(timeout: FiniteDuration): javadsl.Source[Out, Mat] =
+    new Source(delegate.completionTimeout(timeout))
+
+  /**
+   * If the time between two processed elements exceed the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   */
+  def idleTimeout(timeout: FiniteDuration): javadsl.Source[Out, Mat] =
+    new Source(delegate.idleTimeout(timeout))
+
   override def withAttributes(attr: Attributes): javadsl.Source[Out, Mat] =
     new Source(delegate.withAttributes(attr))
 

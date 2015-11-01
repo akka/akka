@@ -996,6 +996,27 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
                                     matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out3, M2] =
     new Flow(delegate.zipWithMat[Out2, Out3, M, M2](that)(combinerToScala(combine))(combinerToScala(matF)))
 
+  /**
+   * If the first element has not passed through this stage before the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   */
+  def initialTimeout(timeout: FiniteDuration): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.initialTimeout(timeout))
+
+  /**
+   * If the completion of the stream does not happen until the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   */
+  def completionTimeout(timeout: FiniteDuration): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.completionTimeout(timeout))
+
+  /**
+   * If the time between two processed elements exceed the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   */
+  def idleTimeout(timeout: FiniteDuration): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.idleTimeout(timeout))
+
   override def withAttributes(attr: Attributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))
 
