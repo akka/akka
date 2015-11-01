@@ -6,12 +6,14 @@ package akka.stream.scaladsl
 import akka.actor._
 import akka.stream.Supervision._
 import akka.stream.impl._
-import akka.stream.impl.fusing.ActorInterpreter
-import akka.stream.stage.Stage
+import akka.stream.impl.fusing.{ ActorGraphInterpreter }
+import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
+import akka.stream.stage.AbstractStage.PushPullGraphStage
+import akka.stream.stage.{ GraphStageLogic, OutHandler, InHandler, Stage }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings, Attributes }
+import akka.stream._
 import akka.testkit.TestEvent.{ Mute, UnMute }
 import akka.testkit.{ EventFilter, TestDuration }
 import com.typesafe.config.ConfigFactory
@@ -32,7 +34,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
   import FlowSpec._
 
   val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+    .withInputBuffer(initialSize = 2, maxSize = 2)
 
   implicit val mat = ActorMaterializer(settings)
 
@@ -40,30 +42,51 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
   val identity2: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ identity(in)
 
   class BrokenActorInterpreter(
+    _assembly: GraphAssembly,
+    _inHandlers: Array[InHandler],
+    _outHandlers: Array[OutHandler],
+    _logics: Array[GraphStageLogic],
+    _shape: Shape,
     _settings: ActorMaterializerSettings,
-    _ops: Seq[Stage[_, _]],
+    _mat: Materializer,
     brokenMessage: Any)
-    extends ActorInterpreter(_settings, _ops, mat, Attributes.none) {
+    extends ActorGraphInterpreter(_assembly, _inHandlers, _outHandlers, _logics, _shape, _settings, _mat) {
 
     import akka.stream.actor.ActorSubscriberMessage._
 
     override protected[akka] def aroundReceive(receive: Receive, msg: Any) = {
       msg match {
-        case OnNext(m) if m == brokenMessage ⇒
+        case ActorGraphInterpreter.OnNext(0, m) if m == brokenMessage ⇒
           throw new NullPointerException(s"I'm so broken [$m]")
         case _ ⇒ super.aroundReceive(receive, msg)
       }
     }
   }
 
-  val faultyFlow: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ in.andThenMat { () ⇒
-    val props = Props(new BrokenActorInterpreter(settings, List(fusing.Map({ x: Any ⇒ x }, stoppingDecider)), "a3"))
+  val faultyFlow: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ in.via({
+    val stage = new PushPullGraphStage((_) ⇒ fusing.Map({ x: Any ⇒ x }, stoppingDecider), Attributes.none)
+
+    val assembly = new GraphAssembly(
+      Array(stage),
+      Array(Attributes.none),
+      Array(stage.shape.inlet, null),
+      Array(0, -1),
+      Array(null, stage.shape.outlet),
+      Array(-1, 0))
+
+    val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
+
+    val props = Props(new BrokenActorInterpreter(assembly, inHandlers, outHandlers, logics, stage.shape, settings, mat, "a3"))
       .withDispatcher("akka.test.stream-dispatcher").withDeploy(Deploy.local)
-    val processor = ActorProcessorFactory[Any, Any](system.actorOf(
-      props,
-      "borken-stage-actor"))
-    (processor, ())
-  }
+    val impl = system.actorOf(props, "borken-stage-actor")
+
+    val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, 0)
+    val publisher = new ActorPublisher[Any](impl) { override val wakeUpMsg = ActorGraphInterpreter.SubscribePending(0) }
+
+    impl ! ActorGraphInterpreter.ExposedPublisher(0, publisher)
+
+    Flow.fromSinkAndSource(Sink(subscriber), Source(publisher))
+  })
 
   val toPublisher: (Source[Any, _], ActorMaterializer) ⇒ Publisher[Any] =
     (f, m) ⇒ f.runWith(Sink.publisher)(m)
@@ -81,15 +104,15 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     for ((name, op) ← List("identity" -> identity, "identity2" -> identity2); n ← List(1, 2, 4)) {
       s"request initial elements from upstream ($name, $n)" in {
-        new ChainSetup(op, settings.withInputBuffer(initialSize = n, maxSize = settings.maxInputBufferSize), toPublisher) {
-          upstream.expectRequest(upstreamSubscription, settings.initialInputBufferSize)
+        new ChainSetup(op, settings.withInputBuffer(initialSize = n, maxSize = n), toPublisher) {
+          upstream.expectRequest(upstreamSubscription, settings.maxInputBufferSize)
         }
       }
     }
 
     "request more elements from upstream when downstream requests more elements" in {
       new ChainSetup(identity, settings, toPublisher) {
-        upstream.expectRequest(upstreamSubscription, settings.initialInputBufferSize)
+        upstream.expectRequest(upstreamSubscription, settings.maxInputBufferSize)
         downstreamSubscription.request(1)
         upstream.expectNoMsg(100.millis)
         downstreamSubscription.request(2)
@@ -132,7 +155,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "cancel upstream when single subscriber cancels subscription while receiving data" in {
-      new ChainSetup(identity, settings.withInputBuffer(initialSize = 1, maxSize = settings.maxInputBufferSize), toPublisher) {
+      new ChainSetup(identity, settings.withInputBuffer(initialSize = 1, maxSize = 1), toPublisher) {
         downstreamSubscription.request(5)
         upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("test")
@@ -291,7 +314,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "be possible to convert to a processor, and should be able to take a Processor" in {
       val identity1 = Flow[Int].toProcessor
-      val identity2 = Flow(() ⇒ identity1.run())
+      val identity2 = Flow.fromProcessor(() ⇒ identity1.run())
       Await.result(
         Source(1 to 10).via(identity2).grouped(100).runWith(Sink.head),
         3.seconds) should ===(1 to 10)

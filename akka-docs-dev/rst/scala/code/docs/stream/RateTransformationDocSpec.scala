@@ -12,6 +12,7 @@ import scala.math._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
+import akka.testkit.TestLatch
 
 class RateTransformationDocSpec extends AkkaSpec {
 
@@ -84,9 +85,14 @@ class RateTransformationDocSpec extends AkkaSpec {
         case (lastElement, drift) => ((lastElement, drift), (lastElement, drift + 1))
       }
     //#expand-drift
+    val latch = TestLatch(2)
+    val realDriftFlow = Flow[Double]
+      .expand(d => { latch.countDown(); (d, 0) }) {
+        case (lastElement, drift) => ((lastElement, drift), (lastElement, drift + 1))
+      }
 
     val (pub, sub) = TestSource.probe[Double]
-      .via(driftFlow)
+      .via(realDriftFlow)
       .toMat(TestSink.probe[(Double, Int)])(Keep.both)
       .run()
 
@@ -98,6 +104,7 @@ class RateTransformationDocSpec extends AkkaSpec {
     sub.requestNext((1.0, 2))
 
     pub.sendNext(2.0)
+    Await.ready(latch, 1.second)
     sub.requestNext((2.0, 0))
   }
 

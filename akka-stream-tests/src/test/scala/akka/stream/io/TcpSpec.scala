@@ -13,10 +13,11 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.{ ActorMaterializer, BindFailedException, StreamTcpException }
 import akka.util.{ ByteString, Helpers }
-
 import scala.collection.immutable
 import scala.concurrent.{ Promise, Await }
 import scala.concurrent.duration._
+import java.net.BindException
+import akka.testkit.EventFilter
 
 class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-enabled=auto\nakka.stream.materializer.subscription-timeout.timeout = 3s") with TcpHelper {
   var demand = 0L
@@ -350,12 +351,14 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
             conn.flow.join(writeButIgnoreRead).run()
           })(Keep.left).run(), 3.seconds)
 
-      val result = Source.maybe[ByteString]
+      val (promise, result) = Source.maybe[ByteString]
         .via(Tcp().outgoingConnection(serverAddress.getHostName, serverAddress.getPort))
-        .runFold(ByteString.empty)(_ ++ _)
+        .toMat(Sink.fold(ByteString.empty)(_ ++ _))(Keep.both)
+        .run()
 
       Await.result(result, 3.seconds) should ===(ByteString("Early response"))
 
+      promise.success(None) // close client upstream, no more data
       binding.unbind()
     }
 
@@ -453,7 +456,7 @@ class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-
       Await.result(echoServerFinish, 1.second)
     }
 
-    "bind and unbind correctly" in {
+    "bind and unbind correctly" in EventFilter[BindException](occurrences = 2).intercept {
       if (Helpers.isWindows) {
         info("On Windows unbinding is not immediate")
         pending

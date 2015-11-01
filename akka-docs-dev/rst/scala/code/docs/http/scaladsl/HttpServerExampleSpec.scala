@@ -352,7 +352,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
         pathEnd {
           (put | parameter('method ! "put")) {
             // form extraction from multipart or www-url-encoded forms
-            formFields('email, 'total.as[Money]).as(Order) { order =>
+            formFields(('email, 'total.as[Money])).as(Order) { order =>
               complete {
                 // complete with serialized Future result
                 (myDbActor ? Update(order)).mapTo[TransactionResult]
@@ -373,7 +373,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
         path("items") {
           get {
             // parameters to case class extraction
-            parameters('size.as[Int], 'color ?, 'dangerous ? "no")
+            parameters(('size.as[Int], 'color ?, 'dangerous ? "no"))
               .as(OrderItem) { orderItem =>
                 // ... route using case class instance created from
                 // required and optional query parameters

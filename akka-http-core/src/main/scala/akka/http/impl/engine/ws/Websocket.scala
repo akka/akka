@@ -40,12 +40,12 @@ private[http] object Websocket {
   /** The lowest layer that implements the binary protocol */
   def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, Unit] =
     BidiFlow.fromFlowsMat(
-      Flow[ByteString].transform(() ⇒ new FrameEventParser),
+      Flow[ByteString].via(FrameEventParser),
       Flow[FrameEvent].transform(() ⇒ new FrameEventRenderer))(Keep.none)
       .named("ws-framing")
 
   /** The layer that handles masking using the rules defined in the specification */
-  def masking(serverSide: Boolean, maskingRandomFactory: () ⇒ Random): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, Unit] =
+  def masking(serverSide: Boolean, maskingRandomFactory: () ⇒ Random): BidiFlow[FrameEvent, FrameEventOrError, FrameEvent, FrameEvent, Unit] =
     Masking(serverSide, maskingRandomFactory)
       .named("ws-masking")
 
@@ -55,7 +55,7 @@ private[http] object Websocket {
    */
   def frameHandling(serverSide: Boolean = true,
                     closeTimeout: FiniteDuration,
-                    log: LoggingAdapter): BidiFlow[FrameEvent, FrameHandler.Output, FrameOutHandler.Input, FrameStart, Unit] =
+                    log: LoggingAdapter): BidiFlow[FrameEventOrError, FrameHandler.Output, FrameOutHandler.Input, FrameStart, Unit] =
     BidiFlow.fromFlowsMat(
       FrameHandler.create(server = serverSide),
       FrameOutHandler.create(serverSide, closeTimeout, log))(Keep.none)
@@ -156,7 +156,7 @@ private[http] object Websocket {
 
     val shape = new FanOutShape2(in, bypass, user)
 
-    def createLogic = new GraphStageLogic(shape) {
+    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
 
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
@@ -187,7 +187,7 @@ private[http] object Websocket {
 
     val shape = new FanInShape3(bypass, user, tick, out)
 
-    def createLogic = new GraphStageLogic(shape) {
+    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
 
       passAlong(bypass, out, doFinish = true, doFail = true)
       passAlong(user, out, doFinish = false, doFail = false)
@@ -210,7 +210,7 @@ private[http] object Websocket {
 
     val shape = new FlowShape(in, out)
 
-    def createLogic = new GraphStageLogic(shape) {
+    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pull(in)
       })

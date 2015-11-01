@@ -5,7 +5,6 @@ package akka.stream.io
 
 import java.io.File
 
-import akka.stream.impl.io.SynchronousFileSink
 import akka.stream.{ Attributes, javadsl, ActorAttributes }
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
@@ -16,8 +15,10 @@ import scala.concurrent.Future
  * Sink which writes incoming [[ByteString]]s to the given file
  */
 object SynchronousFileSink {
+  import akka.stream.impl.io.IOSettings._
+  import akka.stream.impl.io.SynchronousFileSink
 
-  final val DefaultAttributes = Attributes.name("synchronousFileSink")
+  final val DefaultAttributes = SyncFileSinkName and IODispatcher
 
   /**
    * Synchronous (Java 6 compatible) Sink that writes incoming [[ByteString]] elements to the given file.

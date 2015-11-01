@@ -339,40 +339,41 @@ private[stream] class ActorGraphInterpreter(
   override def receive: Receive = {
     // Cases that are most likely on the hot path, in decreasing order of frequency
     case OnNext(id: Int, e: Any) ⇒
-      if (GraphInterpreter.Debug) println(s" onNext $e id=$id")
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onNext $e id=$id")
       inputs(id).onNext(e)
       runBatch()
     case RequestMore(id: Int, demand: Long) ⇒
-      if (GraphInterpreter.Debug) println(s" request  $demand id=$id")
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name}  request  $demand id=$id")
       outputs(id).requestMore(demand)
       runBatch()
     case Resume ⇒
       resumeScheduled = false
       if (interpreter.isSuspended) runBatch()
     case AsyncInput(logic, event, handler) ⇒
-      if (GraphInterpreter.Debug) println(s"ASYNC $event")
-      if (!interpreter.isStageCompleted(logic.stageId)) {
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name} ASYNC $event ($handler) [$logic]")
+      if (!interpreter.isStageCompleted(logic)) {
         try handler(event)
         catch {
           case NonFatal(e) ⇒ logic.failStage(e)
         }
+        interpreter.afterStageHasRun(logic)
       }
       runBatch()
 
     // Initialization and completion messages
     case OnError(id: Int, cause: Throwable) ⇒
-      if (GraphInterpreter.Debug) println(s" onError id=$id")
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onError id=$id")
       inputs(id).onError(cause)
       runBatch()
     case OnComplete(id: Int) ⇒
-      if (GraphInterpreter.Debug) println(s" onComplete id=$id")
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onComplete id=$id")
       inputs(id).onComplete()
       runBatch()
     case OnSubscribe(id: Int, subscription: Subscription) ⇒
       subscribesPending -= 1
       inputs(id).onSubscribe(subscription)
     case Cancel(id: Int) ⇒
-      if (GraphInterpreter.Debug) println(s" cancel id=$id")
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name}  cancel id=$id")
       outputs(id).cancel()
       runBatch()
     case SubscribePending(id: Int) ⇒

@@ -3,64 +3,71 @@
  */
 package akka.stream.impl.fusing
 
-import akka.event.NoLogging
+import akka.event.{ Logging, NoLogging }
 import akka.stream._
+import akka.stream.impl.fusing.GraphInterpreter.{ GraphAssembly, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
+import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage._
 
 /**
  * INTERNAL API
  */
 private[akka] object IteratorInterpreter {
-  final case class IteratorUpstream[T](input: Iterator[T]) extends PushPullStage[T, T] {
+
+  final case class IteratorUpstream[T](input: Iterator[T]) extends UpstreamBoundaryStageLogic[T] {
+    val out: Outlet[T] = Outlet[T]("IteratorUpstream.out")
+    out.id = 0
+
     private var hasNext = input.hasNext
 
-    override def onPush(elem: T, ctx: Context[T]): SyncDirective =
-      throw new UnsupportedOperationException("IteratorUpstream operates as a source, it cannot be pushed")
-
-    override def onPull(ctx: Context[T]): SyncDirective = {
-      if (!hasNext) ctx.finish()
-      else {
-        val elem = input.next()
-        hasNext = input.hasNext
-        if (!hasNext) ctx.pushAndFinish(elem)
-        else ctx.push(elem)
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = {
+        if (!hasNext) completeStage()
+        else {
+          val elem = input.next()
+          hasNext = input.hasNext
+          if (!hasNext) {
+            push(out, elem)
+            complete(out)
+          } else push(out, elem)
+        }
       }
+    })
 
-    }
-
-    // don't let toString consume the iterator
-    override def toString: String = "IteratorUpstream"
+    override def toString = "IteratorUpstream"
   }
 
-  final case class IteratorDownstream[T]() extends BoundaryStage with Iterator[T] {
+  final case class IteratorDownstream[T]() extends DownstreamBoundaryStageLogic[T] with Iterator[T] {
+    val in: Inlet[T] = Inlet[T]("IteratorDownstream.in")
+    in.id = 0
+
     private var done = false
     private var nextElem: T = _
     private var needsPull = true
     private var lastFailure: Throwable = null
 
-    override def onPush(elem: Any, ctx: BoundaryContext): Directive = {
-      nextElem = elem.asInstanceOf[T]
-      needsPull = false
-      ctx.exit()
-    }
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = {
+        nextElem = grab(in)
+        needsPull = false
+      }
 
-    override def onPull(ctx: BoundaryContext): Directive =
-      throw new UnsupportedOperationException("IteratorDownstream operates as a sink, it cannot be pulled")
+      override def onUpstreamFinish(): Unit = {
+        done = true
+        completeStage()
+      }
 
-    override def onUpstreamFinish(ctx: BoundaryContext): TerminationDirective = {
-      done = true
-      ctx.finish()
-    }
-
-    override def onUpstreamFailure(cause: Throwable, ctx: BoundaryContext): TerminationDirective = {
-      done = true
-      lastFailure = cause
-      ctx.finish()
-    }
+      override def onUpstreamFailure(cause: Throwable): Unit = {
+        done = true
+        lastFailure = cause
+        completeStage()
+      }
+    })
 
     private def pullIfNeeded(): Unit = {
       if (needsPull) {
-        enterAndPull() // will eventually result in a finish, or an onPush which exits
+        pull(in)
+        interpreter.execute(Int.MaxValue)
       }
     }
 
@@ -84,8 +91,8 @@ private[akka] object IteratorInterpreter {
 
     // don't let toString consume the iterator
     override def toString: String = "IteratorDownstream"
-
   }
+
 }
 
 /**
@@ -96,11 +103,52 @@ private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: S
 
   private val upstream = IteratorUpstream(input)
   private val downstream = IteratorDownstream[O]()
-  private val interpreter = new OneBoundedInterpreter(upstream +: ops.asInstanceOf[Seq[Stage[_, _]]] :+ downstream,
-    (op, ctx, evt) ⇒ throw new UnsupportedOperationException("IteratorInterpreter is fully synchronous"),
-    NoLogging,
-    NoMaterializer)
-  interpreter.init()
+
+  private def init(): Unit = {
+    import GraphInterpreter.Boundary
+
+    var i = 0
+    val length = ops.length
+    val attributes = Array.fill[Attributes](ops.length)(Attributes.none)
+    val ins = Array.ofDim[Inlet[_]](length + 1)
+    val inOwners = Array.ofDim[Int](length + 1)
+    val outs = Array.ofDim[Outlet[_]](length + 1)
+    val outOwners = Array.ofDim[Int](length + 1)
+    val stages = Array.ofDim[GraphStageWithMaterializedValue[Shape, Any]](length)
+
+    ins(ops.length) = null
+    inOwners(ops.length) = Boundary
+    outs(0) = null
+    outOwners(0) = Boundary
+
+    val opsIterator = ops.iterator
+    while (opsIterator.hasNext) {
+      val op = opsIterator.next().asInstanceOf[Stage[Any, Any]]
+      val stage = new PushPullGraphStage((_) ⇒ op, Attributes.none)
+      stages(i) = stage
+      ins(i) = stage.shape.inlet
+      inOwners(i) = i
+      outs(i + 1) = stage.shape.outlet
+      outOwners(i + 1) = i
+      i += 1
+    }
+    val assembly = new GraphAssembly(stages, attributes, ins, inOwners, outs, outOwners)
+
+    val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
+    val interpreter = new GraphInterpreter(
+      assembly,
+      NoMaterializer,
+      NoLogging,
+      inHandlers,
+      outHandlers,
+      logics,
+      (_, _, _) ⇒ throw new UnsupportedOperationException("IteratorInterpreter does not support asynchronous events."))
+    interpreter.attachUpstreamBoundary(0, upstream)
+    interpreter.attachDownstreamBoundary(ops.length, downstream)
+    interpreter.init()
+  }
+
+  init()
 
   def iterator: Iterator[O] = downstream
 }

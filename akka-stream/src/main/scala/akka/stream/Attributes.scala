@@ -4,10 +4,10 @@
 package akka.stream
 
 import akka.event.Logging
-
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.stream.impl.Stages.StageModule
+import scala.reflect.{ classTag, ClassTag }
+import akka.stream.impl.Stages.SymbolicStage
 import akka.japi.function
 
 /**
@@ -16,7 +16,7 @@ import akka.japi.function
  *
  * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
  */
-final case class Attributes private (attributeList: immutable.Seq[Attributes.Attribute] = Nil) {
+final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
   import Attributes._
 
@@ -44,14 +44,33 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
     }
 
   /**
-   * Get first attribute of a given `Class` or subclass thereof.
+   * Java API: Get the last (most specific) attribute of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
   def getAttribute[T <: Attribute](c: Class[T], default: T): T =
-    attributeList.find(c.isInstance) match {
-      case Some(a) ⇒ c.cast(a)
+    getAttribute(c) match {
+      case Some(a) ⇒ a
       case None    ⇒ default
     }
+
+  /**
+   * Java API: Get the last (most specific) attribute of a given `Class` or subclass thereof.
+   */
+  def getAttribute[T <: Attribute](c: Class[T]): Option[T] =
+    Option(attributeList.foldLeft(null.asInstanceOf[T])((acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) else acc))
+
+  /**
+   * Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
+   * If no such attribute exists the `default` value is returned.
+   */
+  def get[T <: Attribute: ClassTag](default: T) =
+    getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
+
+  /**
+   * Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
+   */
+  def get[T <: Attribute: ClassTag] =
+    getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]])
 
   /**
    * Adds given attributes to the end of these attributes.
@@ -59,7 +78,13 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
   def and(other: Attributes): Attributes =
     if (attributeList.isEmpty) other
     else if (other.attributeList.isEmpty) this
-    else Attributes(attributeList ++ other.attributeList)
+    else Attributes(attributeList ::: other.attributeList)
+
+  /**
+   * Adds given attribute to the end of these attributes.
+   */
+  def and(other: Attribute): Attributes =
+    Attributes(attributeList :+ other)
 
   /**
    * INTERNAL API
@@ -76,12 +101,7 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
           case Name(n) ⇒
             if (buf ne null) concatNames(i, null, buf.append('-').append(n))
             else if (first ne null) {
-              val b = new StringBuilder(
-                (first.length() + n.length()) match {
-                  case x if x < 0                ⇒ throw new IllegalStateException("Names too long to concatenate")
-                  case y if y > Int.MaxValue / 2 ⇒ Int.MaxValue
-                  case z                         ⇒ Math.max(Integer.highestOneBit(z) * 2, 32)
-                })
+              val b = new StringBuilder((first.length() + n.length()) * 2)
               concatNames(i, null, b.append(first).append('-').append(n))
             } else concatNames(i, n, null)
           case _ ⇒ concatNames(i, first, buf)
@@ -94,16 +114,6 @@ final case class Attributes private (attributeList: immutable.Seq[Attributes.Att
       case some ⇒ some
     }
   }
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] def logLevels: Option[LogLevels] =
-    attributeList.collectFirst { case l: LogLevels ⇒ l }
-
-  private[akka] def transform(node: StageModule): StageModule =
-    if ((this eq Attributes.none) || (this eq node.attributes)) node
-    else node.withAttributes(attributes = this and node.attributes)
 
 }
 

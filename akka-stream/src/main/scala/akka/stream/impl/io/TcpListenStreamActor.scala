@@ -156,11 +156,11 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
     val tcpStreamActor = context.watch(context.actorOf(TcpStreamActor.inboundProps(connection, halfClose, settings)))
     val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
 
-    import scala.concurrent.duration._
+    import scala.concurrent.duration.FiniteDuration
     val handler = (idleTimeout match {
       case d: FiniteDuration ⇒ Flow[ByteString].join(Timeouts.idleTimeoutBidi[ByteString, ByteString](d))
       case _                 ⇒ Flow[ByteString]
-    }).andThenMat(() ⇒ (processor, ()))
+    }).via(Flow.fromProcessor(() ⇒ processor))
 
     val conn = StreamTcp.IncomingConnection(
       connected.localAddress,

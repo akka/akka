@@ -70,7 +70,7 @@ object InterpreterSupervisionSpec {
 
 }
 
-class InterpreterSupervisionSpec extends InterpreterSpecKit {
+class InterpreterSupervisionSpec extends GraphInterpreterSpecKit {
   import InterpreterSupervisionSpec._
   import Supervision.stoppingDecider
   import Supervision.resumingDecider
@@ -78,7 +78,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
 
   "Interpreter error handling" must {
 
-    "handle external failure" in new TestSetup(Seq(Map((x: Int) ⇒ x + 1, stoppingDecider))) {
+    "handle external failure" in new OneBoundedSetup[Int](Seq(Map((x: Int) ⇒ x + 1, stoppingDecider))) {
       lastEvents() should be(Set.empty)
 
       upstream.onError(TE)
@@ -86,7 +86,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
 
     }
 
-    "emit failure when op throws" in new TestSetup(Seq(Map((x: Int) ⇒ if (x == 0) throw TE else x, stoppingDecider))) {
+    "emit failure when op throws" in new OneBoundedSetup[Int](Seq(Map((x: Int) ⇒ if (x == 0) throw TE else x, stoppingDecider))) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)
@@ -98,7 +98,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(Cancel, OnError(TE)))
     }
 
-    "emit failure when op throws in middle of the chain" in new TestSetup(Seq(
+    "emit failure when op throws in middle of the chain" in new OneBoundedSetup[Int](Seq(
       Map((x: Int) ⇒ x + 1, stoppingDecider),
       Map((x: Int) ⇒ if (x == 0) throw TE else x + 10, stoppingDecider),
       Map((x: Int) ⇒ x + 100, stoppingDecider))) {
@@ -114,7 +114,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(Cancel, OnError(TE)))
     }
 
-    "resume when Map throws" in new TestSetup(Seq(Map((x: Int) ⇒ if (x == 0) throw TE else x, resumingDecider))) {
+    "resume when Map throws" in new OneBoundedSetup[Int](Seq(Map((x: Int) ⇒ if (x == 0) throw TE else x, resumingDecider))) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)
@@ -138,7 +138,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnNext(4)))
     }
 
-    "resume when Map throws in middle of the chain" in new TestSetup(Seq(
+    "resume when Map throws in middle of the chain" in new OneBoundedSetup[Int](Seq(
       Map((x: Int) ⇒ x + 1, resumingDecider),
       Map((x: Int) ⇒ if (x == 0) throw TE else x + 10, resumingDecider),
       Map((x: Int) ⇒ x + 100, resumingDecider))) {
@@ -157,7 +157,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnNext(114)))
     }
 
-    "resume when Map throws before Grouped" in new TestSetup(Seq(
+    "resume when Map throws before Grouped" in new OneBoundedSetup[Int](Seq(
       Map((x: Int) ⇒ x + 1, resumingDecider),
       Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10, resumingDecider),
       Grouped(3))) {
@@ -177,7 +177,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnNext(Vector(13, 14, 15))))
     }
 
-    "complete after resume when Map throws before Grouped" in new TestSetup(Seq(
+    "complete after resume when Map throws before Grouped" in new OneBoundedSetup[Int](Seq(
       Map((x: Int) ⇒ x + 1, resumingDecider),
       Map((x: Int) ⇒ if (x <= 0) throw TE else x + 10, resumingDecider),
       Grouped(1000))) {
@@ -205,7 +205,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
         }
       }
 
-      new TestSetup(Seq(
+      new OneBoundedSetup[Int](Seq(
         Map((x: Int) ⇒ x + 1, restartingDecider),
         stage,
         Map((x: Int) ⇒ x + 100, restartingDecider))) {
@@ -228,14 +228,13 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
     "restart when onPush throws after ctx.push" in {
       val stage = new RestartTestStage {
         override def onPush(elem: Int, ctx: Context[Int]): SyncDirective = {
-          val ret = ctx.push(sum)
-          super.onPush(elem, ctx)
+          val ret = ctx.push(elem)
           if (elem <= 0) throw TE
           ret
         }
       }
 
-      new TestSetup(Seq(
+      new OneBoundedSetup[Int](Seq(
         Map((x: Int) ⇒ x + 1, restartingDecider),
         stage,
         Map((x: Int) ⇒ x + 100, restartingDecider))) {
@@ -248,6 +247,10 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
         downstream.requestOne()
         lastEvents() should be(Set(RequestOne))
         upstream.onNext(-1) // boom
+        // The element has been pushed before the exception, there is no way back
+        lastEvents() should be(Set(OnNext(100)))
+
+        downstream.requestOne()
         lastEvents() should be(Set(RequestOne))
 
         upstream.onNext(3)
@@ -263,7 +266,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
         }
       }
 
-      new TestSetup(Seq(
+      new OneBoundedSetup[Int](Seq(
         Map((x: Int) ⇒ x + 1, restartingDecider),
         stage,
         Map((x: Int) ⇒ x + 100, restartingDecider))) {
@@ -283,7 +286,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       }
     }
 
-    "resume when Filter throws" in new TestSetup(Seq(
+    "resume when Filter throws" in new OneBoundedSetup[Int](Seq(
       Filter((x: Int) ⇒ if (x == 0) throw TE else true, resumingDecider))) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -299,7 +302,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnNext(3)))
     }
 
-    "resume when MapConcat throws" in new TestSetup(Seq(
+    "resume when MapConcat throws" in new OneBoundedSetup[Int](Seq(
       MapConcat((x: Int) ⇒ if (x == 0) throw TE else List(x, -x), resumingDecider))) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -323,7 +326,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       // TODO can't get type inference to work with `pf` inlined
       val pf: PartialFunction[Int, Int] =
         { case x: Int ⇒ if (x == 0) throw TE else x }
-      new TestSetup(Seq(
+      new OneBoundedSetup[Int](Seq(
         Collect(pf, restartingDecider))) {
         downstream.requestOne()
         lastEvents() should be(Set(RequestOne))
@@ -340,7 +343,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       }
     }
 
-    "resume when Scan throws" in new TestSetup(Seq(
+    "resume when Scan throws" in new OneBoundedSetup[Int](Seq(
       Scan(1, (acc: Int, x: Int) ⇒ if (x == 10) throw TE else acc + x, resumingDecider))) {
       downstream.requestOne()
       lastEvents() should be(Set(OnNext(1)))
@@ -358,7 +361,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnNext(7))) // 1 + 2 + 4
     }
 
-    "restart when Scan throws" in new TestSetup(Seq(
+    "restart when Scan throws" in new OneBoundedSetup[Int](Seq(
       Scan(1, (acc: Int, x: Int) ⇒ if (x == 10) throw TE else acc + x, restartingDecider))) {
       downstream.requestOne()
       lastEvents() should be(Set(OnNext(1)))
@@ -383,7 +386,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnNext(25))) // 1 + 4 + 20
     }
 
-    "restart when Conflate `seed` throws" in new TestSetup(Seq(Conflate(
+    "restart when Conflate `seed` throws" in new OneBoundedSetup[Int](Seq(Conflate(
       (in: Int) ⇒ if (in == 1) throw TE else in,
       (agg: Int, x: Int) ⇒ agg + x,
       restartingDecider))) {
@@ -412,7 +415,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set.empty)
     }
 
-    "restart when Conflate `aggregate` throws" in new TestSetup(Seq(Conflate(
+    "restart when Conflate `aggregate` throws" in new OneBoundedSetup[Int](Seq(Conflate(
       (in: Int) ⇒ in,
       (agg: Int, x: Int) ⇒ if (x == 2) throw TE else agg + x,
       restartingDecider))) {
@@ -447,7 +450,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(Cancel))
     }
 
-    "fail when Expand `seed` throws" in new TestSetup(Seq(Expand(
+    "fail when Expand `seed` throws" in new OneBoundedSetup[Int](Seq(Expand(
       (in: Int) ⇒ if (in == 2) throw TE else in,
       (agg: Int) ⇒ (agg, -math.abs(agg))))) {
 
@@ -469,7 +472,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnError(TE), Cancel))
     }
 
-    "fail when Expand `extrapolate` throws" in new TestSetup(Seq(Expand(
+    "fail when Expand `extrapolate` throws" in new OneBoundedSetup[Int](Seq(Expand(
       (in: Int) ⇒ in,
       (agg: Int) ⇒ if (agg == 2) throw TE else (agg, -math.abs(agg))))) {
 
@@ -493,7 +496,7 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
 
     "fail when onPull throws before pushing all generated elements" in {
       def test(decider: Supervision.Decider, absorbTermination: Boolean): Unit = {
-        new TestSetup(Seq(
+        new OneBoundedSetup[Int](Seq(
           OneToManyTestStage(decider, absorbTermination))) {
 
           downstream.requestOne()
