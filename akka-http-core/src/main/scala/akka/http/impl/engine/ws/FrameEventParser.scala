@@ -4,11 +4,10 @@
 
 package akka.http.impl.engine.ws
 
-import akka.http.impl.util.{ ByteReader, ByteStringParserStage }
-import akka.stream.stage.{ StageState, SyncDirective, Context }
 import akka.util.ByteString
-
 import scala.annotation.tailrec
+import akka.stream.io.ByteStringParser
+import akka.stream.Attributes
 
 /**
  * Streaming parser for the Websocket framing protocol as defined in RFC6455
@@ -36,108 +35,81 @@ import scala.annotation.tailrec
  *
  * INTERNAL API
  */
-private[http] class FrameEventParser extends ByteStringParserStage[FrameEvent] {
-  protected def onTruncation(ctx: Context[FrameEvent]): SyncDirective =
-    ctx.fail(new ProtocolException("Data truncated"))
+private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
+  import ByteStringParser._
 
-  def initial: StageState[ByteString, FrameEvent] = ReadFrameHeader
+  override def createLogic(attr: Attributes) = new ParsingLogic {
+    startWith(ReadFrameHeader)
 
-  object ReadFrameHeader extends ByteReadingState {
-    def read(reader: ByteReader, ctx: Context[FrameEvent]): SyncDirective = {
-      import Protocol._
-
-      val flagsAndOp = reader.readByte()
-      val maskAndLength = reader.readByte()
-
-      val flags = flagsAndOp & FLAGS_MASK
-      val op = flagsAndOp & OP_MASK
-
-      val maskBit = (maskAndLength & MASK_MASK) != 0
-      val length7 = maskAndLength & LENGTH_MASK
-
-      val length =
-        length7 match {
-          case 126 ⇒ reader.readShortBE().toLong
-          case 127 ⇒ reader.readLongBE()
-          case x   ⇒ x.toLong
-        }
-
-      if (length < 0) ctx.fail(new ProtocolException("Highest bit of 64bit length was set"))
-
-      val mask =
-        if (maskBit) Some(reader.readIntBE())
-        else None
-
-      def isFlagSet(mask: Int): Boolean = (flags & mask) != 0
-      val header =
-        FrameHeader(Opcode.forCode(op.toByte),
-          mask,
-          length,
-          fin = isFlagSet(FIN_MASK),
-          rsv1 = isFlagSet(RSV1_MASK),
-          rsv2 = isFlagSet(RSV2_MASK),
-          rsv3 = isFlagSet(RSV3_MASK))
-
-      val data = reader.remainingData
-      val takeNow = (header.length min Int.MaxValue).toInt
-      val thisFrameData = data.take(takeNow)
-      val remaining = data.drop(takeNow)
-
-      val nextState =
-        if (thisFrameData.length == length) ReadFrameHeader
-        else readData(length - thisFrameData.length)
-
-      pushAndBecomeWithRemaining(FrameStart(header, thisFrameData.compact), nextState, remaining, ctx)
-    }
-  }
-
-  def readData(_remaining: Long): State =
-    new State {
-      var remaining = _remaining
-      def onPush(elem: ByteString, ctx: Context[FrameEvent]): SyncDirective =
-        if (elem.size < remaining) {
-          remaining -= elem.size
-          ctx.push(FrameData(elem, lastPart = false))
-        } else {
-          require(remaining <= Int.MaxValue) // safe because, remaining <= elem.size <= Int.MaxValue
-          val frameData = elem.take(remaining.toInt)
-          val remainingData = elem.drop(remaining.toInt)
-
-          pushAndBecomeWithRemaining(FrameData(frameData.compact, lastPart = true), ReadFrameHeader, remainingData, ctx)
-        }
+    trait Step extends ParseStep[FrameEvent] {
+      override def onTruncation(): Unit = failStage(new ProtocolException("Data truncated"))
     }
 
-  def becomeWithRemaining(nextState: State, remainingData: ByteString, ctx: Context[FrameEvent]): SyncDirective = {
-    become(nextState)
-    nextState.onPush(remainingData, ctx)
-  }
-  def pushAndBecomeWithRemaining(elem: FrameEvent, nextState: State, remainingData: ByteString, ctx: Context[FrameEvent]): SyncDirective =
-    if (remainingData.isEmpty) {
-      become(nextState)
-      ctx.push(elem)
-    } else {
-      become(waitForPull(nextState, remainingData))
-      ctx.push(elem)
-    }
+    object ReadFrameHeader extends Step {
+      override def parse(reader: ByteReader): (FrameEvent, Step) = {
+        import Protocol._
 
-  def waitForPull(nextState: State, remainingData: ByteString): State =
-    new State {
-      def onPush(elem: ByteString, ctx: Context[FrameEvent]): SyncDirective =
-        throw new IllegalStateException("Mustn't push in this state")
+        val flagsAndOp = reader.readByte()
+        val maskAndLength = reader.readByte()
 
-      override def onPull(ctx: Context[FrameEvent]): SyncDirective = {
-        become(nextState)
-        nextState.onPush(remainingData, ctx)
+        val flags = flagsAndOp & FLAGS_MASK
+        val op = flagsAndOp & OP_MASK
+
+        val maskBit = (maskAndLength & MASK_MASK) != 0
+        val length7 = maskAndLength & LENGTH_MASK
+
+        val length =
+          length7 match {
+            case 126 ⇒ reader.readShortBE().toLong
+            case 127 ⇒ reader.readLongBE()
+            case x   ⇒ x.toLong
+          }
+
+        if (length < 0) throw new ProtocolException("Highest bit of 64bit length was set")
+
+        val mask =
+          if (maskBit) Some(reader.readIntBE())
+          else None
+
+        def isFlagSet(mask: Int): Boolean = (flags & mask) != 0
+        val header =
+          FrameHeader(Opcode.forCode(op.toByte),
+            mask,
+            length,
+            fin = isFlagSet(FIN_MASK),
+            rsv1 = isFlagSet(RSV1_MASK),
+            rsv2 = isFlagSet(RSV2_MASK),
+            rsv3 = isFlagSet(RSV3_MASK))
+
+        val takeNow = (header.length min reader.remainingSize).toInt
+        val thisFrameData = reader.take(takeNow)
+
+        val nextState =
+          if (thisFrameData.length == length) ReadFrameHeader
+          else new ReadData(length - thisFrameData.length)
+
+        (FrameStart(header, thisFrameData.compact), nextState)
       }
     }
-}
 
-object FrameEventParser {
+    class ReadData(_remaining: Long) extends Step {
+      var remaining = _remaining
+      override def parse(reader: ByteReader): (FrameEvent, Step) =
+        if (reader.remainingSize < remaining) {
+          remaining -= reader.remainingSize
+          (FrameData(reader.takeAll(), lastPart = false), this)
+        } else {
+          (FrameData(reader.take(remaining.toInt), lastPart = true), ReadFrameHeader)
+        }
+    }
+  }
+
   def mask(bytes: ByteString, _mask: Option[Int]): ByteString =
     _mask match {
       case Some(m) ⇒ mask(bytes, m)._1
       case None    ⇒ bytes
     }
+
   def mask(bytes: ByteString, mask: Int): (ByteString, Int) = {
     @tailrec def rec(bytes: Array[Byte], offset: Int, mask: Int): Int =
       if (offset >= bytes.length) mask

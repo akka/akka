@@ -6,20 +6,18 @@ package akka.http.impl.engine.client
 
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
-
 import akka.stream.ActorMaterializer
 import akka.stream.io._
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
-
 import akka.http.impl.util._
-
 import akka.http.scaladsl.{ HttpsContext, Http }
 import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest }
 import akka.http.scaladsl.model.headers.Host
 import org.scalatest.time.{ Span, Seconds }
-
 import scala.concurrent.Future
+import akka.testkit.EventFilter
+import javax.net.ssl.SSLException
 
 class TlsEndpointVerificationSpec extends AkkaSpec("""
     #akka.loggers = []
@@ -30,7 +28,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
   val timeout = Timeout(Span(3, Seconds))
 
   "The client implementation" should {
-    "not accept certificates signed by unknown CA" in {
+    "not accept certificates signed by unknown CA" in EventFilter[SSLException](occurrences = 1).intercept {
       val pipe = pipeline(Http().defaultClientHttpsContext, hostname = "akka.example.org") // default context doesn't include custom CA
 
       whenReady(pipe(HttpRequest(uri = "https://akka.example.org/")).failed, timeout) { e ⇒

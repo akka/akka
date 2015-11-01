@@ -19,10 +19,10 @@ import scala.util.control.NonFatal
  */
 private[http] object FrameHandler {
 
-  def create(server: Boolean): Flow[FrameEvent, Output, Unit] =
-    Flow[FrameEvent].transform(() ⇒ new HandlerStage(server))
+  def create(server: Boolean): Flow[FrameEventOrError, Output, Unit] =
+    Flow[FrameEventOrError].transform(() ⇒ new HandlerStage(server))
 
-  private class HandlerStage(server: Boolean) extends StatefulStage[FrameEvent, Output] {
+  private class HandlerStage(server: Boolean) extends StatefulStage[FrameEventOrError, Output] {
     type Ctx = Context[Output]
     def initial: State = Idle
 
@@ -79,11 +79,6 @@ private[http] object FrameHandler {
       }
     }
 
-    private object Closed extends State {
-      def onPush(elem: FrameEvent, ctx: Ctx): SyncDirective =
-        ctx.pull() // ignore
-    }
-
     private def becomeAndHandleWith(newState: State, part: FrameEvent)(implicit ctx: Ctx): SyncDirective = {
       become(newState)
       current.onPush(part, ctx)
@@ -132,7 +127,7 @@ private[http] object FrameHandler {
     }
 
     private object CloseAfterPeerClosed extends State {
-      def onPush(elem: FrameEvent, ctx: Context[Output]): SyncDirective =
+      def onPush(elem: FrameEventOrError, ctx: Context[Output]): SyncDirective =
         elem match {
           case FrameStart(FrameHeader(Opcode.Close, _, length, _, _, _, _), data) ⇒
             become(WaitForPeerTcpClose)
@@ -141,7 +136,7 @@ private[http] object FrameHandler {
         }
     }
     private object WaitForPeerTcpClose extends State {
-      def onPush(elem: FrameEvent, ctx: Context[Output]): SyncDirective =
+      def onPush(elem: FrameEventOrError, ctx: Context[Output]): SyncDirective =
         ctx.pull() // ignore
     }
 
@@ -168,10 +163,11 @@ private[http] object FrameHandler {
       def handleFrameData(data: FrameData)(implicit ctx: Ctx): SyncDirective
       def handleFrameStart(start: FrameStart)(implicit ctx: Ctx): SyncDirective
 
-      def onPush(part: FrameEvent, ctx: Ctx): SyncDirective =
+      def onPush(part: FrameEventOrError, ctx: Ctx): SyncDirective =
         part match {
           case data: FrameData   ⇒ handleFrameData(data)(ctx)
           case start: FrameStart ⇒ handleFrameStart(start)(ctx)
+          case FrameError(ex)    ⇒ ctx.fail(ex)
         }
     }
   }
