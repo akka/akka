@@ -1,15 +1,16 @@
-package akka.stream.io
+package akka.stream.impl
 
 import java.util.concurrent.{ TimeUnit, TimeoutException }
 
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.scaladsl.{ BidiFlow, Flow }
-import akka.stream.stage._
 import akka.stream.{ BidiShape, Inlet, Outlet, Attributes }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic }
 
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
 
 /**
+ * INTERNAL API
+ *
  * Various stages for controlling timeouts on IO related streams (although not necessarily).
  *
  * The common theme among the processing stages here that
@@ -18,41 +19,7 @@ import scala.concurrent.duration.{ Deadline, FiniteDuration }
  *  - if the timer fires before the event happens, these stages all fail the stream
  *  - otherwise, these streams do not interfere with the element flow, ordinary completion or failure
  */
-object Timeouts {
-
-  /**
-   * If the first element has not passed through this stage before the provided timeout, the stream is failed
-   * with a [[TimeoutException]].
-   */
-  def initalTimeout[T](timeout: FiniteDuration): Flow[T, T, Unit] =
-    Flow.fromGraph(new InitialTimeout[T](timeout))
-
-  /**
-   * If the completion of the stream does not happen until the provided timeout, the stream is failed
-   * with a [[TimeoutException]].
-   */
-  def completionTimeout[T](timeout: FiniteDuration): Flow[T, T, Unit] =
-    Flow.fromGraph(new CompletionTimeout[T](timeout))
-
-  /**
-   * If the time between two processed elements exceed the provided timeout, the stream is failed
-   * with a [[TimeoutException]].
-   */
-  def idleTimeout[T](timeout: FiniteDuration): Flow[T, T, Unit] =
-    Flow.fromGraph(new IdleTimeout[T](timeout))
-
-  /**
-   * If the time between two processed elements *in any direction* exceed the provided timeout, the stream is failed
-   * with a [[TimeoutException]].
-   *
-   * There is a difference between this stage and having two idleTimeout Flows assembled into a BidiStage.
-   * If the timout is configured to be 1 seconds, then this stage will not fail even though there are elements flowing
-   * every second in one direction, but no elements are flowing in the other direction. I.e. this stage considers
-   * the *joint* frequencies of the elements in both directions.
-   */
-  def idleTimeoutBidi[A, B](timeout: FiniteDuration): BidiFlow[A, A, B, B, Unit] =
-    BidiFlow.fromGraph(new IdleTimeoutBidi[A, B](timeout))
-
+private[stream] object Timeouts {
   private def idleTimeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
     import scala.concurrent.duration._
     FiniteDuration(
@@ -60,8 +27,7 @@ object Timeouts {
       TimeUnit.NANOSECONDS)
   }
 
-  private class InitialTimeout[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
-
+  final class Initial[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       private var initialHasPassed = false
 
@@ -86,7 +52,7 @@ object Timeouts {
     override def toString = "InitialTimeoutTimer"
   }
 
-  private class CompletionTimeout[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+  final class Completion[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       setHandler(in, new InHandler {
@@ -106,7 +72,7 @@ object Timeouts {
     override def toString = "CompletionTimeout"
   }
 
-  private class IdleTimeout[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+  final class Idle[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
     private var nextDeadline: Deadline = Deadline.now + timeout
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
@@ -131,7 +97,7 @@ object Timeouts {
     override def toString = "IdleTimeout"
   }
 
-  private class IdleTimeoutBidi[I, O](val timeout: FiniteDuration) extends GraphStage[BidiShape[I, I, O, O]] {
+  final class IdleBidi[I, O](val timeout: FiniteDuration) extends GraphStage[BidiShape[I, I, O, O]] {
     val in1 = Inlet[I]("in1")
     val in2 = Inlet[O]("in2")
     val out1 = Outlet[I]("out1")

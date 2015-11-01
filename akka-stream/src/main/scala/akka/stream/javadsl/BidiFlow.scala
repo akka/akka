@@ -6,6 +6,8 @@ package akka.stream.javadsl
 import akka.japi.function
 import akka.stream._
 
+import scala.concurrent.duration.FiniteDuration
+
 object BidiFlow {
   /**
    * A graph with the shape of a BidiFlow logically is a BidiFlow, this method makes
@@ -73,6 +75,17 @@ object BidiFlow {
   def fromFunctions[I1, O1, I2, O2](top: function.Function[I1, O1], bottom: function.Function[I2, O2]): BidiFlow[I1, O1, I2, O2, Unit] =
     new BidiFlow(scaladsl.BidiFlow.fromFunctions(top.apply _, bottom.apply _))
 
+  /**
+   * If the time between two processed elements *in any direction* exceed the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   *
+   * There is a difference between this stage and having two idleTimeout Flows assembled into a BidiStage.
+   * If the timeout is configured to be 1 seconds, then this stage will not fail even though there are elements flowing
+   * every second in one direction, but no elements are flowing in the other direction. I.e. this stage considers
+   * the *joint* frequencies of the elements in both directions.
+   */
+  def bidirectionalIdleTimeout[I, O](timeout: FiniteDuration): BidiFlow[I, I, O, O, Unit] =
+    new BidiFlow(scaladsl.BidiFlow.bidirectionalIdleTimeout(timeout))
 }
 
 class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O1, I2, O2, Mat]) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
