@@ -54,9 +54,9 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
     val outs = copy.shape.outlets
     new BidiFlow(module
       .compose(copy, combine)
-      .wire(shape.out1, ins(0))
+      .wire(shape.out1, ins.head)
       .wire(outs(1), shape.in2)
-      .replaceShape(BidiShape(shape.in1, outs(0), ins(1), shape.out2)))
+      .replaceShape(BidiShape(shape.in1, outs.head, ins(1), shape.out2)))
   }
 
   /**

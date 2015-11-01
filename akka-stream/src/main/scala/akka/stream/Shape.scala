@@ -270,7 +270,7 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1 @uncheckedVa
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
     require(inlets.size == 2, s"proposed inlets [${inlets.mkString(", ")}] do not fit BidiShape")
     require(outlets.size == 2, s"proposed outlets [${outlets.mkString(", ")}] do not fit BidiShape")
-    BidiShape(inlets(0), outlets(0), inlets(1), outlets(1))
+    BidiShape(inlets.head, outlets.head, inlets(1), outlets(1))
   }
   def reversed: Shape = copyFromPorts(inlets.reverse, outlets.reverse)
   //#implementation-details-elided
