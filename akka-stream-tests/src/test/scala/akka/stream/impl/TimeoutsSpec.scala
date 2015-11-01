@@ -2,17 +2,17 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.stream.io
+package akka.stream.impl
 
 import java.util.concurrent.TimeoutException
 
-import akka.stream.{ ClosedShape, ActorMaterializer }
 import akka.stream.scaladsl._
-import akka.stream.testkit.{ AkkaSpec, TestSubscriber, TestPublisher }
-import scala.concurrent.{ Future, Await }
-import scala.concurrent.duration._
-
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.{ AkkaSpec, TestPublisher, TestSubscriber }
+import akka.stream.{ ActorMaterializer, ClosedShape }
+
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future }
 
 class TimeoutsSpec extends AkkaSpec {
   implicit val mat = ActorMaterializer()
@@ -21,16 +21,18 @@ class TimeoutsSpec extends AkkaSpec {
 
     "pass through elements unmodified" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 100).via(Timeouts.initalTimeout(2.seconds)).grouped(200).runWith(Sink.head),
+        Source(1 to 100).initialTimeout(2.seconds).grouped(200).runWith(Sink.head),
         3.seconds) should ===(1 to 100)
     }
 
     "pass through error unmodified" in assertAllStagesStopped {
       a[TE] shouldBe thrownBy {
         Await.result(
-          Source(1 to 100).concat(Source.failed(TE("test")))
-            .via(Timeouts.initalTimeout(2.seconds))
-            .grouped(200).runWith(Sink.head),
+          Source(1 to 100)
+            .concat(Source.failed(TE("test")))
+            .initialTimeout(2.seconds)
+            .grouped(200)
+            .runWith(Sink.head),
           3.seconds)
       }
     }
@@ -38,7 +40,7 @@ class TimeoutsSpec extends AkkaSpec {
     "fail if no initial element passes until timeout" in assertAllStagesStopped {
       val downstreamProbe = TestSubscriber.probe[Int]()
       Source.maybe[Int]
-        .via(Timeouts.initalTimeout(1.seconds))
+        .initialTimeout(1.second)
         .runWith(Sink(downstreamProbe))
 
       downstreamProbe.expectSubscription()
@@ -54,7 +56,7 @@ class TimeoutsSpec extends AkkaSpec {
 
     "pass through elements unmodified" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 100).via(Timeouts.completionTimeout(2.seconds)).grouped(200).runWith(Sink.head),
+        Source(1 to 100).completionTimeout(2.seconds).grouped(200).runWith(Sink.head),
         3.seconds) should ===(1 to 100)
     }
 
@@ -62,7 +64,7 @@ class TimeoutsSpec extends AkkaSpec {
       a[TE] shouldBe thrownBy {
         Await.result(
           Source(1 to 100).concat(Source.failed(TE("test")))
-            .via(Timeouts.completionTimeout(2.seconds))
+            .completionTimeout(2.seconds)
             .grouped(200).runWith(Sink.head),
           3.seconds)
       }
@@ -72,7 +74,7 @@ class TimeoutsSpec extends AkkaSpec {
       val upstreamProbe = TestPublisher.probe[Int]()
       val downstreamProbe = TestSubscriber.probe[Int]()
       Source(upstreamProbe)
-        .via(Timeouts.completionTimeout(2.seconds))
+        .completionTimeout(2.seconds)
         .runWith(Sink(downstreamProbe))
 
       upstreamProbe.sendNext(1)
@@ -93,7 +95,7 @@ class TimeoutsSpec extends AkkaSpec {
 
     "pass through elements unmodified" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 100).via(Timeouts.idleTimeout(2.seconds)).grouped(200).runWith(Sink.head),
+        Source(1 to 100).idleTimeout(2.seconds).grouped(200).runWith(Sink.head),
         3.seconds) should ===(1 to 100)
     }
 
@@ -101,7 +103,7 @@ class TimeoutsSpec extends AkkaSpec {
       a[TE] shouldBe thrownBy {
         Await.result(
           Source(1 to 100).concat(Source.failed(TE("test")))
-            .via(Timeouts.idleTimeout(2.seconds))
+            .idleTimeout(2.seconds)
             .grouped(200).runWith(Sink.head),
           3.seconds)
       }
@@ -111,7 +113,7 @@ class TimeoutsSpec extends AkkaSpec {
       val upstreamProbe = TestPublisher.probe[Int]()
       val downstreamProbe = TestSubscriber.probe[Int]()
       Source(upstreamProbe)
-        .via(Timeouts.idleTimeout(1.seconds))
+        .idleTimeout(1.seconds)
         .runWith(Sink(downstreamProbe))
 
       // Two seconds in overall, but won't timeout until time between elements is large enough
@@ -131,7 +133,7 @@ class TimeoutsSpec extends AkkaSpec {
   "IdleTimeoutBidi" must {
 
     "not signal error in simple loopback case and pass through elements unmodified" in assertAllStagesStopped {
-      val timeoutIdentity = Timeouts.idleTimeoutBidi[Int, Int](2.seconds).join(Flow[Int])
+      val timeoutIdentity = BidiFlow.bidirectionalIdleTimeout[Int, Int](2.seconds).join(Flow[Int])
 
       Await.result(
         Source(1 to 100).via(timeoutIdentity).grouped(200).runWith(Sink.head),
@@ -146,7 +148,7 @@ class TimeoutsSpec extends AkkaSpec {
       val downstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source(downstreamWriter))(Keep.left)
 
       val assembly: RunnableGraph[(Future[Unit], Future[Unit])] = upstream
-        .joinMat(Timeouts.idleTimeoutBidi[Int, String](2.seconds))(Keep.left)
+        .joinMat(BidiFlow.bidirectionalIdleTimeout[Int, String](2.seconds))(Keep.left)
         .joinMat(downstream)(Keep.both)
 
       val (upFinished, downFinished) = assembly.run()
@@ -174,7 +176,7 @@ class TimeoutsSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
-        val timeoutStage = b.add(Timeouts.idleTimeoutBidi[String, Int](2.seconds))
+        val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
         Source(upWrite) ~> timeoutStage.in1;
         timeoutStage.out1 ~> Sink(downRead)
         Sink(upRead) <~ timeoutStage.out2;
@@ -222,7 +224,7 @@ class TimeoutsSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
-        val timeoutStage = b.add(Timeouts.idleTimeoutBidi[String, Int](2.seconds))
+        val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
         Source(upWrite) ~> timeoutStage.in1;
         timeoutStage.out1 ~> Sink(downRead)
         Sink(upRead) <~ timeoutStage.out2;

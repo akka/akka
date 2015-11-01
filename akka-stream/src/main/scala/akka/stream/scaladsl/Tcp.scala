@@ -13,7 +13,6 @@ import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.io.{ DelayedInitProcessor, StreamTcpManager }
-import akka.stream.io.Timeouts
 import akka.util.ByteString
 import org.reactivestreams.{ Processor, Publisher, Subscriber }
 
@@ -204,7 +203,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
                          idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val timeoutHandling = idleTimeout match {
-      case d: FiniteDuration ⇒ Flow[ByteString].join(Timeouts.idleTimeoutBidi[ByteString, ByteString](d))
+      case d: FiniteDuration ⇒ Flow[ByteString].join(BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](d))
       case _                 ⇒ Flow[ByteString]
     }
 
