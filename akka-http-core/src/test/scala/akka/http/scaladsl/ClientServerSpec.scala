@@ -168,12 +168,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds)
 
       // waiting for the timeout to happen on the client
-      Try(Await.result(clientsResponseFuture, 2.second)).recoverWith {
-        case _: StreamTcpException ⇒ Success(System.nanoTime())
-        case other: Throwable      ⇒ Failure(other)
-      }.get
-      val diff = System.nanoTime() - serverReceivedRequestAtNanos
-      diff should be > theIdleTimeout.toNanos
+      intercept[StreamTcpException] { Await.result(clientsResponseFuture, 2.second) }
+
+      (System.nanoTime() - serverReceivedRequestAtNanos).millis should be >= theIdleTimeout
     }
 
     "log materialization errors in `bindAndHandle`" which {
