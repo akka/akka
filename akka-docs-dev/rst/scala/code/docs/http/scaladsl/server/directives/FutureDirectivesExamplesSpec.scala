@@ -26,9 +26,6 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
         ctx.complete((InternalServerError, "Unsuccessful future!"))
     }
 
-  val resourceActor = system.actorOf(Props(new Actor {
-    def receive = { case _ => sender ! "resource" }
-  }))
   implicit val responseTimeout = Timeout(2, TimeUnit.SECONDS)
 
   "onComplete" in {

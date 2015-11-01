@@ -7,8 +7,8 @@ package directives
 
 import akka.http.scaladsl.model.{ MediaTypes, MediaRanges, StatusCodes }
 import akka.http.scaladsl.model.headers._
-
 import scala.concurrent.Future
+import akka.testkit.EventFilter
 
 class ExecutionDirectivesSpec extends RoutingSpec {
   object MyException extends RuntimeException
@@ -51,7 +51,7 @@ class ExecutionDirectivesSpec extends RoutingSpec {
         }
       }
     }
-    "not interfere with alternative routes" in {
+    "not interfere with alternative routes" in EventFilter[MyException.type](occurrences = 1).intercept {
       Get("/abc") ~>
         get {
           handleExceptions(handler)(reject) ~ { ctx ⇒
@@ -62,22 +62,22 @@ class ExecutionDirectivesSpec extends RoutingSpec {
           responseAs[String] shouldEqual "There was an internal server error."
         }
     }
-    "not handle other exceptions" in {
+    "not handle other exceptions" in EventFilter[RuntimeException](occurrences = 1, message = "buh").intercept {
       Get("/abc") ~>
         get {
           handleExceptions(handler) {
-            throw new RuntimeException
+            throw new RuntimeException("buh")
           }
         } ~> check {
           status shouldEqual StatusCodes.InternalServerError
           responseAs[String] shouldEqual "There was an internal server error."
         }
     }
-    "always fall back to a default content type" in {
+    "always fall back to a default content type" in EventFilter[RuntimeException](occurrences = 2, message = "buh2").intercept {
       Get("/abc") ~> Accept(MediaTypes.`application/json`) ~>
         get {
           handleExceptions(handler) {
-            throw new RuntimeException
+            throw new RuntimeException("buh2")
           }
         } ~> check {
           status shouldEqual StatusCodes.InternalServerError
@@ -87,7 +87,7 @@ class ExecutionDirectivesSpec extends RoutingSpec {
       Get("/abc") ~> Accept(MediaTypes.`text/xml`, MediaRanges.`*/*`.withQValue(0f)) ~>
         get {
           handleExceptions(handler) {
-            throw new RuntimeException
+            throw new RuntimeException("buh2")
           }
         } ~> check {
           status shouldEqual StatusCodes.InternalServerError

@@ -1,7 +1,7 @@
 package akka.stream
 
 import akka.event._
-import akka.stream.impl.fusing.{ GraphInterpreterSpecKit, GraphStages, Map => MapStage, OneBoundedInterpreter }
+import akka.stream.impl.fusing.{ GraphInterpreterSpecKit, GraphStages, Map => MapStage }
 import akka.stream.impl.fusing.GraphStages.Identity
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
 import akka.stream.stage._
@@ -18,10 +18,10 @@ class InterpreterBenchmark {
   import InterpreterBenchmark._
 
   // manual, and not via @Param, because we want @OperationsPerInvocation on our tests
-  final val data100k = (1 to 100000).toVector
+  final val data100k: Vector[Int] = (1 to 100000).toVector
 
   @Param(Array("1", "5", "10"))
-  val numberOfIds = 0
+  val numberOfIds: Int = 0
 
   @Benchmark
   @OperationsPerInvocation(100000)
@@ -47,33 +47,13 @@ class InterpreterBenchmark {
       }
     }
   }
-
-  @Benchmark
-  @OperationsPerInvocation(100000)
-  def onebounded_interpreter_100k_elements() {
-    val lock = new Lock()
-    lock.acquire()
-    val sink = OneBoundedDataSink(data100k.size)
-    val ops = Vector.fill(numberOfIds)(new PushPullStage[Int, Int] {
-      override def onPull(ctx: _root_.akka.stream.stage.Context[Int]) = ctx.pull()
-      override def onPush(elem: Int, ctx: _root_.akka.stream.stage.Context[Int]) = ctx.push(elem)
-    })
-    val interpreter = new OneBoundedInterpreter(OneBoundedDataSource(data100k) +: ops :+ sink,
-      (op, ctx, event) ⇒ (),
-      Logging(NoopBus, classOf[InterpreterBenchmark]),
-      null,
-      Attributes.none,
-      forkLimit = 100, overflowToHeap = false)
-    interpreter.init()
-    sink.requestOne()
-  }
 }
 
 object InterpreterBenchmark {
 
   case class GraphDataSource[T](override val toString: String, data: Vector[T]) extends UpstreamBoundaryStageLogic[T] {
-    var idx = 0
-    val out = Outlet[T]("out")
+    var idx: Int = 0
+    override val out: akka.stream.Outlet[T] = Outlet[T]("out")
     out.id = 0
 
     setHandler(out, new OutHandler {
@@ -81,8 +61,7 @@ object InterpreterBenchmark {
         if (idx < data.size) {
           push(out, data(idx))
           idx += 1
-        }
-        else {
+        } else {
           completeStage()
         }
       }
@@ -91,7 +70,7 @@ object InterpreterBenchmark {
   }
 
   case class GraphDataSink[T](override val toString: String, var expected: Int) extends DownstreamBoundaryStageLogic[T] {
-    val in = Inlet[T]("in")
+    override val in: akka.stream.Inlet[T] = Inlet[T]("in")
     in.id = 0
 
     setHandler(in, new InHandler {
@@ -104,49 +83,7 @@ object InterpreterBenchmark {
       override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
     })
 
-    def requestOne() = pull(in)
-  }
-
-  case class OneBoundedDataSource[T](data: Vector[T]) extends BoundaryStage {
-    var idx = 0
-
-    override def onDownstreamFinish(ctx: BoundaryContext): TerminationDirective = {
-      ctx.finish()
-    }
-
-    override def onPull(ctx: BoundaryContext): Directive = {
-      if (idx < data.size) {
-          idx += 1
-          ctx.push(data(idx - 1))
-        }
-        else {
-          ctx.finish()
-        }
-    }
-
-    override def onPush(elem: Any, ctx: BoundaryContext): Directive =
-      throw new UnsupportedOperationException("Cannot push the boundary")
-  }
-
-  case class OneBoundedDataSink(var expected: Int) extends BoundaryStage {
-    override def onPush(elem: Any, ctx: BoundaryContext): Directive = {
-      expected -= 1
-      if (expected == 0) ctx.exit()
-      else ctx.pull()
-    }
-
-    override def onUpstreamFinish(ctx: BoundaryContext): TerminationDirective = {
-      ctx.finish()
-    }
-
-    override def onUpstreamFailure(cause: Throwable, ctx: BoundaryContext): TerminationDirective = {
-      ctx.finish()
-    }
-
-    override def onPull(ctx: BoundaryContext): Directive =
-      throw new UnsupportedOperationException("Cannot pull the boundary")
-
-    def requestOne(): Unit = enterAndPull()
+    def requestOne(): Unit = pull(in)
   }
 
   val NoopBus = new LoggingBus {

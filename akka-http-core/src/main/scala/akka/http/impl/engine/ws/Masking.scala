@@ -15,13 +15,19 @@ import akka.stream.stage.{ SyncDirective, Context, StatefulStage }
  * INTERNAL API
  */
 private[http] object Masking {
-  def apply(serverSide: Boolean, maskRandom: () ⇒ Random): BidiFlow[ /* net in */ FrameEvent, /* app out */ FrameEvent, /* app in */ FrameEvent, /* net out */ FrameEvent, Unit] =
+  def apply(serverSide: Boolean, maskRandom: () ⇒ Random): BidiFlow[ /* net in */ FrameEvent, /* app out */ FrameEventOrError, /* app in */ FrameEvent, /* net out */ FrameEvent, Unit] =
     BidiFlow.fromFlowsMat(unmaskIf(serverSide), maskIf(!serverSide, maskRandom))(Keep.none)
 
   def maskIf(condition: Boolean, maskRandom: () ⇒ Random): Flow[FrameEvent, FrameEvent, Unit] =
-    if (condition) Flow[FrameEvent].transform(() ⇒ new Masking(maskRandom())) // new random per materialization
+    if (condition)
+      Flow[FrameEvent]
+        .transform(() ⇒ new Masking(maskRandom())) // new random per materialization
+        .map {
+          case f: FrameEvent  ⇒ f
+          case FrameError(ex) ⇒ throw ex
+        }
     else Flow[FrameEvent]
-  def unmaskIf(condition: Boolean): Flow[FrameEvent, FrameEvent, Unit] =
+  def unmaskIf(condition: Boolean): Flow[FrameEvent, FrameEventOrError, Unit] =
     if (condition) Flow[FrameEvent].transform(() ⇒ new Unmasking())
     else Flow[FrameEvent]
 
@@ -41,19 +47,25 @@ private[http] object Masking {
   }
 
   /** Implements both masking and unmasking which is mostly symmetric (because of XOR) */
-  private abstract class Masker extends StatefulStage[FrameEvent, FrameEvent] {
+  private abstract class Masker extends StatefulStage[FrameEvent, FrameEventOrError] {
     def extractMask(header: FrameHeader): Int
     def setNewMask(header: FrameHeader, mask: Int): FrameHeader
 
     def initial: State = Idle
 
-    object Idle extends State {
-      def onPush(part: FrameEvent, ctx: Context[FrameEvent]): SyncDirective =
+    private object Idle extends State {
+      def onPush(part: FrameEvent, ctx: Context[FrameEventOrError]): SyncDirective =
         part match {
           case start @ FrameStart(header, data) ⇒
-            val mask = extractMask(header)
-            become(new Running(mask))
-            current.onPush(start.copy(header = setNewMask(header, mask)), ctx)
+            try {
+              val mask = extractMask(header)
+              become(new Running(mask))
+              current.onPush(start.copy(header = setNewMask(header, mask)), ctx)
+            } catch {
+              case p: ProtocolException ⇒
+                become(Done)
+                ctx.push(FrameError(p))
+            }
           case _: FrameData ⇒
             ctx.fail(new IllegalStateException("unexpected FrameData (need FrameStart first)"))
         }
@@ -61,13 +73,16 @@ private[http] object Masking {
     private class Running(initialMask: Int) extends State {
       var mask = initialMask
 
-      def onPush(part: FrameEvent, ctx: Context[FrameEvent]): SyncDirective = {
+      def onPush(part: FrameEvent, ctx: Context[FrameEventOrError]): SyncDirective = {
         if (part.lastPart) become(Idle)
 
         val (masked, newMask) = FrameEventParser.mask(part.data, mask)
         mask = newMask
         ctx.push(part.withData(data = masked))
       }
+    }
+    private object Done extends State {
+      def onPush(part: FrameEvent, ctx: Context[FrameEventOrError]): SyncDirective = ctx.pull()
     }
   }
 }

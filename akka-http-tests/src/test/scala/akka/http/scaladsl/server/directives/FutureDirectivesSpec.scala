@@ -6,8 +6,8 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.http.scaladsl.model.StatusCodes
-
 import scala.concurrent.Future
+import akka.testkit.EventFilter
 
 class FutureDirectivesSpec extends RoutingSpec {
 
@@ -56,7 +56,7 @@ class FutureDirectivesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "yes"
       }
     }
-    "propagate the exception in the failure case" in {
+    "propagate the exception in the failure case" in EventFilter[Exception](occurrences = 1, message = "XXX").intercept {
       Get() ~> onSuccess(Future.failed(TestException)) { echoComplete } ~> check {
         status shouldEqual StatusCodes.InternalServerError
       }
@@ -67,7 +67,7 @@ class FutureDirectivesSpec extends RoutingSpec {
         responseAs[String] shouldEqual s"Oops. akka.http.scaladsl.server.directives.FutureDirectivesSpec$$TestException: EX when ok"
       }
     }
-    "catch an exception in the failure case" in {
+    "catch an exception in the failure case" in EventFilter[Exception](occurrences = 1, message = "XXX").intercept {
       Get() ~> onSuccess(Future.failed(TestException)) { throwTestException("EX when ") } ~> check {
         status shouldEqual StatusCodes.InternalServerError
         responseAs[String] shouldEqual "There was an internal server error."

@@ -5,15 +5,14 @@ package akka.stream.impl.io
 
 import java.io.{ IOException, InputStream }
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingDeque, TimeUnit }
-
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.io.InputStreamSinkStage._
 import akka.stream.stage._
 import akka.util.ByteString
-
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import akka.stream.Attributes
 
 private[akka] object InputStreamSinkStage {
 
@@ -38,7 +37,7 @@ private[akka] class InputStreamSinkStage(timeout: FiniteDuration) extends SinkSt
   val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
   require(maxBuffer > 0, "Buffer size must be greater than 0")
 
-  override def createLogicAndMaterializedValue: (GraphStageLogic, InputStream) = {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, InputStream) = {
 
     val dataQueue = new LinkedBlockingDeque[StreamToAdapterMessage](maxBuffer + 1)
     var pullRequestIsSent = true

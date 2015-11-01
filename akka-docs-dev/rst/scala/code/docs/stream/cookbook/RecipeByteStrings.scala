@@ -27,9 +27,15 @@ class RecipeByteStrings extends RecipeSpec {
 
         override def onPull(ctx: Context[ByteString]): SyncDirective = emitChunkOrPull(ctx)
 
+        override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective =
+          if (buffer.nonEmpty) ctx.absorbTermination()
+          else ctx.finish()
+
         private def emitChunkOrPull(ctx: Context[ByteString]): SyncDirective = {
-          if (buffer.isEmpty) ctx.pull()
-          else {
+          if (buffer.isEmpty) {
+            if (ctx.isFinishing) ctx.finish()
+            else ctx.pull()
+          } else {
             val (emit, nextBuffer) = buffer.splitAt(chunkSize)
             buffer = nextBuffer
             ctx.push(emit)

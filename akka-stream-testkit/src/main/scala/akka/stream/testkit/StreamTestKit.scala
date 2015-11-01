@@ -9,11 +9,12 @@ import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.language.existentials
+import java.io.StringWriter
+import java.io.PrintWriter
 
 /**
  * Provides factory methods for various Publishers.
@@ -183,7 +184,16 @@ object TestSubscriber {
   final case class OnSubscribe(subscription: Subscription) extends SubscriberEvent
   final case class OnNext[I](element: I) extends SubscriberEvent
   final case object OnComplete extends SubscriberEvent
-  final case class OnError(cause: Throwable) extends SubscriberEvent
+  final case class OnError(cause: Throwable) extends SubscriberEvent {
+    override def toString: String = {
+      val str = new StringWriter
+      val out = new PrintWriter(str)
+      out.print("OnError(")
+      cause.printStackTrace(out)
+      out.print(")")
+      str.toString
+    }
+  }
 
   /**
    * Probe that implements [[org.reactivestreams.Subscriber]] interface.

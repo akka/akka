@@ -21,17 +21,17 @@ private[akka] class ByteReader(input: ByteString) {
 
   def currentOffset: Int = off
   def remainingData: ByteString = input.drop(off)
-  def fromStartToHere: ByteString = input.take(currentOffset)
+  def fromStartToHere: ByteString = input.take(off)
 
   def readByte(): Int =
     if (off < input.length) {
       val x = input(off)
       off += 1
-      x.toInt & 0xFF
+      x & 0xFF
     } else throw NeedMoreData
   def readShortLE(): Int = readByte() | (readByte() << 8)
   def readIntLE(): Int = readShortLE() | (readShortLE() << 16)
-  def readLongLE(): Long = (readIntBE() & 0xffffffffL) | ((readIntLE() & 0xffffffffL) << 32)
+  def readLongLE(): Long = (readIntLE() & 0xffffffffL) | ((readIntLE() & 0xffffffffL) << 32)
 
   def readShortBE(): Int = (readByte() << 8) | readByte()
   def readIntBE(): Int = (readShortBE() << 16) | readShortBE()

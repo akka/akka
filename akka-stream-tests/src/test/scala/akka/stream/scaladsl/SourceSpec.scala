@@ -73,7 +73,7 @@ class SourceSpec extends AkkaSpec {
   }
 
   "Maybe Source" must {
-    "complete materialized future with None when stream cancels" in {
+    "complete materialized future with None when stream cancels" in Utils.assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
       val pubSink = Sink.publisher[Int]
 
@@ -90,7 +90,7 @@ class SourceSpec extends AkkaSpec {
       Await.result(f.future, 500.millis) shouldEqual None
     }
 
-    "allow external triggering of empty completion" in {
+    "allow external triggering of empty completion" in Utils.assertAllStagesStopped {
       val neverSource = Source.maybe[Int].filter(_ ⇒ false)
       val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
 
@@ -102,7 +102,7 @@ class SourceSpec extends AkkaSpec {
       Await.result(counterFuture, 500.millis) shouldEqual 0
     }
 
-    "allow external triggering of non-empty completion" in {
+    "allow external triggering of non-empty completion" in Utils.assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
       val counterSink = Sink.head[Int]
 
@@ -114,7 +114,7 @@ class SourceSpec extends AkkaSpec {
       Await.result(counterFuture, 500.millis) shouldEqual 6
     }
 
-    "allow external triggering of onError" in {
+    "allow external triggering of onError" in Utils.assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
       val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
 

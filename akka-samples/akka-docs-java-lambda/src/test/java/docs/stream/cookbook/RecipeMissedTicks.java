@@ -16,10 +16,14 @@ import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.JavaTestKit;
+import akka.testkit.TestLatch;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
 
@@ -53,12 +57,17 @@ public class RecipeMissedTicks extends RecipeTest {
         final Source<Tick, TestPublisher.Probe<Tick>> tickStream = TestSource.probe(system);
         final Sink<Integer, TestSubscriber.Probe<Integer>> sink = TestSink.probe(system);
 
+        @SuppressWarnings("unused")
         //#missed-ticks
         final Flow<Tick, Integer, BoxedUnit> missedTicks =
           Flow.of(Tick.class).conflate(tick -> 0, (missed, tick) -> missed + 1);
         //#missed-ticks
+        final TestLatch latch = new TestLatch(3, system);
+        final Flow<Tick, Integer, BoxedUnit> realMissedTicks =
+                Flow.of(Tick.class).conflate(tick -> 0, (missed, tick) -> { latch.countDown(); return missed + 1; });
 
-        Pair<TestPublisher.Probe<Tick>, TestSubscriber.Probe<Integer>> pubSub = tickStream.via(missedTicks).toMat(sink, Keep.both()).run(mat);
+        Pair<TestPublisher.Probe<Tick>, TestSubscriber.Probe<Integer>> pubSub =
+        		tickStream.via(realMissedTicks).toMat(sink, Keep.both()).run(mat);
         TestPublisher.Probe<Tick> pub = pubSub.first();
         TestSubscriber.Probe<Integer> sub = pubSub.second();
 
@@ -68,6 +77,8 @@ public class RecipeMissedTicks extends RecipeTest {
         pub.sendNext(Tick);
 
         FiniteDuration timeout = FiniteDuration.create(200, TimeUnit.MILLISECONDS);
+
+        Await.ready(latch, Duration.create(1, TimeUnit.SECONDS));
 
         sub.request(1);
         sub.expectNext(3);
