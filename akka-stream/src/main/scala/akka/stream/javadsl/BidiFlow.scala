@@ -88,7 +88,7 @@ object BidiFlow {
     new BidiFlow(scaladsl.BidiFlow.bidirectionalIdleTimeout(timeout))
 }
 
-class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O1, I2, O2, Mat]) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
+final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O1, I2, O2, Mat]) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
   private[stream] override def module = delegate.module
   override def shape = delegate.shape
 
