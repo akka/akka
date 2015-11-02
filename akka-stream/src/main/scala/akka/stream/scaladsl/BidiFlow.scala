@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.Timeouts
+import akka.stream.impl.Timers
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -207,5 +207,5 @@ object BidiFlow {
    * the *joint* frequencies of the elements in both directions.
    */
   def bidirectionalIdleTimeout[I, O](timeout: FiniteDuration): BidiFlow[I, I, O, O, Unit] =
-    fromGraph(new Timeouts.IdleBidi(timeout))
+    fromGraph(new Timers.IdleBidi(timeout))
 }

@@ -5,6 +5,7 @@ package akka.stream.javadsl
 
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair }
+import akka.stream.impl.Timers.{ DelayInitial, IdleInject }
 import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream.{ scaladsl, _ }
 import akka.stream.stage.Stage
@@ -999,6 +1000,14 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or fails if timeout elapses before first element arrives
+   *
+   * '''Cancels when''' downstream cancels
    */
   def initialTimeout(timeout: FiniteDuration): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.initialTimeout(timeout))
@@ -1006,6 +1015,14 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * If the completion of the stream does not happen until the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or fails if timeout elapses before upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def completionTimeout(timeout: FiniteDuration): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.completionTimeout(timeout))
@@ -1013,9 +1030,51 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * If the time between two processed elements exceed the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or fails if timeout elapses between two emitted elements
+   *
+   * '''Cancels when''' downstream cancels
    */
   def idleTimeout(timeout: FiniteDuration): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.idleTimeout(timeout))
+
+  /**
+   * Injects additional elements if the upstream does not emit for a configured amount of time. In other words, this
+   * stage attempts to maintains a base rate of emitted elements towards the downstream.
+   *
+   * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
+   * do not accumulate during this period.
+   *
+   * Upstream elements are always preferred over injected elements.
+   *
+   * '''Emits when''' upstream emits an element or if the upstream was idle for the configured period
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def keepAlive[U >: Out](maxIdle: FiniteDuration, injectedElem: function.Creator[U]): javadsl.Flow[In, U, Mat] =
+    new Flow(delegate.keepAlive(maxIdle, () ⇒ injectedElem.create()))
+
+  /**
+   * Delays the initial element by the specified duration.
+   *
+   * '''Emits when''' upstream emits an element if the initial delay already elapsed
+   *
+   * '''Backpressures when''' downstream backpressures or initial delay not yet elapsed
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def initialDelay(delay: FiniteDuration): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.initialDelay(delay))
 
   override def withAttributes(attr: Attributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))

@@ -3,10 +3,10 @@ package akka.stream.impl
 import java.util.concurrent.{ TimeUnit, TimeoutException }
 
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.{ BidiShape, Inlet, Outlet, Attributes }
+import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic }
 
-import scala.concurrent.duration.{ Deadline, FiniteDuration }
+import scala.concurrent.duration.{ Duration, Deadline, FiniteDuration }
 
 /**
  * INTERNAL API
@@ -19,7 +19,7 @@ import scala.concurrent.duration.{ Deadline, FiniteDuration }
  *  - if the timer fires before the event happens, these stages all fail the stream
  *  - otherwise, these streams do not interfere with the element flow, ordinary completion or failure
  */
-private[stream] object Timeouts {
+private[stream] object Timers {
   private def idleTimeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
     import scala.concurrent.duration._
     FiniteDuration(
@@ -143,6 +143,83 @@ private[stream] object Timeouts {
 
       override def preStart(): Unit = schedulePeriodically("IdleTimeoutCheckTimer", idleTimeoutCheckInterval(timeout))
     }
+  }
+
+  final class DelayInitial[T](val delay: FiniteDuration) extends GraphStage[FlowShape[T, T]] {
+    val in: Inlet[T] = Inlet("IdleInject.in")
+    val out: Outlet[T] = Outlet("IdleInject.out")
+    override val shape: FlowShape[T, T] = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+      private val IdleTimer = "DelayTimer"
+
+      override def preStart(): Unit = {
+        if (delay == Duration.Zero) open = true
+        else scheduleOnce(IdleTimer, delay)
+      }
+
+      private var open: Boolean = false
+
+      setHandler(in, new InHandler {
+        override def onPush(): Unit = push(out, grab(in))
+      })
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = if (open) pull(in)
+      })
+
+      override protected def onTimer(timerKey: Any): Unit = {
+        open = true
+        if (isAvailable(out)) pull(in)
+      }
+    }
+  }
+
+  final class IdleInject[I, O >: I](val timeout: FiniteDuration, inject: () ⇒ O) extends GraphStage[FlowShape[I, O]] {
+    val in: Inlet[I] = Inlet("IdleInject.in")
+    val out: Outlet[O] = Outlet("IdleInject.out")
+    override val shape: FlowShape[I, O] = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+      private val IdleTimer = "IdleTimer"
+      private var nextDeadline = Deadline.now + timeout
+
+      // Prefetching to ensure priority of actual upstream elements
+      override def preStart(): Unit = pull(in)
+
+      setHandler(in, new InHandler {
+        override def onPush(): Unit = {
+          nextDeadline = Deadline.now + timeout
+          cancelTimer(IdleTimer)
+          if (isAvailable(out)) {
+            push(out, grab(in))
+            pull(in)
+          }
+        }
+      })
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = {
+          if (isAvailable(in)) {
+            push(out, grab(in))
+            pull(in)
+          } else {
+            if (nextDeadline.isOverdue()) {
+              nextDeadline = Deadline.now + timeout
+              push(out, inject())
+            } else scheduleOnce(IdleTimer, nextDeadline.timeLeft)
+          }
+        }
+      })
+
+      override protected def onTimer(timerKey: Any): Unit = {
+        if (nextDeadline.isOverdue() && isAvailable(out)) {
+          push(out, inject())
+          nextDeadline = Deadline.now + timeout
+        }
+      }
+    }
+
   }
 
 }

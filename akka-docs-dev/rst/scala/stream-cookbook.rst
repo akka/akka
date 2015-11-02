@@ -368,8 +368,6 @@ Injecting keep-alive messages into a stream of ByteStrings
 **Situation:** Given a communication channel expressed as a stream of ByteStrings we want to inject keep-alive messages
 but only if this does not interfere with normal traffic.
 
-All this recipe needs is the ``MergePreferred`` element which is a version of a merge that is not fair. In other words,
-whenever the merge can choose because multiple upstream producers have elements to produce it will always choose the
-preferred upstream effectively giving it an absolute priority.
+There is a built-in operation that allows to do this directly:
 
 .. includecode:: code/docs/stream/cookbook/RecipeKeepAlive.scala#inject-keepalive
