@@ -27,9 +27,11 @@ import scala.runtime.BoxedUnit;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @SuppressWarnings("serial")
 public class FlowTest extends StreamTest {
@@ -716,6 +718,71 @@ public class FlowTest extends StreamTest {
             }, materializer);
 
     probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
+  }
+
+  @Test
+  public void mustBeAbleToUseInitialTimeout() throws Exception {
+    try {
+      Await.result(
+          Source.<Integer>maybe()
+              .via(Flow.of(Integer.class).initialTimeout(Duration.create(1, "second")))
+              .runWith(Sink.<Integer>head(), materializer),
+          Duration.create(3, "second")
+      );
+      fail("A TimeoutException was expected");
+    } catch(TimeoutException e) {
+      // expected
+    }
+  }
+
+
+  @Test
+  public void mustBeAbleToUseCompletionTimeout() throws Exception {
+    try {
+      Await.result(
+          Source.<Integer>maybe()
+              .via(Flow.of(Integer.class).completionTimeout(Duration.create(1, "second")))
+              .runWith(Sink.<Integer>head(), materializer),
+          Duration.create(3, "second")
+      );
+      fail("A TimeoutException was expected");
+    } catch(TimeoutException e) {
+      // expected
+    }
+  }
+
+  @Test
+  public void mustBeAbleToUseIdleTimeout() throws Exception {
+    try {
+      Await.result(
+          Source.<Integer>maybe()
+              .via(Flow.of(Integer.class).idleTimeout(Duration.create(1, "second")))
+              .runWith(Sink.<Integer>head(), materializer),
+          Duration.create(3, "second")
+      );
+      fail("A TimeoutException was expected");
+    } catch(TimeoutException e) {
+      // expected
+    }
+  }
+
+  @Test
+  public void mustBeAbleToUseKeepAlive() throws Exception {
+    Integer result = Await.result(
+        Source.<Integer>maybe()
+            .via(Flow.of(Integer.class)
+              .keepAlive(Duration.create(1, "second"), new Creator<Integer>() {
+                public Integer create() {
+                  return 0;
+                }
+              })
+            )
+            .takeWithin(Duration.create(1500, "milliseconds"))
+            .runWith(Sink.<Integer>head(), materializer),
+        Duration.create(3, "second")
+    );
+
+    assertEquals((Object) 0, result);
   }
 
 }
