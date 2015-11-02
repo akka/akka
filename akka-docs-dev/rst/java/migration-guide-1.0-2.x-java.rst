@@ -24,6 +24,7 @@ must be done with the more descriptive method ``Flow.fromGraph()``.
 It was possible to create a ``Flow`` from a ``Source`` and a ``Sink`` using ``wrap()``. Now this functionality can
 be accessed trough the more descriptive methods ``Flow.fromSinkAndSource`` and ``Flow.fromSinkAndSourceMat``.
 
+
 Creating a BidiFlow from other stages
 -------------------------------------
 
@@ -33,9 +34,6 @@ must be done with the more descriptive method ``BidiFlow.fromGraph()``.
 It was possible to create a ``BidiFlow`` from two ``Flow`` s using ``wrap()``. Now this functionality can
 be accessed trough the more descriptive methods ``BidiFlow.fromFlows`` and ``BidiFlow.fromFlowsMat``.
 
-It was possible to create a ``BidiFlow`` from two functions using ``apply()`` (Scala DSL) or ``create()`` (Java DSL).
-Now this functionality can be accessed trough the more descriptive method ``BidiFlow.fromFunctions``.
-
 Update procedure
 ----------------
 
@@ -43,12 +41,50 @@ Update procedure
 2. Replace all uses of ``Flow.wrap`` when it converts a ``Source`` and ``Sink`` to a ``Flow`` with
    ``Flow.fromSinkAndSource`` or ``Flow.fromSinkAndSourceMat``
 3. Replace all uses of ``BidiFlow.wrap`` when it converts a ``Graph`` to a ``BidiFlow`` with ``BidiFlow.fromGraph``
-4. Replace all uses of ``BidiFlow.wrap`` when it converts two ``Flow``s to a ``BidiFlow`` with
+4. Replace all uses of ``BidiFlow.wrap`` when it converts two ``Flow`` s to a ``BidiFlow`` with
    ``BidiFlow.fromFlows`` or ``BidiFlow.fromFlowsMat``
-5. Repplace all uses of ``BidiFlow.apply()`` (Scala DSL) or ``BidiFlow.create()`` (Java DSL) when it converts two
+5. Replace all uses of ``BidiFlow.apply()`` (Scala DSL) or ``BidiFlow.create()`` (Java DSL) when it converts two
    functions to a ``BidiFlow`` with ``BidiFlow.fromFunctions``
 
-TODO: Code example
+Example
+^^^^^^^
+
+::
+
+      Graph<SourceShape<Integer>, BoxedUnit> graphSource = null;
+      // This no longer works!
+      Source<Integer, BoxedUnit> source = Source.wrap(graphSource);
+
+      Graph<SinkShape<Integer>, BoxedUnit> graphSink = null;
+      // This no longer works!
+      Sink<Integer, BoxedUnit> sink = Sink.wrap(graphSink);
+
+      Graph<FlowShape<Integer, Integer>, BoxedUnit> graphFlow = null;
+      // This no longer works!
+      Flow<Integer, Integer, BoxedUnit> flow = Flow.wrap(graphFlow);
+
+      // This no longer works!
+      Flow.wrap(Sink.<Integer>head(), Source.single(0), Keep.left());
+
+should be replaced by
+
+TODO
+
+and
+
+::
+
+      Graph<BidiShape<Integer, Integer, Integer, Integer>, BoxedUnit> bidiGraph = null;
+      // This no longer works!
+      BidiFlow<Integer, Integer, Integer, Integer, BoxedUnit> bidiFlow = BidiFlow.wrap(bidiGraph);
+
+      // This no longer works!
+      BidiFlow.wrap(flow1, flow2, Keep.both());
+
+
+Should be replaced by
+
+TODO
 
 FlowGraph builder methods have been renamed
 ===========================================
@@ -59,10 +95,29 @@ closed graphs now it is explicitly required to return ``ClosedShape`` at the end
 Update procedure
 ----------------
 
-1. Replace all occurrences of ``FlowGraph.create()`` with ``FlowGraph.partial()``
-2. Add ``ClosedShape`` as a return value of the builder block
+1. Replace all occurrences of ``FlowGraph.partial()`` or ``FlowGraph.closed()`` with ``FlowGraph.create()``
+2. Add ``ClosedShape`` as a return value of the builder block if it was ``FlowGraph.closed()`` before
+3. Wrap the closed graph with  ``RunnableGraph.fromGraph`` if it was ``FlowGraph.closed()`` before
 
-TODO: Code sample
+Example
+^^^^^^^
+
+::
+
+      // This no longer works!
+      FlowGraph.factory().closed(builder -> {
+        //...
+      });
+
+      // This no longer works!
+      FlowGraph.factory().partial(builder -> {
+        //...
+        return new FlowShape<>(inlet, outlet);
+      });
+
+should be replaced by
+
+TODO
 
 Methods that create Source, Sink, Flow from Graphs have been removed
 ====================================================================
@@ -88,10 +143,41 @@ be replaced with two steps
 2. Create the required DSL element by calling ``fromGraph()`` on the required DSL element (e.g. ``Source.fromGraph``)
    passing the graph created in the previous step
 
-TODO code example
+Example
+^^^^^^^
 
-Some graph Builder methods in the Java DSL have been renamed
-============================================================
+::
+
+      // This no longer works!
+      Source.factory().create(builder -> {
+        //...
+        return outlet;
+      });
+
+      // This no longer works!
+      Sink.factory().create(builder -> {
+        //...
+        return inlet;
+      });
+
+      // This no longer works!
+      Flow.factory().create(builder -> {
+        //...
+        return new Pair<>(inlet, outlet);
+      });
+
+      // This no longer works!
+      BidiFlow.factory().create(builder -> {
+        //...
+        return new BidiShape<>(inlet1, outlet1, inlet2, outlet2);
+      });
+
+should be replaced by
+
+TODO
+
+Some graph Builder methods have been removed
+============================================
 
 Due to the high number of overloads Java 8 type inference suffered, and it was also hard to figure out which time
 to use which method. Therefore various redundant methods have been removed.
@@ -99,20 +185,13 @@ to use which method. Therefore various redundant methods have been removed.
 Update procedure
 ----------------
 
-1. All uses of builder.addEdge(Outlet, Inlet) should be replaced by the alternative builder.from(…).to(…)
-2. All uses of builder.addEdge(Outlet, FlowShape, Inlet) should be replaced by builder.from(…).via(…).to(…)
-
-Builder.source => use builder.from(…).via(…).to(…)
-Builder.flow => use builder.from(…).via(…).to(…)
-Builder.sink => use builder.from(…).via(…).to(…)
+1. All uses of ``builder.addEdge(Outlet, Inlet)`` should be replaced by the alternative ``builder.from(…).to(…)``
+2. All uses of ``builder.addEdge(Outlet, FlowShape, Inlet)`` should be replaced by ``builder.from(…).via(…).to(…)``
+3. All uses of ``builder.source`` should be replaced by ``builder.from(…).via(…).to(…)``
+4. All uses of ``builder.flow`` should be replaced by ``builder.from(…).via(…).to(…)``
+5. All uses of ``builder.sink`` should be replaced by ``builder.from(…).via(…).to(…)``
 
 TODO: code example
-
-Builder overloads from the Scala DSL have been removed
-======================================================
-
-scaladsl.Builder.addEdge(Outlet, Inlet) => use the DSL (~> and <~)
-scaladsl.Builder.addEdge(Outlet, FlowShape, Inlet) => use the DSL (~> and <~)
 
 Source constructor name changes
 ===============================
@@ -133,10 +212,13 @@ Update procedure
 2. All uses of ``Source.lazyEmpty`` should be replaced by ``Source.maybe`` and the returned ``Promise`` completed with
    a ``None`` (an empty ``Option``)
 
-TODO: code example
+Example
+^^^^^^^
 
-``Flow.empty()`` has been removed from the Java DSL
-===================================================
+TODO
+
+``Flow.empty()`` have been removed
+==================================
 
 The ``empty()`` method has been removed since it behaves exactly the same as ``create()``, creating a ``Flow`` with no
 transformations added yet.
@@ -159,7 +241,10 @@ Update procedure
 
 1. Replace all occurences of ``flatten(FlattenStrategy.concat)`` with ``flattenConcat()``
 
-TODO: code example
+Example
+^^^^^^^
+
+TODO
 
 FlexiMerge an FlexiRoute has been replaced by GraphStage
 ========================================================
@@ -177,26 +262,6 @@ Update procedure
 *There is no simple update procedure. The affected stages must be ported to the new ``GraphStage`` DSL manually. Please
 read the* ``GraphStage`` *documentation (TODO) for details.*
 
-Variance of Inlet and Outlet (Scala DSL)
-========================================
-
-Scala uses *declaration site variance* which was cumbersome in the cases of ``Inlet`` and ``Outlet`` as they are
-purely symbolic object containing no fields or methods and which are used both in input and output locations (wiring
-an ``Outlet`` into an ``Inlet``; reading in a stage from an ``Inlet``). Because of this reasons all users of these
-port abstractions now use *use-site variance* (just like Java variance works). This in general does not affect user
-code expect the case of custom shapes, which now require ``@uncheckedVariance`` annotations on their ``Inlet`` and
-``Outlet`` members (since these are now invariant, but the Scala compiler does not know that they have no fields or
-methods that would violate variance constraints)
-
-This change does not affect Java DSL users.
-
-TODO: code example
-
-Update procedure
-----------------
-
-1. All custom shapes must use ``@uncheckedVariance`` on their ``Inlet`` and ``Outlet`` members.
-
 Semantic change in ``isHoldingUpstream`` in the DetachedStage DSL
 =================================================================
 
@@ -211,15 +276,14 @@ Update procedure
 2. This field must be set on every call to ``holdUpstream()`` (and variants).
 3. In completion, instead of calling ``isHoldingUpstream`` read this variable instead.
 
-TODO: code example
+See the example in the AsyncStage migration section for an example of this procedure.
 
 
 AsyncStage has been replaced by GraphStage
 ==========================================
 
-Due to its complexity and relative inflexibility ``AsyncStage`` have been removed.
-
-TODO explanation
+Due to its complexity and inflexibility ``AsyncStage`` have been removed in favor of ``GraphStage``. Existing
+``AsyncStage`` implementations can be ported in a mostly mechanical way.
 
 Update procedure
 ----------------
@@ -254,10 +318,7 @@ Update procedure
 
 We show the necessary steps in terms of an example ``AsyncStage``
 
-TODO: code sample
+Example
+^^^^^^^
 
-
-
-TODO: Code example
-
-
+TODO
