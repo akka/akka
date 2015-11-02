@@ -18,7 +18,8 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work from Inlets" in {
       Await.result(RunnableGraph.fromGraph(FlowGraph.create(sink) { implicit b ⇒
         s ⇒
-          s.inlet <~ source
+          "s.inlet <~ source" shouldNot compile
+          s.inlet <~ b.add(source)
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
@@ -26,15 +27,17 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work from SinkShape" in {
       Await.result(RunnableGraph.fromGraph(FlowGraph.create(sink) { implicit b ⇒
         s ⇒
-          s <~ source
+          "s <~ source" shouldNot compile
+          s <~ b.add(source)
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
 
-    "work from Sink" in {
+    "not work from Sink" in {
       val sub = TestSubscriber.manualProbe[Int]
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        Sink(sub) <~ source
+        "Sink(sub) <~ source" shouldNot compile
+        b.add(Sink(sub)) <~ b.add(source)
         ClosedShape
       }).run()
       sub.expectSubscription().request(10)
@@ -46,7 +49,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val o: Outlet[Int] = b.add(source).outlet
         "o <~ source" shouldNot compile
-        sink <~ o
+        b.add(sink) <~ o
         ClosedShape
       })
     }
@@ -55,7 +58,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val o: SourceShape[Int] = b.add(source)
         "o <~ source" shouldNot compile
-        sink <~ o
+        b.add(sink) <~ o
         ClosedShape
       })
     }
@@ -68,7 +71,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       Await.result(RunnableGraph.fromGraph(FlowGraph.create(sink) { implicit b ⇒
         s ⇒
           val f: FlowShape[Int, Int] = b.add(Flow[Int])
-          f <~ source
+          f <~ b.add(source)
           f ~> s
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
@@ -78,7 +81,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       Await.result(RunnableGraph.fromGraph(FlowGraph.create(sink) { implicit b ⇒
         s ⇒
           val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](1))
-          f <~ source
+          f <~ b.add(source)
           f ~> s
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
@@ -88,7 +91,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       Await.result(RunnableGraph.fromGraph(FlowGraph.create(sink) { implicit b ⇒
         s ⇒
           val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](1))
-          f <~ source
+          f <~ b.add(source)
           f ~> s
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
@@ -112,10 +115,11 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
 
-    "work towards Source" in {
+    "not work towards Source" in {
       Await.result(RunnableGraph.fromGraph(FlowGraph.create(sink) { implicit b ⇒
         s ⇒
-          s <~ source
+          "s <~ source" shouldNot compile
+          s <~ b.add(source)
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
@@ -125,7 +129,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
         s ⇒
           val f: FlowShape[Int, Int] = b.add(Flow[Int])
           s <~ f
-          source ~> f
+          b.add(source) ~> f
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
@@ -135,7 +139,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
         s ⇒
           val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](1))
           s <~ f
-          source ~> f
+          b.add(source) ~> f
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
@@ -156,7 +160,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
         s ⇒
           val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](1))
           s <~ f
-          source ~> f
+          b.add(source) ~> f
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
@@ -172,10 +176,11 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
 
-    "work across a Flow" in {
+    "not work across a Flow" in {
       Await.result(RunnableGraph.fromGraph(FlowGraph.create(sink) { implicit b ⇒
         s ⇒
-          s <~ Flow[Int] <~ source
+          "s <~ Flow[Int] <~ b.add(source)" shouldNot compile
+          s <~ b.add(Flow[Int]) <~ b.add(source)
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
@@ -183,7 +188,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work across a FlowShape" in {
       Await.result(RunnableGraph.fromGraph(FlowGraph.create(sink) { implicit b ⇒
         s ⇒
-          s <~ b.add(Flow[Int]) <~ source
+          s <~ b.add(Flow[Int]) <~ b.add(source)
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }

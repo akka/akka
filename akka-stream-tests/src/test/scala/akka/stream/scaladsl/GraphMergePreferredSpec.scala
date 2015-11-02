@@ -35,12 +35,12 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
       val result = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
         sink ⇒
           val merge = b.add(MergePreferred[Int](3))
-          preferred ~> merge.preferred
+          b.add(preferred) ~> merge.preferred
 
           merge.out.grouped(numElements * 2) ~> sink.inlet
-          aux ~> merge.in(0)
-          aux ~> merge.in(1)
-          aux ~> merge.in(2)
+          b.add(aux) ~> merge.in(0)
+          b.add(aux) ~> merge.in(1)
+          b.add(aux) ~> merge.in(2)
           ClosedShape
       }).run()
 
@@ -51,12 +51,12 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
       val result = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
         sink ⇒
           val merge = b.add(MergePreferred[Int](3))
-          Source(1 to 100) ~> merge.preferred
+          b.add(Source(1 to 100)) ~> merge.preferred
 
           merge.out.grouped(500) ~> sink.inlet
-          Source(101 to 200) ~> merge.in(0)
-          Source(201 to 300) ~> merge.in(1)
-          Source(301 to 400) ~> merge.in(2)
+          b.add(Source(101 to 200)) ~> merge.in(0)
+          b.add(Source(201 to 300)) ~> merge.in(1)
+          b.add(Source(301 to 400)) ~> merge.in(2)
           ClosedShape
       }).run()
 
@@ -70,11 +70,11 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
         val g = RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
           val merge = b.add(MergePreferred[Int](1))
 
-          s ~> merge.preferred
-          s ~> merge.preferred
-          s ~> merge.in(0)
+          b.add(s) ~> merge.preferred
+          b.add(s) ~> merge.preferred
+          b.add(s) ~> merge.in(0)
 
-          merge.out ~> Sink.head[Int]
+          merge.out ~> b.add(Sink.head[Int])
           ClosedShape
         })
       }).getMessage should include("[MergePreferred.preferred] is already connected")

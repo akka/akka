@@ -36,12 +36,15 @@ class GraphMergeSpec extends TwoStreamsSetup {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val m1 = b.add(Merge[Int](2))
         val m2 = b.add(Merge[Int](2))
+        val s1 = b.add(source1)
+        val s2 = b.add(source2)
+        val s3 = b.add(source3)
 
-        source1 ~> m1.in(0)
-        m1.out ~> Flow[Int].map(_ * 2) ~> m2.in(0)
-        m2.out ~> Flow[Int].map(_ / 2).map(_ + 1) ~> Sink(probe)
-        source2 ~> m1.in(1)
-        source3 ~> m2.in(1)
+        s1 ~> m1.in(0)
+        m1.out ~> b.add(Flow[Int].map(_ * 2)) ~> m2.in(0)
+        m2.out ~> b.add(Flow[Int].map(_ / 2).map(_ + 1)) ~> b.add(Sink(probe))
+        s2 ~> m1.in(1)
+        s3 ~> m2.in(1)
 
         ClosedShape
       }).run()
@@ -71,13 +74,13 @@ class GraphMergeSpec extends TwoStreamsSetup {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val merge = b.add(Merge[Int](6))
 
-        source1 ~> merge.in(0)
-        source2 ~> merge.in(1)
-        source3 ~> merge.in(2)
-        source4 ~> merge.in(3)
-        source5 ~> merge.in(4)
-        source6 ~> merge.in(5)
-        merge.out ~> Sink(probe)
+        b.add(source1) ~> merge.in(0)
+        b.add(source2) ~> merge.in(1)
+        b.add(source3) ~> merge.in(2)
+        b.add(source4) ~> merge.in(3)
+        b.add(source5) ~> merge.in(4)
+        b.add(source6) ~> merge.in(5)
+        merge.out ~> b.add(Sink(probe))
 
         ClosedShape
       }).run()
@@ -159,7 +162,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
           val merge = b.add(Merge[Int](2))
           s1.outlet ~> merge.in(0)
           s2.outlet ~> merge.in(1)
-          merge.out ~> Sink(down)
+          merge.out ~> b.add(Sink(down))
           ClosedShape
       }).run()
 

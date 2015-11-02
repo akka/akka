@@ -219,10 +219,10 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
           import FlowGraph.Implicits._
           val bidi = b.add(rotatedBidi)
 
-          Source(1 to 10) ~> bidi.in1
+          b.add(Source(1 to 10)) ~> bidi.in1
           out2 <~ bidi.out2
 
-          bidi.in2 <~ Source(1 to 100)
+          bidi.in2 <~ b.add(Source(1 to 100))
           bidi.out1 ~> out1
           ClosedShape
       }).run()

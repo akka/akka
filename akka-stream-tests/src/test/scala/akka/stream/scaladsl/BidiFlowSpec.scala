@@ -28,7 +28,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
   val bidiMat = BidiFlow.fromGraph(FlowGraph.create(Sink.head[Int]) { implicit b ⇒
     s ⇒
-      Source.single(42) ~> s
+      b.add(Source.single(42)) ~> s
 
       val top = b.add(Flow[Int].map(x ⇒ x.toLong + 2))
       val bottom = b.add(Flow[ByteString].map(_.decodeString("UTF-8")))
@@ -45,8 +45,8 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
         (st, sb) ⇒
           val s = b.add(bidi)
 
-          Source.single(1) ~> s.in1; s.out1 ~> st
-          sb <~ s.out2; s.in2 <~ Source.single(bytes)
+          b.add(Source.single(1)) ~> s.in1; s.out1 ~> st
+          sb <~ s.out2; s.in2 <~ b.add(Source.single(bytes))
           ClosedShape
       }).run()
 
@@ -82,7 +82,9 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "materialize to its value" in {
       val f = RunnableGraph.fromGraph(FlowGraph.create(bidiMat) { implicit b ⇒
         bidi ⇒
-          Flow[String].map(Integer.valueOf(_).toInt) <~> bidi <~> Flow[Long].map(x ⇒ ByteString(s"Hello $x"))
+          val flow1 = b.add(Flow[String].map(Integer.valueOf(_).toInt))
+
+          flow1 <~> bidi <~> b.add(Flow[Long].map(x ⇒ ByteString(s"Hello $x")))
           ClosedShape
       }).run()
       Await.result(f, 1.second) should ===(42)
@@ -95,7 +97,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
           val merge = b.add(Merge[Int](2))
           val flow = b.add(Flow[String].map(Integer.valueOf(_).toInt))
           bcast ~> sink
-          Source.single(1) ~> bcast ~> merge
+          b.add(Source.single(1)) ~> bcast ~> merge
           flow ~> merge
           FlowShape(flow.inlet, merge.out)
       })

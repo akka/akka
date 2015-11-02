@@ -19,7 +19,11 @@ class SinkSpec extends AkkaSpec {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
       val sink = Sink.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](3))
-        for (i ← 0 to 2) bcast.out(i).filter(_ == i) ~> Sink(probes(i))
+
+        for (i ← 0 to 2) {
+          val sink = b.add(Sink(probes(i)))
+          bcast.out(i).filter(_ == i) ~> sink
+        }
         SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
@@ -37,8 +41,13 @@ class SinkSpec extends AkkaSpec {
       val sink = Sink.fromGraph(FlowGraph.create(Sink(probes(0))) { implicit b ⇒
         s0 ⇒
           val bcast = b.add(Broadcast[Int](3))
-          bcast.out(0) ~> Flow[Int].filter(_ == 0) ~> s0.inlet
-          for (i ← 1 to 2) bcast.out(i).filter(_ == i) ~> Sink(probes(i))
+          val filter = b.add(Flow[Int].filter(_ == 0))
+
+          bcast.out(0) ~> filter ~> s0.inlet
+          for (i ← 1 to 2) {
+            val sink = b.add(Sink(probes(i)))
+            bcast.out(i).filter(_ == i) ~> sink
+          }
           SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
@@ -56,9 +65,11 @@ class SinkSpec extends AkkaSpec {
       val sink = Sink.fromGraph(FlowGraph.create(Sink(probes(0)), Sink(probes(1)))(List(_, _)) { implicit b ⇒
         (s0, s1) ⇒
           val bcast = b.add(Broadcast[Int](3))
+          val sink = b.add(Sink(probes(2)))
+
           bcast.out(0).filter(_ == 0) ~> s0.inlet
           bcast.out(1).filter(_ == 1) ~> s1.inlet
-          bcast.out(2).filter(_ == 2) ~> Sink(probes(2))
+          bcast.out(2).filter(_ == 2) ~> sink
           SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)

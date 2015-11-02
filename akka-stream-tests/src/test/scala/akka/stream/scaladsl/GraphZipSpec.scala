@@ -28,10 +28,10 @@ class GraphZipSpec extends TwoStreamsSetup {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val zip = b.add(Zip[Int, String]())
 
-        Source(1 to 4) ~> zip.in0
-        Source(List("A", "B", "C", "D", "E", "F")) ~> zip.in1
+        b.add(Source(1 to 4)) ~> zip.in0
+        b.add(Source(List("A", "B", "C", "D", "E", "F"))) ~> zip.in1
 
-        zip.out ~> Sink(probe)
+        zip.out ~> b.add(Sink(probe))
 
         ClosedShape
       }).run()

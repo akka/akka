@@ -25,9 +25,9 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
-        Source(List(1, 2, 3)) ~> bcast.in
-        bcast.out(0) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c1)
-        bcast.out(1) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
+        b.add(Source(List(1, 2, 3))) ~> bcast.in
+        bcast.out(0) ~> b.add(Flow[Int].buffer(16, OverflowStrategy.backpressure)) ~> b.add(Sink(c1))
+        bcast.out(1) ~> b.add(Flow[Int].buffer(16, OverflowStrategy.backpressure)) ~> b.add(Sink(c2))
         ClosedShape
       }).run()
 
@@ -62,7 +62,7 @@ class GraphBroadcastSpec extends AkkaSpec {
           (fut1, fut2, fut3, fut4, fut5) ⇒ Future.sequence(List(fut1, fut2, fut3, fut4, fut5))) { implicit b ⇒
             (p1, p2, p3, p4, p5) ⇒
               val bcast = b.add(Broadcast[Int](5))
-              Source(List(1, 2, 3)) ~> bcast.in
+              b.add(Source(List(1, 2, 3))) ~> bcast.in
               bcast.out(0).grouped(5) ~> p1.inlet
               bcast.out(1).grouped(5) ~> p2.inlet
               bcast.out(2).grouped(5) ~> p3.inlet
@@ -93,7 +93,7 @@ class GraphBroadcastSpec extends AkkaSpec {
           implicit b ⇒
             (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, p21, p22) ⇒
               val bcast = b.add(Broadcast[Int](22))
-              Source(List(1, 2, 3)) ~> bcast.in
+              b.add(Source(List(1, 2, 3))) ~> bcast.in
               bcast.out(0).grouped(5) ~> p1.inlet
               bcast.out(1).grouped(5) ~> p2.inlet
               bcast.out(2).grouped(5) ~> p3.inlet
@@ -128,9 +128,9 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
-        Source(List(1, 2, 3)) ~> bcast.in
-        bcast.out(0) ~> Flow[Int] ~> Sink(c1)
-        bcast.out(1) ~> Flow[Int] ~> Sink(c2)
+        b.add(Source(List(1, 2, 3))) ~> bcast.in
+        bcast.out(0) ~> b.add(Flow[Int]) ~> b.add(Sink(c1))
+        bcast.out(1) ~> b.add(Flow[Int]) ~> b.add(Sink(c2))
         ClosedShape
       }).run()
 
@@ -150,9 +150,9 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
-        Source(List(1, 2, 3)) ~> bcast.in
-        bcast.out(0) ~> Flow[Int].named("identity-a") ~> Sink(c1)
-        bcast.out(1) ~> Flow[Int].named("identity-b") ~> Sink(c2)
+        b.add(Source(List(1, 2, 3))) ~> bcast.in
+        bcast.out(0) ~> b.add(Flow[Int].named("identity-a")) ~> b.add(Sink(c1))
+        bcast.out(1) ~> b.add(Flow[Int].named("identity-b")) ~> b.add(Sink(c2))
         ClosedShape
       }).run()
 
@@ -173,9 +173,9 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
-        Source(p1.getPublisher) ~> bcast.in
-        bcast.out(0) ~> Flow[Int] ~> Sink(c1)
-        bcast.out(1) ~> Flow[Int] ~> Sink(c2)
+        b.add(Source(p1.getPublisher)) ~> bcast.in
+        bcast.out(0) ~> b.add(Flow[Int]) ~> b.add(Sink(c1))
+        bcast.out(1) ~> b.add(Flow[Int]) ~> b.add(Sink(c2))
         ClosedShape
       }).run()
 
@@ -202,8 +202,8 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       val sink = Sink.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
-        bcast.out(0) ~> Sink(c1)
-        bcast.out(1) ~> Sink(c2)
+        bcast.out(0) ~> b.add(Sink(c1))
+        bcast.out(1) ~> b.add(Sink(c2))
         SinkShape(bcast.in)
       })
 

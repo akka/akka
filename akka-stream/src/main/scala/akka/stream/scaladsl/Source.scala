@@ -117,13 +117,17 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
     Source.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
+      val firstOutlet = b.add(first)
+      val secondOutlet = b.add(second)
       val c = b.add(strategy(rest.size + 2))
-      first ~> c.in(0)
-      second ~> c.in(1)
+
+      firstOutlet ~> c.in(0)
+      secondOutlet ~> c.in(1)
 
       @tailrec def combineRest(idx: Int, i: Iterator[Source[T, _]]): SourceShape[U] =
         if (i.hasNext) {
-          i.next() ~> c.in(idx)
+          val iOutlet = b.add(i.next())
+          iOutlet ~> c.in(idx)
           combineRest(idx + 1, i)
         } else SourceShape(c.out)
 
@@ -328,13 +332,18 @@ object Source {
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
     Source.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
+
+      val firstOutlet = b.add(first)
+      val secondOutlet = b.add(second)
       val c = b.add(strategy(rest.size + 2))
-      first ~> c.in(0)
-      second ~> c.in(1)
+
+      firstOutlet ~> c.in(0)
+      secondOutlet ~> c.in(1)
 
       @tailrec def combineRest(idx: Int, i: Iterator[Source[T, _]]): SourceShape[U] =
         if (i.hasNext) {
-          i.next() ~> c.in(idx)
+          val iOutlet = b.add(i.next())
+          iOutlet ~> c.in(idx)
           combineRest(idx + 1, i)
         } else SourceShape(c.out)
 

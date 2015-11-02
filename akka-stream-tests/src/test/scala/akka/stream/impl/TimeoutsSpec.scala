@@ -177,10 +177,10 @@ class TimeoutsSpec extends AkkaSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source(upWrite) ~> timeoutStage.in1;
-        timeoutStage.out1 ~> Sink(downRead)
-        Sink(upRead) <~ timeoutStage.out2;
-        timeoutStage.in2 <~ Source(downWrite)
+        b.add(Source(upWrite)) ~> timeoutStage.in1;
+        timeoutStage.out1 ~> b.add(Sink(downRead))
+        b.add(Sink(upRead)) <~ timeoutStage.out2;
+        timeoutStage.in2 <~ b.add(Source(downWrite))
         ClosedShape
       }).run()
 
@@ -225,10 +225,10 @@ class TimeoutsSpec extends AkkaSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source(upWrite) ~> timeoutStage.in1;
-        timeoutStage.out1 ~> Sink(downRead)
-        Sink(upRead) <~ timeoutStage.out2;
-        timeoutStage.in2 <~ Source(downWrite)
+        b.add(Source(upWrite)) ~> timeoutStage.in1
+        timeoutStage.out1 ~> b.add(Sink(downRead))
+        b.add(Sink(upRead)) <~ timeoutStage.out2
+        timeoutStage.in2 <~ b.add(Source(downWrite))
         ClosedShape
       }).run()
 

@@ -14,9 +14,10 @@ object GraphFlowSpec {
 
   val partialGraph = FlowGraph.create() { implicit b ⇒
     import FlowGraph.Implicits._
-    val source2 = Source(4 to 9)
-    val source3 = Source.empty[Int]
-    val source4 = Source.empty[String]
+
+    val source2 = b.add(Source(4 to 9))
+    val source3 = b.add(Source.empty[Int])
+    val source4 = b.add(Source.empty[String])
 
     val inMerge = b.add(Merge[Int](2))
     val outMerge = b.add(Merge[String](2))
@@ -112,7 +113,8 @@ class GraphFlowSpec extends AkkaSpec {
 
         RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
           import FlowGraph.Implicits._
-          Source(1 to 5) ~> flow ~> flow ~> Sink(probe)
+          val source = b.add(Source(1 to 5))
+          source ~> b.add(flow) ~> b.add(flow) ~> b.add(Sink(probe))
           ClosedShape
         }).run()
 
@@ -127,7 +129,8 @@ class GraphFlowSpec extends AkkaSpec {
         val source = Source.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
           partial ⇒
             import FlowGraph.Implicits._
-            source1 ~> partial.inlet
+            val s1 = b.add(source1)
+            s1 ~> partial.inlet
             SourceShape(partial.outlet.map(_.toInt).outlet)
         })
 
@@ -152,7 +155,8 @@ class GraphFlowSpec extends AkkaSpec {
         val source = Source.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
           partial ⇒
             import FlowGraph.Implicits._
-            source1 ~> partial.inlet
+            val s1 = b.add(source1)
+            s1 ~> partial.inlet
             SourceShape(partial.outlet)
         })
 
@@ -167,7 +171,7 @@ class GraphFlowSpec extends AkkaSpec {
         val source = Source.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
           partial ⇒
             import FlowGraph.Implicits._
-            source1 ~> partial.inlet
+            b.add(source1) ~> partial.inlet
             SourceShape(partial.outlet)
         })
 
@@ -195,7 +199,7 @@ class GraphFlowSpec extends AkkaSpec {
             import FlowGraph.Implicits._
             val merge = b.add(Merge[Int](2))
             s1.outlet ~> merge.in(0)
-            merge.out ~> Sink(probe)
+            merge.out ~> b.add(Sink(probe))
             s2.outlet.map(_ * 10) ~> merge.in(1)
             ClosedShape
         }).run()
@@ -211,7 +215,7 @@ class GraphFlowSpec extends AkkaSpec {
         val sink = Sink.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
           partial ⇒
             import FlowGraph.Implicits._
-            partial.outlet.map(_.toInt) ~> Sink(probe)
+            partial.outlet.map(_.toInt) ~> b.add(Sink(probe))
             SinkShape(partial.inlet)
         })
 
@@ -241,7 +245,7 @@ class GraphFlowSpec extends AkkaSpec {
           (partial, flow) ⇒
             import FlowGraph.Implicits._
             flow.outlet ~> partial.inlet
-            partial.outlet.map(_.toInt) ~> Sink(probe)
+            partial.outlet.map(_.toInt) ~> b.add(Sink(probe))
             SinkShape(flow.inlet)
         })
 
@@ -263,7 +267,7 @@ class GraphFlowSpec extends AkkaSpec {
         val sink = Sink.fromGraph(FlowGraph.create(Flow[String].map(_.toInt)) { implicit b ⇒
           flow ⇒
             import FlowGraph.Implicits._
-            flow.outlet ~> Sink(probe)
+            flow.outlet ~> b.add(Sink(probe))
             SinkShape(flow.inlet)
         })
 

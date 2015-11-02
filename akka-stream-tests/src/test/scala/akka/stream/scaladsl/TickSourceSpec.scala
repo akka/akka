@@ -69,10 +69,17 @@ class TickSourceSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
+        val numbers = b.add(Source(1 to 100))
+        val ticks = b.add(Source(1.second, 1.second, "tick"))
         val zip = b.add(Zip[Int, String]())
-        Source(1 to 100) ~> zip.in0
-        Source(1.second, 1.second, "tick") ~> zip.in1
-        zip.out ~> Flow[(Int, String)].map { case (n, _) ⇒ n } ~> Sink(c)
+        val flow = b.add(Flow[(Int, String)].map { case (n, _) ⇒ n })
+        val sink = b.add(Sink(c))
+
+        numbers ~> zip.in0
+        ticks ~> zip.in1
+
+        zip.out ~> flow ~> sink
+
         ClosedShape
       }).run()
 

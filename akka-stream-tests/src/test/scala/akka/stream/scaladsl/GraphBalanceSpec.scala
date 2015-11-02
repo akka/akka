@@ -25,9 +25,9 @@ class GraphBalanceSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
-        Source(List(1, 2, 3)) ~> balance.in
-        balance.out(0) ~> Sink(c1)
-        balance.out(1) ~> Sink(c2)
+        b.add(Source(List(1, 2, 3))) ~> balance.in
+        balance.out(0) ~> b.add(Sink(c1))
+        balance.out(1) ~> b.add(Sink(c2))
         ClosedShape
       }).run()
 
@@ -50,8 +50,8 @@ class GraphBalanceSpec extends AkkaSpec {
       val p2 = RunnableGraph.fromGraph(FlowGraph.create(Sink.publisher[Int]) { implicit b ⇒
         p2Sink ⇒
           val balance = b.add(Balance[Int](2, waitForAllDownstreams = true))
-          Source(List(1, 2, 3)) ~> balance.in
-          balance.out(0) ~> Sink(s1)
+          b.add(Source(List(1, 2, 3))) ~> balance.in
+          balance.out(0) ~> b.add(Sink(s1))
           balance.out(1) ~> p2Sink
           ClosedShape
       }).run()
@@ -81,8 +81,8 @@ class GraphBalanceSpec extends AkkaSpec {
       val (p2, p3) = RunnableGraph.fromGraph(FlowGraph.create(Sink.publisher[Int], Sink.publisher[Int])(Keep.both) { implicit b ⇒
         (p2Sink, p3Sink) ⇒
           val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
-          Source(List(1, 2, 3)) ~> balance.in
-          balance.out(0) ~> Sink(s1)
+          b.add(Source(List(1, 2, 3))) ~> balance.in
+          balance.out(0) ~> b.add(Sink(s1))
           balance.out(1) ~> p2Sink
           balance.out(2) ~> p3Sink
           ClosedShape
@@ -117,7 +117,7 @@ class GraphBalanceSpec extends AkkaSpec {
         implicit b ⇒
           (f1, f2, f3, f4, f5) ⇒
             val balance = b.add(Balance[Int](5, waitForAllDownstreams = true))
-            Source(0 to 14) ~> balance.in
+            b.add(Source(0 to 14)) ~> balance.in
             balance.out(0).grouped(15) ~> f1
             balance.out(1).grouped(15) ~> f2
             balance.out(2).grouped(15) ~> f3
@@ -136,7 +136,7 @@ class GraphBalanceSpec extends AkkaSpec {
       val results = RunnableGraph.fromGraph(FlowGraph.create(outputs, outputs, outputs)(List(_, _, _)) { implicit b ⇒
         (o1, o2, o3) ⇒
           val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
-          Source.repeat(1).take(numElementsForSink * 3) ~> balance.in
+          b.add(Source.repeat(1).take(numElementsForSink * 3)) ~> balance.in
           balance.out(0) ~> o1
           balance.out(1) ~> o2
           balance.out(2) ~> o3
@@ -156,7 +156,7 @@ class GraphBalanceSpec extends AkkaSpec {
       val (p1, p2, p3) = RunnableGraph.fromGraph(FlowGraph.create(probe, probe, probe)(Tuple3.apply) { implicit b ⇒
         (o1, o2, o3) ⇒
           val balance = b.add(Balance[Int](3))
-          Source(1 to 7) ~> balance.in
+          b.add(Source(1 to 7)) ~> balance.in
           balance.out(0) ~> o1
           balance.out(1) ~> o2
           balance.out(2) ~> o3
@@ -182,9 +182,9 @@ class GraphBalanceSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
-        Source(List(1, 2, 3)) ~> balance.in
-        balance.out(0) ~> Sink(c1)
-        balance.out(1) ~> Sink(c2)
+        b.add(Source(List(1, 2, 3))) ~> balance.in
+        balance.out(0) ~> b.add(Sink(c1))
+        balance.out(1) ~> b.add(Sink(c2))
         ClosedShape
       }).run()
 
@@ -204,9 +204,9 @@ class GraphBalanceSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
-        Source(List(1, 2, 3)) ~> balance.in
-        balance.out(0) ~> Sink(c1)
-        balance.out(1) ~> Sink(c2)
+        b.add(Source(List(1, 2, 3))) ~> balance.in
+        balance.out(0) ~> b.add(Sink(c1))
+        balance.out(1) ~> b.add(Sink(c2))
         ClosedShape
       }).run()
 
@@ -227,9 +227,9 @@ class GraphBalanceSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val balance = b.add(Balance[Int](2))
-        Source(p1.getPublisher) ~> balance.in
-        balance.out(0) ~> Sink(c1)
-        balance.out(1) ~> Sink(c2)
+        b.add(Source(p1.getPublisher)) ~> balance.in
+        balance.out(0) ~> b.add(Sink(c1))
+        balance.out(1) ~> b.add(Sink(c2))
         ClosedShape
       }).run()
 

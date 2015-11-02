@@ -29,7 +29,7 @@ class GraphPartialSpec extends AkkaSpec {
 
       val (_, _, result) = RunnableGraph.fromGraph(FlowGraph.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
-          Source(List(1, 2, 3)) ~> d1.inlet
+          b.add(Source(List(1, 2, 3))) ~> d1.inlet
           d1.outlet ~> d2.inlet
           d2.outlet.grouped(100) ~> sink.inlet
           ClosedShape
@@ -52,7 +52,7 @@ class GraphPartialSpec extends AkkaSpec {
 
       val (sub1, sub2, result) = RunnableGraph.fromGraph(FlowGraph.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
-          Source(List(1, 2, 3)) ~> d1.inlet
+          b.add(Source(List(1, 2, 3))) ~> d1.inlet
           d1.outlet ~> d2.inlet
           d2.outlet.grouped(100) ~> sink.inlet
           ClosedShape
@@ -84,7 +84,7 @@ class GraphPartialSpec extends AkkaSpec {
 
       val (sub1, sub2, result) = RunnableGraph.fromGraph(FlowGraph.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
-          Source(List(1, 2, 3)) ~> d1.inlet
+          b.add(Source(List(1, 2, 3))) ~> d1.inlet
           d1.outlet ~> d2.inlet
           d2.outlet.grouped(100) ~> sink.inlet
           ClosedShape
@@ -106,7 +106,7 @@ class GraphPartialSpec extends AkkaSpec {
       val fut = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Int], p)(Keep.left) { implicit b ⇒
         (sink, flow) ⇒
           import FlowGraph.Implicits._
-          Source.single(0) ~> flow.inlet
+          b.add(Source.single(0)) ~> flow.inlet
           flow.outlet ~> sink.inlet
           ClosedShape
       }).run()

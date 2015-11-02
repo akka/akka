@@ -661,12 +661,6 @@ object FlowGraph extends GraphApply {
       def ~>[U >: T](to: Inlet[U])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), to)
 
-      def ~>[Out](via: Graph[FlowShape[T, Out], Any])(implicit b: Builder[_]): PortOps[Out, Unit] = {
-        val s = b.add(via)
-        b.addEdge(importAndGetPort(b), s.inlet)
-        s.outlet
-      }
-
       def ~>[Out](junction: UniformFanInShape[T, Out])(implicit b: Builder[_]): PortOps[Out, Unit] = {
         def bind(n: Int): Unit = {
           if (n == junction.inSeq.length)
@@ -691,9 +685,6 @@ object FlowGraph extends GraphApply {
         flow.outlet
       }
 
-      def ~>(to: Graph[SinkShape[T], _])(implicit b: Builder[_]): Unit =
-        b.addEdge(importAndGetPort(b), b.add(to).inlet)
-
       def ~>(to: SinkShape[T])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), to.inlet)
     }
@@ -703,12 +694,6 @@ object FlowGraph extends GraphApply {
 
       def <~[U <: T](from: Outlet[U])(implicit b: Builder[_]): Unit =
         b.addEdge(from, importAndGetPortReverse(b))
-
-      def <~[In](via: Graph[FlowShape[In, T], _])(implicit b: Builder[_]): ReversePortOps[In] = {
-        val s = b.add(via)
-        b.addEdge(s.outlet, importAndGetPortReverse(b))
-        s.inlet
-      }
 
       def <~[In](junction: UniformFanOutShape[In, T])(implicit b: Builder[_]): ReversePortOps[In] = {
         def bind(n: Int): Unit = {
@@ -734,9 +719,6 @@ object FlowGraph extends GraphApply {
         flow.inlet
       }
 
-      def <~(from: Graph[SourceShape[T], _])(implicit b: Builder[_]): Unit =
-        b.addEdge(b.add(from).outlet, importAndGetPortReverse(b))
-
       def <~(from: SourceShape[T])(implicit b: Builder[_]): Unit =
         b.addEdge(from.outlet, importAndGetPortReverse(b))
     }
@@ -750,9 +732,6 @@ object FlowGraph extends GraphApply {
         throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
 
       override def importAndGetPort(b: Builder[_]): Outlet[Out] = outlet
-
-      override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T, Mat] =
-        super.~>(flow)(b).asInstanceOf[Repr[T, Mat]]
 
       override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3) =
         throw new UnsupportedOperationException("Cannot use viaMat on a port")
@@ -788,10 +767,6 @@ object FlowGraph extends GraphApply {
       override def importAndGetPortReverse(b: Builder[_]): Inlet[In] = j.in
     }
 
-    implicit final class SinkArrow[T](val s: Graph[SinkShape[T], _]) extends AnyVal with ReverseCombinerBase[T] {
-      override def importAndGetPortReverse(b: Builder[_]): Inlet[T] = b.add(s).inlet
-    }
-
     implicit final class SinkShapeArrow[T](val s: SinkShape[T]) extends AnyVal with ReverseCombinerBase[T] {
       override def importAndGetPortReverse(b: Builder[_]): Inlet[T] = s.inlet
     }
@@ -799,47 +774,10 @@ object FlowGraph extends GraphApply {
     implicit final class FlowShapeArrow[I, O](val f: FlowShape[I, O]) extends AnyVal with ReverseCombinerBase[I] {
       override def importAndGetPortReverse(b: Builder[_]): Inlet[I] = f.inlet
 
-      def <~>[I2, O2, Mat](bidi: Graph[BidiShape[O, O2, I2, I], Mat])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
-        val shape = b.add(bidi)
-        b.addEdge(f.outlet, shape.in1)
-        b.addEdge(shape.out2, f.inlet)
-        shape
-      }
-
       def <~>[I2, O2](bidi: BidiShape[O, O2, I2, I])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
         b.addEdge(f.outlet, bidi.in1)
         b.addEdge(bidi.out2, f.inlet)
         bidi
-      }
-
-      def <~>[M](flow: Graph[FlowShape[O, I], M])(implicit b: Builder[_]): Unit = {
-        val shape = b.add(flow)
-        b.addEdge(shape.outlet, f.inlet)
-        b.addEdge(f.outlet, shape.inlet)
-      }
-    }
-
-    implicit final class FlowArrow[I, O, M](val f: Graph[FlowShape[I, O], M]) extends AnyVal {
-      def <~>[I2, O2, Mat](bidi: Graph[BidiShape[O, O2, I2, I], Mat])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
-        val shape = b.add(bidi)
-        val flow = b.add(f)
-        b.addEdge(flow.outlet, shape.in1)
-        b.addEdge(shape.out2, flow.inlet)
-        shape
-      }
-
-      def <~>[I2, O2](bidi: BidiShape[O, O2, I2, I])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
-        val flow = b.add(f)
-        b.addEdge(flow.outlet, bidi.in1)
-        b.addEdge(bidi.out2, flow.inlet)
-        bidi
-      }
-
-      def <~>[M2](flow: Graph[FlowShape[O, I], M2])(implicit b: Builder[_]): Unit = {
-        val shape = b.add(flow)
-        val ff = b.add(f)
-        b.addEdge(shape.outlet, ff.inlet)
-        b.addEdge(ff.outlet, shape.inlet)
       }
     }
 
@@ -850,23 +788,11 @@ object FlowGraph extends GraphApply {
         other
       }
 
-      def <~>[I3, O3, M](otherFlow: Graph[BidiShape[O1, O3, I3, I2], M])(implicit b: Builder[_]): BidiShape[O1, O3, I3, I2] = {
-        val other = b.add(otherFlow)
-        b.addEdge(bidi.out1, other.in1)
-        b.addEdge(other.out2, bidi.in2)
-        other
-      }
-
       def <~>(flow: FlowShape[O1, I2])(implicit b: Builder[_]): Unit = {
         b.addEdge(bidi.out1, flow.inlet)
         b.addEdge(flow.outlet, bidi.in2)
       }
 
-      def <~>[M](f: Graph[FlowShape[O1, I2], M])(implicit b: Builder[_]): Unit = {
-        val flow = b.add(f)
-        b.addEdge(bidi.out1, flow.inlet)
-        b.addEdge(flow.outlet, bidi.in2)
-      }
     }
 
     import scala.language.implicitConversions
@@ -879,10 +805,6 @@ object FlowGraph extends GraphApply {
 
     implicit def flow2flow[I, O](f: FlowShape[I, O])(implicit b: Builder[_]): PortOps[O, Unit] =
       new PortOps(f.outlet, b)
-
-    implicit final class SourceArrow[T](val s: Graph[SourceShape[T], _]) extends AnyVal with CombinerBase[T] {
-      override def importAndGetPort(b: Builder[_]): Outlet[T] = b.add(s).outlet
-    }
 
     implicit final class SourceShapeArrow[T](val s: SourceShape[T]) extends AnyVal with CombinerBase[T] {
       override def importAndGetPort(b: Builder[_]): Outlet[T] = s.outlet

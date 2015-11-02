@@ -23,9 +23,9 @@ abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
       import FlowGraph.Implicits._
       val f = fixture(b)
 
-      Source(p1) ~> f.left
-      Source(p2) ~> f.right
-      f.out ~> Sink(subscriber)
+      b.add(Source(p1)) ~> f.left
+      b.add(Source(p2)) ~> f.right
+      f.out ~> b.add(Sink(subscriber))
       ClosedShape
     }).run()
 
