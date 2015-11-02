@@ -10,8 +10,7 @@ import akka.stream.impl.SplitDecision._
 import akka.stream.impl.Stages.{ SymbolicGraphStage, StageModule, DirectProcessor, SymbolicStage }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, TakeWithin, MapAsync, MapAsyncUnordered }
-import akka.stream.impl.{ ReactiveStreamsCompliance, ConstantFun, Stages, StreamLayout }
-import akka.stream.impl.{ Stages, StreamLayout }
+import akka.stream.impl.{ ReactiveStreamsCompliance, ConstantFun, Stages, StreamLayout, Timeouts }
 import akka.stream.stage.AbstractStage.{ PushPullGraphStageWithMaterializedValue, PushPullGraphStage }
 import akka.stream.stage._
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
@@ -193,7 +192,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   // FIXME: Only exists to keep old stuff alive
   private[akka] def deprecatedAndThenMat[U, Mat2, O >: Out](processorFactory: () ⇒ (Processor[O, U], Mat2)): Repr[U, Mat2] = {
-    val op = Stages.DirectProcessor(processorFactory.asInstanceOf[() ⇒ (Processor[Any, Any], Any)])
+    val op = DirectProcessor(processorFactory.asInstanceOf[() ⇒ (Processor[Any, Any], Any)])
     if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat2]]
     else new Flow[In, U, Mat2](module.fuse(op, shape.outlet, op.inPort, Keep.right).replaceShape(FlowShape(shape.inlet, op.outPort)))
   }
@@ -1018,6 +1017,24 @@ trait FlowOps[+Out, +Mat] {
     case _ ⇒
       throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
   }
+
+  /**
+   * If the first element has not passed through this stage before the provided timeout, the stream is failed
+   * with a [[scala.concurrent.TimeoutException]].
+   */
+  def initialTimeout(timeout: FiniteDuration): Repr[Out, Mat] = via(new Timeouts.Initial[Out](timeout))
+
+  /**
+   * If the completion of the stream does not happen until the provided timeout, the stream is failed
+   * with a [[scala.concurrent.TimeoutException]].
+   */
+  def completionTimeout(timeout: FiniteDuration): Repr[Out, Mat] = via(new Timeouts.Completion[Out](timeout))
+
+  /**
+   * If the time between two processed elements exceed the provided timeout, the stream is failed
+   * with a [[scala.concurrent.TimeoutException]].
+   */
+  def idleTimeout(timeout: FiniteDuration): Repr[Out, Mat] = via(new Timeouts.Idle[Out](timeout))
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.

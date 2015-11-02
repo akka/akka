@@ -13,9 +13,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.util.ByteString
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.Materializer
 import akka.stream.scaladsl._
-import akka.stream.io.{ Timeouts, SynchronousFileSource }
+import akka.stream.io.SynchronousFileSource
 import akka.{ japi, stream }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
