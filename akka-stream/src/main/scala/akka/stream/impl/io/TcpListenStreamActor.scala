@@ -9,8 +9,7 @@ import akka.actor._
 import akka.io.Tcp._
 import akka.io.{ IO, Tcp }
 import akka.stream.impl._
-import akka.stream.io.Timeouts
-import akka.stream.scaladsl.{ Flow, Tcp ⇒ StreamTcp }
+import akka.stream.scaladsl.{ Tcp ⇒ StreamTcp, BidiFlow, Flow }
 import akka.stream.{ ActorMaterializerSettings, BindFailedException, ConnectionException }
 import akka.util.ByteString
 import org.reactivestreams.Subscriber
@@ -158,7 +157,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
 
     import scala.concurrent.duration.FiniteDuration
     val handler = (idleTimeout match {
-      case d: FiniteDuration ⇒ Flow[ByteString].join(Timeouts.idleTimeoutBidi[ByteString, ByteString](d))
+      case d: FiniteDuration ⇒ Flow[ByteString].join(BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](d))
       case _                 ⇒ Flow[ByteString]
     }).via(Flow.fromProcessor(() ⇒ processor))
 
