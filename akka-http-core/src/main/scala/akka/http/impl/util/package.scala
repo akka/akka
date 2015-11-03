@@ -49,12 +49,11 @@ package object util {
 
   private[http] def headAndTailFlow[T]: Flow[Source[T, Any], (T, Source[T, Unit]), Unit] =
     Flow[Source[T, Any]]
-      .map {
+      .flatMapConcat {
         _.prefixAndTail(1)
           .filter(_._1.nonEmpty)
           .map { case (prefix, tail) ⇒ (prefix.head, tail) }
       }
-      .flattenConcat()
 
   private[http] def printEvent[T](marker: String): Flow[T, T, Unit] =
     Flow[T].transform(() ⇒ new PushPullStage[T, T] {

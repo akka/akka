@@ -263,12 +263,13 @@ should be replaced by
 ====================================================================
 
 To simplify type inference in Java 8 and to make the method more discoverable, ``flatten(FlattenStrategy.concat)``
-has been removed and replaced with the alternative method ``flatten(FlattenStrategy.concat)``.
+has been removed and replaced with the alternative method ``flatMapConcat(f)``.
 
 Update procedure
 ----------------
 
-1. Replace all occurences of ``flatten(FlattenStrategy.concat)`` with ``flattenConcat()``
+1. Replace all occurrences of ``flatten(FlattenStrategy.concat)`` with ``flatMapConcat(identity)``
+2. Consider replacing ``map(f).flatMapConcat(identity)`` with ``flatMapConcat(f)``
 
 Example
 ^^^^^^^
@@ -279,7 +280,7 @@ Example
 
 should be replaced by
 
-.. includecode:: code/docs/MigrationsJava.java#flattenConcat
+.. includecode:: code/docs/MigrationsJava.java#flatMapConcat
 
 FlexiMerge an FlexiRoute has been replaced by GraphStage
 ========================================================

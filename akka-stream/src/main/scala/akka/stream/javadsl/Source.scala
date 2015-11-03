@@ -840,11 +840,21 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.splitAfter(p.test).map(_.asJava))
 
   /**
-   * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
-   * This operation can be used on a stream of element type `Source[U]`.
+   * Transform each input element into a `Source` of output elements that is
+   * then flattened into the output stream by concatenation,
+   * fully consuming one Source after the other.
+   *
+   * '''Emits when''' a currently consumed substream has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all consumed substreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   *
    */
-  def flattenConcat[U](): javadsl.Source[U, Mat] =
-    new Source(delegate.flattenConcat[U]()(conforms[U].asInstanceOf[Out <:< scaladsl.Source[U, _]]))
+  def flatMapConcat[T](f: function.Function[Out, Source[T, _]]): Source[T, Mat] =
+    new Source(delegate.flatMapConcat[T](x ⇒ f(x).asScala))
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed
