@@ -116,13 +116,15 @@ class GraphBalanceSpec extends AkkaSpec {
       val (s1, s2, s3, s4, s5) = RunnableGraph.fromGraph(FlowGraph.create(sink, sink, sink, sink, sink)(Tuple5.apply) {
         implicit b ⇒
           (f1, f2, f3, f4, f5) ⇒
+
+            def grouped = b.add(Flow[Int].grouped(15))
             val balance = b.add(Balance[Int](5, waitForAllDownstreams = true))
             b.add(Source(0 to 14)) ~> balance.in
-            balance.out(0).grouped(15) ~> f1
-            balance.out(1).grouped(15) ~> f2
-            balance.out(2).grouped(15) ~> f3
-            balance.out(3).grouped(15) ~> f4
-            balance.out(4).grouped(15) ~> f5
+            balance.out(0) ~> grouped ~> f1
+            balance.out(1) ~> grouped ~> f2
+            balance.out(2) ~> grouped ~> f3
+            balance.out(3) ~> grouped ~> f4
+            balance.out(4) ~> grouped ~> f5
             ClosedShape
       }).run()
 

@@ -86,16 +86,16 @@ private[http] object OutgoingConnectionBlueprint {
 
       val logger = b.add(Flow[ByteString].transform(() ⇒ errorLogger(log, "Outgoing request stream error")).named("errorLogger"))
       val wrapTls = b.add(Flow[ByteString].map(SendBytes))
-      terminationMerge.out ~> requestRendering ~> logger ~> wrapTls
+      terminationMerge.out ~> b.add(requestRendering) ~> logger ~> wrapTls
 
       val unwrapTls = b.add(Flow[SslTlsInbound].collect { case SessionBytes(_, bytes) ⇒ bytes })
       unwrapTls ~> responseParsingMerge.in0
 
       methodBypassFanout.out(0) ~> terminationMerge.in0
 
-      methodBypassFanout.out(1) ~> methodBypass ~> responseParsingMerge.in1
+      methodBypassFanout.out(1) ~> b.add(methodBypass) ~> responseParsingMerge.in1
 
-      responseParsingMerge.out ~> responsePrep ~> terminationFanout.in
+      responseParsingMerge.out ~> b.add(responsePrep) ~> terminationFanout.in
       terminationFanout.out(0) ~> terminationMerge.in1
 
       BidiShape(

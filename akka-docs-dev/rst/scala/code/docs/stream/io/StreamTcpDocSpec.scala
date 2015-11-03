@@ -89,7 +89,7 @@ class StreamTcpDocSpec extends AkkaSpec {
         import connection._
         val welcomeMsg = s"Welcome to: $localAddress, you are: $remoteAddress!\n"
 
-        val welcome = Source.single(ByteString(welcomeMsg))
+        val welcome = b.add(Source.single(ByteString(welcomeMsg)))
         val echo = b.add(Flow[ByteString]
           .via(Framing.delimiter(
             ByteString("\n"),

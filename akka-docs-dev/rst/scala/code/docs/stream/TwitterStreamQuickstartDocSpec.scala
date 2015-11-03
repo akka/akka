@@ -122,9 +122,10 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       import FlowGraph.Implicits._
 
       val bcast = b.add(Broadcast[Tweet](2))
-      tweets ~> bcast.in
-      bcast.out(0) ~> Flow[Tweet].map(_.author) ~> writeAuthors 
-      bcast.out(1) ~> Flow[Tweet].mapConcat(_.hashtags.toList) ~> writeHashtags
+
+      b.add(tweets) ~> bcast.in
+      bcast.out(0) ~>  b.add(Flow[Tweet].map(_.author))                 ~>  b.add(writeAuthors)
+      bcast.out(1) ~>  b.add(Flow[Tweet].mapConcat(_.hashtags.toList))  ~>  b.add(writeHashtags)
       ClosedShape
     })
     g.run()

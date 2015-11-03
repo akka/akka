@@ -102,8 +102,10 @@ class RecipeGlobalRateLimit extends RecipeSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
         import FlowGraph.Implicits._
         val merge = b.add(Merge[String](2))
-        source1 ~> merge ~> Sink(probe)
-        source2 ~> merge
+        val sink = b.add(Sink(probe))
+
+        b.add(source1) ~> merge ~> sink
+        b.add(source2) ~> merge
         ClosedShape
       }).run()
 

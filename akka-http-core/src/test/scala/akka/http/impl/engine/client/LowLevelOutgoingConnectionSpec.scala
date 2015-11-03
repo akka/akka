@@ -362,10 +362,10 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       RunnableGraph.fromGraph(FlowGraph.create(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒
         client ⇒
           import FlowGraph.Implicits._
-          Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
-          client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink(netOut)
-          Source(requests) ~> client.in1
-          client.out2 ~> Sink(responses)
+          b.add(Source(netIn)) ~> b.add(Flow[ByteString].map(SessionBytes(null, _))) ~> client.in2
+          client.out1 ~> b.add(Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x }) ~> b.add(Sink(netOut))
+          b.add(Source(requests)) ~> client.in1
+          client.out2 ~> b.add(Sink(responses))
           ClosedShape
       }).run()
 

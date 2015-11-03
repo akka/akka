@@ -23,13 +23,13 @@ class FlowGraphDocSpec extends AkkaSpec {
     //#simple-flow-graph
     val g = RunnableGraph.fromGraph(FlowGraph.create() { implicit builder: FlowGraph.Builder[Unit] =>
       import FlowGraph.Implicits._
-      val in = Source(1 to 10)
-      val out = Sink.ignore
+      val in = builder.add(Source(1 to 10))
+      val out = builder.add(Sink.ignore)
 
       val bcast = builder.add(Broadcast[Int](2))
       val merge = builder.add(Merge[Int](2))
 
-      val f1, f2, f3, f4 = Flow[Int].map(_ + 10)
+      val f1, f2, f3, f4 = builder.add(Flow[Int].map(_ + 10))
 
       in ~> f1 ~> bcast ~> f2 ~> merge ~> f3 ~> out
       bcast ~> f4 ~> merge
@@ -48,8 +48,8 @@ class FlowGraphDocSpec extends AkkaSpec {
       //#simple-graph
       RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
         import FlowGraph.Implicits._
-        val source1 = Source(1 to 10)
-        val source2 = Source(1 to 10)
+        val source1 = builder.add(Source(1 to 10))
+        val source2 = builder.add(Source(1 to 10))
 
         val zip = builder.add(Zip[Int, Int]())
 
@@ -78,10 +78,13 @@ class FlowGraphDocSpec extends AkkaSpec {
       (topHS, bottomHS) =>
       import FlowGraph.Implicits._
       val broadcast = builder.add(Broadcast[Int](2))
-      Source.single(1) ~> broadcast.in
+      val addedSharedDoubler = builder.add(sharedDoubler)
+      val source = builder.add(Source.single(1))
 
-      broadcast.out(0) ~> sharedDoubler ~> topHS.inlet
-      broadcast.out(1) ~> sharedDoubler ~> bottomHS.inlet
+      source ~> broadcast.in
+
+      broadcast.out(0) ~> addedSharedDoubler ~> topHS.inlet
+      broadcast.out(1) ~> addedSharedDoubler ~> bottomHS.inlet
       ClosedShape
     })
     //#flow-graph-reusing-a-flow
@@ -139,6 +142,7 @@ class FlowGraphDocSpec extends AkkaSpec {
           val priorityMerge = b.add(MergePreferred[In](1))
           val balance = b.add(Balance[In](workerCount))
           val resultsMerge = b.add(Merge[Out](workerCount))
+          val addedWorker = b.add(worker)
 
           // After merging priority and ordinary jobs, we feed them to the balancer
           priorityMerge ~> balance
@@ -146,7 +150,7 @@ class FlowGraphDocSpec extends AkkaSpec {
           // Wire up each of the outputs of the balancer to a worker flow
           // then merge them back
           for (i <- 0 until workerCount)
-            balance.out(i) ~> worker ~> resultsMerge.in(i)
+            balance.out(i) ~> addedWorker ~> resultsMerge.in(i)
 
           // We now expose the input ports of the priorityMerge and the output
           // of the resultsMerge as our PriorityWorkerPool ports
@@ -173,14 +177,18 @@ class FlowGraphDocSpec extends AkkaSpec {
 
       val priorityPool1 = b.add(PriorityWorkerPool(worker1, 4))
       val priorityPool2 = b.add(PriorityWorkerPool(worker2, 2))
+      val jobs = b.add(Source(1 to 100).map("job: " + _))
+      val priorityJobs = b.add(Source(1 to 100).map("priority job: " + _))
+      val oneStepPriority = b.add(Source(1 to 100).map("one-step, priority " + _))
+      val sink = b.add(Sink.foreach(println))
 
-      Source(1 to 100).map("job: " + _) ~> priorityPool1.jobsIn
-      Source(1 to 100).map("priority job: " + _) ~> priorityPool1.priorityJobsIn
+      jobs ~> priorityPool1.jobsIn
+      priorityJobs ~> priorityPool1.priorityJobsIn
 
       priorityPool1.resultsOut ~> priorityPool2.jobsIn
-      Source(1 to 100).map("one-step, priority " + _) ~> priorityPool2.priorityJobsIn
+      oneStepPriority ~> priorityPool2.priorityJobsIn
 
-      priorityPool2.resultsOut ~> Sink.foreach(println)
+      priorityPool2.resultsOut ~> sink
       ClosedShape
     }).run()
     //#flow-graph-components-use

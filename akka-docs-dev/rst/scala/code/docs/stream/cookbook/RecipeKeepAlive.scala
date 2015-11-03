@@ -29,10 +29,14 @@ class RecipeKeepAlive extends RecipeSpec {
       val graph = RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
         import FlowGraph.Implicits._
         val unfairMerge = builder.add(MergePreferred[ByteString](1))
+        val addedDataStream = builder.add(dataStream)
+        val addedTickToKeepAlivePacket = builder.add(tickToKeepAlivePacket)
+        val addedTicks = builder.add(ticks)
+        val addedSink = builder.add(sink)
 
         // If data is available then no keepalive is injected
-        dataStream ~> unfairMerge.preferred
-        ticks ~> tickToKeepAlivePacket ~> unfairMerge ~> sink
+        addedDataStream ~> unfairMerge.preferred
+        addedTicks ~> addedTickToKeepAlivePacket ~> unfairMerge ~> addedSink
         ClosedShape
       })
       //#inject-keepalive

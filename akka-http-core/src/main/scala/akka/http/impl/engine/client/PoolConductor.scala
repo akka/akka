@@ -72,11 +72,11 @@ private object PoolConductor {
       val slotSelector = b.add(new SlotSelector(slotCount, pipeliningLimit, log))
       val route = b.add(new Route(slotCount))
       val retrySplit = b.add(Broadcast[RawSlotEvent](2))
-      val flatten = Flow[RawSlotEvent].mapAsyncUnordered(slotCount) {
+      val flatten = b.add(Flow[RawSlotEvent].mapAsyncUnordered(slotCount) {
         case x: SlotEvent.Disconnected                ⇒ FastFuture.successful(x)
         case SlotEvent.RequestCompletedFuture(future) ⇒ future
         case x                                        ⇒ throw new IllegalStateException("Unexpected " + x)
-      }
+      })
 
       retryMerge.out ~> slotSelector.in0
       slotSelector.out ~> route.in

@@ -18,7 +18,7 @@ class RecipeDroppyBroadcast extends RecipeSpec {
       val sub1 = TestSubscriber.manualProbe[Int]()
       val sub2 = TestSubscriber.manualProbe[Int]()
       val sub3 = TestSubscriber.probe[Int]()
-      val futureSink = Sink.head[Seq[Int]]
+
       val mySink1 = Sink(sub1)
       val mySink2 = Sink(sub2)
       val mySink3 = Sink(sub3)
@@ -29,7 +29,8 @@ class RecipeDroppyBroadcast extends RecipeSpec {
           import FlowGraph.Implicits._
 
           val bcast = b.add(Broadcast[Int](3))
-          myElements ~> bcast
+
+          b.add(myElements) ~> bcast
 
           bcast.buffer(10, OverflowStrategy.dropHead) ~> sink1
           bcast.buffer(10, OverflowStrategy.dropHead) ~> sink2

@@ -44,12 +44,12 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
       val zipper = b.add(ZipWith[Tick, Int, Int]((tick, count) => count))
 
-      Source(initialDelay = 3.second, interval = 3.second, Tick()) ~> zipper.in0
+      b.add(Source(initialDelay = 3.second, interval = 3.second, Tick())) ~> zipper.in0
 
-      Source(initialDelay = 1.second, interval = 1.second, "message!")
-        .conflate(seed = (_) => 1)((count, _) => count + 1) ~> zipper.in1
+      b.add(Source(initialDelay = 1.second, interval = 1.second, "message!")
+        .conflate(seed = (_) => 1)((count, _) => count + 1)) ~> zipper.in1
 
-      zipper.out ~> Sink.foreach(println)
+      zipper.out ~> b.add(Sink.foreach(println))
       ClosedShape
     })
     //#buffering-abstraction-leak

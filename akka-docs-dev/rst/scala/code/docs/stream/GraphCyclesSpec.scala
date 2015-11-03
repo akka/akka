@@ -21,9 +21,10 @@ class GraphCyclesSpec extends AkkaSpec {
 
         val merge = b.add(Merge[Int](2))
         val bcast = b.add(Broadcast[Int](2))
+        val log = b.add(Flow[Int].map { s => println(s); s } )
 
-        source ~> merge ~> Flow[Int].map { s => println(s); s } ~> bcast ~> Sink.ignore
-                  merge                    <~                      bcast
+        b.add(source) ~> merge ~> log ~> bcast ~> b.add(Sink.ignore)
+                         merge     <~    bcast
         ClosedShape
       })
       //#deadlocked
@@ -39,9 +40,10 @@ class GraphCyclesSpec extends AkkaSpec {
 
         val merge = b.add(MergePreferred[Int](1))
         val bcast = b.add(Broadcast[Int](2))
+        val log = b.add(Flow[Int].map { s => println(s); s })
 
-        source ~> merge ~> Flow[Int].map { s => println(s); s } ~> bcast ~> Sink.ignore
-                  merge.preferred              <~                  bcast
+        b.add(source) ~> merge ~> log ~> bcast ~> b.add(Sink.ignore)
+                  merge.preferred   <~   bcast
         ClosedShape
       })
       //#unfair
@@ -56,9 +58,11 @@ class GraphCyclesSpec extends AkkaSpec {
 
         val merge = b.add(Merge[Int](2))
         val bcast = b.add(Broadcast[Int](2))
+        val log = b.add(Flow[Int].map { s => println(s); s })
+        val safetyValve = b.add(Flow[Int].buffer(10, OverflowStrategy.dropHead))
 
-        source ~> merge ~> Flow[Int].map { s => println(s); s } ~> bcast ~> Sink.ignore
-            merge <~ Flow[Int].buffer(10, OverflowStrategy.dropHead) <~ bcast
+        b.add(source) ~> merge ~> log         ~> bcast ~> b.add(Sink.ignore)
+                         merge <~ safetyValve <~ bcast
         ClosedShape
       })
       //#dropping
@@ -75,8 +79,8 @@ class GraphCyclesSpec extends AkkaSpec {
         val zip = b.add(ZipWith[Int, Int, Int]((left, right) => right))
         val bcast = b.add(Broadcast[Int](2))
 
-        source ~> zip.in0
-        zip.out.map { s => println(s); s } ~> bcast ~> Sink.ignore
+        b.add(source) ~> zip.in0
+        zip.out.map { s => println(s); s } ~> bcast ~> b.add(Sink.ignore)
         zip.in1             <~                bcast
         ClosedShape
       })
@@ -93,10 +97,10 @@ class GraphCyclesSpec extends AkkaSpec {
         val zip = b.add(ZipWith((left: Int, right: Int) => left))
         val bcast = b.add(Broadcast[Int](2))
         val concat = b.add(Concat[Int]())
-        val start = Source.single(0)
+        val start = b.add(Source.single(0))
 
-        source ~> zip.in0
-        zip.out.map { s => println(s); s } ~> bcast ~> Sink.ignore
+        b.add(source) ~> zip.in0
+        zip.out.map { s => println(s); s } ~> bcast ~> b.add(Sink.ignore)
         zip.in1 <~ concat <~ start
                    concat         <~          bcast
         ClosedShape

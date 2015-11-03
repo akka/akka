@@ -38,9 +38,9 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
         // importing the partial graph will return its shape (inlets & outlets)
         val pm3 = b.add(pickMaxOfThree)
 
-        Source.single(1) ~> pm3.in(0)
-        Source.single(2) ~> pm3.in(1)
-        Source.single(3) ~> pm3.in(2)
+        b.add(Source.single(1)) ~> pm3.in(0)
+        b.add(Source.single(2)) ~> pm3.in(1)
+        b.add(Source.single(3)) ~> pm3.in(2)
         pm3.out ~> sink.inlet
         ClosedShape
     })
@@ -60,8 +60,8 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
       def ints = Source(() => Iterator.from(1))
 
       // connect the graph
-      ints.filter(_ % 2 != 0) ~> zip.in0
-      ints.filter(_ % 2 == 0) ~> zip.in1
+      b.add(ints.filter(_ % 2 != 0)) ~> zip.in0
+      b.add(ints.filter(_ % 2 == 0)) ~> zip.in1
 
       // expose port
       SourceShape(zip.out)

@@ -102,12 +102,14 @@ class CompositionDocSpec extends AkkaSpec {
       val C = builder.add(Merge[Int](2))
       val E = builder.add(Balance[Int](2))
       val F = builder.add(Merge[Int](2))
+      val source = builder.add(Source.single(0))
+      val sink = builder.add(Sink.foreach(println))
 
-      Source.single(0) ~> B.in; B.out(0) ~> C.in(1); C.out ~> F.in(0)
+      source  ~> B.in; B.out(0) ~> C.in(1); C.out ~> F.in(0)
       C.in(0) <~ F.out
 
       B.out(1).map(_ + 1) ~> E.in; E.out(0) ~> F.in(1)
-      E.out(1) ~> Sink.foreach(println)
+      E.out(1) ~> sink
       ClosedShape
     })
     //#complex-graph-alt
@@ -123,10 +125,11 @@ class CompositionDocSpec extends AkkaSpec {
       val C = builder.add(Merge[Int](2))
       val E = builder.add(Balance[Int](2))
       val F = builder.add(Merge[Int](2))
+      val add1 = builder.add(Flow[Int].map(_ + 1))
 
-                                       C  <~  F
-      B  ~>                            C  ~>  F
-      B  ~>  Flow[Int].map(_ + 1)  ~>  E  ~>  F
+                       C  <~  F
+      B  ~>            C  ~>  F
+      B  ~>  add1  ~>  E  ~>  F
       FlowShape(B.in, E.out(1))
     }.named("partial")
     //#partial-graph
@@ -145,8 +148,11 @@ class CompositionDocSpec extends AkkaSpec {
     // Simple way to create a graph backed Source
     val source = Source.fromGraph( FlowGraph.create() { implicit builder =>
       val merge = builder.add(Merge[Int](2))
-      Source.single(0)      ~> merge
-      Source(List(2, 3, 4)) ~> merge
+      val source1 = builder.add(Source.single(0))
+      val source2 = builder.add(Source(List(2, 3, 4)))
+
+      source1 ~> merge
+      source2 ~> merge
 
       // Exposing exactly one output port
       SourceShape(merge.out)

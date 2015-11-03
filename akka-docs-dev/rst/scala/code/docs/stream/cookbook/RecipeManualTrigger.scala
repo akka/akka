@@ -18,12 +18,14 @@ class RecipeManualTrigger extends RecipeSpec {
       val sink = Sink(sub)
 
       //#manually-triggered-stream
-      val graph = RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
+      val graph = RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
         import FlowGraph.Implicits._
-        val zip = builder.add(Zip[Message, Trigger]())
-        elements ~> zip.in0
-        triggerSource ~> zip.in1
-        zip.out ~> Flow[(Message, Trigger)].map { case (msg, trigger) => msg } ~> sink
+        val zip = b.add(Zip[Message, Trigger]())
+        val extractMsg = b.add(Flow[(Message, Trigger)].map { case (msg, trigger) => msg })
+
+        b.add(elements) ~> zip.in0
+        b.add(triggerSource) ~> zip.in1
+        zip.out ~> extractMsg ~> b.add(sink)
         ClosedShape
       })
       //#manually-triggered-stream
@@ -60,10 +62,13 @@ class RecipeManualTrigger extends RecipeSpec {
       val graph = RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
         import FlowGraph.Implicits._
         val zip = builder.add(ZipWith((msg: Message, trigger: Trigger) => msg))
+        val addedElements = builder.add(elements)
+        val addedTriggerSource = builder.add(triggerSource)
+        val addedSink = builder.add(sink)
 
-        elements ~> zip.in0
-        triggerSource ~> zip.in1
-        zip.out ~> sink
+        addedElements ~> zip.in0
+        addedTriggerSource ~> zip.in1
+        zip.out ~> addedSink
         ClosedShape
       })
       //#manually-triggered-stream-zipwith

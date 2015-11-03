@@ -35,7 +35,7 @@ private object RenderSupport {
     Source.fromGraph(FlowGraph.create(first) { implicit b ⇒
       frst ⇒
         import FlowGraph.Implicits._
-        second ~> Sink.cancelled
+        b.add(second) ~> b.add(Sink.cancelled)
         SourceShape(frst.outlet)
     })
   }

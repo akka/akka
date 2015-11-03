@@ -62,12 +62,14 @@ class GraphBroadcastSpec extends AkkaSpec {
           (fut1, fut2, fut3, fut4, fut5) ⇒ Future.sequence(List(fut1, fut2, fut3, fut4, fut5))) { implicit b ⇒
             (p1, p2, p3, p4, p5) ⇒
               val bcast = b.add(Broadcast[Int](5))
+              def grouped = b.add(Flow[Int].grouped(5))
+
               b.add(Source(List(1, 2, 3))) ~> bcast.in
-              bcast.out(0).grouped(5) ~> p1.inlet
-              bcast.out(1).grouped(5) ~> p2.inlet
-              bcast.out(2).grouped(5) ~> p3.inlet
-              bcast.out(3).grouped(5) ~> p4.inlet
-              bcast.out(4).grouped(5) ~> p5.inlet
+              bcast.out(0) ~> grouped ~> p1.inlet
+              bcast.out(1) ~> grouped ~> p2.inlet
+              bcast.out(2) ~> grouped ~> p3.inlet
+              bcast.out(3) ~> grouped ~> p4.inlet
+              bcast.out(4) ~> grouped ~> p5.inlet
               ClosedShape
           }).run()
 

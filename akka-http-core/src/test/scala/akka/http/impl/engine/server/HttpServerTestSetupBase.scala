@@ -44,10 +44,10 @@ abstract class HttpServerTestSetupBase {
     RunnableGraph.fromGraph(FlowGraph.create(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒
       server ⇒
         import FlowGraph.Implicits._
-        Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
-        server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> netOut.sink
-        server.out2 ~> Sink(requests)
-        Source(responses) ~> server.in1
+        b.add(Source(netIn)) ~> b.add(Flow[ByteString].map(SessionBytes(null, _))) ~> server.in2
+        server.out1 ~> b.add(Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x }) ~> b.add(netOut.sink)
+        server.out2 ~> b.add(Sink(requests))
+        b.add(Source(responses)) ~> server.in1
         ClosedShape
     }).run()
 

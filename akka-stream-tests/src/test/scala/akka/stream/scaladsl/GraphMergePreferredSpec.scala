@@ -35,9 +35,10 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
       val result = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
         sink ⇒
           val merge = b.add(MergePreferred[Int](3))
-          b.add(preferred) ~> merge.preferred
+          val group = b.add(Flow[Int].grouped(numElements * 2))
 
-          merge.out.grouped(numElements * 2) ~> sink.inlet
+          b.add(preferred) ~> merge.preferred
+          merge ~> group ~> sink.inlet
           b.add(aux) ~> merge.in(0)
           b.add(aux) ~> merge.in(1)
           b.add(aux) ~> merge.in(2)
@@ -52,8 +53,9 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
         sink ⇒
           val merge = b.add(MergePreferred[Int](3))
           b.add(Source(1 to 100)) ~> merge.preferred
+          val group = b.add(Flow[Int].grouped(500))
 
-          merge.out.grouped(500) ~> sink.inlet
+          merge ~> group ~> sink.inlet
           b.add(Source(101 to 200)) ~> merge.in(0)
           b.add(Source(201 to 300)) ~> merge.in(1)
           b.add(Source(301 to 400)) ~> merge.in(2)

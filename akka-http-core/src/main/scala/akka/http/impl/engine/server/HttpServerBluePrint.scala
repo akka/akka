@@ -124,19 +124,20 @@ private[http] object HttpServerBluePrint {
         // HTTP pipeline
         requestParsing.outlet ~> bypassFanout.in
         bypassMerge.out ~> renderer.inlet
-        val requestsIn = (bypassFanout.out(0) ~> requestPreparation).outlet
+        val requestsIn = (bypassFanout.out(0) ~> b.add(requestPreparation)).outlet
 
-        bypassFanout.out(1) ~> bypass ~> bypassInput
+        bypassFanout.out(1) ~> b.add(bypass) ~> bypassInput
         oneHundreds ~> bypassOneHundredContinueInput
 
         val switchTokenBroadcast = b.add(Broadcast[ResponseRenderingOutput](2))
         renderer.outlet ~> switchTokenBroadcast
         val switchSource: Outlet[SwitchToWebsocketToken.type] =
           (switchTokenBroadcast ~>
-            Flow[ResponseRenderingOutput]
-            .collect {
-              case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken
-            }).outlet
+            b.add(
+              Flow[ResponseRenderingOutput]
+                .collect {
+                  case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken
+                })).outlet
 
         val http = FlowShape(requestParsing.inlet, switchTokenBroadcast.outlet)
 
