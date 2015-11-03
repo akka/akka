@@ -45,14 +45,17 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
-   * that can handle `maxNumberOfSubscribers` [[org.reactivestreams.Subscriber]]s.
    *
-   * If `maxNumberOfSubscribers` is greater than 1, the size of the `inputBuffer` configured for this stage
-   * becomes the maximum number of elements that the fastest [[org.reactivestreams.Subscriber]] can be ahead
-   * of the slowest one before slowing the processing down due to back pressure.
+   * If `fanout` is `true`, the materialized `Publisher` will support multiple `Subscriber`s and
+   * the size of the `inputBuffer` configured for this stage becomes the maximum number of elements that
+   * the fastest [[org.reactivestreams.Subscriber]] can be ahead of the slowest one before slowing
+   * the processing down due to back pressure.
+   *
+   * If `fanout` is `false` then the materialized `Publisher` will only support a single `Subscriber` and
+   * reject any additional `Subscriber`s.
    */
-  def publisher[In](maxNumberOfSubscribers: Int): Sink[In, Publisher[In]] =
-    new Sink(scaladsl.Sink.publisher(maxNumberOfSubscribers))
+  def publisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
+    new Sink(scaladsl.Sink.publisher(fanout))
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized

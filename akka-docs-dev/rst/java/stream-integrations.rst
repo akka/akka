@@ -107,8 +107,8 @@ This is how it can be used as input :class:`Source` to a :class:`Flow`:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/ActorPublisherDocTest.java#actor-publisher-usage
 
-You can only attach one subscriber to this publisher. Increase the max number of subscribers parameter or use a `Broadcast` element
-in order to support multiple subscribers.
+You can only attach one subscriber to this publisher. Use a ``Broadcast``-element or
+attach a ``Sink.publisher(true)`` to enable multiple subscribers.
 
 ActorSubscriber
 ^^^^^^^^^^^^^^^
@@ -414,10 +414,10 @@ by using the Publisher-:class:`Sink`:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/ReactiveStreamsDocTest.java#source-publisher
 
-A publisher that is created with ``Sink.publisher`` supports a specified number of subscribers. Additional
-subscription attempts will be rejected with an :class:`IllegalStateException`.
+A publisher that is created with ``Sink.publisher(false)`` supports only a single subscription.
+Additional subscription attempts will be rejected with an :class:`IllegalStateException`.
 
-A publisher that supports multiple subscribers is created as follows:
+A publisher that supports multiple subscribers using fan-out/broadcasting is created as follows:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/ReactiveStreamsDocTest.java
   :include: author-alert-subscriber,author-storage-subscriber

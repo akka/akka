@@ -222,7 +222,7 @@ class GraphFlowSpec extends AkkaSpec {
 
       "work with a Source when having KeyedSink inside" in {
         val probe = TestSubscriber.manualProbe[Int]()
-        val pubSink = Sink.publisher[Int](1)
+        val pubSink = Sink.publisher[Int](false)
 
         val sink = Sink.fromGraph(FlowGraph.create(pubSink) { implicit b ⇒
           p ⇒ SinkShape(p.inlet)
@@ -277,7 +277,7 @@ class GraphFlowSpec extends AkkaSpec {
       "materialize properly" in {
         val probe = TestSubscriber.manualProbe[Int]()
         val inSource = Source.subscriber[Int]
-        val outSink = Sink.publisher[Int](1)
+        val outSink = Sink.publisher[Int](false)
 
         val flow = Flow.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
           partial ⇒
@@ -309,7 +309,7 @@ class GraphFlowSpec extends AkkaSpec {
 
         val subscriber = m1
         val publisher = m3
-        source1.runWith(Sink.publisher(1)).subscribe(subscriber)
+        source1.runWith(Sink.publisher(false)).subscribe(subscriber)
         publisher.subscribe(probe)
 
         validateProbe(probe, stdRequests, stdResult)
@@ -318,7 +318,7 @@ class GraphFlowSpec extends AkkaSpec {
       "allow connecting source to sink directly" in {
         val probe = TestSubscriber.manualProbe[Int]()
         val inSource = Source.subscriber[Int]
-        val outSink = Sink.publisher[Int](1)
+        val outSink = Sink.publisher[Int](false)
 
         val source = Source.fromGraph(FlowGraph.create(inSource) { implicit b ⇒
           src ⇒
@@ -340,7 +340,7 @@ class GraphFlowSpec extends AkkaSpec {
         val subscriber = m1
         val publisher = m2
 
-        source1.runWith(Sink.publisher(1)).subscribe(subscriber)
+        source1.runWith(Sink.publisher(false)).subscribe(subscriber)
         publisher.subscribe(probe)
 
         validateProbe(probe, 4, (0 to 3).toSet)

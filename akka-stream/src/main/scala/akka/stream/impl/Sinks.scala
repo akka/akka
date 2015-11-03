@@ -66,7 +66,6 @@ private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkSha
  * INTERNAL API
  */
 private[akka] final class FanoutPublisherSink[In](
-  maxNumberOfSubscribers: Int,
   val attributes: Attributes,
   shape: SinkShape[In])
   extends SinkModule[In, Publisher[In]](shape) {
@@ -76,15 +75,15 @@ private[akka] final class FanoutPublisherSink[In](
     val fanoutProcessor = ActorProcessorFactory[In, In](
       actorMaterializer.actorOf(
         context,
-        FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(attributes), maxNumberOfSubscribers)))
+        FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(attributes))))
     (fanoutProcessor, fanoutProcessor)
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-    new FanoutPublisherSink[In](maxNumberOfSubscribers, attributes, shape)
+    new FanoutPublisherSink[In](attributes, shape)
 
   override def withAttributes(attr: Attributes): Module =
-    new FanoutPublisherSink[In](maxNumberOfSubscribers, attr, amendShape(attr))
+    new FanoutPublisherSink[In](attr, amendShape(attr))
 }
 
 /**

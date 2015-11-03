@@ -7,8 +7,7 @@ import org.reactivestreams.Subscriber
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanoutOutputs(val maxNumberOfSubscribers: Int,
-                                           val maxBufferSize: Int,
+private[akka] abstract class FanoutOutputs(val maxBufferSize: Int,
                                            val initialBufferSize: Int,
                                            self: ActorRef,
                                            val pump: Pump)
@@ -93,17 +92,17 @@ private[akka] abstract class FanoutOutputs(val maxNumberOfSubscribers: Int,
 }
 
 private[akka] object FanoutProcessorImpl {
-  def props(actorMaterializerSettings: ActorMaterializerSettings, maxNumberOfSubscribers: Int): Props =
-    Props(new FanoutProcessorImpl(actorMaterializerSettings, maxNumberOfSubscribers)).withDeploy(Deploy.local)
+  def props(actorMaterializerSettings: ActorMaterializerSettings): Props =
+    Props(new FanoutProcessorImpl(actorMaterializerSettings)).withDeploy(Deploy.local)
 }
 /**
  * INTERNAL API
  */
-private[akka] class FanoutProcessorImpl(_settings: ActorMaterializerSettings, maxNumberOfSubscribers: Int)
+private[akka] class FanoutProcessorImpl(_settings: ActorMaterializerSettings)
   extends ActorProcessorImpl(_settings) {
 
   override val primaryOutputs: FanoutOutputs =
-    new FanoutOutputs(maxNumberOfSubscribers, settings.maxInputBufferSize, settings.initialInputBufferSize, self, this) {
+    new FanoutOutputs(settings.maxInputBufferSize, settings.initialInputBufferSize, self, this) {
       override def afterShutdown(): Unit = afterFlush()
     }
 
