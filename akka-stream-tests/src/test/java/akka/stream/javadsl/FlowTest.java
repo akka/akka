@@ -484,7 +484,7 @@ public class FlowTest extends StreamTest {
     mainInputs.add(Source.from(input2));
 
     final Flow<Source<Integer, BoxedUnit>, List<Integer>, BoxedUnit> flow = Flow.<Source<Integer, BoxedUnit>>create().
-      flatten(akka.stream.javadsl.FlattenStrategy.<Integer, BoxedUnit> concat()).grouped(6);
+      <Integer>flattenConcat().grouped(6);
     Future<List<Integer>> future = Source.from(mainInputs).via(flow)
         .runWith(Sink.<List<Integer>>head(), materializer);
 
