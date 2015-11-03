@@ -8,7 +8,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.{ Merge, Broadcast, Balance, Zip }
 import GraphInterpreter._
 
-class GraphInterpreterSpec extends GraphInterpreterSpecKit {
+class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
   import GraphStages._
 
   "GraphInterpreter" must {
