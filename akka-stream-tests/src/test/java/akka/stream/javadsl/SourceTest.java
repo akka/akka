@@ -31,10 +31,12 @@ import scala.util.Try;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @SuppressWarnings("serial")
 public class SourceTest extends StreamTest {
@@ -651,6 +653,64 @@ public class SourceTest extends StreamTest {
             }, materializer);
 
     probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
+  }
+
+
+  @Test
+  public void mustBeAbleToUseInitialTimeout() throws Exception {
+    try {
+      Await.result(
+          Source.maybe().initialTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer),
+          Duration.create(3, "second")
+      );
+      fail("A TimeoutException was expected");
+    } catch(TimeoutException e) {
+      // expected
+    }
+  }
+
+
+  @Test
+  public void mustBeAbleToUseCompletionTimeout() throws Exception {
+    try {
+      Await.result(
+          Source.maybe().completionTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer),
+          Duration.create(3, "second")
+      );
+      fail("A TimeoutException was expected");
+    } catch(TimeoutException e) {
+      // expected
+    }
+  }
+
+  @Test
+  public void mustBeAbleToUseIdleTimeout() throws Exception {
+    try {
+      Await.result(
+          Source.maybe().idleTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer),
+          Duration.create(3, "second")
+      );
+      fail("A TimeoutException was expected");
+    } catch(TimeoutException e) {
+      // expected
+    }
+  }
+
+  @Test
+  public void mustBeAbleToUseIdleInject() throws Exception {
+    Integer result = Await.result(
+        Source.maybe()
+            .keepAlive(Duration.create(1, "second"), new Creator<Integer>() {
+              public Integer create() {
+                return 0;
+              }
+            })
+            .takeWithin(Duration.create(1500, "milliseconds"))
+            .runWith(Sink.<Integer>head(), materializer),
+        Duration.create(3, "second")
+    );
+
+    assertEquals((Object) 0, result);
   }
 
 }
