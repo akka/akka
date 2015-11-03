@@ -1,6 +1,7 @@
 package docs;
 
 import akka.japi.Pair;
+import akka.japi.function.Function;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import scala.Option;
@@ -64,7 +65,7 @@ public class MigrationsJava {
 
             FlowGraph.create(builder -> {
                 //...
-                return new FlowShape(inlet, outlet);
+                return new FlowShape<>(inlet, outlet);
             });
             //#graph-create
         }
@@ -117,9 +118,14 @@ public class MigrationsJava {
         Flow<Integer, Integer, BoxedUnit> emptyFlow2 = Flow.of(Integer.class);
         //#empty-flow
 
-        //#flattenConcat
-        Flow.<Source<Integer, BoxedUnit>>create().flattenConcat();
-        //#flattenConcat
+        //#flatMapConcat
+        Flow.<Source<Integer, BoxedUnit>>create().
+          <Integer>flatMapConcat(new Function<Source<Integer, BoxedUnit>, Source<Integer, ?>>(){
+            @Override public Source<Integer, ?> apply(Source<Integer, BoxedUnit> param) throws Exception {
+              return param;
+            }
+          });
+        //#flatMapConcat
     }
 
 }

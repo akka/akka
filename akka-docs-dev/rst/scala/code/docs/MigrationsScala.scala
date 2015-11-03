@@ -9,7 +9,7 @@ import scala.concurrent.{ Future, ExecutionContext, Promise }
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 
-class Migrations extends AkkaSpec {
+class MigrationsScala extends AkkaSpec {
 
   "Examples in migration guide" must {
     "compile" in {
@@ -110,10 +110,9 @@ class Migrations extends AkkaSpec {
         val ticks = Source(1.second, 3.seconds, "tick")
         //#source-creators
 
-        //#flatten
-        // Please note that the parenthesis is mandatory due to implicit parameters
-        Flow[Source[Int, Any]].flattenConcat()
-        //#flatten
+        //#flatMapConcat
+        Flow[Source[Int, Any]].flatMapConcat(identity)
+        //#flatMapConcat
 
         //#port-async
         class MapAsyncOne[In, Out](f: In ⇒ Future[Out])(implicit ec: ExecutionContext)

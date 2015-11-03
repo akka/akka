@@ -15,6 +15,7 @@ import akka.stream.Graph;
 import akka.stream.OverflowStrategy;
 import akka.stream.StreamTest;
 import akka.stream.UniformFanInShape;
+import akka.stream.impl.ConstantFun;
 import akka.stream.stage.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
@@ -348,12 +349,13 @@ public class SourceTest extends StreamTest {
     final Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
     final Iterable<Integer> input2 = Arrays.asList(4, 5);
 
-    final List<Source<Integer, BoxedUnit>> mainInputs = new ArrayList<Source<Integer,BoxedUnit>>();
+    final List<Source<Integer, ?>> mainInputs = new ArrayList<Source<Integer,?>>();
     mainInputs.add(Source.from(input1));
     mainInputs.add(Source.from(input2));
 
     Future<List<Integer>> future = Source.from(mainInputs)
-      .<Integer>flattenConcat().grouped(6)
+      .<Integer>flatMapConcat(ConstantFun.<Source<Integer,?>>javaIdentityFunction())
+      .grouped(6)
       .runWith(Sink.<List<Integer>>head(), materializer);
 
     List<Integer> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));

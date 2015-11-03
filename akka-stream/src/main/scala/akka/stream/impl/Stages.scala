@@ -10,6 +10,7 @@ import akka.stream.Supervision.Decider
 import akka.stream._
 import akka.stream.impl.SplitDecision.{ Continue, SplitAfter, SplitBefore, SplitDecision }
 import akka.stream.impl.StreamLayout._
+import akka.stream.scaladsl.Source
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
@@ -232,7 +233,7 @@ private[stream] object Stages {
     def after(f: Any ⇒ Boolean) = Split(el ⇒ if (f(el)) SplitAfter else Continue, name("splitAfter"))
   }
 
-  final case class ConcatAll(attributes: Attributes = concatAll) extends StageModule {
+  final case class ConcatAll(f: Any ⇒ Source[Any, _], attributes: Attributes = concatAll) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }
 

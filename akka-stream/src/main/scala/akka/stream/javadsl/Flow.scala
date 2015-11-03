@@ -839,8 +839,10 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.splitAfter(p.test).map(_.asJava))
 
   /**
-   * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
-   * This operation can be used on a stream of element type `Source[U]`.
+   * Transform each input element into a `Source` of output elements that is
+   * then flattened into the output stream by concatenation,
+   * fully consuming one Source after the other.
+   *
    * '''Emits when''' a currently consumed substream has an element available
    *
    * '''Backpressures when''' downstream backpressures
@@ -850,8 +852,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Cancels when''' downstream cancels
    *
    */
-  def flattenConcat[U](): javadsl.Flow[In, U, Mat] =
-    new Flow(delegate.flattenConcat[U]()(conforms[U].asInstanceOf[Out <:< scaladsl.Source[U, _]]))
+  def flatMapConcat[T](f: function.Function[Out, Source[T, _]]): Flow[In, T, Mat] =
+    new Flow(delegate.flatMapConcat[T](x ⇒ f(x).asScala))
 
   /**
    * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
