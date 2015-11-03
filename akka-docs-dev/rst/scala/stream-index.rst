@@ -22,3 +22,4 @@ Streams
    ../stages-overview
    stream-cookbook
    ../stream-configuration
+   migration-guide-1.0-2.x-scala
