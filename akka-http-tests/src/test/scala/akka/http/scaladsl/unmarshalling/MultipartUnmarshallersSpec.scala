@@ -236,10 +236,20 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
     }
 
     "multipartFormDataUnmarshaller should correctly unmarshal 'multipart/form-data' content" - {
+      "with one element and no explicit content-type" in {
+        Unmarshal(HttpEntity(`multipart/form-data` withBoundary "XYZABC" withCharset `UTF-8`,
+          """--XYZABC
+            |content-disposition: form-data; name=email
+            |
+            |test@there.com
+            |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[Multipart.FormData] should haveParts(
+          Multipart.FormData.BodyPart.Strict("email", HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com")))
+      }
       "with one element" in {
         Unmarshal(HttpEntity(`multipart/form-data` withBoundary "XYZABC" withCharset `UTF-8`,
           """--XYZABC
             |content-disposition: form-data; name=email
+            |Content-Type: application/octet-stream
             |
             |test@there.com
             |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[Multipart.FormData] should haveParts(
@@ -255,6 +265,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                 ByteString {
                   """--XYZABC
                     |Content-Disposition: form-data; name="email"
+                    |Content-Type: application/octet-stream
                     |
                     |test@there.com
                     |--XYZABC
