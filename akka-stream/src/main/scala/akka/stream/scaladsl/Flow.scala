@@ -6,10 +6,8 @@ package akka.stream.scaladsl
 import akka.event.LoggingAdapter
 import akka.stream.Attributes._
 import akka.stream._
-import akka.stream.impl.SplitDecision._
-import akka.stream.impl.Stages.{ SymbolicGraphStage, StageModule, DirectProcessor, SymbolicStage }
+import akka.stream.impl.Stages.{ DirectProcessor, StageModule, SymbolicGraphStage }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
-import akka.stream.impl.Timers
 import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, TakeWithin, MapAsync, MapAsyncUnordered }
 import akka.stream.impl.{ ReactiveStreamsCompliance, ConstantFun, Stages, StreamLayout, Timers }
 import akka.stream.stage.AbstractStage.{ PushPullGraphStageWithMaterializedValue, PushPullGraphStage }
@@ -958,10 +956,8 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels and substreams cancel
    *
    */
-  def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Out, Mat]#Repr[Source[U, Unit], Mat] = {
-    val f = p.asInstanceOf[Any ⇒ Boolean]
-    withAttributes(name("splitWhen")).deprecatedAndThen(Split(el ⇒ if (f(el)) SplitBefore else Continue))
-  }
+  def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Source[U, Unit], Mat] =
+    deprecatedAndThen(Split.when(p.asInstanceOf[Any ⇒ Boolean]))
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -995,10 +991,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.splitAfter]].
    */
-  def splitAfter[U >: Out](p: Out ⇒ Boolean): Repr[Out, Mat]#Repr[Source[U, Unit], Mat] = {
-    val f = p.asInstanceOf[Any ⇒ Boolean]
-    withAttributes(name("splitAfter")).deprecatedAndThen(Split(el ⇒ if (f(el)) SplitAfter else Continue))
-  }
+  def splitAfter[U >: Out](p: Out ⇒ Boolean): Repr[Source[U, Unit], Mat] =
+    deprecatedAndThen(Split.after(p.asInstanceOf[Any ⇒ Boolean]))
 
   /**
    * Flattens a stream of [[Source]]s into a contiguous stream by fully consuming one stream after the other.
