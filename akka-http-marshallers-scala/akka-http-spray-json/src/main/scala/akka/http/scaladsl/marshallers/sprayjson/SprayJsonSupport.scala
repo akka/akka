@@ -23,7 +23,7 @@ trait SprayJsonSupport {
   implicit def sprayJsValueUnmarshaller: FromEntityUnmarshaller[JsValue] =
     Unmarshaller.byteStringUnmarshaller.forContentTypes(`application/json`).mapWithCharset { (data, charset) ⇒
       val input =
-        if (charset == HttpCharsets.`UTF-8`) ParserInput(data.utf8String)
+        if (charset == HttpCharsets.`UTF-8`) ParserInput(data.toArray)
         else ParserInput(data.decodeString(charset.nioCharset.name)) // FIXME: identify charset by instance, not by name!
       JsonParser(input)
     }
