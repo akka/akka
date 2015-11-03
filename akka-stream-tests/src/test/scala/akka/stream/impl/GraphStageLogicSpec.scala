@@ -14,7 +14,7 @@ import akka.stream.impl.fusing.GraphInterpreter._
 import org.scalactic.ConversionCheckedTripleEquals
 import scala.concurrent.duration.Duration
 
-class GraphStageLogicSpec extends GraphInterpreterSpecKit with ConversionCheckedTripleEquals {
+class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with ConversionCheckedTripleEquals {
 
   implicit val mat = ActorMaterializer()
 
