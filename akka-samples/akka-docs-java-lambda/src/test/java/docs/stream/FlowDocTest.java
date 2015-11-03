@@ -217,7 +217,7 @@ public class FlowDocTest {
         (b, tickSource) -> {
           FanInShape2<String, Integer, Integer> zip = b.add(ZipWith.create(Keep.right()));
           b.from(tickSource).toInlet(zip.in0());
-          return new FlowShape<>(zip.in1(), zip.out());
+          return FlowShape.of(zip.in1(), zip.out());
         }));
 
     //#flow-mat-combine

@@ -56,7 +56,7 @@ public class RecipeWorkerPool extends RecipeTest {
             b.from(balance.out(i)).via(b.add(worker)).toInlet(merge.in(i));
         }
 
-        return new FlowShape<>(balance.in(), merge.out());
+        return FlowShape.of(balance.in(), merge.out());
     }));
   }
   //#worker-pool

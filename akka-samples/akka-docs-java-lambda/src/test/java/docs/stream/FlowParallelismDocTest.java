@@ -74,7 +74,7 @@ public class FlowParallelismDocTest {
         // uses of "fryingPan" mean actually different stages in the graph.
         b.from(dispatchBatter.out(1)).via(b.add(fryingPan)).toInlet(mergePancakes.in(1));
 
-        return new FlowShape<>(dispatchBatter.in(), mergePancakes.out());
+        return FlowShape.of(dispatchBatter.in(), mergePancakes.out());
       }));
     //#parallelism
   }
@@ -101,7 +101,7 @@ public class FlowParallelismDocTest {
           .via(b.add(fryingPan2))
           .toInlet(mergePancakes.in(1));
 
-        return new FlowShape<>(dispatchBatter.in(), mergePancakes.out());
+        return FlowShape.of(dispatchBatter.in(), mergePancakes.out());
       }));
     //#parallel-pipeline
   }
@@ -121,7 +121,7 @@ public class FlowParallelismDocTest {
         b.from(dispatchBatter.out(0)).via(b.add(fryingPan1)).toInlet(mergeHalfCooked.in(0));
         b.from(dispatchBatter.out(1)).via(b.add(fryingPan1)).toInlet(mergeHalfCooked.in(1));
 
-        return new FlowShape<>(dispatchBatter.in(), mergeHalfCooked.out());
+        return FlowShape.of(dispatchBatter.in(), mergeHalfCooked.out());
       }));
 
     Flow<HalfCookedPancake, Pancake, BoxedUnit> pancakeChefs2 =
@@ -136,7 +136,7 @@ public class FlowParallelismDocTest {
         b.from(dispatchHalfCooked.out(0)).via(b.add(fryingPan2)).toInlet(mergePancakes.in(0));
         b.from(dispatchHalfCooked.out(1)).via(b.add(fryingPan2)).toInlet(mergePancakes.in(1));
 
-        return new FlowShape<>(dispatchHalfCooked.in(), mergePancakes.out());
+        return FlowShape.of(dispatchHalfCooked.in(), mergePancakes.out());
       }));
 
     Flow<ScoopOfBatter, Pancake, BoxedUnit> kitchen =
