@@ -406,7 +406,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     def acceptConnection(): (TestSubscriber.ManualProbe[HttpRequest], TestPublisher.ManualProbe[HttpResponse]) = {
       connSourceSub.request(1)
       val incomingConnection = connSource.expectNext()
-      val sink = Sink.publisher[HttpRequest](1)
+      val sink = Sink.publisher[HttpRequest](false)
       val source = Source.subscriber[HttpResponse]
 
       val handler = Flow.fromSinkAndSourceMat(sink, source)(Keep.both)

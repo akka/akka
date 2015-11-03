@@ -159,11 +159,11 @@ private[http] object StreamUtils {
       case Nil      ⇒ Nil
       case Seq(one) ⇒ Vector(input.via(one))
       case multiple ⇒
-        val (fanoutSub, fanoutPub) = Source.subscriber[ByteString].toMat(Sink.publisher(transformers.size))(Keep.both).run()
+        val (fanoutSub, fanoutPub) = Source.subscriber[ByteString].toMat(Sink.publisher(true))(Keep.both).run()
         val sources = transformers.map { flow ⇒
           // Doubly wrap to ensure that subscription to the running publisher happens before the final sources
           // are exposed, so there is no race
-          Source(Source(fanoutPub).viaMat(flow)(Keep.right).runWith(Sink.publisher(1)))
+          Source(Source(fanoutPub).viaMat(flow)(Keep.right).runWith(Sink.publisher(false)))
         }
         // The fanout publisher must be wired to the original source after all fanout subscribers have been subscribed
         input.runWith(Sink(fanoutSub))
