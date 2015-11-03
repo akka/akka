@@ -1,4 +1,4 @@
-.. _migration-2.0:
+.. _migration-2.0-scala:
 
 ############################
  Migration Guide 1.0 to 2.x
@@ -24,6 +24,7 @@ must be done with the more descriptive method ``Flow.fromGraph()``.
 It was possible to create a ``Flow`` from a ``Source`` and a ``Sink`` using ``wrap()``. Now this functionality can
 be accessed trough the more descriptive methods ``Flow.fromSinkAndSource`` and ``Flow.fromSinkAndSourceMat``.
 
+
 Creating a BidiFlow from other stages
 -------------------------------------
 
@@ -43,12 +44,53 @@ Update procedure
 2. Replace all uses of ``Flow.wrap`` when it converts a ``Source`` and ``Sink`` to a ``Flow`` with
    ``Flow.fromSinkAndSource`` or ``Flow.fromSinkAndSourceMat``
 3. Replace all uses of ``BidiFlow.wrap`` when it converts a ``Graph`` to a ``BidiFlow`` with ``BidiFlow.fromGraph``
-4. Replace all uses of ``BidiFlow.wrap`` when it converts two ``Flow``s to a ``BidiFlow`` with
+4. Replace all uses of ``BidiFlow.wrap`` when it converts two ``Flow`` s to a ``BidiFlow`` with
    ``BidiFlow.fromFlows`` or ``BidiFlow.fromFlowsMat``
-5. Repplace all uses of ``BidiFlow.apply()`` (Scala DSL) or ``BidiFlow.create()`` (Java DSL) when it converts two
+5. Replace all uses of ``BidiFlow.apply()`` when it converts two
    functions to a ``BidiFlow`` with ``BidiFlow.fromFunctions``
 
-TODO: Code example
+Example
+^^^^^^^
+
+::
+
+      val graphSource: Graph[SourceShape[Int], Unit] = ???
+      // This no longer works!
+      val source: Source[Int, Unit] = Source.wrap(graphSource)
+
+      val graphSink: Graph[SinkShape[Int], Unit] = ???
+      // This no longer works!
+      val sink: Sink[Int, Unit] = Sink.wrap(graphSink)
+
+      val graphFlow: Graph[FlowShape[Int, Int], Unit] = ???
+      // This no longer works!
+      val flow: Flow[Int, Int, Unit] = Flow.wrap(graphFlow)
+
+      // This no longer works
+      Flow.wrap(Sink.head[Int], Source.single(0))(Keep.left)
+
+should be replaced by
+
+.. includecode:: code/docs/Migrations.scala#flow-wrap
+
+and
+
+::
+
+      val bidiGraph: Graph[BidiShape[Int, Int, Int, Int], Unit = ???
+      // This no longer works!
+      val bidi: BidiFlow[Int, Int, Int, Int, Unit] = BidiFlow.wrap(bidiGraph)
+
+      // This no longer works!
+      BidiFlow.wrap(flow1, flow2)(Keep.both)
+
+      // This no longer works!
+      BidiFlow((x: Int) => x + 1, (y: Int) => y * 3)
+
+
+Should be replaced by
+
+.. includecode:: code/docs/Migrations.scala#bidiflow-wrap
 
 FlowGraph builder methods have been renamed
 ===========================================
@@ -59,10 +101,29 @@ closed graphs now it is explicitly required to return ``ClosedShape`` at the end
 Update procedure
 ----------------
 
-1. Replace all occurrences of ``FlowGraph.create()`` with ``FlowGraph.partial()``
-2. Add ``ClosedShape`` as a return value of the builder block
+1. Replace all occurrences of ``FlowGraph.partial()`` or ``FlowGraph.closed()`` with ``FlowGraph.create()``
+2. Add ``ClosedShape`` as a return value of the builder block if it was ``FlowGraph.closed()`` before
+3. Wrap the closed graph with  ``RunnableGraph.fromGraph`` if it was ``FlowGraph.closed()`` before
 
-TODO: Code sample
+Example
+^^^^^^^
+
+::
+
+      // This no longer works!
+      FlowGraph.closed() { builder =>
+        //...
+      }
+
+      // This no longer works!
+      FlowGraph.partial() { builder =>
+        //...
+        FlowShape(inlet, outlet)
+      }
+
+should be replaced by
+
+.. includecode:: code/docs/Migrations.scala#graph-create
 
 Methods that create Source, Sink, Flow from Graphs have been removed
 ====================================================================
@@ -88,31 +149,71 @@ be replaced with two steps
 2. Create the required DSL element by calling ``fromGraph()`` on the required DSL element (e.g. ``Source.fromGraph``)
    passing the graph created in the previous step
 
-TODO code example
+Example
+^^^^^^^
 
-Some graph Builder methods in the Java DSL have been renamed
-============================================================
+::
 
-Due to the high number of overloads Java 8 type inference suffered, and it was also hard to figure out which time
-to use which method. Therefore various redundant methods have been removed.
+      // This no longer works!
+      Source() { builder =>
+        //...
+        outlet
+      }
+
+      // This no longer works!
+      Sink() { builder =>
+        //...
+        inlet
+      }
+
+      // This no longer works!
+      Flow() { builder =>
+        //...
+        (inlet, outlet)
+      }
+
+      // This no longer works!
+      BidiFlow() { builder =>
+        //...
+        BidiShape(inlet1, outlet1, inlet2, outlet2)
+      }
+
+should be replaced by
+
+.. includecode:: code/docs/Migrations.scala#graph-create-2
+
+Several Graph builder methods have been removed
+===============================================
+
+The ``addEdge`` methods have been removed from the DSL to reduce the ways connections can be made and to reduce the
+number of overloads. Now only the ``~>`` notation is available which requires the import of the implicits
+``FlowGraph.Implicits._``.
 
 Update procedure
 ----------------
 
-1. All uses of builder.addEdge(Outlet, Inlet) should be replaced by the alternative builder.from(…).to(…)
-2. All uses of builder.addEdge(Outlet, FlowShape, Inlet) should be replaced by builder.from(…).via(…).to(…)
+1. Replace all uses of ``scaladsl.Builder.addEdge(Outlet, Inlet)`` by the graphical DSL ``~>``.
+2. Replace all uses of ``scaladsl.Builder.addEdge(Outlet, FlowShape, Inlet)`` by the graphical DSL ``~>``.
+   methods, or the graphical DSL ``~>``.
+3. Import ``FlowGraph.Implicits._`` in the builder block or an enclosing scope.
 
-Builder.source => use builder.from(…).via(…).to(…)
-Builder.flow => use builder.from(…).via(…).to(…)
-Builder.sink => use builder.from(…).via(…).to(…)
+Example
+^^^^^^^
 
-TODO: code example
+::
 
-Builder overloads from the Scala DSL have been removed
-======================================================
+      FlowGraph.closed() { builder =>
+        //...
+        // This no longer works!
+        builder.addEdge(outlet, inlet)
+        // This no longer works!
+        builder.addEdge(outlet, flow1, inlet)
+        //...
+      }
 
-scaladsl.Builder.addEdge(Outlet, Inlet) => use the DSL (~> and <~)
-scaladsl.Builder.addEdge(Outlet, FlowShape, Inlet) => use the DSL (~> and <~)
+should be replaced by
+
+.. includecode:: code/docs/Migrations.scala#graph-edges
 
 Source constructor name changes
 ===============================
@@ -133,20 +234,22 @@ Update procedure
 2. All uses of ``Source.lazyEmpty`` should be replaced by ``Source.maybe`` and the returned ``Promise`` completed with
    a ``None`` (an empty ``Option``)
 
-TODO: code example
+Example
+^^^^^^^
 
-``Flow.empty()`` has been removed from the Java DSL
-===================================================
+::
 
-The ``empty()`` method has been removed since it behaves exactly the same as ``create()``, creating a ``Flow`` with no
-transformations added yet.
+      // This no longer works!
+      val src: Source[Int, Promise[Unit]] = Source.lazyEmpty[Int]
+      //...
+      promise.trySuccess(())
 
-Update procedure
-----------------
+      // This no longer works!
+      val ticks = Source(1.second, 3.seconds, "tick")
 
-1. Replace all uses of ``Flow.empty()`` with ``Flow.create``.
+should be replaced by
 
-TODO: code example
+.. includecode:: code/docs/Migrations.scala#source-creators
 
 ``flatten(FlattenStrategy)`` has been replaced by named counterparts
 ====================================================================
@@ -159,7 +262,17 @@ Update procedure
 
 1. Replace all occurences of ``flatten(FlattenStrategy.concat)`` with ``flattenConcat()``
 
-TODO: code example
+Example
+^^^^^^^
+
+::
+
+   // This no longer works!
+   Flow[Source[Int, Any]].flatten(FlattenStrategy.concat)
+
+should be replaced by
+
+.. includecode:: code/docs/Migrations.scala#flatten
 
 FlexiMerge an FlexiRoute has been replaced by GraphStage
 ========================================================
@@ -177,8 +290,8 @@ Update procedure
 *There is no simple update procedure. The affected stages must be ported to the new ``GraphStage`` DSL manually. Please
 read the* ``GraphStage`` *documentation (TODO) for details.*
 
-Variance of Inlet and Outlet (Scala DSL)
-========================================
+Variance of Inlet and Outlet
+============================
 
 Scala uses *declaration site variance* which was cumbersome in the cases of ``Inlet`` and ``Outlet`` as they are
 purely symbolic object containing no fields or methods and which are used both in input and output locations (wiring
@@ -189,8 +302,6 @@ code expect the case of custom shapes, which now require ``@uncheckedVariance`` 
 methods that would violate variance constraints)
 
 This change does not affect Java DSL users.
-
-TODO: code example
 
 Update procedure
 ----------------
@@ -211,15 +322,14 @@ Update procedure
 2. This field must be set on every call to ``holdUpstream()`` (and variants).
 3. In completion, instead of calling ``isHoldingUpstream`` read this variable instead.
 
-TODO: code example
+See the example in the AsyncStage migration section for an example of this procedure.
 
 
 AsyncStage has been replaced by GraphStage
 ==========================================
 
-Due to its complexity and relative inflexibility ``AsyncStage`` have been removed.
-
-TODO explanation
+Due to its complexity and inflexibility ``AsyncStage`` have been removed in favor of ``GraphStage``. Existing
+``AsyncStage`` implementations can be ported in a mostly mechanical way.
 
 Update procedure
 ----------------
@@ -254,10 +364,48 @@ Update procedure
 
 We show the necessary steps in terms of an example ``AsyncStage``
 
-TODO: code sample
+Example
+^^^^^^^
 
+::
 
+      class MapAsyncOne[In, Out](f: In ⇒ Future[Out])(implicit ec: ExecutionContext)
+        extends AsyncStage[In, Out, Try[Out]] {
 
-TODO: Code example
+        private var elemInFlight: Out = _
 
+        override def onPush(elem: In, ctx: AsyncContext[Out, Try[Out]]) = {
+          val future = f(elem)
+          val cb = ctx.getAsyncCallback
+          future.onComplete(cb.invoke)
+          ctx.holdUpstream()
+        }
 
+        override def onPull(ctx: AsyncContext[Out, Try[Out]]) =
+          if (elemInFlight != null) {
+            val e = elemInFlight
+            elemInFlight = null.asInstanceOf[Out]
+            pushIt(e, ctx)
+          } else ctx.holdDownstream()
+
+        override def onAsyncInput(input: Try[Out], ctx: AsyncContext[Out, Try[Out]]) =
+          input match {
+            case Failure(ex)                           ⇒ ctx.fail(ex)
+            case Success(e) if ctx.isHoldingDownstream ⇒ pushIt(e, ctx)
+            case Success(e) ⇒
+              elemInFlight = e
+              ctx.ignore()
+          }
+
+        override def onUpstreamFinish(ctx: AsyncContext[Out, Try[Out]]) =
+          if (ctx.isHoldingUpstream) ctx.absorbTermination()
+          else ctx.finish()
+
+        private def pushIt(elem: Out, ctx: AsyncContext[Out, Try[Out]]) =
+          if (ctx.isFinishing) ctx.pushAndFinish(elem)
+          else ctx.pushAndPull(elem)
+      }
+
+should be replaced by
+
+.. includecode:: code/docs/Migrations.scala#port-async
