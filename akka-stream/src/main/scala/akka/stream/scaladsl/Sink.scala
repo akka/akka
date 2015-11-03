@@ -80,21 +80,19 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
-   * that can handle `maxNumberOfSubscribers` [[org.reactivestreams.Subscriber]]s.
    *
-   * If `maxNumberOfSubscribers` is greater than 1, the size of the `inputBuffer` configured for this stage
-   * becomes the maximum number of elements that the fastest [[org.reactivestreams.Subscriber]] can be ahead
-   * of the slowest one before slowing the processing down due to back pressure.
+   * If `fanout` is `true`, the materialized `Publisher` will support multiple `Subscriber`s and
+   * the size of the `inputBuffer` configured for this stage becomes the maximum number of elements that
+   * the fastest [[org.reactivestreams.Subscriber]] can be ahead of the slowest one before slowing
+   * the processing down due to back pressure.
+   *
+   * If `fanout` is `false` then the materialized `Publisher` will only support a single `Subscriber` and
+   * reject any additional `Subscriber`s.
    */
-  def publisher[T](maxNumberOfSubscribers: Int): Sink[T, Publisher[T]] =
+  def publisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
     new Sink(
-      maxNumberOfSubscribers match {
-        case 1 ⇒ new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink"))
-        case n ⇒
-          new FanoutPublisherSink[T](n,
-            DefaultAttributes.fanoutPublisherSink,
-            shape("FanoutPublisherSink"))
-      })
+      if (fanout) new FanoutPublisherSink[T](DefaultAttributes.fanoutPublisherSink, shape("FanoutPublisherSink"))
+      else new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))
 
   /**
    * A `Sink` that will consume the stream and discard the elements.

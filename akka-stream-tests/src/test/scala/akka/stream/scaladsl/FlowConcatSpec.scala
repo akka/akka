@@ -29,7 +29,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       val s2: Source[String, _] = Source(List(4, 5, 6)).map(_.toString + "-s")
 
       val subs = TestSubscriber.manualProbe[Any]()
-      val subSink = Sink.publisher[Any](1)
+      val subSink = Sink.publisher[Any](false)
 
       val (_, res) = f1.concat(s2).runWith(s1, subSink)
 
