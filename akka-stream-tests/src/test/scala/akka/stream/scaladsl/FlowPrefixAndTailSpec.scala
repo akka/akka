@@ -202,7 +202,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
       val (_, tail) = Await.result(f, 3.seconds)
 
-      val tailPub = tail.runWith(Sink.publisher(1))
+      val tailPub = tail.runWith(Sink.publisher(false))
       s.sendComplete()
 
       tailPub.subscribe(sub)

@@ -13,7 +13,7 @@ class FuturePublisherTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] = {
     val p = Promise[Int]()
-    val pub = Source(p.future).runWith(Sink.publisher(1))
+    val pub = Source(p.future).runWith(Sink.publisher(false))
     p.success(0)
     pub
   }

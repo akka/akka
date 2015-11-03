@@ -39,7 +39,7 @@ public class SinkTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseFanoutPublisher() throws Exception {
-    final Sink<Object, Publisher<Object>> pubSink = Sink.publisher(Integer.MAX_VALUE);
+    final Sink<Object, Publisher<Object>> pubSink = Sink.publisher(true);
     @SuppressWarnings("unused")
     final Publisher<Object> publisher = Source.from(new ArrayList<Object>()).runWith(pubSink, materializer);
   }
