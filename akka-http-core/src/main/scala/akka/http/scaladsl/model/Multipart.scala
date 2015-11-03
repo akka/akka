@@ -7,6 +7,7 @@ package akka.http.scaladsl.model
 import java.io.File
 
 import akka.event.{ NoLogging, LoggingAdapter }
+import akka.stream.impl.ConstantFun
 
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration.FiniteDuration
@@ -40,7 +41,7 @@ sealed trait Multipart {
     val chunks =
       parts
         .transform(() ⇒ BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
-        .flattenConcat()
+        .flatMapConcat(ConstantFun.scalaIdentityFunction)
     HttpEntity.Chunked(mediaType withBoundary boundary, chunks)
   }
 }

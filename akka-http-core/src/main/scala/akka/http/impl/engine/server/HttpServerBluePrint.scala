@@ -20,6 +20,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream._
+import akka.stream.impl.ConstantFun
 import akka.stream.io._
 import akka.stream.scaladsl._
 import akka.stream.stage._
@@ -108,7 +109,7 @@ private[http] object HttpServerBluePrint {
       Flow[ResponseRenderingContext]
         .via(Flow[ResponseRenderingContext].transform(() ⇒ new ErrorsTo500ResponseRecovery(log)).named("recover")) // FIXME: simplify after #16394 is closed
         .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
-        .flattenConcat()
+        .flatMapConcat(ConstantFun.scalaIdentityFunction)
         .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
 
     BidiFlow.fromGraph(FlowGraph.create(requestParsingFlow, rendererPipeline, oneHundredContinueSource)((_, _, _) ⇒ ()) { implicit b ⇒

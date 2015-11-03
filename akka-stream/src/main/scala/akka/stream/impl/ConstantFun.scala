@@ -6,7 +6,7 @@ package akka.stream.impl
 import akka.japi.function.{ Function ⇒ JFun, Function2 ⇒ JFun2 }
 import akka.japi.{ Pair ⇒ JPair }
 
-private[stream] object ConstantFun {
+private[akka] object ConstantFun {
   private[this] val JavaIdentityFunction = new JFun[Any, Any] {
     @throws(classOf[Exception]) override def apply(param: Any): Any = param
   }
