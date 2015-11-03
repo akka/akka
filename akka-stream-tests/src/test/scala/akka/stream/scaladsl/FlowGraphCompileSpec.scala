@@ -44,9 +44,9 @@ class FlowGraphCompileSpec extends AkkaSpec {
     "build simple merge" in {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val merge = b.add(Merge[String](2))
-        in1 ~> f1 ~> merge.in(0)
-        in2 ~> f2 ~> merge.in(1)
-        merge.out ~> f3 ~> out1
+        b.add(in1) ~> b.add(f1) ~> merge.in(0)
+        b.add(in2) ~> b.add(f2) ~> merge.in(1)
+        merge.out ~> b.add(f3) ~> b.add(out1)
         ClosedShape
       }).run()
     }
@@ -54,9 +54,9 @@ class FlowGraphCompileSpec extends AkkaSpec {
     "build simple broadcast" in {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val bcast = b.add(Broadcast[String](2))
-        in1 ~> f1 ~> bcast.in
-        bcast.out(0) ~> f2 ~> out1
-        bcast.out(1) ~> f3 ~> out2
+        b.add(in1) ~> b.add(f1) ~> bcast.in
+        bcast.out(0) ~> b.add(f2) ~> b.add(out1)
+        bcast.out(1) ~> b.add(f3) ~> b.add(out2)
         ClosedShape
       }).run()
     }
@@ -64,9 +64,9 @@ class FlowGraphCompileSpec extends AkkaSpec {
     "build simple balance" in {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val balance = b.add(Balance[String](2))
-        in1 ~> f1 ~> balance.in
-        balance.out(0) ~> f2 ~> out1
-        balance.out(1) ~> f3 ~> out2
+        b.add(in1) ~> b.add(f1) ~> balance.in
+        balance.out(0) ~> b.add(f2) ~> b.add(out1)
+        balance.out(1) ~> b.add(f3) ~> b.add(out2)
         ClosedShape
       })
     }
@@ -75,11 +75,11 @@ class FlowGraphCompileSpec extends AkkaSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val merge = b.add(Merge[String](2))
         val bcast = b.add(Broadcast[String](2))
-        in1 ~> f1 ~> merge.in(0)
-        in2 ~> f2 ~> merge.in(1)
-        merge ~> f3 ~> bcast
-        bcast.out(0) ~> f4 ~> out1
-        bcast.out(1) ~> f5 ~> out2
+        b.add(in1) ~> b.add(f1) ~> merge.in(0)
+        b.add(in2) ~> b.add(f2) ~> merge.in(1)
+        merge ~> b.add(f3) ~> bcast
+        bcast.out(0) ~> b.add(f4) ~> b.add(out1)
+        bcast.out(1) ~> b.add(f5) ~> b.add(out2)
         ClosedShape
       }).run()
     }
@@ -89,11 +89,11 @@ class FlowGraphCompileSpec extends AkkaSpec {
         import FlowGraph.Implicits._
         val merge = b.add(Merge[String](2))
         val bcast = b.add(Broadcast[String](2))
-        b.add(in1) ~> f1 ~> merge.in(0)
-        merge.out ~> f2 ~> bcast.in
-        bcast.out(0) ~> f3 ~> b.add(out1)
-        b.add(in2) ~> f4 ~> merge.in(1)
-        bcast.out(1) ~> f5 ~> b.add(out2)
+        b.add(in1) ~> b.add(f1) ~> merge.in(0)
+        merge.out ~> b.add(f2) ~> bcast.in
+        bcast.out(0) ~> b.add(f3) ~> b.add(out1)
+        b.add(in2) ~> b.add(f4) ~> merge.in(1)
+        bcast.out(1) ~> b.add(f5) ~> b.add(out2)
         ClosedShape
       }).run()
     }
@@ -114,13 +114,13 @@ class FlowGraphCompileSpec extends AkkaSpec {
           val merge = b.add(Merge[String](2))
           val bcast1 = b.add(Broadcast[String](2))
           val bcast2 = b.add(Broadcast[String](2))
-          val feedbackLoopBuffer = Flow[String].buffer(10, OverflowStrategy.dropBuffer)
-          in1 ~> f1 ~> merge.in(0)
-          merge ~> f2 ~> bcast1
-          bcast1.out(0) ~> f3 ~> out1
+          val feedbackLoopBuffer = b.add(Flow[String].buffer(10, OverflowStrategy.dropBuffer))
+          b.add(in1) ~> b.add(f1) ~> merge.in(0)
+          merge ~> b.add(f2) ~> bcast1
+          bcast1.out(0) ~> b.add(f3) ~> b.add(out1)
           bcast1.out(1) ~> feedbackLoopBuffer ~> bcast2
-          bcast2.out(0) ~> f5 ~> merge.in(1) // cycle
-          bcast2.out(1) ~> f6 ~> out2
+          bcast2.out(0) ~> b.add(f5) ~> merge.in(1) // cycle
+          bcast2.out(1) ~> b.add(f6) ~> b.add(out2)
           ClosedShape
         })
       }.getMessage.toLowerCase should include("cycle")
@@ -132,11 +132,11 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val merge = b.add(Merge[String](2))
         val bcast1 = b.add(Broadcast[String](2))
         val bcast2 = b.add(Broadcast[String](2))
-        val feedbackLoopBuffer = Flow[String].buffer(10, OverflowStrategy.dropBuffer)
+        val feedbackLoopBuffer = b.add(Flow[String].buffer(10, OverflowStrategy.dropBuffer))
         import FlowGraph.Implicits._
-        b.add(in1) ~> f1 ~> merge ~> f2 ~> bcast1 ~> f3 ~> b.add(out1)
-        bcast1 ~> feedbackLoopBuffer ~> bcast2 ~> f5 ~> merge
-        bcast2 ~> f6 ~> b.add(out2)
+        b.add(in1) ~> b.add(f1) ~> merge ~> b.add(f2) ~> bcast1 ~> b.add(f3) ~> b.add(out1)
+        bcast1 ~> feedbackLoopBuffer ~> bcast2 ~> b.add(f5) ~> merge
+        bcast2 ~> b.add(f6) ~> b.add(out2)
         ClosedShape
       }).run()
     }
@@ -146,8 +146,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val bcast = b.add(Broadcast[String](2))
         val merge = b.add(Merge[String](2))
         import FlowGraph.Implicits._
-        in1 ~> f1 ~> bcast ~> f2 ~> merge ~> f3 ~> out1
-        bcast ~> f4 ~> merge
+        b.add(in1) ~> b.add(f1) ~> bcast ~> b.add(f2) ~> merge ~> b.add(f3) ~> b.add(out1)
+        bcast ~> b.add(f4) ~> merge
         ClosedShape
       }).run()
     }
@@ -162,13 +162,13 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val m9 = b.add(Merge[String](2))
         val m10 = b.add(Merge[String](2))
         val m11 = b.add(Merge[String](2))
-        val in3 = Source(List("b"))
-        val in5 = Source(List("b"))
-        val in7 = Source(List("a"))
-        val out2 = Sink.publisher[String]
-        val out9 = Sink.publisher[String]
-        val out10 = Sink.publisher[String]
-        def f(s: String) = Flow[String].transform(op[String, String]).named(s)
+        val in3 = b.add(Source(List("b")))
+        val in5 = b.add(Source(List("b")))
+        val in7 = b.add(Source(List("a")))
+        val out2 = b.add(Sink.publisher[String])
+        val out9 = b.add(Sink.publisher[String])
+        val out10 = b.add(Sink.publisher[String])
+        def f(s: String) = b.add(Flow[String].transform(op[String, String]).named(s))
         import FlowGraph.Implicits._
 
         in7 ~> f("a") ~> b7 ~> f("b") ~> m11 ~> f("c") ~> b11 ~> f("d") ~> out2
@@ -187,9 +187,9 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val merge = b.add(Merge[String](2))
         val bcast = b.add(Broadcast[String](2))
         import FlowGraph.Implicits._
-        in1 ~> merge ~> bcast ~> out1
-        in2 ~> merge
-        bcast ~> out2
+        b.add(in1) ~> merge ~> bcast ~> b.add(out1)
+        b.add(in2) ~> merge
+        bcast ~> b.add(out2)
         ClosedShape
       }).run()
     }
@@ -198,10 +198,11 @@ class FlowGraphCompileSpec extends AkkaSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val zip = b.add(Zip[Int, String]())
         val unzip = b.add(Unzip[Int, String]())
-        val out = Sink.publisher[(Int, String)]
+        val out = b.add(Sink.publisher[(Int, String)])
+        val timesTwo = b.add(Flow[Int].map(_ * 2))
         import FlowGraph.Implicits._
-        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.out0 ~> Flow[Int].map(_ * 2) ~> zip.in0
+        b.add(Source(List(1 -> "a", 2 -> "b", 3 -> "c"))) ~> unzip.in
+        unzip.out0 ~> timesTwo ~> zip.in0
         unzip.out1 ~> zip.in1
         zip.out ~> out
         ClosedShape
@@ -230,9 +231,9 @@ class FlowGraphCompileSpec extends AkkaSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
         val merge = b.add(Merge[Fruit](2))
-        Source[Fruit](apples) ~> Flow[Fruit] ~> merge.in(0)
-        Source[Apple](apples) ~> Flow[Apple] ~> merge.in(1)
-        merge.out ~> Flow[Fruit].map(identity) ~> Sink(TestSubscriber.manualProbe[Fruit]())
+        b.add(Source[Fruit](apples)) ~> b.add(Flow[Fruit]) ~> merge.in(0)
+        b.add(Source[Apple](apples)) ~> b.add(Flow[Apple]) ~> merge.in(1)
+        merge.out ~> b.add(Flow[Fruit].map(identity)) ~> b.add(Sink(TestSubscriber.manualProbe[Fruit]()))
         ClosedShape
       })
     }
@@ -241,31 +242,31 @@ class FlowGraphCompileSpec extends AkkaSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         import FlowGraph.Implicits._
         val fruitMerge = b.add(Merge[Fruit](2))
-        Source[Fruit](apples) ~> fruitMerge
-        Source[Apple](apples) ~> fruitMerge
-        fruitMerge ~> Sink.head[Fruit]
+        b.add(Source[Fruit](apples)) ~> fruitMerge
+        b.add(Source[Apple](apples)) ~> fruitMerge
+        fruitMerge ~> b.add(Sink.head[Fruit])
         "fruitMerge ~> Sink.head[Apple]" shouldNot compile
 
         val appleMerge = b.add(Merge[Apple](1))
         "Source[Fruit](apples) ~> appleMerge" shouldNot compile
-        Source[Apple](apples) ~> appleMerge
-        appleMerge ~> Sink.head[Fruit]
+        b.add(Source[Apple](apples)) ~> appleMerge
+        appleMerge ~> b.add(Sink.head[Fruit])
 
         val appleMerge2 = b.add(Merge[Apple](1))
-        Source[Apple](apples) ~> appleMerge2
-        appleMerge2 ~> Sink.head[Apple]
+        b.add(Source[Apple](apples)) ~> appleMerge2
+        appleMerge2 ~> b.add(Sink.head[Apple])
 
         val fruitBcast = b.add(Broadcast[Fruit](1))
-        Source[Fruit](apples) ~> fruitBcast
+        b.add(Source[Fruit](apples)) ~> fruitBcast
         //Source[Apple](apples) ~> fruitBcast // FIXME: should compile #16997
-        fruitBcast ~> Sink.head[Fruit]
+        fruitBcast ~> b.add(Sink.head[Fruit])
         "fruitBcast ~> Sink.head[Apple]" shouldNot compile
 
         val appleBcast = b.add(Broadcast[Apple](2))
         "Source[Fruit](apples) ~> appleBcast" shouldNot compile
-        Source[Apple](apples) ~> appleBcast
-        appleBcast ~> Sink.head[Fruit]
-        appleBcast ~> Sink.head[Apple]
+        b.add(Source[Apple](apples)) ~> appleBcast
+        appleBcast ~> b.add(Sink.head[Fruit])
+        appleBcast ~> b.add(Sink.head[Apple])
         ClosedShape
       })
     }
@@ -279,24 +280,26 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val merge = b add Merge[Fruit](11)
         val unzip = b add Unzip[Int, String]()
         val whatever = b add Sink.publisher[Any]
+        def mapFruit = b.add(Flow[Fruit].map(identity))
+        def mapApples = b.add(Flow[Apple].map(identity))
         import FlowGraph.Implicits._
         b.add(Source[Fruit](apples)) ~> merge.in(0)
         appleSource ~> merge.in(1)
         appleSource ~> merge.in(2)
         fruitSource ~> merge.in(3)
-        fruitSource ~> Flow[Fruit].map(identity) ~> merge.in(4)
-        appleSource ~> Flow[Apple].map(identity) ~> merge.in(5)
+        fruitSource ~> mapFruit ~> merge.in(4)
+        appleSource ~> mapApples ~> merge.in(5)
         b.add(Source(apples)) ~> merge.in(6)
-        b.add(Source(apples)) ~> Flow[Fruit].map(identity) ~> merge.in(7)
-        b.add(Source(apples)) ~> Flow[Apple].map(identity) ~> merge.in(8)
-        merge.out ~> Flow[Fruit].map(identity) ~> outA
+        b.add(Source(apples)) ~> mapFruit ~> merge.in(7)
+        b.add(Source(apples)) ~> mapApples ~> merge.in(8)
+        merge.out ~> mapFruit ~> outA
 
-        b.add(Source(apples)) ~> Flow[Apple] ~> merge.in(9)
-        b.add(Source(apples)) ~> Flow[Apple] ~> outB
-        b.add(Source(apples)) ~> Flow[Apple] ~> b.add(Sink.publisher[Fruit])
-        appleSource ~> Flow[Apple] ~> merge.in(10)
+        b.add(Source(apples)) ~> b.add(Flow[Apple]) ~> merge.in(9)
+        b.add(Source(apples)) ~> b.add(Flow[Apple]) ~> outB
+        b.add(Source(apples)) ~> b.add(Flow[Apple]) ~> b.add(Sink.publisher[Fruit])
+        appleSource ~> b.add(Flow[Apple]) ~> merge.in(10)
 
-        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        b.add(Source(List(1 -> "a", 2 -> "b", 3 -> "c"))) ~> unzip.in
         unzip.out1 ~> whatever
         unzip.out0 ~> b.add(Sink.publisher[Any])
 
@@ -310,31 +313,31 @@ class FlowGraphCompileSpec extends AkkaSpec {
     "build with plain flow without junctions" in {
       import FlowGraph.Implicits._
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        in1 ~> f1 ~> out1
+        b.add(in1) ~> b.add(f1) ~> b.add(out1)
         ClosedShape
       }).run()
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        in1 ~> f1 ~> f2.to(out1)
+        b.add(in1) ~> b.add(f1) ~> b.add(f2.to(out1))
         ClosedShape
       }).run()
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        (in1 via f1) ~> f2 ~> out1
+        b.add(in1 via f1) ~> b.add(f2) ~> b.add(out1)
         ClosedShape
       }).run()
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        in1 ~> out1
+        b.add(in1) ~> b.add(out1)
         ClosedShape
       }).run()
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        in1 ~> (f1 to out1)
+        b.add(in1) ~> b.add(f1 to out1)
         ClosedShape
       }).run()
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        (in1 via f1) ~> out1
+        b.add(in1 via f1) ~> b.add(out1)
         ClosedShape
       }).run()
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        (in1 via f1) ~> (f2 to out1)
+        b.add(in1 via f1) ~> b.add(f2 to out1)
         ClosedShape
       }).run()
     }

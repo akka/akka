@@ -27,8 +27,8 @@ class GraphMatValueSpec extends AkkaSpec {
       val sub = TestSubscriber.manualProbe[Int]()
       val f = RunnableGraph.fromGraph(FlowGraph.create(foldSink) { implicit b ⇒
         fold ⇒
-          Source(1 to 10) ~> fold
-          b.materializedValue.mapAsync(4)(identity) ~> Sink(sub)
+          b.add(Source(1 to 10)) ~> fold
+          b.materializedValue.mapAsync(4)(identity) ~> b.add(Sink(sub))
           ClosedShape
       }).run()
 
@@ -45,11 +45,11 @@ class GraphMatValueSpec extends AkkaSpec {
       val f = RunnableGraph.fromGraph(FlowGraph.create(foldSink) { implicit b ⇒
         fold ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
-          Source(1 to 10) ~> fold
+          b.add(Source(1 to 10)) ~> fold
           b.materializedValue.mapAsync(4)(identity) ~> zip.in0
           b.materializedValue.mapAsync(4)(identity) ~> zip.in1
 
-          zip.out ~> Sink(sub)
+          zip.out ~> b.add(Sink(sub))
           ClosedShape
       }).run()
 
@@ -63,7 +63,7 @@ class GraphMatValueSpec extends AkkaSpec {
     // Exposes the materialized value as a stream value
     val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source.fromGraph(FlowGraph.create(foldSink) { implicit b ⇒
       fold ⇒
-        Source(1 to 10) ~> fold
+        b.add(Source(1 to 10)) ~> fold
         SourceShape(b.materializedValue)
     })
 

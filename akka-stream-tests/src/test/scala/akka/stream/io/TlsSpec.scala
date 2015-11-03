@@ -403,7 +403,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
           (s, o1, o2) ⇒
             val tls = b.add(clientTls(EagerClose))
             s ~> tls.in1; tls.out1 ~> o1
-            o2 <~ tls.out2; tls.in2 <~ Source.failed(ex)
+            o2 <~ tls.out2; tls.in2 <~ b.add(Source.failed(ex))
             ClosedShape
         }).run()
       the[Exception] thrownBy Await.result(out1, 1.second) should be(ex)
@@ -420,7 +420,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
         RunnableGraph.fromGraph(FlowGraph.create(Source.subscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
           (s, o1, o2) ⇒
             val tls = b.add(clientTls(EagerClose))
-            Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1
+            b.add(Source.failed[SslTlsOutbound](ex)) ~> tls.in1; tls.out1 ~> o1
             o2 <~ tls.out2; tls.in2 <~ s
             ClosedShape
         }).run()

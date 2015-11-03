@@ -25,7 +25,7 @@ class PublisherSinkSpec extends AkkaSpec {
 
           val bcast = b.add(Broadcast[Int](2))
 
-          Source(0 to 5) ~> bcast.in
+          b.add(Source(0 to 5)) ~> bcast.in
           bcast.out(0).map(_ * 2) ~> p1.inlet
           bcast.out(1) ~> p2.inlet
           ClosedShape

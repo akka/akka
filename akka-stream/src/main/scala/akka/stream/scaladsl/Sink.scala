@@ -116,12 +116,15 @@ object Sink {
     Sink.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
       val d = b.add(strategy(rest.size + 2))
-      d.out(0) ~> first
-      d.out(1) ~> second
+      val firstInlet = b.add(first)
+      val secondInlet = b.add(second)
+      d.out(0) ~> firstInlet
+      d.out(1) ~> secondInlet
 
       @tailrec def combineRest(idx: Int, i: Iterator[Sink[U, _]]): SinkShape[T] =
         if (i.hasNext) {
-          d.out(idx) ~> i.next()
+          val inlet = b.add(i.next())
+          d.out(idx) ~> inlet
           combineRest(idx + 1, i)
         } else new SinkShape(d.in)
 

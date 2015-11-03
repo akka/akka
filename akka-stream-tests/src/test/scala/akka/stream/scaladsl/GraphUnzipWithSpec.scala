@@ -51,9 +51,9 @@ class GraphUnzipWithSpec extends AkkaSpec {
     RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
       val f = fixture(b)
 
-      Source(p) ~> f.in
-      f.left ~> Sink(leftSubscriber)
-      f.right ~> Sink(rightSubscriber)
+      b.add(Source(p)) ~> f.in
+      f.left ~> b.add(Sink(leftSubscriber))
+      f.right ~> b.add(Sink(rightSubscriber))
 
       ClosedShape
     }).run()
@@ -99,10 +99,10 @@ class GraphUnzipWithSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val unzip = b.add(UnzipWith(f))
-        Source(1 to 4) ~> unzip.in
+        b.add(Source(1 to 4)) ~> unzip.in
 
-        unzip.out0 ~> Flow[LeftOutput].buffer(4, OverflowStrategy.backpressure) ~> Sink(leftProbe)
-        unzip.out1 ~> Flow[RightOutput].buffer(4, OverflowStrategy.backpressure) ~> Sink(rightProbe)
+        unzip.out0 ~> b.add(Flow[LeftOutput].buffer(4, OverflowStrategy.backpressure)) ~> b.add(Sink(leftProbe))
+        unzip.out1 ~> b.add(Flow[RightOutput].buffer(4, OverflowStrategy.backpressure)) ~> b.add(Sink(rightProbe))
 
         ClosedShape
       }).run()
@@ -150,10 +150,10 @@ class GraphUnzipWithSpec extends AkkaSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) ⇒ (1 / b, 1 + "/" + b)))
 
-        Source(-2 to 2) ~> unzip.in
+        b.add(Source(-2 to 2)) ~> unzip.in
 
-        unzip.out0 ~> Sink(leftProbe)
-        unzip.out1 ~> Sink(rightProbe)
+        unzip.out0 ~> b.add(Sink(leftProbe))
+        unzip.out1 ~> b.add(Sink(rightProbe))
 
         ClosedShape
       }).run()
@@ -195,11 +195,11 @@ class GraphUnzipWithSpec extends AkkaSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val unzip = b.add(UnzipWith((a: Person) ⇒ Person.unapply(a).get))
 
-        Source.single(Person("Caplin", "Capybara", 3)) ~> unzip.in
+        b.add(Source.single(Person("Caplin", "Capybara", 3))) ~> unzip.in
 
-        unzip.out0 ~> Sink(probe0)
-        unzip.out1 ~> Sink(probe1)
-        unzip.out2 ~> Sink(probe2)
+        unzip.out0 ~> b.add(Sink(probe0))
+        unzip.out1 ~> b.add(Sink(probe1))
+        unzip.out2 ~> b.add(Sink(probe2))
 
         ClosedShape
       }).run()
@@ -245,35 +245,35 @@ class GraphUnzipWithSpec extends AkkaSpec {
         // odd input ports will be Int, even input ports will be String
         val unzip = b.add(UnzipWith(split20))
 
-        Source.single((0 to 19).toList) ~> unzip.in
+        b.add(Source.single((0 to 19).toList)) ~> unzip.in
 
         def createSink[T](o: Outlet[T]) =
-          o ~> Flow[T].buffer(1, OverflowStrategy.backpressure) ~> Sink(TestSubscriber.manualProbe[T]())
+          o ~> b.add(Flow[T].buffer(1, OverflowStrategy.backpressure)) ~> b.add(Sink(TestSubscriber.manualProbe[T]()))
 
-        unzip.out0 ~> Sink(probe0)
+        unzip.out0 ~> b.add(Sink(probe0))
         createSink(unzip.out1)
         createSink(unzip.out2)
         createSink(unzip.out3)
         createSink(unzip.out4)
 
-        unzip.out5 ~> Sink(probe5)
+        unzip.out5 ~> b.add(Sink(probe5))
         createSink(unzip.out6)
         createSink(unzip.out7)
         createSink(unzip.out8)
         createSink(unzip.out9)
 
-        unzip.out10 ~> Sink(probe10)
+        unzip.out10 ~> b.add(Sink(probe10))
         createSink(unzip.out11)
         createSink(unzip.out12)
         createSink(unzip.out13)
         createSink(unzip.out14)
 
-        unzip.out15 ~> Sink(probe15)
+        unzip.out15 ~> b.add(Sink(probe15))
         createSink(unzip.out16)
         createSink(unzip.out17)
         createSink(unzip.out18)
 
-        unzip.out19 ~> Sink(probe19)
+        unzip.out19 ~> b.add(Sink(probe19))
 
         ClosedShape
       }).run()

@@ -33,7 +33,7 @@ object GraphOpsIntegrationSpec {
       FlowGraph.create() { implicit b ⇒
         val merge = b.add(Merge[In](2))
         val balance = b.add(Balance[Out](2))
-        merge.out ~> pipeline ~> balance.in
+        merge.out ~> b.add(pipeline) ~> balance.in
         ShufflePorts(merge.in(0), merge.in(1), balance.out(0), balance.out(1))
       }
     }
@@ -59,7 +59,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
 
-          Source(List(1, 2, 3)) ~> bcast.in
+          b.add(Source(List(1, 2, 3))) ~> bcast.in
           bcast.out(0) ~> merge.in(0)
           bcast.out(1).map(_ + 3) ~> merge.in(1)
           merge.out.grouped(10) ~> sink.inlet
@@ -76,7 +76,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
           val balance = b.add(Balance[Int](5))
           val merge = b.add(Merge[Int](5))
 
-          Source(elements) ~> balance.in
+          b.add(Source(elements)) ~> balance.in
 
           for (i ← 0 until 5) balance.out(i) ~> merge.in(i)
 
@@ -101,9 +101,9 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
           val m9 = b.add(Merge[Int](2))
           val m10 = b.add(Merge[Int](2))
           val m11 = b.add(Merge[Int](2))
-          val in3 = Source(List(3))
-          val in5 = Source(List(5))
-          val in7 = Source(List(7))
+          val in3 = b.add(Source(List(3)))
+          val in5 = b.add(Source(List(5)))
+          val in7 = b.add(Source(List(7)))
 
           // First layer
           in7 ~> b7.in
@@ -144,7 +144,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
 
-          Source(List(1, 2, 3)).map(_ * 2) ~> bcast.in
+          b.add(Source(List(1, 2, 3)).map(_ * 2)) ~> bcast.in
           bcast.out(0) ~> merge.in(0)
           bcast.out(1).map(_ + 3) ~> merge.in(1)
           merge.out.grouped(10) ~> sink.inlet
@@ -158,8 +158,8 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val s = TestSubscriber.manualProbe[Int]
       val flow = Flow[Int].map(_ * 2)
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit builder ⇒
-        Source(p) ~> flow ~> Sink(s)
+      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
+        b.add(Source(p)) ~> b.add(flow) ~> b.add(Sink(s))
         ClosedShape
       }).run()
       val sub = s.expectSubscription()
@@ -177,8 +177,8 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
         (s1, s2, s3, sink) ⇒
           val merge = b.add(Merge[Int](2))
 
-          Source(List(1, 2, 3)) ~> s1.in1
-          Source(List(10, 11, 12)) ~> s1.in2
+          b.add(Source(List(1, 2, 3))) ~> s1.in1
+          b.add(Source(List(10, 11, 12))) ~> s1.in2
 
           s1.out1 ~> s2.in1
           s1.out2 ~> s2.in2

@@ -356,14 +356,17 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
 
           val merge = b.add(Merge[Int](2))
           val bcast = b.add(Broadcast[String](2))
+          val source1Outlet = b.add(source1)
+          val sink1Inlet = b.add(sink1)
+          val sink2Inlet = b.add(sink2)
 
-          source1 ~> merge.in(0)
+          source1Outlet ~> merge.in(0)
           source2.outlet ~> merge.in(1)
 
           merge.out.map(_.toString) ~> bcast.in
 
-          bcast.out(0).map(_ + "mark") ~> sink1
-          bcast.out(1) ~> sink2
+          bcast.out(0).map(_ + "mark") ~> sink1Inlet
+          bcast.out(1) ~> sink2Inlet
           ClosedShape
       }).run()
 

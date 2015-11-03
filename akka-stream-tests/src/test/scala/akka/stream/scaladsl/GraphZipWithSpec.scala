@@ -23,10 +23,10 @@ class GraphZipWithSpec extends TwoStreamsSetup {
 
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val zip = b.add(ZipWith((_: Int) + (_: Int)))
-        Source(1 to 4) ~> zip.in0
-        Source(10 to 40 by 10) ~> zip.in1
+        b.add(Source(1 to 4)) ~> zip.in0
+        b.add(Source(10 to 40 by 10)) ~> zip.in1
 
-        zip.out ~> Sink(probe)
+        zip.out ~> b.add(Sink(probe))
 
         ClosedShape
       }).run()
@@ -51,10 +51,10 @@ class GraphZipWithSpec extends TwoStreamsSetup {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val zip = b.add(ZipWith[Int, Int, Int]((_: Int) / (_: Int)))
 
-        Source(1 to 4) ~> zip.in0
-        Source(-2 to 2) ~> zip.in1
+        b.add(Source(1 to 4)) ~> zip.in0
+        b.add(Source(-2 to 2)) ~> zip.in1
 
-        zip.out ~> Sink(probe)
+        zip.out ~> b.add(Sink(probe))
 
         ClosedShape
       }).run()
@@ -114,11 +114,11 @@ class GraphZipWithSpec extends TwoStreamsSetup {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val zip = b.add(ZipWith(Person.apply _))
 
-        Source.single("Caplin") ~> zip.in0
-        Source.single("Capybara") ~> zip.in1
-        Source.single(3) ~> zip.in2
+        b.add(Source.single("Caplin")) ~> zip.in0
+        b.add(Source.single("Capybara")) ~> zip.in1
+        b.add(Source.single(3)) ~> zip.in2
 
-        zip.out ~> Sink(probe)
+        zip.out ~> b.add(Sink(probe))
 
         ClosedShape
       }).run()
@@ -144,27 +144,27 @@ class GraphZipWithSpec extends TwoStreamsSetup {
         // odd input ports will be Int, even input ports will be String
         val zip = b.add(ZipWith(sum19))
 
-        Source.single(1) ~> zip.in0
-        Source.single(2).map(_.toString) ~> zip.in1
-        Source.single(3) ~> zip.in2
-        Source.single(4).map(_.toString) ~> zip.in3
-        Source.single(5) ~> zip.in4
-        Source.single(6).map(_.toString) ~> zip.in5
-        Source.single(7) ~> zip.in6
-        Source.single(8).map(_.toString) ~> zip.in7
-        Source.single(9) ~> zip.in8
-        Source.single(10).map(_.toString) ~> zip.in9
-        Source.single(11) ~> zip.in10
-        Source.single(12).map(_.toString) ~> zip.in11
-        Source.single(13) ~> zip.in12
-        Source.single(14).map(_.toString) ~> zip.in13
-        Source.single(15) ~> zip.in14
-        Source.single(16).map(_.toString) ~> zip.in15
-        Source.single(17) ~> zip.in16
-        Source.single(18).map(_.toString) ~> zip.in17
-        Source.single(19) ~> zip.in18
+        b.add(Source.single(2)).map(_.toString) ~> zip.in1
+        b.add(Source.single(1)) ~> zip.in0
+        b.add(Source.single(3)) ~> zip.in2
+        b.add(Source.single(4)).map(_.toString) ~> zip.in3
+        b.add(Source.single(5)) ~> zip.in4
+        b.add(Source.single(6)).map(_.toString) ~> zip.in5
+        b.add(Source.single(7)) ~> zip.in6
+        b.add(Source.single(8)).map(_.toString) ~> zip.in7
+        b.add(Source.single(9)) ~> zip.in8
+        b.add(Source.single(10)).map(_.toString) ~> zip.in9
+        b.add(Source.single(11)) ~> zip.in10
+        b.add(Source.single(12)).map(_.toString) ~> zip.in11
+        b.add(Source.single(13)) ~> zip.in12
+        b.add(Source.single(14)).map(_.toString) ~> zip.in13
+        b.add(Source.single(15)) ~> zip.in14
+        b.add(Source.single(16)).map(_.toString) ~> zip.in15
+        b.add(Source.single(17)) ~> zip.in16
+        b.add(Source.single(18)).map(_.toString) ~> zip.in17
+        b.add(Source.single(19)) ~> zip.in18
 
-        zip.out ~> Sink(probe)
+        zip.out ~> b.add(Sink(probe))
 
         ClosedShape
       }).run()
