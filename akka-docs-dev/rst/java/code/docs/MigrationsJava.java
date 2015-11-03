@@ -78,22 +78,22 @@ public class MigrationsJava {
             //#graph-create-2
             FlowGraph.create(builder -> {
                 //...
-                return new SourceShape<>(outlet);
+                return SourceShape.of(outlet);
             });
 
             FlowGraph.create(builder -> {
                 //...
-                return new SinkShape<>(inlet);
+                return SinkShape.of(inlet);
             });
 
             FlowGraph.create(builder -> {
                 //...
-                return new FlowShape<>(inlet, outlet);
+                return FlowShape.of(inlet, outlet);
             });
 
             FlowGraph.create(builder -> {
                 //...
-                return new BidiShape<>(inlet1, outlet1, inlet2, outlet2);
+                return BidiShape.of(inlet1, outlet1, inlet2, outlet2);
             });
             //#graph-create-2
         }
