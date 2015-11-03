@@ -1000,10 +1000,9 @@ trait FlowOps[+Out, +Mat] {
   }
 
   /**
-   * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
-   * This operation can be used on a stream of element type [[akka.stream.scaladsl.Source]].
+   * Flattens a stream of [[Source]]s into a contiguous stream by fully consuming one stream after the other.
    *
-   * '''Emits when''' (Concat) the current consumed substream has an element available
+   * '''Emits when''' a currently consumed substream has an element available
    *
    * '''Backpressures when''' downstream backpressures
    *
@@ -1012,11 +1011,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U, Mat] = strategy match {
-    case scaladsl.FlattenStrategy.Concat | javadsl.FlattenStrategy.Concat ⇒ deprecatedAndThen(ConcatAll())
-    case _ ⇒
-      throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
-  }
+  def flattenConcat[U]()(implicit ev: Out <:< Source[U, _]): Repr[U, Mat] = deprecatedAndThen(ConcatAll())
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed
