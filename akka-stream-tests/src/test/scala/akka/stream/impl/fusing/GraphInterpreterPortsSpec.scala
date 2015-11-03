@@ -6,7 +6,7 @@ package akka.stream.impl.fusing
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 
-class GraphInterpreterPortsSpec extends GraphInterpreterSpecKit {
+class GraphInterpreterPortsSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
   "Port states" must {
 
