@@ -1,4 +1,4 @@
-.. _migration-2.0:
+.. _migration-2.0-scala:
 
 ############################
  Migration Guide 1.0 to 2.x
@@ -71,7 +71,7 @@ Example
 
 should be replaced by
 
-.. includecode:: /scala/code/docs/Migrations.scala#flow-wrap
+.. includecode:: code/docs/Migrations.scala#flow-wrap
 
 and
 
@@ -90,7 +90,7 @@ and
 
 Should be replaced by
 
-.. includecode:: /scala/code/docs/Migrations.scala#bidiflow-wrap
+.. includecode:: code/docs/Migrations.scala#bidiflow-wrap
 
 FlowGraph builder methods have been renamed
 ===========================================
@@ -123,7 +123,7 @@ Example
 
 should be replaced by
 
-.. includecode:: /scala/code/docs/Migrations.scala#graph-create
+.. includecode:: code/docs/Migrations.scala#graph-create
 
 Methods that create Source, Sink, Flow from Graphs have been removed
 ====================================================================
@@ -180,7 +180,7 @@ Example
 
 should be replaced by
 
-.. includecode:: /scala/code/docs/Migrations.scala#graph-create-2
+.. includecode:: code/docs/Migrations.scala#graph-create-2
 
 Several Graph builder methods have been removed
 ===============================================
@@ -213,7 +213,7 @@ Example
 
 should be replaced by
 
-.. includecode:: /scala/code/docs/Migrations.scala#graph-edges
+.. includecode:: code/docs/Migrations.scala#graph-edges
 
 Source constructor name changes
 ===============================
@@ -249,7 +249,7 @@ Example
 
 should be replaced by
 
-.. includecode:: /scala/code/docs/Migrations.scala#source-creators
+.. includecode:: code/docs/Migrations.scala#source-creators
 
 ``flatten(FlattenStrategy)`` has been replaced by named counterparts
 ====================================================================
@@ -272,7 +272,7 @@ Example
 
 should be replaced by
 
-.. includecode:: /scala/code/docs/Migrations.scala#flatten
+.. includecode:: code/docs/Migrations.scala#flatten
 
 FlexiMerge an FlexiRoute has been replaced by GraphStage
 ========================================================
@@ -408,4 +408,4 @@ Example
 
 should be replaced by
 
-.. includecode:: /scala/code/docs/Migrations.scala#port-async
+.. includecode:: code/docs/Migrations.scala#port-async

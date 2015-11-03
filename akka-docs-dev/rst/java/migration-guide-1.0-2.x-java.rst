@@ -1,4 +1,4 @@
-.. _migration-2.0:
+.. _migration-2.0-java:
 
 ############################
  Migration Guide 1.0 to 2.x
@@ -51,15 +51,15 @@ Example
 
 ::
 
-      Graph<SourceShape<Integer>, BoxedUnit> graphSource = null;
+      Graph<SourceShape<Integer>, BoxedUnit> graphSource = ...;
       // This no longer works!
       Source<Integer, BoxedUnit> source = Source.wrap(graphSource);
 
-      Graph<SinkShape<Integer>, BoxedUnit> graphSink = null;
+      Graph<SinkShape<Integer>, BoxedUnit> graphSink = ...;
       // This no longer works!
       Sink<Integer, BoxedUnit> sink = Sink.wrap(graphSink);
 
-      Graph<FlowShape<Integer, Integer>, BoxedUnit> graphFlow = null;
+      Graph<FlowShape<Integer, Integer>, BoxedUnit> graphFlow = ...;
       // This no longer works!
       Flow<Integer, Integer, BoxedUnit> flow = Flow.wrap(graphFlow);
 
@@ -68,13 +68,13 @@ Example
 
 should be replaced by
 
-TODO
+.. includecode:: code/docs/MigrationsJava.java#flow-wrap
 
 and
 
 ::
 
-      Graph<BidiShape<Integer, Integer, Integer, Integer>, BoxedUnit> bidiGraph = null;
+      Graph<BidiShape<Integer, Integer, Integer, Integer>, BoxedUnit> bidiGraph = ...;
       // This no longer works!
       BidiFlow<Integer, Integer, Integer, Integer, BoxedUnit> bidiFlow = BidiFlow.wrap(bidiGraph);
 
@@ -84,7 +84,7 @@ and
 
 Should be replaced by
 
-TODO
+.. includecode:: code/docs/MigrationsJava.java#bidi-wrap
 
 FlowGraph builder methods have been renamed
 ===========================================
@@ -117,7 +117,7 @@ Example
 
 should be replaced by
 
-TODO
+.. includecode:: code/docs/MigrationsJava.java#graph-create
 
 Methods that create Source, Sink, Flow from Graphs have been removed
 ====================================================================
@@ -174,24 +174,37 @@ Example
 
 should be replaced by
 
-TODO
+.. includecode:: code/docs/MigrationsJava.java#graph-create-2
 
 Some graph Builder methods have been removed
 ============================================
 
 Due to the high number of overloads Java 8 type inference suffered, and it was also hard to figure out which time
-to use which method. Therefore various redundant methods have been removed.
+to use which method. Therefore various redundant methods have been removed. As a consequence, every ``Sink``, ``Source``
+and ``Flow`` needs to be explicitly added via ``builder.add()``.
 
 Update procedure
 ----------------
 
-1. All uses of ``builder.addEdge(Outlet, Inlet)`` should be replaced by the alternative ``builder.from(…).to(…)``
-2. All uses of ``builder.addEdge(Outlet, FlowShape, Inlet)`` should be replaced by ``builder.from(…).via(…).to(…)``
-3. All uses of ``builder.source`` should be replaced by ``builder.from(…).via(…).to(…)``
-4. All uses of ``builder.flow`` should be replaced by ``builder.from(…).via(…).to(…)``
-5. All uses of ``builder.sink`` should be replaced by ``builder.from(…).via(…).to(…)``
+1. All uses of ``builder.edge(outlet,inlet)`` should be replaced by the alternative ``builder.from(outlet).toInlet(inlet)``
+3. All uses of ``builder.source`` should be replaced by ``builder.from(builder.add(source))``
+4. All uses of ``builder.flow`` should be replaced by ``builder.….via(builder.add(flow))``
+5. All uses of ``builder.sink`` should be replaced by ``builder.….to(builder.add(sink)))``
 
-TODO: code example
+::
+
+      FlowGraph.factory().closed(builder -> {
+        // These no longer work
+        builder.edge(outlet, inlet);
+        builder.flow(outlet, flow, inlet);
+        builder.source(Source.single(0));
+        builder.sink(Sink.<Integer>head());
+        //...
+      });
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsJava.java#graph-builder
 
 Source constructor name changes
 ===============================
@@ -215,7 +228,16 @@ Update procedure
 Example
 ^^^^^^^
 
-TODO
+::
+
+      // This no longer works!
+      Source<Integer, Promise<BoxedUnit>> src = Source.lazyEmpty();
+      //...
+      promise.trySuccess(BoxedUnit.UNIT);
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsJava.java#source-creators
 
 ``Flow.empty()`` have been removed
 ==================================
@@ -228,7 +250,14 @@ Update procedure
 
 1. Replace all uses of ``Flow.empty()`` with ``Flow.create``.
 
-TODO: code example
+::
+
+      // This no longer works!
+      Flow<Integer, Integer, BoxedUnit> emptyFlow = Flow.<Integer>empty();
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsJava.java#empty-flow
 
 ``flatten(FlattenStrategy)`` has been replaced by named counterparts
 ====================================================================
@@ -244,7 +273,13 @@ Update procedure
 Example
 ^^^^^^^
 
-TODO
+::
+
+   Flow.<Source<Integer, BoxedUnit>>create().flatten(FlattenStrategy.concat());
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsJava.java#flattenConcat
 
 FlexiMerge an FlexiRoute has been replaced by GraphStage
 ========================================================
