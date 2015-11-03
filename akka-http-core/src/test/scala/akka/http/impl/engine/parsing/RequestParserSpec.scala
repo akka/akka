@@ -19,7 +19,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ FlattenStrategy, _ }
+import akka.stream.scaladsl._
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.matchers.Matcher
@@ -539,7 +539,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             }
           }
         }
-        .flatten(FlattenStrategy.concat)
+        .flattenConcat()
         .map(strictEqualify)
         .grouped(100000).runWith(Sink.head)
         .awaitResult(awaitAtMost)
