@@ -204,8 +204,8 @@ object Source {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): Source[T, Cancellable] =
-    fromGraph(new TickSource[T](initialDelay, interval, tick))
+  def tick[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): Source[T, Cancellable] =
+    fromGraph(new TickSource[T](initialDelay, interval, tick).withAttributes(DefaultAttributes.tickSource))
 
   /**
    * Create a `Source` with one element.

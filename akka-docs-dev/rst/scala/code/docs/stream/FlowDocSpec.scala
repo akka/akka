@@ -77,7 +77,7 @@ class FlowDocSpec extends AkkaSpec {
     import scala.concurrent.duration._
     case object Tick
 
-    val timer = Source(initialDelay = 1.second, interval = 1.seconds, tick = () => Tick)
+    val timer = Source.tick(initialDelay = 1.second, interval = 1.seconds, tick = () => Tick)
 
     val timerCancel: Cancellable = Sink.ignore.runWith(timer)
     timerCancel.cancel()
@@ -148,7 +148,7 @@ class FlowDocSpec extends AkkaSpec {
   "various ways of transforming materialized values" in {
     import scala.concurrent.duration._
 
-    val throttler = Flow.fromGraph(FlowGraph.create(Source(1.second, 1.second, "test")) { implicit builder =>
+    val throttler = Flow.fromGraph(FlowGraph.create(Source.tick(1.second, 1.second, "test")) { implicit builder =>
       tickSource =>
         import FlowGraph.Implicits._
         val zip = builder.add(ZipWith[String, Int, Int](Keep.right))

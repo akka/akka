@@ -125,7 +125,7 @@ private[http] object Websocket {
       import FlowGraph.Implicits._
 
       val split = b.add(BypassRouter)
-      val tick = Source(closeTimeout, closeTimeout, Tick)
+      val tick = Source.tick(closeTimeout, closeTimeout, Tick)
       val merge = b.add(BypassMerge)
       val messagePreparation = b.add(prepareMessages)
       val messageRendering = b.add(renderMessages.via(LiftCompletions))

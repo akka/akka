@@ -106,8 +106,7 @@ class MigrationsScala extends AkkaSpec {
         // This finishes the stream without emitting anything, just like Source.lazyEmpty did
         promise.trySuccess(Some(()))
 
-        // FIXME: After https://github.com/akka/akka/pull/18792 merged
-        val ticks = Source(1.second, 3.seconds, "tick")
+        val ticks = Source.tick(1.second, 3.seconds, "tick")
         //#source-creators
 
         //#flatMapConcat

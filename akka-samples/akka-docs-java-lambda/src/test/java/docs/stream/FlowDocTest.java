@@ -136,7 +136,7 @@ public class FlowDocTest {
         final FiniteDuration oneSecond = Duration.create(1, TimeUnit.SECONDS);
         //akka.actor.Cancellable
         final Source<Object, Cancellable> timer =
-            Source.from(oneSecond, oneSecond, tick);
+            Source.tick(oneSecond, oneSecond, tick);
 
         Sink.ignore().runWith(timer, mat);
 
@@ -213,7 +213,7 @@ public class FlowDocTest {
     FiniteDuration oneSecond = FiniteDuration.apply(1, TimeUnit.SECONDS);
     Flow<Integer, Integer, Cancellable> throttler =
       Flow.fromGraph(FlowGraph.create(
-        Source.from(oneSecond, oneSecond, ""),
+        Source.tick(oneSecond, oneSecond, ""),
         (b, tickSource) -> {
           FanInShape2<String, Integer, Integer> zip = b.add(ZipWith.create(Keep.right()));
           b.from(tickSource).toInlet(zip.in0());

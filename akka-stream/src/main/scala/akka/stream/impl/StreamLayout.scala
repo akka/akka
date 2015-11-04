@@ -335,12 +335,10 @@ private[akka] object StreamLayout {
     override def toString =
       s"""
         | Module: ${this.attributes.nameOrDefault("unnamed")}
-        | Modules: ${subModules.iterator.map(m ⇒ "   " + m.attributes.nameOrDefault(m.getClass.getName)).mkString("\n")}
-        | Downstreams:
-        | ${downstreams.iterator.map { case (in, out) ⇒ s"   $in -> $out" }.mkString("\n")}
-        | Upstreams:
-        | ${upstreams.iterator.map { case (out, in) ⇒ s"   $out -> $in" }.mkString("\n")}
-      """.stripMargin
+        | Modules: ${subModules.iterator.map(m ⇒ "\n   " + m.attributes.nameOrDefault(m.getClass.getName)).mkString("")}
+        | Downstreams: ${downstreams.iterator.map { case (in, out) ⇒ s"\n   $in -> $out" }.mkString("")}
+        | Upstreams: ${upstreams.iterator.map { case (out, in) ⇒ s"\n   $out -> $in" }.mkString("")}
+        |""".stripMargin
   }
 }
 
