@@ -40,7 +40,6 @@ public final class FormData {
   /**
    * Creates the FormData from the given parameters.
    */
-  @SafeVarargs
   public static FormData create(Pair<String, String>... params) {
     return new FormData(Query.create(params));
   }
