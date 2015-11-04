@@ -148,7 +148,7 @@ failures of actors supervised by remote parent). Then the node needs to be moved
 to the ``down`` or ``removed`` states (see the `Membership Lifecycle`_ section below)
 and the actor system must be restarted before it can join the cluster again.
 
-.. _The Phi Accrual Failure Detector: http://ddg.jaist.ac.jp/pub/HDY+04.pdf
+.. _The Phi Accrual Failure Detector: http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf
 
 
 Leader
