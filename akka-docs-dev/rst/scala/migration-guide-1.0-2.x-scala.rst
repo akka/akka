@@ -222,17 +222,16 @@ Source constructor name changes
 zero elements by providing an ``Option``. This is different from ``lazyEmpty`` which only allowed completion to be
 sent, but no elements.
 
-The ``apply()`` and ``from()`` overloads on ``Source`` that provide a tick source (``Source(delay,interval,tick)``)
-are replaced by the named method ``Source.tick()`` to reduce the number of overloads and to make the function more
+The ``apply()`` overload on ``Source`` that provide a tick source (``Source(delay,interval,tick)``)
+is replaced by the named method ``Source.tick()`` to reduce the number of overloads and to make the function more
 discoverable.
 
 Update procedure
 ----------------
 
-1. Replace all uses of ``Source(delay,interval,tick)`` and ``Source.from(delay,interval,tick)`` with the method
-   ``Source.tick()``
-2. All uses of ``Source.lazyEmpty`` should be replaced by ``Source.maybe`` and the returned ``Promise`` completed with
+1. All uses of ``Source.lazyEmpty`` should be replaced by ``Source.maybe`` and the returned ``Promise`` completed with
    a ``None`` (an empty ``Option``)
+2. Replace all uses of ``Source(delay,interval,tick)`` with the method ``Source.tick(delay,interval,tick)``
 
 Example
 ^^^^^^^
