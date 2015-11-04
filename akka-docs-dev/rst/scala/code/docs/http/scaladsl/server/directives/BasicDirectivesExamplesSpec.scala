@@ -199,7 +199,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   "textract" in {
     val pathAndQuery = textract { ctx =>
       val uri = ctx.request.uri
-      (uri.path, uri.query)
+      (uri.path, uri.query())
     }
     val route =
       pathAndQuery { (p, query) =>
