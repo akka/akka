@@ -237,6 +237,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(this)
+
+  override def toString = s"""Flow(${module})"""
 }
 
 object Flow {
