@@ -1,5 +1,6 @@
 package docs
 
+import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl._
 import akka.stream._
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
@@ -198,6 +199,15 @@ class MigrationsScala extends AkkaSpec {
         }
 
         //#port-async
+
+        val uri: Uri = ???
+        //#raw-query
+        val queryPart: Option[String] = uri.rawQueryString
+        //#raw-query
+
+        //#query-param
+        val param: Option[String] = uri.query().get("a")
+        //#query-param
       }
     }
   }
