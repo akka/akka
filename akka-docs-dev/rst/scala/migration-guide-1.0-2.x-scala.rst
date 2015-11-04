@@ -71,7 +71,7 @@ Example
 
 should be replaced by
 
-.. includecode:: code/docs/Migrations.scala#flow-wrap
+.. includecode:: code/docs/MigrationsScala.scala#flow-wrap
 
 and
 
@@ -90,7 +90,7 @@ and
 
 Should be replaced by
 
-.. includecode:: code/docs/Migrations.scala#bidiflow-wrap
+.. includecode:: code/docs/MigrationsScala.scala#bidiflow-wrap
 
 FlowGraph builder methods have been renamed
 ===========================================
@@ -123,7 +123,7 @@ Example
 
 should be replaced by
 
-.. includecode:: code/docs/Migrations.scala#graph-create
+.. includecode:: code/docs/MigrationsScala.scala#graph-create
 
 Methods that create Source, Sink, Flow from Graphs have been removed
 ====================================================================
@@ -180,7 +180,7 @@ Example
 
 should be replaced by
 
-.. includecode:: code/docs/Migrations.scala#graph-create-2
+.. includecode:: code/docs/MigrationsScala.scala#graph-create-2
 
 Several Graph builder methods have been removed
 ===============================================
@@ -213,7 +213,7 @@ Example
 
 should be replaced by
 
-.. includecode:: code/docs/Migrations.scala#graph-edges
+.. includecode:: code/docs/MigrationsScala.scala#graph-edges
 
 Source constructor name changes
 ===============================
@@ -249,7 +249,7 @@ Example
 
 should be replaced by
 
-.. includecode:: code/docs/Migrations.scala#source-creators
+.. includecode:: code/docs/MigrationsScala.scala#source-creators
 
 ``flatten(FlattenStrategy)`` has been replaced by named counterparts
 ====================================================================
@@ -260,7 +260,8 @@ has been removed and replaced with the alternative method ``flatten(FlattenStrat
 Update procedure
 ----------------
 
-1. Replace all occurences of ``flatten(FlattenStrategy.concat)`` with ``flattenConcat()``
+1. Replace all occurrences of ``flatten(FlattenStrategy.concat)`` with ``flatMapConcat(identity)``
+2. Consider replacing all occurrences of ``map(f).flatMapConcat(identity)`` with ``flatMapConcat(f)``
 
 Example
 ^^^^^^^
@@ -272,7 +273,7 @@ Example
 
 should be replaced by
 
-.. includecode:: code/docs/Migrations.scala#flatten
+.. includecode:: code/docs/MigrationsScala.scala#flatMapConcat
 
 FlexiMerge an FlexiRoute has been replaced by GraphStage
 ========================================================
@@ -408,4 +409,4 @@ Example
 
 should be replaced by
 
-.. includecode:: code/docs/Migrations.scala#port-async
+.. includecode:: code/docs/MigrationsScala.scala#port-async

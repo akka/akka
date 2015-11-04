@@ -995,7 +995,9 @@ trait FlowOps[+Out, +Mat] {
     deprecatedAndThen(Split.after(p.asInstanceOf[Any ⇒ Boolean]))
 
   /**
-   * Flattens a stream of [[Source]]s into a contiguous stream by fully consuming one stream after the other.
+   * Transform each input element into a `Source` of output elements that is
+   * then flattened into the output stream by concatenation,
+   * fully consuming one Source after the other.
    *
    * '''Emits when''' a currently consumed substream has an element available
    *
@@ -1006,7 +1008,8 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def flattenConcat[U]()(implicit ev: Out <:< Source[U, _]): Repr[U, Mat] = deprecatedAndThen(ConcatAll())
+  def flatMapConcat[T](f: Out ⇒ Source[T, _]): Repr[T, Mat] =
+    deprecatedAndThen(ConcatAll(f.asInstanceOf[Any ⇒ Source[Any, _]]))
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed

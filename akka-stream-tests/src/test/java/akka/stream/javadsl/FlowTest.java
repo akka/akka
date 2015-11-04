@@ -10,6 +10,7 @@ import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.stream.*;
+import akka.stream.impl.ConstantFun;
 import akka.stream.javadsl.FlowGraph.Builder;
 import akka.stream.stage.*;
 import akka.stream.testkit.AkkaSpec;
@@ -481,12 +482,12 @@ public class FlowTest extends StreamTest {
     final Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
     final Iterable<Integer> input2 = Arrays.asList(4, 5);
 
-    final List<Source<Integer, BoxedUnit>> mainInputs = new ArrayList<Source<Integer,BoxedUnit>>();
+    final List<Source<Integer, ?>> mainInputs = new ArrayList<Source<Integer,?>>();
     mainInputs.add(Source.from(input1));
     mainInputs.add(Source.from(input2));
 
-    final Flow<Source<Integer, BoxedUnit>, List<Integer>, BoxedUnit> flow = Flow.<Source<Integer, BoxedUnit>>create().
-      <Integer>flattenConcat().grouped(6);
+    final Flow<Source<Integer, ?>, List<Integer>, ?> flow = Flow.<Source<Integer, ?>>create().
+      flatMapConcat(ConstantFun.<Source<Integer, ?>>javaIdentityFunction()).grouped(6);
     Future<List<Integer>> future = Source.from(mainInputs).via(flow)
         .runWith(Sink.<List<Integer>>head(), materializer);
 
