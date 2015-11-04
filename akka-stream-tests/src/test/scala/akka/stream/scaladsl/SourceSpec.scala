@@ -17,7 +17,7 @@ class SourceSpec extends AkkaSpec {
 
   "Single Source" must {
     "produce element" in {
-      val p = Source.single(1).runWith(Sink.publisher)
+      val p = Source.single(1).runWith(Sink.publisher(false))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -27,7 +27,7 @@ class SourceSpec extends AkkaSpec {
     }
 
     "reject later subscriber" in {
-      val p = Source.single(1).runWith(Sink.publisher)
+      val p = Source.single(1).runWith(Sink.publisher(false))
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
       p.subscribe(c1)
@@ -45,7 +45,7 @@ class SourceSpec extends AkkaSpec {
 
   "Empty Source" must {
     "complete immediately" in {
-      val p = Source.empty.runWith(Sink.publisher)
+      val p = Source.empty.runWith(Sink.publisher(false))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       c.expectSubscriptionAndComplete()
@@ -60,7 +60,7 @@ class SourceSpec extends AkkaSpec {
   "Failed Source" must {
     "emit error immediately" in {
       val ex = new RuntimeException with NoStackTrace
-      val p = Source.failed(ex).runWith(Sink.publisher)
+      val p = Source.failed(ex).runWith(Sink.publisher(false))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       c.expectSubscriptionAndError(ex)
@@ -75,7 +75,7 @@ class SourceSpec extends AkkaSpec {
   "Maybe Source" must {
     "complete materialized future with None when stream cancels" in Utils.assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
-      val pubSink = Sink.publisher[Int]
+      val pubSink = Sink.publisher[Int](false)
 
       val (f, neverPub) = neverSource.toMat(pubSink)(Keep.both).run()
 

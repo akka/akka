@@ -287,6 +287,23 @@ should be replaced by
 
 .. includecode:: code/docs/MigrationsJava.java#flatMapConcat
 
+`Sink.fanoutPublisher() and Sink.publisher() is now a single method`
+====================================================================
+
+It was a common user mistake to use ``Sink.publisher`` and get into trouble since it would only support
+a single ``Subscriber``, and the discoverability of the apprpriate fix was non-obvious (Sink.fanoutPublisher).
+To make the decision whether to support fanout or not an active one, the aforementioned methods have been
+replaced with a single method: ``Sink.publisher(fanout: Boolean)``.
+
+Update procedure
+----------------
+
+1. Replace all occurences of ``Sink.publisher`` with ``Sink.publisher(false)``
+2. Replace all occurences of ``Sink.fanoutPublisher`` with ``Sink.publisher(true)``
+
+TODO: code example
+
+
 FlexiMerge an FlexiRoute has been replaced by GraphStage
 ========================================================
 

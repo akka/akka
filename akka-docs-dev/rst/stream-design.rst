@@ -38,7 +38,7 @@ Akka Streams fully implement the Reactive Streams specification and interoperate
 
 All stream Processors produced by the default materialization of Akka Streams are restricted to having a single Subscriber, additional Subscribers will be rejected. The reason for this is that the stream topologies described using our DSL never require fan-out behavior from the Publisher sides of the elements, all fan-out is done using explicit elements like :class:`Broadcast[T]`.
 
-This means that ``Sink.fanoutPublisher`` must be used where multicast behavior is needed for interoperation with other Reactive Streams implementations.
+This means that ``Sink.publisher(true)`` must be used where broadcast behavior is needed for interoperation with other Reactive Streams implementations.
 
 What shall users of streaming libraries expect?
 -----------------------------------------------

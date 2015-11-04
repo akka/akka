@@ -83,7 +83,7 @@ public class ReactiveStreamsDocTest {
   final Fixture.RS rs = new Fixture.RS() {
     @Override
     public Publisher<Tweet> tweets() {
-      return TwitterStreamQuickstartDocTest.Model.tweets.runWith(Sink.publisher(), mat);
+      return TwitterStreamQuickstartDocTest.Model.tweets.runWith(Sink.publisher(false), mat);
     }
 
     /** 
@@ -177,7 +177,7 @@ public class ReactiveStreamsDocTest {
       {
         //#source-publisher
         final Publisher<Author> authorPublisher =
-          Source.from(rs.tweets()).via(authors).runWith(Sink.publisher(), mat);
+          Source.from(rs.tweets()).via(authors).runWith(Sink.publisher(false), mat);
         
         authorPublisher.subscribe(rs.storage());
         //#source-publisher
@@ -197,7 +197,7 @@ public class ReactiveStreamsDocTest {
         final Publisher<Author> authorPublisher =
           Source.from(rs.tweets())
             .via(authors)
-            .runWith(Sink.fanoutPublisher(8, 16), mat);
+            .runWith(Sink.publisher(true), mat);
         
         authorPublisher.subscribe(rs.storage());
         authorPublisher.subscribe(rs.alert());

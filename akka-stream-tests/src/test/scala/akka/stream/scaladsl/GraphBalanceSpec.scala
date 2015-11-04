@@ -47,7 +47,7 @@ class GraphBalanceSpec extends AkkaSpec {
 
     "support waiting for demand from all downstream subscriptions" in {
       val s1 = TestSubscriber.manualProbe[Int]()
-      val p2 = RunnableGraph.fromGraph(FlowGraph.create(Sink.publisher[Int]) { implicit b ⇒
+      val p2 = RunnableGraph.fromGraph(FlowGraph.create(Sink.publisher[Int](false)) { implicit b ⇒
         p2Sink ⇒
           val balance = b.add(Balance[Int](2, waitForAllDownstreams = true))
           Source(List(1, 2, 3)) ~> balance.in
@@ -78,7 +78,7 @@ class GraphBalanceSpec extends AkkaSpec {
     "support waiting for demand from all non-cancelled downstream subscriptions" in assertAllStagesStopped {
       val s1 = TestSubscriber.manualProbe[Int]()
 
-      val (p2, p3) = RunnableGraph.fromGraph(FlowGraph.create(Sink.publisher[Int], Sink.publisher[Int])(Keep.both) { implicit b ⇒
+      val (p2, p3) = RunnableGraph.fromGraph(FlowGraph.create(Sink.publisher[Int](false), Sink.publisher[Int](false))(Keep.both) { implicit b ⇒
         (p2Sink, p3Sink) ⇒
           val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
           Source(List(1, 2, 3)) ~> balance.in

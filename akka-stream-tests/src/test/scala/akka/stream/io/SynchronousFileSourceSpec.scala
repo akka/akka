@@ -76,7 +76,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
       val p = SynchronousFileSource(testFile, chunkSize)
         .withAttributes(bufferAttributes)
-        .runWith(Sink.publisher)
+        .runWith(Sink.publisher(false))
       val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -113,7 +113,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
       val p = SynchronousFileSource(testFile, chunkSize)
         .withAttributes(bufferAttributes)
-        .runWith(Sink.publisher)
+        .runWith(Sink.publisher(false))
 
       val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
@@ -140,7 +140,7 @@ class SynchronousFileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "onError whent trying to read from file which does not exist" in assertAllStagesStopped {
-      val p = SynchronousFileSource(notExistingFile).runWith(Sink.publisher)
+      val p = SynchronousFileSource(notExistingFile).runWith(Sink.publisher(false))
       val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
 

@@ -67,7 +67,7 @@ public class FlowGraphTest extends StreamTest {
     final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, BoxedUnit> in2 = Source.from(Arrays.asList("d", "e", "f"));
 
-    final Sink<String, Publisher<String>> publisher = Sink.publisher();
+    final Sink<String, Publisher<String>> publisher = Sink.publisher(false);
     
     final Source<String, BoxedUnit> source = Source.fromGraph(
             FlowGraph.create(new Function<FlowGraph.Builder<BoxedUnit>, SourceShape<String>>() {

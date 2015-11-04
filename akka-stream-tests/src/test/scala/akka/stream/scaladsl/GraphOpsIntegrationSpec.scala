@@ -155,7 +155,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
     }
 
     "be able to run plain flow" in {
-      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p = Source(List(1, 2, 3)).runWith(Sink.publisher(false))
       val s = TestSubscriber.manualProbe[Int]
       val flow = Flow[Int].map(_ * 2)
       RunnableGraph.fromGraph(FlowGraph.create() { implicit builder ⇒
