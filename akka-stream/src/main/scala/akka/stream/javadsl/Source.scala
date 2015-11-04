@@ -123,8 +123,8 @@ object Source {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def from[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: O): javadsl.Source[O, Cancellable] =
-    new Source(scaladsl.Source(initialDelay, interval, tick))
+  def tick[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: O): javadsl.Source[O, Cancellable] =
+    new Source(scaladsl.Source.tick(initialDelay, interval, tick))
 
   /**
    * Create a `Source` with one element.
