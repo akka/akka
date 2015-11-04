@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model
 
+import akka.japi.Pair
+
 import org.scalatest.{ FreeSpec, MustMatchers }
 
 import scala.collection.JavaConverters._
@@ -11,9 +13,9 @@ import scala.collection.JavaConverters._
 class JavaApiSpec extends FreeSpec with MustMatchers {
   "The Java API should work for" - {
     "work with Uris" - {
-      "addParameter" in {
+      "query" in {
         Uri.create("/abc")
-          .addParameter("name", "paul") must be(Uri.create("/abc?name=paul"))
+          .query(Query.create(Pair.create("name", "paul"))) must be(Uri.create("/abc?name=paul"))
       }
       "addSegment" in {
         Uri.create("/abc")
@@ -38,33 +40,23 @@ class JavaApiSpec extends FreeSpec with MustMatchers {
       }
       "access parameterMap" in {
         Uri.create("/abc?name=blub&age=28")
-          .parameterMap().asScala must contain allOf ("name" -> "blub", "age" -> "28")
+          .query().toMap.asScala must contain allOf ("name" -> "blub", "age" -> "28")
       }
       "access parameters" in {
         val Seq(param1, param2, param3) =
           Uri.create("/abc?name=blub&age=28&name=blub2")
-            .parameters.asScala.toSeq
+            .query().toList.asScala.map(_.toScala)
 
-        param1.getKey must be("name")
-        param1.getValue must be("blub")
-
-        param2.getKey must be("age")
-        param2.getValue must be("28")
-
-        param3.getKey must be("name")
-        param3.getValue must be("blub2")
-      }
-      "containsParameter" in {
-        val uri = Uri.create("/abc?name=blub")
-        uri.containsParameter("name") must be(true)
-        uri.containsParameter("age") must be(false)
+        param1 must be("name" -> "blub")
+        param2 must be("age" -> "28")
+        param3 must be("name" -> "blub2")
       }
       "access single parameter" in {
-        val uri = Uri.create("/abc?name=blub")
-        uri.parameter("name") must be(akka.japi.Option.some("blub"))
-        uri.parameter("age") must be(akka.japi.Option.none)
+        val query = Uri.create("/abc?name=blub").query()
+        query.get("name") must be(akka.japi.Option.some("blub"))
+        query.get("age") must be(akka.japi.Option.none)
 
-        Uri.create("/abc?name=blub&name=blib").parameter("name") must be(akka.japi.Option.some("blub"))
+        Uri.create("/abc?name=blub&name=blib").query.get("name") must be(akka.japi.Option.some("blub"))
       }
     }
   }

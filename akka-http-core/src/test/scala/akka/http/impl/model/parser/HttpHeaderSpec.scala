@@ -576,8 +576,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "parse with custom uri parsing mode" in {
-      val targetUri = Uri("http://example.org/?abc=def=ghi", Uri.ParsingMode.RelaxedWithRawQuery)
-      HeaderParser.parseFull("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.RelaxedWithRawQuery)) shouldEqual
+      val targetUri = Uri("http://example.org/?abc=def=ghi", Uri.ParsingMode.Relaxed)
+      HeaderParser.parseFull("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.Relaxed)) shouldEqual
         Right(Location(targetUri))
     }
   }
