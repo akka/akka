@@ -363,3 +363,43 @@ Example
 ^^^^^^^
 
 TODO
+
+Akka HTTP: Uri parsing mode relaxed-with-raw-query replaced with rawQueryString
+===============================================================================
+
+Previously Akka HTTP allowed to configure the parsing mode of an Uri's Query part (``?a=b&c=d``) to ``relaxed-with-raw-query``
+which is useful when Uris are not formatted using the usual "key/value pairs" syntax.
+
+Instead of exposing it as an option for the parser, this is now available as the ``Option<String> rawQueryString()``
+/ ``Option<String> queryString()`` methods on on ``model.Uri``.
+
+For parsing the Query part use ``Query query(Charset charset, Uri.ParsingMode mode)``.
+
+Update procedure
+----------------
+1. If the ``uri-parsing-mode`` was set to ``relaxed-with-raw-query``, remove it
+2. In places where the query string was accessed in ``relaxed-with-raw-query`` mode, use the ``rawQueryString``/``queryString`` methods instead
+3. In places where the parsed query parts (such as ``parameter``) were used, invoke parsing directly using ``uri.query().get("a")``
+
+Example
+^^^^^^^
+
+::
+
+  // config, no longer works
+  akka.http.parsing.uri-parsing-mode = relaxed-with-raw-query
+
+should be replaced by:
+
+.. includecode:: code/docs/MigrationsJava.java#raw-query
+
+And use of query parameters from ``Uri`` that looked like this:
+
+::
+
+  // This no longer works!
+  uri.parameter("name");
+
+should be replaced by:
+
+.. includecode:: code/docs/MigrationsJava.java#query-param
