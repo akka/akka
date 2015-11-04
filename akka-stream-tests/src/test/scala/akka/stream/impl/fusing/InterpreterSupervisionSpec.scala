@@ -11,6 +11,7 @@ import akka.stream.stage.PushPullStage
 import akka.stream.stage.Stage
 import akka.stream.stage.TerminationDirective
 import akka.stream.stage.SyncDirective
+import akka.stream.testkit.AkkaSpec
 
 object InterpreterSupervisionSpec {
   val TE = new Exception("TEST") with NoStackTrace {
@@ -70,7 +71,7 @@ object InterpreterSupervisionSpec {
 
 }
 
-class InterpreterSupervisionSpec extends GraphInterpreterSpecKit {
+class InterpreterSupervisionSpec extends AkkaSpec with GraphInterpreterSpecKit {
   import InterpreterSupervisionSpec._
   import Supervision.stoppingDecider
   import Supervision.resumingDecider
