@@ -24,7 +24,7 @@ private[akka] class ConcatAllImpl(f: Any ⇒ Source[Any, _], materializer: Actor
   import akka.stream.impl.MultiStreamInputProcessor._
 
   val takeNextSubstream = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
-    val publisher = f(primaryInputs.dequeueInputElement()).runWith(Sink.publisher)(materializer)
+    val publisher = f(primaryInputs.dequeueInputElement()).runWith(Sink.publisher(false))(materializer)
     // FIXME we can pass the flow to createSubstreamInput (but avoiding copy impl now)
     val inputs = createAndSubscribeSubstreamInput(publisher)
     nextPhase(streamSubstream(inputs))

@@ -13,7 +13,7 @@ import org.reactivestreams._
 class SingleElementPublisherTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] = {
-    Source(SingleElementPublisher(0, "single-element-publisher")).runWith(Sink.publisher)
+    Source(SingleElementPublisher(0, "single-element-publisher")).runWith(Sink.publisher(false))
   }
 
   override def maxElementsFromPublisher(): Long = 1

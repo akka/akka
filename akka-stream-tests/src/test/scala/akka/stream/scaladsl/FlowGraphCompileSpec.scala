@@ -36,7 +36,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
 
   val in1 = Source(List("a", "b", "c"))
   val in2 = Source(List("d", "e", "f"))
-  val out1 = Sink.publisher[String]
+  val out1 = Sink.publisher[String](false)
   val out2 = Sink.head[String]
 
   "A Graph" should {
@@ -165,9 +165,9 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val in3 = Source(List("b"))
         val in5 = Source(List("b"))
         val in7 = Source(List("a"))
-        val out2 = Sink.publisher[String]
-        val out9 = Sink.publisher[String]
-        val out10 = Sink.publisher[String]
+        val out2 = Sink.publisher[String](false)
+        val out9 = Sink.publisher[String](false)
+        val out10 = Sink.publisher[String](false)
         def f(s: String) = Flow[String].transform(op[String, String]).named(s)
         import FlowGraph.Implicits._
 
@@ -198,7 +198,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
       RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
         val zip = b.add(Zip[Int, String]())
         val unzip = b.add(Unzip[Int, String]())
-        val out = Sink.publisher[(Int, String)]
+        val out = Sink.publisher[(Int, String)](false)
         import FlowGraph.Implicits._
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.out0 ~> Flow[Int].map(_ * 2) ~> zip.in0
@@ -213,8 +213,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
         RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
           val zip = b.add(Zip[Int, String]())
           val unzip = b.add(Unzip[Int, String]())
-          val wrongOut = Sink.publisher[(Int, Int)]
-          val whatever = Sink.publisher[Any]
+          val wrongOut = Sink.publisher[(Int, Int)](false)
+          val whatever = Sink.publisher[Any](false)
           "Flow(List(1, 2, 3)) ~> zip.left ~> wrongOut" shouldNot compile
           """Flow(List("a", "b", "c")) ~> zip.left""" shouldNot compile
           """Flow(List("a", "b", "c")) ~> zip.out""" shouldNot compile
@@ -278,7 +278,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val outB = b add Sink(TestSubscriber.manualProbe[Fruit]())
         val merge = b add Merge[Fruit](11)
         val unzip = b add Unzip[Int, String]()
-        val whatever = b add Sink.publisher[Any]
+        val whatever = b add Sink.publisher[Any](false)
         import FlowGraph.Implicits._
         b.add(Source[Fruit](apples)) ~> merge.in(0)
         appleSource ~> merge.in(1)
@@ -293,12 +293,12 @@ class FlowGraphCompileSpec extends AkkaSpec {
 
         b.add(Source(apples)) ~> Flow[Apple] ~> merge.in(9)
         b.add(Source(apples)) ~> Flow[Apple] ~> outB
-        b.add(Source(apples)) ~> Flow[Apple] ~> b.add(Sink.publisher[Fruit])
+        b.add(Source(apples)) ~> Flow[Apple] ~> b.add(Sink.publisher[Fruit](false))
         appleSource ~> Flow[Apple] ~> merge.in(10)
 
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.out1 ~> whatever
-        unzip.out0 ~> b.add(Sink.publisher[Any])
+        unzip.out0 ~> b.add(Sink.publisher[Any](false))
 
         "merge.out ~> b.add(Broadcast[Apple](2))" shouldNot compile
         "merge.out ~> Flow[Fruit].map(identity) ~> b.add(Broadcast[Apple](2))" shouldNot compile
