@@ -280,7 +280,7 @@ configuration.
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-balancing-pool2
 
 The ``BalancingPool`` automatically uses a special ``BalancingDispatcher`` for its
-routees - disregarding any dispatcher that is set on the the routee Props object.
+routees - disregarding any dispatcher that is set on the routee Props object.
 This is needed in order to implement the balancing semantics via
 sharing the same mailbox by all the routees.
 
@@ -388,7 +388,7 @@ TailChoppingPool and TailChoppingGroup
 --------------------------------------
 
 The TailChoppingRouter will first send the message to one, randomly picked, routee
-and then after a small delay to to a second routee (picked randomly from the remaining routees) and so on.
+and then after a small delay to a second routee (picked randomly from the remaining routees) and so on.
 It waits for first reply it gets back and forwards it back to original sender. Other replies are discarded.
 
 The goal of this router is to decrease latency by performing redundant queries to multiple routees, assuming that
@@ -436,7 +436,7 @@ There is 3 ways to define what data to use for the consistent hash key.
   The key is part of the message and it's convenient to define it together
   with the message definition.
  
-* The messages can be be wrapped in a ``akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope``
+* The messages can be wrapped in a ``akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope``
   to define what data to use for the consistent hash key. The sender knows
   the key to use.
  
@@ -507,7 +507,7 @@ to every routee of a router.
 
 In this example the router receives the ``Broadcast`` message, extracts its payload
 (``"Watch out for Davy Jones' locker"``), and then sends the payload on to all of the router's
-routees. It is up to each each routee actor to handle the received payload message.
+routees. It is up to each routee actor to handle the received payload message.
 
 PoisonPill Messages
 -------------------
