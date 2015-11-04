@@ -206,6 +206,11 @@ final case class SourceShape[+T](outlet: Outlet[T @uncheckedVariance]) extends S
     SourceShape(outlets.head)
   }
 }
+object SourceShape {
+  /** Java API */
+  def of[T](outlet: Outlet[T @uncheckedVariance]): SourceShape[T] =
+    SourceShape(outlet)
+}
 
 /**
  * A Flow [[Shape]] has exactly one input and one output, it looks from the
@@ -223,6 +228,11 @@ final case class FlowShape[-I, +O](inlet: Inlet[I @uncheckedVariance], outlet: O
     FlowShape(inlets.head, outlets.head)
   }
 }
+object FlowShape {
+  /** Java API */
+  def of[I, O](inlet: Inlet[I @uncheckedVariance], outlet: Outlet[O @uncheckedVariance]): FlowShape[I, O] =
+    FlowShape(inlet, outlet)
+}
 
 /**
  * A Sink [[Shape]] has exactly one input and no outputs, it models a data sink.
@@ -237,6 +247,11 @@ final case class SinkShape[-T](inlet: Inlet[T @uncheckedVariance]) extends Shape
     require(outlets.isEmpty, s"proposed outlets [${outlets.mkString(", ")}] do not fit SinkShape")
     SinkShape(inlets.head)
   }
+}
+object SinkShape {
+  /** Java API */
+  def of[T](inlet: Inlet[T @uncheckedVariance]): SinkShape[T] =
+    SinkShape(inlet)
 }
 
 //#bidi-shape
@@ -276,8 +291,15 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1 @uncheckedVa
   //#implementation-details-elided
 }
 //#bidi-shape
-
 object BidiShape {
   def fromFlows[I1, O1, I2, O2](top: FlowShape[I1, O1], bottom: FlowShape[I2, O2]): BidiShape[I1, O1, I2, O2] =
     BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
+
+  /** Java API */
+  def of[In1, Out1, In2, Out2](in1: Inlet[In1 @uncheckedVariance],
+                               out1: Outlet[Out1 @uncheckedVariance],
+                               in2: Inlet[In2 @uncheckedVariance],
+                               out2: Outlet[Out2 @uncheckedVariance]): BidiShape[In1, Out1, In2, Out2] =
+    BidiShape(in1, out1, in2, out2)
+
 }

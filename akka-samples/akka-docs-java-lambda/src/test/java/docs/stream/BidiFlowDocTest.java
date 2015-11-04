@@ -116,7 +116,7 @@ public class BidiFlowDocTest {
                 b.add(Flow.of(Message.class).map(BidiFlowDocTest::toBytes));
         final FlowShape<ByteString, Message> bottom =
                 b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::fromBytes));
-        return new BidiShape<>(top, bottom);
+        return BidiShape.fromFlows(top, bottom);
       }));
 
   public final BidiFlow<Message, ByteString, ByteString, Message, BoxedUnit> codec =
@@ -192,7 +192,7 @@ public class BidiFlowDocTest {
                 b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::addLengthHeader));
         final FlowShape<ByteString, ByteString> bottom =
                 b.add(Flow.of(ByteString.class).transform(() -> new FrameParser()));
-        return new BidiShape<>(top, bottom);
+        return BidiShape.fromFlows(top, bottom);
       }));
   //#framing
   

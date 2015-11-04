@@ -147,7 +147,7 @@ public class FlowGraphDocTest {
     final Flow<Integer, Integer, Future<Integer>> foldingFlow = Flow.fromGraph(
       FlowGraph.create(foldSink,
       (b, fold) -> {
-        return new FlowShape<>(
+        return FlowShape.of(
           fold.inlet(),
           b.from(b.materializedValue()).via(b.add(flatten)).out());
       }));
@@ -164,7 +164,7 @@ public class FlowGraphDocTest {
         // As a result this Source will never emit anything, and its materialited
         // Future will never complete
         b.from(b.materializedValue()).via(b.add(flatten)).to(fold);
-        return new SourceShape<>(b.from(b.materializedValue()).via(b.add(flatten)).out());
+        return SourceShape.of(b.from(b.materializedValue()).via(b.add(flatten)).out());
       }));
 
     //#flow-graph-matvalue-cycle

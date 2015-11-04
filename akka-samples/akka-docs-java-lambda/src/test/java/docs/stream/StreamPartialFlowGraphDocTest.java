@@ -106,7 +106,7 @@ public class StreamPartialFlowGraphDocTest {
           builder.from(builder.add(ints.filter(i -> i % 2 == 0))).toInlet(zip.in0());
           builder.from(builder.add(ints.filter(i -> i % 2 == 1))).toInlet(zip.in1());
           
-          return new SourceShape<>(zip.out());
+          return SourceShape.of(zip.out());
         }));
     
     final Future<Pair<Integer, Integer>> firstPair = 
@@ -127,7 +127,7 @@ public class StreamPartialFlowGraphDocTest {
           b.from(bcast).toInlet(zip.in0());
           b.from(bcast).via(b.add(Flow.of(Integer.class).map(i -> i.toString()))).toInlet(zip.in1());
           
-          return new FlowShape<>(bcast.in(), zip.out());
+          return FlowShape.of(bcast.in(), zip.out());
         }));
     
     //#flow-from-partial-flow-graph
