@@ -94,7 +94,6 @@ public abstract class Query {
     /**
      * Returns a Query from the given parameters.
      */
-    @SafeVarargs
     public static Query create(Pair<String, String>... params) {
         return new JavaQuery(UriJavaAccessor.queryApply(params));
     }
