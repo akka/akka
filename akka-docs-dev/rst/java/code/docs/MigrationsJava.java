@@ -1,6 +1,7 @@
 package docs;
 
 import akka.actor.Cancellable;
+import akka.http.javadsl.model.Uri;
 import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.stream.*;
@@ -11,6 +12,7 @@ import scala.concurrent.Promise;
 import scala.runtime.BoxedUnit;
 
 import java.util.concurrent.TimeUnit;
+import java.nio.charset.Charset;
 
 public class MigrationsJava {
 
@@ -135,6 +137,15 @@ public class MigrationsJava {
             }
           });
         //#flatMapConcat
+
+        Uri uri = null;
+        //#raw-query
+        final akka.japi.Option<String> theRawQueryString = uri.rawQueryString();
+        //#raw-query
+
+        //#query-param
+        final akka.japi.Option<String> aQueryParam = uri.query().get("a");
+        //#query-param
     }
 
 }
