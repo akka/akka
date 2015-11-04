@@ -42,7 +42,7 @@ class ZipWith1[[#A1#], O] (zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (!isAvailable(out) || !isAvailable(in0)) completeStage()
+        if (!isAvailable(in0)) completeStage()
       }
 
     })#
