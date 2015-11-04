@@ -222,6 +222,38 @@ private[stream] object GraphInterpreter {
       assembly
     }
   }
+
+  /**
+   * INTERNAL API
+   */
+  private val _currentInterpreter = new ThreadLocal[Array[AnyRef]] {
+    /*
+     * Using an Object-array avoids holding on to the GraphInterpreter class
+     * when this accidentally leaks onto threads that are not stopped when this
+     * class should be unloaded.
+     */
+    override def initialValue = new Array(1)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[stream] def currentInterpreter: GraphInterpreter =
+    _currentInterpreter.get()(0).asInstanceOf[GraphInterpreter].nonNull
+  // nonNull is just a debug helper to find nulls more timely
+
+  /**
+   * INTERNAL API
+   */
+  private[stream] def currentInterpreterOrNull: GraphInterpreter =
+    _currentInterpreter.get()(0).asInstanceOf[GraphInterpreter]
+
+  /**
+   * INTERNAL API
+   */
+  private[stream] def setCurrentInterpreter(gi: GraphInterpreter) =
+    _currentInterpreter.get()(0) = gi
+
 }
 
 /**
@@ -317,7 +349,10 @@ private[stream] final class GraphInterpreter(
   // of the class for a full description.
   val portStates = Array.fill[Int](assembly.connectionCount)(InReady)
 
-  private[this] var activeStage: GraphStageLogic = _
+  /**
+   * INTERNAL API
+   */
+  private[stream] var activeStage: GraphStageLogic = _
 
   // The number of currently running stages. Once this counter reaches zero, the interpreter is considered to be
   // completed
@@ -349,6 +384,11 @@ private[stream] final class GraphInterpreter(
       _Name = f"${System.identityHashCode(this)}%08X"
       _Name
     } else _Name
+
+  /**
+   * INTERNAL API
+   */
+  private[stream] def nonNull: GraphInterpreter = this
 
   /**
    * Assign the boundary logic to a given connection. This will serve as the interface to the external world
@@ -462,18 +502,23 @@ private[stream] final class GraphInterpreter(
    */
   def execute(eventLimit: Int): Unit = {
     if (Debug) println(s"$Name ---------------- EXECUTE (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
-    var eventsRemaining = eventLimit
-    var connection = dequeue()
-    while (eventsRemaining > 0 && connection != NoEvent) {
-      try processEvent(connection)
-      catch {
-        case NonFatal(e) ⇒
-          if (activeStage == null) throw e
-          else activeStage.failStage(e)
+    val previousInterpreter = currentInterpreterOrNull
+    setCurrentInterpreter(this)
+    try {
+      var eventsRemaining = eventLimit
+      while (eventsRemaining > 0 && queueTail != queueHead) {
+        val connection = dequeue()
+        try processEvent(connection)
+        catch {
+          case NonFatal(e) ⇒
+            if (activeStage == null) throw e
+            else activeStage.failStage(e)
+        }
+        afterStageHasRun(activeStage)
+        eventsRemaining -= 1
       }
-      afterStageHasRun(activeStage)
-      eventsRemaining -= 1
-      if (eventsRemaining > 0) connection = dequeue()
+    } finally {
+      setCurrentInterpreter(previousInterpreter)
     }
     if (Debug) println(s"$Name ---------------- $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
     // TODO: deadlock detection

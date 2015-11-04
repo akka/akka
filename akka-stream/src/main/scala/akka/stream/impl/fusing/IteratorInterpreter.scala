@@ -32,6 +32,8 @@ private[akka] object IteratorInterpreter {
           } else push(out, elem)
         }
       }
+
+      override def onDownstreamFinish(): Unit = completeStage()
     })
 
     override def toString = "IteratorUpstream"
