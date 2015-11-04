@@ -201,7 +201,7 @@ message from network failures and JVM crashes, in addition to graceful terminati
 actor.
 
 The heartbeat arrival times is interpreted by an implementation of
-`The Phi Accrual Failure Detector <http://ddg.jaist.ac.jp/pub/HDY+04.pdf>`_.
+`The Phi Accrual Failure Detector <http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf>`_.
 
 The suspicion level of failure is given by a value called *phi*.
 The basic idea of the phi failure detector is to express the value of *phi* on a scale that

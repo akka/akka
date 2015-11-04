@@ -16,7 +16,7 @@ import akka.util.Helpers.ConfigOps
 
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
- * [http://ddg.jaist.ac.jp/pub/HDY+04.pdf]
+ * [http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf]
  *
  * The suspicion level of failure is given by a value called φ (phi).
  * The basic idea of the φ failure detector is to express the value of φ on a scale that
