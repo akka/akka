@@ -1,12 +1,16 @@
 package docs;
 
+import akka.actor.Cancellable;
 import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import scala.Option;
+import scala.concurrent.duration.FiniteDuration;
 import scala.concurrent.Promise;
 import scala.runtime.BoxedUnit;
+
+import java.util.concurrent.TimeUnit;
 
 public class MigrationsJava {
 
@@ -110,6 +114,11 @@ public class MigrationsJava {
         Source<Integer, Promise<Option<Integer>>> src = Source.<Integer>maybe();
         // Complete the promise with an empty option to emulate the old lazyEmpty
         promise.trySuccess(scala.Option.empty());
+
+        final Source<String, Cancellable> sourceUnderTest = Source.tick(
+          FiniteDuration.create(0, TimeUnit.MILLISECONDS),
+          FiniteDuration.create(200, TimeUnit.MILLISECONDS),
+          "tick");
         //#source-creators
 
         //#empty-flow

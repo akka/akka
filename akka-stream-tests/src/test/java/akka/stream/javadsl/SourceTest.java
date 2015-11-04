@@ -420,7 +420,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustProduceTicks() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
-    Source<String, Cancellable> tickSource = Source.from(FiniteDuration.create(1, TimeUnit.SECONDS),
+    Source<String, Cancellable> tickSource = Source.tick(FiniteDuration.create(1, TimeUnit.SECONDS),
         FiniteDuration.create(500, TimeUnit.MILLISECONDS), "tick");
     Cancellable cancellable = tickSource.to(Sink.foreach(new Procedure<String>() {
       public void apply(String elem) {

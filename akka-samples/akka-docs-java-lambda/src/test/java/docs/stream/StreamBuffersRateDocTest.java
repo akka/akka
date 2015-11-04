@@ -77,9 +77,9 @@ public class StreamBuffersRateDocTest {
     final FiniteDuration oneSecond =
         FiniteDuration.create(1, TimeUnit.SECONDS);
     final Source<String, Cancellable> msgSource =
-        Source.from(oneSecond, oneSecond, "message!");
+        Source.tick(oneSecond, oneSecond, "message!");
     final Source<String, Cancellable> tickSource =
-        Source.from(oneSecond.mul(3), oneSecond.mul(3), "tick");
+        Source.tick(oneSecond.mul(3), oneSecond.mul(3), "tick");
     final Flow<String, Integer, BoxedUnit> conflate =
         Flow.of(String.class).conflate(
             first -> 1, (count, elem) -> count + 1);

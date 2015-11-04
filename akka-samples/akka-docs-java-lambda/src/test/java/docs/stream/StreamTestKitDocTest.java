@@ -110,7 +110,7 @@ public class StreamTestKitDocTest {
   @Test
   public void sinkActorRef() throws Exception {
     //#sink-actorref
-    final Source<Tick, Cancellable> sourceUnderTest = Source.from(
+    final Source<Tick, Cancellable> sourceUnderTest = Source.tick(
       FiniteDuration.create(0, TimeUnit.MILLISECONDS),
       FiniteDuration.create(200, TimeUnit.MILLISECONDS),
       Tick.TOCK);
