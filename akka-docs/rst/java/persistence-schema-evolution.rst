@@ -210,7 +210,7 @@ we are familiar with it, it does its job well and Akka is using it internally as
 
 While being able to read messages with missing fields is half of the solution, you also need to deal with the missing
 values somehow. This is usually modeled as some kind of default value, or by representing the field as an ``Optional<T>``
-See below for an example how reading an optional field from from a serialized protocol buffers message might look like.
+See below for an example how reading an optional field from a serialized protocol buffers message might look like.
 
 .. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#protobuf-read-optional-model
 
@@ -234,7 +234,7 @@ Rename fields
 
 **Situation:**
 When first designing the system the ``SeatReverved`` event featured an ``code`` field.
-After some time you discover that what what was originally called ``code`` actually means ``seatNr``, thus the model
+After some time you discover that what was originally called ``code`` actually means ``seatNr``, thus the model
 should be changed to reflect this concept more accurately.
 
 
@@ -268,7 +268,7 @@ swiftly and refactor your models fearlessly as you go on with the project.
 
 **Solution 2 - by manually handling the event versions:**
 Another solution, in case your serialization format does not support renames as easily as the above mentioned formats,
-is versioning your schema. For example, you could have made your events events carry an additional field called ``_version``
+is versioning your schema. For example, you could have made your events carry an additional field called ``_version``
 which was set to ``1`` (because it was the initial schema), and once you change the schema you bump this number to ``2``,
 and write an adapter which can perform the rename.
 
