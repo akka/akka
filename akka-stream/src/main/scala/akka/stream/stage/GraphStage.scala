@@ -71,7 +71,78 @@ private object TimerMessages {
   final case class Timer(id: Int, task: Cancellable)
 }
 
-object GraphStageLogic {
+/**
+ * Represents the processing logic behind a [[GraphStage]]. Roughly speaking, a subclass of [[GraphStageLogic]] is a
+ * collection of the following parts:
+ *  * A set of [[InHandler]] and [[OutHandler]] instances and their assignments to the [[Inlet]]s and [[Outlet]]s
+ *    of the enclosing [[GraphStage]]
+ *  * Possible mutable state, accessible from the [[InHandler]] and [[OutHandler]] callbacks, but not from anywhere
+ *    else (as such access would not be thread-safe)
+ *  * The lifecycle hooks [[preStart()]] and [[postStop()]]
+ *  * Methods for performing stream processing actions, like pulling or pushing elements
+ *
+ *  The stage logic is always stopped once all its input and output ports have been closed, i.e. it is not possible to
+ *  keep the stage alive for further processing once it does not have any open ports.
+ */
+abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: Int) {
+  import GraphInterpreter._
+
+  /**
+   * Scala API
+   *
+   * Collection of callbacks for an input port of a [[GraphStage]]
+   */
+  trait InHandler {
+    /**
+     * Called when the input port has a new element available. The actual element can be retrieved via the
+     * [[GraphStageLogic.grab()]] method.
+     */
+    def onPush(): Unit
+
+    /**
+     * Called when the input port is finished. After this callback no other callbacks will be called for this port.
+     */
+    def onUpstreamFinish(): Unit = GraphStageLogic.this.completeStage()
+
+    /**
+     * Called when the input port has failed. After this callback no other callbacks will be called for this port.
+     */
+    def onUpstreamFailure(ex: Throwable): Unit = GraphStageLogic.this.failStage(ex)
+  }
+
+  /**
+   * Java API
+   *
+   * Collection of callbacks for an input port of a [[GraphStage]]
+   */
+  abstract class AbstractInHandler extends InHandler
+
+  /**
+   * Scala API
+   *
+   * Collection of callbacks for an output port of a [[GraphStage]]
+   */
+  trait OutHandler {
+    /**
+     * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push()]]
+     * is now allowed to be called on this port.
+     */
+    def onPull(): Unit
+
+    /**
+     * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
+     * be called for this port.
+     */
+    def onDownstreamFinish(): Unit = GraphStageLogic.this.completeStage()
+  }
+
+  /**
+   * Java API
+   *
+   * Collection of callbacks for an output port of a [[GraphStage]]
+   */
+  abstract class AbstractOutHandler extends OutHandler
+
   /**
    * Input handler that terminates the stage upon receiving completion.
    * The stage fails upon receiving a failure.
@@ -95,7 +166,7 @@ object GraphStageLogic {
    */
   class ConditionalTerminateInput(predicate: () ⇒ Boolean) extends InHandler {
     override def onPush(): Unit = ()
-    override def onUpstreamFinish(): Unit = if (predicate()) inOwnerStageLogic.completeStage()
+    override def onUpstreamFinish(): Unit = if (predicate()) GraphStageLogic.this.completeStage()
   }
 
   /**
@@ -129,30 +200,12 @@ object GraphStageLogic {
    */
   class ConditionalTerminateOutput(predicate: () ⇒ Boolean) extends OutHandler {
     override def onPull(): Unit = ()
-    override def onDownstreamFinish(): Unit = if (predicate()) outOwnerStageLogic.completeStage()
+    override def onDownstreamFinish(): Unit = if (predicate()) GraphStageLogic.this.completeStage()
   }
 
   private object DoNothing extends (() ⇒ Unit) {
     def apply(): Unit = ()
   }
-}
-
-/**
- * Represents the processing logic behind a [[GraphStage]]. Roughly speaking, a subclass of [[GraphStageLogic]] is a
- * collection of the following parts:
- *  * A set of [[InHandler]] and [[OutHandler]] instances and their assignments to the [[Inlet]]s and [[Outlet]]s
- *    of the enclosing [[GraphStage]]
- *  * Possible mutable state, accessible from the [[InHandler]] and [[OutHandler]] callbacks, but not from anywhere
- *    else (as such access would not be thread-safe)
- *  * The lifecycle hooks [[preStart()]] and [[postStop()]]
- *  * Methods for performing stream processing actions, like pulling or pushing elements
- *
- *  The stage logic is always stopped once all its input and output ports have been closed, i.e. it is not possible to
- *  keep the stage alive for further processing once it does not have any open ports.
- */
-abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: Int) {
-  import GraphInterpreter._
-  import GraphStageLogic._
 
   def this(shape: Shape) = this(shape.inlets.size, shape.outlets.size)
   /**
@@ -228,7 +281,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Assigns callbacks for the events for an [[Inlet]]
    */
   final protected def setHandler(in: Inlet[_], handler: InHandler): Unit = {
-    handler.inOwnerStageLogic = this
     handlers(in.id) = handler
     if (_interpreter != null) _interpreter.setHandler(conn(in), handler)
   }
@@ -244,7 +296,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Assigns callbacks for the events for an [[Outlet]]
    */
   final protected def setHandler(out: Outlet[_], handler: OutHandler): Unit = {
-    handler.outOwnerStageLogic = this
     handlers(out.id + inCount) = handler
     if (_interpreter != null) _interpreter.setHandler(conn(out), handler)
   }
@@ -830,50 +881,3 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
 
 }
 
-/**
- * Collection of callbacks for an input port of a [[GraphStage]]
- */
-trait InHandler {
-  /**
-   * INTERNAL API
-   */
-  private[stream] var inOwnerStageLogic: GraphStageLogic = _
-
-  /**
-   * Called when the input port has a new element available. The actual element can be retrieved via the
-   * [[GraphStageLogic.grab()]] method.
-   */
-  def onPush(): Unit
-
-  /**
-   * Called when the input port is finished. After this callback no other callbacks will be called for this port.
-   */
-  def onUpstreamFinish(): Unit = inOwnerStageLogic.completeStage()
-
-  /**
-   * Called when the input port has failed. After this callback no other callbacks will be called for this port.
-   */
-  def onUpstreamFailure(ex: Throwable): Unit = inOwnerStageLogic.failStage(ex)
-}
-
-/**
- * Collection of callbacks for an output port of a [[GraphStage]]
- */
-trait OutHandler {
-  /**
-   * INTERNAL API
-   */
-  private[stream] var outOwnerStageLogic: GraphStageLogic = _
-
-  /**
-   * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push()]]
-   * is now allowed to be called on this port.
-   */
-  def onPull(): Unit
-
-  /**
-   * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
-   * be called for this port.
-   */
-  def onDownstreamFinish(): Unit = outOwnerStageLogic.completeStage()
-}

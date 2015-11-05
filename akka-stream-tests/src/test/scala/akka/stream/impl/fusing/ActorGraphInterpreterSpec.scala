@@ -5,7 +5,7 @@ package akka.stream.impl.fusing
 
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 

@@ -12,7 +12,7 @@ import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
 import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
 import akka.stream.scaladsl.{ Keep, Source }
-import akka.stream.stage.OutHandler
+import akka.stream.stage.GraphStageLogic
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
@@ -51,8 +51,8 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
       override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
         val (logic, inputStream) = super.createLogicAndMaterializedValue(inheritedAttributes)
-        val outHandler = logic.handlers(out.id).asInstanceOf[OutHandler]
-        logic.handlers(out.id) = new OutHandler {
+        val outHandler = logic.handlers(out.id).asInstanceOf[GraphStageLogic#OutHandler]
+        logic.handlers(out.id) = new logic.OutHandler {
           override def onDownstreamFinish(): Unit = {
             probe.ref ! OutputStreamSourceTestMessages.Finish
             outHandler.onDownstreamFinish()

@@ -4,7 +4,7 @@ import java.util.concurrent.{ TimeUnit, TimeoutException }
 
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, TimerGraphStageLogic }
 
 import scala.concurrent.duration.{ Duration, Deadline, FiniteDuration }
 

@@ -112,7 +112,8 @@ private[stream] object GraphInterpreter {
      *  - array of the logics
      *  - materialized value
      */
-    def materialize(inheritedAttributes: Attributes): (Array[InHandler], Array[OutHandler], Array[GraphStageLogic], Any) = {
+    def materialize(inheritedAttributes: Attributes): (Array[GraphStageLogic#InHandler], Array[GraphStageLogic#OutHandler], Array[GraphStageLogic], Any) = {
+
       val logics = Array.ofDim[GraphStageLogic](stages.length)
       var finalMat: Any = ()
 
@@ -148,16 +149,16 @@ private[stream] object GraphInterpreter {
         i += 1
       }
 
-      val inHandlers = Array.ofDim[InHandler](connectionCount)
-      val outHandlers = Array.ofDim[OutHandler](connectionCount)
+      val inHandlers = Array.ofDim[GraphStageLogic#InHandler](connectionCount)
+      val outHandlers = Array.ofDim[GraphStageLogic#OutHandler](connectionCount)
 
       i = 0
       while (i < connectionCount) {
         if (ins(i) ne null) {
           val logic = logics(inOwners(i))
           logic.handlers(ins(i).id) match {
-            case null         ⇒ throw new IllegalStateException(s"no handler defined in stage $logic for port ${ins(i)}")
-            case h: InHandler ⇒ inHandlers(i) = h
+            case null                         ⇒ throw new IllegalStateException(s"no handler defined in stage $logic for port ${ins(i)}")
+            case h: GraphStageLogic#InHandler ⇒ inHandlers(i) = h
           }
           logics(inOwners(i)).portToConn(ins(i).id) = i
         }
@@ -165,8 +166,8 @@ private[stream] object GraphInterpreter {
           val logic = logics(outOwners(i))
           val inCount = logic.inCount
           logic.handlers(outs(i).id + inCount) match {
-            case null          ⇒ throw new IllegalStateException(s"no handler defined in stage $logic for port ${outs(i)}")
-            case h: OutHandler ⇒ outHandlers(i) = h
+            case null                          ⇒ throw new IllegalStateException(s"no handler defined in stage $logic for port ${outs(i)}")
+            case h: GraphStageLogic#OutHandler ⇒ outHandlers(i) = h
           }
           logic.portToConn(outs(i).id + inCount) = i
         }
@@ -303,8 +304,8 @@ private[stream] final class GraphInterpreter(
   private val assembly: GraphInterpreter.GraphAssembly,
   val materializer: Materializer,
   val log: LoggingAdapter,
-  val inHandlers: Array[InHandler], // Lookup table for the InHandler of a connection
-  val outHandlers: Array[OutHandler], // Lookup table for the outHandler of the connection
+  val inHandlers: Array[GraphStageLogic#InHandler], // Lookup table for the InHandler of a connection
+  val outHandlers: Array[GraphStageLogic#OutHandler], // Lookup table for the outHandler of the connection
   val logics: Array[GraphStageLogic], // Array of stage logics
   val onAsyncInput: (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit) {
   import GraphInterpreter._
@@ -357,7 +358,7 @@ private[stream] final class GraphInterpreter(
   def attachUpstreamBoundary(connection: Int, logic: UpstreamBoundaryStageLogic[_]): Unit = {
     logic.portToConn(logic.out.id + logic.inCount) = connection
     logic.interpreter = this
-    outHandlers(connection) = logic.handlers(0).asInstanceOf[OutHandler]
+    outHandlers(connection) = logic.handlers(0).asInstanceOf[GraphStageLogic#OutHandler]
   }
 
   /**
@@ -367,13 +368,13 @@ private[stream] final class GraphInterpreter(
   def attachDownstreamBoundary(connection: Int, logic: DownstreamBoundaryStageLogic[_]): Unit = {
     logic.portToConn(logic.in.id) = connection
     logic.interpreter = this
-    inHandlers(connection) = logic.handlers(0).asInstanceOf[InHandler]
+    inHandlers(connection) = logic.handlers(0).asInstanceOf[GraphStageLogic#InHandler]
   }
 
   /**
    * Dynamic handler changes are communicated from a GraphStageLogic by this method.
    */
-  def setHandler(connection: Int, handler: InHandler): Unit = {
+  def setHandler(connection: Int, handler: GraphStageLogic#InHandler): Unit = {
     if (Debug) println(s"$Name SETHANDLER ${inOwnerName(connection)} (in) $handler")
     inHandlers(connection) = handler
   }
@@ -381,7 +382,7 @@ private[stream] final class GraphInterpreter(
   /**
    * Dynamic handler changes are communicated from a GraphStageLogic by this method.
    */
-  def setHandler(connection: Int, handler: OutHandler): Unit = {
+  def setHandler(connection: Int, handler: GraphStageLogic#OutHandler): Unit = {
     if (Debug) println(s"$Name SETHANDLER ${outOwnerName(connection)} (out) $handler")
     outHandlers(connection) = handler
   }

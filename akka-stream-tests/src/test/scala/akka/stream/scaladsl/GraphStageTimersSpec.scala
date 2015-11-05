@@ -3,7 +3,7 @@ package akka.stream.scaladsl
 import akka.actor.ActorRef
 import akka.stream.{ Attributes, ActorMaterializer }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.stage.{ TimerGraphStageLogic, OutHandler, AsyncCallback, InHandler }
+import akka.stream.stage.{ TimerGraphStageLogic, AsyncCallback }
 import akka.stream.testkit.{ AkkaSpec, TestPublisher }
 import akka.testkit.TestDuration
 

@@ -9,7 +9,7 @@ import akka.stream.impl._
 import akka.stream.impl.fusing.{ ActorGraphInterpreter }
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 import akka.stream.stage.AbstractStage.PushPullGraphStage
-import akka.stream.stage.{ GraphStageLogic, OutHandler, InHandler, Stage }
+import akka.stream.stage.{ GraphStageLogic, Stage }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
@@ -43,8 +43,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   class BrokenActorInterpreter(
     _assembly: GraphAssembly,
-    _inHandlers: Array[InHandler],
-    _outHandlers: Array[OutHandler],
+    _inHandlers: Array[GraphStageLogic#InHandler],
+    _outHandlers: Array[GraphStageLogic#OutHandler],
     _logics: Array[GraphStageLogic],
     _shape: Shape,
     _settings: ActorMaterializerSettings,
