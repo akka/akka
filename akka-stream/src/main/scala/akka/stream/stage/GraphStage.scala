@@ -76,7 +76,7 @@ object GraphStageLogic {
    * Input handler that terminates the stage upon receiving completion.
    * The stage fails upon receiving a failure.
    */
-  class EagerTerminateInput extends InHandler {
+  object EagerTerminateInput extends InHandler {
     override def onPush(): Unit = ()
   }
 
@@ -84,7 +84,7 @@ object GraphStageLogic {
    * Input handler that does not terminate the stage upon receiving completion.
    * The stage fails upon receiving a failure.
    */
-  class IgnoreTerminateInput extends InHandler {
+  object IgnoreTerminateInput extends InHandler {
     override def onPush(): Unit = ()
     override def onUpstreamFinish(): Unit = ()
   }
@@ -95,14 +95,15 @@ object GraphStageLogic {
    */
   class ConditionalTerminateInput(predicate: () ⇒ Boolean) extends InHandler {
     override def onPush(): Unit = ()
-    override def onUpstreamFinish(): Unit = if (predicate()) inOwnerStageLogic.completeStage()
+    override def onUpstreamFinish(): Unit =
+      if (predicate()) GraphInterpreter.currentInterpreter.activeStage.completeStage()
   }
 
   /**
    * Input handler that does not terminate the stage upon receiving completion
    * nor failure.
    */
-  class TotallyIgnorantInput extends InHandler {
+  object TotallyIgnorantInput extends InHandler {
     override def onPush(): Unit = ()
     override def onUpstreamFinish(): Unit = ()
     override def onUpstreamFailure(ex: Throwable): Unit = ()
@@ -111,14 +112,14 @@ object GraphStageLogic {
   /**
    * Output handler that terminates the stage upon cancellation.
    */
-  class EagerTerminateOutput extends OutHandler {
+  object EagerTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
   }
 
   /**
    * Output handler that does not terminate the stage upon cancellation.
    */
-  class IgnoreTerminateOutput extends OutHandler {
+  object IgnoreTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
     override def onDownstreamFinish(): Unit = ()
   }
@@ -129,7 +130,8 @@ object GraphStageLogic {
    */
   class ConditionalTerminateOutput(predicate: () ⇒ Boolean) extends OutHandler {
     override def onPull(): Unit = ()
-    override def onDownstreamFinish(): Unit = if (predicate()) outOwnerStageLogic.completeStage()
+    override def onDownstreamFinish(): Unit =
+      if (predicate()) GraphInterpreter.currentInterpreter.activeStage.completeStage()
   }
 
   private object DoNothing extends (() ⇒ Unit) {
@@ -194,12 +196,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Input handler that terminates the stage upon receiving completion.
    * The stage fails upon receiving a failure.
    */
-  final protected def eagerTerminateInput: InHandler = new EagerTerminateInput
+  final protected def eagerTerminateInput: InHandler = EagerTerminateInput
   /**
    * Input handler that does not terminate the stage upon receiving completion.
    * The stage fails upon receiving a failure.
    */
-  final protected def ignoreTerminateInput: InHandler = new IgnoreTerminateInput
+  final protected def ignoreTerminateInput: InHandler = IgnoreTerminateInput
   /**
    * Input handler that terminates the state upon receiving completion if the
    * given condition holds at that time. The stage fails upon receiving a failure.
@@ -209,15 +211,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Input handler that does not terminate the stage upon receiving completion
    * nor failure.
    */
-  final protected def totallyIgnorantInput: InHandler = new TotallyIgnorantInput
+  final protected def totallyIgnorantInput: InHandler = TotallyIgnorantInput
   /**
    * Output handler that terminates the stage upon cancellation.
    */
-  final protected def eagerTerminateOutput: OutHandler = new EagerTerminateOutput
+  final protected def eagerTerminateOutput: OutHandler = EagerTerminateOutput
   /**
    * Output handler that does not terminate the stage upon cancellation.
    */
-  final protected def ignoreTerminateOutput: OutHandler = new IgnoreTerminateOutput
+  final protected def ignoreTerminateOutput: OutHandler = IgnoreTerminateOutput
   /**
    * Output handler that terminates the state upon receiving completion if the
    * given condition holds at that time. The stage fails upon receiving a failure.
@@ -228,7 +230,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Assigns callbacks for the events for an [[Inlet]]
    */
   final protected def setHandler(in: Inlet[_], handler: InHandler): Unit = {
-    handler.inOwnerStageLogic = this
     handlers(in.id) = handler
     if (_interpreter != null) _interpreter.setHandler(conn(in), handler)
   }
@@ -244,7 +245,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Assigns callbacks for the events for an [[Outlet]]
    */
   final protected def setHandler(out: Outlet[_], handler: OutHandler): Unit = {
-    handler.outOwnerStageLogic = this
     handlers(out.id + inCount) = handler
     if (_interpreter != null) _interpreter.setHandler(conn(out), handler)
   }
@@ -835,11 +835,6 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
  */
 trait InHandler {
   /**
-   * INTERNAL API
-   */
-  private[stream] var inOwnerStageLogic: GraphStageLogic = _
-
-  /**
    * Called when the input port has a new element available. The actual element can be retrieved via the
    * [[GraphStageLogic.grab()]] method.
    */
@@ -848,23 +843,18 @@ trait InHandler {
   /**
    * Called when the input port is finished. After this callback no other callbacks will be called for this port.
    */
-  def onUpstreamFinish(): Unit = inOwnerStageLogic.completeStage()
+  def onUpstreamFinish(): Unit = GraphInterpreter.currentInterpreter.activeStage.completeStage()
 
   /**
    * Called when the input port has failed. After this callback no other callbacks will be called for this port.
    */
-  def onUpstreamFailure(ex: Throwable): Unit = inOwnerStageLogic.failStage(ex)
+  def onUpstreamFailure(ex: Throwable): Unit = GraphInterpreter.currentInterpreter.activeStage.failStage(ex)
 }
 
 /**
  * Collection of callbacks for an output port of a [[GraphStage]]
  */
 trait OutHandler {
-  /**
-   * INTERNAL API
-   */
-  private[stream] var outOwnerStageLogic: GraphStageLogic = _
-
   /**
    * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push()]]
    * is now allowed to be called on this port.
@@ -875,5 +865,28 @@ trait OutHandler {
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
    * be called for this port.
    */
-  def onDownstreamFinish(): Unit = outOwnerStageLogic.completeStage()
+  def onDownstreamFinish(): Unit = {
+    GraphInterpreter
+      .currentInterpreter
+      .activeStage
+      .completeStage()
+  }
 }
+
+/**
+ * Java API: callbacks for an input port where termination logic is predefined
+ * (completing when upstream completes, failing when upstream fails).
+ */
+abstract class AbstractInHandler extends InHandler
+
+/**
+ * Java API: callbacks for an output port where termination logic is predefined
+ * (completing when downstream cancels).
+ */
+abstract class AbstractOutHandler extends OutHandler
+
+/**
+ * Java API: callback combination for output and input ports where termination logic is predefined
+ * (completing when upstream completes, failing when upstream fails, completing when downstream cancels).
+ */
+abstract class AbstractInOutHandler extends InHandler with OutHandler
