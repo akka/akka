@@ -7,7 +7,7 @@ import akka.stream.impl.Stages.{ StageModule, SymbolicStage }
 import akka.stream.impl._
 import akka.stream.impl.StreamLayout._
 import akka.stream._
-import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
+import akka.stream.stage.{ GraphStageLogic, GraphStage }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable

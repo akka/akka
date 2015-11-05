@@ -12,7 +12,7 @@ import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.impl.StreamLayout.{ CopiedModule, Module }
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic, GraphAssembly }
 import akka.stream.impl.{ ActorPublisher, ReactiveStreamsCompliance }
-import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage.GraphStageLogic
 import org.reactivestreams.{ Subscriber, Subscription }
 
 import scala.util.control.NonFatal
@@ -76,8 +76,8 @@ private[stream] object ActorGraphInterpreter {
   }
 
   def props(assembly: GraphAssembly,
-            inHandlers: Array[InHandler],
-            outHandlers: Array[OutHandler],
+            inHandlers: Array[GraphStageLogic#InHandler],
+            outHandlers: Array[GraphStageLogic#OutHandler],
             logics: Array[GraphStageLogic],
             shape: Shape,
             settings: ActorMaterializerSettings,
@@ -290,8 +290,8 @@ private[stream] object ActorGraphInterpreter {
  */
 private[stream] class ActorGraphInterpreter(
   assembly: GraphAssembly,
-  inHandlers: Array[InHandler],
-  outHandlers: Array[OutHandler],
+  inHandlers: Array[GraphStageLogic#InHandler],
+  outHandlers: Array[GraphStageLogic#OutHandler],
   logics: Array[GraphStageLogic],
   shape: Shape,
   settings: ActorMaterializerSettings,

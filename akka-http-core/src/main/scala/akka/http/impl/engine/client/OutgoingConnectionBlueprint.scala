@@ -21,7 +21,6 @@ import akka.http.impl.engine.parsing._
 import akka.http.impl.util._
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.InHandler
 
 /**
  * INTERNAL API

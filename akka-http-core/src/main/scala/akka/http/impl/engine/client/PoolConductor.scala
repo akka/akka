@@ -15,7 +15,6 @@ import akka.http.scaladsl.model.HttpMethod
 import akka.http.impl.util._
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.InHandler
 
 private object PoolConductor {
   import PoolFlow.RequestContext

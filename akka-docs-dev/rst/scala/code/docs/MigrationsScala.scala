@@ -3,7 +3,7 @@ package docs
 import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl._
 import akka.stream._
-import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
+import akka.stream.stage.{ GraphStageLogic, GraphStage }
 import akka.stream.testkit.AkkaSpec
 
 import scala.concurrent.{ Future, ExecutionContext, Promise }

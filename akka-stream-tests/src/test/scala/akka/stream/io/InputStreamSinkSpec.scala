@@ -12,7 +12,7 @@ import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.InputStreamSinkStage
 import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
 import akka.stream.scaladsl.{ Keep, Sink }
-import akka.stream.stage.InHandler
+import akka.stream.stage.GraphStageLogic
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSource
@@ -57,8 +57,9 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
       override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
         val (logic, inputStream) = super.createLogicAndMaterializedValue(inheritedAttributes)
-        val inHandler = logic.handlers(in.id).asInstanceOf[InHandler]
-        logic.handlers(in.id) = new InHandler {
+
+        val inHandler = logic.handlers(in.id).asInstanceOf[GraphStageLogic#InHandler]
+        logic.handlers(in.id) = new logic.InHandler {
           override def onPush(): Unit = {
             probe.ref ! InputStreamSinkTestMessages.Push
             inHandler.onPush()

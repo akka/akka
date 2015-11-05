@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream._
-import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
+import akka.stream.stage.{ GraphStageLogic, GraphStage }
 
 import scala.concurrent.duration.Deadline
 import scala.util.control.NoStackTrace
