@@ -45,7 +45,21 @@ sealed abstract class OutPort { self: Outlet[_] ⇒
  * express the internal structural hierarchy of stream topologies).
  */
 object Inlet {
-  def apply[T](toString: String): Inlet[T] = new Inlet[T](toString)
+  /**
+   * Scala API
+   *
+   * Creates a new Inlet with the given name. The name will be used when
+   * displaying debug information or error messages involving the port.
+   */
+  def apply[T](name: String): Inlet[T] = new Inlet[T](name)
+
+  /**
+   * JAVA API
+   *
+   * Creates a new Inlet with the given name. The name will be used when
+   * displaying debug information or error messages involving the port.
+   */
+  def create[T](name: String): Inlet[T] = Inlet(name)
 }
 
 final class Inlet[T] private (override val toString: String) extends InPort {
@@ -62,7 +76,22 @@ final class Inlet[T] private (override val toString: String) extends InPort {
  * express the internal structural hierarchy of stream topologies).
  */
 object Outlet {
-  def apply[T](toString: String): Outlet[T] = new Outlet[T](toString)
+
+  /**
+   * Scala API
+   *
+   * Creates a new Outlet with the given name. The name will be used when
+   * displaying debug information or error messages involving the port.
+   */
+  def apply[T](name: String): Outlet[T] = new Outlet[T](name)
+
+  /**
+   * JAVA API
+   *
+   * Creates a new Outlet with the given name. The name will be used when
+   * displaying debug information or error messages involving the port.
+   */
+  def create[T](name: String): Outlet[T] = Outlet(name)
 }
 
 final class Outlet[T] private (override val toString: String) extends OutPort {
