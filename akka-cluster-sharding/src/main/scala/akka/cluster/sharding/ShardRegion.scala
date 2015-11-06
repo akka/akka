@@ -255,7 +255,7 @@ class ShardRegion(
   val cluster = Cluster(context.system)
 
   // sort by age, oldest first
-  val ageOrdering = Ordering.fromLessThan[Member] { (a, b) ⇒ a.isOlderThan(b) }
+  val ageOrdering = Member.ageOrdering
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
   var regions = Map.empty[ActorRef, Set[ShardId]]
@@ -318,14 +318,14 @@ class ShardRegion(
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
-    changeMembers(immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m ⇒
+    changeMembers(immutable.SortedSet.empty(ageOrdering) union state.members.filter(m ⇒
       m.status == MemberStatus.Up && matchingRole(m)))
   }
 
   def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
     case MemberUp(m) ⇒
       if (matchingRole(m))
-        changeMembers(membersByAge + m)
+        changeMembers(membersByAge - m + m) // replace
 
     case MemberRemoved(m, _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress)

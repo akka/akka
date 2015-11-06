@@ -163,7 +163,7 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
                 val oldUnreachable = state.oldReceiversNowUnreachable
                 state = state.addMember(node)
                 // keep unreachable
-                (oldUnreachable -- state.activeReceivers) should ===(Set.empty)
+                (oldUnreachable diff state.activeReceivers) should ===(Set.empty)
                 state.failureDetector.isMonitoring(node.address) should ===(false)
                 state.failureDetector.isAvailable(node.address) should ===(true)
               }
@@ -174,9 +174,9 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
                 state = state.removeMember(node)
                 // keep unreachable, unless it was the removed
                 if (oldUnreachable(node))
-                  (oldUnreachable -- state.activeReceivers) should ===(Set(node))
+                  (oldUnreachable diff state.activeReceivers) should ===(Set(node))
                 else
-                  (oldUnreachable -- state.activeReceivers) should ===(Set.empty)
+                  (oldUnreachable diff state.activeReceivers) should ===(Set.empty)
 
                 state.failureDetector.isMonitoring(node.address) should ===(false)
                 state.failureDetector.isAvailable(node.address) should ===(true)

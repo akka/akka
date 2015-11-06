@@ -661,7 +661,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
             rebalanceInProgress += shard
             log.debug("Rebalance shard [{}] from [{}]", shard, rebalanceFromRegion)
             context.actorOf(rebalanceWorkerProps(shard, rebalanceFromRegion, handOffTimeout,
-              state.regions.keySet ++ state.regionProxies)
+              state.regions.keySet union state.regionProxies)
               .withDispatcher(context.props.dispatcher))
           case None ⇒
             log.debug("Rebalance of non-existing shard [{}] is ignored", shard)
