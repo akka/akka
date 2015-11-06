@@ -1359,13 +1359,15 @@ private[akka] class WriteAggregator(
 
   def receive = {
     case WriteAck ⇒
-      remaining -= sender().path.address
+      remaining -= senderAddress()
       if (remaining.size == doneWhenRemainingSize)
         reply(ok = true)
     case SendToSecondary ⇒
       secondaryNodes.foreach { replica(_) ! writeMsg }
     case ReceiveTimeout ⇒ reply(ok = false)
   }
+
+  def senderAddress(): Address = sender().path.address
 
   def reply(ok: Boolean): Unit = {
     if (ok && envelope.data == DeletedData)
