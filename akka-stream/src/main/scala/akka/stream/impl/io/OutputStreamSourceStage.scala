@@ -32,28 +32,30 @@ private[akka] object OutputStreamSourceStage {
   }
 }
 
-private[akka] class OutputStreamSourceStage(timeout: FiniteDuration) extends SourceStage[ByteString, OutputStream]("OutputStreamSourceStage") {
+private[akka] class OutputStreamSourceStage(timeout: FiniteDuration) extends SourceStage[ByteString, OutputStream]("OutputStreamSource") {
   val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
   require(maxBuffer > 0, "Buffer size must be greater than 0")
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, OutputStream) = {
     val dataQueue = new LinkedBlockingQueue[ByteString](maxBuffer)
-
-    var flush: Option[Promise[Unit]] = None
-    var close: Option[Promise[Unit]] = None
     val downstreamStatus = new AtomicReference[DownstreamStatus](Ok)
 
     val logic = new GraphStageLogic(shape) with StageWithCallback {
+      var flush: Option[Promise[Unit]] = None
+      var close: Option[Promise[Unit]] = None
+
       private val downstreamCallback: AsyncCallback[Try[ByteString]] =
-        getAsyncCallback(onAsyncElem)
+        getAsyncCallback {
+          case Success(elem) ⇒ onPush(elem)
+          case Failure(ex)   ⇒ failStage(ex)
+        }
 
       private val upstreamCallback: AsyncCallback[(AdapterToStageMessage, Promise[Unit])] =
         getAsyncCallback(onAsyncMessage)
 
       override def wakeUp(msg: AdapterToStageMessage): Future[Unit] = {
-        implicit val ex = interpreter.materializer.executionContext
         val p = Promise[Unit]()
-        Future(upstreamCallback.invoke((msg, p)))
+        upstreamCallback.invoke((msg, p))
         p.future
       }
 
@@ -70,11 +72,6 @@ private[akka] class OutputStreamSourceStage(timeout: FiniteDuration) extends Sou
               unblockUpstream()
             } else sendResponseIfNeed()
         }
-
-      private def onAsyncElem(event: Try[ByteString]): Unit = event match {
-        case Success(elem) ⇒ onPush(elem)
-        case Failure(ex)   ⇒ failStage(ex)
-      }
 
       private def unblockUpstream(): Boolean =
         flush match {
@@ -127,23 +124,27 @@ private[akka] class OutputStreamAdapter(dataQueue: BlockingQueue[ByteString],
   var isPublisherAlive = true
   val publisherClosedException = new IOException("Reactive stream is terminated, no writes are possible")
 
+  @scala.throws(classOf[IOException])
   private[this] def send(sendAction: () ⇒ Unit): Unit = {
     if (isActive) {
-      if (isPublisherAlive) {
-        sendAction()
-      } else throw publisherClosedException
+      if (isPublisherAlive) sendAction()
+      else throw publisherClosedException
     } else throw new IOException("OutputStream is closed")
   }
 
+  @scala.throws(classOf[IOException])
   private[this] def sendData(data: ByteString): Unit =
     send(() ⇒ {
-      dataQueue.put(data)
+      try {
+        dataQueue.put(data)
+      } catch { case NonFatal(ex) ⇒ throw new IOException(ex) }
       if (downstreamStatus.get() == Canceled) {
         isPublisherAlive = false
         throw publisherClosedException
       }
     })
 
+  @scala.throws(classOf[IOException])
   private[this] def sendMessage(message: AdapterToStageMessage, handleCancelled: Boolean = true) =
     send(() ⇒
       try {
