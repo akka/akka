@@ -6,16 +6,16 @@ package akka.persistence
 
 import akka.actor.{ OneForOneStrategy, _ }
 import akka.persistence.journal.AsyncWriteTarget.{ ReplayFailure, ReplayMessages, ReplaySuccess, WriteMessages }
-import akka.persistence.journal.inmem.InmemStore
-import akka.persistence.journal.{ AsyncWriteJournal, AsyncWriteProxy }
+import akka.persistence.journal.AsyncWriteJournal
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
 import akka.util.Timeout
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Try }
+import akka.persistence.journal.inmem.InmemJournal
+import scala.concurrent.Future
 
 object PersistentActorFailureSpec {
   import PersistentActorSpec.{ Cmd, Evt, ExamplePersistentActor }
@@ -23,46 +23,42 @@ object PersistentActorFailureSpec {
   class SimulatedException(msg: String) extends RuntimeException(msg) with NoStackTrace
   class SimulatedSerializationException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
-  class FailingInmemJournal extends AsyncWriteProxy {
-    import AsyncWriteProxy.SetStore
+  class FailingInmemJournal extends InmemJournal {
 
-    val timeout = Timeout(3 seconds)
-
-    override def preStart(): Unit = {
-      super.preStart()
-      self ! SetStore(context.actorOf(Props[FailingInmemStore]()))
+    override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
+      if (isWrong(messages)) throw new SimulatedException("Simulated Store failure")
+      else {
+        val ser = checkSerializable(messages)
+        if (ser.exists(_.isFailure))
+          Future.successful(ser)
+        else
+          super.asyncWriteMessages(messages)
+      }
     }
 
-  }
-
-  class FailingInmemStore extends InmemStore {
-    def failingReceive: Receive = {
-      case w: WriteMessages if isWrong(w) ⇒
-        throw new SimulatedException("Simulated Store failure")
-      case w: WriteMessages if checkSerializable(w).exists(_.isFailure) ⇒
-        sender() ! checkSerializable(w)
-      case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
-        val highest = highestSequenceNr(pid)
-        val readFromStore = read(pid, fromSnr, toSnr, max)
-        if (readFromStore.isEmpty)
-          sender() ! ReplaySuccess(highest)
-        else if (isCorrupt(readFromStore))
-          sender() ! ReplayFailure(new SimulatedException(s"blahonga $fromSnr $toSnr"))
-        else {
-          readFromStore.foreach(sender() ! _)
-          sender() ! ReplaySuccess(highest)
-        }
+    override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
+      recoveryCallback: PersistentRepr ⇒ Unit): Future[Unit] = {
+      val highest = highestSequenceNr(persistenceId)
+      val readFromStore = read(persistenceId, fromSequenceNr, toSequenceNr, max)
+      if (readFromStore.isEmpty)
+        Future.successful(())
+      else if (isCorrupt(readFromStore))
+        Future.failed(new SimulatedException(s"blahonga $fromSequenceNr $toSequenceNr"))
+      else {
+        readFromStore.foreach(recoveryCallback)
+        Future.successful(())
+      }
     }
 
-    def isWrong(w: WriteMessages): Boolean =
-      w.messages.exists {
+    def isWrong(messages: immutable.Seq[AtomicWrite]): Boolean =
+      messages.exists {
         case a: AtomicWrite ⇒
           a.payload.exists { case PersistentRepr(Evt(s: String), _) ⇒ s.contains("wrong") }
         case _ ⇒ false
       }
 
-    def checkSerializable(w: WriteMessages): immutable.Seq[Try[Unit]] =
-      w.messages.collect {
+    def checkSerializable(messages: immutable.Seq[AtomicWrite]): immutable.Seq[Try[Unit]] =
+      messages.collect {
         case a: AtomicWrite ⇒
           a.payload.collectFirst {
             case PersistentRepr(Evt(s: String), _: Long) if s.contains("not serializable") ⇒ s
@@ -75,7 +71,6 @@ object PersistentActorFailureSpec {
     def isCorrupt(events: Seq[PersistentRepr]): Boolean =
       events.exists { case PersistentRepr(Evt(s: String), _) ⇒ s.contains("corrupt") }
 
-    override def receive = failingReceive.orElse(super.receive)
   }
 
   class OnRecoveryFailurePersistentActor(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
