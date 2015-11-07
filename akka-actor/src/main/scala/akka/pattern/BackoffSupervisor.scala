@@ -61,6 +61,26 @@ object BackoffSupervisor {
 
   private case object StartChild extends DeadLetterSuppression
   private case class ResetRestartCount(current: Int) extends DeadLetterSuppression
+
+  /**
+   * INTERNAL API
+   *
+   * Calculates an exponential back off delay.
+   */
+  private[akka] def calculateDelay(
+    restartCount: Int,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double): FiniteDuration = {
+    val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
+    if (restartCount >= 30) // Duration overflow protection (> 100 years)
+      maxBackoff
+    else
+      maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd match {
+        case f: FiniteDuration ⇒ f
+        case _                 ⇒ maxBackoff
+      }
+  }
 }
 
 /**
@@ -121,15 +141,7 @@ final class BackoffSupervisor(
   def receive = {
     case Terminated(ref) if child.contains(ref) ⇒
       child = None
-      val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
-      val restartDelay =
-        if (restartCount >= 30) // Duration overflow protection (> 100 years)
-          maxBackoff
-        else
-          maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd match {
-            case f: FiniteDuration ⇒ f
-            case _                 ⇒ maxBackoff
-          }
+      val restartDelay = calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
       context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
       restartCount += 1
 
