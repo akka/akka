@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 import sample.cluster.stats.StatsMessages.JobFailed;
 import sample.cluster.stats.StatsMessages.StatsJob;
 import sample.cluster.stats.StatsMessages.StatsResult;
-import scala.concurrent.forkjoin.ThreadLocalRandom;
+import java.util.concurrent.ThreadLocalRandom;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorSelection;

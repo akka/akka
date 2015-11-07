@@ -13,7 +13,7 @@ import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.{ Try, Success, Failure }
 import akka.ConfigurationException
 import akka.actor.Actor

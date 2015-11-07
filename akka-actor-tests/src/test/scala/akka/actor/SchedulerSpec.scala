@@ -10,7 +10,7 @@ import java.util.concurrent._
 import atomic.{ AtomicReference, AtomicInteger }
 import scala.concurrent.{ future, Await, ExecutionContext }
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.Try
 import scala.util.control.NonFatal
 import org.scalatest.BeforeAndAfterEach

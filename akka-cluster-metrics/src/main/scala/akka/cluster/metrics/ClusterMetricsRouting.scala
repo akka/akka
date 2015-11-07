@@ -7,7 +7,7 @@ import java.util.Arrays
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import com.typesafe.config.Config
 import akka.actor.Actor
 import akka.actor.ActorSystem

@@ -7,7 +7,7 @@ import language.existentials
 import language.postfixOps
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.control.NonFatal
 import akka.actor._
 import akka.actor.SupervisorStrategy.Stop

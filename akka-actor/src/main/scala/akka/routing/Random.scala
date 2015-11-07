@@ -4,7 +4,7 @@
 package akka.routing
 
 import scala.collection.immutable
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import akka.actor.ActorContext
 import akka.actor.Props
 import akka.dispatch.Dispatchers
