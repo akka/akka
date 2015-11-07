@@ -106,8 +106,8 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
             |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(
             HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
-            List(`Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email")),
-              RawHeader("date", "unknown")))))
+            List(RawHeader("date", "unknown"),
+              `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email"))))))
       "a full example (Strict)" in {
         Unmarshal(HttpEntity(`multipart/mixed` withBoundary "12345",
           """preamble and
@@ -246,6 +246,8 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                   """sition: form-data; name="userfile"; filename="test.dat"
                     |Content-Type: application/pdf
                     |Content-Transfer-Encoding: binary
+                    |Content-Additional-1: anything
+                    |Content-Additional-2: really-anything
                     |
                     |filecontent
                     |--XYZABC--""".stripMarginWithNewline("\r\n")
@@ -253,8 +255,11 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
             })
         }.to[Multipart.FormData].flatMap(_.toStrict(1.second)) should haveParts(
           Multipart.FormData.BodyPart.Strict("email", HttpEntity(ContentTypes.`application/octet-stream`, "test@there.com")),
-          Multipart.FormData.BodyPart.Strict("userfile", HttpEntity(MediaTypes.`application/pdf`, "filecontent"),
-            Map("filename" -> "test.dat"), List(RawHeader("Content-Transfer-Encoding", "binary"))))
+          Multipart.FormData.BodyPart.Strict("userfile", HttpEntity(MediaTypes.`application/pdf`, "filecontent"), Map("filename" -> "test.dat"),
+            List(
+              RawHeader("Content-Transfer-Encoding", "binary"),
+              RawHeader("Content-Additional-1", "anything"),
+              RawHeader("Content-Additional-2", "really-anything")))) // verifies order of headers is preserved
       }
       // TODO: reactivate after multipart/form-data unmarshalling integrity verification is implemented
       //
