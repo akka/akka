@@ -14,6 +14,8 @@ import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import headers._
 
+import scala.collection.mutable.ListBuffer
+
 /**
  * INTERNAL API
  *
@@ -114,7 +116,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
       case NotEnoughDataException ⇒ continue(input.takeRight(needle.length + 2), 0)(parsePreamble)
     }
 
-  @tailrec def parseHeaderLines(input: ByteString, lineStart: Int, headers: List[HttpHeader] = Nil,
+  @tailrec def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = ListBuffer[HttpHeader](),
                                 headerCount: Int = 0, cth: Option[`Content-Type`] = None): StateResult = {
     def contentType =
       cth match {
@@ -136,27 +138,28 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
       case null ⇒ continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, cth))
 
       case BoundaryHeader ⇒
-        emit(BodyPartStart(headers, _ ⇒ HttpEntity.empty(contentType)))
+        emit(BodyPartStart(headers.toList, _ ⇒ HttpEntity.empty(contentType)))
         val ix = lineStart + boundaryLength
         if (crlf(input, ix)) parseHeaderLines(input, ix + 2)
         else if (doubleDash(input, ix)) terminate()
         else fail("Illegal multipart boundary in message content")
 
-      case HttpHeaderParser.EmptyHeader ⇒ parseEntity(headers, contentType)(input, lineEnd)
+      case HttpHeaderParser.EmptyHeader ⇒ parseEntity(headers.toList, contentType)(input, lineEnd)
 
       case h: `Content-Type` ⇒
         if (cth.isEmpty) parseHeaderLines(input, lineEnd, headers, headerCount + 1, Some(h))
         else if (cth.get == h) parseHeaderLines(input, lineEnd, headers, headerCount, cth)
         else fail("multipart part must not contain more than one Content-Type header")
 
-      case h if headerCount < maxHeaderCount ⇒ parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, cth)
+      case h if headerCount < maxHeaderCount ⇒
+        parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, cth)
 
-      case _                                 ⇒ fail(s"multipart part contains more than the configured limit of $maxHeaderCount headers")
+      case _ ⇒ fail(s"multipart part contains more than the configured limit of $maxHeaderCount headers")
     }
   }
 
   // work-around for compiler complaining about non-tail-recursion if we inline this method
-  def parseHeaderLinesAux(headers: List[HttpHeader], headerCount: Int,
+  def parseHeaderLinesAux(headers: ListBuffer[HttpHeader], headerCount: Int,
                           cth: Option[`Content-Type`])(input: ByteString, lineStart: Int): StateResult =
     parseHeaderLines(input, lineStart, headers, headerCount, cth)
 
