@@ -5,7 +5,7 @@
 package akka.persistence
 
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.language.postfixOps
 
 import com.typesafe.config.ConfigFactory

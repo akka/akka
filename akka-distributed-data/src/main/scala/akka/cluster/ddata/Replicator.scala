@@ -10,7 +10,7 @@ import scala.collection.immutable.Queue
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try

@@ -4,13 +4,9 @@
 
 package akka.actor
 
-import java.lang.reflect.{ Constructor, Modifier, ParameterizedType, TypeVariable }
-
 import akka.actor.Deploy.{ NoDispatcherGiven, NoMailboxGiven }
 import akka.dispatch._
-import akka.japi.Creator
 import akka.routing._
-import akka.util.Reflect
 
 import scala.annotation.varargs
 import scala.collection.immutable
@@ -24,7 +20,7 @@ import scala.reflect.ClassTag
  *
  * Used when creating new actors through <code>ActorSystem.actorOf</code> and <code>ActorContext.actorOf</code>.
  */
-object Props {
+object Props extends AbstractProps {
 
   /**
    * The defaultCreator, simply throws an UnsupportedOperationException when applied, which is used when creating a Props
@@ -90,46 +86,6 @@ object Props {
    */
   def apply(clazz: Class[_], args: Any*): Props = apply(defaultDeploy, clazz, args.toList)
 
-  /**
-   * Java API: create a Props given a class and its constructor arguments.
-   */
-  @varargs
-  def create(clazz: Class[_], args: AnyRef*): Props = apply(defaultDeploy, clazz, args.toList)
-
-  /**
-   * Create new Props from the given [[akka.japi.Creator]].
-   *
-   * You can not use a Java 8 lambda with this method since the generated classes
-   * don't carry enough type information.
-   *
-   * Use the Props.create(actorClass, creator) instead.
-   */
-  def create[T <: Actor](creator: Creator[T]): Props = {
-    val cc = creator.getClass
-    if ((cc.getEnclosingClass ne null) && (cc.getModifiers & Modifier.STATIC) == 0)
-      throw new IllegalArgumentException("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level")
-    val ac = classOf[Actor]
-    val coc = classOf[Creator[_]]
-    val actorClass = Reflect.findMarker(cc, coc) match {
-      case t: ParameterizedType ⇒
-        t.getActualTypeArguments.head match {
-          case c: Class[_] ⇒ c // since T <: Actor
-          case v: TypeVariable[_] ⇒
-            v.getBounds collectFirst { case c: Class[_] if ac.isAssignableFrom(c) && c != ac ⇒ c } getOrElse ac
-          case x ⇒ throw new IllegalArgumentException(s"unsupported type found in Creator argument [$x]")
-        }
-      case c: Class[_] if (c == coc) ⇒
-        throw new IllegalArgumentException(s"erased Creator types are unsupported, use Props.create(actorClass, creator) instead")
-    }
-    apply(defaultDeploy, classOf[CreatorConsumer], actorClass :: creator :: Nil)
-  }
-
-  /**
-   * Create new Props from the given [[akka.japi.Creator]] with the type set to the given actorClass.
-   */
-  def create[T <: Actor](actorClass: Class[T], creator: Creator[T]): Props = {
-    apply(defaultDeploy, classOf[CreatorConsumer], actorClass :: creator :: Nil)
-  }
 }
 
 /**
@@ -158,8 +114,7 @@ object Props {
 @SerialVersionUID(2L)
 final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
 
-  if (Modifier.isAbstract(clazz.getModifiers))
-    throw new IllegalArgumentException(s"Actor class [${clazz.getName}] must not be abstract")
+  Props.validate(clazz)
 
   // derived property, does not need to be serialized
   @transient
@@ -258,101 +213,4 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
   private[akka] def newActor(): Actor = {
     producer.produce()
   }
-}
-
-/**
- * This interface defines a class of actor creation strategies deviating from
- * the usual default of just reflectively instantiating the [[Actor]]
- * subclass. It can be used to allow a dependency injection framework to
- * determine the actual actor class and how it shall be instantiated.
- */
-trait IndirectActorProducer {
-
-  /**
-   * This factory method must produce a fresh actor instance upon each
-   * invocation. <b>It is not permitted to return the same instance more than
-   * once.</b>
-   */
-  def produce(): Actor
-
-  /**
-   * This method is used by [[Props]] to determine the type of actor which will
-   * be created. This means that an instance of this `IndirectActorProducer`
-   * will be created in order to call this method during any call to
-   * [[Props#actorClass]]; it should be noted that such calls may
-   * performed during actor set-up before the actual actor’s instantiation, and
-   * that the instance created for calling `actorClass` is not necessarily reused
-   * later to produce the actor.
-   */
-  def actorClass: Class[_ <: Actor]
-}
-
-private[akka] object IndirectActorProducer {
-  val CreatorFunctionConsumerClass = classOf[CreatorFunctionConsumer]
-  val CreatorConsumerClass = classOf[CreatorConsumer]
-  val TypedCreatorFunctionConsumerClass = classOf[TypedCreatorFunctionConsumer]
-
-  def apply(clazz: Class[_], args: immutable.Seq[Any]): IndirectActorProducer = {
-    if (classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
-      def get1stArg[T]: T = args.head.asInstanceOf[T]
-      def get2ndArg[T]: T = args.tail.head.asInstanceOf[T]
-      // The cost of doing reflection to create these for every props
-      // is rather high, so we match on them and do new instead
-      clazz match {
-        case TypedCreatorFunctionConsumerClass ⇒
-          new TypedCreatorFunctionConsumer(get1stArg, get2ndArg)
-        case CreatorFunctionConsumerClass ⇒
-          new CreatorFunctionConsumer(get1stArg)
-        case CreatorConsumerClass ⇒
-          new CreatorConsumer(get1stArg, get2ndArg)
-        case _ ⇒
-          Reflect.instantiate(clazz, args).asInstanceOf[IndirectActorProducer]
-      }
-    } else if (classOf[Actor].isAssignableFrom(clazz)) {
-      if (args.isEmpty) new NoArgsReflectConstructor(clazz.asInstanceOf[Class[_ <: Actor]])
-      else new ArgsReflectConstructor(clazz.asInstanceOf[Class[_ <: Actor]], args)
-    } else throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
-  }
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class CreatorFunctionConsumer(creator: () ⇒ Actor) extends IndirectActorProducer {
-  override def actorClass = classOf[Actor]
-  override def produce() = creator()
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class CreatorConsumer(clazz: Class[_ <: Actor], creator: Creator[Actor]) extends IndirectActorProducer {
-  override def actorClass = clazz
-  override def produce() = creator.create()
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class TypedCreatorFunctionConsumer(clz: Class[_ <: Actor], creator: () ⇒ Actor) extends IndirectActorProducer {
-  override def actorClass = clz
-  override def produce() = creator()
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class ArgsReflectConstructor(clz: Class[_ <: Actor], args: immutable.Seq[Any]) extends IndirectActorProducer {
-  private[this] val constructor: Constructor[_] = Reflect.findConstructor(clz, args)
-  override def actorClass = clz
-  override def produce() = Reflect.instantiate(constructor, args).asInstanceOf[Actor]
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class NoArgsReflectConstructor(clz: Class[_ <: Actor]) extends IndirectActorProducer {
-  Reflect.findConstructor(clz, List.empty)
-  override def actorClass = clz
-  override def produce() = Reflect.instantiate(clz)
 }

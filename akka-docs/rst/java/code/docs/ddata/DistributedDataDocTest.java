@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import scala.concurrent.duration.FiniteDuration;
-import scala.concurrent.forkjoin.ThreadLocalRandom;
+import java.util.concurrent.ThreadLocalRandom;
 
 import akka.actor.Actor;
 import akka.actor.ActorLogging;

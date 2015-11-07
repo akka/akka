@@ -1,7 +1,7 @@
 package sample.cluster.stats
 
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorSystem
