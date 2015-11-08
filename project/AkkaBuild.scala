@@ -417,6 +417,23 @@ object AkkaBuild extends Build {
         )
   )
 
+  lazy val httpSprayJsonTestkit = Project(
+    id = "akka-http-testkit-spray-json-experimental",
+    base = file("akka-http-testkit-spray-json"),
+    dependencies = Seq(http, httpSprayJson, httpTestkit, streamTestkit),
+    settings =
+      defaultSettings ++ formatSettings ++ scaladocSettings ++
+        javadocSettings ++ OSGi.httpTestKit ++
+        Seq(
+          version := streamAndHttpVersion,
+          libraryDependencies ++= Dependencies.httpTestkit,
+          // FIXME include mima when akka-http-scala-2.3.x is released
+          //previousArtifact := akkaPreviousArtifact("akka-http-testkit-scala")
+          previousArtifact := None,
+          scalacOptions in Compile  += "-language:_"
+        )
+  ).settings(Dependencies.httpSprayJson)
+
   lazy val httpTests = Project(
     id = "akka-http-tests-experimental",
     base = file("akka-http-tests"),
