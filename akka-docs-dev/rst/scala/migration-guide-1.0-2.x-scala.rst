@@ -438,7 +438,7 @@ Example
 
 should be replaced by:
 
-.. includecode:: code/docs/Migrations.scala#raw-query
+.. includecode:: code/docs/MigrationsScala.scala#raw-query
 
 And use of query parameters from ``Uri`` that looked like this:
 
@@ -449,4 +449,4 @@ And use of query parameters from ``Uri`` that looked like this:
 
 should be replaced by:
 
-.. includecode:: code/docs/Migrations.scala#query-param
+.. includecode:: code/docs/MigrationsScala.scala#query-param
