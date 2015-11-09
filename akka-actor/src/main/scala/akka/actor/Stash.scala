@@ -123,14 +123,8 @@ private[akka] trait StashSupport {
 
   /* The capacity of the stash. Configured in the actor's mailbox or dispatcher config.
    */
-  private val capacity: Int = {
-    val dispatcher = context.system.settings.config.getConfig(context.props.dispatcher)
-    val fallback = dispatcher.withFallback(context.system.settings.config.getConfig(Mailboxes.DefaultMailboxId))
-    val config =
-      if (context.props.mailbox == Mailboxes.DefaultMailboxId) fallback
-      else context.system.settings.config.getConfig(context.props.mailbox).withFallback(fallback)
-    config.getInt("stash-capacity")
-  }
+  private val capacity: Int =
+    context.system.mailboxes.stashCapacity(context.props.dispatcher, context.props.mailbox)
 
   /**
    * INTERNAL API.
