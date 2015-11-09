@@ -922,6 +922,62 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.keepAlive(maxIdle, () ⇒ injectedElem.create()))
 
   /**
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
+   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   *
+   * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
+   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
+   * to allow some burstyness. Whenever stream wants to send an element, it takes as many
+   * tokens from the bucket as number of elements. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens.
+   *
+   * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
+   *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
+   *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate
+   *
+   * '''Emits when''' upstream emits an element and configured time per each element elapsed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
+               mode: ThrottleMode): javadsl.Source[Out, Mat] =
+    new Source(delegate.throttle(elements, per, maximumBurst, mode))
+
+  /**
+   * Sends elements downstream with speed limited to `cost/per`. Cost is
+   * calculating for each element individually by calling `calculateCost` function.
+   * This combinator works for streams when elements have different cost(length).
+   * Streams of `ByteString` for example.
+   *
+   * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
+   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
+   * to allow some burstyness. Whenever stream wants to send an element, it takes as many
+   * tokens from the bucket as element cost. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate.
+   *
+   * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
+   *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
+   *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
+   *  cannot emit elements that cost more than the maximumBurst
+   *
+   * '''Emits when''' upstream emits an element and configured time per each element elapsed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
+               costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Source[Out, Mat] =
+    new Source(delegate.throttle(cost, per, maximumBurst, costCalculation.apply _, mode))
+
+  /**
    * Delays the initial element by the specified duration.
    *
    * '''Emits when''' upstream emits an element if the initial delay already elapsed

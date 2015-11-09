@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.impl
 
 import java.util.concurrent.{ TimeUnit, TimeoutException }
