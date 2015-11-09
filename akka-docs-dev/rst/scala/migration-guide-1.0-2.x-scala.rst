@@ -254,7 +254,7 @@ should be replaced by
 ====================================================================
 
 To simplify type inference in Java 8 and to make the method more discoverable, ``flatten(FlattenStrategy.concat)``
-has been removed and replaced with the alternative method ``flatten(FlattenStrategy.concat)``.
+has been removed and replaced with the alternative method ``flatMapConcat(identity)``.
 
 Update procedure
 ----------------
