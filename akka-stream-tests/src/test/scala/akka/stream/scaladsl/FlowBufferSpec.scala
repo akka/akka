@@ -6,9 +6,7 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.OverflowStrategy
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, OverflowStrategy }
 import akka.stream.OverflowStrategy.Fail.BufferOverflowException
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
@@ -77,6 +75,9 @@ class FlowBufferSpec extends AkkaSpec {
       // Fill up buffer
       for (i ← 1 to 200) publisher.sendNext(i)
 
+      // The next request would  be otherwise in race with the last onNext in the above loop
+      subscriber.expectNoMsg(500.millis)
+
       // drain
       for (i ← 101 to 200) {
         sub.request(1)
@@ -102,6 +103,9 @@ class FlowBufferSpec extends AkkaSpec {
 
       // Fill up buffer
       for (i ← 1 to 200) publisher.sendNext(i)
+
+      // The next request would  be otherwise in race with the last onNext in the above loop
+      subscriber.expectNoMsg(500.millis)
 
       // drain
       for (i ← 1 to 99) {
@@ -132,6 +136,9 @@ class FlowBufferSpec extends AkkaSpec {
       // Fill up buffer
       for (i ← 1 to 150) publisher.sendNext(i)
 
+      // The next request would  be otherwise in race with the last onNext in the above loop
+      subscriber.expectNoMsg(500.millis)
+
       // drain
       for (i ← 101 to 150) {
         sub.request(1)
@@ -151,8 +158,13 @@ class FlowBufferSpec extends AkkaSpec {
     "drop new elements if buffer is full and configured so" in {
       val (publisher, subscriber) = TestSource.probe[Int].buffer(100, overflowStrategy = OverflowStrategy.dropNew).toMat(TestSink.probe[Int])(Keep.both).run()
 
+      subscriber.ensureSubscription()
+
       // Fill up buffer
       for (i ← 1 to 150) publisher.sendNext(i)
+
+      // The next request would  be otherwise in race with the last onNext in the above loop
+      subscriber.expectNoMsg(500.millis)
 
       // drain
       for (i ← 1 to 100) {
@@ -205,6 +217,8 @@ class FlowBufferSpec extends AkkaSpec {
         // Fill up buffer
         for (i ← 1 to 200) publisher.sendNext(i)
 
+        // The request below is in race otherwise with the onNext(200) above
+        subscriber.expectNoMsg(500.millis)
         sub.request(1)
         subscriber.expectNext(200)
 
