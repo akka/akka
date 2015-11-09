@@ -70,17 +70,19 @@ class FlowConflateSpec extends AkkaSpec {
       subscriber.expectNext(1)
 
       sub.request(1)
-      subscriber.expectNoMsg(1.second)
+      subscriber.expectNoMsg(500.millis)
       publisher.sendNext(2)
       subscriber.expectNext(2)
 
       publisher.sendNext(3)
       publisher.sendNext(4)
+      // The request can be in race with the above onNext(4) so the result would be either 3 or 7.
+      subscriber.expectNoMsg(500.millis)
       sub.request(1)
       subscriber.expectNext(7)
 
       sub.request(1)
-      subscriber.expectNoMsg(1.second)
+      subscriber.expectNoMsg(500.millis)
       sub.cancel()
 
     }

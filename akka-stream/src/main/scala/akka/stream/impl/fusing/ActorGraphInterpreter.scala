@@ -3,7 +3,7 @@
  */
 package akka.stream.impl.fusing
 
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.{ ThreadLocalRandom, TimeoutException }
 
 import akka.actor._
 import akka.event.Logging
@@ -305,7 +305,8 @@ private[stream] class ActorGraphInterpreter(
     inHandlers,
     outHandlers,
     logics,
-    (logic, event, handler) ⇒ self ! AsyncInput(logic, event, handler))
+    (logic, event, handler) ⇒ self ! AsyncInput(logic, event, handler),
+    settings.fuzzingMode)
 
   private val inputs = Array.tabulate(shape.inlets.size)(new BatchingActorInputBoundary(settings.maxInputBufferSize, _))
   private val outputs = Array.tabulate(shape.outlets.size)(new ActorOutputBoundary(self, _))
@@ -396,7 +397,14 @@ private[stream] class ActorGraphInterpreter(
 
   private def runBatch(): Unit = {
     try {
-      interpreter.execute(eventLimit)
+      val effectiveLimit = {
+        if (!settings.fuzzingMode) eventLimit
+        else {
+          if (ThreadLocalRandom.current().nextBoolean()) Thread.`yield`()
+          ThreadLocalRandom.current().nextInt(2) // 1 or zero events to be processed
+        }
+      }
+      interpreter.execute(effectiveLimit)
       if (interpreter.isCompleted) {
         // Cannot stop right away if not completely subscribed
         if (subscribesPending == 0) context.stop(self)

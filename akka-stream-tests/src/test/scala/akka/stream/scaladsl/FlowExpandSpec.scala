@@ -7,8 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 
 import akka.stream.testkit._
 
@@ -22,6 +21,9 @@ class FlowExpandSpec extends AkkaSpec {
   "Expand" must {
 
     "pass-through elements unchanged when there is no rate difference" in {
+      // Shadow the fuzzed materializer (see the ordering guarantee needed by the for loop below).
+      implicit val materializer = ActorMaterializer(settings.withFuzzing(false))
+
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
@@ -51,6 +53,9 @@ class FlowExpandSpec extends AkkaSpec {
       }
 
       publisher.sendNext(-42)
+
+      // The request below is otherwise in race with the above sendNext
+      subscriber.expectNoMsg(500.millis)
       subscriber.requestNext(-42)
 
       subscriber.cancel()
@@ -68,6 +73,9 @@ class FlowExpandSpec extends AkkaSpec {
 
       publisher.sendNext(2)
       publisher.sendComplete()
+
+      // The request below is otherwise in race with the above sendNext(2) (and completion)
+      subscriber.expectNoMsg(500.millis)
 
       subscriber.requestNext(2)
       subscriber.expectComplete()

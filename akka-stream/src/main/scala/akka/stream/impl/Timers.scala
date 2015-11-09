@@ -196,13 +196,18 @@ private[stream] object Timers {
             pull(in)
           }
         }
+
+        override def onUpstreamFinish(): Unit = {
+          if (!isAvailable(in)) completeStage()
+        }
       })
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = {
           if (isAvailable(in)) {
             push(out, grab(in))
-            pull(in)
+            if (isClosed(in)) completeStage()
+            else pull(in)
           } else {
             if (nextDeadline.isOverdue()) {
               nextDeadline = Deadline.now + timeout

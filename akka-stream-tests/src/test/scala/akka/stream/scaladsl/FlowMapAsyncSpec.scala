@@ -247,7 +247,7 @@ class FlowMapAsyncSpec extends AkkaSpec with ScalaFutures {
       }
 
       try {
-        val N = 100000
+        val N = 10000
         Source(1 to N)
           .mapAsync(parallelism)(i ⇒ deferred())
           .runFold(0)((c, _) ⇒ c + 1)

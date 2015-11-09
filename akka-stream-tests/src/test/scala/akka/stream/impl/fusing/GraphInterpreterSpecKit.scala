@@ -32,7 +32,7 @@ trait GraphInterpreterSpecKit {
       in.id = 0
     }
 
-    class AssemblyBuilder(stages: Seq[GraphStage[_ <: Shape]]) {
+    class AssemblyBuilder(stages: Seq[GraphStageWithMaterializedValue[_ <: Shape, _]]) {
       var upstreams = Vector.empty[(UpstreamBoundaryStageLogic[_], Inlet[_])]
       var downstreams = Vector.empty[(Outlet[_], DownstreamBoundaryStageLogic[_])]
       var connections = Vector.empty[(Outlet[_], Inlet[_])]
@@ -71,7 +71,8 @@ trait GraphInterpreterSpecKit {
         val assembly = buildAssembly()
 
         val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
-        _interpreter = new GraphInterpreter(assembly, NoMaterializer, NoLogging, inHandlers, outHandlers, logics, (_, _, _) ⇒ ())
+        _interpreter = new GraphInterpreter(assembly, NoMaterializer, NoLogging, inHandlers, outHandlers, logics,
+          (_, _, _) ⇒ (), fuzzingMode = false)
 
         for ((upstream, i) ← upstreams.zipWithIndex) {
           _interpreter.attachUpstreamBoundary(i, upstream._1)
@@ -87,10 +88,11 @@ trait GraphInterpreterSpecKit {
 
     def manualInit(assembly: GraphAssembly): Unit = {
       val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
-      _interpreter = new GraphInterpreter(assembly, NoMaterializer, NoLogging, inHandlers, outHandlers, logics, (_, _, _) ⇒ ())
+      _interpreter = new GraphInterpreter(assembly, NoMaterializer, NoLogging, inHandlers, outHandlers, logics,
+        (_, _, _) ⇒ (), fuzzingMode = false)
     }
 
-    def builder(stages: GraphStage[_ <: Shape]*): AssemblyBuilder = new AssemblyBuilder(stages)
+    def builder(stages: GraphStageWithMaterializedValue[_ <: Shape, _]*): AssemblyBuilder = new AssemblyBuilder(stages)
   }
 
   abstract class TestSetup extends Builder {
@@ -132,6 +134,18 @@ trait GraphInterpreterSpecKit {
         push(out, elem)
         interpreter.execute(eventLimit)
       }
+
+      def onComplete(eventLimit: Int = Int.MaxValue): Unit = {
+        if (GraphInterpreter.Debug) println(s"----- COMPLETE $this")
+        complete(out)
+        interpreter.execute(eventLimit)
+      }
+
+      def onFailure(eventLimit: Int = Int.MaxValue, ex: Throwable): Unit = {
+        if (GraphInterpreter.Debug) println(s"----- FAIL $this")
+        fail(out, ex)
+        interpreter.execute(eventLimit)
+      }
     }
 
     class DownstreamProbe[T](override val toString: String) extends DownstreamBoundaryStageLogic[T] {
@@ -147,6 +161,12 @@ trait GraphInterpreterSpecKit {
       def requestOne(eventLimit: Int = Int.MaxValue): Unit = {
         if (GraphInterpreter.Debug) println(s"----- REQ $this")
         pull(in)
+        interpreter.execute(eventLimit)
+      }
+
+      def cancel(eventLimit: Int = Int.MaxValue): Unit = {
+        if (GraphInterpreter.Debug) println(s"----- CANCEL $this")
+        cancel(in)
         interpreter.execute(eventLimit)
       }
     }
