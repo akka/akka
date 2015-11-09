@@ -214,7 +214,6 @@ abstract class Parser(initialValueStackSize: Int = 16,
         val pos = Position(cursor, input)
         scheme.parseError(ParseError(pos, pos, RuleTrace(Nil, RuleTrace.Fail(e.expected)) :: Nil))
       case NonFatal(e) ⇒
-        e.printStackTrace()
         scheme.failure(e)
     } finally {
       phase = null
