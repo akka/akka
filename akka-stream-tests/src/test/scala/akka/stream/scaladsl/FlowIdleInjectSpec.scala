@@ -137,10 +137,10 @@ class FlowIdleInjectSpec extends AkkaSpec {
       Source(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink(downstream))
 
       downstream.request(2)
-      downstream.expectNoMsg(0.5.second)
+      downstream.expectNoMsg(500.millis)
       downstream.expectNext(0)
 
-      downstream.expectNoMsg(0.5 second)
+      downstream.expectNoMsg(500.millis)
       downstream.expectNext(0)
     }
 

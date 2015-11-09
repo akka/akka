@@ -384,6 +384,8 @@ class GraphInterpreterPortsSpec extends AkkaSpec with GraphInterpreterSpecKit {
     "ignore pull while completing" in new PortTestSetup {
       out.complete()
       in.pull()
+      // While the pull event is not enqueued at this point, we should still report the state correctly
+      in.hasBeenPulled should be(true)
 
       stepAll()
 
@@ -648,6 +650,8 @@ class GraphInterpreterPortsSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
       in.cancel()
       out.push(0)
+      // While the push event is not enqueued at this point, we should still report the state correctly
+      out.isAvailable should be(false)
 
       stepAll()
 
@@ -1066,6 +1070,7 @@ class GraphInterpreterPortsSpec extends AkkaSpec with GraphInterpreterSpecKit {
     "ignore pull while failing" in new PortTestSetup {
       out.fail(TE("test"))
       in.pull()
+      in.hasBeenPulled should be(true)
 
       stepAll()
 
