@@ -3,28 +3,20 @@
  */
 package akka.cluster.sharding
 
-import scala.collection.immutable
 import java.io.File
-import akka.cluster.sharding.ShardRegion.Passivate
-import scala.concurrent.duration._
-import org.apache.commons.io.FileUtils
-import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
+import akka.cluster.sharding.ShardRegion.GracefulShutdown
 import akka.persistence.Persistence
-import akka.persistence.journal.leveldb.SharedLeveldbJournal
-import akka.persistence.journal.leveldb.SharedLeveldbStore
+import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec}
 import akka.testkit._
-import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
-import scala.concurrent.Future
-import akka.util.Timeout
-import akka.pattern.ask
+import com.typesafe.config.ConfigFactory
+import org.apache.commons.io.FileUtils
+
+import scala.concurrent.duration._
 
 object ClusterShardingGracefulShutdownSpec {
   case object StopEntity
@@ -202,6 +194,24 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
       }
 
       enterBarrier("after-3")
+    }
+
+    "gracefully shutdown empty region" in within(30.seconds) {
+      runOn(first) {
+        val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
+        val regionEmpty = ClusterSharding(system).start(
+          typeName = "EntityEmpty",
+          entityProps = Props[Entity],
+          settings = ClusterShardingSettings(system),
+          extractEntityId = extractEntityId,
+          extractShardId = extractShardId,
+          allocationStrategy,
+          handOffStopMessage = StopEntity)
+
+        watch(regionEmpty)
+        regionEmpty ! GracefulShutdown
+        expectTerminated(regionEmpty, 5.seconds)
+      }
     }
 
   }
