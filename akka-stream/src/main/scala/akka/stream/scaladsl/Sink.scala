@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.actor.{ ActorRef, Props }
+import akka.dispatch.ExecutionContexts
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
@@ -75,8 +76,22 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a `Future` of the first value received.
+   * If the stream completes before signaling at least a single element, the Future will be failed with a [[NoSuchElementException]].
+   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   *
+   * See also [[headOption]].
    */
-  def head[T]: Sink[T, Future[T]] = new Sink(new HeadSink[T](DefaultAttributes.headSink, shape("HeadSink")))
+  def head[T]: Sink[T, Future[T]] = new Sink[T, Future[Option[T]]](new HeadOptionSink[T](DefaultAttributes.headSink, shape("HeadSink")))
+    .mapMaterializedValue(e ⇒ e.map(_.getOrElse(throw new NoSuchElementException("head of empty stream")))(ExecutionContexts.sameThreadExecutionContext))
+
+  /**
+   * A `Sink` that materializes into a `Future` of the optional first value received.
+   * If the stream completes before signaling at least a single element, the value of the Future will be [[None]].
+   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   *
+   * See also [[head]].
+   */
+  def headOption[T]: Sink[T, Future[Option[T]]] = new Sink(new HeadOptionSink[T](DefaultAttributes.headSink, shape("HeadOptionSink")))
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
