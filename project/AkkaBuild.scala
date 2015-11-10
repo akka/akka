@@ -1123,7 +1123,6 @@ object AkkaBuild extends Build {
         Try("/usr/libexec/java_home -v 1.8".!!).toOption.toSeq // OS/X method
         )
         .find(isJavaHome)
-        .orElse { sLog.value.warn("Java 8 installation has not been found. Java 8 tasks will not be run."); None }
         .map(dirName => file(dirName.trim))
     },
 
