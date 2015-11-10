@@ -5,9 +5,11 @@
 package akka.http.scaladsl.testkit
 
 import java.util.concurrent.CountDownLatch
+import akka.dispatch.ExecutionContexts
+
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Await, ExecutionContext }
 import akka.stream.Materializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
@@ -95,7 +97,11 @@ trait RouteTestResultComponent {
     private def failNeitherCompletedNorRejected(): Nothing =
       failTest("Request was neither completed nor rejected within " + timeout)
 
-    private def awaitAllElements[T](data: Source[T, _]): immutable.Seq[T] =
-      data.grouped(100000).runWith(Sink.head).awaitResult(timeout)
+    private def awaitAllElements[T](data: Source[T, _]): immutable.Seq[T] = {
+      data.grouped(100000).runWith(Sink.head).recover({
+        case e: NoSuchElementException ⇒ Nil
+      })(ExecutionContexts.sameThreadExecutionContext)
+        .awaitResult(timeout)
+    }
   }
 }
