@@ -619,7 +619,7 @@ private[stream] final class GraphInterpreter(
       logic.afterPostStop()
     } catch {
       case NonFatal(e) ⇒
-        log.error(s"Error during postStop in [${assembly.stages(logic.stageId)}]", e)
+        log.error(e, s"Error during postStop in [${assembly.stages(logic.stageId)}]")
     }
   }
 
