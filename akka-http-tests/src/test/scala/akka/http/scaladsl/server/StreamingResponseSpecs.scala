@@ -20,8 +20,8 @@ class StreamingResponseSpecs extends RoutingSpec {
       val route = complete(response)
 
       Get() ~> route ~> check {
-        status should ===(OK)
-        responseAs[String] shouldEqual ""
+        status should ===(StatusCodes.OK)
+        responseAs[String] should === ("")
       }
     }
 

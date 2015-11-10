@@ -4,6 +4,7 @@
 package akka.stream.impl
 
 import akka.actor.{ Deploy, ActorRef, Props }
+import akka.dispatch.ExecutionContexts
 import akka.stream.actor.ActorPublisherMessage.Request
 import akka.stream.impl.StreamLayout.Module
 import akka.stream._
@@ -90,10 +91,10 @@ private[akka] final class FanoutPublisherSink[In](
  * INTERNAL API
  */
 private[akka] object HeadSink {
-  final class HeadSinkSubscriber[In] extends Subscriber[In] {
+  final class HeadOptionSinkSubscriber[In] extends Subscriber[In] {
     private[this] var subscription: Subscription = null
-    private[this] val promise: Promise[In] = Promise[In]()
-    def future: Future[In] = promise.future
+    private[this] val promise: Promise[Option[In]] = Promise[Option[In]]()
+    def future: Future[Option[In]] = promise.future
     override def onSubscribe(s: Subscription): Unit = {
       ReactiveStreamsCompliance.requireNonNullSubscription(s)
       if (subscription ne null) s.cancel()
@@ -105,7 +106,7 @@ private[akka] object HeadSink {
 
     override def onNext(elem: In): Unit = {
       ReactiveStreamsCompliance.requireNonNullElement(elem)
-      promise.trySuccess(elem)
+      promise.trySuccess(Some(elem))
       subscription.cancel()
       subscription = null
     }
@@ -116,7 +117,7 @@ private[akka] object HeadSink {
     }
 
     override def onComplete(): Unit =
-      promise.tryFailure(new NoSuchElementException("empty stream"))
+      promise.trySuccess(None)
   }
 
 }
@@ -124,19 +125,19 @@ private[akka] object HeadSink {
 /**
  * INTERNAL API
  * Holds a [[scala.concurrent.Future]] that will be fulfilled with the first
- * thing that is signaled to this stream, which can be either an element (after
- * which the upstream subscription is canceled), an error condition (putting
- * the Future into the corresponding failed state) or the end-of-stream
- * (failing the Future with a NoSuchElementException).
+ * element that is signaled to this stream (wrapped in a [[Some]]),
+ * which can be either an element (after which the upstream subscription is canceled),
+ * an error condition (putting the Future into the corresponding failed state) or
+ * the end-of-stream (yielding [[None]]).
  */
-private[akka] final class HeadSink[In](val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Future[In]](shape) {
+private[akka] final class HeadOptionSink[In](val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Future[Option[In]]](shape) {
   override def create(context: MaterializationContext) = {
-    val sub = new HeadSink.HeadSinkSubscriber[In]
+    val sub = new HeadSink.HeadOptionSinkSubscriber[In]
     (sub, sub.future)
   }
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Future[In]] = new HeadSink[In](attributes, shape)
-  override def withAttributes(attr: Attributes): Module = new HeadSink[In](attr, amendShape(attr))
-  override def toString: String = "HeadSink"
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Future[Option[In]]] = new HeadOptionSink[In](attributes, shape)
+  override def withAttributes(attr: Attributes): Module = new HeadOptionSink[In](attr, amendShape(attr))
+  override def toString: String = "HeadOptionSink"
 }
 
 /**
