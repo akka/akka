@@ -55,8 +55,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
         case InputBuffer(initial, max)    ⇒ s.withInputBuffer(initial, max)
         case Dispatcher(dispatcher)       ⇒ s.withDispatcher(dispatcher)
         case SupervisionStrategy(decider) ⇒ s.withSupervisionStrategy(decider)
-        case l: LogLevels                 ⇒ s
-        case Name(_)                      ⇒ s
+        case _                            ⇒ s
       }
     }
   }
