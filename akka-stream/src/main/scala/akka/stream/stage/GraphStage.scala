@@ -149,8 +149,9 @@ object GraphStageLogic {
  *  * The lifecycle hooks [[preStart()]] and [[postStop()]]
  *  * Methods for performing stream processing actions, like pulling or pushing elements
  *
- *  The stage logic is always stopped once all its input and output ports have been closed, i.e. it is not possible to
- *  keep the stage alive for further processing once it does not have any open ports.
+ *  The stage logic is always once all its input and output ports have been closed, i.e. it is not possible to
+ *  keep the stage alive for further processing once it does not have any open ports. This can be changed by
+ *  overriding `keepGoingAfterAllPortsClosed` to return true.
  */
 abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: Int) {
   import GraphInterpreter._
@@ -394,6 +395,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       }
       i += 1
     }
+    if (keepGoingAfterAllPortsClosed) interpreter.closeKeptAliveStageIfNeeded(stageId)
   }
 
   /**
@@ -409,6 +411,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         interpreter.fail(portToConn(i), ex)
       i += 1
     }
+    if (keepGoingAfterAllPortsClosed) interpreter.closeKeptAliveStageIfNeeded(stageId)
   }
 
   /**
@@ -718,6 +721,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Invoked after processing of external events stopped because the stage is about to stop or fail.
    */
   def postStop(): Unit = ()
+
+  /**
+   * If this method returns true when all ports had been closed then the stage is not stopped until
+   * completeStage() or failStage() are explicitly called
+   */
+  def keepGoingAfterAllPortsClosed: Boolean = false
 }
 
 /**
