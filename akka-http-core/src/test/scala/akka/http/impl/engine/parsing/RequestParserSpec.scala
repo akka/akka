@@ -4,6 +4,11 @@
 
 package akka.http.impl.engine.parsing
 
+import com.typesafe.config.{ Config, ConfigFactory }
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import org.scalatest.matchers.Matcher
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
 import akka.http.ParserSettings
 import akka.http.impl.engine.parsing.ParserOutput._
@@ -21,12 +26,6 @@ import akka.http.scaladsl.util.FastFuture._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.util.ByteString
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.matchers.Matcher
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -165,311 +164,263 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |""" should parseTo(HttpRequest(GET, Uri("http://x//foo").toHttpRequestTargetOriginForm, protocol = `HTTP/1.0`))
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
+    }
 
-      "properly parse a chunked request" - {
-        val start =
-          """PATCH /data HTTP/1.1
-            |Transfer-Encoding: chunked
-            |Connection: lalelu
-            |Content-Type: application/pdf
-            |Host: ping
-            |
-            |"""
-        val baseRequest = HttpRequest(PATCH, "/data", List(Connection("lalelu"), Host("ping")))
-
-        "request start" in new Test {
-          Seq(start, "rest") should generalMultiParseTo(
-            Right(baseRequest.withEntity(HttpEntity.Chunked(`application/pdf`, source()))),
-            Left(EntityStreamError(ErrorInfo("Illegal character 'r' in chunk start"))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
-
-        "message chunk with and without extension" in new Test {
-          Seq(start +
-            """3
-              |abc
-              |10;some=stuff;bla
-              |0123456789ABCDEF
-              |""",
-            "10;foo=",
-            """bar
-              |0123456789ABCDEF
-              |A
-              |0123456789""",
-            """
-              |0
-              |
-              |""") should generalMultiParseTo(
-              Right(baseRequest.withEntity(Chunked(`application/pdf`, source(
-                Chunk(ByteString("abc")),
-                Chunk(ByteString("0123456789ABCDEF"), "some=stuff;bla"),
-                Chunk(ByteString("0123456789ABCDEF"), "foo=bar"),
-                Chunk(ByteString("0123456789"), ""),
-                LastChunk)))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
-
-        "message end" in new Test {
-          Seq(start,
-            """0
-              |
-              |""") should generalMultiParseTo(
-              Right(baseRequest.withEntity(Chunked(`application/pdf`, source(LastChunk)))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
-
-        "message end with extension and trailer" in new Test {
-          Seq(start,
-            """000;nice=true
-              |Foo: pip
-              | apo
-              |Bar: xyz
-              |
-              |""") should generalMultiParseTo(
-              Right(baseRequest.withEntity(Chunked(`application/pdf`,
-                source(LastChunk("nice=true", List(RawHeader("Foo", "pip apo"), RawHeader("Bar", "xyz"))))))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
-
-        "don't overflow the stack for large buffers of chunks" in new Test {
-          override val awaitAtMost = 3000.millis
-
-          val x = NotEnoughDataException
-          val numChunks = 15000 // failed starting from 4000 with sbt started with `-Xss2m`
-          val oneChunk = "1\r\nz\n"
-          val manyChunks = (oneChunk * numChunks) + "0\r\n"
-
-          val parser = newParser
-          val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
-          val HttpEntity.Chunked(_, chunks) = result.head.right.get.req.entity
-          val strictChunks = chunks.grouped(100000).runWith(Sink.head).awaitResult(awaitAtMost)
-          strictChunks.size shouldEqual numChunks
-        }
-      }
-
-      "properly parse a chunked request with additional transfer encodings" in new Test {
+    "properly parse a chunked request" - {
+      val start =
         """PATCH /data HTTP/1.1
-          |Transfer-Encoding: fancy, chunked
+          |Transfer-Encoding: chunked
+          |Connection: lalelu
           |Content-Type: application/pdf
           |Host: ping
           |
-          |0
-          |
-          |""" should parseTo(HttpRequest(PATCH, "/data", List(`Transfer-Encoding`(TransferEncodings.Extension("fancy")),
-          Host("ping")), HttpEntity.Chunked(`application/pdf`, source(LastChunk))))
+          |"""
+      val baseRequest = HttpRequest(PATCH, "/data", List(Connection("lalelu"), Host("ping")))
+
+      "request start" in new Test {
+        Seq(start, "rest") should generalMultiParseTo(
+          Right(baseRequest.withEntity(HttpEntity.Chunked(`application/pdf`, source()))),
+          Left(EntityStreamError(ErrorInfo("Illegal character 'r' in chunk start"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      "support `rawRequestUriHeader` setting" in new Test {
-        override protected def newParser: HttpRequestParser =
-          new HttpRequestParser(parserSettings, rawRequestUriHeader = true, _headerParser = HttpHeaderParser(parserSettings)())
-
-        """GET /f%6f%6fbar?q=b%61z HTTP/1.1
-          |Host: ping
-          |Content-Type: application/pdf
-          |
-          |""" should parseTo(
-          HttpRequest(
-            GET,
-            "/foobar?q=b%61z",
-            List(
-              `Raw-Request-URI`("/f%6f%6fbar?q=b%61z"),
-              Host("ping")),
-            HttpEntity.empty(`application/pdf`)))
-      }
-
-      "reject a message chunk with" - {
-        val start =
-          """PATCH /data HTTP/1.1
-            |Transfer-Encoding: chunked
-            |Connection: lalelu
-            |Host: ping
+      "message chunk with and without extension" in new Test {
+        Seq(start +
+          """3
+            |abc
+            |10;some=stuff;bla
+            |0123456789ABCDEF
+            |""",
+          "10;foo=",
+          """bar
+            |0123456789ABCDEF
+            |A
+            |0123456789""",
+          """
+            |0
             |
-            |"""
-        val baseRequest = HttpRequest(PATCH, "/data", List(Connection("lalelu"), Host("ping")),
-          HttpEntity.Chunked(`application/octet-stream`, source()))
-
-        "an illegal char after chunk size" in new Test {
-          Seq(start,
-            """15 ;
-              |""") should generalMultiParseTo(Right(baseRequest),
-              Left(EntityStreamError(ErrorInfo("Illegal character ' ' in chunk start"))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
-
-        "an illegal char in chunk size" in new Test {
-          Seq(start, "bla") should generalMultiParseTo(Right(baseRequest),
-            Left(EntityStreamError(ErrorInfo("Illegal character 'l' in chunk start"))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
-
-        "too-long chunk extension" in new Test {
-          Seq(start, "3;" + ("x" * 257)) should generalMultiParseTo(Right(baseRequest),
-            Left(EntityStreamError(ErrorInfo("HTTP chunk extension length exceeds configured limit of 256 characters"))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
-
-        "too-large chunk size" in new Test {
-          Seq(start,
-            """1a2b3c4d5e
-               |""") should generalMultiParseTo(Right(baseRequest),
-              Left(EntityStreamError(ErrorInfo("HTTP chunk size exceeds the configured limit of 1048576 bytes"))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
-
-        "an illegal chunk termination" in new Test {
-          Seq(start,
-            """3
-              |abcde""") should generalMultiParseTo(Right(baseRequest),
-              Left(EntityStreamError(ErrorInfo("Illegal chunk termination"))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
-
-        "an illegal header in the trailer" in new Test {
-          Seq(start,
-            """0
-              |F@oo: pip""") should generalMultiParseTo(Right(baseRequest),
-              Left(EntityStreamError(ErrorInfo("Illegal character '@' in header name"))))
-          closeAfterResponseCompletion shouldEqual Seq(false)
-        }
+            |""") should generalMultiParseTo(
+            Right(baseRequest.withEntity(Chunked(`application/pdf`, source(
+              Chunk(ByteString("abc")),
+              Chunk(ByteString("0123456789ABCDEF"), "some=stuff;bla"),
+              Chunk(ByteString("0123456789ABCDEF"), "foo=bar"),
+              Chunk(ByteString("0123456789"), ""),
+              LastChunk)))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      "reject a request with" - {
-        "an illegal HTTP method" in new Test {
-          "get " should parseToError(NotImplemented, ErrorInfo("Unsupported HTTP method", "get"))
-          "GETX " should parseToError(NotImplemented, ErrorInfo("Unsupported HTTP method", "GETX"))
-        }
+      "message end" in new Test {
+        Seq(start,
+          """0
+            |
+            |""") should generalMultiParseTo(
+            Right(baseRequest.withEntity(Chunked(`application/pdf`, source(LastChunk)))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
 
-        "a too long HTTP method" in new Test {
-          "ABCDEFGHIJKLMNOPQ " should
-            parseToError(BadRequest,
-              ErrorInfo(
-                "Unsupported HTTP method",
-                "HTTP method too long (started with 'ABCDEFGHIJKLMNOP'). Increase `akka.http.server.parsing.max-method-length` to support HTTP methods with more characters."))
-        }
+      "message end with extension and trailer" in new Test {
+        Seq(start,
+          """000;nice=true
+            |Foo: pip
+            | apo
+            |Bar: xyz
+            |
+            |""") should generalMultiParseTo(
+            Right(baseRequest.withEntity(Chunked(`application/pdf`,
+              source(LastChunk("nice=true", List(RawHeader("Foo", "pip apo"), RawHeader("Bar", "xyz"))))))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
 
-        "two Content-Length headers" in new Test {
-          """GET / HTTP/1.1
+      "don't overflow the stack for large buffers of chunks" in new Test {
+        override val awaitAtMost = 3000.millis
+
+        val x = NotEnoughDataException
+        val numChunks = 15000 // failed starting from 4000 with sbt started with `-Xss2m`
+        val oneChunk = "1\r\nz\n"
+        val manyChunks = (oneChunk * numChunks) + "0\r\n"
+
+        val parser = newParser
+        val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
+        val HttpEntity.Chunked(_, chunks) = result.head.right.get.req.entity
+        val strictChunks = chunks.grouped(100000).runWith(Sink.head).awaitResult(awaitAtMost)
+        strictChunks.size shouldEqual numChunks
+      }
+    }
+
+    "properly parse a chunked request with additional transfer encodings" in new Test {
+      """PATCH /data HTTP/1.1
+        |Transfer-Encoding: fancy, chunked
+        |Content-Type: application/pdf
+        |Host: ping
+        |
+        |0
+        |
+        |""" should parseTo(HttpRequest(PATCH, "/data", List(`Transfer-Encoding`(TransferEncodings.Extension("fancy")),
+        Host("ping")), HttpEntity.Chunked(`application/pdf`, source(LastChunk))))
+      closeAfterResponseCompletion shouldEqual Seq(false)
+    }
+
+    "support `rawRequestUriHeader` setting" in new Test {
+      override protected def newParser: HttpRequestParser =
+        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, _headerParser = HttpHeaderParser(parserSettings)())
+
+      """GET /f%6f%6fbar?q=b%61z HTTP/1.1
+        |Host: ping
+        |Content-Type: application/pdf
+        |
+        |""" should parseTo(
+        HttpRequest(
+          GET,
+          "/foobar?q=b%61z",
+          List(
+            `Raw-Request-URI`("/f%6f%6fbar?q=b%61z"),
+            Host("ping")),
+          HttpEntity.empty(`application/pdf`)))
+    }
+
+    "reject a message chunk with" - {
+      val start =
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: chunked
+          |Connection: lalelu
+          |Host: ping
+          |
+          |"""
+      val baseRequest = HttpRequest(PATCH, "/data", List(Connection("lalelu"), Host("ping")),
+        HttpEntity.Chunked(`application/octet-stream`, source()))
+
+      "an illegal char after chunk size" in new Test {
+        Seq(start,
+          """15 ;
+            |""") should generalMultiParseTo(Right(baseRequest),
+            Left(EntityStreamError(ErrorInfo("Illegal character ' ' in chunk start"))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "an illegal char in chunk size" in new Test {
+        Seq(start, "bla") should generalMultiParseTo(Right(baseRequest),
+          Left(EntityStreamError(ErrorInfo("Illegal character 'l' in chunk start"))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "too-long chunk extension" in new Test {
+        Seq(start, "3;" + ("x" * 257)) should generalMultiParseTo(Right(baseRequest),
+          Left(EntityStreamError(ErrorInfo("HTTP chunk extension length exceeds configured limit of 256 characters"))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "too-large chunk size" in new Test {
+        Seq(start,
+          """1a2b3c4d5e
+             |""") should generalMultiParseTo(Right(baseRequest),
+            Left(EntityStreamError(ErrorInfo("HTTP chunk size exceeds the configured limit of 1048576 bytes"))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "an illegal chunk termination" in new Test {
+        Seq(start,
+          """3
+            |abcde""") should generalMultiParseTo(Right(baseRequest),
+            Left(EntityStreamError(ErrorInfo("Illegal chunk termination"))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "an illegal header in the trailer" in new Test {
+        Seq(start,
+          """0
+            |F@oo: pip""") should generalMultiParseTo(Right(baseRequest),
+            Left(EntityStreamError(ErrorInfo("Illegal character '@' in header name"))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+    }
+
+    "reject a request with" - {
+      "an illegal HTTP method" in new Test {
+        "get " should parseToError(NotImplemented, ErrorInfo("Unsupported HTTP method", "get"))
+        "GETX " should parseToError(NotImplemented, ErrorInfo("Unsupported HTTP method", "GETX"))
+      }
+
+      "a too long HTTP method" in new Test {
+        "ABCDEFGHIJKLMNOPQ " should
+          parseToError(BadRequest,
+            ErrorInfo(
+              "Unsupported HTTP method",
+              "HTTP method too long (started with 'ABCDEFGHIJKLMNOP'). Increase `akka.http.server.parsing.max-method-length` to support HTTP methods with more characters."))
+      }
+
+      "two Content-Length headers" in new Test {
+        """GET / HTTP/1.1
             |Content-Length: 3
             |Content-Length: 4
             |
             |foo""" should parseToError(BadRequest,
-            ErrorInfo("HTTP message must not contain more than one Content-Length header"))
-        }
+          ErrorInfo("HTTP message must not contain more than one Content-Length header"))
+      }
 
-        "a too-long URI" in new Test {
-          "GET /23456789012345678901 HTTP/1.1" should parseToError(RequestUriTooLong,
-            ErrorInfo("URI length exceeds the configured limit of 20 characters"))
-        }
+      "a too-long URI" in new Test {
+        "GET /23456789012345678901 HTTP/1.1" should parseToError(RequestUriTooLong,
+          ErrorInfo("URI length exceeds the configured limit of 20 characters"))
+      }
 
-        "HTTP version 1.2" in new Test {
-          """GET / HTTP/1.2
+      "HTTP version 1.2" in new Test {
+        """GET / HTTP/1.2
               |""" should parseToError(HTTPVersionNotSupported,
-            ErrorInfo("The server does not support the HTTP protocol version used in the request."))
-        }
+          ErrorInfo("The server does not support the HTTP protocol version used in the request."))
+      }
 
-        "with an illegal char in a header name" in new Test {
-          """GET / HTTP/1.1
+      "with an illegal char in a header name" in new Test {
+        """GET / HTTP/1.1
             |User@Agent: curl/7.19.7""" should parseToError(BadRequest, ErrorInfo("Illegal character '@' in header name"))
-        }
+      }
 
-        "with a too-long header name" in new Test {
-          """|GET / HTTP/1.1
+      "with a too-long header name" in new Test {
+        """|GET / HTTP/1.1
             |UserxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAgent: curl/7.19.7""" should parseToError(
-            BadRequest, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
-        }
+          BadRequest, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
+      }
 
-        "with a too-long header-value" in new Test {
-          """|GET / HTTP/1.1
+      "with a too-long header-value" in new Test {
+        """|GET / HTTP/1.1
             |Fancy: 123456789012345678901234567890123""" should parseToError(BadRequest,
-            ErrorInfo("HTTP header value exceeds the configured limit of 32 characters"))
-        }
+          ErrorInfo("HTTP header value exceeds the configured limit of 32 characters"))
+      }
 
-        "with an invalid Content-Length header value" in new Test {
-          """GET / HTTP/1.0
+      "with an invalid Content-Length header value" in new Test {
+        """GET / HTTP/1.0
             |Content-Length: 1.5
             |
             |abc""" should parseToError(BadRequest, ErrorInfo("Illegal `Content-Length` header value"))
-        }
+      }
 
-        "with Content-Length > Long.MaxSize" in new Test {
-          // content-length = (Long.MaxValue + 1) * 10, which is 0 when calculated overflow
-          """PUT /resource/yes HTTP/1.1
+      "with Content-Length > Long.MaxSize" in new Test {
+        // content-length = (Long.MaxValue + 1) * 10, which is 0 when calculated overflow
+        """PUT /resource/yes HTTP/1.1
             |Content-length: 92233720368547758080
             |Host: x
             |
             |""" should parseToError(400: StatusCode, ErrorInfo("`Content-Length` header value must not exceed 63-bit integer range"))
-        }
+      }
 
-        "with entity length > max-content-length" - {
-          "for Default entity" in new Test {
-            """PUT /resource/yes HTTP/1.1
-            |Content-length: 101
-            |Host: x
-            |
-            |""" should parseToError(413: StatusCode,
-              ErrorInfo("Request Content-Length of 101 bytes exceeds the configured limit of 100 bytes",
-                "Consider increasing the value of akka.http.server.parsing.max-content-length"))
-
-            override protected def parserSettings: ParserSettings = super.parserSettings.copy(maxContentLength = 100)
-          }
-
-          "for Chunked entity" in new Test {
-            def request(dataElements: ByteString*) = HttpRequest(PUT, "/", List(Host("x")),
-              HttpEntity.Chunked(`application/octet-stream`, source(dataElements.map(ChunkStreamPart(_)): _*)))
-
-            Seq(
-              """PUT / HTTP/1.1
-            |Transfer-Encoding: chunked
-            |Host: x
-            |
-            |65
-            |abc""") should generalMultiParseTo(Right(request()),
-                Left(
-                  EntityStreamError(
-                    ErrorInfo("Aggregated data length of chunked request entity of 101 bytes exceeds the configured limit of 100 bytes",
-                      "Consider increasing the value of akka.http.server.parsing.max-content-length"))))
-
-            Seq(
-              """PUT / HTTP/1.1
-              |Transfer-Encoding: chunked
-              |Host: x
-              |
-              |1
-              |a
-              |""",
-              """64
-               |a""") should generalMultiParseTo(Right(request(ByteString("a"))),
-                Left(EntityStreamError(
-                  ErrorInfo("Aggregated data length of chunked request entity of 101 bytes exceeds the configured limit of 100 bytes",
-                    "Consider increasing the value of akka.http.server.parsing.max-content-length"))))
-
-            override protected def parserSettings: ParserSettings = super.parserSettings.copy(maxContentLength =
-              100)
-          }
-        }
-
-        "with an illegal entity using CONNECT" in new Test {
-          """CONNECT /resource/yes HTTP/1.1
+      "with an illegal entity using CONNECT" in new Test {
+        """CONNECT /resource/yes HTTP/1.1
             |Transfer-Encoding: chunked
             |Host: x
             |
             |""" should parseToError(422: StatusCode, ErrorInfo("CONNECT requests must not have an entity"))
-        }
-        "with an illegal entity using HEAD" in new Test {
-          """HEAD /resource/yes HTTP/1.1
+      }
+      "with an illegal entity using HEAD" in new Test {
+        """HEAD /resource/yes HTTP/1.1
             |Content-length: 3
             |Host: x
             |
             |foo""" should parseToError(422: StatusCode, ErrorInfo("HEAD requests must not have an entity"))
-        }
-        "with an illegal entity using TRACE" in new Test {
-          """TRACE /resource/yes HTTP/1.1
+      }
+      "with an illegal entity using TRACE" in new Test {
+        """TRACE /resource/yes HTTP/1.1
             |Transfer-Encoding: chunked
             |Host: x
             |
             |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
-        }
       }
     }
   }
