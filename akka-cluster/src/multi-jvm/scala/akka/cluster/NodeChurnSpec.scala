@@ -67,7 +67,7 @@ abstract class NodeChurnSpec
       additionaSystems.foreach { s ⇒
         val c = Cluster(s)
         c.state.members.size should be(numberOfMembers)
-        c.state.members.forall(_.status == MemberStatus.Up)
+        c.state.members.forall(_.status == MemberStatus.Up) shouldBe true
       }
     }
   }
