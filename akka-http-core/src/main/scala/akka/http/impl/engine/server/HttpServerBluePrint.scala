@@ -6,7 +6,8 @@ package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
 import java.util.Random
-
+import org.reactivestreams.{ Publisher, Subscriber }
+import scala.util.control.NonFatal
 import akka.actor.{ ActorRef, Deploy, Props }
 import akka.event.LoggingAdapter
 import akka.http.ServerSettings
@@ -25,9 +26,6 @@ import akka.stream.io._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.ByteString
-import org.reactivestreams.{ Publisher, Subscriber }
-
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -86,7 +84,8 @@ private[http] object HttpServerBluePrint {
                 headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
               else hdrs
 
-            HttpRequest(effectiveMethod, uri, effectiveHeaders, createEntity(entityParts), protocol)
+            val entity = createEntity(entityParts) withSizeLimit parserSettings.maxContentLength
+            HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol)
           case (_, src) ⇒ src.runWith(Sink.ignore)
         }.collect {
           case r: HttpRequest ⇒ r
@@ -107,7 +106,8 @@ private[http] object HttpServerBluePrint {
 
     val rendererPipeline =
       Flow[ResponseRenderingContext]
-        .via(Flow[ResponseRenderingContext].transform(() ⇒ new ErrorsTo500ResponseRecovery(log)).named("recover")) // FIXME: simplify after #16394 is closed
+        .via(Flow[ResponseRenderingContext].transform(() ⇒ new ErrorResponseRecovery(log,
+          settings)).named("recover")) // FIXME: simplify after #16394 is closed
         .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
         .flatMapConcat(ConstantFun.scalaIdentityFunction)
         .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
@@ -280,7 +280,7 @@ private[http] object HttpServerBluePrint {
    */
   case object OneHundredContinue
 
-  final class ErrorsTo500ResponseRecovery(log: LoggingAdapter)
+  final class ErrorResponseRecovery(log: LoggingAdapter, settings: ServerSettings)
     extends PushPullStage[ResponseRenderingContext, ResponseRenderingContext] {
 
     import akka.stream.stage.Context
@@ -295,11 +295,24 @@ private[http] object HttpServerBluePrint {
 
     override def onUpstreamFailure(error: Throwable, ctx: Context[ResponseRenderingContext]) =
       error match {
+        case EntityStreamSizeException(limit, contentLength) ⇒
+          val status = StatusCodes.RequestEntityTooLarge
+          val summary = contentLength match {
+            case Some(cl) ⇒ s"Request Content-Length of $cl bytes exceeds the configured limit of $limit bytes"
+            case None     ⇒ s"Aggregated data length of request entity exceeds the configured limit of $limit bytes"
+          }
+          val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
+          logParsingError(info withSummaryPrepended s"Illegal request, responding with status '$status'",
+            log, settings.parserSettings.errorLoggingVerbosity)
+          val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
+          errorResponse = ResponseRenderingContext(HttpResponse(status, entity = msg), closeRequested = true)
+          ctx.absorbTermination()
+
         case NonFatal(e) ⇒
           log.error(e, "Internal server error, sending 500 response")
-          errorResponse = ResponseRenderingContext(HttpResponse(StatusCodes.InternalServerError),
-            closeRequested = true)
+          errorResponse = ResponseRenderingContext(HttpResponse(StatusCodes.InternalServerError), closeRequested = true)
           ctx.absorbTermination()
+
         case _ ⇒ ctx.fail(error)
       }
   }

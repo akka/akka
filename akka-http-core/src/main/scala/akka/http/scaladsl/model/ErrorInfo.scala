@@ -72,4 +72,8 @@ object EntityStreamException {
   def apply(summary: String, detail: String = ""): EntityStreamException = apply(ErrorInfo(summary, detail))
 }
 
+case class EntityStreamSizeException(limit: Long, actualSize: Option[Long] = None) extends RuntimeException {
+  override def toString = s"EntityStreamSizeException($limit, $actualSize)"
+}
+
 case class RequestTimeoutException(request: HttpRequest, message: String) extends RuntimeException(message)

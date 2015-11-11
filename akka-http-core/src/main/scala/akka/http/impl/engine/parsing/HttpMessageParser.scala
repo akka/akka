@@ -208,9 +208,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
     }
 
     def parseChunkBody(chunkSize: Int, extension: String, cursor: Int): StateResult =
-      if (totalBytesRead + chunkSize > settings.maxContentLength)
-        failWithChunkedEntityTooLong(totalBytesRead + chunkSize)
-      else if (chunkSize > 0) {
+      if (chunkSize > 0) {
         val chunkBodyEnd = cursor + chunkSize
         def result(terminatorLen: Int) = {
           emit(EntityChunk(HttpEntity.Chunk(input.slice(cursor, chunkBodyEnd).compact, extension)))
@@ -285,7 +283,6 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
     setCompletionHandling(CompletionOk)
     terminate()
   }
-  def failWithChunkedEntityTooLong(totalBytesRead: Long): StateResult
 
   def terminate(): StateResult = {
     terminated = true
@@ -317,7 +314,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
       case EntityPart(bytes)       ⇒ bytes
       case EntityStreamError(info) ⇒ throw EntityStreamException(info)
     }
-    HttpEntity.Default(contentType(cth), contentLength, transformData(data))
+    HttpEntity.Default(contentType(cth), contentLength, HttpEntity.limitableByteSource(transformData(data)))
   }
 
   def chunkedEntity(cth: Option[`Content-Type`],
@@ -326,7 +323,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
       case EntityChunk(chunk)      ⇒ chunk
       case EntityStreamError(info) ⇒ throw EntityStreamException(info)
     }
-    HttpEntity.Chunked(contentType(cth), transformChunks(chunks))
+    HttpEntity.Chunked(contentType(cth), HttpEntity.limitableChunkSource(transformChunks(chunks)))
   }
 
   def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =
