@@ -19,7 +19,10 @@ import scala.concurrent.duration._
 import java.net.BindException
 import akka.testkit.EventFilter
 
-class TcpSpec extends AkkaSpec("akka.io.tcp.windows-connection-abort-workaround-enabled=auto\nakka.stream.materializer.subscription-timeout.timeout = 3s") with TcpHelper {
+class TcpSpec extends AkkaSpec(
+  """
+    |akka.io.tcp.windows-connection-abort-workaround-enabled=auto
+    |akka.stream.materializer.subscription-timeout.timeout = 3s""".stripMargin) with TcpHelper {
   var demand = 0L
 
   "Outgoing TCP stream" must {

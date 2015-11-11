@@ -144,7 +144,8 @@ private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: S
       inHandlers,
       outHandlers,
       logics,
-      (_, _, _) ⇒ throw new UnsupportedOperationException("IteratorInterpreter does not support asynchronous events."))
+      (_, _, _) ⇒ throw new UnsupportedOperationException("IteratorInterpreter does not support asynchronous events."),
+      fuzzingMode = false)
     interpreter.attachUpstreamBoundary(0, upstream)
     interpreter.attachDownstreamBoundary(ops.length, downstream)
     interpreter.init()
