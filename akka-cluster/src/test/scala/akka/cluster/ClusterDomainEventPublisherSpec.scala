@@ -44,7 +44,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
   val dUp = TestMember(Address("akka.tcp", "sys", "d", 2552), Up, Set("GRP"))
 
   val g0 = Gossip(members = SortedSet(aUp)).seen(aUp.uniqueAddress)
-  val g1 = Gossip(members = SortedSet(aUp, bExiting, cJoining)).seen(aUp.uniqueAddress).seen(bExiting.uniqueAddress).seen(cJoining.uniqueAddress)
+  val g1 = Gossip(members = SortedSet(aUp, cJoining)).seen(aUp.uniqueAddress).seen(cJoining.uniqueAddress)
   val g2 = Gossip(members = SortedSet(aUp, bExiting, cUp)).seen(aUp.uniqueAddress)
   val g3 = g2.seen(bExiting.uniqueAddress).seen(cUp.uniqueAddress)
   val g4 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress)
@@ -71,6 +71,11 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
 
   "ClusterDomainEventPublisher" must {
 
+    "publish MemberJoined" in {
+      publisher ! PublishChanges(g1)
+      memberSubscriber.expectMsg(MemberJoined(cJoining))
+    }
+
     "publish MemberUp" in {
       publisher ! PublishChanges(g2)
       publisher ! PublishChanges(g3)
@@ -92,7 +97,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       memberSubscriber.expectMsg(MemberExited(bExiting))
       memberSubscriber.expectMsg(MemberUp(cUp))
       publisher ! PublishChanges(g6)
-      memberSubscriber.expectNoMsg(500 millis)
+      memberSubscriber.expectMsg(MemberLeft(aLeaving))
       publisher ! PublishChanges(g7)
       memberSubscriber.expectMsg(MemberExited(aExiting))
       memberSubscriber.expectMsg(LeaderChanged(Some(cUp.address)))
