@@ -33,33 +33,23 @@ private[akka] object InputStreamSinkStage {
 /**
  * INTERNAL API
  */
-private[akka] class InputStreamSinkStage(timeout: FiniteDuration) extends SinkStage[ByteString, InputStream]("InputStreamSinkStage") {
+private[akka] class InputStreamSinkStage(timeout: FiniteDuration) extends SinkStage[ByteString, InputStream]("InputStreamSink") {
   val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
   require(maxBuffer > 0, "Buffer size must be greater than 0")
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, InputStream) = {
-
     val dataQueue = new LinkedBlockingDeque[StreamToAdapterMessage](maxBuffer + 1)
-    var pullRequestIsSent = true
 
     val logic = new GraphStageLogic(shape) with StageWithCallback {
+      var pullRequestIsSent = true
 
       private val callback: AsyncCallback[AdapterToStageMessage] =
-        getAsyncCallback(onAsyncMessage)
-
-      override def wakeUp(msg: AdapterToStageMessage): Unit = {
-        if (!isClosed(in)) {
-          Future(callback.invoke(msg))(interpreter.materializer.executionContext)
+        getAsyncCallback {
+          case ReadElementAcknowledgement ⇒ sendPullIfAllowed()
+          case Close                      ⇒ completeStage()
         }
-      }
 
-      private def onAsyncMessage(event: AdapterToStageMessage): Unit =
-        event match {
-          case ReadElementAcknowledgement ⇒
-            sendPullIfAllowed()
-          case Close ⇒
-            completeStage()
-        }
+      override def wakeUp(msg: AdapterToStageMessage): Unit = callback.invoke(msg)
 
       private def sendPullIfAllowed(): Unit =
         if (!pullRequestIsSent) {
@@ -127,16 +117,21 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
       if (isStageAlive) {
         detachedChunk match {
           case None ⇒
-            sharedBuffer.poll(timeout.toMillis, TimeUnit.MILLISECONDS) match {
-              case Data(data) ⇒
-                detachedChunk = Some(data)
-                readBytes(a, begin, length)
-              case Finished ⇒
-                isStageAlive = false
-                -1
-              case Failed(ex) ⇒
-                isStageAlive = false
-                throw new IOException(ex)
+            try {
+              sharedBuffer.poll(timeout.toMillis, TimeUnit.MILLISECONDS) match {
+                case Data(data) ⇒
+                  detachedChunk = Some(data)
+                  readBytes(a, begin, length)
+                case Finished ⇒
+                  isStageAlive = false
+                  -1
+                case Failed(ex) ⇒
+                  isStageAlive = false
+                  throw new IOException(ex)
+                case null ⇒ throw new IOException("Timeout on waiting for new data")
+              }
+            } catch {
+              case ex: InterruptedException ⇒ throw new IOException(ex)
             }
           case Some(data) ⇒
             readBytes(a, begin, length)
@@ -145,7 +140,8 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
   }
 
   private[this] def readBytes(a: Array[Byte], begin: Int, length: Int): Int = {
-    val availableInChunk = detachedChunk.size - skipBytes
+    require(detachedChunk.nonEmpty, "Chunk must be pulled from shared buffer")
+    val availableInChunk = detachedChunk.get.size - skipBytes
     val readBytes = getData(a, begin, length, 0)
     if (readBytes >= availableInChunk) sendToStage(ReadElementAcknowledgement)
     readBytes
@@ -163,7 +159,7 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
   @tailrec
   private[this] def getData(arr: Array[Byte], begin: Int, length: Int,
                             gotBytes: Int): Int = {
-    getDataChunk() match {
+    grabDataChunk() match {
       case Some(data) ⇒
         val size = data.size - skipBytes
         if (size + gotBytes <= length) {
@@ -183,7 +179,7 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
     }
   }
 
-  private[this] def getDataChunk(): Option[ByteString] = {
+  private[this] def grabDataChunk(): Option[ByteString] = {
     detachedChunk match {
       case None ⇒
         sharedBuffer.poll() match {
