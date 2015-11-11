@@ -16,7 +16,7 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
-import headers._
+import akka.http.scaladsl.model.headers._
 import MediaTypes._
 
 class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
@@ -144,6 +144,12 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
             Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first part, implicitly typed")),
             Multipart.General.BodyPart.Strict(HttpEntity(`application/octet-stream`, "second part, explicitly typed")))
       }
+      "a boundary with spaces" in {
+        Unmarshal(HttpEntity(`multipart/mixed` withBoundary "simple boundary",
+          """--simple boundary
+            |--simple boundary--""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts(
+          Multipart.General.BodyPart.Strict(HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`)))
+      }
     }
 
     "multipartGeneralUnmarshaller should reject illegal multipart content with" - {
@@ -197,6 +203,18 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
         Await.result(Unmarshal(HttpEntity.Default(contentType, content.length, Source(byteStrings)))
           .to[Multipart.General]
           .flatMap(_ toStrict 1.second).failed, 1.second).getMessage shouldEqual "Illegal character ' ' in header name"
+      }
+      "a boundary with a trailing space" in {
+        Await.result(
+          Unmarshal(HttpEntity(`multipart/mixed` withBoundary "simple boundary ", ByteString.empty))
+            .to[Multipart.General].failed, 1.second).getMessage shouldEqual
+          "requirement failed: 'boundary' parameter of multipart Content-Type must not end with a space char"
+      }
+      "a boundary with an illegal character" in {
+        Await.result(
+          Unmarshal(HttpEntity(`multipart/mixed` withBoundary "simple&boundary", ByteString.empty))
+            .to[Multipart.General].failed, 1.second).getMessage shouldEqual
+          "requirement failed: 'boundary' parameter of multipart Content-Type contains illegal character '&'"
       }
     }
 
@@ -262,6 +280,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
               RawHeader("Content-Additional-2", "really-anything")))) // verifies order of headers is preserved
       }
       // TODO: reactivate after multipart/form-data unmarshalling integrity verification is implemented
+      // see https://github.com/akka/akka/issues/18908
       //
       //      "reject illegal multipart content" in {
       //        val Left(MalformedContent(msg, _)) = HttpEntity(`multipart/form-data` withBoundary "XYZABC", "--noboundary--").as[MultipartFormData]
