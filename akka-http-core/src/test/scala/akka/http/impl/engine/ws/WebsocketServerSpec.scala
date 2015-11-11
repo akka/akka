@@ -32,7 +32,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |
               |""")
 
-          val request = expectRequest
+          val request = expectRequest()
           val upgrade = request.header[UpgradeToWebsocket]
           upgrade.isDefined shouldBe true
 
@@ -78,7 +78,7 @@ class WebsocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |
               |""")
 
-          val request = expectRequest
+          val request = expectRequest()
           val upgrade = request.header[UpgradeToWebsocket]
           upgrade.isDefined shouldBe true
 
