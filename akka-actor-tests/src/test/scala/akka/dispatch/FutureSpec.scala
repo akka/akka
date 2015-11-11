@@ -539,7 +539,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         latch.open()
         assert(Await.result(f2, timeout.duration) === 10)
 
-        val f3 = Future { Thread.sleep(100); 5 }
+        val f3 = Promise[Int]().future
         filterException[TimeoutException] { intercept[TimeoutException] { FutureSpec.ready(f3, 0 millis) } }
       }
 
