@@ -20,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
-
 public class LoggingAdapterTest {
 
     private static final Config config = ConfigFactory.parseString(
@@ -53,7 +52,22 @@ public class LoggingAdapterTest {
 
             log.debug("Four args message: {}, {}, {}, {}", 1, 2, 3, 4);
             expectLog(DebugLevel(), "Four args message: 1, 2, 3, 4");
+        }};
+    }
 
+    @Test
+    public void mustFormatMessageWithVarargs() {
+        final ActorSystem system = ActorSystem.create("test-system", config);
+        final LoggingAdapter log = Logging.getLogger(system, this);
+        final LoggingAdapterExt logext = new LoggingAdapterExt(log);
+        new LogJavaTestKit(system) {{
+            system.eventStream().subscribe(getRef(), LogEvent.class);
+            logext.debug("Six args message: {}, {}, {}, {}, {}, {}", 1, 2, 3, 4, 5, 6);
+            expectLog(DebugLevel(), "Six args message: 1, 2, 3, 4, 5, 6");
+
+            int[] primitiveArgs = {10, 20, 30};
+            logext.warning("Args as array of primitives: {}, {}, {}", primitiveArgs);
+            expectLog(WarningLevel(), "Args as array of primitives: 10, 20, 30");
         }};
     }
 

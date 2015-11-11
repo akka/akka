@@ -70,23 +70,23 @@ trait JavaLoggingAdapter extends LoggingAdapter {
 
   def isDebugEnabled = logger.isLoggable(logging.Level.CONFIG)
 
-  protected def notifyError(message: String) {
+  protected[akka] def notifyError(message: String) {
     log(logging.Level.SEVERE, null, message)
   }
 
-  protected def notifyError(cause: Throwable, message: String) {
+  protected[akka] def notifyError(cause: Throwable, message: String) {
     log(logging.Level.SEVERE, cause, message)
   }
 
-  protected def notifyWarning(message: String) {
+  protected[akka] def notifyWarning(message: String) {
     log(logging.Level.WARNING, null, message)
   }
 
-  protected def notifyInfo(message: String) {
+  protected[akka] def notifyInfo(message: String) {
     log(logging.Level.INFO, null, message)
   }
 
-  protected def notifyDebug(message: String) {
+  protected[akka] def notifyDebug(message: String) {
     log(logging.Level.CONFIG, null, message)
   }
 
