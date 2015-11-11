@@ -29,9 +29,9 @@ object TransparentExponentialBackoffSupervisor {
    *       maxBackoff,
    *       (random_delay_factor * calculated_backoff) + calculated_backoff)
    *   }}}
-   * @param decider an [[akka.actor.SupervisorStrategy.Decider]] to specify how the supervisor
+   * @param decider an `Decider` to specify how the supervisor
    *   should behave for different exceptions. If no cases are matched, the default decider of
-   *   [[akka.actor.Actor]] is used. When the [[akka.actor.SupervisorStrategy.Restart]] directive
+   *   [[akka.actor.Actor]] is used. When the `Restart` directive
    *   is returned by the decider, this supervisor will apply an exponential back off restart.
    */
   def propsWithDecider(
