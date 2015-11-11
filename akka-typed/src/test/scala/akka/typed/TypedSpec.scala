@@ -77,7 +77,7 @@ class TypedSpec(config: Config) extends Spec with Matchers with BeforeAndAfterAl
   /**
    * Group assertion that ensures that the given inboxes are empty.
    */
-  def assertEmpty(inboxes: Inbox.SyncInbox[_]*): Unit = {
+  def assertEmpty(inboxes: Inbox[_]*): Unit = {
     inboxes foreach (i ⇒ withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
   }
 }

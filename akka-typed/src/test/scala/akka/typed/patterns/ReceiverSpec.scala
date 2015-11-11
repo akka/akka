@@ -14,7 +14,7 @@ object ReceiverSpec {
 class ReceiverSpec extends TypedSpec {
   import ReceiverSpec._
 
-  private val dummyInbox = Inbox.sync[Replies[Msg]]("dummy")
+  private val dummyInbox = Inbox[Replies[Msg]]("dummy")
 
   private val startingPoints: Seq[Setup] = Seq(
     Setup("initial", ctx ⇒ behavior[Msg], 0, 0),
@@ -51,13 +51,13 @@ class ReceiverSpec extends TypedSpec {
       .message(ctx, GetAll(Duration.Zero)(dummyInbox.ref))
 
   private def setup(name: String, behv: Behavior[Command[Msg]] = behavior[Msg])(
-    proc: (EffectfulActorContext[Command[Msg]], EffectfulActorContext[Msg], Inbox.SyncInbox[Replies[Msg]]) ⇒ Unit): Unit =
+    proc: (EffectfulActorContext[Command[Msg]], EffectfulActorContext[Msg], Inbox[Replies[Msg]]) ⇒ Unit): Unit =
     for (Setup(description, behv, messages, effects) ← startingPoints) {
       val ctx = new EffectfulActorContext("ctx", Props(ScalaDSL.ContextAware(behv)), system)
       withClue(s"[running for starting point '$description' (${ctx.currentBehavior})]: ") {
         dummyInbox.receiveAll() should have size messages
         ctx.getAllEffects() should have size effects
-        proc(ctx, ctx.asInstanceOf[EffectfulActorContext[Msg]], Inbox.sync[Replies[Msg]](name))
+        proc(ctx, ctx.asInstanceOf[EffectfulActorContext[Msg]], Inbox[Replies[Msg]](name))
       }
     }
 
@@ -69,7 +69,7 @@ class ReceiverSpec extends TypedSpec {
      */
     def `must return "self" as external address`(): Unit =
       setup("") { (int, ext, _) ⇒
-        val inbox = Inbox.sync[ActorRef[Msg]]("extAddr")
+        val inbox = Inbox[ActorRef[Msg]]("extAddr")
         int.run(ExternalAddress(inbox.ref))
         int.hasEffects should be(false)
         inbox.receiveAll() should be(List(int.self))

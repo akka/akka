@@ -89,6 +89,8 @@ object Dependencies {
 
   val actor = l ++= Seq(config)
 
+  val typed = l ++= Seq(Test.junitIntf)
+
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
   val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck.value, Test.junitIntf)

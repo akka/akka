@@ -29,7 +29,7 @@ class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
   }
   case class GetState(replyTo: ActorRef[State]) extends Command
   object GetState {
-    def apply()(implicit inbox: Inbox.SyncInbox[State]): GetState = GetState(inbox.ref)
+    def apply()(implicit inbox: Inbox[State]): GetState = GetState(inbox.ref)
   }
   case class AuxPing(id: Int) extends Command {
     override def expectedResponse(ctx: ActorContext[Command]): Seq[Event] = Pong :: Nil
@@ -51,10 +51,10 @@ class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
   trait Common {
     def behavior(monitor: ActorRef[Event]): Behavior[Command]
 
-    case class Setup(ctx: EffectfulActorContext[Command], inbox: Inbox.SyncInbox[Event])
+    case class Setup(ctx: EffectfulActorContext[Command], inbox: Inbox[Event])
 
     protected def mkCtx(requirePreStart: Boolean = false, factory: (ActorRef[Event]) ⇒ Behavior[Command] = behavior) = {
-      val inbox = Inbox.sync[Event]("evt")
+      val inbox = Inbox[Event]("evt")
       val ctx = new EffectfulActorContext("ctx", Props(factory(inbox.ref)), system)
       val msgs = inbox.receiveAll()
       if (requirePreStart)
@@ -73,7 +73,7 @@ class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
         setup.inbox.receiveAll() should ===(command.expectedResponse(setup.ctx))
         setup
       }
-      def check[T](command: Command, aux: T*)(implicit inbox: Inbox.SyncInbox[T]): Setup = {
+      def check[T](command: Command, aux: T*)(implicit inbox: Inbox[T]): Setup = {
         setup.ctx.run(command)
         setup.inbox.receiveAll() should ===(command.expectedResponse(setup.ctx))
         inbox.receiveAll() should ===(aux)
@@ -85,7 +85,7 @@ class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
         setup.inbox.receiveAll() should ===(expected ++ expected)
         setup
       }
-      def check2[T](command: Command, aux: T*)(implicit inbox: Inbox.SyncInbox[T]): Setup = {
+      def check2[T](command: Command, aux: T*)(implicit inbox: Inbox[T]): Setup = {
         setup.ctx.run(command)
         val expected = command.expectedResponse(setup.ctx)
         setup.inbox.receiveAll() should ===(expected ++ expected)
@@ -161,15 +161,15 @@ class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
     }
 
     def `must react to Terminated`(): Unit = {
-      mkCtx().check(Terminated(Inbox.sync("x").ref))
+      mkCtx().check(Terminated(Inbox("x").ref))
     }
 
     def `must react to Terminated after a message`(): Unit = {
-      mkCtx().check(GetSelf).check(Terminated(Inbox.sync("x").ref))
+      mkCtx().check(GetSelf).check(Terminated(Inbox("x").ref))
     }
 
     def `must react to a message after Terminated`(): Unit = {
-      mkCtx().check(Terminated(Inbox.sync("x").ref)).check(GetSelf)
+      mkCtx().check(Terminated(Inbox("x").ref)).check(GetSelf)
     }
   }
 
@@ -204,7 +204,7 @@ class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
   }
 
   trait Become extends Common with Unhandled {
-    private implicit val inbox = Inbox.sync[State]("state")
+    private implicit val inbox = Inbox[State]("state")
 
     def `must be in state A`(): Unit = {
       mkCtx().check(GetState(), StateA)
@@ -275,15 +275,15 @@ class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
     }
 
     def `must react to Terminated after swap`(): Unit = {
-      mkCtx().check(Swap).check(Terminated(Inbox.sync("x").ref))
+      mkCtx().check(Swap).check(Terminated(Inbox("x").ref))
     }
 
     def `must react to Terminated after a message after swap`(): Unit = {
-      mkCtx().check(Swap).check(GetSelf).check(Terminated(Inbox.sync("x").ref))
+      mkCtx().check(Swap).check(GetSelf).check(Terminated(Inbox("x").ref))
     }
 
     def `must react to a message after Terminated after swap`(): Unit = {
-      mkCtx().check(Swap).check(Terminated(Inbox.sync("x").ref)).check(GetSelf)
+      mkCtx().check(Swap).check(Terminated(Inbox("x").ref)).check(GetSelf)
     }
   }
 
@@ -387,7 +387,7 @@ class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
   object `A SynchronousSelf Behavior` extends Messages with BecomeWithLifecycle with Stoppable {
     import ScalaDSL._
 
-    implicit private val inbox = Inbox.sync[Command]("syncself")
+    implicit private val inbox = Inbox[Command]("syncself")
 
     override def behavior(monitor: ActorRef[Event]): Behavior[Command] =
       SynchronousSelf(self ⇒ mkFull(monitor))
@@ -417,7 +417,7 @@ class BehaviorSpec extends TypedSpec with ConversionCheckedTripleEquals {
   }
 
   trait And extends Common {
-    private implicit val inbox = Inbox.sync[State]("and")
+    private implicit val inbox = Inbox[State]("and")
 
     private def behavior2(monitor: ActorRef[Event]): Behavior[Command] =
       ScalaDSL.And(mkFull(monitor), mkFull(monitor))

@@ -141,4 +141,6 @@ object ActorSystem {
   }
 
   def apply(untyped: akka.actor.ActorSystem): ActorSystem[Nothing] = new Wrapper(untyped.asInstanceOf[ExtendedActorSystem])
+
+  def create[T](name: String, guardianProps: Props[T]) = apply(name, guardianProps)
 }
