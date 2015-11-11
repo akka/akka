@@ -198,10 +198,11 @@ object ActorMaterializerSettings {
     supervisionDecider: Supervision.Decider,
     subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
     debugLogging: Boolean,
-    outputBurstLimit: Int) =
+    outputBurstLimit: Int,
+    fuzzingMode: Boolean) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit)
+      outputBurstLimit, fuzzingMode)
 
   /**
    * Create [[ActorMaterializerSettings]].
@@ -226,7 +227,8 @@ object ActorMaterializerSettings {
       supervisionDecider = Supervision.stoppingDecider,
       subscriptionTimeoutSettings = StreamSubscriptionTimeoutSettings(config),
       debugLogging = config.getBoolean("debug-logging"),
-      outputBurstLimit = config.getInt("output-burst-limit"))
+      outputBurstLimit = config.getInt("output-burst-limit"),
+      fuzzingMode = config.getBoolean("debug.fuzzing-mode"))
 
   /**
    * Java API
@@ -245,6 +247,7 @@ object ActorMaterializerSettings {
    */
   def create(config: Config): ActorMaterializerSettings =
     apply(config)
+
 }
 
 /**
@@ -260,7 +263,8 @@ final class ActorMaterializerSettings(
   val supervisionDecider: Supervision.Decider,
   val subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
   val debugLogging: Boolean,
-  val outputBurstLimit: Int) {
+  val outputBurstLimit: Int,
+  val fuzzingMode: Boolean) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
@@ -274,24 +278,31 @@ final class ActorMaterializerSettings(
     supervisionDecider: Supervision.Decider = this.supervisionDecider,
     subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings = this.subscriptionTimeoutSettings,
     debugLogging: Boolean = this.debugLogging,
-    outputBurstLimit: Int = this.outputBurstLimit) =
+    outputBurstLimit: Int = this.outputBurstLimit,
+    fuzzingMode: Boolean = this.fuzzingMode) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit)
+      outputBurstLimit, fuzzingMode)
 
-  def withInputBuffer(initialSize: Int, maxSize: Int): ActorMaterializerSettings =
-    copy(initialInputBufferSize = initialSize, maxInputBufferSize = maxSize)
+  def withInputBuffer(initialSize: Int, maxSize: Int): ActorMaterializerSettings = {
+    if (initialSize == this.initialInputBufferSize && maxSize == this.maxInputBufferSize) this
+    else copy(initialInputBufferSize = initialSize, maxInputBufferSize = maxSize)
+  }
 
-  def withDispatcher(dispatcher: String): ActorMaterializerSettings =
-    copy(dispatcher = dispatcher)
+  def withDispatcher(dispatcher: String): ActorMaterializerSettings = {
+    if (this.dispatcher == dispatcher) this
+    else copy(dispatcher = dispatcher)
+  }
 
   /**
    * Scala API: Decides how exceptions from application code are to be handled, unless
    * overridden for specific flows of the stream operations with
    * [[akka.stream.Attributes#supervisionStrategy]].
    */
-  def withSupervisionStrategy(decider: Supervision.Decider): ActorMaterializerSettings =
-    copy(supervisionDecider = decider)
+  def withSupervisionStrategy(decider: Supervision.Decider): ActorMaterializerSettings = {
+    if (decider eq this.supervisionDecider) this
+    else copy(supervisionDecider = decider)
+  }
 
   /**
    * Java API: Decides how exceptions from application code are to be handled, unless
@@ -308,8 +319,15 @@ final class ActorMaterializerSettings(
     })
   }
 
-  def withDebugLogging(enable: Boolean): ActorMaterializerSettings =
-    copy(debugLogging = enable)
+  def withFuzzing(enable: Boolean): ActorMaterializerSettings = {
+    if (enable == this.fuzzingMode) this
+    else copy(fuzzingMode = enable)
+  }
+
+  def withDebugLogging(enable: Boolean): ActorMaterializerSettings = {
+    if (enable == this.debugLogging) this
+    else copy(debugLogging = enable)
+  }
 
   private def requirePowerOfTwo(n: Integer, name: String): Unit = {
     require(n > 0, s"$name must be > 0")

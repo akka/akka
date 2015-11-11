@@ -6,6 +6,7 @@ package akka.stream.impl
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
 import akka.actor._
+import akka.event.Logging
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
 import akka.stream._
@@ -29,6 +30,12 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
                                                flowNameCounter: AtomicLong,
                                                namePrefix: String) extends ActorMaterializer {
   import akka.stream.impl.Stages._
+  private val logger = Logging.getLogger(system, this)
+
+  if (settings.fuzzingMode) {
+    logger.warning("Fuzzing mode is enabled on this system. If you see this warning on your production system then " +
+      "set akka.materializer.debug.fuzzing-mode to off.")
+  }
 
   override def shutdown(): Unit =
     if (haveShutDown.compareAndSet(false, true)) supervisor ! PoisonPill

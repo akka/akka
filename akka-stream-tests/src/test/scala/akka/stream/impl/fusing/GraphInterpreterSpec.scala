@@ -3,7 +3,8 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.Attributes
+import akka.stream.{ OverflowStrategy, Attributes }
+import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.{ Merge, Broadcast, Balance, Zip }
 import GraphInterpreter._
@@ -340,6 +341,43 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
 
       // The cycle is now empty
       interpreter.isSuspended should be(false)
+    }
+
+    "implement buffer" in new TestSetup {
+      val source = new UpstreamProbe[String]("source")
+      val sink = new DownstreamProbe[String]("sink")
+      val buffer = new PushPullGraphStage[String, String, Unit](
+        (_) ⇒ new Buffer[String](2, OverflowStrategy.backpressure),
+        Attributes.none)
+
+      builder(buffer)
+        .connect(source, buffer.shape.inlet)
+        .connect(buffer.shape.outlet, sink)
+        .init()
+
+      stepAll()
+      lastEvents() should ===(Set(RequestOne(source)))
+
+      sink.requestOne()
+      lastEvents() should ===(Set.empty)
+
+      source.onNext("A")
+      lastEvents() should ===(Set(RequestOne(source), OnNext(sink, "A")))
+
+      source.onNext("B")
+      lastEvents() should ===(Set(RequestOne(source)))
+
+      source.onNext("C", eventLimit = 0)
+      sink.requestOne()
+      lastEvents() should ===(Set(OnNext(sink, "B"), RequestOne(source)))
+
+      sink.requestOne(eventLimit = 0)
+      source.onComplete(eventLimit = 3)
+      lastEvents() should ===(Set(OnNext(sink, "C")))
+
+      sink.requestOne()
+      lastEvents() should ===(Set(OnComplete(sink)))
+
     }
   }
 

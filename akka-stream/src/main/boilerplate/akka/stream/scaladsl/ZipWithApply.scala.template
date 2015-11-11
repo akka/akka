@@ -32,8 +32,13 @@ class ZipWith1[[#A1#], O] (zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
     var pending = 1
+    // Without this field the completion signalling would take one extra pull
+    var willShutDown = false
 
-    private def pushAll(): Unit = push(out, zipper([#grab(in0)#]))
+    private def pushAll(): Unit = {
+      push(out, zipper([#grab(in0)#]))
+      if (willShutDown) completeStage()
+    }
 
     [#setHandler(in0, new InHandler {
       override def onPush(): Unit = {
@@ -43,6 +48,7 @@ class ZipWith1[[#A1#], O] (zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape
 
       override def onUpstreamFinish(): Unit = {
         if (!isAvailable(in0)) completeStage()
+        willShutDown = true
       }
 
     })#
@@ -51,9 +57,11 @@ class ZipWith1[[#A1#], O] (zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape
     setHandler(out, new OutHandler {
       override def onPull(): Unit = {
         pending = shape.inlets.size
-        [#if (!isClosed(in0)) pull(in0)
-        else completeStage()#
-        ]
+        if (willShutDown) completeStage()
+        else {
+            [#pull(in0)#
+            ]
+        }
       }
     })
   }

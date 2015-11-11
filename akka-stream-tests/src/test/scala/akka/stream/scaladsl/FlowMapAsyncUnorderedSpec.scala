@@ -7,7 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializerSettings, ActorMaterializer }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
@@ -235,7 +235,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec with ScalaFutures with Conversi
       }
 
       try {
-        val N = 100000
+        val N = 10000
         Source(1 to N)
           .mapAsyncUnordered(parallelism)(i ⇒ deferred())
           .runFold(0)((c, _) ⇒ c + 1)
