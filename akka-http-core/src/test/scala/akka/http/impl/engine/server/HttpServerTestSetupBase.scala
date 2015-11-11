@@ -61,7 +61,7 @@ abstract class HttpServerTestSetupBase {
       case s                          ⇒ s
     }.mkString("\n")
 
-  def expectRequest: HttpRequest = requests.requestNext()
+  def expectRequest(): HttpRequest = requests.requestNext()
   def expectNoRequest(max: FiniteDuration): Unit = requests.expectNoMsg(max)
   def expectSubscribe(): Unit = netOut.expectComplete()
   def expectSubscribeAndNetworkClose(): Unit = netOut.expectSubscriptionAndComplete()
