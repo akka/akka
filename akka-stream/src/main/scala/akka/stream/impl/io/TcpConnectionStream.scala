@@ -70,15 +70,13 @@ private[akka] abstract class TcpStreamActor(val settings: ActorMaterializerSetti
 
     def handleRead: Receive = {
       case Received(data) ⇒
-        if (closed) connection ! ResumeReading
-        else {
+        if (closed) {
+          connection ! ResumeReading
+        } else {
           pendingElement = data
           readPump.pump()
         }
-      case ConfirmedClosed ⇒
-        cancel()
-        readPump.pump()
-      case PeerClosed ⇒
+      case ConfirmedClosed | PeerClosed ⇒
         cancel()
         readPump.pump()
     }
@@ -91,7 +89,6 @@ private[akka] abstract class TcpStreamActor(val settings: ActorMaterializerSetti
       if (!closed) {
         closed = true
         pendingElement = null
-        if (!tcpOutputs.isFlushed && (connection ne null)) connection ! ResumeReading
       }
     }
 
