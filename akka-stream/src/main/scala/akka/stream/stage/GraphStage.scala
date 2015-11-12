@@ -3,7 +3,8 @@
  */
 package akka.stream.stage
 
-import akka.actor.{ Cancellable, DeadLetterSuppression }
+import akka.actor._
+import akka.dispatch.sysmsg.{ Unwatch, Watch, DeathWatchNotification, SystemMessage }
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.StreamLayout.Module
@@ -136,6 +137,32 @@ object GraphStageLogic {
 
   private object DoNothing extends (() ⇒ Unit) {
     def apply(): Unit = ()
+  }
+
+  /**
+   * Minimal actor to work with other actors and watch them in a synchronous ways
+   */
+  class StageActorRef(asyncCallback: AsyncCallback[(ActorRef, Any)], override val path: ActorPath) extends akka.actor.MinimalActorRef {
+    override def provider: ActorRefProvider =
+      throw new UnsupportedOperationException("GraphStage MinimalActor does not provide")
+
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
+      asyncCallback.invoke((sender, message))
+    }
+
+    // FIXME: This ActorRef is not watchable!
+    override def sendSystemMessage(message: SystemMessage): Unit = message match {
+      case DeathWatchNotification(actorRef, _, _) ⇒
+        this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))
+      case _ ⇒ //ignore all other messages
+    }
+
+    def watch(actorRef: ActorRef): Unit =
+      actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Watch(actorRef.asInstanceOf[InternalActorRef], this))
+
+    def unwatch(actorRef: ActorRef): Unit =
+      actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(actorRef.asInstanceOf[InternalActorRef], this))
+
   }
 }
 
@@ -703,12 +730,24 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * This object can be cached and reused within the same [[GraphStageLogic]].
    */
-  final def getAsyncCallback[T](handler: T ⇒ Unit): AsyncCallback[T] = {
+  final protected def getAsyncCallback[T](handler: T ⇒ Unit): AsyncCallback[T] = {
     new AsyncCallback[T] {
       override def invoke(event: T): Unit =
         interpreter.onAsyncInput(GraphStageLogic.this, event, handler.asInstanceOf[Any ⇒ Unit])
     }
   }
+
+  /**
+   * Created MinimalActorRef to get messages and watch other actors in synchronous way.
+   * @param receive - callback that will be
+   * @return - minimal actor with watch method
+   */
+  // FIXME: I don't like the Pair allocation :(
+  final protected def getStageActorRef(receive: ((ActorRef, Any)) ⇒ Unit): StageActorRef =
+    // FIXME: Avoid returning multiple actorrefs. Probably push down this feature to a subclass?
+    // FIXME: toString is a completely wrong path
+    new StageActorRef(getAsyncCallback(receive),
+      ActorMaterializer.downcast(interpreter.materializer).supervisor.path / toString)
 
   // Internal hooks to avoid reliance on user calling super in preStart
   protected[stream] def beforePreStart(): Unit = ()
