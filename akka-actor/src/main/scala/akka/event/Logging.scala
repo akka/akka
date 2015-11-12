@@ -14,7 +14,7 @@ import akka.util.ReentrantGuard
 import akka.{ AkkaException, ConfigurationException }
 
 import scala.annotation.implicitNotFound
-import scala.collection.immutable
+import scala.collection.{ mutable, immutable }
 import scala.concurrent.Await
 import scala.language.existentials
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -889,11 +889,11 @@ trait LoggingAdapter {
    * These actually implement the passing on of the messages to be logged.
    * Will not be called if is...Enabled returned false.
    */
-  protected def notifyError(message: String): Unit
-  protected def notifyError(cause: Throwable, message: String): Unit
-  protected def notifyWarning(message: String): Unit
-  protected def notifyInfo(message: String): Unit
-  protected def notifyDebug(message: String): Unit
+  protected[akka] def notifyError(message: String): Unit
+  protected[akka] def notifyError(cause: Throwable, message: String): Unit
+  protected[akka] def notifyWarning(message: String): Unit
+  protected[akka] def notifyInfo(message: String): Unit
+  protected[akka] def notifyDebug(message: String): Unit
 
   /*
    * The rest is just the widening of the API for the user's convenience.
@@ -903,152 +903,212 @@ trait LoggingAdapter {
    * Log message at error level, including the exception that caused the error.
    * @see [[LoggingAdapter]]
    */
-  def error(cause: Throwable, message: String): Unit = { if (isErrorEnabled) notifyError(cause, message) }
+  def error(cause: Throwable, message: String): Unit = {
+    if (isErrorEnabled) notifyError(cause, message)
+  }
   /**
    * Message template with 1 replacement argument.
    * @see [[LoggingAdapter]]
    */
-  def error(cause: Throwable, template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(cause, format1(template, arg1)) }
+  def error(cause: Throwable, template: String, arg1: Any): Unit = {
+    if (isErrorEnabled) notifyError(cause, format1(template, arg1))
+  }
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2)) }
+  def error(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = {
+    if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2))
+  }
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3)) }
+  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3))
+  }
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3, arg4)) }
+  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at error level, without providing the exception that caused the error.
    * @see [[LoggingAdapter]]
    */
-  def error(message: String): Unit = { if (isErrorEnabled) notifyError(message) }
+  def error(message: String): Unit = {
+    if (isErrorEnabled) notifyError(message)
+  }
   /**
    * Message template with 1 replacement argument.
    * @see [[LoggingAdapter]]
    */
-  def error(template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(format1(template, arg1)) }
+  def error(template: String, arg1: Any): Unit = {
+    if (isErrorEnabled) notifyError(format1(template, arg1))
+  }
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(template: String, arg1: Any, arg2: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2)) }
+  def error(template: String, arg1: Any, arg2: Any): Unit = {
+    if (isErrorEnabled) notifyError(format(template, arg1, arg2))
+  }
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3)) }
+  def error(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3))
+  }
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4)) }
+  def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at warning level.
    * @see [[LoggingAdapter]]
    */
-  def warning(message: String): Unit = { if (isWarningEnabled) notifyWarning(message) }
+  def warning(message: String): Unit = {
+    if (isWarningEnabled) notifyWarning(message)
+  }
   /**
    * Message template with 1 replacement argument.
    * @see [[LoggingAdapter]]
    */
-  def warning(template: String, arg1: Any): Unit = { if (isWarningEnabled) notifyWarning(format1(template, arg1)) }
+  def warning(template: String, arg1: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format1(template, arg1))
+  }
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def warning(template: String, arg1: Any, arg2: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2)) }
+  def warning(template: String, arg1: Any, arg2: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2))
+  }
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def warning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3)) }
+  def warning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3))
+  }
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4)) }
+  def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at info level.
    * @see [[LoggingAdapter]]
    */
-  def info(message: String) { if (isInfoEnabled) notifyInfo(message) }
+  def info(message: String): Unit = {
+    if (isInfoEnabled) notifyInfo(message)
+  }
   /**
    * Message template with 1 replacement argument.
    * @see [[LoggingAdapter]]
    */
-  def info(template: String, arg1: Any): Unit = { if (isInfoEnabled) notifyInfo(format1(template, arg1)) }
+  def info(template: String, arg1: Any): Unit = {
+    if (isInfoEnabled) notifyInfo(format1(template, arg1))
+  }
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def info(template: String, arg1: Any, arg2: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2)) }
+  def info(template: String, arg1: Any, arg2: Any): Unit = {
+    if (isInfoEnabled) notifyInfo(format(template, arg1, arg2))
+  }
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def info(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3)) }
+  def info(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3))
+  }
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3, arg4)) }
+  def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at debug level.
    * @see [[LoggingAdapter]]
    */
-  def debug(message: String) { if (isDebugEnabled) notifyDebug(message) }
+  def debug(message: String): Unit = {
+    if (isDebugEnabled) notifyDebug(message)
+  }
   /**
    * Message template with 1 replacement argument.
    * @see [[LoggingAdapter]]
    */
-  def debug(template: String, arg1: Any): Unit = { if (isDebugEnabled) notifyDebug(format1(template, arg1)) }
+  def debug(template: String, arg1: Any): Unit = {
+    if (isDebugEnabled) notifyDebug(format1(template, arg1))
+  }
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def debug(template: String, arg1: Any, arg2: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2)) }
+  def debug(template: String, arg1: Any, arg2: Any): Unit = {
+    if (isDebugEnabled) notifyDebug(format(template, arg1, arg2))
+  }
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def debug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3)) }
+  def debug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3))
+  }
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4)) }
+  def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at the specified log level.
    */
-  def log(level: Logging.LogLevel, message: String) { if (isEnabled(level)) notifyLog(level, message) }
+  def log(level: Logging.LogLevel, message: String): Unit = {
+    if (isEnabled(level)) notifyLog(level, message)
+  }
   /**
    * Message template with 1 replacement argument.
    */
-  def log(level: Logging.LogLevel, template: String, arg1: Any): Unit = { if (isEnabled(level)) notifyLog(level, format1(template, arg1)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any): Unit = {
+    if (isEnabled(level)) notifyLog(level, format1(template, arg1))
+  }
   /**
    * Message template with 2 replacement arguments.
    */
-  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any): Unit = {
+    if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2))
+  }
   /**
    * Message template with 3 replacement arguments.
    */
-  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3))
+  }
   /**
    * Message template with 4 replacement arguments.
    */
-  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3, arg4)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * @return true if the specified log level is enabled
@@ -1091,6 +1151,11 @@ trait LoggingAdapter {
     }
     sb.append(rest).toString
   }
+}
+
+object LoggingAdapter {
+  import scala.language.implicitConversions
+  implicit def toLoggingAdapterEx(adapter: LoggingAdapter): LoggingAdapterExt = new LoggingAdapterExt(adapter)
 }
 
 /**
@@ -1210,11 +1275,11 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource)
   def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
 
-  protected def notifyError(message: String): Unit = bus.publish(Error(logSource, logClass, message, mdc))
-  protected def notifyError(cause: Throwable, message: String): Unit = bus.publish(Error(cause, logSource, logClass, message, mdc))
-  protected def notifyWarning(message: String): Unit = bus.publish(Warning(logSource, logClass, message, mdc))
-  protected def notifyInfo(message: String): Unit = bus.publish(Info(logSource, logClass, message, mdc))
-  protected def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message, mdc))
+  protected[akka] def notifyError(message: String): Unit = bus.publish(Error(logSource, logClass, message, mdc))
+  protected[akka] def notifyError(cause: Throwable, message: String): Unit = bus.publish(Error(cause, logSource, logClass, message, mdc))
+  protected[akka] def notifyWarning(message: String): Unit = bus.publish(Warning(logSource, logClass, message, mdc))
+  protected[akka] def notifyInfo(message: String): Unit = bus.publish(Info(logSource, logClass, message, mdc))
+  protected[akka] def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message, mdc))
 }
 
 /**
@@ -1233,9 +1298,84 @@ object NoLogging extends LoggingAdapter {
   final override def isInfoEnabled = false
   final override def isDebugEnabled = false
 
-  final protected override def notifyError(message: String): Unit = ()
-  final protected override def notifyError(cause: Throwable, message: String): Unit = ()
-  final protected override def notifyWarning(message: String): Unit = ()
-  final protected override def notifyInfo(message: String): Unit = ()
-  final protected override def notifyDebug(message: String): Unit = ()
+  final protected[akka] override def notifyError(message: String): Unit = ()
+  final protected[akka] override def notifyError(cause: Throwable, message: String): Unit = ()
+  final protected[akka] override def notifyWarning(message: String): Unit = ()
+  final protected[akka] override def notifyInfo(message: String): Unit = ()
+  final protected[akka] override def notifyDebug(message: String): Unit = ()
+}
+
+class LoggingAdapterExt(delegate: LoggingAdapter) extends LoggingAdapter {
+
+  override def isErrorEnabled: Boolean = delegate.isErrorEnabled
+
+  override def isInfoEnabled: Boolean = delegate.isInfoEnabled
+
+  override def isDebugEnabled: Boolean = delegate.isDebugEnabled
+
+  override def isWarningEnabled: Boolean = delegate.isWarningEnabled
+
+  override protected[akka] def notifyError(message: String): Unit = delegate.notifyError(message)
+
+  override protected[akka] def notifyError(cause: Throwable, message: String): Unit = delegate.notifyError(cause, message)
+
+  override protected[akka] def notifyInfo(message: String): Unit = delegate.notifyInfo(message)
+
+  override protected[akka] def notifyWarning(message: String): Unit = delegate.notifyWarning(message)
+
+  override protected[akka] def notifyDebug(message: String): Unit = delegate.notifyDebug(message)
+
+  /**
+   * Message template with varargs replacement arguments.
+   * @see [[LoggingAdapterExt]]
+   */
+  @annotation.varargs
+  def debug(template: String, args: Any*): Unit = {
+    if (isDebugEnabled) delegate.notifyDebug(format(template, args.asInstanceOf[mutable.WrappedArray[Any]].array: _*))
+  }
+
+  /**
+   * Message template with varargs replacement arguments.
+   * @see [[LoggingAdapterExt]]
+   */
+  @annotation.varargs
+  def warning(template: String, args: Any*): Unit = {
+    if (isWarningEnabled) delegate.notifyWarning(format(template, args.asInstanceOf[mutable.WrappedArray[Any]].array: _*))
+  }
+
+  /**
+   * Message template with varargs replacement arguments.
+   * @see [[LoggingAdapterExt]]
+   */
+  @annotation.varargs
+  def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any, args: Any*): Unit = {
+    if (isInfoEnabled) delegate.notifyInfo(format(template, args.asInstanceOf[mutable.WrappedArray[Any]].array: _*))
+  }
+
+  /**
+   * Message template with varargs replacement arguments.
+   * @see [[LoggingAdapterExt]]
+   */
+  @annotation.varargs
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any, args: Any*): Unit = {
+    if (isEnabled(level)) delegate.notifyLog(level, format(template, args.asInstanceOf[mutable.WrappedArray[Any]].array: _*))
+  }
+
+  /**
+   * Message template with varargs replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
+  @annotation.varargs
+  def error(cause: Throwable, template: String, args: Any*): Unit = {
+    if (isErrorEnabled) notifyError(cause, format(template, args.asInstanceOf[mutable.WrappedArray[Any]].array: _*))
+  }
+
+  /**
+   * Message template with vararg replacement argument.
+   * @see [[LoggingAdapter]]
+   */
+  @annotation.varargs
+  def error(template: String, args: Any*): Unit = {
+    if (isErrorEnabled) notifyError(format(template, args.asInstanceOf[mutable.WrappedArray[Any]].array: _*))
+  }
 }
