@@ -473,7 +473,7 @@ object HttpEntity {
     }.named("limitable"))
 
   /**
-    * INTERNAL API
-    */
+   * INTERNAL API
+   */
   private case class SizeLimit(maxBytes: Long, contentLength: Option[Long] = None) extends Attributes.Attribute
 }
