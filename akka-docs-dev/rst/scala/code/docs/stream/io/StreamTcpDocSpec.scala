@@ -38,13 +38,12 @@ class StreamTcpDocSpec extends AkkaSpec {
       //#echo-server-simple-bind
     }
     {
-      val localhost = TestUtils.temporaryServerAddress()
-      val connections: Source[IncomingConnection, Future[ServerBinding]] =
-        Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
-
+      val (host, port) = TestUtils.temporaryServerHostnameAndPort()
       //#echo-server-simple-handle
       import akka.stream.io.Framing
 
+      val connections: Source[IncomingConnection, Future[ServerBinding]] =
+        Tcp().bind(host, port)
       connections runForeach { connection =>
         println(s"New connection from: ${connection.remoteAddress}")
 
