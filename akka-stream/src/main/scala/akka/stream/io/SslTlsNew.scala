@@ -3,7 +3,7 @@
  */
 package akka.stream.io
 
-import java.nio.ByteBuffer
+import java.nio.{ BufferOverflowException, ByteBuffer }
 import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
@@ -30,10 +30,11 @@ class SslTlsNew(
 
   extends GraphStage[BidiShape[SslTlsOutbound, ByteString, ByteString, SslTlsInbound]] {
   private val name = s"StreamTls($role)"
-  val cipherIn = Inlet[ByteString](s"$name.cipherIn")
-  val cipherOut = Outlet[ByteString](s"$name.cipherOut")
-  val plainIn = Inlet[SslTlsOutbound](s"$name.transportIn")
-  val plainOut = Outlet[SslTlsInbound](s"$name.transportOut")
+  val cipherIn: Inlet[ByteString] = Inlet[ByteString](s"$name.cipherIn")
+  val cipherOut: Outlet[ByteString] = Outlet[ByteString](s"$name.cipherOut")
+  val plainIn: Inlet[SslTlsOutbound] = Inlet[SslTlsOutbound](s"$name.transportIn")
+  val plainOut: Outlet[SslTlsInbound] = Outlet[SslTlsInbound](s"$name.transportOut")
+
   override val shape: BidiShape[SslTlsOutbound, ByteString, ByteString, SslTlsInbound] =
     new BidiShape(plainIn, cipherOut, cipherIn, plainOut)
 
@@ -66,20 +67,21 @@ class SslTlsNew(
       }
 
       final override def onUpstreamFinish(): Unit = if (buffer.isEmpty && (byteBuffer.position == 0)) onInputFinished()
-      final override def onUpstreamFailure(ex: Throwable): Unit = onUpstreamFailure(ex)
+      final override def onUpstreamFailure(ex: Throwable): Unit = onInputFailed(ex)
 
       final def hasMoreBytes: Boolean =
         buffer.nonEmpty || !isClosed(in)
 
       final def readMoreBytesIntoBuffer(): Unit = {
-        if (buffer.isEmpty) pull(in)
-        else {
+        if (buffer.isEmpty && !hasBeenPulled(in)) pull(in)
+        else if (byteBuffer.position < capacity) {
+          println("reading to buffer")
           byteBuffer.compact()
           val copied = buffer.copyToBuffer(byteBuffer)
           buffer = buffer.drop(copied)
           byteBuffer.flip()
           onMoreBytes()
-        }
+        } else throw new BufferOverflowException()
       }
 
     }
@@ -107,7 +109,7 @@ class SslTlsNew(
             push(out, wrapByteString(ByteString.fromByteBuffer(byteBuffer)))
             byteBuffer.clear()
             onMoreSpace()
-          }
+          } else byteBuffer.clear()
         } else if (closed) complete(out)
       }
 
@@ -126,7 +128,6 @@ class SslTlsNew(
     }
 
     var currentSession = engine.getSession
-    applySessionParameters(firstSession)
 
     /*
      * So here’s the big picture summary: the SSLEngine is the boss, and it can
@@ -181,38 +182,34 @@ class SslTlsNew(
     val bufPlainIn: ByteBufferInput[SslTlsOutbound] =
       new ByteBufferInput[SslTlsOutbound](plainIn, _.bytes, 16665 + 2048) {
         override protected def onMoreBytes(): Unit = {
-          println("PUSH bufPlainIn")
-          if (!corkUser) doWrap()
-          if (hasMoreBytes) readMoreBytesIntoBuffer() // FIXME: can be a deep recursion :(
+          if (!corkUser) {
+            doWrap()
+            bufCipherOut.flushBytes()
+          }
         }
 
         override protected def onInputFinished(): Unit = engine.closeOutbound()
       }
 
-    val bufPlainOut: ByteBufferOutput[SslTlsInbound] =
-      new ByteBufferOutput[SslTlsInbound](plainOut, SessionBytes(currentSession, _), 16665 * 2 + 2048) {
-        override protected def onMoreSpace(): Unit = {
-          doUnwrap()
-          bufPlainOut.flushBytes()
-        }
+    val bufCipherOut: ByteBufferOutput[ByteString] =
+      new ByteBufferOutput[ByteString](cipherOut, identity, 16665 + 2048) {
+        override protected def onMoreSpace(): Unit = bufPlainIn.readMoreBytesIntoBuffer()
         override protected def onOutputFinished(): Unit = completeStage()
       }
 
     val bufCipherIn: ByteBufferInput[ByteString] =
       new ByteBufferInput[ByteString](cipherIn, identity, 16665 + 2048) {
         override protected def onMoreBytes(): Unit = {
-          println("PUSH bufCipherIn")
           doUnwrap()
           bufPlainOut.flushBytes()
-          if (hasMoreBytes) readMoreBytesIntoBuffer()
         }
 
         override protected def onInputFinished(): Unit = engine.closeInbound()
       }
 
-    val bufCipherOut: ByteBufferOutput[ByteString] =
-      new ByteBufferOutput[ByteString](cipherOut, identity, 16665 + 2048) {
-        override protected def onMoreSpace(): Unit = doWrap()
+    val bufPlainOut: ByteBufferOutput[SslTlsInbound] =
+      new ByteBufferOutput[SslTlsInbound](plainOut, SessionBytes(currentSession, _), 16665 * 2 + 2048) {
+        override protected def onMoreSpace(): Unit = bufCipherIn.readMoreBytesIntoBuffer()
         override protected def onOutputFinished(): Unit = completeStage()
       }
 
@@ -226,7 +223,7 @@ class SslTlsNew(
      */
     override def preStart(): Unit = {
       bufCipherIn.readMoreBytesIntoBuffer()
-      bufPlainIn.readMoreBytesIntoBuffer()
+      applySessionParameters(firstSession)
       doWrap()
     }
 
@@ -240,8 +237,8 @@ class SslTlsNew(
         s"remaining=${bufPlainIn.byteBuffer.remaining} " +
         s"out=${bufCipherOut.byteBuffer.position}")
 
-      if (lastHandshakeStatus == FINISHED) handshakeFinished()
       runDelegatedTasks()
+      if (lastHandshakeStatus == FINISHED) handshakeFinished()
       result.getStatus match {
         case OK     ⇒ bufCipherOut.flushBytes()
         case CLOSED ⇒ bufCipherOut.flushAndComplete()
@@ -262,16 +259,16 @@ class SslTlsNew(
       runDelegatedTasks()
       result.getStatus match {
         case OK ⇒
-          result.getHandshakeStatus match {
+          lastHandshakeStatus match {
             case NEED_WRAP ⇒
+              doWrap()
+              bufCipherOut.flushBytes()
             case FINISHED ⇒
               handshakeFinished()
-            case _ ⇒
-              if (bufCipherIn.byteBuffer.hasRemaining) doUnwrap()
+            case NEED_UNWRAP ⇒ doUnwrap()
           }
         case CLOSED           ⇒
         case BUFFER_UNDERFLOW ⇒ bufCipherIn.readMoreBytesIntoBuffer()
-        case BUFFER_OVERFLOW  ⇒
         case s                ⇒ failStage(new IllegalStateException(s"unexpected status $s in doUnwrap()"))
       }
     }

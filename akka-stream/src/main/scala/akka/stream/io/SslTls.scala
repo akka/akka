@@ -8,6 +8,7 @@ import java.lang.{ Integer ⇒ jInteger }
 import akka.japi
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
+import akka.stream.scaladsl.BidiFlow
 import akka.util.ByteString
 import javax.net.ssl._
 import scala.annotation.varargs
@@ -73,7 +74,7 @@ object SslTls {
    */
   def apply(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role,
             closing: Closing = IgnoreComplete, hostInfo: Option[(String, Int)] = None): ScalaFlow =
-    new scaladsl.BidiFlow(TlsModule(Attributes.none, sslContext, firstSession, role, closing, hostInfo))
+    BidiFlow.fromGraph(new SslTlsNew(sslContext, firstSession, role, closing, hostInfo, tracing = false))
 
   /**
    * Java API: create a StreamTls [[akka.stream.javadsl.BidiFlow]] in client mode. The
@@ -108,43 +109,6 @@ object SslTls {
   def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, hostInfo: japi.Option[japi.Pair[String, jInteger]], closing: Closing): JavaFlow =
     new javadsl.BidiFlow(apply(sslContext, firstSession, role, closing, hostInfo.asScala.map(e ⇒ (e.first, e.second))))
 
-  /**
-   * INTERNAL API.
-   */
-  private[akka] case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOut: Outlet[SslTlsInbound],
-                                     cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
-                                     shape: Shape, attributes: Attributes,
-                                     sslContext: SSLContext, firstSession: NegotiateNewSession,
-                                     role: Role, closing: Closing, hostInfo: Option[(String, Int)]) extends Module {
-    override def subModules: Set[Module] = Set.empty
-
-    override def withAttributes(att: Attributes): Module = copy(attributes = att)
-    override def carbonCopy: Module = {
-      val mod = TlsModule(attributes, sslContext, firstSession, role, closing, hostInfo)
-      if (plainIn == shape.inlets.head) mod
-      else mod.replaceShape(mod.shape.asInstanceOf[BidiShape[_, _, _, _]].reversed)
-    }
-
-    override def replaceShape(s: Shape) =
-      if (s == shape) this
-      else if (shape.hasSamePortsAs(s)) copy(shape = s)
-      else throw new IllegalArgumentException("trying to replace shape with different ports")
-  }
-
-  /**
-   * INTERNAL API.
-   */
-  private[akka] object TlsModule {
-    def apply(attributes: Attributes, sslContext: SSLContext, firstSession: NegotiateNewSession, role: Role, closing: Closing, hostInfo: Option[(String, Int)]): TlsModule = {
-      val name = attributes.nameOrDefault(s"StreamTls($role)")
-      val cipherIn = Inlet[ByteString](s"$name.cipherIn")
-      val cipherOut = Outlet[ByteString](s"$name.cipherOut")
-      val plainIn = Inlet[SslTlsOutbound](s"$name.transportIn")
-      val plainOut = Outlet[SslTlsInbound](s"$name.transportOut")
-      val shape = new BidiShape(plainIn, cipherOut, cipherIn, plainOut)
-      TlsModule(plainIn, plainOut, cipherIn, cipherOut, shape, attributes, sslContext, firstSession, role, closing, hostInfo)
-    }
-  }
 }
 
 /**

@@ -3,7 +3,7 @@ package akka.stream.io
 import java.security.{ SecureRandom, KeyStore }
 import javax.net.ssl.{ SSLContext, TrustManagerFactory, KeyManagerFactory }
 
-import akka.stream.ActorMaterializer
+import akka.stream.{ ClosedShape, ActorMaterializer }
 import akka.stream.io.TlsSpec._
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
@@ -36,7 +36,7 @@ object NewTlsSpec {
   def initSslContext(): SSLContext = initWithTrust("/truststore")
 }
 
-class NewTlsSpec extends AkkaSpec("akka.loglevel=DEBUG") {
+class NewTlsSpec extends AkkaSpec("akka.loglevel=DEBUG\n akka.stream.materializer.debug.fuzzing-mode=off") {
 
   implicit val materializer = ActorMaterializer()
 
@@ -59,13 +59,13 @@ class NewTlsSpec extends AkkaSpec("akka.loglevel=DEBUG") {
       val result =
         Source.single(ByteString("Hello world!"))
           .map(SendBytes)
-          .map { x ⇒ println("SND" + x); x }
+          .map { x ⇒ println("SND " + x); x }
           .via(clientTls join srv)
           .map(_.asInstanceOf[SessionBytes].bytes)
-          .map { x ⇒ println("RCV" + x); x }
+          .map { x ⇒ println("RCV " + x); x }
           .runFold(ByteString.empty)(_ ++ _)
 
-      Await.result(result, 3.seconds)
+      Await.result(result, 3.seconds) should ===(ByteString("Hello world!"))
     }
 
   }
