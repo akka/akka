@@ -156,6 +156,43 @@ concrete subtype.
   Therefore you must make sure that you always consume the entity data, even in the case that you are not actually
   interested in it!
 
+
+Limiting message entity length
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All message entities that Akka HTTP reads from the network automatically get a length verification check attached to
+them. This check makes sure that the total entity size is less than or equal to the configured
+``max-content-length`` [#]_, which is an important defense against certain Denial-of-Service attacks.
+However, a single global limit for all requests (or responses) is often too inflexible for applications that need to
+allow large limits for *some* requests (or responses) but want to clamp down on all messages not belonging into that
+group.
+In order to give you maximum flexibility in defining entity size limits according to your needs the ``HttpEntity``
+features a ``withSizeLimit`` method, which lets you adjust the globally configured maximum size for this particular
+entity, be it to increase or decrease any previously set value.
+This means that your application will receive all requests (or responses) from the HTTP layer, even the ones whose
+``Content-Length`` exceeds the configured limit (because you might want to increase the limit yourself).
+Only when the actual data stream ``Source`` contained in the entity is materialized will the boundary checks be
+actually applied. In case the length verification fails the respective stream will be terminated with an
+``EntityStreamException`` either directly at materialization time (if the ``Content-Length`` is known) or whenever more
+data bytes than allowed have been read.
+
+When called on ``Strict`` entities the ``withSizeLimit`` method will return the entity itself if the length is within
+the bound, otherwise a ``Default`` entity with a single element data stream. This allows for potential refinement of the
+entity size limit at a later point (before materialization of the data stream).
+
+By default all message entities produced by the HTTP layer automatically carry the limit that is defined in the
+application's ``max-content-length`` config setting. If the entity is transformed in a way that changes the
+content-length and then another limit is applied then this new limit will be evaluated against the new
+content-length. If the entity is transformed in a way that changes the content-length and no new limit is applied
+then the previous limit will be applied against the previous content-length.
+Generally this behavior should be in line with your expectations.
+
+.. [#] `akka.http.parsing.max-content-length` (applying to server- as well as client-side),
+       `akka.http.server.parsing.max-content-length` (server-side only),
+       `akka.http.client.parsing.max-content-length` (client-side only) or
+       `akka.http.host-connection-pool.client.parsing.max-content-length` (only host-connection-pools)
+
+
 Special processing for HEAD requests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
