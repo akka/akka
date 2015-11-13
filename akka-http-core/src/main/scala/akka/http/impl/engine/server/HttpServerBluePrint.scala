@@ -106,8 +106,7 @@ private[http] object HttpServerBluePrint {
 
     val rendererPipeline =
       Flow[ResponseRenderingContext]
-        .via(Flow[ResponseRenderingContext].transform(() ⇒ new ErrorResponseRecovery(log,
-          settings)).named("recover")) // FIXME: simplify after #16394 is closed
+        .recover(errorResponseRecovery(log, settings))
         .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
         .flatMapConcat(ConstantFun.scalaIdentityFunction)
         .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
@@ -245,6 +244,25 @@ private[http] object HttpServerBluePrint {
     }
   }
 
+  def errorResponseRecovery(log: LoggingAdapter,
+                            settings: ServerSettings): PartialFunction[Throwable, ResponseRenderingContext] = {
+    case EntityStreamSizeException(limit, contentLength) ⇒
+      val status = StatusCodes.RequestEntityTooLarge
+      val summary = contentLength match {
+        case Some(cl) ⇒ s"Request Content-Length of $cl bytes exceeds the configured limit of $limit bytes"
+        case None     ⇒ s"Aggregated data length of request entity exceeds the configured limit of $limit bytes"
+      }
+      val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
+      logParsingError(info withSummaryPrepended s"Illegal request, responding with status '$status'",
+        log, settings.parserSettings.errorLoggingVerbosity)
+      val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
+      ResponseRenderingContext(HttpResponse(status, entity = msg), closeRequested = true)
+
+    case NonFatal(e) ⇒
+      log.error(e, "Internal server error, sending 500 response")
+      ResponseRenderingContext(HttpResponse(StatusCodes.InternalServerError), closeRequested = true)
+  }
+
   /**
    * The `Expect: 100-continue` header has a special status in HTTP.
    * It allows the client to send an `Expect: 100-continue` header with the request and then pause request sending
@@ -279,43 +297,6 @@ private[http] object HttpServerBluePrint {
    * we've received a `100 Continue` response.
    */
   case object OneHundredContinue
-
-  final class ErrorResponseRecovery(log: LoggingAdapter, settings: ServerSettings)
-    extends PushPullStage[ResponseRenderingContext, ResponseRenderingContext] {
-
-    import akka.stream.stage.Context
-
-    private[this] var errorResponse: ResponseRenderingContext = _
-
-    override def onPush(elem: ResponseRenderingContext, ctx: Context[ResponseRenderingContext]) = ctx.push(elem)
-
-    override def onPull(ctx: Context[ResponseRenderingContext]) =
-      if (ctx.isFinishing) ctx.pushAndFinish(errorResponse)
-      else ctx.pull()
-
-    override def onUpstreamFailure(error: Throwable, ctx: Context[ResponseRenderingContext]) =
-      error match {
-        case EntityStreamSizeException(limit, contentLength) ⇒
-          val status = StatusCodes.RequestEntityTooLarge
-          val summary = contentLength match {
-            case Some(cl) ⇒ s"Request Content-Length of $cl bytes exceeds the configured limit of $limit bytes"
-            case None     ⇒ s"Aggregated data length of request entity exceeds the configured limit of $limit bytes"
-          }
-          val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
-          logParsingError(info withSummaryPrepended s"Illegal request, responding with status '$status'",
-            log, settings.parserSettings.errorLoggingVerbosity)
-          val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
-          errorResponse = ResponseRenderingContext(HttpResponse(status, entity = msg), closeRequested = true)
-          ctx.absorbTermination()
-
-        case NonFatal(e) ⇒
-          log.error(e, "Internal server error, sending 500 response")
-          errorResponse = ResponseRenderingContext(HttpResponse(StatusCodes.InternalServerError), closeRequested = true)
-          ctx.absorbTermination()
-
-        case _ ⇒ ctx.fail(error)
-      }
-  }
 
   private trait WebsocketSetup {
     def websocketFlow: Flow[ByteString, ByteString, Any]
