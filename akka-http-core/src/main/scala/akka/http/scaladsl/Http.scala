@@ -669,17 +669,15 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
     /**
      * Handles the connection with the given handler function.
-     * Returns the materialization result of the underlying flow materialization.
      */
     def handleWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: Materializer): Unit =
       handleWith(Flow[HttpRequest].map(handler))
 
     /**
      * Handles the connection with the given handler function.
-     * Returns the materialization result of the underlying flow materialization.
      */
-    def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: Materializer): Unit =
-      handleWith(Flow[HttpRequest].mapAsync(1)(handler))
+    def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse], parallelism: Int = 1)(implicit fm: Materializer): Unit =
+      handleWith(Flow[HttpRequest].mapAsync(parallelism)(handler))
   }
 
   /**
