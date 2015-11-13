@@ -67,9 +67,6 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Returns a copy of this message with the list of headers transformed by the given function */
   def mapHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Self = withHeaders(f(headers))
 
-  /** Returns a copy of this message with the entity transformed by the given function */
-  def mapEntity(f: HttpEntity ⇒ MessageEntity): Self = withEntity(f(entity))
-
   /**
    * The content encoding as specified by the Content-Encoding header. If no Content-Encoding header is present the
    * default value 'identity' is returned.
