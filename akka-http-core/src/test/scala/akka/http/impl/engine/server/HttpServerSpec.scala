@@ -5,9 +5,8 @@
 package akka.http.impl.engine.server
 
 import java.net.{ InetAddress, InetSocketAddress }
-
 import akka.http.ServerSettings
-
+import scala.reflect.ClassTag
 import scala.util.Random
 import scala.annotation.tailrec
 import scala.concurrent.duration._
@@ -34,7 +33,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
 
-      expectRequest shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
+      expectRequest() shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
     }
 
     "deliver a request as soon as all headers are received" in new TestSetup {
@@ -44,7 +43,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
@@ -87,7 +86,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |abcdef
              |""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
@@ -123,7 +122,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |abcdefghijkl""")
 
-      expectRequest shouldEqual
+      expectRequest() shouldEqual
         HttpRequest(
           method = POST,
           uri = "http://example.com/strict",
@@ -138,7 +137,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |abcdef""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
@@ -161,7 +160,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |abcdef
              |""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
@@ -182,7 +181,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |abcdefghijkl""")
 
-      expectRequest shouldEqual
+      expectRequest() shouldEqual
         HttpRequest(
           method = POST,
           uri = "http://example.com/strict",
@@ -195,7 +194,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |mnopqrstuvwx""")
 
-      expectRequest shouldEqual
+      expectRequest() shouldEqual
         HttpRequest(
           method = POST,
           uri = "http://example.com/next-strict",
@@ -210,7 +209,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |abcdef""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
@@ -232,7 +231,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |abcde""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) ⇒
           data shouldEqual ByteString("abcde")
       }
@@ -247,7 +246,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |abcdef
              |""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
@@ -270,7 +269,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |abcde""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) ⇒
           data shouldEqual ByteString("abcde")
       }
@@ -283,7 +282,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |abcdef""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
@@ -306,7 +305,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |abcdef
              |""")
 
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
@@ -327,7 +326,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Content-Length: 12
              |
              |abcdef""")
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
@@ -348,7 +347,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |6
              |abcdef
              |""")
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
@@ -367,7 +366,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |
              |""")
-      expectRequest shouldEqual HttpRequest(GET, uri = "http://example.com/", headers = List(Host("example.com")))
+      expectRequest() shouldEqual HttpRequest(GET, uri = "http://example.com/", headers = List(Host("example.com")))
     }
 
     "keep HEAD request when transparent-head-requests are disabled" in new TestSetup {
@@ -376,7 +375,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |
              |""")
-      expectRequest shouldEqual HttpRequest(HEAD, uri = "http://example.com/", headers = List(Host("example.com")))
+      expectRequest() shouldEqual HttpRequest(HEAD, uri = "http://example.com/", headers = List(Host("example.com")))
     }
 
     "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Strict)" in new TestSetup {
@@ -384,7 +383,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Host: example.com
              |
              |""")
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain`, ByteString("abcd"))))
           expectResponseWithWipedDate(
@@ -404,7 +403,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
       val data = TestPublisher.manualProbe[ByteString]()
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain`, 4, Source(data))))
           val dataSub = data.expectSubscription()
@@ -426,7 +425,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
       val data = TestPublisher.manualProbe[ByteString]()
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain`, Source(data))))
           val dataSub = data.expectSubscription()
@@ -449,7 +448,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
       val data = TestPublisher.manualProbe[ChunkStreamPart]()
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain`, Source(data))))
           val dataSub = data.expectSubscription()
@@ -472,7 +471,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
       val data = TestPublisher.manualProbe[ByteString]()
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = CloseDelimited(ContentTypes.`text/plain`, Source(data))))
           val dataSub = data.expectSubscription()
@@ -489,7 +488,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Content-Length: 16
              |
              |""")
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink(dataProbe)).run()
@@ -525,7 +524,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Transfer-Encoding: chunked
              |
              |""")
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, Chunked(ContentType(`application/octet-stream`, None), data), _) ⇒
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink(dataProbe)).run()
@@ -566,7 +565,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |Content-Length: 16
              |
              |""")
-      inside(expectRequest) {
+      inside(expectRequest()) {
         case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) ⇒
           responses.sendNext(HttpResponse(entity = "Yeah"))
           expectResponseWithWipedDate(
@@ -587,7 +586,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""".stripMarginWithNewline("\r\n"))
 
-      expectRequest shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
+      expectRequest() shouldEqual HttpRequest(uri = "http://example.com/", headers = List(Host("example.com")))
 
       responses.expectRequest()
       responses.sendError(new RuntimeException("CRASH BOOM BANG"))
@@ -609,7 +608,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
 
-      val HttpRequest(POST, _, _, entity, _) = expectRequest
+      val HttpRequest(POST, _, _, entity, _) = expectRequest()
       responses.sendNext(HttpResponse(entity = entity))
       responses.sendComplete()
 
@@ -644,7 +643,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
 
-      expectRequest shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
+      expectRequest() shouldEqual HttpRequest(uri = "http://example.com//foo", headers = List(Host("example.com")))
     }
 
     "use default-host-header for HTTP/1.0 requests" in new TestSetup {
@@ -652,10 +651,11 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
 
-      expectRequest shouldEqual HttpRequest(uri = "http://example.com/abc", protocol = HttpProtocols.`HTTP/1.0`)
+      expectRequest() shouldEqual HttpRequest(uri = "http://example.com/abc", protocol = HttpProtocols.`HTTP/1.0`)
 
       override def settings: ServerSettings = super.settings.copy(defaultHostHeader = Host("example.com"))
     }
+
     "fail an HTTP/1.0 request with 400 if no default-host-header is set" in new TestSetup {
       send("""GET /abc HTTP/1.0
              |
@@ -686,12 +686,196 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""".stripMarginWithNewline("\r\n"))
 
-      val request = expectRequest
+      val request = expectRequest()
       request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
     }
+
+    def isDefinedVia = afterWord("is defined via")
+    "support request length verification" which isDefinedVia {
+
+      class LengthVerificationTest(maxContentLength: Int) extends TestSetup(maxContentLength) {
+        val entityBase = "0123456789ABCD"
+        def sendStrictRequestWithLength(bytes: Int) =
+          send(s"""POST /foo HTTP/1.1
+                 |Host: example.com
+                 |Content-Length: $bytes
+                 |
+                 |${entityBase take bytes}""")
+        def sendDefaultRequestWithLength(bytes: Int) = {
+          send(s"""POST /foo HTTP/1.1
+                 |Host: example.com
+                 |Content-Length: $bytes
+                 |
+                 |${entityBase take 3}""")
+          send(entityBase.slice(3, 7))
+          send(entityBase.slice(7, bytes))
+        }
+        def sendChunkedRequestWithLength(bytes: Int) =
+          send(s"""POST /foo HTTP/1.1
+                 |Host: example.com
+                 |Transfer-Encoding: chunked
+                 |
+                 |3
+                 |${entityBase take 3}
+                 |4
+                 |${entityBase.slice(3, 7)}
+                 |${bytes - 7}
+                 |${entityBase.slice(7, bytes)}
+                 |0
+                 |
+                 |""")
+
+        implicit class XRequest(request: HttpRequest) {
+          def expectEntity[T <: HttpEntity: ClassTag](bytes: Int) =
+            inside(request) {
+              case HttpRequest(POST, _, _, entity: T, _) ⇒
+                entity.toStrict(100.millis).awaitResult(100.millis).data.utf8String shouldEqual entityBase.take(bytes)
+            }
+
+          def expectDefaultEntityWithSizeError(limit: Int, actualSize: Int) =
+            inside(request) {
+              case HttpRequest(POST, _, _, entity @ HttpEntity.Default(_, `actualSize`, _), _) ⇒
+                val error = the[Exception]
+                  .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis))
+                  .getCause
+                error shouldEqual EntityStreamSizeException(limit, Some(actualSize))
+
+                responses.expectRequest()
+                responses.sendError(error.asInstanceOf[Exception])
+
+                expectResponseWithWipedDate(
+                  s"""HTTP/1.1 413 Request Entity Too Large
+                      |Server: akka-http/test
+                      |Date: XXXX
+                      |Connection: close
+                      |Content-Type: text/plain; charset=UTF-8
+                      |Content-Length: 75
+                      |
+                  |Request Content-Length of $actualSize bytes exceeds the configured limit of $limit bytes""")
+            }
+
+          def expectChunkedEntityWithSizeError(limit: Int) =
+            inside(request) {
+              case HttpRequest(POST, _, _, entity: HttpEntity.Chunked, _) ⇒
+                val error = the[Exception]
+                  .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis))
+                  .getCause
+                error shouldEqual EntityStreamSizeException(limit, None)
+
+                responses.expectRequest()
+                responses.sendError(error.asInstanceOf[Exception])
+
+                expectResponseWithWipedDate(
+                  s"""HTTP/1.1 413 Request Entity Too Large
+                    |Server: akka-http/test
+                    |Date: XXXX
+                    |Connection: close
+                    |Content-Type: text/plain; charset=UTF-8
+                    |Content-Length: 81
+                    |
+                    |Aggregated data length of request entity exceeds the configured limit of $limit bytes""")
+            }
+        }
+      }
+
+      "the config setting (strict entity)" in new LengthVerificationTest(maxContentLength = 10) {
+        sendStrictRequestWithLength(10)
+        expectRequest().expectEntity[HttpEntity.Strict](10)
+
+        // entities that would be strict but have a Content-Length > the configured maximum are delivered
+        // as single element Default entities!
+        sendStrictRequestWithLength(11)
+        expectRequest().expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
+      }
+
+      "the config setting (default entity)" in new LengthVerificationTest(maxContentLength = 10) {
+        sendDefaultRequestWithLength(10)
+        expectRequest().expectEntity[HttpEntity.Default](10)
+
+        sendDefaultRequestWithLength(11)
+        expectRequest().expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
+      }
+
+      "the config setting (chunked entity)" in new LengthVerificationTest(maxContentLength = 10) {
+        sendChunkedRequestWithLength(10)
+        expectRequest().expectEntity[HttpEntity.Chunked](10)
+
+        sendChunkedRequestWithLength(11)
+        expectRequest().expectChunkedEntityWithSizeError(limit = 10)
+      }
+
+      "a smaller programmatically-set limit (strict entity)" in new LengthVerificationTest(maxContentLength = 12) {
+        sendStrictRequestWithLength(10)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Strict](10)
+
+        // entities that would be strict but have a Content-Length > the configured maximum are delivered
+        // as single element Default entities!
+        sendStrictRequestWithLength(11)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
+      }
+
+      "a smaller programmatically-set limit (default entity)" in new LengthVerificationTest(maxContentLength = 12) {
+        sendDefaultRequestWithLength(10)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Default](10)
+
+        sendDefaultRequestWithLength(11)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
+      }
+
+      "a smaller programmatically-set limit (chunked entity)" in new LengthVerificationTest(maxContentLength = 12) {
+        sendChunkedRequestWithLength(10)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Chunked](10)
+
+        sendChunkedRequestWithLength(11)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectChunkedEntityWithSizeError(limit = 10)
+      }
+
+      "a larger programmatically-set limit (strict entity)" in new LengthVerificationTest(maxContentLength = 8) {
+        // entities that would be strict but have a Content-Length > the configured maximum are delivered
+        // as single element Default entities!
+        sendStrictRequestWithLength(10)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Default](10)
+
+        sendStrictRequestWithLength(11)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
+      }
+
+      "a larger programmatically-set limit (default entity)" in new LengthVerificationTest(maxContentLength = 8) {
+        sendDefaultRequestWithLength(10)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Default](10)
+
+        sendDefaultRequestWithLength(11)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
+      }
+
+      "a larger programmatically-set limit (chunked entity)" in new LengthVerificationTest(maxContentLength = 8) {
+        sendChunkedRequestWithLength(10)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Chunked](10)
+
+        sendChunkedRequestWithLength(11)
+        expectRequest().mapEntity(_ withSizeLimit 10).expectChunkedEntityWithSizeError(limit = 10)
+      }
+
+      "the config setting applied before another attribute (default entity)" in new LengthVerificationTest(maxContentLength = 10) {
+        def nameDataSource(name: String): RequestEntity ⇒ RequestEntity = {
+          case x: HttpEntity.Default ⇒ x.copy(data = x.data named name)
+        }
+        sendDefaultRequestWithLength(10)
+        expectRequest().mapEntity(nameDataSource("foo")).expectEntity[HttpEntity.Default](10)
+
+        sendDefaultRequestWithLength(11)
+        expectRequest().mapEntity(nameDataSource("foo")).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
+      }
+    }
   }
-  class TestSetup extends HttpServerTestSetupBase {
+  class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase {
     implicit def system = spec.system
     implicit def materializer = spec.materializer
+
+    override def settings = {
+      val s = super.settings
+      if (maxContentLength < 0) s
+      else s.copy(parserSettings = s.parserSettings.copy(maxContentLength = maxContentLength))
+    }
   }
 }

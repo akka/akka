@@ -7,7 +7,7 @@ package akka.http.impl.engine.client
 import language.existentials
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
-import akka.stream.io.{ SessionBytes, SslTlsInbound, SendBytes, SslTlsOutbound }
+import akka.stream.io.{ SessionBytes, SslTlsInbound, SendBytes }
 import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream._
@@ -71,7 +71,8 @@ private[http] object OutgoingConnectionBlueprint {
       .via(headAndTailFlow)
       .collect {
         case (ResponseStart(statusCode, protocol, headers, createEntity, _), entityParts) ⇒
-          HttpResponse(statusCode, headers, createEntity(entityParts), protocol)
+          val entity = createEntity(entityParts) withSizeLimit parserSettings.maxContentLength
+          HttpResponse(statusCode, headers, entity, protocol)
         case (MessageStartError(_, info), _) ⇒ throw IllegalResponseException(info)
       }
 
