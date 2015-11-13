@@ -154,14 +154,13 @@ object SslTls {
  * unwrapping [[SendBytes]].
  */
 object SslTlsPlacebo {
-  val forScala: scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
-    scaladsl.BidiFlow.fromGraph(scaladsl.FlowGraph.create() { implicit b ⇒
-      // this constructs a session for (invalid) protocol SSL_NULL_WITH_NULL_NULL
-      val session = SSLContext.getDefault.createSSLEngine.getSession
-      val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(bytes) ⇒ bytes })
-      val bottom = b.add(scaladsl.Flow[ByteString].map(SessionBytes(session, _)))
-      BidiShape.fromFlows(top, bottom)
-    })
+  val forScala: scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] = {
+    val session = SSLContext.getDefault.createSSLEngine.getSession
+    val top = scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(bytes) ⇒ bytes }
+    val bottom = scaladsl.Flow[ByteString].map(SessionBytes(session, _))
+    scaladsl.BidiFlow.fromFlows(top, bottom)
+  }
+
   val forJava: javadsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
     new javadsl.BidiFlow(forScala)
 }
@@ -348,7 +347,9 @@ case class SessionBytes(session: SSLSession, bytes: ByteString) extends SslTlsIn
  * This is the supertype of all messages that the SslTls stage accepts on its
  * plaintext side.
  */
-sealed trait SslTlsOutbound
+sealed trait SslTlsOutbound {
+  def bytes: ByteString
+}
 
 /**
  * Initiate a new session negotiation. Any [[SendBytes]] commands following
@@ -369,6 +370,8 @@ case class NegotiateNewSession(
   enabledProtocols: Option[immutable.Seq[String]],
   clientAuth: Option[ClientAuth],
   sslParameters: Option[SSLParameters]) extends SslTlsOutbound {
+
+  override def bytes: ByteString = ByteString.empty
 
   /**
    * Java API: Make a copy of this message with the given `enabledCipherSuites`.
