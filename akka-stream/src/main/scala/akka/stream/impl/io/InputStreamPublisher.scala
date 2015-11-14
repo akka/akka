@@ -33,7 +33,7 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
   extends akka.stream.actor.ActorPublisher[ByteString]
   with ActorLogging {
 
-  // TODO possibly de-duplicate with SynchronousFilePublisher?
+  // TODO possibly de-duplicate with FilePublisher?
 
   import InputStreamPublisher._
 

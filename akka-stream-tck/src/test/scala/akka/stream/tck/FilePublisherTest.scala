@@ -7,8 +7,7 @@ import java.io.{ File, FileWriter }
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.stream.io.SynchronousFileSource
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{ Source, Sink }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.{ EventFilter, TestEvent }
@@ -16,7 +15,7 @@ import akka.util.ByteString
 import org.reactivestreams.Publisher
 import org.testng.annotations.{ AfterClass, BeforeClass }
 
-class SynchronousFilePublisherTest extends AkkaPublisherVerification[ByteString] {
+class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
 
   val ChunkSize = 256
   val Elements = 1000
@@ -37,7 +36,7 @@ class SynchronousFilePublisherTest extends AkkaPublisherVerification[ByteString]
   }
 
   def createPublisher(elements: Long): Publisher[ByteString] =
-    SynchronousFileSource(file, chunkSize = 512)
+    Source.file(file, chunkSize = 512)
       .take(elements)
       .runWith(Sink.publisher(false))
 
