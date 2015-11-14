@@ -3,13 +3,17 @@
  */
 package akka.stream.scaladsl
 
+import java.io.File
+
 import akka.actor.{ ActorRef, Props }
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
+import akka.stream.impl.io.FileSink
 import akka.stream.stage.{ Context, PushStage, SyncDirective, TerminationDirective }
 import akka.stream.{ javadsl, _ }
+import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
@@ -218,10 +222,22 @@ object Sink {
    * upstream and then stop back pressure.
    *
    * @param bufferSize The size of the buffer in element count
-   * @param timeout Timeout for ``SinkQueue.pull():Future[Option[T] ]``
+   * @param timeout Timeout for ``SinkQueue.pull():Future[Option[T]]``
    */
   def queue[T](bufferSize: Int, timeout: FiniteDuration = 5.seconds): Sink[T, SinkQueue[T]] = {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
     new Sink(new AcknowledgeSink(bufferSize, DefaultAttributes.acknowledgeSink, shape("AcknowledgeSink"), timeout))
   }
+
+  /**
+   * Creates a Sink which writes incoming [[ByteString]] elements to the given file and either overwrites
+   * or appends to it.
+   *
+   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   *
+   * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
+   * unless configured otherwise by using [[ActorAttributes]].
+   */
+  def file(f: File, append: Boolean = false): Sink[ByteString, Future[Long]] =
+    new Sink(new FileSink(f, append, DefaultAttributes.fileSink, shape("FileSink")))
 }

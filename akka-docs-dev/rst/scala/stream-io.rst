@@ -110,7 +110,7 @@ on files.
   Once Akka is free to require JDK8 (from ``2.4.x``) these implementations will be updated to make use of the
   new NIO APIs (i.e. :class:`AsynchronousFileChannel`).
 
-Streaming data from a file is as easy as defining a `SynchronousFileSource` given a target file, and an optional
+Streaming data from a file is as easy as creating a `Source.file` given a target file, and an optional
 ``chunkSize`` which determines the buffer size determined as one "element" in such stream:
 
 .. includecode:: code/docs/stream/io/StreamFileDocSpec.scala#file-source
@@ -122,9 +122,3 @@ dispatcher for file IO operations globally, you can do so by changing the ``akka
 or for a specific stage by specifying a custom Dispatcher in code, like this:
 
 .. includecode:: code/docs/stream/io/StreamFileDocSpec.scala#custom-dispatcher-code
-
-If you would like to keep all sink and source factories defined on the :class:`Source` and :class:`Sink` objects
-instead of using the separate objects contained in ``akka.stream.io`` to create these you can import an *implicit
-coversion* that makes these operations available as shown below:
-
-.. includecode:: code/docs/stream/io/StreamFileDocSpec.scala#source-sink-implicits

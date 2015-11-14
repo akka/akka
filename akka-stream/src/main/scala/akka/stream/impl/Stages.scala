@@ -23,6 +23,8 @@ import scala.collection.immutable
 private[stream] object Stages {
 
   object DefaultAttributes {
+    val IODispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+
     val timerTransform = name("timerTransform")
     val stageFactory = name("stageFactory")
     val fused = name("fused")
@@ -79,10 +81,10 @@ private[stream] object Stages {
     val subscriberSource = name("subscriberSource")
     val actorPublisherSource = name("actorPublisherSource")
     val actorRefSource = name("actorRefSource")
-    val synchronousFileSource = name("synchronousFileSource")
     val inputStreamSource = name("inputStreamSource")
     val acknowledgeSource = name("acknowledgeSource")
     val outputStreamSource = name("outputStreamSource")
+    val fileSource = name("fileSource") and IODispatcher
 
     val subscriberSink = name("subscriberSink")
     val cancelledSink = name("cancelledSink")
@@ -92,10 +94,10 @@ private[stream] object Stages {
     val ignoreSink = name("ignoreSink")
     val actorRefSink = name("actorRefSink")
     val actorSubscriberSink = name("actorSubscriberSink")
-    val synchronousFileSink = name("synchronousFileSink")
     val outputStreamSink = name("outputStreamSink")
     val acknowledgeSink = name("acknowledgeSink")
     val inputStreamSink = name("inputStreamSink")
+    val fileSink = name("fileSource") and IODispatcher
   }
 
   import DefaultAttributes._

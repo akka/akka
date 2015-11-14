@@ -18,7 +18,7 @@ import scala.language.implicitConversions
  *   import akka.stream.io._
  *
  *   // explicitly using IO Source:
- *   SynchronousFileSource(file).map(...)
+ *   FileSource(file).map(...)
  *
  *   // using implicit conversion:
  *   import akka.stream.io.Implicits._
@@ -29,19 +29,11 @@ object Implicits {
 
   // ---- Sources ----
 
-  implicit final class AddSynchronousFileSource(val s: Source.type) extends AnyVal {
-    def synchronousFile: SynchronousFileSource.type = SynchronousFileSource
-  }
-
   implicit final class AddInputStreamSource(val s: Source.type) extends AnyVal {
     def inputStream: InputStreamSource.type = InputStreamSource
   }
 
   // ---- Sinks ----
-
-  implicit final class AddSynchronousFileSink(val s: Sink.type) extends AnyVal {
-    def synchronousFile: SynchronousFileSink.type = SynchronousFileSink
-  }
 
   implicit final class AddOutputStreamSink(val s: Sink.type) extends AnyVal {
     def outputStream: OutputStreamSink.type = OutputStreamSink

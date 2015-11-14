@@ -1,5 +1,7 @@
 package docs
 
+import java.io.File
+
 import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl._
 import akka.stream._
@@ -208,6 +210,14 @@ class MigrationsScala extends AkkaSpec {
         //#query-param
         val param: Option[String] = uri.query().get("a")
         //#query-param
+
+        //#file-source-sink
+        val fileSrc = Source.file(new File("."))
+
+        val otherFileSrc = Source.file(new File("."), 1024)
+
+        val someFileSink = Sink.file(new File("."))
+        //#file-source-sink
       }
     }
   }

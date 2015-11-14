@@ -3,10 +3,13 @@
  */
 package akka.stream.javadsl
 
+import java.io.File
+
 import akka.actor.{ ActorRef, Props }
 import akka.japi.function
 import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
+import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.concurrent.duration.FiniteDuration
@@ -153,6 +156,30 @@ object Sink {
    */
   def queue[T](bufferSize: Int, timeout: FiniteDuration): Sink[T, SinkQueue[T]] =
     new Sink(scaladsl.Sink.queue(bufferSize, timeout))
+
+  /**
+   * Creates a Sink that writes incoming [[ByteString]] elements to the given file.
+   * Overwrites existing files, if you want to append to an existing file use [[#file(File, Boolean)]] and
+   * pass in `true` as the Boolean argument.
+   *
+   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   */
+  def file(f: File): javadsl.Sink[ByteString, Future[java.lang.Long]] = file(f, append = false)
+
+  /**
+   * Creates a Sink that writes incoming [[ByteString]] elements to the given file and either overwrites
+   * or appends to it.
+   *
+   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   */
+  def file(f: File, append: Boolean): javadsl.Sink[ByteString, Future[java.lang.Long]] =
+    new Sink(scaladsl.Sink.file(f, append)).asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
 
 }
 

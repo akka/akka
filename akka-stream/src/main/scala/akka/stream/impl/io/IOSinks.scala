@@ -6,6 +6,7 @@ package akka.stream.impl.io
 import java.io.{ File, OutputStream }
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.{ ActorMaterializer, MaterializationContext, Attributes, SinkShape }
 import akka.stream.ActorAttributes.Dispatcher
 import akka.util.ByteString
@@ -16,7 +17,7 @@ import scala.concurrent.{ Future, Promise }
  * Creates simple synchronous (Java 6 compatible) Sink which writes all incoming elements to the given file
  * (creating it before hand if necessary).
  */
-private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attributes: Attributes, shape: SinkShape[ByteString])
+private[akka] final class FileSink(f: File, append: Boolean, val attributes: Attributes, shape: SinkShape[ByteString])
   extends SinkModule[ByteString, Future[Long]](shape) {
 
   override def create(context: MaterializationContext) = {
@@ -24,18 +25,18 @@ private[akka] final class SynchronousFileSink(f: File, append: Boolean, val attr
     val settings = mat.effectiveSettings(context.effectiveAttributes)
 
     val bytesWrittenPromise = Promise[Long]()
-    val props = SynchronousFileSubscriber.props(f, bytesWrittenPromise, settings.maxInputBufferSize, append)
-    val dispatcher = context.effectiveAttributes.get[Dispatcher](IOSettings.IODispatcher).dispatcher
+    val props = FileSubscriber.props(f, bytesWrittenPromise, settings.maxInputBufferSize, append)
+    val dispatcher = context.effectiveAttributes.get[Dispatcher](IODispatcher).dispatcher
 
     val ref = mat.actorOf(context, props.withDispatcher(dispatcher))
     (akka.stream.actor.ActorSubscriber[ByteString](ref), bytesWrittenPromise.future)
   }
 
   override protected def newInstance(shape: SinkShape[ByteString]): SinkModule[ByteString, Future[Long]] =
-    new SynchronousFileSink(f, append, attributes, shape)
+    new FileSink(f, append, attributes, shape)
 
   override def withAttributes(attr: Attributes): Module =
-    new SynchronousFileSink(f, append, attr, amendShape(attr))
+    new FileSink(f, append, attr, amendShape(attr))
 }
 
 /**
