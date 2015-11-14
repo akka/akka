@@ -145,7 +145,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     Persistence(context.system).settings.atLeastOnceDelivery.redeliveryBurstLimit
 
   /**
-   * After this number of delivery attempts a [[AtLeastOnceDelivery.UnconfirmedWarning]] message
+   * After this number of delivery attempts an [[AtLeastOnceDelivery.UnconfirmedWarning]] message
    * will be sent to `self`. The count is reset after a restart.
    *
    * The default value can be configured with the
