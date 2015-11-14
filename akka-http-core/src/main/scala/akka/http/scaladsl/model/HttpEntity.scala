@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.util.ByteString
 import akka.stream.scaladsl._
-import akka.stream.io.SynchronousFileSource
 import akka.stream.stage._
 import akka.stream._
 import akka.{ japi, stream }
@@ -195,7 +194,7 @@ object HttpEntity {
     val fileLength = file.length
     if (fileLength > 0)
       Default(contentType, fileLength,
-        if (chunkSize > 0) SynchronousFileSource(file, chunkSize) else SynchronousFileSource(file))
+        if (chunkSize > 0) Source.file(file, chunkSize) else Source.file(file))
     else empty(contentType)
   }
 

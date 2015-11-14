@@ -13,16 +13,16 @@ import akka.util.ByteString
 import scala.concurrent.Promise
 
 /** INTERNAL API */
-private[akka] object SynchronousFileSubscriber {
+private[akka] object FileSubscriber {
   def props(f: File, completionPromise: Promise[Long], bufSize: Int, append: Boolean) = {
     require(bufSize > 0, "buffer size must be > 0")
-    Props(classOf[SynchronousFileSubscriber], f, completionPromise, bufSize, append).withDeploy(Deploy.local)
+    Props(classOf[FileSubscriber], f, completionPromise, bufSize, append).withDeploy(Deploy.local)
   }
 
 }
 
 /** INTERNAL API */
-private[akka] class SynchronousFileSubscriber(f: File, bytesWrittenPromise: Promise[Long], bufSize: Int, append: Boolean)
+private[akka] class FileSubscriber(f: File, bytesWrittenPromise: Promise[Long], bufSize: Int, append: Boolean)
   extends akka.stream.actor.ActorSubscriber
   with ActorLogging {
 
@@ -58,7 +58,7 @@ private[akka] class SynchronousFileSubscriber(f: File, bytesWrittenPromise: Prom
       }
 
     case ActorSubscriberMessage.OnError(cause) ⇒
-      log.error(cause, "Tearing down SynchronousFileSink({}) due to upstream error", f.getAbsolutePath)
+      log.error(cause, "Tearing down FileSink({}) due to upstream error", f.getAbsolutePath)
       context.stop(self)
 
     case ActorSubscriberMessage.OnComplete ⇒

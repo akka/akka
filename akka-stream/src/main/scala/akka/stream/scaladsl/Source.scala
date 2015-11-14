@@ -3,13 +3,17 @@
  */
 package akka.stream.scaladsl
 
+import java.io.File
+
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStages.TickSource
+import akka.stream.impl.io.FileSource
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
+import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
@@ -368,5 +372,18 @@ object Source {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
     new Source(new AcknowledgeSource(bufferSize, overflowStrategy, DefaultAttributes.acknowledgeSource, shape("AcknowledgeSource")))
   }
+
+  /**
+   * Creates a Source from a Files contents.
+   * Emitted elements are `chunkSize` sized [[akka.util.ByteString]] elements,
+   * except the final element, which will be up to `chunkSize` in size.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   */
+  def file(f: File, chunkSize: Int = 8192): Source[ByteString, Future[Long]] =
+    new Source(new FileSource(f, chunkSize, DefaultAttributes.fileSource, shape("FileSource")))
 
 }

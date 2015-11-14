@@ -3,12 +3,15 @@
  */
 package akka.stream.javadsl
 
+import java.io.File
+
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
 import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream.stage.Stage
+import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -234,6 +237,31 @@ object Source {
    */
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy, timeout: FiniteDuration): Source[T, SourceQueue[T]] =
     new Source(scaladsl.Source.queue(bufferSize, overflowStrategy, timeout))
+
+  /**
+   * Creates a Source from a Files contents.
+   * Emitted elements are [[ByteString]] elements, chunked by default by 8192 bytes,
+   * except the last element, which will be up to 8192 in size.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   */
+  def file(f: File): javadsl.Source[ByteString, Future[java.lang.Long]] = file(f, 8192)
+
+  /**
+   * Creates a synchronous (Java 6 compatible) Source from a Files contents.
+   * Emitted elements are `chunkSize` sized [[ByteString]] elements,
+   * except the last element, which will be up to `chunkSize` in size.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   */
+  def file(f: File, chunkSize: Int): Source[ByteString, Future[java.lang.Long]] =
+    new Source(scaladsl.Source.file(f, chunkSize)).asInstanceOf[Source[ByteString, Future[java.lang.Long]]]
 }
 
 /**
@@ -1022,5 +1050,4 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def log(name: String): javadsl.Source[Out, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
-
 }
