@@ -357,7 +357,8 @@ private[stream] final class GraphInterpreter(
   // Counts how many active connections a stage has. Once it reaches zero, the stage is automatically stopped.
   private[this] val shutdownCounter = Array.tabulate(assembly.stages.length) { i ⇒
     val shape = assembly.stages(i).shape
-    shape.inlets.size + shape.outlets.size
+    val keepGoing = if (logics(i).keepGoingAfterAllPortsClosed) 1 else 0
+    shape.inlets.size + shape.outlets.size + keepGoing
   }
 
   // An event queue implemented as a circular buffer
@@ -617,6 +618,12 @@ private[stream] final class GraphInterpreter(
       if (activeConnections > 0) shutdownCounter(stageId) = activeConnections - 1
     }
   }
+
+  // Call only for keep-alive stages
+  def closeKeptAliveStageIfNeeded(stageId: Int): Unit =
+    if (stageId != Boundary && shutdownCounter(stageId) == 1) {
+      shutdownCounter(stageId) = 0
+    }
 
   private def finalizeStage(logic: GraphStageLogic): Unit = {
     try {
