@@ -5,9 +5,11 @@
 package akka.http.scaladsl.testkit
 
 import java.util.concurrent.CountDownLatch
+import akka.dispatch.ExecutionContexts
+
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Await, ExecutionContext }
 import akka.stream.Materializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
@@ -80,22 +82,19 @@ trait RouteTestResultComponent {
         case s: HttpEntity.Strict ⇒ () ⇒ s
 
         case HttpEntity.Default(contentType, contentLength, data) ⇒
-          val dataChunks = awaitAllElements(data);
-          { () ⇒ HttpEntity.Default(contentType, contentLength, Source(dataChunks)) }
+          val dataChunks = awaitAllElements(data); { () ⇒ HttpEntity.Default(contentType, contentLength, Source(dataChunks)) }
 
         case HttpEntity.CloseDelimited(contentType, data) ⇒
-          val dataChunks = awaitAllElements(data);
-          { () ⇒ HttpEntity.CloseDelimited(contentType, Source(dataChunks)) }
+          val dataChunks = awaitAllElements(data); { () ⇒ HttpEntity.CloseDelimited(contentType, Source(dataChunks)) }
 
-        case HttpEntity.Chunked(contentType, chunks) ⇒
-          val dataChunks = awaitAllElements(chunks);
-          { () ⇒ HttpEntity.Chunked(contentType, Source(dataChunks)) }
+        case HttpEntity.Chunked(contentType, data) ⇒
+          val dataChunks = awaitAllElements(data); { () ⇒ HttpEntity.Chunked(contentType, Source(dataChunks)) }
       }
 
     private def failNeitherCompletedNorRejected(): Nothing =
       failTest("Request was neither completed nor rejected within " + timeout)
 
     private def awaitAllElements[T](data: Source[T, _]): immutable.Seq[T] =
-      data.grouped(100000).runWith(Sink.head).awaitResult(timeout)
+      data.grouped(100000).runWith(Sink.headOption).awaitResult(timeout).getOrElse(Nil)
   }
 }
