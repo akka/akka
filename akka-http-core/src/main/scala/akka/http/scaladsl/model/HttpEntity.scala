@@ -120,8 +120,8 @@ sealed trait BodyPartEntity extends HttpEntity with jm.BodyPartEntity {
   def withContentType(contentType: ContentType): BodyPartEntity
 
   /**
-    * See [[HttpEntity#withSizeLimit]].
-    */
+   * See [[HttpEntity#withSizeLimit]].
+   */
   def withSizeLimit(maxBytes: Long): BodyPartEntity
 }
 
@@ -134,8 +134,8 @@ sealed trait RequestEntity extends HttpEntity with jm.RequestEntity with Respons
   def withContentType(contentType: ContentType): RequestEntity
 
   /**
-    * See [[HttpEntity#withSizeLimit]].
-    */
+   * See [[HttpEntity#withSizeLimit]].
+   */
   def withSizeLimit(maxBytes: Long): RequestEntity
 
   def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): RequestEntity
@@ -150,8 +150,8 @@ sealed trait ResponseEntity extends HttpEntity with jm.ResponseEntity {
   def withContentType(contentType: ContentType): ResponseEntity
 
   /**
-    * See [[HttpEntity#withSizeLimit]].
-    */
+   * See [[HttpEntity#withSizeLimit]].
+   */
   def withSizeLimit(maxBytes: Long): ResponseEntity
 
   def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): ResponseEntity
@@ -161,8 +161,8 @@ sealed trait UniversalEntity extends jm.UniversalEntity with MessageEntity with 
   def withContentType(contentType: ContentType): UniversalEntity
 
   /**
-    * See [[HttpEntity#withSizeLimit]].
-    */
+   * See [[HttpEntity#withSizeLimit]].
+   */
   def withSizeLimit(maxBytes: Long): UniversalEntity
 
   def contentLength: Long
@@ -233,8 +233,8 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     /**
-      * See [[HttpEntity#withSizeLimit]].
-      */
+     * See [[HttpEntity#withSizeLimit]].
+     */
     def withSizeLimit(maxBytes: Long): UniversalEntity =
       if (data.length <= maxBytes) this
       else Default(contentType, data.length, limitableByteSource(Source.single(data))) withSizeLimit maxBytes
@@ -265,8 +265,8 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     /**
-      * See [[HttpEntity#withSizeLimit]].
-      */
+     * See [[HttpEntity#withSizeLimit]].
+     */
     def withSizeLimit(maxBytes: Long): Default =
       copy(data = data withAttributes Attributes(SizeLimit(maxBytes, Some(contentLength))))
 
@@ -287,8 +287,8 @@ object HttpEntity {
     def dataBytes: Source[ByteString, Any] = data
 
     /**
-      * See [[HttpEntity#withSizeLimit]].
-      */
+     * See [[HttpEntity#withSizeLimit]].
+     */
     def withSizeLimit(maxBytes: Long): Self =
       withData(data withAttributes Attributes(SizeLimit(maxBytes)))
 
