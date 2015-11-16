@@ -112,7 +112,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * called, not only the first one matching.</b>
    */
   final def onTransition(transitionHandler: UnitApply2[S, S]): Unit =
-    onTransition(transitionHandler(_: S, _: S)) 
+    onTransition(transitionHandler(_: S, _: S))
 
   /**
    * Set handler which is called upon reception of unhandled messages. Calling
