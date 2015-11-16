@@ -23,6 +23,7 @@ final case class ParserSettings(
   maxChunkExtLength: Int,
   maxChunkSize: Int,
   uriParsingMode: Uri.ParsingMode,
+  cookieParsingMode: ParserSettings.CookieParsingMode,
   illegalHeaderWarnings: Boolean,
   errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity,
   headerValueCacheLimits: Map[String, Int],
@@ -70,6 +71,7 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
       c getIntBytes "max-chunk-ext-length",
       c getIntBytes "max-chunk-size",
       Uri.ParsingMode(c getString "uri-parsing-mode"),
+      CookieParsingMode(c getString "cookie-parsing-mode"),
       c getBoolean "illegal-header-warnings",
       ErrorLoggingVerbosity(c getString "error-logging-verbosity"),
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey -> cacheConfig.getInt(kvp.getKey))(collection.breakOut),
@@ -84,12 +86,23 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
     case object Full extends ErrorLoggingVerbosity
 
     def apply(string: String): ErrorLoggingVerbosity =
-      string.toLowerCase(Locale.ROOT) match {
+      string.toRootLowerCase match {
         case "off"    ⇒ Off
         case "simple" ⇒ Simple
         case "full"   ⇒ Full
         case x        ⇒ throw new IllegalArgumentException(s"[$x] is not a legal `error-logging-verbosity` setting")
       }
+  }
+
+  sealed trait CookieParsingMode
+  object CookieParsingMode {
+    case object RFC6265 extends CookieParsingMode
+    case object Raw extends CookieParsingMode
+
+    def apply(mode: String): CookieParsingMode = mode.toRootLowerCase match {
+      case "rfc6265" ⇒ RFC6265
+      case "raw"     ⇒ Raw
+    }
   }
 
   /**
