@@ -170,7 +170,7 @@ the validator to test all projects.
 
 ## Source style
 
-Akka uses [Scalariform](https://github.com/mdr/scalariform) to enforce some of the code style rules.
+Akka uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
 
 ## Contributing Modules
 
