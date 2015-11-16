@@ -4,6 +4,7 @@
 package akka.stream.javadsl
 
 import akka.actor.{ ActorRef, Props }
+import akka.dispatch.ExecutionContexts
 import akka.japi.function
 import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
@@ -90,9 +91,24 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a `Future` of the first value received.
+   * If the stream completes before signaling at least a single element, the Future will be failed with a [[NoSuchElementException]].
+   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   *
+   * See also [[headOption]].
    */
   def head[In](): Sink[In, Future[In]] =
     new Sink(scaladsl.Sink.head[In])
+
+  /**
+   * A `Sink` that materializes into a `Future` of the optional first value received.
+   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[akka.japi.Option]].
+   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   *
+   * See also [[head]].
+   */
+  def headOption[In](): Sink[In, Future[akka.japi.Option[In]]] =
+    new Sink(scaladsl.Sink.headOption[In].mapMaterializedValue(
+      _.map(akka.japi.Option.fromScalaOption)(ExecutionContexts.sameThreadExecutionContext)))
 
   /**
    * Sends the elements of the stream to the given `ActorRef`.

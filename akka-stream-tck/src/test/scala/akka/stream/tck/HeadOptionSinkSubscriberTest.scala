@@ -9,10 +9,10 @@ import org.reactivestreams.Subscriber
 
 import scala.concurrent.Promise
 
-class HeadSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
+class HeadOptionSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
   import HeadSink._
 
-  override def createSubscriber(): Subscriber[Int] = new HeadSinkSubscriber[Int]
+  override def createSubscriber(): Subscriber[Int] = new HeadOptionSinkSubscriber[Int]
 
   override def createElement(element: Int): Int = element
 }
