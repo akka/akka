@@ -19,6 +19,10 @@ public abstract class HttpCookiePair {
     public abstract HttpCookie toCookie();
 
     public static HttpCookiePair create(String name, String value) {
-        return new akka.http.scaladsl.model.headers.HttpCookiePair(name, value);
+        return akka.http.scaladsl.model.headers.HttpCookiePair.apply(name, value);
+    }
+
+    public static HttpCookiePair createRaw(String name, String value) {
+        return akka.http.scaladsl.model.headers.HttpCookiePair.raw(name, value);
     }
 }

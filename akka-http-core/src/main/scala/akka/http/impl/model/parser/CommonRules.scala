@@ -215,17 +215,35 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
     `challenge-or-credentials` ~> ((scheme, params) ⇒ GenericHttpCredentials(scheme, params.toMap))
   }
 
-  // ******************************************************************************************
-  // https://tools.ietf.org/html/rfc6265#section-4.1.1
-  // ******************************************************************************************
-  def `cookie-pair` = rule {
-    `cookie-name` ~ ws('=') ~ `cookie-value` ~> (HttpCookiePair(_: String, _: String))
+  /**
+   * Either `Some(cookiePair)` if the cookie pair is parsable using the giving cookie parsing mode
+   * or None, otherwise.
+   */
+  def `optional-cookie-pair`: Rule1[Option[HttpCookiePair]] = rule {
+    (`cookie-pair` ~ &(`cookie-separator`) ~> (Some(_: HttpCookiePair))) |
+      // fallback that parses and discards everything until the next semicolon
+      (zeroOrMore(!`cookie-separator` ~ ANY) ~ &(`cookie-separator`) ~ push(None))
+  }
+
+  def `cookie-pair`: Rule1[HttpCookiePair] = rule {
+    `cookie-name` ~ ws('=') ~ `cookie-value` ~> (createCookiePair _)
   }
 
   def `cookie-name` = rule { token }
 
-  def `cookie-value` = rule {
-    ('"' ~ capture(zeroOrMore(`cookie-octet`)) ~ '"' | capture(zeroOrMore(`cookie-octet`))) ~ OWS
+  // abstract methods need to be implemented depending on actual cookie parsing mode
+  def `cookie-value`: Rule1[String]
+  def createCookiePair(name: String, value: String): HttpCookiePair
+
+  // ******************************************************************************************
+  // https://tools.ietf.org/html/rfc6265#section-4.1.1
+  // ******************************************************************************************
+  def `cookie-value-rfc-6265` = rule {
+    ('"' ~ capture(zeroOrMore(`cookie-octet-rfc-6265`)) ~ '"' | capture(zeroOrMore(`cookie-octet-rfc-6265`))) ~ OWS
+  }
+
+  def `cookie-value-raw` = rule {
+    capture(zeroOrMore(`cookie-octet-raw`)) ~ OWS
   }
 
   def `cookie-av` = rule {
