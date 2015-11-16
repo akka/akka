@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.http.ParserSettings
+
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
@@ -274,7 +276,8 @@ private[http] object BodyPartParser {
     maxHeaderCount: Int,
     illegalHeaderWarnings: Boolean,
     headerValueCacheLimit: Int,
-    uriParsingMode: Uri.ParsingMode) extends HttpHeaderParser.Settings {
+    uriParsingMode: Uri.ParsingMode,
+    cookieParsingMode: ParserSettings.CookieParsingMode) extends HttpHeaderParser.Settings {
     require(maxHeaderNameLength > 0, "maxHeaderNameLength must be > 0")
     require(maxHeaderValueLength > 0, "maxHeaderValueLength must be > 0")
     require(maxHeaderCount > 0, "maxHeaderCount must be > 0")
@@ -289,5 +292,6 @@ private[http] object BodyPartParser {
     maxHeaderCount = 64,
     illegalHeaderWarnings = true,
     headerValueCacheLimit = 8,
-    uriParsingMode = Uri.ParsingMode.Relaxed)
+    uriParsingMode = Uri.ParsingMode.Relaxed,
+    cookieParsingMode = ParserSettings.CookieParsingMode.RFC6265)
 }

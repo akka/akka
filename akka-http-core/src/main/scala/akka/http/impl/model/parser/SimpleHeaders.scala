@@ -95,7 +95,16 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // https://tools.ietf.org/html/rfc6265#section-4.2
   def `cookie` = rule {
-    oneOrMore(`cookie-pair`).separatedBy((ch(';') | ch(',')) ~ OWS) ~ EOI ~> (`Cookie`(_))
+    oneOrMore(`optional-cookie-pair`).separatedBy(';' ~ OWS) ~ EOI ~> { pairs ⇒
+      val validPairs = pairs.collect { case Some(p) ⇒ p }
+      `Cookie` {
+        if (validPairs.nonEmpty) validPairs
+        // Parsing infrastructure requires to return an HttpHeader value here but it is not possible
+        // to create a Cookie header without elements, so we throw here. This will 1) log a warning
+        // provide the complete content of the header as a RawHeader
+        else throw HeaderParser.EmptyCookieException
+      }
+    }
   }
 
   // http://tools.ietf.org/html/rfc7231#section-7.1.1.2

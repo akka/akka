@@ -60,7 +60,11 @@ private[http] object CharacterClasses {
   val `token68-start` = ALPHA ++ DIGIT ++ "-._~+/"
 
   // https://tools.ietf.org/html/rfc6265#section-4.1.1
-  val `cookie-octet` = CharPredicate('\u0021', '\u0023' to '\u002b', '\u002d' to '\u003a', '\u003c' to '\u005b', '\u005d' to '\u007e')
+  val `cookie-octet-rfc-6265` = CharPredicate('\u0021', '\u0023' to '\u002b', '\u002d' to '\u003a', '\u003c' to '\u005b', '\u005d' to '\u007e')
+  val `cookie-separator` = CharPredicate(akka.parboiled2.EOI, ';')
+  val `cookie-octet-raw` =
+    CharPredicate('\u0020' to '\u007e') ++
+      CharPredicate((x: Char) ⇒ x > 0x7f && java.lang.Character.isDefined(x)) -- `cookie-separator`
   val `av-octet` = CharPredicate('\u0020' to '\u003a', '\u003c' to '\u007e') // http://www.rfc-editor.org/errata_search.php?rfc=6265
 
   // http://tools.ietf.org/html/rfc5988#section-5
