@@ -41,6 +41,9 @@ Directives filtering or extracting from the request
 :ref:`BasicDirectives` and :ref:`MiscDirectives`
   Directives handling request properties.
 
+:ref:`FileUploadDirectives`
+  Handle file uploads.
+
 
 .. _Response Directives:
 
@@ -85,6 +88,7 @@ List of predefined directives by trait
    debugging-directives/index
    execution-directives/index
    file-and-resource-directives/index
+   file-upload-directives/index
    form-field-directives/index
    future-directives/index
    header-directives/index
