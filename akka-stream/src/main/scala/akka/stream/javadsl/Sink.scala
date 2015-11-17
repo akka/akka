@@ -3,7 +3,7 @@
  */
 package akka.stream.javadsl
 
-import java.io.File
+import java.io.{ InputStream, OutputStream, File }
 
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
@@ -182,6 +182,8 @@ object Sink {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param f The file to write to
    */
   def file(f: File): javadsl.Sink[ByteString, Future[java.lang.Long]] = file(f, append = false)
 
@@ -193,10 +195,53 @@ object Sink {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param f The file to write to
+   * @param append Whether or not the file should be overwritten or appended to
    */
   def file(f: File, append: Boolean): javadsl.Sink[ByteString, Future[java.lang.Long]] =
     new Sink(scaladsl.Sink.file(f, append)).asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
 
+  /**
+   * Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
+   *
+   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param f A Creator which creates an OutputStream to write to
+   */
+  def outputStream(f: function.Creator[OutputStream]): javadsl.Sink[ByteString, Future[java.lang.Long]] =
+    new Sink(scaladsl.Sink.outputStream(() ⇒ f.create())).asInstanceOf[javadsl.Sink[ByteString, Future[java.lang.Long]]]
+
+  /**
+   * Creates a Sink which when materialized will return an [[java.io.InputStream]] which it is possible
+   * to read the values produced by the stream this Sink is attached to.
+   *
+   * This method uses a default read timeout, use [[#inputStream(FiniteDuration)]] to explicitly
+   * configure the timeout.
+   *
+   * This Sink is intended for inter-operation with legacy APIs since it is inherently blocking.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   */
+  def inputStream(): Sink[ByteString, InputStream] = new Sink(scaladsl.Sink.inputStream())
+
+  /**
+   * Creates a Sink which when materialized will return an [[java.io.InputStream]] which it is possible
+   * to read the values produced by the stream this Sink is attached to.
+   *
+   * This Sink is intended for inter-operation with legacy APIs since it is inherently blocking.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param readTimeout the max time the read operation on the materialized InputStream should block
+   */
+  def inputStream(readTimeout: FiniteDuration): Sink[ByteString, InputStream] =
+    new Sink(scaladsl.Sink.inputStream(readTimeout))
 }
 
 /**

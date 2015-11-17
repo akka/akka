@@ -3,14 +3,14 @@
  */
 package akka.stream.scaladsl
 
-import java.io.File
+import java.io.{ OutputStream, InputStream, File }
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStages.TickSource
-import akka.stream.impl.io.FileSource
+import akka.stream.impl.io.{ OutputStreamSourceStage, InputStreamSource, FileSource }
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
 import akka.util.ByteString
@@ -382,8 +382,41 @@ object Source {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   *
+   * @param f the File to read from
+   * @param chunkSize the size of each read operation, defaults to 8192
    */
   def file(f: File, chunkSize: Int = 8192): Source[ByteString, Future[Long]] =
     new Source(new FileSource(f, chunkSize, DefaultAttributes.fileSource, shape("FileSource")))
+
+  /**
+   * Creates a Source from an [[InputStream]] created by the given function.
+   * Emitted elements are `chunkSize` sized [[akka.util.ByteString]] elements,
+   * except the final element, which will be up to `chunkSize` in size.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   *
+   * @param in a function which creates the InputStream to read from
+   * @param chunkSize the size of each read operation, defaults to 8192
+   */
+  def inputStream(in: () ⇒ InputStream, chunkSize: Int = 8192): Source[ByteString, Future[Long]] =
+    new Source(new InputStreamSource(in, chunkSize, DefaultAttributes.inputStreamSource, shape("InputStreamSource")))
+
+  /**
+   * Creates a Source which when materialized will return an [[OutputStream]] which it is possible
+   * to write the ByteStrings to the stream this Source is attached to.
+   *
+   * This Source is intended for inter-operation with legacy APIs since it is inherently blocking.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param writeTimeout the max time the write operation on the materialized OutputStream should block, defaults to 5 seconds
+   */
+  def outputStream(writeTimeout: FiniteDuration = 5.seconds): Source[ByteString, OutputStream] =
+    Source.fromGraph(new OutputStreamSourceStage(writeTimeout)).withAttributes(DefaultAttributes.outputStreamSource)
 
 }

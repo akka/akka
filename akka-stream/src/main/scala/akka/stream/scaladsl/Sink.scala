@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import java.io.File
+import java.io.{ InputStream, OutputStream, File }
 
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
@@ -11,7 +11,7 @@ import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
-import akka.stream.impl.io.FileSink
+import akka.stream.impl.io.{ InputStreamSinkStage, OutputStreamSink, FileSink }
 import akka.stream.stage.{ Context, PushStage, SyncDirective, TerminationDirective }
 import akka.stream.{ javadsl, _ }
 import akka.util.ByteString
@@ -255,4 +255,29 @@ object Sink {
    */
   def file(f: File, append: Boolean = false): Sink[ByteString, Future[Long]] =
     new Sink(new FileSink(f, append, DefaultAttributes.fileSink, shape("FileSink")))
+
+  /**
+   * Creates a Sink which writes incoming [[ByteString]]s to an [[OutputStream]] created by the given function.
+   *
+   * Materializes a [[Future]] that will be completed with the size of the file (in bytes) at the streams completion.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   */
+  def outputStream(out: () ⇒ OutputStream): Sink[ByteString, Future[Long]] =
+    new Sink(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, shape("OutputStreamSink")))
+
+  /**
+   * Creates a Sink which when materialized will return an [[InputStream]] which it is possible
+   * to read the values produced by the stream this Sink is attached to.
+   *
+   * This Sink is intended for inter-operation with legacy APIs since it is inherently blocking.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param readTimeout the max time the read operation on the materialized InputStream should block
+   */
+  def inputStream(readTimeout: FiniteDuration = 5.seconds): Sink[ByteString, InputStream] =
+    Sink.fromGraph(new InputStreamSinkStage(readTimeout)).withAttributes(DefaultAttributes.inputStreamSink)
 }

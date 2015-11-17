@@ -52,7 +52,7 @@ class FileSourcesBenchmark {
   @Setup
   def setup() {
     fileChannelSource = Source.file(file, bufSize)
-    fileInputStreamSource = InputStreamSource(() ⇒ new FileInputStream(file), bufSize)
+    fileInputStreamSource = Source.inputStream(() ⇒ new FileInputStream(file), bufSize)
     ioSourceLinesIterator = Source(() ⇒ scala.io.Source.fromFile(file).getLines()).map(ByteString(_))
   }
 
