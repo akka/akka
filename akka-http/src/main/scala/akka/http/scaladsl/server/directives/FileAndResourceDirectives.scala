@@ -9,7 +9,8 @@ import java.io.File
 import java.net.{ URI, URL }
 
 import akka.stream.ActorAttributes
-import akka.stream.io.{ InputStreamSource, SynchronousFileSource }
+import akka.stream.io.{ InputStreamSource }
+import akka.stream.scaladsl.Source
 
 import scala.annotation.tailrec
 import akka.actor.ActorSystem
@@ -54,7 +55,7 @@ trait FileAndResourceDirectives {
             extractSettings { settings ⇒
               complete {
                 HttpEntity.Default(contentType, file.length,
-                  SynchronousFileSource(file)
+                  Source.file(file)
                     .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
               }
             }
