@@ -13,6 +13,10 @@ you use Cluster Singleton or Cluster Sharding, especially together with Akka Per
           that is exclusively available for 
           `Typesafe Project Success Subscription <http://www.typesafe.com/subscription>`_ customers.
 
+To use the Split Brain Resolver feature you must  
+`install Typesafe Reactive Platform <https://together.typesafe.com/products/reactivePlatform>`_. If you use
+``akka-contrib``, make sure that you use version ``@version@`` (instead of the OSS version).
+
 The Problem
 ===========
 
@@ -85,6 +89,8 @@ the characteristics of your system. Every strategy has a failure scenario where 
 decision. This section describes the different strategies and guidelines of when to use what.
 
 You enable a strategy with the configuration property ``akka.cluster.split-brain-resolver.active-strategy``.
+
+.. note:: You must also remove auto-down configuration, remove this property (or set to off): ``akka.cluster.auto-down-unreachable-after``
 
 All strategies are inactive until the cluster membership and the information about unreachable nodes
 have been stable for a certain time period. Continuously adding more nodes while there is a network
