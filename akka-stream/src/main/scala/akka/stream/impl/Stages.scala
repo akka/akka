@@ -25,8 +25,6 @@ private[stream] object Stages {
   object DefaultAttributes {
     val IODispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
 
-    val timerTransform = name("timerTransform")
-    val stageFactory = name("stageFactory")
     val fused = name("fused")
     val map = name("map")
     val log = name("log")
@@ -63,9 +61,6 @@ private[stream] object Stages {
     val zip = name("zip")
     val unzip = name("unzip")
     val concat = name("concat")
-    val flexiMerge = name("flexiMerge")
-    val flexiRoute = name("flexiRoute")
-    val identityJunction = name("identityJunction")
     val repeat = name("repeat")
 
     val publisherSource = name("publisherSource")
@@ -90,6 +85,8 @@ private[stream] object Stages {
     val cancelledSink = name("cancelledSink")
     val headSink = name("headSink") and inputBuffer(initial = 1, max = 1)
     val headOptionSink = name("headOptionSink") and inputBuffer(initial = 1, max = 1)
+    val lastSink = name("lastSink")
+    val lastOptionSink = name("lastOptionSink")
     val publisherSink = name("publisherSink")
     val fanoutPublisherSink = name("fanoutPublisherSink")
     val ignoreSink = name("ignoreSink")
