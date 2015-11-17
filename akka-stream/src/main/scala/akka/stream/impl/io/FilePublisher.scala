@@ -16,13 +16,13 @@ import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
 /** INTERNAL API */
-private[akka] object SynchronousFilePublisher {
+private[akka] object FilePublisher {
   def props(f: File, completionPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
     require(initialBuffer > 0, s"initialBuffer must be > 0 (was $initialBuffer)")
     require(maxBuffer >= initialBuffer, s"maxBuffer must be >= initialBuffer (was $maxBuffer)")
 
-    Props(classOf[SynchronousFilePublisher], f, completionPromise, chunkSize, initialBuffer, maxBuffer)
+    Props(classOf[FilePublisher], f, completionPromise, chunkSize, initialBuffer, maxBuffer)
       .withDeploy(Deploy.local)
   }
 
@@ -31,9 +31,9 @@ private[akka] object SynchronousFilePublisher {
 }
 
 /** INTERNAL API */
-private[akka] final class SynchronousFilePublisher(f: File, bytesReadPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+private[akka] final class FilePublisher(f: File, bytesReadPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
   extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
-  import SynchronousFilePublisher._
+  import FilePublisher._
 
   var eofReachedAtOffset = Long.MinValue
 
