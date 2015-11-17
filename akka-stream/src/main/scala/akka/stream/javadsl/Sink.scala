@@ -114,6 +114,27 @@ object Sink {
       _.map(akka.japi.Option.fromScalaOption)(ExecutionContexts.sameThreadExecutionContext)))
 
   /**
+   * A `Sink` that materializes into a `Future` of the last value received.
+   * If the stream completes before signaling at least a single element, the Future will be failed with a [[NoSuchElementException]].
+   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   *
+   * See also [[lastOption]].
+   */
+  def last[In](): Sink[In, Future[In]] =
+    new Sink(scaladsl.Sink.last[In])
+
+  /**
+   * A `Sink` that materializes into a `Future` of the optional last value received.
+   * If the stream completes before signaling at least a single element, the value of the Future will be an empty [[akka.japi.Option]].
+   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   *
+   * See also [[head]].
+   */
+  def lastOption[In](): Sink[In, Future[akka.japi.Option[In]]] =
+    new Sink(scaladsl.Sink.lastOption[In].mapMaterializedValue(
+      _.map(akka.japi.Option.fromScalaOption)(ExecutionContexts.sameThreadExecutionContext)))
+
+  /**
    * Sends the elements of the stream to the given `ActorRef`.
    * If the target actor terminates the stream will be canceled.
    * When the stream is completed successfully the given `onCompleteMessage`
