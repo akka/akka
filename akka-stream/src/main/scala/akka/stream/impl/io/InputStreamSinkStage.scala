@@ -33,7 +33,7 @@ private[akka] object InputStreamSinkStage {
 /**
  * INTERNAL API
  */
-private[akka] class InputStreamSinkStage(timeout: FiniteDuration) extends SinkStage[ByteString, InputStream]("InputStreamSink") {
+private[akka] class InputStreamSinkStage(readTimeout: FiniteDuration) extends SinkStage[ByteString, InputStream]("InputStreamSink") {
   val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
   require(maxBuffer > 0, "Buffer size must be greater than 0")
 
@@ -77,7 +77,7 @@ private[akka] class InputStreamSinkStage(timeout: FiniteDuration) extends SinkSt
         }
       })
     }
-    (logic, new InputStreamAdapter(dataQueue, logic.wakeUp, timeout))
+    (logic, new InputStreamAdapter(dataQueue, logic.wakeUp, readTimeout))
   }
 }
 
@@ -87,7 +87,7 @@ private[akka] class InputStreamSinkStage(timeout: FiniteDuration) extends SinkSt
  */
 private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapterMessage],
                                        sendToStage: (AdapterToStageMessage) ⇒ Unit,
-                                       timeout: FiniteDuration)
+                                       readTimeout: FiniteDuration)
   extends InputStream {
 
   var isActive = true
@@ -118,7 +118,7 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
         detachedChunk match {
           case None ⇒
             try {
-              sharedBuffer.poll(timeout.toMillis, TimeUnit.MILLISECONDS) match {
+              sharedBuffer.poll(readTimeout.toMillis, TimeUnit.MILLISECONDS) match {
                 case Data(data) ⇒
                   detachedChunk = Some(data)
                   readBytes(a, begin, length)

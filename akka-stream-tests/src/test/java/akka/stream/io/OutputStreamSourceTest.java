@@ -40,7 +40,7 @@ public class OutputStreamSourceTest extends StreamTest {
         final FiniteDuration timeout = FiniteDuration.create(300, TimeUnit.MILLISECONDS);
         final JavaTestKit probe = new JavaTestKit(system);
 
-        final Source<ByteString, OutputStream> source = OutputStreamSource.create(timeout);
+        final Source<ByteString, OutputStream> source = Source.outputStream(timeout);
         final OutputStream s = source.to(Sink.foreach(new Procedure<ByteString>() {
             public void apply(ByteString elem) {
                 probe.getRef().tell(elem, ActorRef.noSender());
