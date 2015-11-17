@@ -3,34 +3,17 @@
  */
 package akka.persistence.journal
 
-import akka.util.Helpers.Requiring
-import scala.concurrent.duration._
-import akka.actor.Actor
-import akka.actor.Stash
-import scala.concurrent.duration.FiniteDuration
-import akka.actor.ActorRef
-import akka.persistence.JournalProtocol
-import akka.actor.ActorSystem
-import akka.persistence.Persistence
-import scala.util.control.NoStackTrace
+import java.net.URISyntaxException
 import java.util.concurrent.TimeoutException
-import akka.persistence.AtomicWrite
-import akka.persistence.NonPersistentRepr
-import akka.persistence.DeleteMessagesFailure
-import akka.actor.ActorLogging
-import com.typesafe.config.Config
-import akka.actor.Address
-import akka.actor.ActorIdentity
-import akka.actor.RootActorPath
-import akka.actor.Identify
-import akka.actor.ReceiveTimeout
-import akka.actor.ExtendedActorSystem
-import akka.persistence.SaveSnapshotFailure
-import akka.persistence.DeleteSnapshotFailure
-import akka.persistence.DeleteSnapshotsFailure
-import akka.persistence.SnapshotProtocol
 
-object JournalProxy {
+import akka.actor._
+import akka.persistence.{ AtomicWrite, DeleteMessagesFailure, DeleteSnapshotFailure, DeleteSnapshotsFailure, JournalProtocol, NonPersistentRepr, Persistence, SaveSnapshotFailure, SnapshotProtocol }
+import akka.util.Helpers.Requiring
+import com.typesafe.config.Config
+
+import scala.concurrent.duration._
+
+object PersistencePluginProxy {
   final case class TargetLocation(address: Address)
   private case object InitTimeout
 
@@ -38,6 +21,13 @@ object JournalProxy {
     Persistence(system).journalFor(null) ! TargetLocation(address)
     if (system.settings.config.getString("akka.persistence.snapshot-store.plugin") != "")
       Persistence(system).snapshotStoreFor(null) ! TargetLocation(address)
+  }
+
+  def start(system: ActorSystem): Unit = {
+    Persistence(system).journalFor(null)
+    if (system.settings.config.getString("akka.persistence.snapshot-store.plugin") != "")
+      Persistence(system).snapshotStoreFor(null)
+
   }
 
   private sealed trait PluginType {
@@ -51,9 +41,23 @@ object JournalProxy {
   }
 }
 
-// FIXME document me
-final class JournalProxy(config: Config) extends Actor with Stash with ActorLogging {
-  import JournalProxy._
+/**
+ * PersistencePluginProxyExtensionImpl is an `Extension` that enables initialization of the `PersistencePluginProxy`
+ * via configuration, without requiring any code changes or the creation of any actors.
+ * @param system The actor system to initialize the extension for
+ */
+class PersistencePluginProxyExtensionImpl(system: ActorSystem) extends Extension {
+  PersistencePluginProxy.start(system)
+}
+
+object PersistencePluginProxyExtension extends ExtensionId[PersistencePluginProxyExtensionImpl] with ExtensionIdProvider {
+  override def createExtension(system: ExtendedActorSystem): PersistencePluginProxyExtensionImpl = new PersistencePluginProxyExtensionImpl(system)
+  override def lookup(): ExtensionId[_ <: Extension] = PersistencePluginProxyExtension
+  override def get(system: ActorSystem): PersistencePluginProxyExtensionImpl = super.get(system)
+}
+
+final class PersistencePluginProxy(config: Config) extends Actor with Stash with ActorLogging {
+  import PersistencePluginProxy._
   import JournalProtocol._
   import SnapshotProtocol._
 
@@ -65,7 +69,7 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
       throw new IllegalArgumentException("Unknown plugin type: " + other)
   }
 
-  private val timeout: FiniteDuration = config.getDuration("init-timeout", MILLISECONDS).millis
+  private val initTimeout: FiniteDuration = config.getDuration("init-timeout", MILLISECONDS).millis
   private val targetPluginId: String = {
     val key = s"target-${pluginType.qualifier}-plugin"
     config.getString(key).requiring(_ != "", s"$pluginId.$key must be defined")
@@ -84,7 +88,18 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
       }
       context.become(active(target, targetAtThisNode = true))
     } else {
-      context.system.scheduler.scheduleOnce(timeout, self, InitTimeout)(context.dispatcher)
+      val targetAddressKey = s"target-${pluginType.qualifier}-address"
+      val targetAddress = config.getString(targetAddressKey)
+      if (targetAddress != "") {
+        try {
+          log.info("Setting target {} address to {}", pluginType.qualifier, targetAddress)
+          PersistencePluginProxy.setTargetLocation(context.system, AddressFromURIString(targetAddress))
+        } catch {
+          case _: URISyntaxException ⇒ log.warning("Invalid URL provided for target {} address: {}", pluginType.qualifier, targetAddress)
+        }
+      }
+
+      context.system.scheduler.scheduleOnce(initTimeout, self, InitTimeout)(context.dispatcher)
     }
   }
 
@@ -92,7 +107,7 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
     context.system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
   private def timeoutException() = new TimeoutException(s"Target ${pluginType.qualifier} not initialized. " +
-    "Use `JournalProxy.setTargetLocation`")
+    s"Use `PersistencePluginProxy.setTargetLocation` or set `target-${pluginType.qualifier}-address`")
 
   def receive = init
 
@@ -101,9 +116,10 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
       context.setReceiveTimeout(1.second) // for retries
       context.become(identifying(address))
     case InitTimeout ⇒
-      log.info("Initialization timeout, Use `JournalProxy.setTargetLocation`")
+      log.info("Initialization timed-out (after {}), Use `PersistencePluginProxy.setTargetLocation` or set `target-{}-address`", initTimeout, pluginType.qualifier)
       context.become(initTimedOut)
       unstashAll() // will trigger appropriate failures
+    case Terminated(_) ⇒
     case msg ⇒
       stash()
   }
@@ -124,9 +140,11 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
     case ActorIdentity(`targetPluginId`, Some(target)) ⇒
       log.info("Found target {} at [{}]", pluginType.qualifier, address)
       context.setReceiveTimeout(Duration.Undefined)
+      context.watch(target)
       unstashAll()
       context.become(active(target, address == selfAddress))
     case _: ActorIdentity ⇒ // will retry after ReceiveTimeout
+    case Terminated(_)    ⇒
     case ReceiveTimeout ⇒
       sendIdentify(address)
   }: Receive).orElse(init)
@@ -135,9 +153,13 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
     case TargetLocation(address) ⇒
       if (targetAtThisNode && address != selfAddress)
         becomeIdentifying(address)
-    case InitTimeout ⇒
+    case Terminated(`targetJournal`) ⇒
+      context.unwatch(targetJournal)
+      context.become(initTimedOut)
+    case Terminated(_) ⇒
+    case InitTimeout   ⇒
     case msg ⇒
-      targetJournal.forward(msg)
+      targetJournal forward msg
   }
 
   def initTimedOut: Receive = {
@@ -173,9 +195,11 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
     case TargetLocation(address) ⇒
       becomeIdentifying(address)
 
+    case Terminated(_) ⇒
+
     case other ⇒
       val e = timeoutException()
-      log.error(e, "Failed JournalProxy request: {}", e.getMessage)
+      log.error(e, "Failed PersistencePluginProxy request: {}", e.getMessage)
   }
 
 }
