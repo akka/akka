@@ -420,3 +420,39 @@ And use of query parameters from ``Uri`` that looked like this:
 should be replaced by:
 
 .. includecode:: code/docs/MigrationsJava.java#query-param
+
+SynchronousFileSource and SynchronousFileSink
+============================================
+
+Both have been replaced by `Source.file(…)` and `Sink.file(…)` due to discoverability issues
+paired with names which leaked internal implementation details.
+
+Update procedure
+----------------
+
+Replace `SynchronousFileSource.create(` with `Source.file(`
+
+Replace `SynchronousFileSink.create(` with `Sink.file(`
+
+Replace `SynchronousFileSink.appendTo(f)` with `Sink.file(f, true)`
+
+Example
+^^^^^^^
+
+::
+
+      // This no longer works!
+      final Source<ByteString, Future<java.lang.Long>> src =
+        SynchronousFileSource.create(new File("."));
+
+      // This no longer works!
+      final Source<ByteString, Future<java.lang.Long>> src =
+        SynchronousFileSource.create(new File("."), 1024);
+
+      // This no longer works!
+      final Sink<ByteString, Future<java.lang.Long>> sink =
+              `SynchronousFileSink.appendTo(new File("."));
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsJava.java#file-source-sink

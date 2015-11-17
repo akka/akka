@@ -15,7 +15,6 @@ import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 import akka.stream.Materializer
-import akka.stream.io.SynchronousFileSource
 import akka.stream.scaladsl.{ Source }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model.headers._
@@ -236,7 +235,7 @@ object Multipart {
         }
 
       /**
-       * Creates a BodyPart backed by a File that will be streamed using a SynchronousFileSource.
+       * Creates a BodyPart backed by a File that will be streamed using a FileSource.
        */
       def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = -1): BodyPart =
         BodyPart(name, HttpEntity(contentType, file, chunkSize), Map("filename" -> file.getName))

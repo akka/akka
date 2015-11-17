@@ -6,11 +6,14 @@ import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.stream.*;
 import akka.stream.javadsl.*;
+import akka.util.ByteString;
 import scala.Option;
+import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 import scala.concurrent.Promise;
 import scala.runtime.BoxedUnit;
 
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.nio.charset.Charset;
 
@@ -146,6 +149,17 @@ public class MigrationsJava {
         //#query-param
         final akka.japi.Option<String> aQueryParam = uri.query().get("a");
         //#query-param
+
+        //#file-source-sink
+        final Source<ByteString, Future<Long>> fileSrc =
+          Source.file(new File("."));
+
+        final Source<ByteString, Future<Long>> otherFileSrc =
+          Source.file(new File("."), 1024);
+
+        final Sink<ByteString, Future<Long>> fileSink =
+          Sink.file(new File("."));
+        //#file-source-sink
     }
 
 }

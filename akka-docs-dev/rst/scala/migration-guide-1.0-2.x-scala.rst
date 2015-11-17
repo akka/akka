@@ -450,3 +450,34 @@ And use of query parameters from ``Uri`` that looked like this:
 should be replaced by:
 
 .. includecode:: code/docs/MigrationsScala.scala#query-param
+
+SynchronousFileSource and SynchronousFileSink
+============================================
+
+Both have been replaced by `Source.file(…)` and `Sink.file(…)` due to discoverability issues
+paired with names which leaked internal implementation details.
+
+Update procedure
+----------------
+
+Replace `SynchronousFileSource(` and `SynchronousFileSource.apply(` with `Source.file(`
+
+Replace `SynchronousFileSink(` and `SynchronousFileSink.apply(` with `Sink.file(`
+
+Example
+^^^^^^^
+
+::
+
+      // This no longer works!
+      val fileSrc = SynchronousFileSource(new File("."))
+
+      // This no longer works!
+      val otherFileSrc = SynchronousFileSource(new File("."), 1024)
+
+      // This no longer works!
+      val someFileSink = SynchronousFileSink(new File("."))
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsScala.scala#file-source-sink
