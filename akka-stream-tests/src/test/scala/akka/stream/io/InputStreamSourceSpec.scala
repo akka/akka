@@ -5,7 +5,7 @@ package akka.stream.io
 
 import java.io.InputStream
 
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{ Source, Sink }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
@@ -19,7 +19,7 @@ class InputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) with ScalaF
 
   "InputStreamSource" must {
     "read bytes from InputStream" in assertAllStagesStopped {
-      val f = InputStreamSource(() ⇒ new InputStream {
+      val f = Source.inputStream(() ⇒ new InputStream {
         @volatile var buf = List("a", "b", "c").map(_.charAt(0).toInt)
         override def read(): Int = {
           buf match {
