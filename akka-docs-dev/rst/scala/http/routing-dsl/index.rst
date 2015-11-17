@@ -77,6 +77,7 @@ in the :ref:`exception-handling-scala` section of the documtnation. You can use 
 
 File uploads
 ^^^^^^^^^^^^
+For high level directives to handle uploads see the :ref:`FileUploadDirectives`.
 
 Handling a simple file upload from for example a browser form with a `file` input can be done
 by accepting a `Multipart.FormData` entity, note that the body parts are `Source` rather than
