@@ -74,3 +74,25 @@ Failures and exceptions inside the Routing DSL
 Exception handling within the Routing DSL is done by providing :class:`ExceptionHandler` s which are documented in-depth
 in the :ref:`exception-handling-scala` section of the documtnation. You can use them to transform exceptions into
 :class:`HttpResponse` s with apropriate error codes and human-readable failure descriptions.
+
+File uploads
+^^^^^^^^^^^^
+
+Handling a simple file upload from for example a browser form with a `file` input can be done
+by accepting a `Multipart.FormData` entity, note that the body parts are `Source` rather than
+all available right away, and so is the individual body part payload so you will need to consume
+those streams both for the file and for the form fields.
+
+Here is a simple example which just dumps the uploaded file into a temporary file on disk, collects
+some form fields and saves an entry to a fictive database:
+
+.. includecode2:: ../../code/docs/http/scaladsl/server/FileUploadExamplesSpec.scala
+   :snippet: simple-upload
+
+You can transform the uploaded files as they arrive rather than storing then in a temporary file as
+in the previous example. In this example we accept any number of ``.csv`` files, parse those into lines
+and split each line before we send it to an actor for further processing:
+
+.. includecode2:: ../../code/docs/http/scaladsl/server/FileUploadExamplesSpec.scala
+   :snippet: stream-csv-upload
+
