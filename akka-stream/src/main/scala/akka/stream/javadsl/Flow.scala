@@ -404,6 +404,57 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.grouped(n).map(_.asJava)) // TODO optimize to one step
 
   /**
+   * Ensure stream boundedness by limiting the number of elements from upstream.
+   * If the number of incoming elements exceeds max, it will signal
+   * upstream failure `StreamLimitException` downstream.
+   *
+   * Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
+   *
+   * '''Emits when''' the specified number of elements to take has not yet been reached
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   *
+   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   *
+   * See also [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
+   */
+  def limit(n: Long): javadsl.Flow[In, Out, Mat] = new Flow(delegate.limit(n))
+
+  /**
+   * Ensure stream boundedness by evaluating the cost of incoming elements
+   * using a cost function. Exactly how many elements will be allowed to travel downstream depends on the
+   * evaluated cost of each element. If the accumulated cost exceeds max, it will signal
+   * upstream failure `StreamLimitException` downstream.
+   *
+   * Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
+   *
+   * '''Emits when''' the specified number of elements to take has not yet been reached
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   *
+   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   *
+   * See also [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
+   */
+  def limitWeighted(n: Long)(costFn: function.Function[Out, Long]): javadsl.Flow[In, Out, Mat] = {
+    new Flow(delegate.limitWeighted(n)(costFn.apply))
+  }
+
+  /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
    * possibly smaller than requested due to end-of-stream.
    *
@@ -615,6 +666,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Completes when''' predicate returned false or upstream completes
    *
    * '''Cancels when''' predicate returned false or downstream cancels
+   *
+   * See also [[Flow.limit]], [[Flow.limitWeighted]]
    */
   def takeWhile(p: function.Predicate[Out]): javadsl.Flow[In, Out, Mat] = new Flow(delegate.takeWhile(p.test))
 
@@ -664,6 +717,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Completes when''' the defined number of elements has been taken or upstream completes
    *
    * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   *
+   * See also [[Flow.limit]], [[Flow.limitWeighted]]
    */
   def take(n: Long): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.take(n))
@@ -684,6 +739,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Completes when''' upstream completes or timer fires
    *
    * '''Cancels when''' downstream cancels or timer fires
+   *
+   * See also [[Flow.limit]], [[Flow.limitWeighted]]
    */
   def takeWithin(d: FiniteDuration): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.takeWithin(d))

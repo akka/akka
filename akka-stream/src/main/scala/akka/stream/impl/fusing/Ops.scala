@@ -318,6 +318,20 @@ private[akka] final case class Grouped[T](n: Int) extends PushPullStage[T, immut
 /**
  * INTERNAL API
  */
+
+private[akka] final case class LimitWeighted[T](n: Long, costFn: T ⇒ Long) extends PushStage[T, T] {
+  private var left = n
+
+  override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
+    left -= costFn(elem)
+    if (left >= 0) ctx.push(elem)
+    else ctx.fail(new StreamLimitReachedException(n))
+  }
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] final case class Sliding[T](n: Int, step: Int) extends PushPullStage[T, immutable.Seq[T]] {
   private var buf = Vector.empty[T]
 
