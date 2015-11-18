@@ -396,7 +396,9 @@ private[http] object HttpServerBluePrint {
         outlets(2).asInstanceOf[Outlet[ByteString]])
     }
   }
-  private class ProtocolSwitchStage(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random, log: LoggingAdapter) extends GraphStage[ProtocolSwitchShape] {
+
+  private class ProtocolSwitchStage(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit,
+                                    websocketRandomFactory: () ⇒ Random, log: LoggingAdapter) extends GraphStage[ProtocolSwitchShape] {
     private val fromNet = Inlet[ByteString]("fromNet")
     private val toNet = Outlet[ByteString]("toNet")
 
@@ -409,11 +411,13 @@ private[http] object HttpServerBluePrint {
     def shape: ProtocolSwitchShape = ProtocolSwitchShape(fromNet, toNet, fromHttp, toHttp, fromWs, toWs)
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+      import akka.http.impl.engine.rendering.ResponseRenderingOutput._
+
       var websocketHandlerWasInstalled = false
 
-      setHandler(fromHttp, conditionalTerminateInput(() ⇒ !websocketHandlerWasInstalled))
+      setHandler(fromHttp, ignoreTerminateInput)
       setHandler(toHttp, ignoreTerminateOutput)
-      setHandler(fromWs, conditionalTerminateInput(() ⇒ websocketHandlerWasInstalled))
+      setHandler(fromWs, ignoreTerminateInput)
       setHandler(toWs, ignoreTerminateOutput)
 
       val pullNet = () ⇒ pull(fromNet)
@@ -425,23 +429,25 @@ private[http] object HttpServerBluePrint {
         override def onUpstreamFailure(ex: Throwable): Unit = fail(target, ex)
       })
 
-      setHandler(toNet, new OutHandler {
-        import akka.http.impl.engine.rendering.ResponseRenderingOutput._
-        def onPull(): Unit =
-          if (isHttp) read(fromHttp) {
-            case HttpData(b) ⇒ push(toNet, b)
-            case SwitchToWebsocket(bytes, handlerFlow) ⇒
-              push(toNet, bytes)
-              val frameHandler = handlerFlow match {
-                case Left(frameHandler) ⇒ frameHandler
-                case Right(messageHandler) ⇒
-                  Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory, log = log).join(messageHandler)
-              }
-              installHandler(frameHandler)
-              websocketHandlerWasInstalled = true
+      val shutdown: () ⇒ Unit = () ⇒ completeStage()
+      val httpToNet: ResponseRenderingOutput ⇒ Unit = {
+        case HttpData(b) ⇒ push(toNet, b)
+        case SwitchToWebsocket(bytes, handlerFlow) ⇒
+          push(toNet, bytes)
+          val frameHandler = handlerFlow match {
+            case Left(frameHandler) ⇒ frameHandler
+            case Right(messageHandler) ⇒
+              Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory, log = log).join(messageHandler)
           }
-          else
-            read(fromWs)(push(toNet, _))
+          installHandler(frameHandler)
+          websocketHandlerWasInstalled = true
+      }
+      val wsToNet: ByteString ⇒ Unit = push(toNet, _)
+
+      setHandler(toNet, new OutHandler {
+        def onPull(): Unit =
+          if (isHttp) read(fromHttp)(httpToNet, shutdown)
+          else read(fromWs)(wsToNet, shutdown)
 
         // toNet cancellation isn't allowed to stop this stage
         override def onDownstreamFinish(): Unit = ()

@@ -336,6 +336,7 @@ final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Mo
  */
 trait FlowOps[+Out, +Mat] {
   import akka.stream.impl.Stages._
+  import GraphDSL.Implicits._
 
   type Repr[+O] <: FlowOps[O, Mat]
 
@@ -1294,7 +1295,6 @@ trait FlowOps[+Out, +Mat] {
   protected def zipGraph[U, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, (Out, U)], M] =
     GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import GraphDSL.Implicits._
         val zip = b.add(Zip[Out, U]())
         r ~> zip.in1
         FlowShape(zip.in0, zip.out)
@@ -1318,7 +1318,6 @@ trait FlowOps[+Out, +Mat] {
   protected def zipWithGraph[Out2, Out3, M](that: Graph[SourceShape[Out2], M])(combine: (Out, Out2) ⇒ Out3): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
     GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import GraphDSL.Implicits._
         val zip = b.add(ZipWith[Out, Out2, Out3](combine))
         r ~> zip.in1
         FlowShape(zip.in0, zip.out)
@@ -1354,7 +1353,6 @@ trait FlowOps[+Out, +Mat] {
                                              segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import GraphDSL.Implicits._
         val interleave = b.add(Interleave[U](2, segmentSize))
         r ~> interleave.in(1)
         FlowShape(interleave.in(0), interleave.out)
@@ -1372,16 +1370,41 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge[U >: Out](that: Graph[SourceShape[U], _]): Repr[U] =
+  def merge[U >: Out, M](that: Graph[SourceShape[U], M]): Repr[U] =
     via(mergeGraph(that))
 
   protected def mergeGraph[U >: Out, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import GraphDSL.Implicits._
         val merge = b.add(Merge[U](2))
         r ~> merge.in(1)
         FlowShape(merge.in(0), merge.out)
+    }
+
+  /**
+   * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
+   * picking always the smallest of the available elements (waiting for one element from each side
+   * to be available). This means that possible contiguity of the input streams is not exploited to avoid
+   * waiting for elements, this merge will block when one of the inputs does not have more elements (and
+   * does not complete).
+   *
+   * '''Emits when''' all of the inputs have an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergeSorted[U >: Out, M](that: Graph[SourceShape[U], M])(implicit ord: Ordering[U]): Repr[U] =
+    via(mergeSortedGraph(that))
+
+  protected def mergeSortedGraph[U >: Out, M](that: Graph[SourceShape[U], M])(implicit ord: Ordering[U]): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    GraphDSL.create(that) { implicit b ⇒
+      r ⇒
+        val merge = b.add(new MergeSorted[U])
+        r ~> merge.in1
+        FlowShape(merge.in0, merge.out)
     }
 
   /**
@@ -1408,7 +1431,6 @@ trait FlowOps[+Out, +Mat] {
   protected def concatGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
     GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import GraphDSL.Implicits._
         val merge = b.add(Concat[U]())
         r ~> merge.in(1)
         FlowShape(merge.in(0), merge.out)
@@ -1559,6 +1581,18 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
     viaMat(interleaveGraph(that, request))(matF)
+
+  /**
+   * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
+   * picking always the smallest of the available elements (waiting for one element from each side
+   * to be available). This means that possible contiguity of the input streams is not exploited to avoid
+   * waiting for elements, this merge will block when one of the inputs does not have more elements (and
+   * does not complete).
+   *
+   * @see [[#mergeSorted]].
+   */
+  def mergeSortedMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3)(implicit ord: Ordering[U]): ReprMat[U, Mat3] =
+    viaMat(mergeSortedGraph(that))(matF)
 
   /**
    * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
