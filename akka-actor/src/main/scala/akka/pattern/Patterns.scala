@@ -4,17 +4,17 @@
 package akka.pattern
 
 import akka.actor.{ ActorSelection, Scheduler }
+import java.util.concurrent.{ Callable, TimeUnit }
 import scala.concurrent.ExecutionContext
-import java.util.concurrent.Callable
 import scala.concurrent.duration.FiniteDuration
-import java.util.concurrent.TimeUnit
 
 object Patterns {
+  import akka.japi
   import akka.actor.{ ActorRef, ActorSystem }
   import akka.pattern.{ ask ⇒ scalaAsk, pipe ⇒ scalaPipe, gracefulStop ⇒ scalaGracefulStop, after ⇒ scalaAfter }
   import akka.util.Timeout
   import scala.concurrent.Future
-  import scala.concurrent.duration.Duration
+  import scala.concurrent.duration._
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -48,6 +48,23 @@ object Patterns {
   def ask(actor: ActorRef, message: Any, timeout: Timeout): Future[AnyRef] = scalaAsk(actor, message)(timeout).asInstanceOf[Future[AnyRef]]
 
   /**
+   * A variation of ask which allows to implement "replyTo" pattern by including
+   * sender reference in message.
+   *
+   * {{{
+   * final Future<Object> f = Patterns.ask(
+   *   worker,
+   *   new akka.japi.Function<ActorRef, Object> {
+   *     Object apply(ActorRef askSender) {
+   *       return new Request(askSender);
+   *     }
+   *   },
+   *   timeout);
+   * }}}
+   */
+  def ask(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeout: Timeout): Future[AnyRef] = scalaAsk(actor, messageFactory.apply _)(timeout).asInstanceOf[Future[AnyRef]]
+
+  /**
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
    * holding the eventual reply message; this means that the target actor
@@ -78,6 +95,23 @@ object Patterns {
    */
   def ask(actor: ActorRef, message: Any, timeoutMillis: Long): Future[AnyRef] =
     scalaAsk(actor, message)(new Timeout(timeoutMillis, TimeUnit.MILLISECONDS)).asInstanceOf[Future[AnyRef]]
+
+  /**
+   * A variation of ask which allows to implement "replyTo" pattern by including
+   * sender reference in message.
+   *
+   * {{{
+   * final Future<Object> f = Patterns.ask(
+   *   worker,
+   *   new akka.japi.Function<ActorRef, Object> {
+   *     Object apply(ActorRef askSender) {
+   *       return new Request(askSender);
+   *     }
+   *   },
+   *   timeout);
+   * }}}
+   */
+  def ask(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): Future[AnyRef] = scalaAsk(actor, messageFactory.apply _)(Timeout(timeoutMillis.millis)).asInstanceOf[Future[AnyRef]]
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -142,6 +176,23 @@ object Patterns {
    */
   def ask(selection: ActorSelection, message: Any, timeoutMillis: Long): Future[AnyRef] =
     scalaAsk(selection, message)(new Timeout(timeoutMillis, TimeUnit.MILLISECONDS)).asInstanceOf[Future[AnyRef]]
+
+  /**
+   * A variation of ask which allows to implement "replyTo" pattern by including
+   * sender reference in message.
+   *
+   * {{{
+   * final Future<Object> f = Patterns.ask(
+   *   selection,
+   *   new akka.japi.Function<ActorRef, Object> {
+   *     Object apply(ActorRef askSender) {
+   *       return new Request(askSender);
+   *     }
+   *   },
+   *   timeout);
+   * }}}
+   */
+  def ask(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): Future[AnyRef] = scalaAsk(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).asInstanceOf[Future[AnyRef]]
 
   /**
    * Register an onComplete callback on this [[scala.concurrent.Future]] to send
