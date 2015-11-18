@@ -54,7 +54,7 @@ To illustrate these concepts we create a small :class:`PushPullStage` that imple
 
 |
 
-Map calls ``ctx.push()`` from the ``onPush()`` handler and it also calls ``ctx.pull()`` form the ``onPull``
+Map calls ``ctx.push()`` from the ``onPush()`` handler and it also calls ``ctx.pull()`` from the ``onPull``
 handler resulting in the conceptual wiring above, and fully expressed in code below:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowStagesDocTest.java#one-to-one
@@ -127,13 +127,13 @@ Completion handling
 Completion handling usually (but not exclusively) comes into the picture when processing stages need to emit a few
 more elements after their upstream source has been completed. We have seen an example of this in our ``Duplicator`` class
 where the last element needs to be doubled even after the upstream neighbor stage has been completed. Since the
-``onUpstreamFinish()`` handler expects a :class:`TerminationDirective` as the return type we are only allowed to call
+``onUpstreamFinish()`` handler expects a :class:`TerminationDirective` as the return type, we are only allowed to call
 ``ctx.finish()``, ``ctx.fail()`` or ``ctx.absorbTermination()``. Since the first two of these available methods will
 immediately terminate, our only option is ``absorbTermination()``. It is also clear from the return type of
 ``onUpstreamFinish`` that we cannot call ``ctx.push()`` but we need to emit elements somehow! The trick is that after
 calling ``absorbTermination()`` the ``onPull()`` handler will be called eventually, and at the same time
 ``ctx.isFinishing`` will return true, indicating that ``ctx.pull()`` cannot be called anymore. Now we are free to
-emit additional elementss and call ``ctx.finish()`` or ``ctx.pushAndFinish()`` eventually to finish processing.
+emit additional elements and call ``ctx.finish()`` or ``ctx.pushAndFinish()`` eventually to finish processing.
 
 The reason for this slightly complex termination sequence is that the underlying ``onComplete`` signal of
 Reactive Streams may arrive without any pending demand, i.e. without respecting backpressure. This means that

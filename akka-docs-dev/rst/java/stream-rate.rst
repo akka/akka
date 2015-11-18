@@ -26,7 +26,7 @@ Running the above example, one of the possible outputs looks like this:
 
 Note that the order is *not* ``A:1, B:1, C:1, A:2, B:2, C:2,`` which would correspond to a synchronous execution model
 where an element completely flows through the processing pipeline before the next element enters the flow. The next
-element is processed by a stage as soon as it is emitted the previous one.
+element is processed by a stage as soon as it emitted the previous one.
 
 While pipelining in general increases throughput, in practice there is a cost of passing an element through the
 asynchronous (and therefore thread crossing) boundary which is significant. To amortize this cost Akka Streams uses
@@ -143,7 +143,7 @@ Understanding conflate
 
 When a fast producer can not be informed to slow down by backpressure or some other signal, conflate might be useful to combine elements from a producer until a demand signal comes from a consumer.
 
-Below is an example snippet that summarizes fast stream of elements to a standart deviation, mean and count of elements that have arrived  while the stats have been calculated.
+Below is an example snippet that summarizes fast stream of elements to a standard deviation, mean and count of elements that have arrived  while the stats have been calculated.
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/RateTransformationDocTest.java#conflate-summarize
 
