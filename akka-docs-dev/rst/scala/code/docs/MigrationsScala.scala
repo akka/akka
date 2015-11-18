@@ -1,6 +1,6 @@
 package docs
 
-import java.io.File
+import java.io.{ InputStream, File }
 
 import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl._
@@ -218,6 +218,29 @@ class MigrationsScala extends AkkaSpec {
 
         val someFileSink = Sink.file(new File("."))
         //#file-source-sink
+
+        class SomeInputStream extends java.io.InputStream { override def read(): Int = 0 }
+        class SomeOutputStream extends java.io.OutputStream { override def write(b: Int): Unit = () }
+
+        //#input-output-stream-source-sink
+        val inputStreamSrc = Source.inputStream(() => new SomeInputStream())
+
+        val otherInputStreamSrc = Source.inputStream(() => new SomeInputStream())
+
+        val someOutputStreamSink = Sink.outputStream(() => new SomeOutputStream())
+        //#input-output-stream-source-sink
+
+        //#output-input-stream-source-sink
+        val timeout: FiniteDuration = 0.seconds
+
+        val outputStreamSrc = Source.outputStream()
+
+        val otherOutputStreamSrc = Source.outputStream(timeout)
+
+        val someInputStreamSink = Sink.inputStream()
+
+        val someOtherInputStreamSink = Sink.inputStream(timeout)
+        //#output-input-stream-source-sink
       }
     }
   }

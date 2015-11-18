@@ -3,7 +3,7 @@
  */
 package akka.stream.javadsl
 
-import java.io.File
+import java.io.{ OutputStream, InputStream, File }
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
@@ -260,8 +260,60 @@ object Source {
    *
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
-  def file(f: File, chunkSize: Int): Source[ByteString, Future[java.lang.Long]] =
+  def file(f: File, chunkSize: Int): javadsl.Source[ByteString, Future[java.lang.Long]] =
     new Source(scaladsl.Source.file(f, chunkSize)).asInstanceOf[Source[ByteString, Future[java.lang.Long]]]
+
+  /**
+   * Creates a Source from an [[java.io.InputStream]] created by the given function.
+   * Emitted elements are `chunkSize` sized [[akka.util.ByteString]] elements,
+   * except the final element, which will be up to `chunkSize` in size.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   */
+  def inputStream(in: function.Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, Future[java.lang.Long]] =
+    new Source(scaladsl.Source.inputStream(() ⇒ in.create(), chunkSize)).asInstanceOf[Source[ByteString, Future[java.lang.Long]]]
+
+  /**
+   * Creates a Source from an [[java.io.InputStream]] created by the given function.
+   * Emitted elements are [[ByteString]] elements, chunked by default by 8192 bytes,
+   * except the last element, which will be up to 8192 in size.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
+   */
+  def inputStream(in: function.Creator[InputStream]): javadsl.Source[ByteString, Future[java.lang.Long]] = inputStream(in, 8192)
+
+  /**
+   * Creates a Source which when materialized will return an [[java.io.OutputStream]] which it is possible
+   * to write the ByteStrings to the stream this Source is attached to.
+   *
+   * This Source is intended for inter-operation with legacy APIs since it is inherently blocking.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param writeTimeout the max time the write operation on the materialized OutputStream should block
+   */
+  def outputStream(writeTimeout: FiniteDuration): javadsl.Source[ByteString, OutputStream] =
+    new Source(scaladsl.Source.outputStream(writeTimeout))
+
+  /**
+   * Creates a Source which when materialized will return an [[java.io.OutputStream]] which it is possible
+   * to write the ByteStrings to the stream this Source is attached to. The write timeout for OutputStreams
+   * materialized will default to 5 seconds, @see [[#outputStream(FiniteDuration)]] if you want to override it.
+   *
+   * This Source is intended for inter-operation with legacy APIs since it is inherently blocking.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   */
+  def outputStream(): javadsl.Source[ByteString, OutputStream] =
+    new Source(scaladsl.Source.outputStream())
 }
 
 /**

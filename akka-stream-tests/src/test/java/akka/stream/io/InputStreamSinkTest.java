@@ -36,7 +36,7 @@ public class InputStreamSinkTest  extends StreamTest {
     public void mustReadEventViaInputStream() throws Exception {
         final FiniteDuration timeout = FiniteDuration.create(300, TimeUnit.MILLISECONDS);
 
-        final Sink<ByteString, InputStream> sink = InputStreamSink.create(timeout);
+        final Sink<ByteString, InputStream> sink = Sink.inputStream(timeout);
         final List<ByteString> list = Collections.singletonList(ByteString.fromString("a"));
         final InputStream stream = Source.from(list).runWith(sink, materializer);
 

@@ -80,7 +80,7 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   "InputStreamSink" must {
     "read bytes from InputStream" in assertAllStagesStopped {
-      val (probe, inputStream) = TestSource.probe[ByteString].toMat(InputStreamSink())(Keep.both).run()
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(Sink.inputStream())(Keep.both).run()
 
       probe.sendNext(byteString)
       val arr = newArray()
@@ -113,7 +113,7 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "returns less than was expected when the data source has provided some but not enough data" in assertAllStagesStopped {
-      val (probe, inputStream) = TestSource.probe[ByteString].toMat(InputStreamSink())(Keep.both).run()
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(Sink.inputStream())(Keep.both).run()
 
       val data = randomArray(2)
       probe.sendNext(ByteString(data))
@@ -126,7 +126,7 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "block read until get requested number of bytes from upstream" in assertAllStagesStopped {
-      val (probe, inputStream) = TestSource.probe[ByteString].toMat(InputStreamSink())(Keep.both).run()
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(Sink.inputStream())(Keep.both).run()
 
       val arr = newArray()
       val f = Future(inputStream.read(arr))
@@ -141,7 +141,7 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
     "fill up buffer by default" in assertAllStagesStopped {
       import system.dispatcher
-      val (probe, inputStream) = TestSource.probe[ByteString].toMat(InputStreamSink())(Keep.both).run()
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(Sink.inputStream())(Keep.both).run()
 
       val array2 = randomArray(3)
       probe.sendNext(byteString)
@@ -162,7 +162,7 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "throw error when reactive stream is closed" in assertAllStagesStopped {
-      val (probe, inputStream) = TestSource.probe[ByteString].toMat(InputStreamSink())(Keep.both).run()
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(Sink.inputStream())(Keep.both).run()
 
       probe.sendNext(byteString)
       inputStream.close()
@@ -188,7 +188,7 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "return -1 when read after stream is completed" in assertAllStagesStopped {
-      val (probe, inputStream) = TestSource.probe[ByteString].toMat(InputStreamSink())(Keep.both).run()
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(Sink.inputStream())(Keep.both).run()
 
       probe.sendNext(byteString)
       val arr = newArray()
@@ -229,9 +229,9 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       val mat = ActorMaterializer()(sys)
 
       try {
-        TestSource.probe[ByteString].runWith(InputStreamSink())(mat)
+        TestSource.probe[ByteString].runWith(Sink.inputStream())(mat)
         mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
-        val ref = expectMsgType[Children].children.find(_.path.toString contains "InputStreamSink").get
+        val ref = expectMsgType[Children].children.find(_.path.toString contains "inputStreamSink").get
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
       } finally shutdown(sys)
     }

@@ -21,7 +21,7 @@ class StreamingResponseSpecs extends RoutingSpec {
 
       Get() ~> route ~> check {
         status should ===(StatusCodes.OK)
-        responseAs[String] should === ("")
+        responseAs[String] should ===("")
       }
     }
 
