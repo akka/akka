@@ -929,7 +929,22 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Cancels when''' downstream cancels
    */
   def merge[T >: Out](that: Graph[SourceShape[T], _]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.merge(that))
+    merge(that, eagerClose = false)
+
+  /**
+   * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
+   * picking randomly when several elements ready.
+   *
+   * '''Emits when''' one of the inputs has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def merge[T >: Out](that: Graph[SourceShape[T], _], eagerClose: Boolean): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.merge(that, eagerClose))
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
@@ -939,6 +954,17 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def mergeMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
                                 matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
+    mergeMat(that, matF, eagerClose = false)
+
+  /**
+   * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
+   * picking randomly when several elements ready.
+   *
+   * @see [[#merge]]
+   */
+  def mergeMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
+                                matF: function.Function2[Mat, M, M2],
+                                eagerClose: Boolean): javadsl.Flow[In, T, M2] =
     new Flow(delegate.mergeMat(that)(combinerToScala(matF)))
 
   /**
