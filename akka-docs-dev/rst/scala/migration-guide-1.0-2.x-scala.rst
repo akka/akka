@@ -454,15 +454,15 @@ should be replaced by:
 SynchronousFileSource and SynchronousFileSink
 ============================================
 
-Both have been replaced by `Source.file(…)` and `Sink.file(…)` due to discoverability issues
+Both have been replaced by ``Source.file(…)`` and ``Sink.file(…)`` due to discoverability issues
 paired with names which leaked internal implementation details.
 
 Update procedure
 ----------------
 
-Replace `SynchronousFileSource(` and `SynchronousFileSource.apply(` with `Source.file(`
+Replace ``SynchronousFileSource(`` and ``SynchronousFileSource.apply(`` with ``Source.file(``
 
-Replace `SynchronousFileSink(` and `SynchronousFileSink.apply(` with `Sink.file(`
+Replace ``SynchronousFileSink(`` and ``SynchronousFileSink.apply(`` with ``Sink.file(``
 
 Example
 ^^^^^^^
@@ -481,3 +481,66 @@ Example
 should be replaced by
 
 .. includecode:: code/docs/MigrationsScala.scala#file-source-sink
+
+InputStreamSource and OutputStreamSink
+============================================
+
+Both have been replaced by ``Source.inputStream(…)`` and ``Sink.outputStream(…)`` due to discoverability issues.
+
+Update procedure
+----------------
+
+Replace ``InputStreamSource(`` and ``InputStreamSource.apply(`` with ``Source.inputStream(``
+
+Replace ``OutputStreamSink(`` and ``OutputStreamSink.apply(`` with ``Sink.outputStream(``
+
+Example
+^^^^^^^
+
+::
+
+      // This no longer works!
+      val inputStreamSrc = InputStreamSource(() => new SomeInputStream())
+
+      // This no longer works!
+      val otherInputStreamSrc = InputStreamSource(() => new SomeInputStream(), 1024)
+
+      // This no longer works!
+      val someOutputStreamSink = OutputStreamSink(() => new SomeOutputStream())
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsScala.scala#input-output-stream-source-sink
+
+OutputStreamSource and InputStreamSink
+======================================
+
+Both have been replaced by ``Source.outputStream(…)`` and ``Sink.inputStream(…)`` due to discoverability issues.
+
+Update procedure
+----------------
+
+Replace ``OutputStreamSource(`` and ``OutputStreamSource.apply(`` with ``Source.outputStream(``
+
+Replace ``InputStreamSink(`` and ``InputStreamSink.apply(`` with ``Sink.inputStream(``
+
+Example
+^^^^^^^
+
+::
+
+      // This no longer works!
+      val outputStreamSrc = OutputStreamSource()
+
+      // This no longer works!
+      val otherOutputStreamSrc = OutputStreamSource(timeout)
+
+      // This no longer works!
+      val someInputStreamSink = InputStreamSink()
+
+      // This no longer works!
+      val someOtherInputStreamSink = InputStreamSink(timeout);
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsScala.scala#output-input-stream-source-sink

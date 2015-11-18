@@ -2,6 +2,7 @@ package docs;
 
 import akka.actor.Cancellable;
 import akka.http.javadsl.model.Uri;
+import akka.japi.function.Creator;
 import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.stream.*;
@@ -14,6 +15,9 @@ import scala.concurrent.Promise;
 import scala.runtime.BoxedUnit;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;
 import java.nio.charset.Charset;
 
@@ -21,6 +25,15 @@ public class MigrationsJava {
 
     // This is compile-only code, no need for actually running anything.
     public static ActorMaterializer mat = null;
+
+    public static class SomeInputStream extends InputStream {
+      public SomeInputStream() {}
+      @Override public int read() throws IOException { return 0; }
+    }
+
+    public static class SomeOutputStream extends OutputStream {
+      @Override public void write(int b) throws IOException { return; }
+    }
 
     public static void main(String[] args) {
 
@@ -160,6 +173,47 @@ public class MigrationsJava {
         final Sink<ByteString, Future<Long>> fileSink =
           Sink.file(new File("."));
         //#file-source-sink
+
+        //#input-output-stream-source-sink
+        final Source<ByteString, Future<java.lang.Long>> inputStreamSrc =
+          Source.inputStream(new Creator<InputStream>(){
+            public InputStream create() {
+              return new SomeInputStream();
+            }
+          });
+
+        final Source<ByteString, Future<java.lang.Long>> otherInputStreamSrc =
+          Source.inputStream(new Creator<InputStream>(){
+            public InputStream create() {
+              return new SomeInputStream();
+            }
+          }, 1024);
+
+        final Sink<ByteString, Future<java.lang.Long>> outputStreamSink =
+          Sink.outputStream(new Creator<OutputStream>(){
+            public OutputStream create() {
+              return new SomeOutputStream();
+            }
+          });
+        //#input-output-stream-source-sink
+
+
+      //#output-input-stream-source-sink
+      final FiniteDuration timeout = FiniteDuration.Zero();
+
+      final Source<ByteString, OutputStream> outputStreamSrc =
+          Source.outputStream();
+
+        final Source<ByteString, OutputStream> otherOutputStreamSrc =
+          Source.outputStream(timeout);
+
+        final Sink<ByteString, InputStream> someInputStreamSink =
+          Sink.inputStream();
+
+        final Sink<ByteString, InputStream> someOtherInputStreamSink =
+          Sink.inputStream(timeout);
+        //#output-input-stream-source-sink
+
     }
 
 }

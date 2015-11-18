@@ -32,7 +32,7 @@ private[akka] object OutputStreamSourceStage {
   }
 }
 
-private[akka] class OutputStreamSourceStage(timeout: FiniteDuration) extends SourceStage[ByteString, OutputStream]("OutputStreamSource") {
+private[akka] class OutputStreamSourceStage(writeTimeout: FiniteDuration) extends SourceStage[ByteString, OutputStream]("OutputStreamSource") {
   val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
   require(maxBuffer > 0, "Buffer size must be greater than 0")
 
@@ -110,14 +110,14 @@ private[akka] class OutputStreamSourceStage(timeout: FiniteDuration) extends Sou
         }
       })
     }
-    (logic, new OutputStreamAdapter(dataQueue, downstreamStatus, logic.wakeUp, timeout))
+    (logic, new OutputStreamAdapter(dataQueue, downstreamStatus, logic.wakeUp, writeTimeout))
   }
 }
 
 private[akka] class OutputStreamAdapter(dataQueue: BlockingQueue[ByteString],
                                         downstreamStatus: AtomicReference[DownstreamStatus],
                                         sendToStage: (AdapterToStageMessage) ⇒ Future[Unit],
-                                        timeout: FiniteDuration)
+                                        writeTimeout: FiniteDuration)
   extends OutputStream {
 
   var isActive = true
@@ -148,7 +148,7 @@ private[akka] class OutputStreamAdapter(dataQueue: BlockingQueue[ByteString],
   private[this] def sendMessage(message: AdapterToStageMessage, handleCancelled: Boolean = true) =
     send(() ⇒
       try {
-        Await.ready(sendToStage(message), timeout)
+        Await.ready(sendToStage(message), writeTimeout)
         if (downstreamStatus.get() == Canceled && handleCancelled) {
           //Publisher considered to be terminated at earliest convenience to minimize messages sending back and forth
           isPublisherAlive = false

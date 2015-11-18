@@ -424,17 +424,17 @@ should be replaced by:
 SynchronousFileSource and SynchronousFileSink
 ============================================
 
-Both have been replaced by `Source.file(…)` and `Sink.file(…)` due to discoverability issues
+Both have been replaced by ``Source.file(…)`` and ``Sink.file(…)`` due to discoverability issues
 paired with names which leaked internal implementation details.
 
 Update procedure
 ----------------
 
-Replace `SynchronousFileSource.create(` with `Source.file(`
+Replace ``SynchronousFileSource.create(`` with ``Source.file(``
 
-Replace `SynchronousFileSink.create(` with `Sink.file(`
+Replace ``SynchronousFileSink.create(`` with ``Sink.file(``
 
-Replace `SynchronousFileSink.appendTo(f)` with `Sink.file(f, true)`
+Replace ``SynchronousFileSink.appendTo(f)`` with ``Sink.file(f, true)``
 
 Example
 ^^^^^^^
@@ -456,3 +456,86 @@ Example
 should be replaced by
 
 .. includecode:: code/docs/MigrationsJava.java#file-source-sink
+
+InputStreamSource and OutputStreamSink
+======================================
+
+Both have been replaced by ``Source.inputStream(…)`` and ``Sink.outputStream(…)`` due to discoverability issues.
+
+Update procedure
+----------------
+
+Replace ``InputStreamSource.create(`` with ``Source.inputStream(``
+
+Replace ``OutputStreamSink.create(`` with ``Sink.outputStream(``
+
+Example
+^^^^^^^
+
+::
+
+      // This no longer works!
+      final Source<ByteString, Future<java.lang.Long>> inputStreamSrc =
+        InputStreamSource.create(new Creator<InputStream>(){
+          public InputStream create() {
+            return new SomeInputStream();
+          }
+        });
+
+      // This no longer works!
+      final Source<ByteString, Future<java.lang.Long>> otherInputStreamSrc =
+        InputStreamSource.create(new Creator<InputStream>(){
+          public InputStream create() {
+            return new SomeInputStream();
+          }
+        }, 1024);
+
+      // This no longer works!
+      final Sink<ByteString, Future<java.lang.Long>> outputStreamSink =
+        OutputStreamSink.create(new Creator<OutputStream>(){
+          public OutputStream create() {
+            return new SomeOutputStream();
+          }
+        })
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsJava.java#input-output-stream-source-sink
+
+
+OutputStreamSource and InputStreamSink
+======================================
+
+Both have been replaced by ``Source.outputStream(…)`` and ``Sink.inputStream(…)`` due to discoverability issues.
+
+Update procedure
+----------------
+
+Replace ``OutputStreamSource.create(`` with ``Source.outputStream(``
+
+Replace ``InputStreamSink.create(`` with ``Sink.inputStream(``
+
+Example
+^^^^^^^
+
+::
+
+      // This no longer works!
+      final Source<ByteString, OutputStream> outputStreamSrc =
+        OutputStreamSource.create();
+
+      // This no longer works!
+      final Source<ByteString, OutputStream> otherOutputStreamSrc =
+        OutputStreamSource.create(timeout);
+
+      // This no longer works!
+      final Sink<ByteString, InputStream> someInputStreamSink =
+        InputStreamSink.create();
+
+      // This no longer works!
+      final Sink<ByteString, InputStream> someOtherInputStreamSink =
+        InputStreamSink.create(timeout);
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsJava.java#output-input-stream-source-sink

@@ -9,7 +9,6 @@ import java.io.File
 import java.net.{ URI, URL }
 
 import akka.stream.ActorAttributes
-import akka.stream.io.{ InputStreamSource }
 import akka.stream.scaladsl.Source
 
 import scala.annotation.tailrec
@@ -93,7 +92,7 @@ trait FileAndResourceDirectives {
                 extractSettings { settings ⇒
                   complete {
                     HttpEntity.Default(contentType, length,
-                      InputStreamSource(() ⇒ url.openStream())
+                      Source.inputStream(() ⇒ url.openStream())
                         .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
                   }
                 }
