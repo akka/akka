@@ -15,7 +15,7 @@ import scala.concurrent.Promise
 import akka.stream.impl.SinkModule
 import akka.stream.impl.StreamLayout.Module
 import org.scalatest.concurrent.ScalaFutures
-import akka.stream.impl.BlackholeSubscriber
+import akka.stream.impl.SinkholeSubscriber
 
 object AttributesSpec {
 
@@ -26,7 +26,7 @@ object AttributesSpec {
 
   final class AttributesSink(val attributes: Attributes, shape: SinkShape[Nothing]) extends SinkModule[Nothing, Future[Attributes]](shape) {
     override def create(context: MaterializationContext) =
-      (new BlackholeSubscriber(0, Promise()), Future.successful(context.effectiveAttributes))
+      (new SinkholeSubscriber(Promise()), Future.successful(context.effectiveAttributes))
 
     override protected def newInstance(shape: SinkShape[Nothing]): SinkModule[Nothing, Future[Attributes]] =
       new AttributesSink(attributes, shape)
