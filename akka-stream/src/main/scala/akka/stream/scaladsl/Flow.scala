@@ -525,6 +525,8 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' predicate returned false or upstream completes
    *
    * '''Cancels when''' predicate returned false or downstream cancels
+   *
+   * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
    */
   def takeWhile(p: Out ⇒ Boolean): Repr[Out] = andThen(TakeWhile(p))
 
@@ -572,6 +574,55 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def grouped(n: Int): Repr[immutable.Seq[Out]] = andThen(Grouped(n))
+
+  /**
+   * Ensure stream boundedness by limiting the number of elements from upstream.
+   * If the number of incoming elements exceeds max, it will signal
+   * upstream failure `StreamLimitException` downstream.
+   *
+   * Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
+   *
+   * '''Emits when''' the specified number of elements to take has not yet been reached
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   *
+   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   *
+   * See also [[FlowOps.take]], [[FlowOps.takeWithin]], [[FlowOps.takeWhile]]
+   */
+  def limit(max: Long): Repr[Out] = limitWeighted(max)(_ ⇒ 1)
+
+  /**
+   * Ensure stream boundedness by evaluating the cost of incoming elements
+   * using a cost function. Exactly how many elements will be allowed to travel downstream depends on the
+   * evaluated cost of each element. If the accumulated cost exceeds max, it will signal
+   * upstream failure `StreamLimitException` downstream.
+   *
+   * Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
+   *
+   * '''Emits when''' the specified number of elements to take has not yet been reached
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   *
+   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   *
+   * See also [[FlowOps.take]], [[FlowOps.takeWithin]], [[FlowOps.takeWhile]]
+   */
+  def limitWeighted[T](max: Long)(costFn: Out ⇒ Long): Repr[Out] = andThen(LimitWeighted(max, costFn))
 
   /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
@@ -790,6 +841,8 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' the defined number of elements has been taken or upstream completes
    *
    * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   *
+   * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
    */
   def take(n: Long): Repr[Out] = andThen(Take(n))
 
@@ -830,6 +883,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
+   *
+   * See also [[FlowOps.limit]], [[FlowOps.limitWeighted]]
    */
   def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] = andThen(Conflate(seed, aggregate))
 

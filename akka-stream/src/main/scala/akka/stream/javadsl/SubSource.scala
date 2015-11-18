@@ -278,6 +278,58 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *
    * '''Cancels when''' downstream cancels
    */
+
+  /**
+   * Ensure stream boundedness by limiting the number of elements from upstream.
+   * If the number of incoming elements exceeds max, it will signal
+   * upstream failure `StreamLimitException` downstream.
+   *
+   * Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
+   *
+   * '''Emits when''' the specified number of elements to take has not yet been reached
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   *
+   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   *
+   * See also [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
+   */
+  def limit(n: Int): javadsl.SubSource[Out, Mat] = new SubSource(delegate.limit(n))
+
+  /**
+   * Ensure stream boundedness by evaluating the cost of incoming elements
+   * using a cost function. Exactly how many elements will be allowed to travel downstream depends on the
+   * evaluated cost of each element. If the accumulated cost exceeds max, it will signal
+   * upstream failure `StreamLimitException` downstream.
+   *
+   * Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
+   *
+   * '''Emits when''' the specified number of elements to take has not yet been reached
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   *
+   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
+   *
+   * See also [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
+   */
+  def limitWeighted(n: Long)(costFn: function.Function[Out, Long]): javadsl.SubSource[Out, Mat] = {
+    new SubSource(delegate.limitWeighted(n)(costFn.apply))
+  }
+
   def sliding(n: Int, step: Int = 1): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
     new SubSource(delegate.sliding(n, step).map(_.asJava)) // TODO optimize to one step
 

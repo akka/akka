@@ -136,6 +136,19 @@ object Sink {
       _.map(akka.japi.Option.fromScalaOption)(ExecutionContexts.sameThreadExecutionContext)))
 
   /**
+   * A `Sink` that keeps on collecting incoming elements until upstream terminates.
+   * As upstream may be unbounded, `Flow[T].take` or the stricter ``Flow[T].limit` (and their variants)
+   * may be used to ensure boundedness.
+   * Materializes into a Future` of `Seq[T]` containing all the collected elements.
+   *
+   * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
+   */
+  def seq[In]: Sink[In, Future[java.util.List[In]]] = {
+    import scala.collection.JavaConverters._
+    new Sink(scaladsl.Sink.seq[In].mapMaterializedValue(fut ⇒ fut.map(sq ⇒ sq.asJava)(ExecutionContexts.sameThreadExecutionContext)))
+  }
+
+  /**
    * Sends the elements of the stream to the given `ActorRef`.
    * If the target actor terminates the stream will be canceled.
    * When the stream is completed successfully the given `onCompleteMessage`
