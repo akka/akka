@@ -571,12 +571,19 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * for the given inlet if suspension is needed and reinstalls the current
    * handler upon receiving the last `onPush()` signal (before invoking the `andThen` function).
    */
-  final protected def readN[T](in: Inlet[T], n: Int)(andThen: Seq[T] ⇒ Unit): Unit =
+  final protected def readN[T](in: Inlet[T], n: Int)(andThen: Seq[T] ⇒ Unit, onClose: Seq[T] ⇒ Unit): Unit =
     if (n < 0) throw new IllegalArgumentException("cannot read negative number of elements")
     else if (n == 0) andThen(Nil)
     else {
       val result = new ArrayBuffer[T](n)
       var pos = 0
+      def realAndThen = (elem: T) ⇒ {
+        result(pos) = elem
+        pos += 1
+        if (pos == n) andThen(result)
+      }
+      def realOnClose = () ⇒ onClose(result.take(pos))
+
       if (isAvailable(in)) {
         val elem = grab(in)
         result(0) = elem
@@ -586,20 +593,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           pos = 1
           requireNotReading(in)
           pull(in)
-          setHandler(in, new Reading(in, n - 1, getHandler(in))(elem ⇒ {
-            result(pos) = elem
-            pos += 1
-            if (pos == n) andThen(result)
-          }))
+          setHandler(in, new Reading(in, n - 1, getHandler(in))(realAndThen, realOnClose))
         }
       } else {
         requireNotReading(in)
         if (!hasBeenPulled(in)) pull(in)
-        setHandler(in, new Reading(in, n, getHandler(in))(elem ⇒ {
-          result(pos) = elem
-          pos += 1
-          if (pos == n) andThen(result)
-        }))
+        setHandler(in, new Reading(in, n, getHandler(in))(realAndThen, realOnClose))
       }
     }
 
@@ -609,14 +608,16 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * for the given inlet if suspension is needed and reinstalls the current
    * handler upon receiving the `onPush()` signal (before invoking the `andThen` function).
    */
-  final protected def read[T](in: Inlet[T])(andThen: T ⇒ Unit): Unit = {
+  final protected def read[T](in: Inlet[T])(andThen: T ⇒ Unit, onClose: () ⇒ Unit): Unit = {
     if (isAvailable(in)) {
       val elem = grab(in)
       andThen(elem)
+    } else if (isClosed(in)) {
+      onClose()
     } else {
       requireNotReading(in)
       if (!hasBeenPulled(in)) pull(in)
-      setHandler(in, new Reading(in, 1, getHandler(in))(andThen))
+      setHandler(in, new Reading(in, 1, getHandler(in))(andThen, onClose))
     }
   }
 
@@ -640,7 +641,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Caution: for n==1 andThen is called after resetting the handler, for
    * other values it is called without resetting the handler.
    */
-  private class Reading[T](in: Inlet[T], private var n: Int, val previous: InHandler)(andThen: T ⇒ Unit) extends InHandler {
+  private class Reading[T](in: Inlet[T], private var n: Int, val previous: InHandler)(andThen: T ⇒ Unit, onClose: () ⇒ Unit) extends InHandler {
     override def onPush(): Unit = {
       val elem = grab(in)
       if (n == 1) setHandler(in, previous)
@@ -650,8 +651,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       }
       andThen(elem)
     }
-    override def onUpstreamFinish(): Unit = previous.onUpstreamFinish()
-    override def onUpstreamFailure(ex: Throwable): Unit = previous.onUpstreamFailure(ex)
+    override def onUpstreamFinish(): Unit = {
+      setHandler(in, previous)
+      onClose()
+      previous.onUpstreamFinish()
+    }
+    override def onUpstreamFailure(ex: Throwable): Unit = {
+      setHandler(in, previous)
+      previous.onUpstreamFailure(ex)
+    }
   }
 
   /**
@@ -816,19 +824,30 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Install a handler on the given inlet that emits received elements on the
-   * given outlet before pulling for more data. `doTerminate` controls whether
+   * given outlet before pulling for more data. `doFinish` and `doFail` control whether
    * completion or failure of the given inlet shall lead to stage termination or not.
+   * `doPull` instructs to perform one initial pull on the `from` port.
    */
-  final protected def passAlong[Out, In <: Out](from: Inlet[In], to: Outlet[Out], doFinish: Boolean, doFail: Boolean): Unit =
-    setHandler(from, new InHandler {
-      val puller = () ⇒ tryPull(from)
+  final protected def passAlong[Out, In <: Out](from: Inlet[In], to: Outlet[Out],
+                                                doFinish: Boolean = true, doFail: Boolean = true,
+                                                doPull: Boolean = false): Unit = {
+    class PassAlongHandler extends InHandler with (() ⇒ Unit) {
+      override def apply(): Unit = tryPull(from)
       override def onPush(): Unit = {
         val elem = grab(from)
-        emit(to, elem, puller)
+        emit(to, elem, this)
       }
-      override def onUpstreamFinish(): Unit = if (doFinish) super.onUpstreamFinish()
-      override def onUpstreamFailure(ex: Throwable): Unit = if (doFail) super.onUpstreamFailure(ex)
-    })
+      override def onUpstreamFinish(): Unit = if (doFinish) completeStage()
+      override def onUpstreamFailure(ex: Throwable): Unit = if (doFail) failStage(ex)
+    }
+    val ph = new PassAlongHandler
+    if (_interpreter != null) {
+      if (isAvailable(from)) emit(to, grab(from), ph)
+      if (doFinish && isClosed(from)) completeStage()
+    }
+    setHandler(from, ph)
+    if (doPull) tryPull(from)
+  }
 
   /**
    * Obtain a callback object that can be used asynchronously to re-enter the

@@ -318,6 +318,55 @@ final class Interleave[T] private (val inputPorts: Int, val segmentSize: Int, va
   override def toString = "Interleave"
 }
 
+/**
+ * Merge two pre-sorted streams such that the resulting stream is sorted.
+ *
+ * '''Emits when''' both inputs have an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
+ */
+final class MergeSorted[T: Ordering] extends GraphStage[FanInShape2[T, T, T]] {
+  private val left = Inlet[T]("left")
+  private val right = Inlet[T]("right")
+  private val out = Outlet[T]("out")
+
+  override val shape = new FanInShape2(left, right, out)
+
+  override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+    import Ordering.Implicits._
+    setHandler(left, ignoreTerminateInput)
+    setHandler(right, ignoreTerminateInput)
+    setHandler(out, eagerTerminateOutput)
+
+    var other: T = _
+    def nullOut(): Unit = other = null.asInstanceOf[T]
+
+    def dispatch(l: T, r: T): Unit =
+      if (l < r) { other = r; emit(out, l, readL) }
+      else { other = l; emit(out, r, readR) }
+
+    val dispatchR = dispatch(other, _: T)
+    val dispatchL = dispatch(_: T, other)
+    val passR = () ⇒ emit(out, other, () ⇒ { nullOut(); passAlong(right, out, doPull = true) })
+    val passL = () ⇒ emit(out, other, () ⇒ { nullOut(); passAlong(left, out, doPull = true) })
+    val readR = () ⇒ read(right)(dispatchR, passL)
+    val readL = () ⇒ read(left)(dispatchL, passR)
+
+    override def preStart(): Unit = {
+      // all fan-in stages need to eagerly pull all inputs to get cycles started
+      pull(right)
+      read(left)(l ⇒ {
+        other = l
+        readR()
+      }, () ⇒ passAlong(right, out))
+    }
+  }
+}
+
 object Broadcast {
   /**
    * Create a new `Broadcast` with the specified number of output ports.
