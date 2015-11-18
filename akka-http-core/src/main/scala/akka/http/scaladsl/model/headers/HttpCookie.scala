@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.model.headers
 
+import akka.http.impl.model.parser.CharacterClasses
 import akka.http.javadsl.model.headers
 import akka.parboiled2.CharPredicate
 import akka.japi.{ Option ⇒ JOption }
@@ -13,22 +14,36 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 // see http://tools.ietf.org/html/rfc6265
-final case class HttpCookiePair(
+// sealed abstract to prevent generation of default apply method in companion
+sealed abstract case class HttpCookiePair private (
   name: String,
   value: String) extends jm.headers.HttpCookiePair with ToStringRenderable {
-
-  HttpCookiePair.validate(name, value)
 
   def render[R <: Rendering](r: R): r.type = r ~~ name ~~ '=' ~~ value
   def toCookie: HttpCookie = HttpCookie.fromPair(this)
 }
 object HttpCookiePair {
-  def apply(pair: (String, String)): HttpCookiePair = HttpCookiePair(pair._1, pair._2)
+  def apply(pair: (String, String)): HttpCookiePair = apply(pair._1, pair._2)
+  def apply(name: String, value: String): HttpCookiePair = {
+    HttpCookiePair.validate(name, value)
+    new HttpCookiePair(name, value) {}
+  }
+
+  def raw(pair: (String, String)): HttpCookiePair = raw(pair._1, pair._2)
+  def raw(name: String, value: String): HttpCookiePair = {
+    HttpCookiePair.validateRaw(name, value)
+    new HttpCookiePair(name, value) {}
+  }
 
   private[http] def validate(name: String, value: String): Unit = {
     import HttpCookie._
     require(nameChars.matchesAll(name), s"'${nameChars.firstMismatch(name).get}' not allowed in cookie name ('$name')")
     require(valueChars.matchesAll(value), s"'${valueChars.firstMismatch(value).get}' not allowed in cookie content ('$value')")
+  }
+  private[http] def validateRaw(name: String, value: String): Unit = {
+    import HttpCookie._
+    require(nameChars.matchesAll(name), s"'${nameChars.firstMismatch(name).get}' not allowed in cookie name ('$name')")
+    require(rawValueChars.matchesAll(value), s"'${rawValueChars.firstMismatch(value).get}' not allowed in cookie content ('$value')")
   }
 }
 
@@ -111,6 +126,7 @@ object HttpCookie {
   // http://tools.ietf.org/html/rfc6265#section-4.1.1
   // ; US-ASCII characters excluding CTLs, whitespace DQUOTE, comma, semicolon, and backslash
   private[http] val valueChars = CharPredicate('\u0021', '\u0023' to '\u002B', '\u002D' to '\u003A', '\u003C' to '\u005B', '\u005D' to '\u007E')
+  private[http] val rawValueChars = CharacterClasses.`cookie-octet-raw`
   private[http] val domainChars = ALPHANUM ++ ".-"
   private[http] val pathOrExtChars = VCHAR ++ ' ' -- ';'
 }

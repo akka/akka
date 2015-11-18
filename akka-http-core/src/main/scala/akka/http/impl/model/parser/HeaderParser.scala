@@ -4,6 +4,9 @@
 
 package akka.http.impl.model.parser
 
+import akka.http.ParserSettings
+import akka.http.ParserSettings.CookieParsingMode
+import akka.http.scaladsl.model.headers.HttpCookiePair
 import scala.util.control.NonFatal
 import akka.http.impl.util.SingletonException
 import akka.parboiled2._
@@ -63,6 +66,17 @@ private[http] class HeaderParser(val input: ParserInput, settings: HeaderParser.
   def ruleNotFound(ruleName: String): Result = throw HeaderParser.RuleNotFoundException
 
   def newUriParser(input: ParserInput): UriParser = new UriParser(input, uriParsingMode = settings.uriParsingMode)
+
+  def `cookie-value`: Rule1[String] =
+    settings.cookieParsingMode match {
+      case CookieParsingMode.RFC6265 ⇒ rule { `cookie-value-rfc-6265` }
+      case CookieParsingMode.Raw     ⇒ rule { `cookie-value-raw` }
+    }
+
+  def createCookiePair(name: String, value: String): HttpCookiePair = settings.cookieParsingMode match {
+    case CookieParsingMode.RFC6265 ⇒ HttpCookiePair(name, value)
+    case CookieParsingMode.Raw     ⇒ HttpCookiePair.raw(name, value)
+  }
 }
 
 /**
@@ -70,6 +84,7 @@ private[http] class HeaderParser(val input: ParserInput, settings: HeaderParser.
  */
 private[http] object HeaderParser {
   object RuleNotFoundException extends SingletonException
+  object EmptyCookieException extends SingletonException("Cookie header contained no parsable cookie values.")
 
   def parseFull(headerName: String, value: String, settings: Settings = DefaultSettings): HeaderParser#Result = {
     import akka.parboiled2.EOI
@@ -143,12 +158,17 @@ private[http] object HeaderParser {
 
   trait Settings {
     def uriParsingMode: Uri.ParsingMode
+    def cookieParsingMode: ParserSettings.CookieParsingMode
   }
-  def Settings(uriParsingMode: Uri.ParsingMode): Settings = {
+  def Settings(uriParsingMode: Uri.ParsingMode = Uri.ParsingMode.Relaxed,
+               cookieParsingMode: ParserSettings.CookieParsingMode = ParserSettings.CookieParsingMode.RFC6265): Settings = {
     val _uriParsingMode = uriParsingMode
+    val _cookieParsingMode = cookieParsingMode
+
     new Settings {
       def uriParsingMode: Uri.ParsingMode = _uriParsingMode
+      def cookieParsingMode: CookieParsingMode = _cookieParsingMode
     }
   }
-  val DefaultSettings: Settings = Settings(Uri.ParsingMode.Relaxed)
+  val DefaultSettings: Settings = Settings()
 }

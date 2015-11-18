@@ -4,7 +4,8 @@
 
 package akka.http.impl.model.parser
 
-import akka.http.scaladsl.model.HttpHeader.ParsingResult
+import akka.http.ParserSettings.CookieParsingMode
+import akka.http.impl.model.parser.HeaderParser.Settings
 import org.scalatest.{ Matchers, FreeSpec }
 import org.scalatest.matchers.{ Matcher, MatchResult }
 import akka.http.impl.util._
@@ -217,13 +218,36 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         .renderedTo("bytes */999999999999999999")
     }
 
-    "Cookie" in {
+    "Cookie (RFC 6265)" in {
       "Cookie: SID=31d4d96e407aad42" =!= Cookie("SID" -> "31d4d96e407aad42")
       "Cookie: SID=31d4d96e407aad42; lang=en>US" =!= Cookie("SID" -> "31d4d96e407aad42", "lang" -> "en>US")
+      "Cookie: a=1; b=2" =!= Cookie("a" -> "1", "b" -> "2")
       "Cookie: a=1;b=2" =!= Cookie("a" -> "1", "b" -> "2").renderedTo("a=1; b=2")
       "Cookie: a=1 ;b=2" =!= Cookie("a" -> "1", "b" -> "2").renderedTo("a=1; b=2")
-      "Cookie: a=1; b=2" =!= Cookie("a" -> "1", "b" -> "2")
-      "Cookie: a=1,b=2" =!= Cookie("a" -> "1", "b" -> "2").renderedTo("a=1; b=2")
+
+      "Cookie: z=0;a=1,b=2" =!= Cookie("z" -> "0").renderedTo("z=0")
+      """Cookie: a=1;b="test"""" =!= Cookie("a" -> "1", "b" -> "test").renderedTo("a=1; b=test")
+
+      "Cookie: a=1; b=f\"d\"c\"; c=xyz" =!= Cookie("a" -> "1", "c" -> "xyz").renderedTo("a=1; c=xyz")
+      "Cookie: a=1; b=ä; c=d" =!= Cookie("a" -> "1", "c" -> "d").renderedTo("a=1; c=d")
+
+      "Cookie: a=1,2" =!=
+        ErrorInfo(
+          "Illegal HTTP header 'Cookie'",
+          "Cookie header contained no parsable cookie values.")
+    }
+
+    "Cookie (Raw)" in {
+      "Cookie: SID=31d4d96e407aad42" =!= Cookie("SID" -> "31d4d96e407aad42").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: SID=31d4d96e407aad42; lang=en>US" =!= Cookie("SID" -> "31d4d96e407aad42", "lang" -> "en>US").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1; b=2" =!= Cookie("a" -> "1", "b" -> "2").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1;b=2" =!= Cookie("a" -> "1", "b" -> "2").renderedTo("a=1; b=2").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1 ;b=2" =!= Cookie(List(HttpCookiePair.raw("a" -> "1 "), HttpCookiePair("b" -> "2"))).renderedTo("a=1 ; b=2").withCookieParsingMode(CookieParsingMode.Raw)
+
+      "Cookie: z=0; a=1,b=2" =!= Cookie(List(HttpCookiePair("z" -> "0"), HttpCookiePair.raw("a" -> "1,b=2"))).withCookieParsingMode(CookieParsingMode.Raw)
+      """Cookie: a=1;b="test"""" =!= Cookie(List(HttpCookiePair("a" -> "1"), HttpCookiePair.raw("b" -> "\"test\""))).renderedTo("a=1; b=\"test\"").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1; b=f\"d\"c\"; c=xyz" =!= Cookie(List(HttpCookiePair("a" -> "1"), HttpCookiePair.raw("b" -> "f\"d\"c\""), HttpCookiePair("c" -> "xyz"))).withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1; b=ä; c=d" =!= Cookie(List(HttpCookiePair("a" -> "1"), HttpCookiePair.raw("b" -> "ä"), HttpCookiePair("c" -> "d"))).withCookieParsingMode(CookieParsingMode.Raw)
     }
 
     "Date" in {
@@ -591,12 +615,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
   }
   sealed trait TestExample extends (String ⇒ Unit)
-  implicit class TestHeader(val header: HttpHeader) extends TestExample {
+  implicit class TestHeader(val header: HttpHeader) extends TestExample { outer ⇒
     def apply(line: String) = {
       val Array(name, value) = line.split(": ", 2)
-      HttpHeader.parse(name, value) should (equal(HttpHeader.ParsingResult.Ok(header, Nil)) and renderFromHeaderTo(this, line))
+      HttpHeader.parse(name, value, settings) should (equal(HttpHeader.ParsingResult.Ok(header, Nil)) and renderFromHeaderTo(this, line))
     }
     def rendering(line: String): String = line
+    def settings: HeaderParser.Settings = HeaderParser.DefaultSettings
     def renderedTo(expectedRendering: String): TestHeader =
       new TestHeader(header) {
         override def rendering(line: String): String =
@@ -604,6 +629,16 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
             case x: ModeledHeader ⇒ x.name + ": " + expectedRendering
             case _                ⇒ expectedRendering
           }
+
+        override def settings: Settings = outer.settings
+      }
+    def withCookieParsingMode(mode: CookieParsingMode): TestHeader =
+      withParserSettings(Settings(settings.uriParsingMode, mode))
+
+    def withParserSettings(newSettings: HeaderParser.Settings): TestHeader =
+      new TestHeader(header) {
+        override def rendering(line: String): String = outer.rendering(line)
+        override def settings = newSettings
       }
   }
   implicit class TestError(expectedError: ErrorInfo) extends TestExample {
