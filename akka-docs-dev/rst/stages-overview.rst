@@ -130,7 +130,7 @@ concat                 the current stream has an element available; if the curre
 prepend                the given stream has an element available; if the given input completes, it tries the current one                           downstream backpressures                                                                                                        all upstreams complete
 =====================  =========================================================================================================================   ==============================================================================================================================  =====================================================================================
 
-(*) This behavior is changeable to completing when any upstream completes by setting ``eagerClose=true``.
+(*) This behavior is changeable to completing when any upstream completes by setting ``eagerComplete=true``.
 
 Fan-out stages
 ^^^^^^^^^^^^^^
