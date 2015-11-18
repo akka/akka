@@ -238,7 +238,7 @@ object AkkaBuild extends Build {
   lazy val checkerTests = Project(
     id = "akka-diagnostics-tests",
     base = file("akka-diagnostics-tests"),
-    dependencies = Seq(cluster, testkit % "compile;test->test")
+    dependencies = Seq(clusterSharding, clusterMetrics, testkit % "compile;test->test")
   )
 
   lazy val samples = Project(
