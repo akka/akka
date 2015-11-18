@@ -14,6 +14,7 @@ Scala Documentation
    scala/index-utilities
    scala/howto
    experimental/index
+   scala/index-rp
    dev/index
    project/index
    additional/index
