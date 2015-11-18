@@ -17,6 +17,12 @@ import language.postfixOps
 class AskSpec extends AkkaSpec with ScalaFutures {
 
   "The “ask” pattern" must {
+    "send request to actor and wrap the answer in Future" in {
+      implicit val timeout = Timeout(5.seconds)
+      val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender() ! x } }))
+      val f = echo ? "ping"
+      f.futureValue should ===("ping")
+    }
 
     "return broken promises on DeadLetters" in {
       implicit val timeout = Timeout(5 seconds)
@@ -224,3 +230,4 @@ class AskSpec extends AkkaSpec with ScalaFutures {
   }
 
 }
+
