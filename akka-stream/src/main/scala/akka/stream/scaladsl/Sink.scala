@@ -118,6 +118,16 @@ object Sink {
   def lastOption[T]: Sink[T, Future[Option[T]]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastOptionSink)
 
   /**
+   * TODO: document usage
+   *
+   */
+  def toSeq[T]: Sink[T, Future[Seq[T]]] = {
+    Flow[T].grouped(Integer.MAX_VALUE).toMat(Sink.headOption)(Keep.right) mapMaterializedValue { e ⇒
+      e.map(_.getOrElse(Seq.empty[T]))(ExecutionContexts.sameThreadExecutionContext)
+    }
+  }
+
+  /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
    *
    * If `fanout` is `true`, the materialized `Publisher` will support multiple `Subscriber`s and

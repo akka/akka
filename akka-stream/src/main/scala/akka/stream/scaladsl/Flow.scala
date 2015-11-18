@@ -812,6 +812,8 @@ trait FlowOps[+Out, +Mat] {
    */
   def takeWithin(d: FiniteDuration): Repr[Out] = via(new TakeWithin[Out](d).withAttributes(name("takeWithin")))
 
+  def limit[T](max: Int): Repr[Out, Mat] = ??? // TODO
+
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
    * until the subscriber is ready to accept them. For example a conflate step might average incoming numbers if the
