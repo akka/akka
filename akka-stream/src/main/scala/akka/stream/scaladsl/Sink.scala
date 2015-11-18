@@ -118,6 +118,20 @@ object Sink {
   def lastOption[T]: Sink[T, Future[Option[T]]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastOptionSink)
 
   /**
+   * A `Sink` that keeps on collecting incoming elements until upstream terminates.
+   * As upstream may be unbounded, `Flow[T].take` or the stricter ``Flow[T].limit` (and their variants)
+   * may be used to ensure boundedness.
+   * Materializes into a Future` of `Seq[T]` containing all the collected elements.
+   *
+   * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
+   */
+  def seq[T]: Sink[T, Future[Seq[T]]] = {
+    Flow[T].grouped(Integer.MAX_VALUE).toMat(Sink.headOption)(Keep.right) mapMaterializedValue { e ⇒
+      e.map(_.getOrElse(Seq.empty[T]))(ExecutionContexts.sameThreadExecutionContext)
+    }
+  }
+
+  /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
    *
    * If `fanout` is `true`, the materialized `Publisher` will support multiple `Subscriber`s and
