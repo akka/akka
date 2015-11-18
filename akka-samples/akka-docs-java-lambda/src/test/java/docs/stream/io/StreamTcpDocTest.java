@@ -3,12 +3,10 @@
  */
 package docs.stream.io;
 
-import static org.junit.Assert.assertEquals;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import akka.stream.io.Framing;
 import docs.stream.SilenceSystemOut;
-import docs.stream.cookbook.RecipeParseLines;
 import java.net.InetSocketAddress;
 
 import org.junit.AfterClass;
@@ -19,7 +17,6 @@ import scala.runtime.BoxedUnit;
 import util.SocketUtils;
 
 import akka.actor.ActorSystem;
-import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.Tcp.*;
