@@ -7,7 +7,7 @@ import java.io.File
 
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
-import akka.stream.io.{ Framing, SynchronousFileSink }
+import akka.stream.io.{ Framing }
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.Multipart
 import akka.util.ByteString
@@ -34,7 +34,7 @@ class FileUploadExamplesSpec extends RoutingSpec {
               // stream into a file as the chunks of it arrives and return a future
               // file to where it got stored
               val file = File.createTempFile("upload", "tmp")
-              b.entity.dataBytes.runWith(SynchronousFileSink(file)).map(_ =>
+              b.entity.dataBytes.runWith(Sink.file(file)).map(_ =>
                 (b.name -> file))
 
             case b: BodyPart =>
