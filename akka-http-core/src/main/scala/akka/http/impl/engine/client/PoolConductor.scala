@@ -68,7 +68,7 @@ private object PoolConductor {
     GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
 
-      val retryMerge = b.add(MergePreferred[RequestContext](1, eagerClose = true))
+      val retryMerge = b.add(MergePreferred[RequestContext](1, eagerComplete = true))
       val slotSelector = b.add(new SlotSelector(slotCount, pipeliningLimit, log))
       val route = b.add(new Route(slotCount))
       val retrySplit = b.add(Broadcast[RawSlotEvent](2))

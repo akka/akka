@@ -1466,17 +1466,17 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Backpressures when''' downstream backpressures
    *
-   * '''Completes when''' all upstreams complete
+   * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge[U >: Out, M](that: Graph[SourceShape[U], M]): Repr[U] =
-    via(mergeGraph(that))
+  def merge[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean = false): Repr[U] =
+    via(mergeGraph(that, eagerComplete))
 
-  protected def mergeGraph[U >: Out, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+  protected def mergeGraph[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        val merge = b.add(Merge[U](2))
+        val merge = b.add(Merge[U](2, eagerComplete))
         r ~> merge.in(1)
         FlowShape(merge.in(0), merge.out)
     }
@@ -1716,8 +1716,8 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    *
    * @see [[#merge]].
    */
-  def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
-    viaMat(mergeGraph(that))(matF)
+  def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], eagerComplete: Boolean = false)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+    viaMat(mergeGraph(that, eagerComplete))(matF)
 
   /**
    * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
