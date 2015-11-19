@@ -177,11 +177,6 @@ package util {
     def receive = { case x ⇒ log.warning(x.toString) }
   }
 
-  // Provisioning of actor names composed of a common prefix + a counter. According to #16613 not in scope as public API.
-  private[http] final class SeqActorName(prefix: String) extends AtomicInteger {
-    def next(): String = prefix + '-' + getAndIncrement()
-  }
-
   private[http] trait LogMessages extends ActorLogging { this: Actor ⇒
     def logMessages(mark: String = "")(r: Receive): Receive =
       new Receive {

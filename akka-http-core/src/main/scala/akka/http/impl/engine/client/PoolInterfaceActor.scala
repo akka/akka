@@ -5,18 +5,19 @@
 package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
+import akka.event.Logging
+
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
-import akka.stream.Materializer
+import akka.stream.{ ActorAttributes, Materializer }
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
 import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
-import akka.stream.impl.FixedSizeBuffer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.impl.{ SeqActorName, FixedSizeBuffer }
+import akka.stream.scaladsl.{ Keep, Flow, Sink, Source }
 import akka.http.HostConnectionPoolSetup
-import akka.http.impl.util.SeqActorName
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
 import PoolFlow._
@@ -54,14 +55,23 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
 
   log.debug("(Re-)starting host connection pool to {}:{}", hcps.host, hcps.port)
 
-  { // start the pool flow with this actor acting as source as well as sink
+  initConnectionFlow()
+
+  /** Start the pool flow with this actor acting as source as well as sink */
+  private def initConnectionFlow() = {
     import context.system
     import hcps._
     import setup._
+
     val connectionFlow =
       if (httpsContext.isEmpty) Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
       else Http().outgoingConnectionTls(host, port, None, settings.connectionSettings, httpsContext, setup.log)
-    val poolFlow = PoolFlow(connectionFlow, new InetSocketAddress(host, port), settings, setup.log)
+
+    val poolFlow = PoolFlow(
+      Flow[HttpRequest].viaMat(connectionFlow)(Keep.right),
+      new InetSocketAddress(host, port), settings, setup.log)
+      .named("PoolFlow")
+
     Source(ActorPublisher(self)).via(poolFlow).runWith(Sink(ActorSubscriber[ResponseContext](self)))
   }
 
@@ -106,7 +116,7 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
         // if we can't dispatch right now we buffer and dispatch when demand from the pool arrives
         if (inputBuffer.isFull) {
           x.responsePromise.failure(
-            new RuntimeException(s"Exceeded configured max-open-requests value of [${inputBuffer.size}]"))
+            new RuntimeException(s"Exceeded configured max-open-requests value of [${inputBuffer.size}]")) // TODO maybe named exception?
         } else inputBuffer.enqueue(x)
       } else dispatchRequest(x) // if we can dispatch right now, do it
       request(1) // for every incoming request we demand one response from the pool

@@ -44,7 +44,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
 
   override def withNamePrefix(name: String): Materializer = this.copy(namePrefix = name)
 
-  private[this] def nextFlowNameCount(): Long = flowNameCounter.incrementAndGet()
+  private[this] def nextFlowNameCount(): Long = flowNameCounter.incrementAndGet() // TODO use SeqActorName instead
 
   private[this] def createFlowName(): String = s"$namePrefix-${nextFlowNameCount()}"
 
@@ -214,6 +214,9 @@ private[akka] class FlowNameCounter extends Extension {
 private[akka] object StreamSupervisor {
   def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
     Props(new StreamSupervisor(settings, haveShutDown)).withDeploy(Deploy.local)
+
+  private val actorName = new SeqActorName("StreamSupervisor")
+  def nextName(): String = actorName.next()
 
   final case class Materialize(props: Props, name: String)
     extends DeadLetterSuppression with NoSerializationVerificationNeeded
