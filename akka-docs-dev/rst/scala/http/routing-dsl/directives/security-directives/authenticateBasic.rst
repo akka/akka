@@ -27,6 +27,8 @@ variant of this directive which allows it to run without blocking routing layer 
 Standard HTTP-based authentication which uses the ``WWW-Authenticate`` header containing challenge data and
 ``Authorization`` header for receiving credentials is implemented in subclasses of ``HttpAuthenticator``.
 
+See :ref:`credentials-and-timing-attacks-scala` for details about verifying the secret.
+
 .. warning::
   Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
 

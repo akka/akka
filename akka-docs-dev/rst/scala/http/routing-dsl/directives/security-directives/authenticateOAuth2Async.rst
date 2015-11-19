@@ -28,6 +28,8 @@ which by default is mapped to an ``401 Unauthorized`` response.
 
 See also :ref:`-authenticateOAuth2-` if the authorization operation is rather quick, and does not have to execute asynchronously.
 
+See :ref:`credentials-and-timing-attacks-scala` for details about verifying the secret.
+
 For more information on how OAuth2 works see `RFC 6750`_.
 
 .. _RFC 6750: https://tools.ietf.org/html/rfc6750
