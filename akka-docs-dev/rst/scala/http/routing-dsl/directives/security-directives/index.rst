@@ -64,3 +64,20 @@ they are only a means of extracting the so called ``Bearer Token`` from the ``Au
 as defined in `RFC 6750`_, and allow users to validate and complete the protocol.
 
 .. _RFC 6750: https://tools.ietf.org/html/rfc6750
+
+
+.. _credentials-and-timing-attacks-scala:
+
+Credentials and password timing attacks
+---------------------------------------
+
+When transforming request ``Credentials`` into an application specific user identifier the naive solution for
+checking the secret (password) would be a regular string comparison, but doing this would open up the application to
+timing attacks. See for example `Timing Attacks Explained`_ for an explanation of the problem.
+
+.. _Timing Attacks Explained: http://emerose.com/timing-attacks-explained
+
+To protect users of the library from that mistake the secret is not available through the API, instead the method
+``Credentials.Provided.verify(String)`` should be used. It does a constant time comparison rather than returning early
+upon finding the first non-equal character.
+
