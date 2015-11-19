@@ -176,7 +176,7 @@ private[akka] class DiagnosticsRecorder(system: ExtendedActorSystem) extends Ext
       }
     } catch {
       case NonFatal(e) ⇒
-        system.log.error(e, "Couldn't gather Akka diagnostics information")
+        system.log.warning("Couldn't gather Akka diagnostics information, please configure section akka.diagnostics.recorder (to correct error or turn off this feature): {}", e.getMessage)
     }
   }
 
@@ -590,7 +590,7 @@ private[akka] class DiagnosticsRecorder(system: ExtendedActorSystem) extends Ext
    */
   private[akka] class DiagnosticsRecorderMBeanImpl extends StandardMBean(classOf[DiagnosticsRecorderMBean]) with DiagnosticsRecorderMBean {
 
-    override val getReportFileLocation: String = reportFile.getAbsolutePath
+    override lazy val getReportFileLocation: String = reportFile.getAbsolutePath
 
     override def collectThreadDumps(): String =
       collectThreadDumps(collectThreadDumpsCount)

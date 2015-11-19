@@ -671,7 +671,11 @@ private[akka] class ActorSystemImpl(
     if (LogConfigOnStart) logConfiguration()
 
     ConfigChecker.reportIssues(this)
-    DiagnosticsRecorder(this).runStartupReport()
+    try DiagnosticsRecorder(this).runStartupReport()
+    catch {
+      case NonFatal(e) ⇒
+        log.warning("cannot start DiagnosticsRecorder, please configure section akka.diagnostics.recorder (to correct error or turn off this feature): {}", e.getMessage)
+    }
 
     this
   } catch {

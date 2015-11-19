@@ -235,6 +235,21 @@ class DiagnosticsRecorderSpec extends AkkaSpec(DiagnosticsRecorderSpec.config) {
       }
 
     }
+
+    "not fail the system when directory cannot be created" in {
+      val f = new File("akka-diagnostics-tests/target", "akka-diagnostics-file")
+      if (f.createNewFile())
+        try {
+          val sys = ActorSystem("akka-diag-file",
+            ConfigFactory.parseString(s"""akka.diagnostics.recorder{dir="${f.getPath}"\nenabled=on\nstartup-report-after=0s}""")
+              .withFallback(ConfigFactory.parseString(DiagnosticsRecorderSpec.config)))
+          sys.shutdown()
+          sys.awaitTermination()
+        } finally {
+          f.delete()
+        }
+      else fail("could not create file " + f)
+    }
   }
 
 }
