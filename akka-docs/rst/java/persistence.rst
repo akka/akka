@@ -922,7 +922,7 @@ directory. This can be changed by configuration where the specified path can be 
 Note that it is not mandatory to specify a snapshot store plugin. If you don't use snapshots
 you don't have to configure it.
 
-.. _journal-proxy:
+.. _journal-proxy-java:
 
 Journal Proxy
 -------------
@@ -931,7 +931,7 @@ A journal proxy allows sharing of journals and snapshot stores across multiple a
 different nodes). This, for example, allows persistent actors to failover to a backup node and continue using the
 shared journal instance from the backup node. The journal proxy works by forwarding all the journal/snapshot store
 messages to a single, shared, persistence plugin instance, and therefor supports any use case supported by the proxied
-plugin (for example, :ref:`Persistence Query <persistence-query-scala>`).
+plugin (for example, :ref:`Persistence Query <persistence-query-java>`).
 
 .. warning::
 
@@ -943,15 +943,16 @@ The journal and snapshot store proxies are controlled via the ``akka.persistence
 ``target-snapshot-store-plugin`` keys to the underlying plugin you wish to use (for example:
 ``akka.persistence.journal.leveldb``). The ``start-target-journal`` and ``start-target-snapshot-store`` keys should be
 set to ``on`` in exactly one actor system - this is the system that will instantiate the shared persistence plugin.
-Next, the journal proxy needs to be told how to find the shared plugin. This can be done by setting the ``TBD``
-configuration key, or programmatically by calling the ``JournalProxy.setTargetLocation`` method.
+Next, the journal proxy needs to be told how to find the shared plugin. This can be done by setting the
+``target-journal-address`` and ``target-snapshot-store-address`` configuration keys, or programmatically by calling the
+``JournalProxy.setTargetLocation`` method.
 
 .. note::
 
   The proxied persistence plugin can (and should) be configured using its original configuration keys.
 
 
-.. _custom-serialization:
+.. _custom-serialization-java:
 
 Custom serialization
 ====================
