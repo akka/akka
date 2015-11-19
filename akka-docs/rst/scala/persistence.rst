@@ -994,8 +994,9 @@ The journal and snapshot store proxies are controlled via the ``akka.persistence
 ``target-snapshot-store-plugin`` keys to the underlying plugin you wish to use (for example:
 ``akka.persistence.journal.leveldb``). The ``start-target-journal`` and ``start-target-snapshot-store`` keys should be
 set to ``on`` in exactly one actor system - this is the system that will instantiate the shared persistence plugin.
-Next, the journal proxy needs to be told how to find the shared plugin. This can be done by setting the ``TBD``
-configuration key, or programmatically by calling the ``JournalProxy.setTargetLocation`` method.
+Next, the journal proxy needs to be told how to find the shared plugin. This can be done by setting the
+``target-journal-address`` and ``target-snapshot-store-address`` configuration keys, or programmatically by calling the
+``JournalProxy.setTargetLocation`` method.
 
 .. note::
 
