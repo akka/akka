@@ -29,6 +29,8 @@ which by default is mapped to an ``401 Unauthorized`` response.
 Longer-running authentication tasks (like looking up credentials in a database) should use the :ref:`-authenticateOAuth2Async-`
 variant of this directive which allows it to run without blocking routing layer of Akka HTTP, freeing it for other requests.
 
+See :ref:`credentials-and-timing-attacks-scala` for details about verifying the secret.
+
 For more information on how OAuth2 works see `RFC 6750`_.
 
 .. _RFC 6750: https://tools.ietf.org/html/rfc6750
