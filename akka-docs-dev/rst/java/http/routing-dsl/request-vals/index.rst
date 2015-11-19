@@ -43,6 +43,10 @@ akka.http.javadsl.server.values.FormFieldsPathMatchers
   Contains request values to match and access URI path segments.
 akka.http.javadsl.server.values.FormFieldsCustomRequestVal
   An abstract class to implement arbitrary custom request values.
+:ref:`akka.http.javadsl.server.values.HttpBasicAuthenticator.scala <http-basic-authenticator-java>`
+  An abstract class to implement HTTP basic authentication
+:ref:`akka.http.javadsl.server.values.OAuth2Authenticator <oauth2-authenticator-java>`
+  An abstract class to implement Oauth 2 bearer token authentication
 
 See also
 --------
@@ -52,3 +56,5 @@ See also
 
   form-field-request-vals
   header-request-vals
+  http-basic-authenticator
+  oauth2-authenticator
