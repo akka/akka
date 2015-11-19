@@ -25,6 +25,8 @@ leaves the request to be rejected with a :class:`AuthenticationFailedRejection` 
 Longer-running authentication tasks (like looking up credentials in a database) should use :ref:`-authenticateBasicAsync-`
 or :ref:`-authenticateBasicPFAsync-` if you prefer to use the ``PartialFunction`` syntax.
 
+See :ref:`credentials-and-timing-attacks-scala` for details about verifying the secret.
+
 .. warning::
   Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
 
