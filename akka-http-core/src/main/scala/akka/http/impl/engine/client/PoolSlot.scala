@@ -4,20 +4,22 @@
 
 package akka.http.impl.engine.client
 
-import language.existentials
 import java.net.InetSocketAddress
-import scala.concurrent.Future
-import scala.util.{ Failure, Success }
-import scala.collection.immutable
+
 import akka.actor._
-import akka.http.scaladsl.model.{ HttpEntity, HttpResponse, HttpRequest }
-import akka.http.scaladsl.util.FastFuture
 import akka.http.ConnectionPoolSettings
 import akka.http.impl.util._
-import akka.stream.impl.{ SubscribePending, ExposedPublisher, ActorProcessor }
-import akka.stream.actor._
-import akka.stream.scaladsl._
+import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
+import akka.http.scaladsl.util.FastFuture
 import akka.stream._
+import akka.stream.actor._
+import akka.stream.impl.{ ActorProcessor, ExposedPublisher, SeqActorName, SubscribePending }
+import akka.stream.scaladsl._
+
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.language.existentials
+import scala.util.{ Failure, Success }
 
 private object PoolSlot {
   import PoolFlow.{ RequestContext, ResponseContext }
@@ -56,10 +58,12 @@ private object PoolSlot {
     FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
 
+      // TODO wouldn't be better to have them under a known parent? /user/SlotProcessor-0 seems weird
+      val name = slotProcessorActorName.next()
       val slotProcessor = b.add {
         Flow.fromProcessor { () ⇒
           val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
-            slotProcessorActorName.next())
+            name)
           ActorProcessor[RequestContext, List[ProcessorOut]](actor)
         }.mapConcat(identity)
       }
@@ -72,8 +76,8 @@ private object PoolSlot {
         split.out(1).collect { case r: RawSlotEvent ⇒ r }.outlet)
     }
 
-  import ActorSubscriberMessage._
   import ActorPublisherMessage._
+  import ActorSubscriberMessage._
 
   /**
    * An actor mananging a series of materializations of the given `connectionFlow`.
@@ -87,15 +91,15 @@ private object PoolSlot {
   private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
                               settings: ConnectionPoolSettings)(implicit fm: Materializer)
     extends ActorSubscriber with ActorPublisher[List[ProcessorOut]] with ActorLogging {
-
     var exposedPublisher: akka.stream.impl.ActorPublisher[Any] = _
     var inflightRequests = immutable.Queue.empty[RequestContext]
     val runnableGraph = Source.actorPublisher[HttpRequest](Props(new FlowInportActor(self)).withDeploy(Deploy.local))
       .via(connectionFlow)
       .toMat(Sink.actorSubscriber[HttpResponse](Props(new FlowOutportActor(self)).withDeploy(Deploy.local)))(Keep.both)
+      .named("SlotProcessorInternalConnectionFlow")
 
-    def requestStrategy = ZeroRequestStrategy
-    def receive = waitingExposedPublisher
+    override def requestStrategy = ZeroRequestStrategy
+    override def receive = waitingExposedPublisher
 
     def waitingExposedPublisher: Receive = {
       case ExposedPublisher(publisher) ⇒
@@ -107,20 +111,25 @@ private object PoolSlot {
     def waitingForSubscribePending: Receive = {
       case SubscribePending ⇒
         exposedPublisher.takePendingSubscribers() foreach (s ⇒ self ! ActorPublisher.Internal.Subscribe(s))
+        log.debug("become unconnected, from subscriber pending")
         context.become(unconnected)
     }
 
     val unconnected: Receive = {
-      case OnNext(rc: RequestContext) ⇒
+      case m @ OnNext(rc: RequestContext) ⇒
         val (connInport, connOutport) = runnableGraph.run()
         connOutport ! Request(totalDemand)
         context.become(waitingForDemandFromConnection(connInport, connOutport, rc))
 
-      case Request(_) ⇒ if (remainingRequested == 0) request(1) // ask for first request if necessary
+      case m @ Request(_) ⇒ if (remainingRequested == 0) request(1) // ask for first request if necessary
 
-      case Cancel     ⇒ { cancel(); shutdown() }
-      case OnComplete ⇒ onComplete()
-      case OnError(e) ⇒ onError(e)
+      case m @ OnComplete ⇒ onComplete()
+      case m @ OnError(e) ⇒ onError(e)
+      case m @ Cancel ⇒
+        cancel()
+        shutdown()
+
+      case c @ FromConnection(msg) ⇒ // ignore ...
     }
 
     def waitingForDemandFromConnection(connInport: ActorRef, connOutport: ActorRef,
@@ -136,8 +145,8 @@ private object PoolSlot {
         context.become(running(connInport, connOutport))
 
       case FromConnection(Cancel)     ⇒ if (!isActive) { cancel(); shutdown() } // else ignore and wait for accompanying OnComplete or OnError
-      case FromConnection(OnComplete) ⇒ handleDisconnect(None)
-      case FromConnection(OnError(e)) ⇒ handleDisconnect(Some(e))
+      case FromConnection(OnComplete) ⇒ handleDisconnect(sender(), None, Some(firstRequest))
+      case FromConnection(OnError(e)) ⇒ handleDisconnect(sender(), Some(e), Some(firstRequest))
       case FromConnection(OnNext(x))  ⇒ throw new IllegalStateException("Unexpected HttpResponse: " + x)
     }
 
@@ -171,18 +180,29 @@ private object PoolSlot {
         val requestCompleted = SlotEvent.RequestCompletedFuture(whenCompleted.map(_ ⇒ SlotEvent.RequestCompleted(slotIx)))
         onNext(delivery :: requestCompleted :: Nil)
 
-      case FromConnection(OnComplete) ⇒ handleDisconnect(None)
-      case FromConnection(OnError(e)) ⇒ handleDisconnect(Some(e))
+      case FromConnection(OnComplete) ⇒ handleDisconnect(sender(), None)
+      case FromConnection(OnError(e)) ⇒ handleDisconnect(sender(), Some(e))
     }
 
-    def handleDisconnect(error: Option[Throwable]): Unit = {
+    def handleDisconnect(connInport: ActorRef, error: Option[Throwable], firstContext: Option[RequestContext] = None): Unit = {
       log.debug("Slot {} disconnected after {}", slotIx, error getOrElse "regular connection close")
-      val results: List[ProcessorOut] = inflightRequests.map { rc ⇒
-        if (rc.retriesLeft == 0) {
-          val reason = error.fold[Throwable](new RuntimeException("Unexpected disconnect"))(identityFunc)
-          ResponseDelivery(ResponseContext(rc, Failure(reason)))
-        } else SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))
-      }(collection.breakOut)
+
+      val results: List[ProcessorOut] = {
+        if (inflightRequests.isEmpty && firstContext.isDefined) {
+          (error match {
+            case Some(err) ⇒ ResponseDelivery(ResponseContext(firstContext.get, Failure(new RuntimeException("Unexpected (early) disconnect", err))))
+            case _         ⇒ ResponseDelivery(ResponseContext(firstContext.get, Failure(new RuntimeException("Unexpected (early) disconnect"))))
+          }) :: Nil
+        } else {
+          inflightRequests.map { rc ⇒
+            if (rc.retriesLeft == 0) {
+              val reason = error.fold[Throwable](new RuntimeException("Unexpected disconnect"))(identityFunc)
+              connInport ! ActorPublisherMessage.Cancel
+              ResponseDelivery(ResponseContext(rc, Failure(reason)))
+            } else SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))
+          }(collection.breakOut)
+        }
+      }
       inflightRequests = immutable.Queue.empty
       onNext(SlotEvent.Disconnected(slotIx, results.size) :: results)
       if (canceled) onComplete()
@@ -207,23 +227,27 @@ private object PoolSlot {
 
   private case class FromConnection(ev: Any) extends NoSerializationVerificationNeeded
 
-  private class FlowInportActor(slotProcessor: ActorRef) extends ActorPublisher[HttpRequest] {
+  private class FlowInportActor(slotProcessor: ActorRef) extends ActorPublisher[HttpRequest] with ActorLogging {
     def receive: Receive = {
       case ev: Request            ⇒ slotProcessor ! FromConnection(ev)
-      case Cancel                 ⇒ { slotProcessor ! FromConnection(Cancel); context.stop(self) }
       case OnNext(r: HttpRequest) ⇒ onNext(r)
-      case OnComplete             ⇒ { onComplete(); context.stop(self) }
-      case OnError(e)             ⇒ { onError(e); context.stop(self) }
+      case OnComplete             ⇒ onCompleteThenStop()
+      case OnError(e)             ⇒ onErrorThenStop(e)
+      case Cancel ⇒
+        slotProcessor ! FromConnection(Cancel)
+        context.stop(self)
     }
   }
 
-  private class FlowOutportActor(slotProcessor: ActorRef) extends ActorSubscriber {
+  private class FlowOutportActor(slotProcessor: ActorRef) extends ActorSubscriber with ActorLogging {
     def requestStrategy = ZeroRequestStrategy
     def receive: Receive = {
-      case Request(n)                     ⇒ request(n)
-      case Cancel                         ⇒ cancel()
-      case ev: OnNext                     ⇒ slotProcessor ! FromConnection(ev)
-      case ev @ (OnComplete | OnError(_)) ⇒ { slotProcessor ! FromConnection(ev); context.stop(self) }
+      case Request(n) ⇒ request(n)
+      case Cancel     ⇒ cancel()
+      case ev: OnNext ⇒ slotProcessor ! FromConnection(ev)
+      case ev @ (OnComplete | OnError(_)) ⇒
+        slotProcessor ! FromConnection(ev)
+        context.stop(self)
     }
   }
 }

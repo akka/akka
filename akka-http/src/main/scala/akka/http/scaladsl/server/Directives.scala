@@ -4,7 +4,14 @@
 
 package akka.http.scaladsl.server
 
+import java.io.File
+
+import akka.http.scaladsl.model.Multipart
+import akka.stream.scaladsl.{ Source, Sink }
+import akka.util.ByteString
 import directives._
+
+import scala.util.Try
 
 trait Directives extends RouteConcatenation
   with BasicDirectives

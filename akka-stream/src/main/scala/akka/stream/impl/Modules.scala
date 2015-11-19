@@ -3,6 +3,8 @@
  */
 package akka.stream.impl
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor._
 import akka.stream._
 import akka.stream.impl.AcknowledgePublisher.{ Ok, Rejected }
@@ -96,7 +98,8 @@ private[akka] final class ActorPublisherSource[Out](props: Props, val attributes
     (akka.stream.actor.ActorPublisher[Out](publisherRef), publisherRef)
   }
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] = new ActorPublisherSource[Out](props, attributes, shape)
+  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] =
+    new ActorPublisherSource[Out](props, attributes, shape)
   override def withAttributes(attr: Attributes): Module = new ActorPublisherSource(props, attr, amendShape(attr))
 }
 
