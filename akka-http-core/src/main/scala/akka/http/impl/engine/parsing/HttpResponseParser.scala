@@ -4,11 +4,9 @@
 
 package akka.http.impl.engine.parsing
 
-import akka.http.ParserSettings
-
 import scala.annotation.tailrec
+import akka.http.ParserSettings
 import akka.http.impl.model.parser.CharacterClasses
-import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.http.scaladsl.model._
 import headers._
@@ -84,7 +82,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
-    def emitResponseStart(createEntity: Source[ResponseOutput, Unit] ⇒ ResponseEntity,
+    def emitResponseStart(createEntity: EntityCreator[ResponseOutput, ResponseEntity],
                           headers: List[HttpHeader] = headers) =
       emit(ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
     def finishEmptyResponse() = {
@@ -110,9 +108,11 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
               parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
             }
           case None ⇒
-            emitResponseStart { entityParts ⇒
-              val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
-              HttpEntity.CloseDelimited(contentType(cth), HttpEntity.limitableByteSource(data))
+            emitResponseStart {
+              StreamedEntityCreator { entityParts ⇒
+                val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
+                HttpEntity.CloseDelimited(contentType(cth), HttpEntity.limitableByteSource(data))
+              }
             }
             setCompletionHandling(HttpMessageParser.CompletionOk)
             parseToCloseBody(input, bodyStart, totalBytesRead = 0)
