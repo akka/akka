@@ -12,7 +12,7 @@ about OAuth 2 Bearer Token see `RFC6750`_.
 
 .. _RFC6750: https://tools.ietf.org/html/rfc6750
 
-To use it you subclass ``OAutht2Authenticator`` and implement the ``authenticate`` method
+To use it you subclass ``OAuth2Authenticator`` and implement the ``authenticate`` method
 to provide your own logic which verifies the OAuth2 credentials. When verification is done
 the request can either be refused by returning the return value of ``refuseAccess()`` or completed
 with an object that is application specific by returning the return value of ``authenticateAs(T)``.
