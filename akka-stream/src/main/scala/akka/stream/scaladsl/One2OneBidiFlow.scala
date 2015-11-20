@@ -3,15 +3,13 @@
  */
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 
-import scala.concurrent.duration.Deadline
-import scala.util.control.NoStackTrace
-
 object One2OneBidiFlow {
 
-  case class UnexpectedOutputException(element: Any) extends RuntimeException with NoStackTrace
+  case class UnexpectedOutputException(element: Any) extends RuntimeException(element.toString) with NoStackTrace
   case object OutputTruncationException extends RuntimeException with NoStackTrace
 
   /**
@@ -77,10 +75,7 @@ object One2OneBidiFlow {
 
       setHandler(outOut, new OutHandler {
         override def onPull(): Unit = pull(outIn)
-        override def onDownstreamFinish(): Unit = {
-          cancel(outIn)
-          cancel(inIn) // short-cut to speed up cleanup of upstream
-        }
+        override def onDownstreamFinish(): Unit = cancel(outIn)
       })
     }
   }
