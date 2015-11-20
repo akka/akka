@@ -4,8 +4,6 @@
 
 package akka.actor
 
-import java.lang.reflect.Constructor
-
 import akka.japi.Creator
 import akka.util.Reflect
 import scala.collection.immutable
@@ -93,7 +91,7 @@ private[akka] class TypedCreatorFunctionConsumer(clz: Class[_ <: Actor], creator
  * INTERNAL API
  */
 private[akka] class ArgsReflectConstructor(clz: Class[_ <: Actor], args: immutable.Seq[Any]) extends IndirectActorProducer {
-  private[this] val constructor: Constructor[_] = Reflect.findConstructor(clz, args)
+  private[this] val constructor = Reflect.findConstructor(clz, args)
   override def actorClass = clz
   override def produce() = Reflect.instantiate(constructor, args).asInstanceOf[Actor]
 }
