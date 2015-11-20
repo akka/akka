@@ -7,9 +7,11 @@ package akka.http.scaladsl
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.{ BindException, Socket }
 import java.util.concurrent.TimeoutException
-
+import scala.annotation.tailrec
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future, Promise }
+import scala.util.{ Try, Success }
 import akka.actor.ActorSystem
-import akka.event.NoLogging
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpEntity._
@@ -24,11 +26,6 @@ import akka.testkit.EventFilter
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
-
-import scala.annotation.tailrec
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.util.{ Try, Success }
 
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -357,10 +354,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         toStrict(response.entity) shouldEqual HttpEntity("yeah")
 
         clientOutSub.sendComplete()
-        serverInSub.request(1) // work-around for #16552
         serverIn.expectComplete()
         serverOutSub.expectCancellation()
-        clientInSub.request(1) // work-around for #16552
         clientIn.expectComplete()
 
         binding.foreach(_.unbind())
@@ -397,10 +392,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         Await.result(chunkStream2.grouped(1000).runWith(Sink.head), 100.millis) shouldEqual chunks
 
         clientOutSub.sendComplete()
-        serverInSub.request(1) // work-around for #16552
         serverIn.expectComplete()
         serverOutSub.expectCancellation()
-        clientInSub.request(1) // work-around for #16552
         clientIn.expectComplete()
 
         connSourceSub.cancel()
@@ -430,10 +423,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         val response = clientIn.expectNext()
         toStrict(response.entity) shouldEqual HttpEntity("yeah")
 
-        serverInSub.request(1) // work-around for #16552
         serverIn.expectComplete()
         serverOutSub.expectCancellation()
-        clientInSub.request(1) // work-around for #16552
         clientIn.expectComplete()
 
         connSourceSub.cancel()
