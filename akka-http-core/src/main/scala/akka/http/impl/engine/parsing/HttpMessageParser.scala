@@ -8,7 +8,6 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
-import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.ParserSettings
@@ -298,29 +297,30 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
     case None    ⇒ ContentTypes.`application/octet-stream`
   }
 
-  def emptyEntity(cth: Option[`Content-Type`])(entityParts: Any): UniversalEntity =
-    if (cth.isDefined) HttpEntity.empty(cth.get.contentType) else HttpEntity.Empty
+  def emptyEntity(cth: Option[`Content-Type`]) =
+    StrictEntityCreator(if (cth.isDefined) HttpEntity.empty(cth.get.contentType) else HttpEntity.Empty)
 
   def strictEntity(cth: Option[`Content-Type`], input: ByteString, bodyStart: Int,
-                   contentLength: Int)(entityParts: Any): UniversalEntity =
-    HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength))
+                   contentLength: Int) =
+    StrictEntityCreator(HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength)))
 
-  def defaultEntity(cth: Option[`Content-Type`],
-                    contentLength: Long)(entityParts: Source[_ <: ParserOutput, Unit]): UniversalEntity = {
-    val data = entityParts.collect {
-      case EntityPart(bytes)       ⇒ bytes
-      case EntityStreamError(info) ⇒ throw EntityStreamException(info)
+  def defaultEntity[A <: ParserOutput](cth: Option[`Content-Type`], contentLength: Long) =
+    StreamedEntityCreator[A, UniversalEntity] { entityParts ⇒
+      val data = entityParts.collect {
+        case EntityPart(bytes)       ⇒ bytes
+        case EntityStreamError(info) ⇒ throw EntityStreamException(info)
+      }
+      HttpEntity.Default(contentType(cth), contentLength, HttpEntity.limitableByteSource(data))
     }
-    HttpEntity.Default(contentType(cth), contentLength, HttpEntity.limitableByteSource(data))
-  }
 
-  def chunkedEntity(cth: Option[`Content-Type`])(entityChunks: Source[_ <: ParserOutput, Unit]): RequestEntity = {
-    val chunks = entityChunks.collect {
-      case EntityChunk(chunk)      ⇒ chunk
-      case EntityStreamError(info) ⇒ throw EntityStreamException(info)
+  def chunkedEntity[A <: ParserOutput](cth: Option[`Content-Type`]) =
+    StreamedEntityCreator[A, RequestEntity] { entityChunks ⇒
+      val chunks = entityChunks.collect {
+        case EntityChunk(chunk)      ⇒ chunk
+        case EntityStreamError(info) ⇒ throw EntityStreamException(info)
+      }
+      HttpEntity.Chunked(contentType(cth), HttpEntity.limitableChunkSource(chunks))
     }
-    HttpEntity.Chunked(contentType(cth), HttpEntity.limitableChunkSource(chunks))
-  }
 
   def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =
     teh.withChunkedPeeled match {

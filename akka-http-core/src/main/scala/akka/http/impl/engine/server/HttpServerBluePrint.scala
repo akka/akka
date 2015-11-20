@@ -172,17 +172,22 @@ private[http] object HttpServerBluePrint {
       var openRequests = immutable.Queue[RequestStart]()
       var oneHundredContinueResponsePending = false
       var pullSuppressed = false
+      var messageEndPending = false
 
       setHandler(requestParsingIn, new InHandler {
         def onPush(): Unit =
           grab(requestParsingIn) match {
             case r: RequestStart ⇒
               openRequests = openRequests.enqueue(r)
+              messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
               val rs = if (r.expect100Continue) {
                 oneHundredContinueResponsePending = true
                 r.copy(createEntity = with100ContinueTrigger(r.createEntity))
               } else r
               push(requestPrepOut, rs)
+            case MessageEnd ⇒
+              messageEndPending = false
+              push(requestPrepOut, MessageEnd)
             case MessageStartError(status, info) ⇒ finishWithIllegalRequestError(status, info)
             case x                               ⇒ push(requestPrepOut, x)
           }
@@ -203,9 +208,16 @@ private[http] object HttpServerBluePrint {
           val response = grab(httpResponseIn)
           val requestStart = openRequests.head
           openRequests = openRequests.tail
+          val isEarlyResponse = messageEndPending && openRequests.isEmpty
+          if (isEarlyResponse && response.status.isSuccess)
+            log.warning(
+              """Sending 2xx response before end of request was received...
+                |Note that the connection will be closed after this response. Also, many clients will not read early responses!
+                |Consider waiting for the request end before dispatching this response!""".stripMargin)
           val close = requestStart.closeRequested ||
             requestStart.expect100Continue && oneHundredContinueResponsePending ||
-            isClosed(requestParsingIn) && openRequests.isEmpty
+            isClosed(requestParsingIn) && openRequests.isEmpty ||
+            isEarlyResponse
           push(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close))
           if (close) complete(responseCtxOut)
         }
@@ -290,19 +302,21 @@ private[http] object HttpServerBluePrint {
           }
         }
 
-      def with100ContinueTrigger[T](createEntity: Source[T, Unit] ⇒ RequestEntity) =
-        createEntity.compose[Source[T, Unit]] {
-          _.via(Flow[T].transform(() ⇒ new PushPullStage[T, T] {
-            private var oneHundredContinueSent = false
-            def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
-            def onPull(ctx: Context[T]) = {
-              if (!oneHundredContinueSent) {
-                oneHundredContinueSent = true
-                emit100ContinueResponse.invoke(())
+      def with100ContinueTrigger[T <: ParserOutput](createEntity: EntityCreator[T, RequestEntity]) =
+        StreamedEntityCreator {
+          createEntity.compose[Source[T, Unit]] {
+            _.via(Flow[T].transform(() ⇒ new PushPullStage[T, T] {
+              private var oneHundredContinueSent = false
+              def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
+              def onPull(ctx: Context[T]) = {
+                if (!oneHundredContinueSent) {
+                  oneHundredContinueSent = true
+                  emit100ContinueResponse.invoke(())
+                }
+                ctx.pull()
               }
-              ctx.pull()
-            }
-          }).named("expect100continueTrigger"))
+            }).named("expect100continueTrigger"))
+          }
         }
     }
   }
