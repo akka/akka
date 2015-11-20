@@ -616,6 +616,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
         """HTTP/1.1 200 OK
           |Server: akka-http/test
           |Date: XXXX
+          |Connection: close
           |Content-Type: application/octet-stream
           |Content-Length: 100000
           |
@@ -688,6 +689,30 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       val request = expectRequest()
       request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
+    }
+
+    "add `Connection: close` to early responses" in new TestSetup {
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Content-Length: 100000
+             |
+             |""")
+
+      val HttpRequest(POST, _, _, entity, _) = expectRequest()
+      responses.sendNext(HttpResponse(status = StatusCodes.InsufficientStorage))
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 507 Insufficient Storage
+          |Server: akka-http/test
+          |Date: XXXX
+          |Connection: close
+          |Content-Length: 0
+          |
+          |""")
+
+      netIn.sendComplete()
+      requests.expectComplete()
+      netOut.expectComplete()
     }
 
     def isDefinedVia = afterWord("is defined via")
