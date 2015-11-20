@@ -7,7 +7,6 @@ package akka.http.impl.engine.parsing
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import scala.annotation.tailrec
 import akka.http.ParserSettings
-import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.http.impl.engine.ws.Handshake
 import akka.http.impl.model.parser.CharacterClasses
@@ -114,7 +113,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
     if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
-      def emitRequestStart(createEntity: Source[RequestOutput, Unit] ⇒ RequestEntity,
+      def emitRequestStart(createEntity: EntityCreator[RequestOutput, RequestEntity],
                            headers: List[HttpHeader] = headers) = {
         val allHeaders0 =
           if (rawRequestUriHeader) `Raw-Request-URI`(new String(uriBytes, HttpCharsets.`US-ASCII`.nioCharset)) :: headers
