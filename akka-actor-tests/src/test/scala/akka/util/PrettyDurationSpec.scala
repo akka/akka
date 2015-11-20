@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.testkit.metrics.reporter
+package akka.util
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
@@ -10,7 +10,7 @@ class PrettyDurationSpec extends FlatSpec with Matchers {
 
   behavior of "PrettyDuration"
 
-  import akka.testkit.metrics.reporter.PrettyDuration._
+  import akka.util.PrettyDuration._
 
   import scala.concurrent.duration._
 
