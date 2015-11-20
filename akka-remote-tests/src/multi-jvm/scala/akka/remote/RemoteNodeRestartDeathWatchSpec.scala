@@ -33,6 +33,8 @@ object RemoteNodeRestartDeathWatchMultiJvmSpec extends MultiNodeConfig {
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
+      
+      akka.diagnostics.checker.disabled-checks += transport-failure-detector
     """)))
 
   testTransport(on = true)

@@ -10,3 +10,5 @@ customers.
    :maxdepth: 2
 
    split-brain-resolver
+   ../common/config-checker
+   ../common/diagnostics-recorder

@@ -29,6 +29,8 @@ object RemoteNodeRestartGateSpec extends MultiNodeConfig {
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
       akka.remote.retry-gate-closed-for  = 1d # Keep it long
+      
+      akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
                               """)))
 
   testTransport(on = true)

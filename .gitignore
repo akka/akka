@@ -12,8 +12,7 @@
 .#*
 .*.swp
 .DS_Store
-.cache
-.cache
+.cache*
 .classpath
 .codefellow
 .ensime*
@@ -78,6 +77,7 @@ tm.out
 worker*.log
 *-shim.sbt
 test-output
+akka-diagnostics/
 
 # Default sigar library extract location.
 native/

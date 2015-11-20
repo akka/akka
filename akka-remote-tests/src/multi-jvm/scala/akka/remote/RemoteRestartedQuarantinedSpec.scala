@@ -39,6 +39,8 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
       # TODO should not be needed, but see TODO at the end of the test
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 10 s
+      
+      akka.diagnostics.checker.disabled-checks = [transport-failure-detector, enabled-transports, hostname, power-user-settings]
                               """)))
 
   testTransport(on = true)
@@ -124,6 +126,7 @@ abstract class RemoteRestartedQuarantinedSpec
                       hostname = ${addr.host.get}
                       port = ${addr.port.get}
                     }
+                    akka.diagnostics.checker.disabled-checks = [transport-failure-detector, enabled-transports, hostname, power-user-settings]
                     """).withFallback(system.settings.config))
 
         val probe = TestProbe()(freshSystem)

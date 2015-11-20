@@ -61,6 +61,9 @@ object SystemMessageDeliveryStressTest {
       }
 
     }
+
+    akka.diagnostics.checker.disabled-checks += transport-failure-detector
+    akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
                                                    """)
 
   private[akka] class SystemMessageSequenceVerifier(system: ActorSystem, testActor: ActorRef) extends MinimalActorRef {
@@ -112,7 +115,7 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
   with DefaultTimeout {
   import SystemMessageDeliveryStressTest._
 
-  override def expectedTestDuration: FiniteDuration = 120.seconds
+  override def expectedTestDuration: FiniteDuration = 180.seconds
 
   val systemA = system
   val systemB = ActorSystem("systemB", system.settings.config)
@@ -198,4 +201,5 @@ class SystemMessageDeliveryNoPassiveRetryGate extends SystemMessageDeliveryStres
   """
     akka.remote.use-passive-connections = off
     akka.remote.retry-gate-closed-for = 0.5 s
+    akka.diagnostics.checker.disabled-checks += retry-gate-closed-for
   """)

@@ -44,7 +44,7 @@ object AkkaBuild extends Build {
       SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++
       GraphiteBuildEvents.settings ++ Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
+      Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id, checkerTests.id),
 
       // FIXME problem with scalaunidoc:doc, there must be a better way
       unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(protobuf, samples,
@@ -65,7 +65,7 @@ object AkkaBuild extends Build {
     aggregate = Seq[ProjectReference](actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
       slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, 
-      multiNodeTestkit, benchJmh, typed, protobuf) ++
+      multiNodeTestkit, benchJmh, typed, protobuf, checkerTests) ++
       (
         if (System.getProperty("akka.build.includeSamples", "false").toBoolean) Seq(samples) else Seq.empty[sbt.Project]
       ).map(sbt.Project.projectToRef) ++
@@ -234,6 +234,12 @@ object AkkaBuild extends Build {
     base = file("akka-contrib"),
     dependencies = Seq(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile;test->provided")
   ) configs (MultiJvm)
+  
+  lazy val checkerTests = Project(
+    id = "akka-diagnostics-tests",
+    base = file("akka-diagnostics-tests"),
+    dependencies = Seq(clusterSharding, clusterMetrics, testkit % "compile;test->test")
+  )
 
   lazy val samples = Project(
     id = "akka-samples",
@@ -247,7 +253,7 @@ object AkkaBuild extends Build {
         sampleRemoteJava, sampleRemoteScala, sampleSupervisionJavaLambda,
         sampleDistributedDataScala, sampleDistributedDataJava)
   )
-
+  
   lazy val sampleCamelJava = Sample.project("akka-sample-camel-java")
   lazy val sampleCamelScala = Sample.project("akka-sample-camel-scala")
 
