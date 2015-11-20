@@ -6,12 +6,12 @@ package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
 import java.util.Random
+import scala.collection.immutable
+import akka.stream.scaladsl.One2OneBidiFlow.One2OneBidi
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.util.control.NonFatal
-import akka.actor.{ ActorRef, Deploy, Props }
 import akka.event.LoggingAdapter
 import akka.http.ServerSettings
-import akka.http.impl.engine.TokenSourceActor
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
@@ -29,6 +29,24 @@ import akka.util.ByteString
 
 /**
  * INTERNAL API
+ *
+ *
+ * HTTP pipeline setup:
+ *
+ *                     +-------------+                 +-------------+                   +-----------+
+ *     HttpRequest     |  request-   |     Request-    |             |      Request-     | request-  |     ByteString
+ * | <-----------------+ Preparation <-----------------+             <-------------------+  Parsing  <---------------
+ * |                   |             |     Output      |             |      Output       |           |
+ * |                   +-------------+                 |             |                   +-----------+
+ * |                                                   |             |
+ * | Application-                                      | controller- |
+ * | Flow                                              |    Stage    |
+ * |                                                   |             |
+ * |                                                   |             |                   +-----------+
+ * |                  HttpResponse                     |             |     Response-     | renderer- |     ByteString
+ * v -------------------------------------------------->             +-------------------> Pipeline  +-------------->
+ *                                                     |             |     Rendering-    |           |
+ *                                                     +-------------+     Context       +-----------+
  */
 private[http] object HttpServerBluePrint {
   def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer = {
@@ -45,15 +63,6 @@ private[http] object HttpServerBluePrint {
     val ws = websocketSetup
     val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
 
-    @volatile var oneHundredContinueRef: Option[ActorRef] = None // FIXME: unnecessary after fixing #16168
-    val oneHundredContinueSource = StreamUtils.oneTimeSource(Source.actorPublisher[OneHundredContinue.type] {
-      Props {
-        val actor = new TokenSourceActor(OneHundredContinue)
-        oneHundredContinueRef = Some(actor.context.self)
-        actor
-      }.withDeploy(Deploy.local)
-    }, errorMsg = "Http.serverLayer is currently not reusable. You need to create a new instance for each materialization.")
-
     def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
       case start: RequestStart ⇒
         try {
@@ -69,7 +78,7 @@ private[http] object HttpServerBluePrint {
     val requestParsingFlow = Flow[ByteString].transform(() ⇒
       // each connection uses a single (private) request parser instance for all its requests
       // which builds a cache of all header instances seen on that connection
-      rootParser.createShallowCopy(() ⇒ oneHundredContinueRef).stage).named("rootParser")
+      rootParser.createShallowCopy().stage).named("rootParser")
       .map(establishAbsoluteUri)
 
     val requestPreparation =
@@ -96,207 +105,207 @@ private[http] object HttpServerBluePrint {
         // `buffer` will ensure demand and therefore make sure that completion is reported eagerly.
         .buffer(1, OverflowStrategy.backpressure)
 
-    // we need to make sure that only one element per incoming request is queueing up in front of
-    // the bypassMerge.bypassInput. Otherwise the rising backpressure against the bypassFanout
-    // would eventually prevent us from reading the remaining request chunks from the transportIn
-    val bypass = Flow[RequestOutput].collect {
-      case r: RequestStart      ⇒ r
-      case m: MessageStartError ⇒ m
-    }
-
     val rendererPipeline =
       Flow[ResponseRenderingContext]
-        .recover(errorResponseRecovery(log, settings))
         .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
         .flatMapConcat(ConstantFun.scalaIdentityFunction)
         .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
 
-    BidiFlow.fromGraph(FlowGraph.create(requestParsingFlow, rendererPipeline, oneHundredContinueSource)((_, _, _) ⇒ ()) { implicit b ⇒
-      (requestParsing, renderer, oneHundreds) ⇒
+    BidiFlow.fromGraph(FlowGraph.create(requestParsingFlow, rendererPipeline)(Keep.none) { implicit b ⇒
+      (requestParsing, renderer) ⇒
         import FlowGraph.Implicits._
 
-        val bypassFanout = b.add(Broadcast[RequestOutput](2).named("bypassFanout"))
-        val bypassMerge = b.add(new BypassMerge(settings, log))
-        val bypassInput = bypassMerge.in0
-        val bypassOneHundredContinueInput = bypassMerge.in1
-        val bypassApplicationInput = bypassMerge.in2
+        // HTTP
+        val requestPrep = b.add(requestPreparation)
+        val controllerStage = b.add(new ControllerStage(settings, log))
+        val csRequestParsingIn = controllerStage.in1
+        val csRequestPrepOut = controllerStage.out1
+        val csHttpResponseIn = controllerStage.in2
+        val csResponseCtxOut = controllerStage.out2
+        requestParsing.outlet ~> csRequestParsingIn
+        csResponseCtxOut ~> renderer.inlet
+        csRequestPrepOut ~> requestPrep
 
-        // HTTP pipeline
-        requestParsing.outlet ~> bypassFanout.in
-        bypassMerge.out ~> renderer.inlet
-        val requestsIn = (bypassFanout.out(0) ~> requestPreparation).outlet
+        // One2OneBidi
+        val one2one = b.add(new One2OneBidi[HttpRequest, HttpResponse](16)) // TODO: replace hard-coded value by reintroducing `pipeline-limit` setting from spray
+        requestPrep.outlet ~> one2one.in1
+        one2one.out2 ~> csHttpResponseIn
 
-        bypassFanout.out(1) ~> bypass ~> bypassInput
-        oneHundreds ~> bypassOneHundredContinueInput
-
+        // Websocket
+        val http = FlowShape(requestParsing.inlet, renderer.outlet)
         val switchTokenBroadcast = b.add(Broadcast[ResponseRenderingOutput](2))
-        renderer.outlet ~> switchTokenBroadcast
-        val switchSource: Outlet[SwitchToWebsocketToken.type] =
-          (switchTokenBroadcast ~>
-            Flow[ResponseRenderingOutput]
-            .collect {
-              case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken
-            }).outlet
-
-        val http = FlowShape(requestParsing.inlet, switchTokenBroadcast.outlet)
-
-        // Websocket pipeline
+        val switchToWebsocket = b.add(Flow[ResponseRenderingOutput]
+          .collect { case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken })
         val websocket = b.add(ws.websocketFlow)
-
-        // protocol routing
         val protocolRouter = b.add(WebsocketSwitchRouter)
         val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory, log))
-
-        protocolRouter.out0 ~> http ~> protocolMerge.in0
-        protocolRouter.out1 ~> websocket ~> protocolMerge.in1
-
-        // protocol switching
         val wsSwitchTokenMerge = b.add(WsSwitchTokenMerge)
-        // feed back switch signal to the protocol router
-        switchSource ~> wsSwitchTokenMerge.in1
+        switchTokenBroadcast ~> switchToWebsocket
+        protocolRouter.out0 ~> http ~> switchTokenBroadcast ~> protocolMerge.in0
+        protocolRouter.out1 ~> websocket ~> protocolMerge.in1
+        switchToWebsocket ~> wsSwitchTokenMerge.in1
         wsSwitchTokenMerge.out ~> protocolRouter.in
 
+        // SSL/TLS
         val unwrapTls = b.add(Flow[SslTlsInbound] collect { case x: SessionBytes ⇒ x.bytes })
         val wrapTls = b.add(Flow[ByteString].map[SslTlsOutbound](SendBytes))
-
         unwrapTls ~> wsSwitchTokenMerge.in0
         protocolMerge.out ~> wrapTls
 
         BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest](
-          bypassApplicationInput,
+          one2one.in2,
           wrapTls.outlet,
           unwrapTls.inlet,
-          requestsIn)
+          one2one.out1)
     })
   }
 
-  class BypassMerge(settings: ServerSettings, log: LoggingAdapter)
-    extends GraphStage[FanInShape3[MessageStart with RequestOutput, OneHundredContinue.type, HttpResponse, ResponseRenderingContext]] {
-    private val bypassInput = Inlet[MessageStart with RequestOutput]("bypassInput")
-    private val oneHundredContinue = Inlet[OneHundredContinue.type]("100continue")
-    private val applicationInput = Inlet[HttpResponse]("applicationInput")
-    private val out = Outlet[ResponseRenderingContext]("bypassOut")
+  class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
+    extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
+    private val requestParsingIn = Inlet[RequestOutput]("requestParsingIn")
+    private val requestPrepOut = Outlet[RequestOutput]("requestPrepOut")
+    private val httpResponseIn = Inlet[HttpResponse]("httpResponseIn")
+    private val responseCtxOut = Outlet[ResponseRenderingContext]("responseCtxOut")
+    val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponseIn, responseCtxOut)
 
-    override val shape = new FanInShape3(bypassInput, oneHundredContinue, applicationInput, out)
+    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
+      var openRequests = immutable.Queue[RequestStart]()
+      var oneHundredContinueResponsePending = false
+      var pullSuppressed = false
 
-    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      var requestStart: RequestStart = _
-
-      setHandler(bypassInput, new InHandler {
-        override def onPush(): Unit = {
-          grab(bypassInput) match {
+      setHandler(requestParsingIn, new InHandler {
+        def onPush(): Unit =
+          grab(requestParsingIn) match {
             case r: RequestStart ⇒
-              requestStart = r
-              pull(applicationInput)
-              if (r.expect100ContinueResponsePending)
-                read(oneHundredContinue) { cont ⇒
-                  emit(out, ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
-                  requestStart = requestStart.copy(expect100ContinueResponsePending = false)
-                }
-            case MessageStartError(status, info) ⇒ finishWithError(status, info)
+              openRequests = openRequests.enqueue(r)
+              val rs = if (r.expect100Continue) {
+                oneHundredContinueResponsePending = true
+                r.copy(createEntity = with100ContinueTrigger(r.createEntity))
+              } else r
+              push(requestPrepOut, rs)
+            case MessageStartError(status, info) ⇒ finishWithIllegalRequestError(status, info)
+            case x                               ⇒ push(requestPrepOut, x)
           }
-        }
-        override def onUpstreamFinish(): Unit =
-          requestStart match {
-            case null ⇒ completeStage()
-            case r    ⇒ requestStart = r.copy(closeRequested = true)
-          }
+        override def onUpstreamFinish() =
+          if (openRequests.isEmpty) completeStage()
+          else complete(requestPrepOut)
       })
 
-      setHandler(applicationInput, new InHandler {
-        override def onPush(): Unit = {
-          val response = grab(applicationInput)
-          // see the comment on [[OneHundredContinue]] for an explanation of the closing logic here (and more)
-          val close = requestStart.closeRequested || requestStart.expect100ContinueResponsePending
-          abortReading(oneHundredContinue)
-          emit(out, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
-            if (close) () ⇒ completeStage() else pullBypass)
+      setHandler(requestPrepOut, new OutHandler {
+        def onPull(): Unit =
+          if (oneHundredContinueResponsePending) pullSuppressed = true
+          else pull(requestParsingIn)
+        override def onDownstreamFinish() = cancel(requestParsingIn)
+      })
+
+      setHandler(httpResponseIn, new InHandler {
+        def onPush(): Unit = {
+          val response = grab(httpResponseIn)
+          val requestStart = openRequests.head
+          openRequests = openRequests.tail
+          val close = requestStart.closeRequested ||
+            requestStart.expect100Continue && oneHundredContinueResponsePending ||
+            isClosed(requestParsingIn) && openRequests.isEmpty
+          push(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close))
+          if (close) complete(responseCtxOut)
         }
+        override def onUpstreamFinish() =
+          if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
+          else complete(responseCtxOut)
         override def onUpstreamFailure(ex: Throwable): Unit =
           ex match {
             case EntityStreamException(errorInfo) ⇒
               // the application has forwarded a request entity stream error to the response stream
-              finishWithError(StatusCodes.BadRequest, errorInfo)
-            case _ ⇒ failStage(ex)
+              finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)
+
+            case EntityStreamSizeException(limit, contentLength) ⇒
+              val summary = contentLength match {
+                case Some(cl) ⇒ s"Request Content-Length of $cl bytes exceeds the configured limit of $limit bytes"
+                case None     ⇒ s"Aggregated data length of request entity exceeds the configured limit of $limit bytes"
+              }
+              val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
+              finishWithIllegalRequestError(StatusCodes.RequestEntityTooLarge, info)
+
+            case NonFatal(e) ⇒
+              log.error(e, "Internal server error, sending 500 response")
+              emitErrorResponse(HttpResponse(StatusCodes.InternalServerError))
           }
       })
 
-      def finishWithError(status: StatusCode, info: ErrorInfo): Unit = {
+      setHandler(responseCtxOut, new OutHandler {
+        def onPull(): Unit = if (!hasBeenPulled(httpResponseIn)) pull(httpResponseIn)
+        override def onDownstreamFinish() = cancel(httpResponseIn)
+      })
+
+      def finishWithIllegalRequestError(status: StatusCode, info: ErrorInfo): Unit = {
         logParsingError(info withSummaryPrepended s"Illegal request, responding with status '$status'",
           log, settings.parserSettings.errorLoggingVerbosity)
         val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
-        emit(out, ResponseRenderingContext(HttpResponse(status, entity = msg), closeRequested = true), () ⇒ completeStage())
+        emitErrorResponse(HttpResponse(status, entity = msg))
       }
 
-      setHandler(oneHundredContinue, ignoreTerminateInput) // RK: not sure if this is always correct
-      setHandler(out, eagerTerminateOutput)
+      def emitErrorResponse(response: HttpResponse): Unit =
+        emit(responseCtxOut, ResponseRenderingContext(response, closeRequested = true), () ⇒ complete(responseCtxOut))
 
-      val pullBypass = () ⇒
-        if (isClosed(bypassInput)) completeStage()
-        else {
-          pull(bypassInput)
-          requestStart = null
+      /**
+       * The `Expect: 100-continue` header has a special status in HTTP.
+       * It allows the client to send an `Expect: 100-continue` header with the request and then pause request sending
+       * (i.e. hold back sending the request entity). The server reads the request headers, determines whether it wants to
+       * accept the request and responds with
+       *
+       * - `417 Expectation Failed`, if it doesn't support the `100-continue` expectation
+       * (or if the `Expect` header contains other, unsupported expectations).
+       * - a `100 Continue` response,
+       * if it is ready to accept the request entity and the client should go ahead with sending it
+       * - a final response (like a 4xx to signal some client-side error
+       * (e.g. if the request entity length is beyond the configured limit) or a 3xx redirect)
+       *
+       * Only if the client receives a `100 Continue` response from the server is it allowed to continue sending the request
+       * entity. In this case it will receive another response after having completed request sending.
+       * So this special feature breaks the normal "one request - one response" logic of HTTP!
+       * It therefore requires special handling in all HTTP stacks (client- and server-side).
+       *
+       * For us this means:
+       *
+       * - on the server-side:
+       * After having read a `Expect: 100-continue` header with the request we package up an `HttpRequest` instance and send
+       * it through to the application. Only when (and if) the application then requests data from the entity stream do we
+       * send out a `100 Continue` response and continue reading the request entity.
+       * The application can therefore determine itself whether it wants the client to send the request entity
+       * by deciding whether to look at the request entity data stream or not.
+       * If the application sends a response *without* having looked at the request entity the client receives this
+       * response *instead of* the `100 Continue` response and the server closes the connection afterwards.
+       *
+       * - on the client-side:
+       * If the user adds a `Expect: 100-continue` header to the request we need to hold back sending the entity until
+       * we've received a `100 Continue` response.
+       */
+      val emit100ContinueResponse =
+        getAsyncCallback[Unit] { _ ⇒
+          oneHundredContinueResponsePending = false
+          emit(responseCtxOut, ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
+          if (pullSuppressed) {
+            pullSuppressed = false
+            pull(requestParsingIn)
+          }
         }
 
-      override def preStart(): Unit = {
-        pull(bypassInput)
-      }
+      def with100ContinueTrigger[T](createEntity: Source[T, Unit] ⇒ RequestEntity) =
+        createEntity.compose[Source[T, Unit]] {
+          _.via(Flow[T].transform(() ⇒ new PushPullStage[T, T] {
+            private var oneHundredContinueSent = false
+            def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
+            def onPull(ctx: Context[T]) = {
+              if (!oneHundredContinueSent) {
+                oneHundredContinueSent = true
+                emit100ContinueResponse.invoke(())
+              }
+              ctx.pull()
+            }
+          }).named("expect100continueTrigger"))
+        }
     }
   }
-
-  def errorResponseRecovery(log: LoggingAdapter,
-                            settings: ServerSettings): PartialFunction[Throwable, ResponseRenderingContext] = {
-    case EntityStreamSizeException(limit, contentLength) ⇒
-      val status = StatusCodes.RequestEntityTooLarge
-      val summary = contentLength match {
-        case Some(cl) ⇒ s"Request Content-Length of $cl bytes exceeds the configured limit of $limit bytes"
-        case None     ⇒ s"Aggregated data length of request entity exceeds the configured limit of $limit bytes"
-      }
-      val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
-      logParsingError(info withSummaryPrepended s"Illegal request, responding with status '$status'",
-        log, settings.parserSettings.errorLoggingVerbosity)
-      val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
-      ResponseRenderingContext(HttpResponse(status, entity = msg), closeRequested = true)
-
-    case NonFatal(e) ⇒
-      log.error(e, "Internal server error, sending 500 response")
-      ResponseRenderingContext(HttpResponse(StatusCodes.InternalServerError), closeRequested = true)
-  }
-
-  /**
-   * The `Expect: 100-continue` header has a special status in HTTP.
-   * It allows the client to send an `Expect: 100-continue` header with the request and then pause request sending
-   * (i.e. hold back sending the request entity). The server reads the request headers, determines whether it wants to
-   * accept the request and responds with
-   *
-   * - `417 Expectation Failed`, if it doesn't support the `100-continue` expectation
-   * (or if the `Expect` header contains other, unsupported expectations).
-   * - a `100 Continue` response,
-   * if it is ready to accept the request entity and the client should go ahead with sending it
-   * - a final response (like a 4xx to signal some client-side error
-   * (e.g. if the request entity length is beyond the configured limit) or a 3xx redirect)
-   *
-   * Only if the client receives a `100 Continue` response from the server is it allowed to continue sending the request
-   * entity. In this case it will receive another response after having completed request sending.
-   * So this special feature breaks the normal "one request - one response" logic of HTTP!
-   * It therefore requires special handling in all HTTP stacks (client- and server-side).
-   *
-   * For us this means:
-   *
-   * - on the server-side:
-   * After having read a `Expect: 100-continue` header with the request we package up an `HttpRequest` instance and send
-   * it through to the application. Only when (and if) the application then requests data from the entity stream do we
-   * send out a `100 Continue` response and continue reading the request entity.
-   * The application can therefore determine itself whether it wants the client to send the request entity
-   * by deciding whether to look at the request entity data stream or not.
-   * If the application sends a response *without* having looked at the request entity the client receives this
-   * response *instead of* the `100 Continue` response and the server closes the connection afterwards.
-   *
-   * - on the client-side:
-   * If the user adds a `Expect: 100-continue` header to the request we need to hold back sending the entity until
-   * we've received a `100 Continue` response.
-   */
-  case object OneHundredContinue
 
   private trait WebsocketSetup {
     def websocketFlow: Flow[ByteString, ByteString, Any]

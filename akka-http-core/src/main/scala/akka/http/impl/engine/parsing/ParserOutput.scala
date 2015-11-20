@@ -29,7 +29,7 @@ private[http] object ParserOutput {
     protocol: HttpProtocol,
     headers: List[HttpHeader],
     createEntity: Source[RequestOutput, Unit] ⇒ RequestEntity,
-    expect100ContinueResponsePending: Boolean,
+    expect100Continue: Boolean,
     closeRequested: Boolean) extends MessageStart with RequestOutput
 
   final case class ResponseStart(

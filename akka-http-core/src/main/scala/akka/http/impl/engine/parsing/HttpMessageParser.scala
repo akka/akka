@@ -4,8 +4,6 @@
 
 package akka.http.impl.engine.parsing
 
-import akka.http.ParserSettings
-
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import akka.parboiled2.CharUtils
@@ -13,7 +11,7 @@ import akka.util.ByteString
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.http.impl.model.parser.CharacterClasses
-import akka.http.impl.util._
+import akka.http.ParserSettings
 import akka.http.scaladsl.model._
 import headers._
 import HttpProtocols._
@@ -308,22 +306,20 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
     HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength))
 
   def defaultEntity(cth: Option[`Content-Type`],
-                    contentLength: Long,
-                    transformData: Source[ByteString, Unit] ⇒ Source[ByteString, Unit] = identityFunc)(entityParts: Source[_ <: ParserOutput, Unit]): UniversalEntity = {
+                    contentLength: Long)(entityParts: Source[_ <: ParserOutput, Unit]): UniversalEntity = {
     val data = entityParts.collect {
       case EntityPart(bytes)       ⇒ bytes
       case EntityStreamError(info) ⇒ throw EntityStreamException(info)
     }
-    HttpEntity.Default(contentType(cth), contentLength, HttpEntity.limitableByteSource(transformData(data)))
+    HttpEntity.Default(contentType(cth), contentLength, HttpEntity.limitableByteSource(data))
   }
 
-  def chunkedEntity(cth: Option[`Content-Type`],
-                    transformChunks: Source[HttpEntity.ChunkStreamPart, Unit] ⇒ Source[HttpEntity.ChunkStreamPart, Unit] = identityFunc)(entityChunks: Source[_ <: ParserOutput, Unit]): RequestEntity = {
+  def chunkedEntity(cth: Option[`Content-Type`])(entityChunks: Source[_ <: ParserOutput, Unit]): RequestEntity = {
     val chunks = entityChunks.collect {
       case EntityChunk(chunk)      ⇒ chunk
       case EntityStreamError(info) ⇒ throw EntityStreamException(info)
     }
-    HttpEntity.Chunked(contentType(cth), HttpEntity.limitableChunkSource(transformChunks(chunks)))
+    HttpEntity.Chunked(contentType(cth), HttpEntity.limitableChunkSource(chunks))
   }
 
   def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =
