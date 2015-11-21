@@ -504,6 +504,20 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
 
   /**
+   * Shifts emissions in time by a specified amount
+   *
+   * '''Emits when''' upstream emitted and configured time elapsed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream completes
+   */
+  def delay(of: FiniteDuration): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.delay(of))
+
+  /**
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    *

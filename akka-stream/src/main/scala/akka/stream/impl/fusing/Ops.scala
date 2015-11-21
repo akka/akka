@@ -857,13 +857,42 @@ private[stream] class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphS
   }
 }
 
+private[stream] class Delay[T](d: FiniteDuration) extends SimpleLinearGraphStage[T] {
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+    var element: T = _
+    val timerName = "DelayedTimer"
+    var willStop = false
+
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = {
+        element = grab(in)
+        scheduleOnce("DelayedTimer", d)
+      }
+      override def onUpstreamFinish(): Unit =
+        if (isAvailable(out) && isTimerActive(timerName)) willStop = true
+        else completeStage()
+    })
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = pull(in)
+    })
+
+    final override protected def onTimer(key: Any): Unit = {
+      push(out, element)
+      if (willStop)
+        completeStage()
+    }
+  }
+
+  override def toString = "Delay"
+}
+
 private[stream] class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     setHandler(in, new InHandler {
       override def onPush(): Unit = push(out, grab(in))
-      override def onUpstreamFinish(): Unit = completeStage()
-      override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
     })
 
     setHandler(out, new OutHandler {
@@ -887,8 +916,6 @@ private[stream] class DropWithin[T](timeout: FiniteDuration) extends SimpleLinea
       override def onPush(): Unit =
         if (allow) push(out, grab(in))
         else pull(in)
-      override def onUpstreamFinish(): Unit = completeStage()
-      override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
     })
 
     setHandler(out, new OutHandler {

@@ -8,7 +8,9 @@ import java.io.{ OutputStream, InputStream, File }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
+import akka.stream.Attributes._
 import akka.stream._
+import akka.stream.impl.fusing.Delay
 import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream.stage.Stage
 import akka.util.ByteString
@@ -706,6 +708,20 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def groupedWithin(n: Int, d: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
     new Source(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
+
+  /**
+   * Shifts emissions in time by a specified amount
+   *
+   * '''Emits when''' upstream emitted and configured time elapsed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream completes
+   */
+  def delay(of: FiniteDuration): javadsl.Source[Out, Mat] =
+    new Source(delegate.delay(of))
 
   /**
    * Discard the given number of elements at the beginning of the stream.
