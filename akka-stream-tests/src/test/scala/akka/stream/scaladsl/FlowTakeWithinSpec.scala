@@ -37,7 +37,7 @@ class FlowTakeWithinSpec extends AkkaSpec {
       c.expectNoMsg(200.millis)
     }
 
-    "deliver bufferd elements onComplete before the timeout" in assertAllStagesStopped {
+    "deliver buffered elements onComplete before the timeout" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()
       Source(1 to 3).takeWithin(1.second).to(Sink(c)).run()
       val cSub = c.expectSubscription()

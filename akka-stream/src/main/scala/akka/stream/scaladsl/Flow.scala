@@ -8,7 +8,7 @@ import akka.stream.Attributes._
 import akka.stream._
 import akka.stream.impl.Stages.{ DirectProcessor, StageModule, SymbolicGraphStage }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
-import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, TakeWithin, MapAsync, MapAsyncUnordered }
+import akka.stream.impl.fusing._
 import akka.stream.impl.{ ReactiveStreamsCompliance, ConstantFun, Stages, StreamLayout, Timers }
 import akka.stream.stage.AbstractStage.{ PushPullGraphStageWithMaterializedValue, PushPullGraphStage }
 import akka.stream.stage._
@@ -717,6 +717,20 @@ trait FlowOps[+Out, +Mat] {
   }
 
   /**
+   * Shifts emissions in time by a specified amount
+   *
+   * '''Emits when''' upstream emitted and configured time elapsed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream completes
+   */
+  def delay(of: FiniteDuration): Repr[Out, Mat] =
+    via(new Delay[Out](of).withAttributes(name("delay")))
+
+  /**
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    *
@@ -881,7 +895,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' prefix elements has been consumed and substream has been consumed
    *
    * '''Cancels when''' downstream cancels or substream cancels
-   *
    */
   def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, Unit]), Mat] =
     deprecatedAndThen(PrefixAndTail(n))
@@ -956,7 +969,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels and substreams cancel
-   *
    */
   def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Source[U, Unit], Mat] =
     deprecatedAndThen(Split.when(p.asInstanceOf[Any ⇒ Boolean]))
@@ -1008,7 +1020,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes and all consumed substreams complete
    *
    * '''Cancels when''' downstream cancels
-   *
    */
   def flatMapConcat[T](f: Out ⇒ Source[T, _]): Repr[T, Mat] =
     deprecatedAndThen(ConcatAll(f.asInstanceOf[Any ⇒ Source[Any, _]]))
