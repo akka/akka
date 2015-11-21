@@ -609,5 +609,11 @@ class UriSpec extends WordSpec with Matchers {
       Uri("http://example.com/foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString === "/foo/bar?query=1"
       Uri("http://example.com//foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString === "//foo/bar?query=1"
     }
+
+    "survive parsing a URI with thousands of path segments" in {
+      val slashes = "/a/" * 2000
+      val uri = Uri(s"http://foo.bar/$slashes")
+      uri.toString // was reported to throw StackOverflowException in Spray's URI
+    }
   }
 }
