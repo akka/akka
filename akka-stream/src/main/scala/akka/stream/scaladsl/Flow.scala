@@ -574,6 +574,11 @@ trait FlowOps[+Out, +Mat] {
   def grouped(n: Int): Repr[immutable.Seq[Out]] = andThen(Grouped(n))
 
   /**
+   * TODO: description
+   */
+  def limit[T](n: Int): Repr[Out, Mat] = andThen(Limit(n))
+
+  /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
    * possibly smaller than requested due to end-of-stream.
    *
@@ -811,8 +816,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels or timer fires
    */
   def takeWithin(d: FiniteDuration): Repr[Out] = via(new TakeWithin[Out](d).withAttributes(name("takeWithin")))
-
-  def limit[T](max: Int): Repr[Out, Mat] = ??? // TODO
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary

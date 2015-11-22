@@ -318,6 +318,26 @@ private[akka] final case class Grouped[T](n: Int) extends PushPullStage[T, immut
 /**
  * INTERNAL API
  */
+private[akka] final case class Limit[T](n: Int) extends PushPullStage[T, T] {
+  private var left = n
+
+  override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
+    left -= 1
+    if (left >= 0) ctx.push(elem)
+    else {
+      if (ctx.isFinishing) ctx.push(elem)
+      else ctx.fail(new Exception("more elements not allowed"))
+    }
+  }
+
+  override def onPull(ctx: Context[T]): SyncDirective = {
+    ctx.pull()
+  }
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] final case class Sliding[T](n: Int, step: Int) extends PushPullStage[T, immutable.Seq[T]] {
   private var buf = Vector.empty[T]
 

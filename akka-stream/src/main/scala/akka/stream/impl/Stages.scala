@@ -34,6 +34,7 @@ private[stream] object Stages {
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val grouped = name("grouped")
+    val limit = name("limit")
     val sliding = name("sliding")
     val take = name("take")
     val drop = name("drop")
@@ -152,6 +153,11 @@ private[stream] object Stages {
   final case class Grouped[T](n: Int, attributes: Attributes = grouped) extends SymbolicStage[T, immutable.Seq[T]] {
     require(n > 0, "n must be greater than 0")
     override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Grouped(n)
+  }
+
+  final case class Limit[T](n: Int, attributes: Attributes = limit) extends SymbolicStage[T, T] {
+    require(n > 0, "n must be greater than 0")
+    override def create(attr: Attributes): Stage[T, T] = fusing.Limit(n)
   }
 
   final case class Sliding[T](n: Int, step: Int, attributes: Attributes = sliding) extends SymbolicStage[T, immutable.Seq[T]] {
