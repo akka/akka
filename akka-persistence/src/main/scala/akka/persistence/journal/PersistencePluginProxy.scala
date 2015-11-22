@@ -85,7 +85,7 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
         log.info("Setting target {} address to {}", pluginType.qualifier, targetAddress)
         PersistencePluginProxy.setTargetLocation(context.system, AddressFromURIString(targetAddress))
       } catch {
-        case _: URISyntaxException => log.warning("Invalid URL provided for target {} address: {}", pluginType.qualifier, targetAddress)
+        case _: URISyntaxException ⇒ log.warning("Invalid URL provided for target {} address: {}", pluginType.qualifier, targetAddress)
       }
     }
   }
@@ -103,7 +103,7 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
       context.setReceiveTimeout(1.second) // for retries
       context.become(identifying(address))
     case InitTimeout ⇒
-      log.info("Initialization timeout, Use `PersistencePluginProxy.setTargetLocation`")
+      log.info("Initialization timed-out (after {}), Use `PersistencePluginProxy.setTargetLocation`", timeout)
       context.become(initTimedOut)
       unstashAll() // will trigger appropriate failures
     case msg ⇒
