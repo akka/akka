@@ -945,7 +945,7 @@ A journal proxy allows sharing of journals and snapshot stores across multiple a
 different nodes). This, for example, allows persistent actors to failover to a backup node and continue using the
 shared journal instance from the backup node. The journal proxy works by forwarding all the journal/snapshot store
 messages to a single, shared, persistence plugin instance, and therefor supports any use case supported by the proxied
-plugin (for example, :ref:`Persistence Query <persistence-query-java>`).
+plugin.
 
 .. warning::
 
