@@ -42,7 +42,6 @@ object PersistencePluginProxy {
   }
 }
 
-// FIXME document me
 final class PersistencePluginProxy(config: Config) extends Actor with Stash with ActorLogging {
   import PersistencePluginProxy._
   import JournalProtocol._
@@ -139,7 +138,10 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
         becomeIdentifying(address)
     case InitTimeout ⇒
     case msg ⇒
-      targetJournal.forward(msg)
+      import akka.pattern.{ ask, pipe }
+      val sender = context.sender()
+      val f = ask(targetJournal, msg)(1.second)
+      pipe(f)(context.system.dispatcher) to (sender, self)
   }
 
   def initTimedOut: Receive = {
