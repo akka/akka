@@ -3,28 +3,19 @@
  */
 package akka.persistence.journal
 
+import java.net.URISyntaxException
+
 import akka.util.Helpers.Requiring
 import scala.concurrent.duration._
-import akka.actor.Actor
-import akka.actor.Stash
+import akka.actor._
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.ActorRef
 import akka.persistence.JournalProtocol
-import akka.actor.ActorSystem
 import akka.persistence.Persistence
-import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
 import akka.persistence.AtomicWrite
 import akka.persistence.NonPersistentRepr
 import akka.persistence.DeleteMessagesFailure
-import akka.actor.ActorLogging
 import com.typesafe.config.Config
-import akka.actor.Address
-import akka.actor.ActorIdentity
-import akka.actor.RootActorPath
-import akka.actor.Identify
-import akka.actor.ReceiveTimeout
-import akka.actor.ExtendedActorSystem
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.DeleteSnapshotFailure
 import akka.persistence.DeleteSnapshotsFailure
@@ -85,6 +76,17 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
       context.become(active(target, targetAtThisNode = true))
     } else {
       context.system.scheduler.scheduleOnce(timeout, self, InitTimeout)(context.dispatcher)
+    }
+
+    val targetAddressKey = s"target-${pluginType.qualifier}-address"
+    if (config.hasPath(targetAddressKey)) {
+      val targetAddress = config.getString(targetAddressKey)
+      try {
+        log.info("Setting target {} address to {}", pluginType.qualifier, targetAddress)
+        JournalProxy.setTargetLocation(context.system, AddressFromURIString(targetAddress))
+      } catch {
+        case _: URISyntaxException => log.warning("Invalid URL provided for target {} address: {}", pluginType.qualifier, targetAddress)
+      }
     }
   }
 
