@@ -103,7 +103,7 @@ class AkkaConsoleReporter(
 
   private def printKnownOpsInTimespanCounter(counter: KnownOpsInTimespanTimer) {
     import concurrent.duration._
-    import PrettyDuration._
+    import akka.util.PrettyDuration._
     output.print("               ops = %d%n".format(counter.getCount))
     output.print("              time = %s%n".format(counter.elapsedTime.nanos.pretty))
     output.print("             ops/s = %2.2f%n".format(counter.opsPerSecond))
