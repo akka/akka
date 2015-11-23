@@ -5,7 +5,8 @@
 package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
-import akka.event.Logging
+
+import akka.stream.OverflowStrategy.Fail.BufferOverflowException
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
@@ -27,7 +28,7 @@ private object PoolInterfaceActor {
 
   case object Shutdown extends DeadLetterSuppression
 
-  val names = SeqActorName("PoolInterfaceActor")
+  val name = SeqActorName("PoolInterfaceActor")
 }
 
 /**
@@ -116,7 +117,7 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
         // if we can't dispatch right now we buffer and dispatch when demand from the pool arrives
         if (inputBuffer.isFull) {
           x.responsePromise.failure(
-            new RuntimeException(s"Exceeded configured max-open-requests value of [${inputBuffer.size}]")) // TODO maybe named exception?
+            new BufferOverflowException(s"Exceeded configured max-open-requests value of [${inputBuffer.size}]"))
         } else inputBuffer.enqueue(x)
       } else dispatchRequest(x) // if we can dispatch right now, do it
       request(1) // for every incoming request we demand one response from the pool

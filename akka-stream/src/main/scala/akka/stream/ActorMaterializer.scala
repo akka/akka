@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicBoolean }
 
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
+import akka.event.LoggingAdapter
 import akka.stream.impl._
 import com.typesafe.config.Config
 
@@ -59,7 +60,7 @@ object ActorMaterializer {
       system.dispatchers,
       context.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName()),
       haveShutDown,
-      FlowNames(system).names.copy(namePrefix))
+      FlowNames(system).name.copy(namePrefix))
   }
 
   /**
@@ -168,6 +169,11 @@ abstract class ActorMaterializer extends Materializer {
    * INTERNAL API
    */
   private[akka] def system: ActorSystem
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def logger: LoggingAdapter
 
   /** INTERNAL API */
   private[akka] def supervisor: ActorRef

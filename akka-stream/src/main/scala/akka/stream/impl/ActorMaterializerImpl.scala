@@ -29,10 +29,11 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
                                                haveShutDown: AtomicBoolean,
                                                flowNames: SeqActorName) extends ActorMaterializer {
   import akka.stream.impl.Stages._
-  private val logger = Logging.getLogger(system, this)
+  private val _logger = Logging.getLogger(system, this)
+  override def logger = _logger
 
   if (settings.fuzzingMode) {
-    logger.warning("Fuzzing mode is enabled on this system. If you see this warning on your production system then " +
+    _logger.warning("Fuzzing mode is enabled on this system. If you see this warning on your production system then " +
       "set akka.materializer.debug.fuzzing-mode to off.")
   }
 
@@ -202,7 +203,7 @@ private[akka] object FlowNames extends ExtensionId[FlowNames] with ExtensionIdPr
  * INTERNAL API
  */
 private[akka] class FlowNames extends Extension {
-  val names = SeqActorName("Flow")
+  val name = SeqActorName("Flow")
 }
 
 /**
