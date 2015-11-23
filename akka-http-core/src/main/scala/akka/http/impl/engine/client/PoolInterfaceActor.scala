@@ -27,7 +27,7 @@ private object PoolInterfaceActor {
 
   case object Shutdown extends DeadLetterSuppression
 
-  val name = new SeqActorName("PoolInterfaceActor")
+  val names = SeqActorName("PoolInterfaceActor")
 }
 
 /**

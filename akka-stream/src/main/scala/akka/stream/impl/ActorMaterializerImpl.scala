@@ -27,8 +27,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
                                                dispatchers: Dispatchers,
                                                supervisor: ActorRef,
                                                haveShutDown: AtomicBoolean,
-                                               flowNameCounter: AtomicLong,
-                                               namePrefix: String) extends ActorMaterializer {
+                                               flowNames: SeqActorName) extends ActorMaterializer {
   import akka.stream.impl.Stages._
   private val logger = Logging.getLogger(system, this)
 
@@ -42,11 +41,9 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
 
   override def isShutdown: Boolean = haveShutDown.get()
 
-  override def withNamePrefix(name: String): Materializer = this.copy(namePrefix = name)
+  override def withNamePrefix(name: String): Materializer = this.copy(flowNames = flowNames.copy(name))
 
-  private[this] def nextFlowNameCount(): Long = flowNameCounter.incrementAndGet() // TODO use SeqActorName instead
-
-  private[this] def createFlowName(): String = s"$namePrefix-${nextFlowNameCount()}"
+  private[this] def createFlowName(): String = flowNames.next()
 
   private val initialAttributes = Attributes(
     Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
@@ -195,17 +192,17 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
 /**
  * INTERNAL API
  */
-private[akka] object FlowNameCounter extends ExtensionId[FlowNameCounter] with ExtensionIdProvider {
-  override def get(system: ActorSystem): FlowNameCounter = super.get(system)
-  override def lookup() = FlowNameCounter
-  override def createExtension(system: ExtendedActorSystem): FlowNameCounter = new FlowNameCounter
+private[akka] object FlowNames extends ExtensionId[FlowNames] with ExtensionIdProvider {
+  override def get(system: ActorSystem): FlowNames = super.get(system)
+  override def lookup() = FlowNames
+  override def createExtension(system: ExtendedActorSystem): FlowNames = new FlowNames
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class FlowNameCounter extends Extension {
-  val counter = new AtomicLong(0)
+private[akka] class FlowNames extends Extension {
+  val names = SeqActorName("Flow")
 }
 
 /**
@@ -215,7 +212,7 @@ private[akka] object StreamSupervisor {
   def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
     Props(new StreamSupervisor(settings, haveShutDown)).withDeploy(Deploy.local)
 
-  private val actorName = new SeqActorName("StreamSupervisor")
+  private val actorName = SeqActorName("StreamSupervisor")
   def nextName(): String = actorName.next()
 
   final case class Materialize(props: Props, name: String)
