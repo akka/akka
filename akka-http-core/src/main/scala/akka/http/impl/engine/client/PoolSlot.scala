@@ -35,7 +35,7 @@ private object PoolSlot {
     final case class Disconnected(slotIx: Int, failedRequests: Int) extends SlotEvent
   }
 
-  private val slotProcessorActorName = new SeqActorName("SlotProcessor")
+  private val slotProcessorActorName = SeqActorName("SlotProcessor")
 
   /*
     Stream Setup
