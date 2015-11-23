@@ -929,7 +929,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Cancels when''' downstream cancels
    */
   def merge[T >: Out](that: Graph[SourceShape[T], _]): javadsl.Flow[In, T, Mat] =
-    merge(that, eagerClose = false)
+    merge(that, eagerComplete = false)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
@@ -939,12 +939,12 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Backpressures when''' downstream backpressures
    *
-   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge[T >: Out](that: Graph[SourceShape[T], _], eagerClose: Boolean): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.merge(that, eagerClose))
+  def merge[T >: Out](that: Graph[SourceShape[T], _], eagerComplete: Boolean): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.merge(that, eagerComplete))
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
@@ -954,7 +954,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def mergeMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
                                 matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
-    mergeMat(that, matF, eagerClose = false)
+    mergeMat(that, matF, eagerComplete = false)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
@@ -964,7 +964,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def mergeMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
                                 matF: function.Function2[Mat, M, M2],
-                                eagerClose: Boolean): javadsl.Flow[In, T, M2] =
+                                eagerComplete: Boolean): javadsl.Flow[In, T, M2] =
     new Flow(delegate.mergeMat(that)(combinerToScala(matF)))
 
   /**

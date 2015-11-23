@@ -17,9 +17,9 @@ object Merge {
    * Create a new `Merge` with the specified number of input ports.
    *
    * @param inputPorts number of input ports
-   * @param eagerClose if true, the merge will complete as soon as one of its inputs completes.
+   * @param eagerComplete if true, the merge will complete as soon as one of its inputs completes.
    */
-  def apply[T](inputPorts: Int, eagerClose: Boolean = false): Merge[T] = new Merge(inputPorts, eagerClose)
+  def apply[T](inputPorts: Int, eagerComplete: Boolean = false): Merge[T] = new Merge(inputPorts, eagerComplete)
 
 }
 
@@ -31,11 +31,11 @@ object Merge {
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+ * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
  *
  * '''Cancels when''' downstream cancels
  */
-class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
+class Merge[T] private (val inputPorts: Int, val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Merge.in" + i))
   val out: Outlet[T] = Outlet[T]("Merge.out")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
@@ -77,7 +77,7 @@ class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) extends Gr
         }
 
         override def onUpstreamFinish() =
-          if (eagerClose) {
+          if (eagerComplete) {
             in.foreach(cancel)
             runningUpstreams = 0
             if (!pending) completeStage()
@@ -116,9 +116,9 @@ object MergePreferred {
    * Create a new `MergePreferred` with the specified number of secondary input ports.
    *
    * @param secondaryPorts number of secondary input ports
-   * @param eagerClose if true, the merge will complete as soon as one of its inputs completes.
+   * @param eagerComplete if true, the merge will complete as soon as one of its inputs completes.
    */
-  def apply[T](secondaryPorts: Int, eagerClose: Boolean = false): MergePreferred[T] = new MergePreferred(secondaryPorts, eagerClose)
+  def apply[T](secondaryPorts: Int, eagerComplete: Boolean = false): MergePreferred[T] = new MergePreferred(secondaryPorts, eagerComplete)
 }
 
 /**
@@ -132,13 +132,13 @@ object MergePreferred {
  *
  * '''Backpressures when''' downstream backpressures
  *
- * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+ * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
  *
  * '''Cancels when''' downstream cancels
  *
  * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
-class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
+class MergePreferred[T] private (val secondaryPorts: Int, val eagerComplete: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
   override val shape: MergePreferred.MergePreferredShape[T] =
     new MergePreferred.MergePreferredShape(secondaryPorts, "MergePreferred")
 
@@ -150,7 +150,7 @@ class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: Boolea
     var openInputs = secondaryPorts + 1
     def onComplete(): Unit = {
       openInputs -= 1
-      if (eagerClose || openInputs == 0) completeStage()
+      if (eagerComplete || openInputs == 0) completeStage()
     }
 
     setHandler(out, new OutHandler {

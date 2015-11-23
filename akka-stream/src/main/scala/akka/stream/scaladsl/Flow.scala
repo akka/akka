@@ -1173,12 +1173,12 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Backpressures when''' downstream backpressures
    *
-   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge[U >: Out](that: Graph[SourceShape[U], _], eagerClose: Boolean = false): Repr[U, Mat] =
-    mergeMat(that, eagerClose)(Keep.left)
+  def merge[U >: Out](that: Graph[SourceShape[U], _], eagerComplete: Boolean = false): Repr[U, Mat] =
+    mergeMat(that, eagerComplete)(Keep.left)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
@@ -1186,11 +1186,11 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#merge]].
    */
-  def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], eagerClose: Boolean = false)(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
+  def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], eagerComplete: Boolean = false)(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
     this.viaMat(FlowGraph.create(that) { implicit b ⇒
       r ⇒
         import FlowGraph.Implicits._
-        val merge = b.add(Merge[U](2, eagerClose))
+        val merge = b.add(Merge[U](2, eagerComplete))
         r ~> merge.in(1)
         FlowShape(merge.in(0), merge.out)
     })(matF)
