@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.testkit.metrics.reporter
+package akka.util
 
 import java.util.Locale
 
@@ -9,8 +9,21 @@ import scala.concurrent.duration._
 
 object PrettyDuration {
 
+  /**
+   * JAVA API
+   * Selects most apropriate TimeUnit for given duration and formats it accordingly, with 4 digits precision
+   */
+  def format(duration: Duration): String = duration.pretty
+
+  /**
+   * JAVA API
+   * Selects most apropriate TimeUnit for given duration and formats it accordingly
+   */
+  def format(duration: Duration, includeNanos: Boolean, precision: Int): String = duration.pretty(includeNanos, precision)
+
   implicit class PrettyPrintableDuration(val duration: Duration) extends AnyVal {
 
+    /** Selects most apropriate TimeUnit for given duration and formats it accordingly, with 4 digits precision **/
     def pretty: String = pretty(includeNanos = false)
 
     /** Selects most apropriate TimeUnit for given duration and formats it accordingly */
