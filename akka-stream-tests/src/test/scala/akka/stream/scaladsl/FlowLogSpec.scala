@@ -28,7 +28,7 @@ class FlowLogSpec extends AkkaSpec("akka.loglevel = DEBUG") with ScriptedTest {
 
   "A Log" must {
 
-    val supervisorPath = "akka://FlowLogSpec/user/$a"
+    val supervisorPath = "akka://FlowLogSpec/user/StreamSupervisor-0"
     val LogSrc = s"akka.stream.Log($supervisorPath)"
     val LogClazz = classOf[Materializer]
 

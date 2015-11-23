@@ -116,16 +116,16 @@ private object PoolSlot {
     }
 
     val unconnected: Receive = {
-      case m @ OnNext(rc: RequestContext) ⇒
+      case OnNext(rc: RequestContext) ⇒
         val (connInport, connOutport) = runnableGraph.run()
         connOutport ! Request(totalDemand)
         context.become(waitingForDemandFromConnection(connInport, connOutport, rc))
 
-      case m @ Request(_) ⇒ if (remainingRequested == 0) request(1) // ask for first request if necessary
+      case Request(_) ⇒ if (remainingRequested == 0) request(1) // ask for first request if necessary
 
-      case m @ OnComplete ⇒ onComplete()
-      case m @ OnError(e) ⇒ onError(e)
-      case m @ Cancel ⇒
+      case OnComplete ⇒ onComplete()
+      case OnError(e) ⇒ onError(e)
+      case Cancel ⇒
         cancel()
         shutdown()
 

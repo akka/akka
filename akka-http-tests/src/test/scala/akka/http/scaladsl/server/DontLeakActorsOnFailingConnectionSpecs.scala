@@ -79,6 +79,7 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
         resps.onComplete({ case _ ⇒ countDown.countDown() })
 
         countDown.await(10, TimeUnit.SECONDS)
+        Thread.sleep(5000)
       }
     }
   }
@@ -86,11 +87,11 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
   private def handleResponse(httpResp: Try[HttpResponse], id: Int): Unit = {
     httpResp match {
       case Success(httpRes) ⇒
-        log.warning(s"$id: OK: (${httpRes.status.intValue}")
+        println(s"$id: OK: (${httpRes.status.intValue}")
         httpRes.entity.dataBytes.runWith(Sink.ignore)
 
       case Failure(ex) ⇒
-        log.warning(s"$id: FAIL: $ex")
+        println(s"$id: FAIL: $ex")
     }
   }
 
