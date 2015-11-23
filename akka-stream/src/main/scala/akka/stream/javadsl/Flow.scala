@@ -799,6 +799,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels and substreams cancel
+    *
+   * See also [[Flow.splitAfter]].
    */
   def splitWhen(p: function.Predicate[Out]): javadsl.Flow[In, Source[Out, Unit], Mat] =
     new Flow(delegate.splitWhen(p.test).map(_.asJava))

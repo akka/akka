@@ -957,6 +957,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels and substreams cancel
    *
+   * See also [[FlowOps.splitAfter]].
    */
   def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Source[U, Unit], Mat] =
     deprecatedAndThen(Split.when(p.asInstanceOf[Any ⇒ Boolean]))
@@ -991,7 +992,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels and substreams cancel
    *
-   * See also [[FlowOps.splitAfter]].
+   * See also [[FlowOps.splitWhen]].
    */
   def splitAfter[U >: Out](p: Out ⇒ Boolean): Repr[Source[U, Unit], Mat] =
     deprecatedAndThen(Split.after(p.asInstanceOf[Any ⇒ Boolean]))
