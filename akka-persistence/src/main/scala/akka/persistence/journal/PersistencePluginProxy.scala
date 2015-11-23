@@ -3,34 +3,19 @@
  */
 package akka.persistence.journal
 
-import akka.util.Helpers.Requiring
-import scala.concurrent.duration._
-import akka.actor.Actor
-import akka.actor.Stash
-import scala.concurrent.duration.FiniteDuration
-import akka.actor.ActorRef
-import akka.persistence.JournalProtocol
-import akka.actor.ActorSystem
-import akka.persistence.Persistence
-import scala.util.control.NoStackTrace
+import java.net.URISyntaxException
 import java.util.concurrent.TimeoutException
-import akka.persistence.AtomicWrite
-import akka.persistence.NonPersistentRepr
-import akka.persistence.DeleteMessagesFailure
-import akka.actor.ActorLogging
-import com.typesafe.config.Config
-import akka.actor.Address
-import akka.actor.ActorIdentity
-import akka.actor.RootActorPath
-import akka.actor.Identify
-import akka.actor.ReceiveTimeout
-import akka.actor.ExtendedActorSystem
-import akka.persistence.SaveSnapshotFailure
-import akka.persistence.DeleteSnapshotFailure
-import akka.persistence.DeleteSnapshotsFailure
-import akka.persistence.SnapshotProtocol
 
-object JournalProxy {
+import akka.actor._
+import akka.pattern.{ ask, pipe }
+import akka.persistence.{ AtomicWrite, DeleteMessagesFailure, DeleteSnapshotFailure, DeleteSnapshotsFailure, JournalProtocol, NonPersistentRepr, Persistence, SaveSnapshotFailure, SnapshotProtocol }
+import akka.util.Helpers.Requiring
+import com.typesafe.config.Config
+
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
+
+object PersistencePluginProxy {
   final case class TargetLocation(address: Address)
   private case object InitTimeout
 
@@ -51,9 +36,8 @@ object JournalProxy {
   }
 }
 
-// FIXME document me
-final class JournalProxy(config: Config) extends Actor with Stash with ActorLogging {
-  import JournalProxy._
+final class PersistencePluginProxy(config: Config) extends Actor with Stash with ActorLogging {
+  import PersistencePluginProxy._
   import JournalProtocol._
   import SnapshotProtocol._
 
@@ -84,6 +68,17 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
       }
       context.become(active(target, targetAtThisNode = true))
     } else {
+      val targetAddressKey = s"target-${pluginType.qualifier}-address"
+      if (config.hasPath(targetAddressKey)) {
+        val targetAddress = config.getString(targetAddressKey)
+        try {
+          log.info("Setting target {} address to {}", pluginType.qualifier, targetAddress)
+          PersistencePluginProxy.setTargetLocation(context.system, AddressFromURIString(targetAddress))
+        } catch {
+          case _: URISyntaxException ⇒ log.warning("Invalid URL provided for target {} address: {}", pluginType.qualifier, targetAddress)
+        }
+      }
+
       context.system.scheduler.scheduleOnce(timeout, self, InitTimeout)(context.dispatcher)
     }
   }
@@ -92,7 +87,7 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
     context.system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
   private def timeoutException() = new TimeoutException(s"Target ${pluginType.qualifier} not initialized. " +
-    "Use `JournalProxy.setTargetLocation`")
+    "Use `PersistencePluginProxy.setTargetLocation`")
 
   def receive = init
 
@@ -101,7 +96,7 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
       context.setReceiveTimeout(1.second) // for retries
       context.become(identifying(address))
     case InitTimeout ⇒
-      log.info("Initialization timeout, Use `JournalProxy.setTargetLocation`")
+      log.info("Initialization timed-out (after {}), Use `PersistencePluginProxy.setTargetLocation`", timeout)
       context.become(initTimedOut)
       unstashAll() // will trigger appropriate failures
     case msg ⇒
@@ -136,8 +131,57 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
       if (targetAtThisNode && address != selfAddress)
         becomeIdentifying(address)
     case InitTimeout ⇒
-    case msg ⇒
-      targetJournal.forward(msg)
+
+    case msg @ WriteMessages(messages, _, actorInstanceId) ⇒
+      implicit val ec = context.system.dispatcher
+      val sender = context.sender()
+      val f = ask(targetJournal, msg)(1.second)
+      f onComplete {
+        case Success(v) ⇒ sender ! v
+        case Failure(t) ⇒
+          sender ! WriteMessagesFailed(t)
+          messages foreach {
+            case a: AtomicWrite       ⇒ a.payload.foreach { p ⇒ sender ! WriteMessageFailure(p, t, actorInstanceId) }
+            case r: NonPersistentRepr ⇒ sender ! LoopMessageSuccess(r.payload, actorInstanceId)
+          }
+      }
+    case msg @ DeleteMessagesTo(_, toSeqNr, _) ⇒
+      implicit val ec = context.system.dispatcher
+      val sender = context.sender()
+      val f = ask(targetJournal, msg)(2.seconds)
+      f recover { case t ⇒ DeleteMessagesFailure(t, toSeqNr) } pipeTo sender
+    case msg @ ReplayMessages(_, _, _, _, _) ⇒
+      implicit val ec = context.system.dispatcher
+      val sender = context.sender()
+      val f = ask(targetJournal, msg)(2.seconds)
+      f recover { case t ⇒ ReplayMessagesFailure(t) } pipeTo sender
+
+    case msg @ LoadSnapshot(_, _, toSequenceNr) ⇒
+      implicit val ec = context.system.dispatcher
+      val sender = context.sender()
+      val f = ask(targetJournal, msg)(2.seconds)
+      f recover { case t ⇒ LoadSnapshotResult(None, toSequenceNr) } pipeTo sender
+    case msg @ SaveSnapshot(metadata, _) ⇒
+      implicit val ec = context.system.dispatcher
+      val sender = context.sender()
+      val f = ask(targetJournal, msg)(2.seconds)
+      f recover { case t ⇒ SaveSnapshotFailure(metadata, t) } pipeTo sender
+    case msg @ DeleteSnapshot(metadata) ⇒
+      implicit val ec = context.system.dispatcher
+      val sender = context.sender()
+      val f = ask(targetJournal, msg)(2.seconds)
+      f recover { case t ⇒ DeleteSnapshotFailure(metadata, t) } pipeTo sender
+    case msg @ DeleteSnapshots(_, criteria) ⇒
+      implicit val ec = context.system.dispatcher
+      val sender = context.sender()
+      val f = ask(targetJournal, msg)(2.seconds)
+      f recover { case t ⇒ DeleteSnapshotsFailure(criteria, t) } pipeTo sender
+
+    case msg ⇒ // is this necessary? what other messages can we get?
+      log.info("received non-protocol message: {}", msg)
+      val sender = context.sender()
+      val f = ask(targetJournal, msg)(2.seconds)
+      pipe(f)(context.system.dispatcher) to (sender, self)
   }
 
   def initTimedOut: Receive = {
@@ -175,7 +219,7 @@ final class JournalProxy(config: Config) extends Actor with Stash with ActorLogg
 
     case other ⇒
       val e = timeoutException()
-      log.error(e, "Failed JournalProxy request: {}", e.getMessage)
+      log.error(e, "Failed PersistencePluginProxy request: {}", e.getMessage)
   }
 
 }
