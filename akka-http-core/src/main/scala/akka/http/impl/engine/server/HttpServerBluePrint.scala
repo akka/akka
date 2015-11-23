@@ -127,7 +127,7 @@ private[http] object HttpServerBluePrint {
         csRequestPrepOut ~> requestPrep
 
         // One2OneBidi
-        val one2one = b.add(new One2OneBidi[HttpRequest, HttpResponse](16)) // TODO: replace hard-coded value by reintroducing `pipeline-limit` setting from spray
+        val one2one = b.add(new One2OneBidi[HttpRequest, HttpResponse](settings.pipeliningLimit))
         requestPrep.outlet ~> one2one.in1
         one2one.out2 ~> csHttpResponseIn
 
