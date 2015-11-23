@@ -50,15 +50,16 @@ trait FileAndResourceDirectives {
     get {
       if (file.isFile && file.canRead)
         conditionalFor(file.length, file.lastModified) {
-          withRangeSupport {
-            extractSettings { settings ⇒
-              complete {
-                HttpEntity.Default(contentType, file.length,
-                  Source.file(file)
-                    .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
+          if (file.length > 0) {
+            withRangeSupport {
+              extractSettings { settings ⇒
+                complete {
+                  HttpEntity.Default(contentType, file.length,
+                    Source.file(file).withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
+                }
               }
             }
-          }
+          } else complete(HttpEntity.Empty)
         }
       else reject
     }
@@ -88,15 +89,17 @@ trait FileAndResourceDirectives {
         Option(classLoader.getResource(resourceName)) flatMap ResourceFile.apply match {
           case Some(ResourceFile(url, length, lastModified)) ⇒
             conditionalFor(length, lastModified) {
-              withRangeSupport {
-                extractSettings { settings ⇒
-                  complete {
-                    HttpEntity.Default(contentType, length,
-                      Source.inputStream(() ⇒ url.openStream())
-                        .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
+              if (length > 0) {
+                withRangeSupport {
+                  extractSettings { settings ⇒
+                    complete {
+                      HttpEntity.Default(contentType, length,
+                        Source.inputStream(() ⇒ url.openStream())
+                          .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
+                    }
                   }
                 }
-              }
+              } else complete(HttpEntity.Empty)
             }
           case _ ⇒ reject // not found or directory
         }

@@ -55,7 +55,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
 
     "return a single range from a file" in {
-      val file = File.createTempFile("partialTest", null)
+      val file = File.createTempFile("akkaHttpTest", null)
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         Get() ~> addHeader(Range(ByteRange(0, 10))) ~> getFromFile(file) ~> check {
@@ -67,7 +67,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
 
     "return multiple ranges from a file at once" in {
-      val file = File.createTempFile("partialTest", null)
+      val file = File.createTempFile("akkaHttpTest", null)
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         val rangeHeader = Range(ByteRange(1, 10), ByteRange.suffix(10))
@@ -78,6 +78,16 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
 
           val parts = responseAs[Multipart.ByteRanges].toStrict(1.second).awaitResult(3.seconds).strictParts
           parts.map(_.entity.data.utf8String) should contain theSameElementsAs List("BCDEFGHIJK", "QRSTUVWXYZ")
+        }
+      } finally file.delete
+    }
+
+    "properly handle zero-byte files" in {
+      val file = File.createTempFile("akkaHttpTest", null)
+      try {
+        Get() ~> getFromFile(file) ~> check {
+          mediaType shouldEqual NoMediaType
+          responseAs[String] shouldEqual ""
         }
       } finally file.delete
     }
@@ -138,6 +148,12 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       Get() ~> getFromResource("sample.xyz") ~> check {
         mediaType shouldEqual `application/octet-stream`
         responseAs[String] shouldEqual "XyZ"
+      }
+    }
+    "properly handle zero-byte files" in {
+      Get() ~> getFromResource("subDirectory/fileA.txt") ~> check {
+        mediaType shouldEqual NoMediaType
+        responseAs[String] shouldEqual ""
       }
     }
   }
