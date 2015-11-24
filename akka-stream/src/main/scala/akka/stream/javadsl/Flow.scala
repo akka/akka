@@ -404,6 +404,11 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.grouped(n).map(_.asJava)) // TODO optimize to one step
 
   /**
+   * TODO: description
+   */
+  def limit(n: Int): javadsl.Flow[In, Out, Mat] = new Flow(delegate.limit(n))
+
+  /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
    * possibly smaller than requested due to end-of-stream.
    *
