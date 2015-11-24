@@ -5,6 +5,11 @@ Client-Side HTTPS Support
 
 Akka HTTP supports TLS encryption on the client-side as well as on the :ref:`server-side <serverSideHTTPS-java>`.
 
+.. warning:
+
+   Akka HTTP 1.0 does not completely validate certificates when using HTTPS. Please do not treat HTTPS connections
+   made with this version as secure. Requests are vulnerable to a Man-In-The-Middle attack via certificate substitution.
+   
 The central vehicle for configuring encryption is the ``HttpsContext``, which can be created using
 the static method ``HttpsContext.create`` which is defined like this:
 
