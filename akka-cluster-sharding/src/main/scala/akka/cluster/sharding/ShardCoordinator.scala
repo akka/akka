@@ -801,8 +801,6 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
 
   node.subscribe(self, ClusterShuttingDown.getClass)
 
-  var afterUpdateCallback: DomainEvent ⇒ Unit = _
-
   // get state from ddata replicator, repeat until GetSuccess
   getState()
 
@@ -812,8 +810,9 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   def waitingForState: Receive = ({
     case g @ GetSuccess(CoordinatorStateKey, _) ⇒
       state = g.get(CoordinatorStateKey).value
-      watchStateActors()
       context.become(waitingForStateInitialized)
+      // note that watchStateActors may call update
+      watchStateActors()
 
     case GetFailure(CoordinatorStateKey, _) ⇒
       log.error(
@@ -840,10 +839,12 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   }
 
   // this state will stash all messages until it receives UpdateSuccess
-  def waitingForUpdate[E <: DomainEvent](evt: E): Receive = {
+  def waitingForUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: DomainEvent ⇒ Unit): Receive = {
     case UpdateSuccess(CoordinatorStateKey, Some(`evt`)) ⇒
       log.debug("The coordinator state was successfully updated with {}", evt)
-      updateSuccess(evt)
+      context.unbecome()
+      afterUpdateCallback(evt)
+      unstashAll()
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) ⇒
       log.error(
@@ -870,16 +871,8 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   }
 
   def update[E <: DomainEvent](evt: E)(f: E ⇒ Unit): Unit = {
-    afterUpdateCallback = f.asInstanceOf[DomainEvent ⇒ Unit]
-    context.become(waitingForUpdate(evt))
+    context.become(waitingForUpdate(evt, f.asInstanceOf[DomainEvent ⇒ Unit]), discardOld = false)
     sendUpdate(evt)
-  }
-
-  def updateSuccess(evt: DomainEvent): Unit = {
-    afterUpdateCallback(evt)
-    afterUpdateCallback = null
-    context.become(active)
-    unstashAll()
   }
 
   def getState(): Unit =
