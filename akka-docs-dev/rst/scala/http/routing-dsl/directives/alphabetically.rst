@@ -62,6 +62,7 @@ Directive                                   Description
 :ref:`-extractUri-`                         Extracts the complete request URI
 :ref:`-failWith-`                           Bubbles the given error up the response chain where it is dealt with by the
                                             closest :ref:`-handleExceptions-` directive and its ``ExceptionHandler``
+:ref:`-fileUpload-`                         Provides a stream of an uploaded file from a multipart request
 :ref:`-formField-`                          Extracts an HTTP form field from the request
 :ref:`-formFields-`                         Extracts a number of HTTP form field from the request
 :ref:`-get-`                                Rejects all non-GET requests
@@ -199,6 +200,7 @@ Directive                                   Description
 :ref:`-setCookie-`                          Adds a ``Set-Cookie`` response header with the given cookies
 :ref:`-textract-`                           Extracts a number of values using a ``RequestContext ⇒ Tuple`` function
 :ref:`-tprovide-`                           Injects a given tuple of values into a directive
+:ref:`-uploadedFile-`                       Streams one uploaded file from a multipart request to a file on disk
 :ref:`-validate-`                           Checks a given condition before running its inner route
 :ref:`-withExecutionContext-`               Runs its inner route with the given alternative ``ExecutionContext``
 :ref:`-withMaterializer-`                   Runs its inner route with the given alternative ``Materializer``
