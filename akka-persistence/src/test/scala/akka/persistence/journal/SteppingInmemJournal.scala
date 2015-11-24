@@ -11,11 +11,11 @@ import akka.persistence.{ AtomicWrite, PersistentRepr }
 import akka.util.Timeout
 import akka.testkit._
 import com.typesafe.config.{ ConfigFactory, Config }
-
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.Try
+import scala.util.Success
 
 object SteppingInmemJournal {
 
@@ -97,7 +97,10 @@ final class SteppingInmemJournal extends InmemJournal {
       val promise = Promise[Try[Unit]]()
       val future = promise.future
       doOrEnqueue { () ⇒
-        promise.completeWith(super.asyncWriteMessages(Seq(message)).map(_.head))
+        promise.completeWith(super.asyncWriteMessages(Seq(message)).map {
+          case Nil       ⇒ AsyncWriteJournal.successUnit
+          case head :: _ ⇒ head
+        })
         future.map(_ ⇒ ())
       }
       future
