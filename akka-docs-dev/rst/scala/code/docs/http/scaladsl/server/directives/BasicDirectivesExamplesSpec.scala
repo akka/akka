@@ -7,6 +7,7 @@ package directives
 
 import java.io.File
 
+import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Server, RawHeader }
@@ -231,6 +232,49 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abcdef?ghi=12") ~> route ~> check {
       status shouldEqual StatusCodes.BadGateway
     }
+  }
+  "1mapResponse-advanced-json" in {
+    //#1mapResponse-advanced
+    trait ApiRoutes {
+      protected def system: ActorSystem
+      private val log = Logging(system, "ApiRoutes")
+
+      private val NullJsonEntity = HttpEntity(ContentTypes.`application/json`, "{}")
+
+      private def nonSuccessToEmptyJsonEntity(response: HttpResponse): HttpResponse =
+        response.status match {
+          case code if code.isSuccess ⇒ response
+          case code ⇒
+            log.warning("Dropping response entity since response status code was: {}", code)
+            response.copy(entity = NullJsonEntity)
+        }
+
+      /** Wrapper for all of our JSON API routes */
+      def apiRoute(innerRoutes: ⇒ Route): Route =
+        mapResponse(nonSuccessToEmptyJsonEntity)(innerRoutes)
+    }
+    //#1mapResponse-advanced
+
+    import StatusCodes._
+    val __system = system
+    val routes = new ApiRoutes {
+      override protected def system = __system
+    }
+    import routes.apiRoute
+
+    //#1mapResponse-advanced
+    val route: Route =
+      apiRoute {
+        get {
+          complete(InternalServerError)
+        }
+      }
+
+    // tests:
+    Get("/") ~> route ~> check {
+      responseAs[String] shouldEqual "{}"
+    }
+    //#1mapResponse-advanced
   }
   "mapRouteResult" in {
     // this directive is a joke, don't do that :-)
