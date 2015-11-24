@@ -9,8 +9,10 @@ import java.net.InetSocketAddress
 import java.security.MessageDigest
 import java.util
 
+import akka.event.Logging
+
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
 import scala.annotation.tailrec
 import scala.collection.immutable
 
@@ -48,6 +50,10 @@ sealed trait ModeledHeader extends HttpHeader with Serializable {
 
 /**
  * Superclass for user-defined custom headers defined by implementing `name` and `value`.
+ *
+ * Prefer to extend [[ModeledCustomHeader]] and [[ModeledCustomHeaderCompanion]] instead if
+ * planning to use the defined header in match clauses (e.g. in the routing layer of Akka HTTP),
+ * as they allow the custom header to be matched from [[RawHeader]] and vice-versa.
  */
 abstract class CustomHeader extends jm.headers.CustomHeader {
   /** Override to return true if this header shouldn't be rendered */
@@ -55,6 +61,43 @@ abstract class CustomHeader extends jm.headers.CustomHeader {
 
   def lowercaseName: String = name.toRootLowerCase
   final def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
+}
+
+/**
+ * To be extended by companion object of a custom header extending [[ModeledCustomHeader]].
+ * Implements necessary apply and unapply methods to make the such defined header feel "native".
+ */
+abstract class ModeledCustomHeaderCompanion[H <: ModeledCustomHeader[H]] {
+  def name: String
+  def lowercaseName: String = name.toRootLowerCase
+
+  def parse(value: String): Try[H]
+
+  def apply(value: String): H =
+    parse(value) match {
+      case Success(parsed) ⇒ parsed
+      case Failure(ex)     ⇒ throw new IllegalArgumentException(s"Unable to construct custom header by parsing: '$value'", ex)
+    }
+
+  def unapply(h: HttpHeader): Option[String] = h match {
+    case _: RawHeader    ⇒ if (h.lowercaseName == lowercaseName) Some(h.value) else None
+    case _: CustomHeader ⇒ if (h.lowercaseName == lowercaseName) Some(h.value) else None
+    case _               ⇒ None
+  }
+
+}
+
+/**
+ * Support class for building user-defined custom headers defined by implementing `name` and `value`.
+ * By implementing a [[ModeledCustomHeader]] instead of [[CustomHeader]] directly, all needed unapply
+ * methods are provided for this class, such that it can be pattern matched on from [[RawHeader]] and
+ * the other way around as well.
+ */
+abstract class ModeledCustomHeader[H <: ModeledCustomHeader[H]] extends CustomHeader { this: H ⇒
+  def companion: ModeledCustomHeaderCompanion[H]
+
+  final override def name = companion.name
+  final override def lowercaseName: String = name.toRootLowerCase
 }
 
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -138,6 +181,10 @@ final case class `If-Range`(entityTagOrDateTime: Either[EntityTag, DateTime]) ex
 final case class RawHeader(name: String, value: String) extends jm.headers.RawHeader {
   val lowercaseName = name.toRootLowerCase
   def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
+}
+object RawHeader {
+  def unapply[H <: HttpHeader](customHeader: H): Option[(String, String)] =
+    Some(customHeader.name -> customHeader.value)
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.3.2

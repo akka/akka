@@ -216,6 +216,8 @@ header across persistent HTTP connections.
 
 .. _RFC 7230: http://tools.ietf.org/html/rfc7230#section-3.3.3
 
+.. _header-model-scala:
+
 Header Model
 ------------
 
@@ -281,6 +283,38 @@ Connection
 
 __ @github@/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala#L422
 
+Custom Headers
+--------------
+
+Sometimes you may need to model a custom header type which is not part of HTTP and still be able to use it
+as convienient as is possible with the built-in types.
+
+Because of the number of ways one may interact with headers (i.e. try to match a ``CustomHeader`` against a ``RawHeader``
+or the other way around etc), a helper trait for custom Header types and their companions classes are provided by Akka HTTP.
+Thanks to extending :class:`ModeledCustomHeader` instead of the plain ``CustomHeader`` such header can be matched
+
+.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/CustomHeaderRoutingSpec.scala
+   :include: modeled-api-key-custom-header
+
+Which allows the this CustomHeader to be used in the following scenarios:
+
+.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/CustomHeaderRoutingSpec.scala
+   :include: matching-examples
+
+Including usage within the header directives like in the following :ref:`-headerValuePF-` example:
+
+.. includecode:: ../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/CustomHeaderRoutingSpec.scala
+   :include: matching-in-routes
+
+One can also directly extend :class:`CustomHeader` which requires less boilerplate, however that has the downside of
+matching against :ref:`RawHeader` instances not working out-of-the-box, thus limiting its usefulnes in the routing layer
+of Akka HTTP. For only rendering such header however it would be enough.
+
+.. note::
+  When defining custom headers, prefer to extend :class:`ModeledCustomHeader` instead of :class:`CustomHeader` directly
+  as it will automatically make your header abide all the expected pattern matching semantics one is accustomed to
+  when using built-in types (such as matching a custom header against a ``RawHeader`` as is often the case in routing
+  layers of Akka HTTP applications).
 
 Parsing / Rendering
 -------------------
