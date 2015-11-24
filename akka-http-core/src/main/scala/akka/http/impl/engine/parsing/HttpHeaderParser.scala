@@ -442,7 +442,7 @@ private[http] object HttpHeaderParser {
   def prime(parser: HttpHeaderParser): HttpHeaderParser = {
     val valueParsers: Seq[HeaderValueParser] =
       HeaderParser.ruleNames.map { name ⇒
-        new ModelledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name), parser.settings)
+        new ModeledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name), parser.settings)
       }(collection.breakOut)
     def insertInGoodOrder(items: Seq[Any])(startIx: Int = 0, endIx: Int = items.size): Unit =
       if (endIx - startIx > 0) {
@@ -477,7 +477,7 @@ private[http] object HttpHeaderParser {
     def cachingEnabled = maxValueCount > 0
   }
 
-  private[parsing] class ModelledHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int, settings: HeaderParser.Settings)
+  private[parsing] class ModeledHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int, settings: HeaderParser.Settings)
     extends HeaderValueParser(headerName, maxValueCount) {
     def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
       // TODO: optimize by running the header value parser directly on the input ByteString (rather than an extracted String)
