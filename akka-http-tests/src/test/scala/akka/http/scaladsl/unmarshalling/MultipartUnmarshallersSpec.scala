@@ -92,9 +92,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
             |filecontent
             |--12345--""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first part, with a trailing newline\r\n")),
-          Multipart.General.BodyPart.Strict(
-            HttpEntity(`application/octet-stream`, "filecontent"),
-            List(RawHeader("Content-Transfer-Encoding", "binary"))))
+          Multipart.General.BodyPart.Strict(HttpEntity(`application/octet-stream`, "filecontent"), List(RawHeader("Content-Transfer-Encoding", "binary"))))
       }
       "illegal headers" in (
         Unmarshal(HttpEntity(`multipart/form-data` withBoundary "XYZABC",
