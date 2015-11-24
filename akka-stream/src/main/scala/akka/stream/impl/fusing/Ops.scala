@@ -318,7 +318,7 @@ private[akka] final case class Grouped[T](n: Int) extends PushPullStage[T, immut
 /**
  * INTERNAL API
  */
-private[akka] final case class Limit[T](n: Int) extends PushPullStage[T, T] {
+private[akka] final case class Limit[T](n: Int) extends PushStage[T, T] {
   private var left = n
 
   override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
@@ -326,12 +326,8 @@ private[akka] final case class Limit[T](n: Int) extends PushPullStage[T, T] {
     if (left >= 0) ctx.push(elem)
     else {
       if (ctx.isFinishing) ctx.push(elem)
-      else ctx.fail(new Exception("more elements not allowed"))
+      else ctx.fail(new StreamLimitReachedException(left, s"limit of $n reached on this stream"))
     }
-  }
-
-  override def onPull(ctx: Context[T]): SyncDirective = {
-    ctx.pull()
   }
 }
 

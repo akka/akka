@@ -156,7 +156,6 @@ private[stream] object Stages {
   }
 
   final case class Limit[T](n: Int, attributes: Attributes = limit) extends SymbolicStage[T, T] {
-    require(n > 0, "n must be greater than 0")
     override def create(attr: Attributes): Stage[T, T] = fusing.Limit(n)
   }
 
