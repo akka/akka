@@ -305,13 +305,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * INTERNAL API
    */
   // Using common array to reduce overhead for small port counts
-  private[stream] var handlers = Array.ofDim[Any](inCount + outCount)
+  private[stream] val handlers = Array.ofDim[Any](inCount + outCount)
 
   /**
    * INTERNAL API
    */
   // Using common array to reduce overhead for small port counts
-  private[stream] var portToConn = Array.ofDim[Int](handlers.length)
+  private[stream] val portToConn = Array.ofDim[Int](handlers.length)
 
   /**
    * INTERNAL API

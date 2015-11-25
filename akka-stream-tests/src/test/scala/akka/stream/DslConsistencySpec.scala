@@ -8,19 +8,30 @@ import java.lang.reflect.Modifier
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
+object DslConsistencySpec {
+  class ScalaSubSource[Out, Mat] extends impl.SubFlowImpl[Out, Out, Mat, scaladsl.Source[Out, Mat]#Repr, scaladsl.RunnableGraph[Mat]](null, null, null)
+  class ScalaSubFlow[In, Out, Mat] extends impl.SubFlowImpl[Out, Out, Mat, scaladsl.Flow[In, Out, Mat]#Repr, scaladsl.Sink[In, Mat]](null, null, null)
+}
+
 class DslConsistencySpec extends WordSpec with Matchers {
 
-  val sFlowClass = classOf[akka.stream.scaladsl.Flow[_, _, _]]
-  val jFlowClass = classOf[akka.stream.javadsl.Flow[_, _, _]]
+  val sFlowClass: Class[_] = classOf[akka.stream.scaladsl.Flow[_, _, _]]
+  val jFlowClass: Class[_] = classOf[akka.stream.javadsl.Flow[_, _, _]]
 
-  val sSourceClass = classOf[akka.stream.scaladsl.Source[_, _]]
-  val jSourceClass = classOf[akka.stream.javadsl.Source[_, _]]
+  val sSubFlowClass: Class[_] = classOf[DslConsistencySpec.ScalaSubFlow[_, _, _]]
+  val jSubFlowClass: Class[_] = classOf[akka.stream.javadsl.SubFlow[_, _, _]]
 
-  val sSinkClass = classOf[akka.stream.scaladsl.Sink[_, _]]
-  val jSinkClass = classOf[akka.stream.javadsl.Sink[_, _]]
+  val sSourceClass: Class[_] = classOf[akka.stream.scaladsl.Source[_, _]]
+  val jSourceClass: Class[_] = classOf[akka.stream.javadsl.Source[_, _]]
 
-  val jRunnableGraphClass = classOf[akka.stream.javadsl.RunnableGraph[_]]
-  val sRunnableGraphClass = classOf[akka.stream.scaladsl.RunnableGraph[_]]
+  val sSubSourceClass: Class[_] = classOf[DslConsistencySpec.ScalaSubSource[_, _]]
+  val jSubSourceClass: Class[_] = classOf[akka.stream.javadsl.SubSource[_, _]]
+
+  val sSinkClass: Class[_] = classOf[akka.stream.scaladsl.Sink[_, _]]
+  val jSinkClass: Class[_] = classOf[akka.stream.javadsl.Sink[_, _]]
+
+  val jRunnableGraphClass: Class[_] = classOf[akka.stream.javadsl.RunnableGraph[_]]
+  val sRunnableGraphClass: Class[_] = classOf[akka.stream.scaladsl.RunnableGraph[_]]
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
@@ -28,13 +39,16 @@ class DslConsistencySpec extends WordSpec with Matchers {
       Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
       Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat")
 
+  val graphHelpers = Set("zipGraph", "zipWithGraph", "mergeGraph", "concatGraph", "alsoToGraph")
   val allowMissing: Map[Class[_], Set[String]] = Map(
+    jFlowClass -> graphHelpers,
+    jSourceClass -> graphHelpers,
+    // Java subflows can only be nested using .via and .to (due to type system restrictions)
+    jSubFlowClass -> (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow")),
+    jSubSourceClass -> (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow")),
     sFlowClass -> Set("of"),
     sSourceClass -> Set("adapt", "from"),
     sSinkClass -> Set("adapt"),
-
-    jSinkClass -> Set(),
-
     sRunnableGraphClass -> Set("builder"))
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
@@ -48,7 +62,9 @@ class DslConsistencySpec extends WordSpec with Matchers {
   "Java and Scala DSLs" must {
 
     ("Source" -> List(sSourceClass, jSourceClass)) ::
+      ("SubSource" -> List(sSubSourceClass, jSubSourceClass)) ::
       ("Flow" -> List(sFlowClass, jFlowClass)) ::
+      ("SubFlow" -> List(sSubFlowClass, jSubFlowClass)) ::
       ("Sink" -> List(sSinkClass, jSinkClass)) ::
       ("RunanbleFlow" -> List(sRunnableGraphClass, jRunnableGraphClass)) ::
       Nil foreach {

@@ -116,6 +116,21 @@ class MigrationsScala extends AkkaSpec {
         Flow[Source[Int, Any]].flatMapConcat(identity)
         //#flatMapConcat
 
+        //#group-flatten
+        Flow[Int]
+          .groupBy(2, _ % 2) // the first parameter sets max number of substreams
+          .map(_ + 3)
+          .concatSubstreams
+        //#group-flatten
+
+        val MaxDistinctWords = 1000
+        //#group-fold
+        Flow[String]
+          .groupBy(MaxDistinctWords, identity)
+          .fold(("", 0))((pair, word) => (word, pair._2 + 1))
+          .mergeSubstreams
+        //#group-fold
+
         //#port-async
         class MapAsyncOne[In, Out](f: In ⇒ Future[Out])(implicit ec: ExecutionContext)
           extends GraphStage[FlowShape[In, Out]] {

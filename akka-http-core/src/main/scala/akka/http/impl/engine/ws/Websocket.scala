@@ -85,36 +85,39 @@ private[http] object Websocket {
     }
 
     /** Collects user-level API messages from MessageDataParts */
-    val collectMessage: Flow[Source[MessageDataPart, Unit], Message, Unit] =
-      Flow[Source[MessageDataPart, Unit]]
-        .via(headAndTailFlow)
+    val collectMessage: Flow[MessageDataPart, Message, Unit] =
+      Flow[MessageDataPart]
+        .prefixAndTail(1)
         .map {
-          case (TextMessagePart(text, true), remaining) ⇒
-            TextMessage.Strict(text)
-          case (first @ TextMessagePart(text, false), remaining) ⇒
-            TextMessage(
-              (Source.single(first) ++ remaining)
-                .collect {
-                  case t: TextMessagePart if t.data.nonEmpty ⇒ t.data
-                })
-          case (BinaryMessagePart(data, true), remaining) ⇒
-            BinaryMessage.Strict(data)
-          case (first @ BinaryMessagePart(data, false), remaining) ⇒
-            BinaryMessage(
-              (Source.single(first) ++ remaining)
-                .collect {
-                  case t: BinaryMessagePart if t.data.nonEmpty ⇒ t.data
-                })
+          case (seq, remaining) ⇒ seq.head match {
+            case TextMessagePart(text, true) ⇒
+              TextMessage.Strict(text)
+            case first @ TextMessagePart(text, false) ⇒
+              TextMessage(
+                (Source.single(first) ++ remaining)
+                  .collect {
+                    case t: TextMessagePart if t.data.nonEmpty ⇒ t.data
+                  })
+            case BinaryMessagePart(data, true) ⇒
+              BinaryMessage.Strict(data)
+            case first @ BinaryMessagePart(data, false) ⇒
+              BinaryMessage(
+                (Source.single(first) ++ remaining)
+                  .collect {
+                    case t: BinaryMessagePart if t.data.nonEmpty ⇒ t.data
+                  })
+          }
         }
 
     def prepareMessages: Flow[MessagePart, Message, Unit] =
       Flow[MessagePart]
         .transform(() ⇒ new PrepareForUserHandler)
         .splitWhen(_.isMessageEnd) // FIXME using splitAfter from #16885 would simplify protocol a lot
-        .map(_.collect {
+        .collect {
           case m: MessageDataPart ⇒ m
-        })
+        }
         .via(collectMessage)
+        .concatSubstreams
         .named("ws-prepare-messages")
 
     def renderMessages: Flow[Message, FrameStart, Unit] =

@@ -292,6 +292,64 @@ Update procedure
 *There is no simple update procedure. The affected stages must be ported to the new ``GraphStage`` DSL manually. Please
 read the* ``GraphStage`` *documentation (TODO) for details.*
 
+GroupBy, SplitWhen and SplitAfter now return SubFlow
+====================================================
+
+Previously the ``groupBy``, ``splitWhen``, and ``splitAfter`` combinators
+returned a type that included a :class:`Source` within its elements.
+Transforming these substreams was only possible by nesting the respective
+combinators inside a ``map`` of the outer stream. This has been made more
+convenient and also safer by dropping down into transforming the substreams
+instead: the return type is now a :class:`SubFlow` that does not implement the
+:class:`Graph` interface and therefore only represents an unfinished
+intermediate builder step. The substream mode can be ended by closing the
+substreams (i.e. attaching a :class:`Sink`) or merging them back together.
+
+Update Procedure
+----------------
+
+The transformations that were done on the substreams need to be lifted up one
+level. This only works for cases where the processing topology is homogenous
+for all substreams.
+
+Example
+^^^^^^^
+
+::
+
+  Flow[Int]
+    // This no longer works!
+    .groupBy(_ % 2)
+    // This no longer works!
+    .map {
+      case (key, source) => source.map(_ + 3)
+    }
+    // This no longer works!
+    .flatten(FlattenStrategy.concat)
+
+This is implemented now as
+
+.. includecode:: code/docs/MigrationsScala.scala#group-flatten
+
+Example 2
+^^^^^^^^^
+
+::
+
+  Flow[String]
+    // This no longer works!
+    .groupBy(identity)
+    // This no longer works!
+    .map {
+      case (key, source) => source.runFold((key, 0))((pair, word) => (key, pair._2 + 1))
+    }
+    // This no longer works!
+    .mapAsyncUnordered(4, identity)
+
+This is implemented now as
+
+.. includecode:: code/docs/MigrationsScala.scala#group-fold
+
 Variance of Inlet and Outlet
 ============================
 
@@ -468,7 +526,7 @@ should be replaced by:
 .. includecode:: code/docs/MigrationsScala.scala#query-param
 
 SynchronousFileSource and SynchronousFileSink
-============================================
+=============================================
 
 Both have been replaced by ``Source.file(…)`` and ``Sink.file(…)`` due to discoverability issues
 paired with names which leaked internal implementation details.

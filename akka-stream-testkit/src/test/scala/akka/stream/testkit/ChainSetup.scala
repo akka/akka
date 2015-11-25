@@ -7,16 +7,16 @@ import org.reactivestreams.Publisher
 import akka.stream.ActorMaterializer
 import akka.stream.Attributes
 
-class ChainSetup[In, Out](
-  stream: Flow[In, In, _] ⇒ Flow[In, Out, _],
+class ChainSetup[In, Out, M](
+  stream: Flow[In, In, Unit] ⇒ Flow[In, Out, M],
   val settings: ActorMaterializerSettings,
   materializer: ActorMaterializer,
   toPublisher: (Source[Out, _], ActorMaterializer) ⇒ Publisher[Out])(implicit val system: ActorSystem) {
 
-  def this(stream: Flow[In, In, _] ⇒ Flow[In, Out, _], settings: ActorMaterializerSettings, toPublisher: (Source[Out, _], ActorMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
+  def this(stream: Flow[In, In, Unit] ⇒ Flow[In, Out, M], settings: ActorMaterializerSettings, toPublisher: (Source[Out, _], ActorMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
     this(stream, settings, ActorMaterializer(settings)(system), toPublisher)(system)
 
-  def this(stream: Flow[In, In, _] ⇒ Flow[In, Out, _],
+  def this(stream: Flow[In, In, Unit] ⇒ Flow[In, Out, M],
            settings: ActorMaterializerSettings,
            materializerCreator: (ActorMaterializerSettings, ActorRefFactory) ⇒ ActorMaterializer,
            toPublisher: (Source[Out, _], ActorMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =

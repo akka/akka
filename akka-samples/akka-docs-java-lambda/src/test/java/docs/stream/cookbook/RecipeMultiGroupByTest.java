@@ -10,6 +10,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.javadsl.SubSource;
 import akka.testkit.JavaTestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -25,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.assertTrue;
 
-public class RecipeMultiGroupBy extends RecipeTest {
+public class RecipeMultiGroupByTest extends RecipeTest {
   static ActorSystem system;
 
   @BeforeClass
@@ -99,40 +100,36 @@ public class RecipeMultiGroupBy extends RecipeTest {
 
         final Source<Pair<Message, Topic>, BoxedUnit> messageAndTopic = elems
           .mapConcat((Message msg) -> {
-          List<Topic> topicsForMessage = topicMapper.apply(msg);
-          // Create a (Msg, Topic) pair for each of the topics
+            List<Topic> topicsForMessage = topicMapper.apply(msg);
+            // Create a (Msg, Topic) pair for each of the topics
 
-          // the message belongs to
-          return topicsForMessage
-            .stream()
-            .map(topic -> new Pair<Message, Topic>(msg, topic))
-            .collect(toList());
+            // the message belongs to
+            return topicsForMessage
+              .stream()
+              .map(topic -> new Pair<Message, Topic>(msg, topic))
+              .collect(toList());
         });
 
-        Source<Pair<Topic, Source<Message, BoxedUnit>>, BoxedUnit> multiGroups = messageAndTopic
-          .groupBy(pair -> pair.second())
+        SubSource<Pair<Message, Topic>, BoxedUnit> multiGroups = messageAndTopic
+          .groupBy(2, pair -> pair.second())
           .map(pair -> {
-          Topic topic = pair.first();
-          Source<Pair<Message, Topic>, BoxedUnit> topicStream = pair.second();
+            Message message = pair.first();
+            Topic topic = pair.second();
 
-          // chopping of the topic from the (Message, Topic) pairs
-          return new Pair<Topic, Source<Message, BoxedUnit>>(
-            topic,
-            topicStream.<Message> map(p -> p.first()));
-        });
+            // do what needs to be done
+            //#multi-groupby
+            return pair;
+            //#multi-groupby
+          });
         //#multi-groupby
 
         Future<List<String>> result = multiGroups
+          .grouped(10)
+          .mergeSubstreams()
           .map(pair -> {
-          Topic topic = pair.first();
-          Source<String, BoxedUnit> topicMessages = pair.second().map(p -> p.msg);
-
-          return topicMessages
-            .grouped(10)
-            .map(m -> topic.name + mkString(m, "[", ", ", "]"))
-            .runWith(Sink.head(), mat);
-        })
-          .mapAsync(4, i -> i)
+            Topic topic = pair.get(0).second();
+            return topic.name + mkString(pair.stream().map(p -> p.first().msg).collect(toList()), "[", ", ", "]");
+          })
           .grouped(10)
           .runWith(Sink.head(), mat);
 

@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import java.io.{ OutputStream, InputStream, File }
-
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
@@ -15,12 +14,12 @@ import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
 import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ Future, Promise }
 import scala.language.higherKinds
+import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -29,13 +28,19 @@ import scala.language.higherKinds
  * a Reactive Streams `Publisher` (at least conceptually).
  */
 final class Source[+Out, +Mat](private[stream] override val module: Module)
-  extends FlowOps[Out, Mat] with Graph[SourceShape[Out], Mat] {
+  extends FlowOpsMat[Out, Mat] with Graph[SourceShape[Out], Mat] {
 
-  override type Repr[+O, +M] = Source[O, M]
+  override type Repr[+O] = Source[O, Mat @uncheckedVariance]
+  override type ReprMat[+O, +M] = Source[O, M]
+
+  override type Closed = RunnableGraph[Mat @uncheckedVariance]
+  override type ClosedMat[+M] = RunnableGraph[M]
 
   override val shape: SourceShape[Out] = module.shape.asInstanceOf[SourceShape[Out]]
 
-  def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
+  override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
+
+  override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
     if (flow.module eq Stages.identityGraph.module) this.asInstanceOf[Source[T, Mat3]]
     else {
       val flowCopy = flow.module.carbonCopy
@@ -64,11 +69,11 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   /**
    * Transform only the materialized value of this Source, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Repr[Out, Mat2] =
-    new Source(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
+    new Source[Out, Mat2](module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /** INTERNAL API */
-  override private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U, Mat] = {
+  override private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U] = {
     // No need to copy here, op is a fresh instance
     new Source(
       module
@@ -107,10 +112,10 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * @param attr the attributes to add
    * @return a new Source with the added attributes
    */
-  override def withAttributes(attr: Attributes): Repr[Out, Mat] =
+  override def withAttributes(attr: Attributes): Repr[Out] =
     new Source(module.withAttributes(attr).nest()) // User API
 
-  override def named(name: String): Repr[Out, Mat] = withAttributes(Attributes.name(name))
+  override def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
