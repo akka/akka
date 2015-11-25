@@ -31,8 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("serial")
 public class FlowTest extends StreamTest {
@@ -237,122 +236,71 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(6);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
-  public void mustBeAbleToUseGroupBy() {
-    final JavaTestKit probe = new JavaTestKit(system);
+  public void mustBeAbleToUseGroupBy() throws Exception {
     final Iterable<String> input = Arrays.asList("Aaa", "Abb", "Bcc", "Cdd", "Cee");
-    final Flow<String, Pair<String, Source<String, BoxedUnit>>, BoxedUnit> slsFlow = Flow
-        .of(String.class).groupBy(new Function<String, String>() {
+    final Flow<String, List<String>, BoxedUnit> flow = Flow
+        .of(String.class)
+        .groupBy(3, new Function<String, String>() {
           public String apply(String elem) {
             return elem.substring(0, 1);
           }
-        });
-    Source.from(input).via(slsFlow).runForeach(new Procedure<Pair<String, Source<String, BoxedUnit>>>() {
+        })
+        .grouped(10)
+        .mergeSubstreams();
+    
+    final Future<List<List<String>>> future =
+        Source.from(input).via(flow).grouped(10).runWith(Sink.<List<List<String>>> head(), materializer);
+    final Object[] result = Await.result(future, Duration.create(1, TimeUnit.SECONDS)).toArray();
+    Arrays.sort(result, (Comparator<Object>)(Object) new Comparator<List<String>>() {
       @Override
-      public void apply(final Pair<String, Source<String, BoxedUnit>> pair) throws Exception {
-        pair.second().runForeach(new Procedure<String>() {
-          @Override
-          public void apply(String elem) throws Exception {
-            probe.getRef().tell(new Pair<String, String>(pair.first(), elem), ActorRef.noSender());
-          }
-        }, materializer);
-      }
-    }, materializer);
-
-    Map<String, List<String>> grouped = new HashMap<String, List<String>>();
-    for (Object o : probe.receiveN(5)) {
-      @SuppressWarnings("unchecked")
-      Pair<String, String> p = (Pair<String, String>) o;
-      List<String> g = grouped.get(p.first());
-      if (g == null) {
-        g = new ArrayList<String>();
-      }
-      g.add(p.second());
-      grouped.put(p.first(), g);
-    }
-
-    assertEquals(Arrays.asList("Aaa", "Abb"), grouped.get("A"));
-
-  }
-
-  @Test
-  public void mustBeAbleToUseSplitWhen() {
-    final JavaTestKit probe = new JavaTestKit(system);
-    final Iterable<String> input = Arrays.asList("A", "B", "C", ".", "D", ".", "E", "F");
-    final Flow<String, Source<String, BoxedUnit>, ?> flow = Flow.of(String.class).splitWhen(new Predicate<String>() {
-      public boolean test(String elem) {
-        return elem.equals(".");
-      }
-    });
-    Source.from(input).via(flow).runForeach(new Procedure<Source<String, BoxedUnit>>() {
-      @Override
-      public void apply(Source<String, BoxedUnit> subStream) throws Exception {
-        subStream.filter(new Predicate<String>() {
-          @Override
-          public boolean test(String elem) {
-            return !elem.equals(".");
-          }
-        }).grouped(10).runForeach(new Procedure<List<String>>() {
-          @Override
-          public void apply(List<String> chunk) throws Exception {
-            probe.getRef().tell(chunk, ActorRef.noSender());
-          }
-        }, materializer);
-      }
-    }, materializer);
-
-    for (Object o : probe.receiveN(3)) {
-      @SuppressWarnings("unchecked")
-      List<String> chunk = (List<String>) o;
-      if (chunk.get(0).equals("A")) {
-        assertEquals(Arrays.asList("A", "B", "C"), chunk);
-      } else if (chunk.get(0).equals("D")) {
-        assertEquals(Arrays.asList("D"), chunk);
-      } else if (chunk.get(0).equals("E")) {
-        assertEquals(Arrays.asList("E", "F"), chunk);
-      } else {
-        assertEquals("[A, B, C] or [D] or [E, F]", chunk);
-      }
-    }
-
-  }
-
-  @Test
-  public void mustBeAbleToUseSplitAfter() {
-    final JavaTestKit probe = new JavaTestKit(system);
-    final Iterable<String> input = Arrays.asList("A", "B", "C", ".", "D", ".", "E", "F");
-    final Flow<String, Source<String, BoxedUnit>, ?> flow = Flow.of(String.class).splitAfter(new Predicate<String>() {
-      public boolean test(String elem) {
-        return elem.equals(".");
+      public int compare(List<String> o1, List<String> o2) {
+        return o1.get(0).charAt(0) - o2.get(0).charAt(0);
       }
     });
 
-    Source.from(input).via(flow).runForeach(new Procedure<Source<String, BoxedUnit>>() {
-      @Override
-      public void apply(Source<String, BoxedUnit> subStream) throws Exception {
-        subStream.grouped(10).runForeach(new Procedure<List<String>>() {
-          @Override
-          public void apply(List<String> chunk) throws Exception {
-            probe.getRef().tell(chunk, ActorRef.noSender());
+    assertArrayEquals(new Object[] { Arrays.asList("Aaa", "Abb"), Arrays.asList("Bcc"), Arrays.asList("Cdd", "Cee") }, result);
+  }
+
+  @Test
+  public void mustBeAbleToUseSplitWhen() throws Exception {
+    final Iterable<String> input = Arrays.asList("A", "B", "C", ".", "D", ".", "E", "F");
+    final Flow<String, List<String>, BoxedUnit> flow = Flow
+    	.of(String.class)
+    	.splitWhen(new Predicate<String>() {
+    	  public boolean test(String elem) {
+            return elem.equals(".");
           }
-        }, materializer);
-      }
-    }, materializer);
+        })
+    	.grouped(10)
+    	.concatSubstreams();
 
-    for (Object o : probe.receiveN(3)) {
-      @SuppressWarnings("unchecked")
-      List<String> chunk = (List<String>) o;
-      if (chunk.get(0).equals("A")) {
-        assertEquals(Arrays.asList("A", "B", "C", "."), chunk);
-      } else if (chunk.get(0).equals("D")) {
-        assertEquals(Arrays.asList("D", "."), chunk);
-      } else if (chunk.get(0).equals("E")) {
-        assertEquals(Arrays.asList("E", "F"), chunk);
-      } else {
-        assertEquals("[A, B, C, .] or [D, .] or [E, F]", chunk);
-      }
-    }
+    final Future<List<List<String>>> future =
+        Source.from(input).via(flow).grouped(10).runWith(Sink.<List<List<String>>> head(), materializer);
+    final List<List<String>> result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
 
+    assertEquals(Arrays.asList(Arrays.asList("A", "B", "C"), Arrays.asList(".", "D"), Arrays.asList(".", "E", "F")), result);
+  }
+
+  @Test
+  public void mustBeAbleToUseSplitAfter() throws Exception {
+	final Iterable<String> input = Arrays.asList("A", "B", "C", ".", "D", ".", "E", "F");
+	final Flow<String, List<String>, BoxedUnit> flow = Flow
+	    .of(String.class)
+	    .splitAfter(new Predicate<String>() {
+	   	  public boolean test(String elem) {
+	        return elem.equals(".");
+	      }
+	    })
+	    .grouped(10)
+	    .concatSubstreams();
+
+    final Future<List<List<String>>> future =
+        Source.from(input).via(flow).grouped(10).runWith(Sink.<List<List<String>>> head(), materializer);
+    final List<List<String>> result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
+
+    assertEquals(Arrays.asList(Arrays.asList("A", "B", "C", "."), Arrays.asList("D", "."), Arrays.asList("E", "F")), result);
   }
 
   public <T> Creator<Stage<T, T>> op() {

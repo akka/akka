@@ -86,8 +86,8 @@ trait ScriptedTest extends Matchers {
     def debug: String = s"Script(pending=($pendingIns in, $pendingOuts out), remainingIns=${providedInputs.drop(inputCursor).mkString("/")}, remainingOuts=${expectedOutputs.drop(outputCursor).mkString("/")})"
   }
 
-  class ScriptRunner[In, Out](
-    op: Flow[In, In, _] ⇒ Flow[In, Out, _],
+  class ScriptRunner[In, Out, M](
+    op: Flow[In, In, Unit] ⇒ Flow[In, Out, M],
     settings: ActorMaterializerSettings,
     script: Script[In, Out],
     maximumOverrun: Int,
@@ -196,8 +196,8 @@ trait ScriptedTest extends Matchers {
 
   }
 
-  def runScript[In, Out](script: Script[In, Out], settings: ActorMaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
-    op: Flow[In, In, _] ⇒ Flow[In, Out, _])(implicit system: ActorSystem): Unit = {
+  def runScript[In, Out, M](script: Script[In, Out], settings: ActorMaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
+    op: Flow[In, In, Unit] ⇒ Flow[In, Out, M])(implicit system: ActorSystem): Unit = {
     new ScriptRunner(op, settings, script, maximumOverrun, maximumRequest, maximumBuffer).run()
   }
 
