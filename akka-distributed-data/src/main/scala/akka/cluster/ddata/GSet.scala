@@ -27,7 +27,7 @@ object GSet {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final case class GSet[A](elements: Set[A]) extends ReplicatedData with ReplicatedDataSerialization {
+final case class GSet[A](elements: Set[A]) extends ReplicatedData with ReplicatedDataSerialization with FastMerge {
 
   type T = GSet[A]
 
@@ -53,9 +53,15 @@ final case class GSet[A](elements: Set[A]) extends ReplicatedData with Replicate
   /**
    * Adds an element to the set
    */
-  def add(element: A): GSet[A] = copy(elements + element)
+  def add(element: A): GSet[A] = assignAncestor(copy(elements + element))
 
-  override def merge(that: GSet[A]): GSet[A] = copy(elements ++ that.elements)
+  override def merge(that: GSet[A]): GSet[A] =
+    if ((this eq that) || that.isAncestorOf(this)) this.clearAncestor()
+    else if (this.isAncestorOf(that)) that.clearAncestor()
+    else {
+      clearAncestor()
+      copy(elements union that.elements)
+    }
 }
 
 object GSetKey {
