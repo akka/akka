@@ -20,6 +20,8 @@ import akka.serialization.SerializerWithStringManifest
 import akka.serialization.BaseSerializer
 import akka.protobuf.ByteString
 import akka.util.ByteString.UTF_8
+import scala.collection.immutable.TreeMap
+import akka.cluster.UniqueAddress
 
 /**
  * Protobuf serializer of ReplicatedData.
@@ -303,7 +305,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
 
   def versionVectorToProto(versionVector: VersionVector): rd.VersionVector = {
     val b = rd.VersionVector.newBuilder()
-    versionVector.versions.foreach {
+    versionVector.versionsIterator.foreach {
       case (node, value) ⇒ b.addEntries(rd.VersionVector.Entry.newBuilder().
         setNode(uniqueAddressToProto(node)).setVersion(value))
     }
@@ -314,8 +316,16 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     versionVectorFromProto(rd.VersionVector.parseFrom(bytes))
 
   def versionVectorFromProto(versionVector: rd.VersionVector): VersionVector = {
-    VersionVector(versions = versionVector.getEntriesList.asScala.map(entry ⇒
-      uniqueAddressFromProto(entry.getNode) -> entry.getVersion)(breakOut))
+    val entries = versionVector.getEntriesList
+    if (entries.isEmpty)
+      VersionVector.empty
+    else if (entries.size == 1)
+      VersionVector(uniqueAddressFromProto(entries.get(0).getNode), entries.get(0).getVersion)
+    else {
+      val versions: TreeMap[UniqueAddress, Long] = versionVector.getEntriesList.asScala.map(entry ⇒
+        uniqueAddressFromProto(entry.getNode) -> entry.getVersion)(breakOut)
+      VersionVector(versions)
+    }
   }
 
   def ormapToProto(ormap: ORMap[_]): rd.ORMap = {
