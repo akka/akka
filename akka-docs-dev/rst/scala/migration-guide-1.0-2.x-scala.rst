@@ -8,7 +8,7 @@ The 2.0 release contains some structural changes that require some
 simple, mechanical source-level changes in client code.
 
 
-Introduced proper named constructor methods insted of ``wrap()``
+Introduced proper named constructor methods instead of ``wrap()``
 ================================================================
 
 There were several, unrelated uses of ``wrap()`` which made it hard to find and hard to understand the intention of
@@ -273,6 +273,18 @@ Example
 should be replaced by
 
 .. includecode:: code/docs/MigrationsScala.scala#flatMapConcat
+
+Merge and MergePreferred apply method parameter name change
+===========================================================
+
+``Merge.apply()`` and ``MergePreferred.apply()`` methods previously had optional ``eagerClose`` parameter, which was
+somewhat misleading since flow stages are not closed but completed. To avoid confusion, this parameter has been renamed
+to `eagerComplete` to correctly reflect actual behavior.
+
+Update procedure
+----------------
+
+Simply replace usages of ``eagerClose`` named parameters with ``eagerComplete``.
 
 FlexiMerge an FlexiRoute has been replaced by GraphStage
 ========================================================
