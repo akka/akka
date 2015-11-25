@@ -31,22 +31,22 @@ import akka.util.ByteString
  * INTERNAL API
  *
  *
- * HTTP pipeline setup:
+ * HTTP pipeline setup (without the underlying SSL/TLS (un)wrapping and the websocket switch):
  *
- *                     +-------------+                 +-------------+                   +-----------+
- *     HttpRequest     |  request-   |     Request-    |             |      Request-     | request-  |     ByteString
- * | <-----------------+ Preparation <-----------------+             <-------------------+  Parsing  <---------------
- * |                   |             |     Output      |             |      Output       |           |
- * |                   +-------------+                 |             |                   +-----------+
- * |                                                   |             |
- * | Application-                                      | controller- |
- * | Flow                                              |    Stage    |
- * |                                                   |             |
- * |                                                   |             |                   +-----------+
- * |                  HttpResponse                     |             |     Response-     | renderer- |     ByteString
- * v -------------------------------------------------->             +-------------------> Pipeline  +-------------->
- *                                                     |             |     Rendering-    |           |
- *                                                     +-------------+     Context       +-----------+
+ *                 +----------+          +-------------+          +-------------+             +-----------+
+ *    HttpRequest  |          |   Http-  |  request-   | Request- |             |   Request-  | request-  | ByteString
+ *  | <------------+          <----------+ Preparation <----------+             <-------------+  Parsing  <-----------
+ *  |              |          |  Request |             | Output   |             |   Output    |           |
+ *  |              |          |          +-------------+          |             |             +-----------+
+ *  |              |          |                                   |             |
+ *  | Application- | One2One- |                                   | controller- |
+ *  | Flow         |   Bidi   |                                   |    Stage    |
+ *  |              |          |                                   |             |
+ *  |              |          |                                   |             |             +-----------+
+ *  | HttpResponse |          |           HttpResponse            |             |  Response-  | renderer- | ByteString
+ *  v ------------->          +----------------------------------->             +-------------> Pipeline  +---------->
+ *                 |          |                                   |             |  Rendering- |           |
+ *                 +----------+                                   +-------------+  Context    +-----------+
  */
 private[http] object HttpServerBluePrint {
   def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer = {
@@ -81,7 +81,7 @@ private[http] object HttpServerBluePrint {
       rootParser.createShallowCopy().stage).named("rootParser")
       .map(establishAbsoluteUri)
 
-    val requestPreparation =
+    val requestPreparationFlow =
       Flow[RequestOutput]
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .via(headAndTailFlow)
@@ -105,58 +105,58 @@ private[http] object HttpServerBluePrint {
         // `buffer` will ensure demand and therefore make sure that completion is reported eagerly.
         .buffer(1, OverflowStrategy.backpressure)
 
-    val rendererPipeline =
+    val responseRenderingFlow =
       Flow[ResponseRenderingContext]
         .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
         .flatMapConcat(ConstantFun.scalaIdentityFunction)
         .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
 
-    BidiFlow.fromGraph(FlowGraph.create(requestParsingFlow, rendererPipeline)(Keep.none) { implicit b ⇒
-      (requestParsing, renderer) ⇒
-        import FlowGraph.Implicits._
+    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
+      import FlowGraph.Implicits._
 
-        // HTTP
-        val requestPrep = b.add(requestPreparation)
-        val controllerStage = b.add(new ControllerStage(settings, log))
-        val csRequestParsingIn = controllerStage.in1
-        val csRequestPrepOut = controllerStage.out1
-        val csHttpResponseIn = controllerStage.in2
-        val csResponseCtxOut = controllerStage.out2
-        requestParsing.outlet ~> csRequestParsingIn
-        csResponseCtxOut ~> renderer.inlet
-        csRequestPrepOut ~> requestPrep
+      // HTTP
+      val requestParsing = b.add(requestParsingFlow)
+      val requestPreparation = b.add(requestPreparationFlow)
+      val responseRendering = b.add(responseRenderingFlow)
+      val controllerStage = b.add(new ControllerStage(settings, log))
+      val csRequestParsingIn = controllerStage.in1
+      val csRequestPrepOut = controllerStage.out1
+      val csHttpResponseIn = controllerStage.in2
+      val csResponseCtxOut = controllerStage.out2
+      requestParsing.outlet ~> csRequestParsingIn
+      csResponseCtxOut ~> responseRendering.inlet
+      csRequestPrepOut ~> requestPreparation
 
-        // One2OneBidi
-        val one2one = b.add(new One2OneBidi[HttpRequest, HttpResponse](settings.pipeliningLimit))
-        requestPrep.outlet ~> one2one.in1
-        one2one.out2 ~> csHttpResponseIn
+      // One2OneBidi
+      val one2one = b.add(new One2OneBidi[HttpRequest, HttpResponse](settings.pipeliningLimit))
+      requestPreparation.outlet ~> one2one.in1
+      one2one.out2 ~> csHttpResponseIn
 
-        // Websocket
-        val http = FlowShape(requestParsing.inlet, renderer.outlet)
-        val switchTokenBroadcast = b.add(Broadcast[ResponseRenderingOutput](2))
-        val switchToWebsocket = b.add(Flow[ResponseRenderingOutput]
-          .collect { case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken })
-        val websocket = b.add(ws.websocketFlow)
-        val protocolRouter = b.add(WebsocketSwitchRouter)
-        val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory, log))
-        val wsSwitchTokenMerge = b.add(WsSwitchTokenMerge)
-        switchTokenBroadcast ~> switchToWebsocket
-        protocolRouter.out0 ~> http ~> switchTokenBroadcast ~> protocolMerge.in0
-        protocolRouter.out1 ~> websocket ~> protocolMerge.in1
-        switchToWebsocket ~> wsSwitchTokenMerge.in1
-        wsSwitchTokenMerge.out ~> protocolRouter.in
+      // Websocket
+      val http = FlowShape(requestParsing.inlet, responseRendering.outlet)
+      val switchTokenBroadcast = b.add(Broadcast[ResponseRenderingOutput](2))
+      val switchToWebsocket = b.add(Flow[ResponseRenderingOutput]
+        .collect { case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken })
+      val websocket = b.add(ws.websocketFlow)
+      val protocolRouter = b.add(WebsocketSwitchRouter)
+      val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory, log))
+      val wsSwitchTokenMerge = b.add(WsSwitchTokenMerge)
+      switchTokenBroadcast ~> switchToWebsocket ~> wsSwitchTokenMerge.in1
+      protocolRouter.out0 ~> http ~> switchTokenBroadcast ~> protocolMerge.in0
+      protocolRouter.out1 ~> websocket ~> protocolMerge.in1
+      wsSwitchTokenMerge.out ~> protocolRouter.in
 
-        // SSL/TLS
-        val unwrapTls = b.add(Flow[SslTlsInbound] collect { case x: SessionBytes ⇒ x.bytes })
-        val wrapTls = b.add(Flow[ByteString].map[SslTlsOutbound](SendBytes))
-        unwrapTls ~> wsSwitchTokenMerge.in0
-        protocolMerge.out ~> wrapTls
+      // SSL/TLS
+      val unwrapTls = b.add(Flow[SslTlsInbound] collect { case x: SessionBytes ⇒ x.bytes })
+      val wrapTls = b.add(Flow[ByteString].map[SslTlsOutbound](SendBytes))
+      unwrapTls ~> wsSwitchTokenMerge.in0
+      protocolMerge.out ~> wrapTls
 
-        BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest](
-          one2one.in2,
-          wrapTls.outlet,
-          unwrapTls.inlet,
-          one2one.out1)
+      BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest](
+        one2one.in2,
+        wrapTls.outlet,
+        unwrapTls.inlet,
+        one2one.out1)
     })
   }
 
@@ -169,6 +169,7 @@ private[http] object HttpServerBluePrint {
     val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponseIn, responseCtxOut)
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
+      val pullHttpResponseIn = () ⇒ pull(httpResponseIn)
       var openRequests = immutable.Queue[RequestStart]()
       var oneHundredContinueResponsePending = false
       var pullSuppressed = false
@@ -218,7 +219,8 @@ private[http] object HttpServerBluePrint {
             requestStart.expect100Continue && oneHundredContinueResponsePending ||
             isClosed(requestParsingIn) && openRequests.isEmpty ||
             isEarlyResponse
-          push(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close))
+          emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
+            pullHttpResponseIn)
           if (close) complete(responseCtxOut)
         }
         override def onUpstreamFinish() =
@@ -244,9 +246,17 @@ private[http] object HttpServerBluePrint {
           }
       })
 
-      setHandler(responseCtxOut, new OutHandler {
-        def onPull(): Unit = if (!hasBeenPulled(httpResponseIn)) pull(httpResponseIn)
-        override def onDownstreamFinish() = cancel(httpResponseIn)
+      class ResponseCtxOutHandler extends OutHandler {
+        override def onPull() = {}
+        override def onDownstreamFinish() =
+          cancel(httpResponseIn) // we cannot fully completeState() here as the websocket pipeline would not complete properly
+      }
+      setHandler(responseCtxOut, new ResponseCtxOutHandler {
+        override def onPull() = {
+          pull(httpResponseIn)
+          // after the initial pull here we only ever pull after having emitted in `onPush` of `httpResponseIn`
+          setHandler(responseCtxOut, new ResponseCtxOutHandler)
+        }
       })
 
       def finishWithIllegalRequestError(status: StatusCode, info: ErrorInfo): Unit = {
