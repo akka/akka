@@ -232,25 +232,26 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     val replicator = system.actorOf(Replicator.props(
       ReplicatorSettings(system).withGossipInterval(1.second).withMaxDeltaElements(10)), "replicator")
 
-    def coordinatorProps(typeName: String, rebalanceEnabled: Boolean) = {
+    def coordinatorProps(typeName: String, rebalanceEnabled: Boolean, rememberEntities: Boolean) = {
       val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
       val cfg = ConfigFactory.parseString(s"""
       handoff-timeout = 10s
       shard-start-timeout = 10s
       rebalance-interval = ${if (rebalanceEnabled) "2s" else "3600s"}
       """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
-      val settings = ClusterShardingSettings(cfg)
+      val settings = ClusterShardingSettings(cfg).withRememberEntities(rememberEntities)
       if (settings.stateStoreMode == "persistence")
         ShardCoordinator.props(typeName, settings, allocationStrategy)
       else
         ShardCoordinator.props(typeName, settings, allocationStrategy, replicator)
     }
 
-    List("counter", "rebalancingCounter", "PersistentCounterEntities", "AnotherPersistentCounter",
-      "PersistentCounter", "RebalancingPersistentCounter", "AutoMigrateRegionTest").foreach { typeName ⇒
+    List("counter", "rebalancingCounter", "RememberCounterEntities", "AnotherRememberCounter",
+      "RememberCounter", "RebalancingRememberCounter", "AutoMigrateRememberRegionTest").foreach { typeName ⇒
         val rebalanceEnabled = typeName.toLowerCase.startsWith("rebalancing")
+        val rememberEnabled = typeName.toLowerCase.contains("remember")
         val singletonProps = BackoffSupervisor.props(
-          childProps = coordinatorProps(typeName, rebalanceEnabled),
+          childProps = coordinatorProps(typeName, rebalanceEnabled, rememberEnabled),
           childName = "coordinator",
           minBackoff = 5.seconds,
           maxBackoff = 5.seconds,
@@ -286,11 +287,11 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
   lazy val region = createRegion("counter", rememberEntities = false)
   lazy val rebalancingRegion = createRegion("rebalancingCounter", rememberEntities = false)
 
-  lazy val persistentEntitiesRegion = createRegion("PersistentCounterEntities", rememberEntities = true)
-  lazy val anotherPersistentRegion = createRegion("AnotherPersistentCounter", rememberEntities = true)
-  lazy val persistentRegion = createRegion("PersistentCounter", rememberEntities = true)
-  lazy val rebalancingPersistentRegion = createRegion("RebalancingPersistentCounter", rememberEntities = true)
-  lazy val autoMigrateRegion = createRegion("AutoMigrateRegionTest", rememberEntities = true)
+  lazy val persistentEntitiesRegion = createRegion("RememberCounterEntities", rememberEntities = true)
+  lazy val anotherPersistentRegion = createRegion("AnotherRememberCounter", rememberEntities = true)
+  lazy val persistentRegion = createRegion("RememberCounter", rememberEntities = true)
+  lazy val rebalancingPersistentRegion = createRegion("RebalancingRememberCounter", rememberEntities = true)
+  lazy val autoMigrateRegion = createRegion("AutoMigrateRememberRegionTest", rememberEntities = true)
 
   s"Cluster sharding ($mode)" must {
 
@@ -529,7 +530,6 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     }
 
     "rebalance to nodes with less shards" in within(60 seconds) {
-
       runOn(fourth) {
         for (n ← 1 to 10) {
           rebalancingRegion ! EntityEnvelope(n, Increment)
@@ -558,7 +558,6 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
       }
 
       enterBarrier("after-9")
-
     }
   }
 
@@ -811,7 +810,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
 
         autoMigrateRegion ! Get(1)
         expectMsg(2)
-        lastSender.path should ===(node(third) / "user" / "AutoMigrateRegionTestRegion" / "1" / "1")
+        lastSender.path should ===(node(third) / "user" / "AutoMigrateRememberRegionTestRegion" / "1" / "1")
 
         //Kill region 3
         system.actorSelection(lastSender.path.parent.parent) ! PoisonPill
@@ -821,7 +820,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
       // Wait for migration to happen
       //Test the shard, thus counter was moved onto node 4 and started.
       runOn(fourth) {
-        val counter1 = system.actorSelection(system / "AutoMigrateRegionTestRegion" / "1" / "1")
+        val counter1 = system.actorSelection(system / "AutoMigrateRememberRegionTestRegion" / "1" / "1")
         val probe = TestProbe()
         awaitAssert({
           counter1.tell(Identify(1), probe.ref)
