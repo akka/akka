@@ -46,7 +46,7 @@ class One2OneBidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       outOut.expectError(new One2OneBidiFlow.UnexpectedOutputException(3))
     }
 
-    "drop surplus output elements" in new Test() {
+    "fully propagate cancellation" in new Test() {
       inIn.sendNext(1)
       inOut.requestNext() should ===(1)
 
@@ -55,6 +55,9 @@ class One2OneBidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
       outOut.cancel()
       outIn.expectCancellation()
+
+      inOut.cancel()
+      inIn.expectCancellation()
     }
 
     "backpressure the input side if the maximum number of pending output elements has been reached" in {
