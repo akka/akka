@@ -3,6 +3,7 @@
  */
 package akka.persistence.japi.journal
 
+import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
 import com.typesafe.config.Config
 import org.junit.runner.RunWith
@@ -21,4 +22,6 @@ import org.scalatest.junit.JUnitRunner
  * @param config configures the Journal plugin to be tested
  */
 @RunWith(classOf[JUnitRunner])
-class JavaJournalSpec(config: Config) extends JournalSpec(config)
+class JavaJournalSpec(config: Config) extends JournalSpec(config) {
+  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on
+}
