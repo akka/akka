@@ -73,13 +73,10 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
     "work with one immediately failed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(failedPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectSubscriptionAndError(TestException)
-
-      val subscriber2 = setup(nonemptyPublisher(1 to 4), failedPublisher)
-      subscriber2.expectSubscriptionAndError(TestException)
     }
 
-    "work with one nonempty and one delayed failed publisher" in assertAllStagesStopped {
-      val subscriber = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
+    "work with one nonempty and one immediately failed publisher" in assertAllStagesStopped {
+      val subscriber = setup(nonemptyPublisher(1 to 4), failedPublisher)
       subscriber.expectSubscription().request(5)
 
       val errorSignalled = (1 to 4).foldLeft(false)((errorSignalled, e) ⇒
@@ -89,6 +86,11 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
 
     "work with one delayed failed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber = setup(soonToFailPublisher, nonemptyPublisher(1 to 4))
+      subscriber.expectSubscriptionAndError(TestException)
+    }
+
+    "work with one nonempty and one delayed failed publisher" in assertAllStagesStopped {
+      val subscriber = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
       subscriber.expectSubscription().request(5)
 
       val errorSignalled = (1 to 4).foldLeft(false)((errorSignalled, e) ⇒

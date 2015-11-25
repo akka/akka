@@ -12,13 +12,25 @@ import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils._
 import org.reactivestreams.Publisher
-
 import scala.concurrent.duration._
+import akka.stream.StreamSubscriptionTimeoutSettings
+import akka.stream.StreamSubscriptionTimeoutTerminationMode
+
+object FlowSplitAfterSpec {
+  import language.higherKinds
+
+  implicit class Lift[M](val f: SubFlow[Int, M, Source[Int, M]#Repr, RunnableGraph[M]]) extends AnyVal {
+    def lift = f.prefixAndTail(0).map(_._2).concatSubstreams
+  }
+
+}
 
 class FlowSplitAfterSpec extends AkkaSpec {
+  import FlowSplitAfterSpec._
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
+    .withSubscriptionTimeoutSettings(StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 1.second))
 
   implicit val materializer = ActorMaterializer(settings)
 
@@ -37,7 +49,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
 
   class SubstreamsSupport(splitAfter: Int = 3, elementCount: Int = 6) {
     val source = Source(1 to elementCount)
-    val groupStream = source.splitAfter(_ == splitAfter).runWith(Sink.publisher(false))
+    val groupStream = source.splitAfter(_ == splitAfter).lift.runWith(Sink.publisher(false))
     val masterSubscriber = TestSubscriber.manualProbe[Source[Int, _]]()
 
     groupStream.subscribe(masterSubscriber)
@@ -77,6 +89,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
         s2.expectNext(5)
         s2.expectComplete()
 
+        masterSubscription.request(1)
         masterSubscriber.expectComplete()
       }
     }
@@ -97,6 +110,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
         s2.expectNext(3)
         s2.expectComplete()
 
+        masterSubscription.request(1)
         masterSubscriber.expectComplete()
       }
     }
@@ -138,6 +152,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
       val exc = TE("test")
       val publisher = Source(publisherProbeProbe)
         .splitAfter(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
+        .lift
         .runWith(Sink.publisher(false))
       val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
       publisher.subscribe(subscriber)
@@ -170,6 +185,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
       val exc = TE("test")
       val publisher = Source(publisherProbeProbe)
         .splitAfter(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
+        .lift
         .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.publisher(false))
       val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
@@ -216,7 +232,7 @@ class FlowSplitAfterSpec extends AkkaSpec {
       val up = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[Source[Int, Unit]]()
 
-      val flowSubscriber = Source.subscriber[Int].splitAfter(_ % 3 == 0).to(Sink(down)).run()
+      val flowSubscriber = Source.subscriber[Int].splitAfter(_ % 3 == 0).lift.to(Sink(down)).run()
 
       val downstream = down.expectSubscription()
       downstream.cancel()

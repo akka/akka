@@ -11,7 +11,7 @@ import akka.http.scaladsl.util.FastFuture._
 trait PredefinedToRequestMarshallers {
   private type TRM[T] = ToRequestMarshaller[T] // brevity alias
 
-  implicit val fromRequest: TRM[HttpRequest] = Marshaller.opaque(identity)
+  implicit val fromRequest: TRM[HttpRequest] = Marshaller.opaque(conforms)
 
   implicit def fromUri: TRM[Uri] =
     Marshaller strict { uri ⇒ Marshalling.Opaque(() ⇒ HttpRequest(uri = uri)) }
@@ -26,4 +26,3 @@ trait PredefinedToRequestMarshallers {
 }
 
 object PredefinedToRequestMarshallers extends PredefinedToRequestMarshallers
-

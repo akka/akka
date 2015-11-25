@@ -259,10 +259,10 @@ private[akka] object ActorProcessorFactory {
     // Also, otherwise the attributes will not affect the settings properly!
     val settings = materializer.effectiveSettings(att)
     op match {
-      case GroupBy(f, _)         ⇒ (GroupByProcessorImpl.props(settings, f), ())
-      case PrefixAndTail(n, _)   ⇒ (PrefixAndTailImpl.props(settings, n), ())
-      case Split(d, _)           ⇒ (SplitWhereProcessorImpl.props(settings, d), ())
-      case DirectProcessor(p, m) ⇒ throw new AssertionError("DirectProcessor cannot end up in ActorProcessorFactory")
+      case GroupBy(maxSubstreams, f, _) ⇒ (GroupByProcessorImpl.props(settings, maxSubstreams, f), ())
+      case PrefixAndTail(n, _)          ⇒ (PrefixAndTailImpl.props(settings, n), ())
+      case Split(d, _)                  ⇒ (SplitWhereProcessorImpl.props(settings, d), ())
+      case DirectProcessor(p, m)        ⇒ throw new AssertionError("DirectProcessor cannot end up in ActorProcessorFactory")
     }
   }
 

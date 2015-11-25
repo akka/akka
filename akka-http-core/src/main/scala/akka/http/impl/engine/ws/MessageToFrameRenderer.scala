@@ -21,7 +21,7 @@ private[http] object MessageToFrameRenderer {
       // FIXME: fragment?
       Source.single(FrameEvent.fullFrame(opcode, None, data, fin = true))
 
-    def streamedFrames(opcode: Opcode, data: Source[ByteString, _]): Source[FrameStart, _] =
+    def streamedFrames[M](opcode: Opcode, data: Source[ByteString, M]): Source[FrameStart, Unit] =
       Source.single(FrameEvent.empty(opcode, fin = false)) ++
         data.map(FrameEvent.fullFrame(Opcode.Continuation, None, _, fin = false)) ++
         Source.single(FrameEvent.emptyLastContinuationFrame)

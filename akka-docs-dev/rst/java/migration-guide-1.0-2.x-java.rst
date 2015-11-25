@@ -322,6 +322,62 @@ Update procedure
 *There is no simple update procedure. The affected stages must be ported to the new ``GraphStage`` DSL manually. Please
 read the* ``GraphStage`` *documentation (TODO) for details.*
 
+GroupBy, SplitWhen and SplitAfter now return SubFlow or SubSource
+=================================================================
+
+Previously the ``groupBy``, ``splitWhen``, and ``splitAfter`` combinators
+returned a type that included a :class:`Source` within its elements.
+Transforming these substreams was only possible by nesting the respective
+combinators inside a ``map`` of the outer stream. This has been made more
+convenient and also safer by dropping down into transforming the substreams
+instead: the return type is now a :class:`SubSource` (for sources) or a
+:class:`SubFlow` (for flows) that does not implement the :class:`Graph`
+interface and therefore only represents an unfinished intermediate builder
+step.
+
+Update Procedure
+----------------
+
+The transformations that were done on the substreams need to be lifted up one
+level. This only works for cases where the processing topology is homogenous
+for all substreams.
+
+Example
+^^^^^^^
+
+::
+
+  Flow.<Integer> create()
+    // This no longer works!
+    .groupBy(i -> i % 2)
+    // This no longer works!
+    .map(pair -> pair.second().map(i -> i + 3))
+    // This no longer works!
+    .flatten(FlattenStrategy.concat())
+
+This is implemented now as
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/MigrationsJava.java#group-flatten
+
+Example 2
+^^^^^^^^^
+
+::
+
+  Flow.<String> create()
+    // This no longer works!
+    .groupBy(i -> i)
+    // This no longer works!
+    .map(pair ->
+      pair.second().runFold(new Pair<>(pair.first(), 0),
+                            (pair, word) -> new Pair<>(word, pair.second() + 1)))
+    // This no longer works!
+    .mapAsyncUnordered(4, i -> i)
+
+This is implemented now as
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/MigrationsJava.java#group-fold
+
 Semantic change in ``isHoldingUpstream`` in the DetachedStage DSL
 =================================================================
 
@@ -437,7 +493,7 @@ should be replaced by:
 .. includecode:: code/docs/MigrationsJava.java#query-param
 
 SynchronousFileSource and SynchronousFileSink
-============================================
+=============================================
 
 Both have been replaced by ``Source.file(…)`` and ``Sink.file(…)`` due to discoverability issues
 paired with names which leaked internal implementation details.

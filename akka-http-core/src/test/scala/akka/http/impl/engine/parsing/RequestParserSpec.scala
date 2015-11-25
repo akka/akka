@@ -475,13 +475,14 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         .map(ByteString.apply)
         .transform(() ⇒ parser.stage).named("parser")
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
-        .via(headAndTailFlow)
+        .prefixAndTail(1)
         .collect {
-          case (RequestStart(method, uri, protocol, headers, createEntity, _, close), entityParts) ⇒
+          case (Seq(RequestStart(method, uri, protocol, headers, createEntity, _, close)), entityParts) ⇒
             closeAfterResponseCompletion :+= close
             Right(HttpRequest(method, uri, headers, createEntity(entityParts), protocol))
-          case (x @ (MessageStartError(_, _) | EntityStreamError(_)), _) ⇒ Left(x)
+          case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), _) ⇒ Left(x)
         }
+        .concatSubstreams
         .flatMapConcat { x ⇒
           Source {
             x match {

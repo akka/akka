@@ -13,8 +13,8 @@ import akka.stream.scaladsl.Source
  * INTERNAL API
  */
 private[akka] object GroupByProcessorImpl {
-  def props(settings: ActorMaterializerSettings, keyFor: Any ⇒ Any): Props =
-    Props(new GroupByProcessorImpl(settings, keyFor)).withDeploy(Deploy.local)
+  def props(settings: ActorMaterializerSettings, maxSubstreams: Int, keyFor: Any ⇒ Any): Props =
+    Props(new GroupByProcessorImpl(settings, maxSubstreams, keyFor)).withDeploy(Deploy.local)
 
   private case object Drop
 }
@@ -22,7 +22,7 @@ private[akka] object GroupByProcessorImpl {
 /**
  * INTERNAL API
  */
-private[akka] class GroupByProcessorImpl(settings: ActorMaterializerSettings, val keyFor: Any ⇒ Any)
+private[akka] class GroupByProcessorImpl(settings: ActorMaterializerSettings, val maxSubstreams: Int, val keyFor: Any ⇒ Any)
   extends MultiStreamOutputProcessor(settings) {
 
   import MultiStreamOutputProcessor._
@@ -69,9 +69,11 @@ private[akka] class GroupByProcessorImpl(settings: ActorMaterializerSettings, va
       // Just drop, we do not open any more substreams
       nextPhase(waitNext)
     } else {
+      if (keyToSubstreamOutput.size == maxSubstreams)
+        throw new IllegalStateException(s"cannot open substream for key '$key': too many substreams open")
       val substreamOutput = createSubstreamOutput()
       val substreamFlow = Source(substreamOutput) // substreamOutput is a Publisher
-      primaryOutputs.enqueueOutputElement((key, substreamFlow))
+      primaryOutputs.enqueueOutputElement(substreamFlow)
       keyToSubstreamOutput(key) = substreamOutput
       nextPhase(dispatchToSubstream(elem, substreamOutput))
     }

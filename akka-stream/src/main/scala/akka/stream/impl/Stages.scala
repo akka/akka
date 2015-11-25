@@ -133,7 +133,7 @@ private[stream] object Stages {
 
     def apply[T]: SymbolicStage[T, T] = this.asInstanceOf[SymbolicStage[T, T]]
 
-    override def create(attr: Attributes): Stage[Any, Any] = fusing.Map(identity, supervision(attr))
+    override def create(attr: Attributes): Stage[Any, Any] = fusing.Map(conforms, supervision(attr))
   }
 
   final case class Map[In, Out](f: In ⇒ Out, attributes: Attributes = map) extends SymbolicStage[In, Out] {
@@ -215,7 +215,7 @@ private[stream] object Stages {
 
   // FIXME: These are not yet proper stages, therefore they use the deprecated StageModule infrastructure
 
-  final case class GroupBy(f: Any ⇒ Any, attributes: Attributes = groupBy) extends StageModule {
+  final case class GroupBy(maxSubstreams: Int, f: Any ⇒ Any, attributes: Attributes = groupBy) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }
 

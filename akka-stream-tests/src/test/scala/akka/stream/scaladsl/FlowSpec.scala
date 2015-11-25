@@ -38,8 +38,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   implicit val mat = ActorMaterializer(settings)
 
-  val identity: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ in.map(e ⇒ e)
-  val identity2: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ identity(in)
+  val identity: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ in.map(e ⇒ e)
+  val identity2: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ identity(in)
 
   class BrokenActorInterpreter(
     _assembly: GraphAssembly,
@@ -63,7 +63,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
   }
 
-  val faultyFlow: Flow[Any, Any, _] ⇒ Flow[Any, Any, _] = in ⇒ in.via({
+  val faultyFlow: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ in.via({
     val stage = new PushPullGraphStage((_) ⇒ fusing.Map({ x: Any ⇒ x }, stoppingDecider), Attributes.none)
 
     val assembly = new GraphAssembly(
@@ -302,11 +302,11 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "be covariant" in {
       val f1: Source[Fruit, _] = Source[Fruit](apples)
       val p1: Publisher[Fruit] = Source[Fruit](apples).runWith(Sink.publisher(false))
-      val f2: Source[Source[Fruit, _], _] = Source[Fruit](apples).splitWhen(_ ⇒ true)
-      val f3: Source[(Boolean, Source[Fruit, _]), _] = Source[Fruit](apples).groupBy(_ ⇒ true)
+      val f2: SubFlow[Fruit, _, Source[Fruit, Unit]#Repr, _] = Source[Fruit](apples).splitWhen(_ ⇒ true)
+      val f3: SubFlow[Fruit, _, Source[Fruit, Unit]#Repr, _] = Source[Fruit](apples).groupBy(2, _ ⇒ true)
       val f4: Source[(immutable.Seq[Fruit], Source[Fruit, _]), _] = Source[Fruit](apples).prefixAndTail(1)
-      val d1: Flow[String, Source[Fruit, _], _] = Flow[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
-      val d2: Flow[String, (Boolean, Source[Fruit, _]), _] = Flow[String].map(_ ⇒ new Apple).groupBy(_ ⇒ true)
+      val d1: SubFlow[Fruit, _, Flow[String, Fruit, Unit]#Repr, _] = Flow[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
+      val d2: SubFlow[Fruit, _, Flow[String, Fruit, Unit]#Repr, _] = Flow[String].map(_ ⇒ new Apple).groupBy(2, _ ⇒ true)
       val d3: Flow[String, (immutable.Seq[Apple], Source[Fruit, _]), _] = Flow[String].map(_ ⇒ new Apple).prefixAndTail(1)
     }
 
@@ -507,7 +507,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "call future subscribers' onError should be called instead of onSubscribed after initial upstream reported an error" in {
-      new ChainSetup[Int, String](_.map(_ ⇒ throw TestException), settings.withInputBuffer(initialSize = 1, maxSize = 1),
+      new ChainSetup[Int, String, Unit](_.map(_ ⇒ throw TestException), settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(1)) {
         downstreamSubscription.request(1)
         upstreamSubscription.expectRequest(1)
