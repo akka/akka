@@ -41,15 +41,15 @@ private object PoolSlot {
     Stream Setup
     ============
 
-    Request-   +-----------+              +-------------+              +-------------+     +------------+ 
+    Request-   +-----------+              +-------------+              +-------------+     +------------+
     Context    | Slot-     |  List[       |   flatten   |  Processor-  |   doubler   |     | SlotEvent- |  Response-
     +--------->| Processor +------------->| (MapConcat) +------------->| (MapConcat) +---->| Split      +------------->
-               |           |  Processor-  |             |  Out         |             |     |            |  Context                                  
-               +-----------+  Out]        +-------------+              +-------------+     +-----+------+                                    
-                                                                                                 | RawSlotEvent                                                    
+               |           |  Processor-  |             |  Out         |             |     |            |  Context
+               +-----------+  Out]        +-------------+              +-------------+     +-----+------+
+                                                                                                 | RawSlotEvent
                                                                                                  | (to Conductor
                                                                                                  |  via slotEventMerge)
-                                                                                                 v 
+                                                                                                 v
    */
   def apply(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any],
             remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
@@ -65,7 +65,7 @@ private object PoolSlot {
           val actor = system.actorOf(Props(new SlotProcessor(slotIx, connectionFlow, settings)).withDeploy(Deploy.local),
             name)
           ActorProcessor[RequestContext, List[ProcessorOut]](actor)
-        }.mapConcat(identity)
+        }.mapConcat(conforms)
       }
       val split = b.add(Broadcast[ProcessorOut](2))
 
@@ -196,7 +196,7 @@ private object PoolSlot {
         } else {
           inflightRequests.map { rc ⇒
             if (rc.retriesLeft == 0) {
-              val reason = error.fold[Throwable](new RuntimeException("Unexpected disconnect"))(identityFunc)
+              val reason = error.fold[Throwable](new RuntimeException("Unexpected disconnect"))(conforms)
               connInport ! ActorPublisherMessage.Cancel
               ResponseDelivery(ResponseContext(rc, Failure(reason)))
             } else SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))
