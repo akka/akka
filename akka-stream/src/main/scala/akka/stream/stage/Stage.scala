@@ -411,6 +411,7 @@ private[akka] object StatefulStage {
  *
  * Use [[#terminationEmit]] to push final elements from [[#onUpstreamFinish]] or [[#onUpstreamFailure]].
  */
+@deprecated("StatefulStage is deprecated, please use GraphStage instead.", "2.0-M2")
 abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
   import StatefulStage._
 
