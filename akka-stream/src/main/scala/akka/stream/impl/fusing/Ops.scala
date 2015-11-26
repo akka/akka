@@ -326,7 +326,7 @@ private[akka] final case class Limit[T](n: Int) extends PushStage[T, T] {
     if (left >= 0) ctx.push(elem)
     else {
       if (ctx.isFinishing) ctx.push(elem)
-      else ctx.fail(new StreamLimitReachedException(left, s"limit of $n reached on this stream"))
+      else ctx.fail(new StreamLimitReachedException(n, s"limit of $n reached on this stream"))
     }
   }
 }
