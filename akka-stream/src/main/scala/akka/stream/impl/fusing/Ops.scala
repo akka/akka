@@ -5,7 +5,8 @@ package akka.stream.impl.fusing
 
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
-import akka.stream.Attributes.LogLevels
+import akka.stream.Attributes.{ InputBuffer, LogLevels }
+import akka.stream.DelayOverflowStrategy.EmitEarly
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ FixedSizeBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
@@ -14,10 +15,10 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import akka.stream.ActorAttributes.SupervisionStrategy
+import scala.concurrent.duration.{ FiniteDuration, _ }
 
 /**
  * INTERNAL API
@@ -398,7 +399,7 @@ private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowSt
     else ctx.absorbTermination()
 
   val enqueueAction: (DetachedContext[T], T) ⇒ UpstreamDirective = {
-    overflowStrategy match {
+    (overflowStrategy: @unchecked) match {
       case DropHead ⇒ (ctx, elem) ⇒
         if (buffer.isFull) buffer.dropHead()
         buffer.enqueue(elem)
@@ -857,31 +858,78 @@ private[stream] class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphS
   }
 }
 
-private[stream] class Delay[T](d: FiniteDuration) extends SimpleLinearGraphStage[T] {
+private[stream] class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
-    var element: T = _
+    val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+    val buffer = FixedSizeBuffer[(Long, T)](maxBuffer) // buffer has pairs timestamp with upstream element
     val timerName = "DelayedTimer"
     var willStop = false
 
-    setHandler(in, new InHandler {
+    setHandler(in, handler = new InHandler {
       override def onPush(): Unit = {
-        element = grab(in)
-        scheduleOnce("DelayedTimer", d)
+        if (buffer.isFull) (strategy: @unchecked) match {
+          case EmitEarly ⇒
+            if (!isTimerActive(timerName))
+              push(out, buffer.dequeue()._2)
+            else {
+              cancelTimer(timerName)
+              onTimer(timerName)
+            }
+          case DelayOverflowStrategy.DropHead ⇒
+            buffer.dropHead()
+            grabElementAndSchedule(true)
+          case DelayOverflowStrategy.DropTail ⇒
+            buffer.dropTail()
+            grabElementAndSchedule(true)
+          case DelayOverflowStrategy.DropNew ⇒
+            grab(in)
+            if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
+          case DelayOverflowStrategy.DropBuffer ⇒
+            buffer.clear()
+            grabElementAndSchedule(true)
+          case DelayOverflowStrategy.Fail ⇒
+            failStage(new DelayOverflowStrategy.Fail.BufferOverflowException(s"Buffer overflow for delay combinator (max capacity was: $maxBuffer)!"))
+          case DelayOverflowStrategy.Backpressure ⇒ //do nothing here
+        }
+        else {
+          grabElementAndSchedule(strategy != DelayOverflowStrategy.Backpressure)
+        }
       }
-      override def onUpstreamFinish(): Unit =
+
+      def grabElementAndSchedule(pullCondition: Boolean): Unit = {
+        buffer.enqueue((System.currentTimeMillis(), grab(in)))
+        if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
+        if (pullCondition) pull(in)
+      }
+
+      override def onUpstreamFinish(): Unit = {
         if (isAvailable(out) && isTimerActive(timerName)) willStop = true
         else completeStage()
+      }
     })
 
     setHandler(out, new OutHandler {
-      override def onPull(): Unit = pull(in)
+      override def onPull(): Unit = {
+        if (!isTimerActive(timerName) && !buffer.isEmpty && nextElementWaitTime() < 0)
+          push(out, buffer.dequeue()._2)
+
+        if (!willStop && !hasBeenPulled(in)) pull(in)
+        completeIfReady()
+      }
     })
 
+    def completeIfReady(): Unit = if (willStop && buffer.isEmpty) completeStage()
+
+    def nextElementWaitTime(): Long = d.toMillis - (System.currentTimeMillis() - buffer.peek()._1)
+
     final override protected def onTimer(key: Any): Unit = {
-      push(out, element)
-      if (willStop)
-        completeStage()
+      push(out, buffer.dequeue()._2)
+      if (!buffer.isEmpty) {
+        val waitTime = nextElementWaitTime()
+        if (waitTime > 0) scheduleOnce(timerName, waitTime.millis)
+      }
+      completeIfReady()
     }
   }
 

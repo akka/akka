@@ -10,7 +10,6 @@ import akka.stream.testkit.scaladsl._
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.stream.OverflowStrategy
 
 object ActorRefSinkSpec {
   case class Fw(ref: ActorRef) extends Actor {
