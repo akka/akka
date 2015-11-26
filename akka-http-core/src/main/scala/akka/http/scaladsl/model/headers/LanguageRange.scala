@@ -4,11 +4,13 @@
 
 package akka.http.scaladsl.model.headers
 
+import scala.language.implicitConversions
 import scala.collection.immutable
 import akka.http.impl.util._
 import akka.http.scaladsl.model.WithQValue
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.japi
 
 sealed trait LanguageRange extends jm.headers.LanguageRange with ValueRenderable with WithQValue[LanguageRange] {
   def qValue: Float
@@ -23,7 +25,7 @@ sealed trait LanguageRange extends jm.headers.LanguageRange with ValueRenderable
   }
 
   /** Java API */
-  def matches(language: jm.headers.Language): Boolean = matches(language.asScala)
+  def matches(language: jm.headers.Language) = matches(language.asScala)
   def getSubTags: java.lang.Iterable[String] = subTags.asJava
 }
 object LanguageRange {
@@ -31,19 +33,44 @@ object LanguageRange {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
     def primaryTag = "*"
     def subTags = Nil
-    def matches(lang: Language): Boolean = true
+    def matches(lang: Language) = true
     def withQValue(qValue: Float) =
       if (qValue == 1.0f) `*` else if (qValue != this.qValue) `*`(qValue.toFloat) else this
   }
   object `*` extends `*`(1.0f)
+
+  final case class One(language: Language, qValue: Float) extends LanguageRange {
+    require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
+    def matches(l: Language) =
+      (language.primaryTag equalsIgnoreCase l.primaryTag) &&
+        language.subTags.size <= l.subTags.size &&
+        (language.subTags zip l.subTags).forall(t ⇒ t._1 equalsIgnoreCase t._2)
+    def primaryTag = language.primaryTag
+    def subTags = language.subTags
+    def withQValue(qValue: Float) = One(language, qValue)
+  }
+
+  implicit def apply(language: Language): LanguageRange = apply(language, 1.0f)
+  def apply(language: Language, qValue: Float): LanguageRange = One(language, qValue)
 }
 
-final case class Language(primaryTag: String, subTags: immutable.Seq[String], qValue: Float = 1.0f) extends jm.headers.Language with LanguageRange {
-  require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
-  def matches(lang: Language): Boolean = lang.primaryTag == this.primaryTag && lang.subTags == this.subTags
-  def withQValue(qValue: Float): Language = Language(primaryTag, subTags, qValue)
-  override def withQValue(qValue: Double): Language = withQValue(qValue.toFloat)
+final case class Language(primaryTag: String, subTags: immutable.Seq[String])
+  extends jm.headers.Language with ValueRenderable with WithQValue[LanguageRange] {
+  def withQValue(qValue: Float) = LanguageRange(this, qValue.toFloat)
+  def render[R <: Rendering](r: R): r.type = {
+    r ~~ primaryTag
+    if (subTags.nonEmpty) subTags.foreach(r ~~ '-' ~~ _)
+    r
+  }
+
+  /** Java API */
+  def getSubTags: java.lang.Iterable[String] = subTags.asJava
 }
 object Language {
-  def apply(primaryTag: String, subTags: String*) = new Language(primaryTag, immutable.Seq(subTags: _*))
+  implicit def apply(compoundTag: String): Language =
+    if (compoundTag.indexOf('-') >= 0) {
+      val tags = compoundTag.split('-')
+      new Language(tags.head, immutable.Seq(tags.tail: _*))
+    } else new Language(compoundTag, immutable.Seq.empty)
+  def apply(primaryTag: String, subTags: String*): Language = new Language(primaryTag, immutable.Seq(subTags: _*))
 }
