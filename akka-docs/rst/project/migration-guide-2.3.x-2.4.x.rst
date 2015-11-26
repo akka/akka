@@ -477,6 +477,13 @@ max-message-batch-size config
 Configuration property ``akka.persistence.journal.max-message-batch-size`` has been moved into the plugin configuration
 section, to allow different values for different journal plugins. See ``reference.conf``.
 
+akka.persistence.snapshot-store.plugin config
+---------------------------------------------
+
+The configuration property ``akka.persistence.snapshot-store.plugin`` now by default is empty. To restore the previous
+setting add ``akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"`` to your application.conf.
+See ``reference.conf``.
+
 PersistentView is deprecated
 ----------------------------
 
