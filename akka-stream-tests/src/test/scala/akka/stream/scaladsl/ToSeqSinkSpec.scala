@@ -13,7 +13,7 @@ class ToSeqSinkSpec extends AkkaSpec {
   implicit val mat = ActorMaterializer(settings)
 
   "Sink.toSeq" must {
-    "???" in {
+    "return a Seq[T] from a Source" in {
       val input = (1 to 6)
       val future = Source(input).runWith(Sink.toSeq)
       val result = Await.result(future, 300.millis)
