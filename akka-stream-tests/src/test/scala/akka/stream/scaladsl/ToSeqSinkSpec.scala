@@ -17,7 +17,14 @@ class ToSeqSinkSpec extends AkkaSpec {
       val input = (1 to 6)
       val future = Source(input).runWith(Sink.toSeq)
       val result = Await.result(future, 300.millis)
-      input should be(input.toSeq)
+      result should be(input.toSeq)
+    }
+
+    "return an empty Seq[T] from an empty Source" in {
+      val input: Seq[Int] = Seq.empty
+      val future = Source(() ⇒ input.iterator).runWith(Sink.toSeq)
+      val result = Await.result(future, 300.millis)
+      result should be(Seq.empty: Seq[Int])
     }
   }
 }
