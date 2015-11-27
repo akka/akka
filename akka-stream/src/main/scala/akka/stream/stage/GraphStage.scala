@@ -151,10 +151,10 @@ object GraphStageLogic {
   /**
    * Minimal actor to work with other actors and watch them in a synchronous ways
    */
-  class StageActorRef(val provider: ActorRefProvider, val log: LoggingAdapter,
-                      getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
-                      initialReceive: StageActorRef.Receive,
-                      override val path: ActorPath) extends akka.actor.MinimalActorRef {
+  final class StageActorRef(val provider: ActorRefProvider, val log: LoggingAdapter,
+                            getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
+                            initialReceive: StageActorRef.Receive,
+                            override val path: ActorPath) extends akka.actor.MinimalActorRef {
     import StageActorRef._
 
     private val callback = getAsyncCallback(internalReceive)
@@ -838,7 +838,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   }
 
   private var _stageActorRef: StageActorRef = _
-  final implicit def stageActorRef: ActorRef = _stageActorRef match {
+  final def stageActorRef: ActorRef = _stageActorRef match {
     case null ⇒ throw StageActorRefNotInitializedException()
     case ref  ⇒ ref
   }
@@ -861,16 +861,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @return minimal actor with watch method
    */
   // FIXME: I don't like the Pair allocation :(
-  @tailrec
   final protected def getStageActorRef(receive: ((ActorRef, Any)) ⇒ Unit): StageActorRef = {
-    val actorMaterializer = ActorMaterializer.downcast(interpreter.materializer)
-    val provider = actorMaterializer.supervisor.asInstanceOf[InternalActorRef].provider
-    val path = actorMaterializer.supervisor.path / StageActorRef.name.next()
-
     _stageActorRef match {
       case null ⇒
+        val actorMaterializer = ActorMaterializer.downcast(interpreter.materializer)
+        val provider = actorMaterializer.supervisor.asInstanceOf[InternalActorRef].provider
+        val path = actorMaterializer.supervisor.path / StageActorRef.name.next()
         _stageActorRef = new StageActorRef(provider, actorMaterializer.logger, getAsyncCallback, receive, path)
-        getStageActorRef(receive)
+        _stageActorRef
       case existing ⇒
         existing.become(receive)
         existing

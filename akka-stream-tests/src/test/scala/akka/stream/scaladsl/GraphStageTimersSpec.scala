@@ -1,10 +1,13 @@
+/**
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.scaladsl
 
 import akka.actor.ActorRef
 import akka.stream.{ Attributes, ActorMaterializer }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage.{ TimerGraphStageLogic, OutHandler, AsyncCallback, InHandler }
-import akka.stream.testkit.{ AkkaSpec, TestPublisher }
+import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestDuration
 
 import scala.concurrent.Promise
@@ -54,14 +57,13 @@ class GraphStageTimersSpec extends AkkaSpec {
         sideChannel.asyncCallback = getAsyncCallback(onTestEvent)
       }
 
-      override protected def onTimer(timerKey: Any) = {
+      override protected def onTimer(timerKey: Any): Unit = {
         val tick = Tick(tickCount.next())
         probe ! tick
         if (timerKey == "TestSingleTimerResubmit" && tick.n == 1)
           scheduleOnce("TestSingleTimerResubmit", 500.millis.dilated)
         else if (timerKey == "TestRepeatedTimer" && tick.n == 5)
           cancelTimer("TestRepeatedTimer")
-        Nil
       }
 
       private def onTestEvent(event: Any): Unit = event match {
@@ -93,7 +95,6 @@ class GraphStageTimersSpec extends AkkaSpec {
 
     "receive single-shot timer" in {
       val driver = setupIsolatedStage
-
       within(2.seconds) {
         within(500.millis, 1.second) {
           driver ! TestSingleTimer
@@ -172,7 +173,6 @@ class GraphStageTimersSpec extends AkkaSpec {
           if (isAvailable(out)) push(out, tickCount)
           if (tickCount == 3) cancelTimer("tick")
         }
-
       }
     }
 
