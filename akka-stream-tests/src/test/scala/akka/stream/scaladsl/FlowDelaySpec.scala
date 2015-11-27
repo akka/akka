@@ -24,6 +24,15 @@ class FlowDelaySpec extends AkkaSpec {
         1200.millis) should ===(1 to 10)
     }
 
+    "add delay to initialDelay if exists upstream" in {
+      Source(1 to 10).initialDelay(1.second).delay(1.second).runWith(TestSink.probe[Int])
+        .request(10)
+        .expectNoMsg(1800.millis)
+        .expectNext(300.millis, 1)
+        .expectNextN(2 to 10)
+        .expectComplete()
+    }
+
     "deliver element after time passed from actual receiving element" in {
       Source(1 to 3).delay(300.millis).runWith(TestSink.probe[Int])
         .request(2)
