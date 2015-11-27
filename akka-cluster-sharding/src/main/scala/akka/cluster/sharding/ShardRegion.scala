@@ -752,8 +752,7 @@ class ShardRegion(
             None
           case None ⇒
             throw new IllegalStateException("Shard must not be allocated to a proxy only ShardRegion")
-        }
-      )
+        })
     }
   }
 
