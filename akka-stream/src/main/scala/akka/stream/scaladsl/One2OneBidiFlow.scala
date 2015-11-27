@@ -3,15 +3,13 @@
  */
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 
-import scala.concurrent.duration.Deadline
-import scala.util.control.NoStackTrace
-
 object One2OneBidiFlow {
 
-  case class UnexpectedOutputException(element: Any) extends RuntimeException with NoStackTrace
+  case class UnexpectedOutputException(element: Any) extends RuntimeException(element.toString) with NoStackTrace
   case object OutputTruncationException extends RuntimeException with NoStackTrace
 
   /**
@@ -24,8 +22,6 @@ object One2OneBidiFlow {
    *    for every input element.
    * 3. Backpressures the input side if the maximum number of pending output elements has been reached,
    *    which is given via the ``maxPending`` parameter. You can use -1 to disable this feature.
-   * 4. Drops surplus output elements, i.e. ones that the inner flow tries to produce after the input stream
-   *    has signalled completion. Note that no error is triggered in this case!
    */
   def apply[I, O](maxPending: Int): BidiFlow[I, I, O, O, Unit] =
     BidiFlow.fromGraph(new One2OneBidi[I, O](maxPending))
@@ -41,7 +37,7 @@ object One2OneBidiFlow {
 
     override def createLogic(effectiveAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       private var pending = 0
-      private var pullsSuppressed = 0
+      private var pullSuppressed = false
 
       setHandler(inIn, new InHandler {
         override def onPush(): Unit = {
@@ -54,7 +50,7 @@ object One2OneBidiFlow {
       setHandler(inOut, new OutHandler {
         override def onPull(): Unit =
           if (pending < maxPending || maxPending == -1) pull(inIn)
-          else pullsSuppressed += 1
+          else pullSuppressed = true
         override def onDownstreamFinish(): Unit = cancel(inIn)
       })
 
@@ -64,8 +60,8 @@ object One2OneBidiFlow {
           if (pending > 0) {
             pending -= 1
             push(outOut, element)
-            if (pullsSuppressed > 0) {
-              pullsSuppressed -= 1
+            if (pullSuppressed) {
+              pullSuppressed = false
               pull(inIn)
             }
           } else throw new UnexpectedOutputException(element)
@@ -77,10 +73,7 @@ object One2OneBidiFlow {
 
       setHandler(outOut, new OutHandler {
         override def onPull(): Unit = pull(outIn)
-        override def onDownstreamFinish(): Unit = {
-          cancel(outIn)
-          cancel(inIn) // short-cut to speed up cleanup of upstream
-        }
+        override def onDownstreamFinish(): Unit = cancel(outIn)
       })
     }
   }
