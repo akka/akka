@@ -148,8 +148,8 @@ object BackoffSupervisor {
  * message to this actor and it will reply with [[akka.pattern.BackoffSupervisor.CurrentChild]]
  * containing the `ActorRef` of the current child, if any.
  *
- * The `BackoffSupervisor` forwards all messages from the child to the parent of the
- * `BackoffSupervisor`.
+ * The `BackoffSupervisor`delegates all messages from the child to the parent of the
+ * `BackoffSupervisor`, with the supervisor as sender.
  *
  * The `BackoffSupervisor` forwards all other messages to the child, if it is currently running.
  *
@@ -211,7 +211,8 @@ final class BackoffSupervisor(
       sender() ! CurrentChild(child)
 
     case msg if child.contains(sender()) ⇒
-      context.parent.forward(msg)
+      // use the BackoffSupervisor as sender
+      context.parent ! msg
 
     case msg ⇒ child match {
       case Some(c) ⇒ c.forward(msg)
