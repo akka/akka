@@ -6,13 +6,10 @@ package docs.persistence;
 
 import akka.actor.*;
 import akka.dispatch.Futures;
-import akka.persistence.*;
 import akka.persistence.japi.journal.JavaJournalSpec;
 import akka.persistence.japi.snapshot.JavaSnapshotStoreSpec;
-import akka.persistence.journal.japi.AsyncWriteJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
-import akka.persistence.snapshot.japi.SnapshotStore;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.iq80.leveldb.util.FileUtils;
@@ -25,7 +22,9 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 //#plugin-imports
-
+import akka.persistence.*;		
+import akka.persistence.journal.japi.AsyncWriteJournal;		
+import akka.persistence.snapshot.japi.SnapshotStore;		
 //#plugin-imports
 
 public class PersistencePluginDocTest {
