@@ -10,4 +10,5 @@ MiscDirectives
    rejectEmptyResponse
    requestEntityEmpty
    requestEntityPresent
+   selectPreferredLanguage
    validate
