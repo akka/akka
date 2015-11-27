@@ -330,11 +330,11 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
         EmptyBytesFirst,
         EmptyBytesInTheMiddle,
         EmptyBytesLast,
-        CancellingRHS,
-        SessionRenegotiationBySender,
-        SessionRenegotiationByReceiver,
-        SessionRenegotiationFirstOne,
-        SessionRenegotiationFirstTwo)
+        CancellingRHS //        SessionRenegotiationBySender,
+        //        SessionRenegotiationByReceiver,
+        //        SessionRenegotiationFirstOne,
+        //        SessionRenegotiationFirstTwo
+        )
 
     for {
       commPattern ← communicationPatterns
