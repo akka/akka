@@ -194,6 +194,19 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
     } yield range).sortBy(-_.qValue)
 
   /**
+   * The language-ranges accepted by the client according to the `Accept-Language` request header.
+   * The returned ranges are sorted by increasing generality (i.e. most specific first).
+   */
+  def acceptedLanguageRanges: immutable.Seq[LanguageRange] =
+    (for {
+      `Accept-Language`(languageRanges) ← headers
+      range ← languageRanges
+    } yield range).sortBy {
+      case _: LanguageRange.`*` ⇒ 0 // most general, needs to come last
+      case x                    ⇒ -(x.subTags.size + 1) // more subtags -> more specific -> go first
+    }
+
+  /**
    * All cookies provided by the client in one or more `Cookie` headers.
    */
   def cookies: immutable.Seq[HttpCookiePair] = for (`Cookie`(cookies) ← headers; cookie ← cookies) yield cookie
@@ -241,6 +254,22 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
     ranges match {
       case Nil ⇒ 1.0f // http://tools.ietf.org/html/rfc7231#section-5.3.1
       case x   ⇒ x collectFirst { case r if r matches encoding ⇒ r.qValue } getOrElse 0f
+    }
+
+  /**
+   * Determines whether the given language is accepted by the client.
+   */
+  def isLanguageAccepted(language: Language, ranges: Seq[LanguageRange] = acceptedLanguageRanges): Boolean =
+    qValueForLanguage(language, ranges) > 0f
+
+  /**
+   * Returns the q-value that the client (implicitly or explicitly) attaches to the given language.
+   * Note: The given ranges must be sorted by increasing generality (i.e. most specific first)!
+   */
+  def qValueForLanguage(language: Language, ranges: Seq[LanguageRange] = acceptedLanguageRanges): Float =
+    ranges match {
+      case Nil ⇒ 1.0f // http://tools.ietf.org/html/rfc7231#section-5.3.1
+      case x   ⇒ x collectFirst { case r if r matches language ⇒ r.qValue } getOrElse 0f
     }
 
   /**
