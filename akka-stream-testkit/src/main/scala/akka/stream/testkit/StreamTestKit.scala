@@ -266,7 +266,7 @@ object TestSubscriber {
     /**
      * Fluent DSL
      *
-     * Expect a stream element during specified time, then timeout.
+     * Expect a stream element during specified time or timeout.
      */
     def expectNext(d: FiniteDuration, element: I): Self = {
       probe.expectMsg(d, OnNext(element))
