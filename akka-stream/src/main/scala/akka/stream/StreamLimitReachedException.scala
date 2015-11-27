@@ -1,3 +1,3 @@
 package akka.stream
 
-class StreamLimitReachedException(val n: Int, msg: String) extends RuntimeException(msg)
+class StreamLimitReachedException(val n: Int) extends RuntimeException(s"limit of $n reached")

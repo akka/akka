@@ -15,33 +15,33 @@ class FlowLimitSpec extends AkkaSpec {
   implicit val mat = ActorMaterializer(settings)
 
   "Limit" must {
-    "produce output that is identical to the input when n = input.length" in assertAllStagesStopped {
+    "produce output that is identical to the input when n = input.length" in {
       val input = (1 to 6)
       val n = input.length
       val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
       val result = Await.result(future, 300.millis)
       result should be(input.toSeq)
     }
-  }
 
-  "produce output that is identical to the input when n > input.length" in assertAllStagesStopped {
-    val input = (1 to 6)
-    val n = input.length + 2 // n > input.length
-    val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
-    val result = Await.result(future, 300.millis)
-    result should be(input.toSeq)
-  }
-
-  "produce n messages before throwing a StreamLimitReachedException when n < input.size" in {
-    val input = (1 to 6)
-    val n = input.length - 2 // n < input.length
-
-    val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
-    val result = Try(Await.result(future, 300.millis)) match {
-      case Failure(t: StreamLimitReachedException) if t.n == n ⇒ true
-      case _ ⇒ false
+    "produce output that is identical to the input when n > input.length" in {
+      val input = (1 to 6)
+      val n = input.length + 2 // n > input.length
+      val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
+      val result = Await.result(future, 300.millis)
+      result should be(input.toSeq)
     }
 
-    result should be(true)
+    "produce n messages before throwing a StreamLimitReachedException when n < input.size" in {
+      val input = (1 to 6)
+      val n = input.length - 2 // n < input.length
+
+      val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
+      val result = Try(Await.result(future, 300.millis)) match {
+        case Failure(t: StreamLimitReachedException) if t.n == n ⇒ true
+        case _ ⇒ false
+      }
+
+      result should be(true)
+    }
   }
 }
