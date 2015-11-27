@@ -812,6 +812,11 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.grouped(n).map(_.asJava))
 
   /**
+   * TODO: description
+   */
+  def limit(n: Int): javadsl.Source[Out, Mat] = new Source(delegate.limit(n))
+
+  /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
    * possibly smaller than requested due to end-of-stream.
    *
