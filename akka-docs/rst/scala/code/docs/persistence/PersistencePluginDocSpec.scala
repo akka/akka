@@ -176,9 +176,11 @@ object PersistenceTCKDoc {
     //#journal-tck-scala
     class MyJournalSpec extends JournalSpec(
       config = ConfigFactory.parseString(
-        """
-        akka.persistence.journal.plugin = "my.journal.plugin"
-        """))
+        """akka.persistence.journal.plugin = "my.journal.plugin"""")) {
+
+      override def supportsRejectingNonSerializableObjects: CapabilityFlag =
+        false // or CapabilityFlag.off
+    }
     //#journal-tck-scala
   }
   new AnyRef {
@@ -204,6 +206,9 @@ object PersistenceTCKDoc {
         """
         akka.persistence.journal.plugin = "my.journal.plugin"
         """)) {
+
+      override def supportsRejectingNonSerializableObjects: CapabilityFlag =
+        true // or CapabilityFlag.on
 
       val storageLocations = List(
         new File(system.settings.config.getString("akka.persistence.journal.leveldb.dir")),
