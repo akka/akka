@@ -197,6 +197,8 @@ Directive                                   Description
 :ref:`-responseEncodingAccepted-`           Rejects the request with an ``UnacceptedResponseEncodingRejection`` if the
                                             given response encoding is not accepted by the client
 :ref:`-scheme-`                             Rejects all requests whose URI scheme doesn't match the given one
+:ref:`-selectPreferredLanguage-`            Inspects the request's ``Accept-Language`` header and determines, which of
+                                            a given set of language alternatives is preferred by the client
 :ref:`-setCookie-`                          Adds a ``Set-Cookie`` response header with the given cookies
 :ref:`-textract-`                           Extracts a number of values using a ``RequestContext ⇒ Tuple`` function
 :ref:`-tprovide-`                           Injects a given tuple of values into a directive

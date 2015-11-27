@@ -58,6 +58,25 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "request entity empty"
     }
   }
+  "selectPreferredLanguage-example" in {
+    val request = Get() ~> `Accept-Language`(
+      Language("en-US"),
+      Language("en") withQValue 0.7f,
+      LanguageRange.`*` withQValue 0.1f,
+      Language("de") withQValue 0.5f)
+
+    request ~> {
+      selectPreferredLanguage("en", "en-US") { lang ⇒
+        complete(lang.toString)
+      }
+    } ~> check { responseAs[String] shouldEqual "en-US" }
+
+    request ~> {
+      selectPreferredLanguage("de-DE", "hu") { lang ⇒
+        complete(lang.toString)
+      }
+    } ~> check { responseAs[String] shouldEqual "de-DE" }
+  }
   "validate-example" in {
     val route =
       extractUri { uri =>
