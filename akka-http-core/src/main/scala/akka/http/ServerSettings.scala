@@ -26,6 +26,7 @@ final case class ServerSettings(
   serverHeader: Option[Server],
   timeouts: ServerSettings.Timeouts,
   maxConnections: Int,
+  pipeliningLimit: Int,
   remoteAddressHeader: Boolean,
   rawRequestUriHeader: Boolean,
   transparentHeadRequests: Boolean,
@@ -38,6 +39,7 @@ final case class ServerSettings(
   parserSettings: ParserSettings) {
 
   require(0 < maxConnections, "max-connections must be > 0")
+  require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
   require(0 < responseHeaderSizeHint, "response-size-hint must be > 0")
   require(0 < backlog, "backlog must be > 0")
 }
@@ -55,6 +57,7 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getFiniteDuration "bind-timeout"),
     c getInt "max-connections",
+    c getInt "pipelining-limit",
     c getBoolean "remote-address-header",
     c getBoolean "raw-request-uri-header",
     c getBoolean "transparent-head-requests",

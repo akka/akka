@@ -28,15 +28,15 @@ private[http] object ParserOutput {
     uri: Uri,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Source[RequestOutput, Unit] ⇒ RequestEntity,
-    expect100ContinueResponsePending: Boolean,
+    createEntity: EntityCreator[RequestOutput, RequestEntity],
+    expect100Continue: Boolean,
     closeRequested: Boolean) extends MessageStart with RequestOutput
 
   final case class ResponseStart(
     statusCode: StatusCode,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Source[ResponseOutput, Unit] ⇒ ResponseEntity,
+    createEntity: EntityCreator[ResponseOutput, ResponseEntity],
     closeRequested: Boolean) extends MessageStart with ResponseOutput
 
   case object MessageEnd extends MessageOutput
@@ -58,4 +58,16 @@ private[http] object ParserOutput {
   case object NeedNextRequestMethod extends ResponseOutput
 
   final case class RemainingBytes(bytes: ByteString) extends ResponseOutput
+
+  //////////////////////////////////////
+
+  sealed abstract class EntityCreator[-A <: ParserOutput, +B >: HttpEntity.Strict <: HttpEntity] extends (Source[A, Unit] ⇒ B)
+
+  final case class StrictEntityCreator(entity: HttpEntity.Strict) extends EntityCreator[ParserOutput, HttpEntity.Strict] {
+    def apply(parts: Source[ParserOutput, Unit]) = entity
+  }
+  final case class StreamedEntityCreator[-A <: ParserOutput, +B >: HttpEntity.Strict <: HttpEntity](creator: Source[A, Unit] ⇒ B)
+    extends EntityCreator[A, B] {
+    def apply(parts: Source[A, Unit]) = creator(parts)
+  }
 }

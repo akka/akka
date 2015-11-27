@@ -373,7 +373,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Signals that there will be no more elements emitted on the given port.
    */
-  final protected def complete[T](out: Outlet[T]): Unit = interpreter.complete(conn(out))
+  final protected def complete[T](out: Outlet[T]): Unit =
+    getHandler(out) match {
+      case e: Emitting[_] ⇒ e.addFollowUp(new EmittingCompletion(e.out, e.previous))
+      case _              ⇒ interpreter.complete(conn(out))
+    }
 
   /**
    * Signals failure through the given port.
