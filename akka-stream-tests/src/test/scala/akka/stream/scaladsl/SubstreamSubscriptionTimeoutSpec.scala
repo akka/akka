@@ -100,7 +100,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
       val (_, s1) = subscriber.expectNext()
       val (_, s2) = subscriber.expectNext()
 
-      val groupByActor = watchGroupByActor(5) // update this number based on how many streams the test above has...
+      val groupByActor = watchGroupByActor(4) // update this number based on how many streams the test above has...
 
       // it should be terminated after none of it's substreams are used within the timeout
       expectTerminated(groupByActor, 1000.millis)
@@ -150,7 +150,8 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
   private def watchGroupByActor(flowNr: Int): ActorRef = {
     implicit val t = Timeout(300.millis)
     import akka.pattern.ask
-    val path = s"/user/StreamSupervisor-0/flow-${flowNr}-1-groupBy"
+
+    val path = (materializer.supervisor.path / s"flow-${flowNr}-1-groupBy").toStringWithoutAddress
     val gropByPath = system.actorSelection(path)
     val groupByActor = try {
       Await.result((gropByPath ? Identify("")).mapTo[ActorIdentity], 300.millis).ref.get
