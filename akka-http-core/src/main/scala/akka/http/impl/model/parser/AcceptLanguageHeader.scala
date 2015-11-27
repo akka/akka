@@ -23,5 +23,5 @@ private[parser] trait AcceptLanguageHeader { this: Parser with CommonRules with 
     }
   }
 
-  def `language-range` = rule { ws('*') ~ push(LanguageRange.`*`) | language }
+  def `language-range` = rule { ws('*') ~ push(LanguageRange.`*`) | language ~> (LanguageRange(_)) }
 }
