@@ -257,7 +257,15 @@ object ShardCoordinator {
       // shards for each region
       regions: Map[ActorRef, Vector[ShardId]] = Map.empty,
       regionProxies: Set[ActorRef] = Set.empty,
-      unallocatedShards: Set[ShardId] = Set.empty) extends ClusterShardingSerializable {
+      unallocatedShards: Set[ShardId] = Set.empty,
+      rememberEntities: Boolean = false) extends ClusterShardingSerializable {
+
+      def withRememberEntities(enabled: Boolean): State = {
+        if (enabled)
+          copy(rememberEntities = enabled)
+        else
+          copy(unallocatedShards = Set.empty, rememberEntities = enabled)
+      }
 
       def updated(event: DomainEvent): State = event match {
         case ShardRegionRegistered(region) ⇒
@@ -268,28 +276,34 @@ object ShardCoordinator {
           copy(regionProxies = regionProxies + proxy)
         case ShardRegionTerminated(region) ⇒
           require(regions.contains(region), s"Terminated region $region not registered: $this")
+          val newUnallocatedShards =
+            if (rememberEntities) (unallocatedShards ++ regions(region)) else unallocatedShards
           copy(
             regions = regions - region,
             shards = shards -- regions(region),
-            unallocatedShards = unallocatedShards ++ regions(region))
+            unallocatedShards = newUnallocatedShards)
         case ShardRegionProxyTerminated(proxy) ⇒
           require(regionProxies.contains(proxy), s"Terminated region proxy $proxy not registered: $this")
           copy(regionProxies = regionProxies - proxy)
         case ShardHomeAllocated(shard, region) ⇒
           require(regions.contains(region), s"Region $region not registered: $this")
           require(!shards.contains(shard), s"Shard [$shard] already allocated: $this")
+          val newUnallocatedShards =
+            if (rememberEntities) (unallocatedShards - shard) else unallocatedShards
           copy(
             shards = shards.updated(shard, region),
             regions = regions.updated(region, regions(region) :+ shard),
-            unallocatedShards = unallocatedShards - shard)
+            unallocatedShards = newUnallocatedShards)
         case ShardHomeDeallocated(shard) ⇒
           require(shards.contains(shard), s"Shard [$shard] not allocated: $this")
           val region = shards(shard)
           require(regions.contains(region), s"Region $region for shard [$shard] not registered: $this")
+          val newUnallocatedShards =
+            if (rememberEntities) (unallocatedShards + shard) else unallocatedShards
           copy(
             shards = shards - shard,
             regions = regions.updated(region, regions(region).filterNot(_ == shard)),
-            unallocatedShards = unallocatedShards + shard)
+            unallocatedShards = newUnallocatedShards)
       }
     }
 
@@ -381,7 +395,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
   val cluster = Cluster(context.system)
   val removalMargin = cluster.settings.DownRemovalMargin
 
-  var state = State.empty
+  var state = State.empty.withRememberEntities(settings.rememberEntities)
   var rebalanceInProgress = Set.empty[ShardId]
   var unAckedHostShards = Map.empty[ShardId, Cancellable]
   // regions that have requested handoff, for graceful shutdown
@@ -653,7 +667,10 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
     unAckedHostShards = unAckedHostShards.updated(shard, cancel)
   }
 
-  def allocateShardHomes(): Unit = state.unallocatedShards.foreach { self ! GetShardHome(_) }
+  def allocateShardHomes(): Unit = {
+    if (settings.rememberEntities)
+      state.unallocatedShards.foreach { self ! GetShardHome(_) }
+  }
 
   def continueGetShardHome(shard: ShardId, region: ActorRef, getShardHomeSender: ActorRef): Unit =
     if (!rebalanceInProgress.contains(shard)) {
@@ -747,6 +764,7 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
         state = st
 
     case RecoveryCompleted ⇒
+      state = state.withRememberEntities(settings.rememberEntities)
       watchStateActors()
   }
 
@@ -798,6 +816,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
 
   implicit val node = Cluster(context.system)
   val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
+  val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
 
   node.subscribe(self, ClusterShuttingDown.getClass)
 
@@ -809,7 +828,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   // This state will drop all other messages since they will be retried
   def waitingForState: Receive = ({
     case g @ GetSuccess(CoordinatorStateKey, _) ⇒
-      state = g.get(CoordinatorStateKey).value
+      state = g.get(CoordinatorStateKey).value.withRememberEntities(settings.rememberEntities)
       context.become(waitingForStateInitialized)
       // note that watchStateActors may call update
       watchStateActors()
@@ -880,7 +899,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
 
   def sendUpdate(evt: DomainEvent) = {
     val s = state.updated(evt)
-    replicator ! Update(CoordinatorStateKey, LWWRegister(State.empty), WriteMajority(updatingStateTimeout), Some(evt)) { reg ⇒
+    replicator ! Update(CoordinatorStateKey, LWWRegister(initEmptyState), WriteMajority(updatingStateTimeout), Some(evt)) { reg ⇒
       reg.withValue(s)
     }
   }
