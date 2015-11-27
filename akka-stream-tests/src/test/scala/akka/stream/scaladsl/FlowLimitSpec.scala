@@ -43,5 +43,18 @@ class FlowLimitSpec extends AkkaSpec {
 
       result should be(true)
     }
+
+    "throw a StreamLimitReachedException when n < 0" in {
+      val input = (1 to 6)
+      val n = -1
+
+      val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.head)
+      val result = Try(Await.result(future, 300.millis)) match {
+        case Failure(t: StreamLimitReachedException) ⇒ true
+        case _                                       ⇒ false
+      }
+
+      result should be(true)
+    }
   }
 }
