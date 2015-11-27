@@ -325,6 +325,20 @@ Update procedure
 See the example in the AsyncStage migration section for an example of this procedure.
 
 
+StatefulStage has been replaced by GraphStage
+=============================================
+
+The :class:`StatefulStage` class had some flaws and limitations, most notably around completion handling which
+caused subtle bugs. The new :class:`GraphStage` (:ref:`graphstage-java`) solves these issues and should be used
+instead.
+
+Update procedure
+----------------
+
+There is no mechanical update procedure available. Please consult the :class:`GraphStage` documentation
+(:ref:`graphstage-java`).
+
+
 AsyncStage has been replaced by GraphStage
 ==========================================
 

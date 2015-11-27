@@ -68,3 +68,22 @@ You can also inject exceptions and test sink behaviour on error conditions.
 Test source and sink can be used together in combination when testing flows.
 
 .. includecode:: code/docs/stream/StreamTestKitDocSpec.scala#test-source-and-sink
+
+
+Fuzzing Mode
+============
+
+For testing, it is possible to enable a special stream execution mode that exercises concurrent execution paths
+more aggressively (at the cost of reduced performance) and therefore helps exposing race conditions in tests. To
+enable this setting add the following line to your configuration:
+
+::
+
+   akka.stream.materializer.debug.fuzzing-mode = on
+
+
+.. warning::
+
+   Never use this setting in production or benchmarks. This is a testing tool to provide more coverage of your code
+   during tests, but it reduces the throughput of streams. A warning message will be logged if you have this setting
+   enabled.
