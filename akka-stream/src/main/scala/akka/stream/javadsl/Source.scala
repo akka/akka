@@ -4,6 +4,7 @@
 package akka.stream.javadsl
 
 import java.io.{ OutputStream, InputStream, File }
+import java.util
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
@@ -108,6 +109,18 @@ object Source {
       override def iterator: Iterator[O] = iterable.iterator().asScala
     }
     new Source(scaladsl.Source(scalaIterable))
+  }
+
+  /**
+   * Creates [[Source]] with `start` as the first element and each next element as `previous + 1` until
+   * it reaches `end`. It allows to create `Source` out of range as simply as on scala `Source(1 to N)`
+   */
+  def range(start: Int, end: Int): javadsl.Source[Integer, Unit] = {
+    require(start <= end, "start must be less or equal than end")
+    from(new util.AbstractList[Integer]() {
+      override def get(index: Int) = start + index
+      override def size() = end - start + 1
+    })
   }
 
   /**
