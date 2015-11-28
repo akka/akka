@@ -162,4 +162,33 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       } ~> check { responseAs[String] === "List(3, 10)" }
     }
   }
+
+  "The 'formFieldMap' directive" should {
+    "extract fields with different keys" in {
+      Post("/", FormData("age" -> "42", "numberA" -> "3", "numberB" -> "5")) ~> {
+        formFieldMap { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "Map(age -> 42, numberA -> 3, numberB -> 5)" }
+    }
+  }
+
+  "The 'formFieldSeq' directive" should {
+    "extract all fields" in {
+      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "5")) ~> {
+        formFieldSeq { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "Vector((age,42), (number,3), (number,5))" }
+    }
+    "produce empty Seq when FormData is empty" in {
+      Post("/", FormData.Empty) ~> {
+        formFieldSeq { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "Vector()" }
+    }
+  }
+
+  "The 'formFieldMultiMap' directive" should {
+    "extract fields with different keys (with duplicates)" in {
+      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "5")) ~> {
+        formFieldMultiMap { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "Map(age -> List(42), number -> List(5, 3))" }
+    }
+  }
 }
