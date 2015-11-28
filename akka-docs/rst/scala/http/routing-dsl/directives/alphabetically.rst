@@ -64,7 +64,13 @@ Directive                                   Description
                                             closest :ref:`-handleExceptions-` directive and its ``ExceptionHandler``
 :ref:`-fileUpload-`                         Provides a stream of an uploaded file from a multipart request
 :ref:`-formField-`                          Extracts an HTTP form field from the request
+:ref:`-formFieldMap-`                       Extracts a number of HTTP form field from the request as
+                                            a ``Map[String, String]``
+:ref:`-formFieldMultiMap-`                  Extracts a number of HTTP form field from the request as
+                                            a ``Map[String, List[String]``
 :ref:`-formFields-`                         Extracts a number of HTTP form field from the request
+:ref:`-formFieldSeq-`                       Extracts a number of HTTP form field from the request as
+                                            a ``Seq[(String, String)]``
 :ref:`-get-`                                Rejects all non-GET requests
 :ref:`-getFromBrowseableDirectories-`       Serves the content of the given directories as a file-system browser, i.e.
                                             files are sent and directories served as browseable listings
