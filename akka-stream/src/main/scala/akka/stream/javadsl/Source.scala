@@ -119,7 +119,8 @@ object Source {
     require(start <= end, "start must be less or equal than end")
     from(new util.AbstractList[Integer]() {
       override def get(index: Int) = start + index
-      override def size() = end - start + 1
+      override def size = end - start + 1
+      override def toString = s"Range($start to $end)"
     })
   }
 
