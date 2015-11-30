@@ -3,7 +3,7 @@
  */
 package akka.stream.impl.fusing
 
-import java.util.concurrent.{ ThreadLocalRandom, TimeoutException }
+import java.util.concurrent.TimeoutException
 
 import akka.actor._
 import akka.event.Logging
@@ -15,6 +15,7 @@ import akka.stream.impl.{ ActorPublisher, ReactiveStreamsCompliance }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import org.reactivestreams.{ Subscriber, Subscription }
 
+import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
 
 /**
