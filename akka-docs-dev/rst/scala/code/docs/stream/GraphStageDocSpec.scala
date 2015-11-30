@@ -66,7 +66,7 @@ class GraphStageDocSpec extends AkkaSpec {
     //#custom-source-example
 
     //#simple-source-usage
-    // A GraphStage is a proper Graph, just like what FlowGraph.create would return
+    // A GraphStage is a proper Graph, just like what GraphDSL.create would return
     val sourceGraph: Graph[SourceShape[Int], Unit] = new NumbersSource
 
     // Create a Source from the Graph to access the DSL

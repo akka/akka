@@ -66,8 +66,8 @@ private[http] object HttpServerBluePrint {
   def websocketSupport(settings: ServerSettings, log: LoggingAdapter)(implicit mat: Materializer): BidiFlow[ResponseRenderingOutput, ByteString, ByteString, ByteString, Unit] = {
     val ws = websocketSetup
 
-    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+    BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
 
       val switch = b.add(new ProtocolSwitchStage(ws.installHandler, settings.websocketRandomFactory, log))
 

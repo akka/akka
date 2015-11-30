@@ -76,8 +76,8 @@ class CompositionDocSpec extends AkkaSpec {
   "complex graph" in {
     // format: OFF
     //#complex-graph
-    import FlowGraph.Implicits._
-    RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
+    import GraphDSL.Implicits._
+    RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
       val A: Outlet[Int]                  = builder.add(Source.single(0)).outlet
       val B: UniformFanOutShape[Int, Int] = builder.add(Broadcast[Int](2))
       val C: UniformFanInShape[Int, Int]  = builder.add(Merge[Int](2))
@@ -96,8 +96,8 @@ class CompositionDocSpec extends AkkaSpec {
     //#complex-graph
 
     //#complex-graph-alt
-    import FlowGraph.Implicits._
-    RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
+    import GraphDSL.Implicits._
+    RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
       val B = builder.add(Broadcast[Int](2))
       val C = builder.add(Merge[Int](2))
       val E = builder.add(Balance[Int](2))
@@ -117,8 +117,8 @@ class CompositionDocSpec extends AkkaSpec {
   "partial graph" in {
     // format: OFF
     //#partial-graph
-    import FlowGraph.Implicits._
-    val partial = FlowGraph.create() { implicit builder =>
+    import GraphDSL.Implicits._
+    val partial = GraphDSL.create() { implicit builder =>
       val B = builder.add(Broadcast[Int](2))
       val C = builder.add(Merge[Int](2))
       val E = builder.add(Balance[Int](2))
@@ -143,7 +143,7 @@ class CompositionDocSpec extends AkkaSpec {
     val flow = Flow.fromGraph(partial)
 
     // Simple way to create a graph backed Source
-    val source = Source.fromGraph( FlowGraph.create() { implicit builder =>
+    val source = Source.fromGraph( GraphDSL.create() { implicit builder =>
       val merge = builder.add(Merge[Int](2))
       Source.single(0)      ~> merge
       Source(List(2, 3, 4)) ~> merge
@@ -167,7 +167,7 @@ class CompositionDocSpec extends AkkaSpec {
   "closed graph" in {
     //#embed-closed
     val closed1 = Source.single(0).to(Sink.foreach(println))
-    val closed2 = RunnableGraph.fromGraph(FlowGraph.create() { implicit builder =>
+    val closed2 = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
       val embeddedClosed: ClosedShape = builder.add(closed1)
       // …
       embeddedClosed

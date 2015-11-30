@@ -16,8 +16,8 @@ class GraphCyclesSpec extends AkkaSpec {
       // format: OFF
       //#deadlocked
       // WARNING! The graph below deadlocks!
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
-        import FlowGraph.Implicits._
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
 
         val merge = b.add(Merge[Int](2))
         val bcast = b.add(Broadcast[Int](2))
@@ -34,8 +34,8 @@ class GraphCyclesSpec extends AkkaSpec {
       // format: OFF
       //#unfair
       // WARNING! The graph below stops consuming from "source" after a few steps
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
-        import FlowGraph.Implicits._
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
 
         val merge = b.add(MergePreferred[Int](1))
         val bcast = b.add(Broadcast[Int](2))
@@ -51,8 +51,8 @@ class GraphCyclesSpec extends AkkaSpec {
     "include a dropping cycle" in {
       // format: OFF
       //#dropping
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
-        import FlowGraph.Implicits._
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
 
         val merge = b.add(Merge[Int](2))
         val bcast = b.add(Broadcast[Int](2))
@@ -69,8 +69,8 @@ class GraphCyclesSpec extends AkkaSpec {
       // format: OFF
       //#zipping-dead
       // WARNING! The graph below never processes any elements
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
-        import FlowGraph.Implicits._
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
 
         val zip = b.add(ZipWith[Int, Int, Int]((left, right) => right))
         val bcast = b.add(Broadcast[Int](2))
@@ -87,8 +87,8 @@ class GraphCyclesSpec extends AkkaSpec {
     "include a live zipping cycle" in {
       // format: OFF
       //#zipping-live
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
-        import FlowGraph.Implicits._
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
 
         val zip = b.add(ZipWith((left: Int, right: Int) => left))
         val bcast = b.add(Broadcast[Int](2))

@@ -126,7 +126,7 @@ As a first example, let's look at a more complex layout:
 
 The diagram shows a :class:`RunnableGraph` (remember, if there are no unwired ports, the graph is closed, and therefore
 can be materialized) that encapsulates a non-trivial stream processing network. It contains fan-in, fan-out stages,
-directed and non-directed cycles. The ``runnable()`` method of the :class:`FlowGraph` object allows the creation of a
+directed and non-directed cycles. The ``runnable()`` method of the :class:`GraphDSL` object allows the creation of a
 general, closed, and runnable graph. For example the network on the diagram can be realized like this:
 
 .. includecode:: code/docs/stream/CompositionDocSpec.scala#complex-graph
@@ -141,7 +141,7 @@ explicitly, and it is not necessary to import our linear stages via ``add()``, s
 
 Similar to the case in the first section, so far we have not considered modularity. We created a complex graph, but
 the layout is flat, not modularized. We will modify our example, and create a reusable component with the graph DSL.
-The way to do it is to use the ``create()`` factory method on :class:`FlowGraph`. If we remove the sources and sinks
+The way to do it is to use the ``create()`` factory method on :class:`GraphDSL`. If we remove the sources and sinks
 from the previous example, what remains is a partial graph:
 
 |
@@ -284,7 +284,7 @@ Attributes
 ----------
 
 We have seen that we can use ``named()`` to introduce a nesting level in the fluid DSL (and also explicit nesting by using
-``create()`` from :class:`FlowGraph`). Apart from having the effect of adding a nesting level, ``named()`` is actually
+``create()`` from :class:`GraphDSL`). Apart from having the effect of adding a nesting level, ``named()`` is actually
 a shorthand for calling ``withAttributes(Attributes.name("someName"))``. Attributes provide a way to fine-tune certain
 aspects of the materialized running entity. For example buffer sizes can be controlled via attributes (see
 :ref:`stream-buffers-scala`). When it comes to hierarchic composition, attributes are inherited by nested modules,

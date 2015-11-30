@@ -822,7 +822,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
     val messageHandler: Flow[Message, Message, Unit] =
       Flow.fromGraph {
-        FlowGraph.create() { implicit b ⇒
+        GraphDSL.create() { implicit b ⇒
           val in = b.add(Sink(messageIn)).inlet
           val out = b.add(Source(messageOut)).outlet
 

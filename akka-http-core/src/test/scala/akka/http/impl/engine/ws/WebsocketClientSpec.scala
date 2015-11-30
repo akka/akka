@@ -312,9 +312,9 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
       val netIn = TestPublisher.probe[ByteString]()
 
       val graph =
-        RunnableGraph.fromGraph(FlowGraph.create(clientLayer) { implicit b ⇒
+        RunnableGraph.fromGraph(GraphDSL.create(clientLayer) { implicit b ⇒
           client ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
             client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> netOut.sink
             client.out2 ~> clientImplementation ~> client.in1

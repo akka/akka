@@ -121,8 +121,8 @@ private[http] object Websocket {
       MessageToFrameRenderer.create(serverSide)
         .named("ws-render-messages")
 
-    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+    BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
 
       val split = b.add(BypassRouter)
       val tick = Source.tick(closeTimeout, closeTimeout, Tick)

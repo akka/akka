@@ -11,11 +11,11 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class GraphZipSpec extends TwoStreamsSetup {
-  import FlowGraph.Implicits._
+  import GraphDSL.Implicits._
 
   override type Outputs = (Int, Int)
 
-  override def fixture(b: FlowGraph.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
     val zip = b.add(Zip[Int, Int]())
 
     override def left: Inlet[Int] = zip.in0
@@ -28,7 +28,7 @@ class GraphZipSpec extends TwoStreamsSetup {
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[(Int, String)]()
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val zip = b.add(Zip[Int, String]())
 
         Source(1 to 4) ~> zip.in0
@@ -57,7 +57,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream1 = TestPublisher.probe[Int]()
       val upstream2 = TestPublisher.probe[String]()
 
-      val completed = RunnableGraph.fromGraph(FlowGraph.create(Sink.ignore) { implicit b ⇒
+      val completed = RunnableGraph.fromGraph(GraphDSL.create(Sink.ignore) { implicit b ⇒
         out ⇒
           val zip = b.add(Zip[Int, String]())
 
@@ -83,7 +83,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[(Int, String)]()
 
-      RunnableGraph.fromGraph(FlowGraph.create(Sink(downstream)) { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(Sink(downstream)) { implicit b ⇒
         out ⇒
           val zip = b.add(Zip[Int, String]())
 
@@ -110,7 +110,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[(Int, String)]()
 
-      RunnableGraph.fromGraph(FlowGraph.create(Sink(downstream)) { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(Sink(downstream)) { implicit b ⇒
         out ⇒
           val zip = b.add(Zip[Int, String]())
 
@@ -139,7 +139,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[(Int, String)]()
 
-      RunnableGraph.fromGraph(FlowGraph.create(Sink(downstream)) { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(Sink(downstream)) { implicit b ⇒
         out ⇒
           val zip = b.add(Zip[Int, String]())
 
@@ -169,7 +169,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[(Int, String)]()
 
-      RunnableGraph.fromGraph(FlowGraph.create(Sink(downstream)) { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(Sink(downstream)) { implicit b ⇒
         out ⇒
           val zip = b.add(Zip[Int, String]())
 

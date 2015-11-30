@@ -14,7 +14,7 @@ import scala.util.control.NoStackTrace
 
 class GraphUnzipWithSpec extends AkkaSpec {
 
-  import FlowGraph.Implicits._
+  import GraphDSL.Implicits._
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -26,7 +26,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
   type LeftOutput = Int
   type RightOutput = String
 
-  abstract class Fixture(b: FlowGraph.Builder[_]) {
+  abstract class Fixture(b: GraphDSL.Builder[_]) {
     def in: Inlet[Int]
     def left: Outlet[LeftOutput]
     def right: Outlet[RightOutput]
@@ -34,7 +34,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
 
   val f: (Int ⇒ (Int, String)) = b ⇒ (b + b, b + "+" + b)
 
-  def fixture(b: FlowGraph.Builder[_]): Fixture = new Fixture(b) {
+  def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
     val unzip = b.add(UnzipWith[Int, Int, String](f))
 
     override def in: Inlet[Int] = unzip.in
@@ -48,7 +48,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
     val leftSubscriber = TestSubscriber.probe[LeftOutput]()
     val rightSubscriber = TestSubscriber.probe[RightOutput]()
 
-    RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
+    RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
       val f = fixture(b)
 
       Source(p) ~> f.in
@@ -97,7 +97,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
       val leftProbe = TestSubscriber.manualProbe[LeftOutput]()
       val rightProbe = TestSubscriber.manualProbe[RightOutput]()
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val unzip = b.add(UnzipWith(f))
         Source(1 to 4) ~> unzip.in
 
@@ -147,7 +147,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
       val leftProbe = TestSubscriber.manualProbe[LeftOutput]()
       val rightProbe = TestSubscriber.manualProbe[RightOutput]()
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) ⇒ (1 / b, 1 + "/" + b)))
 
         Source(-2 to 2) ~> unzip.in
@@ -192,7 +192,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
 
       case class Person(name: String, surname: String, int: Int)
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val unzip = b.add(UnzipWith((a: Person) ⇒ Person.unapply(a).get))
 
         Source.single(Person("Caplin", "Capybara", 3)) ~> unzip.in
@@ -228,7 +228,7 @@ class GraphUnzipWithSpec extends AkkaSpec {
       val probe15 = TestSubscriber.manualProbe[String]()
       val probe19 = TestSubscriber.manualProbe[String]()
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
 
         val split20 = (a: (List[Int])) ⇒
           (a(0), a(0).toString,

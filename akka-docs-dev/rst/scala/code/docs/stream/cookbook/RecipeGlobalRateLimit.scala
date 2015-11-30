@@ -99,8 +99,8 @@ class RecipeGlobalRateLimit extends RecipeSpec {
 
       val probe = TestSubscriber.manualProbe[String]()
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
-        import FlowGraph.Implicits._
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
         val merge = b.add(Merge[String](2))
         source1 ~> merge ~> Sink(probe)
         source2 ~> merge
