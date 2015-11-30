@@ -1,4 +1,9 @@
+/**
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.persistence.journal
+
+import akka.persistence.scalatest.{ MayVerb, OptionalTests }
 
 import scala.concurrent.duration._
 import scala.collection.immutable.Seq
@@ -29,7 +34,8 @@ object JournalSpec {
  * @see [[akka.persistence.journal.JournalPerfSpec]]
  * @see [[akka.persistence.japi.journal.JavaJournalPerfSpec]]
  */
-abstract class JournalSpec(config: Config) extends PluginSpec(config) {
+abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVerb
+  with OptionalTests with JournalCapabilityFlags {
 
   implicit lazy val system: ActorSystem = ActorSystem("JournalSpec", config.withFallback(JournalSpec.config))
 
@@ -181,33 +187,39 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) {
       journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
+  }
 
-    "reject non-serializable events" in {
-      // there is no chance that a journal could create a data representation for type of event
-      val notSerializableEvent = new Object { override def toString = "not serializable" }
-      val msgs = (6 to 8).map { i ⇒
-        val event = if (i == 7) notSerializableEvent else s"b-$i"
-        AtomicWrite(PersistentRepr(payload = event, sequenceNr = i, persistenceId = pid, sender = Actor.noSender,
-          writerUuid = writerUuid))
-      }
+  "A Journal optionally" may {
 
-      val probe = TestProbe()
-      journal ! WriteMessages(msgs, probe.ref, actorInstanceId)
+    optional(flag = supportsRejectingNonSerializableObjects) {
+      "reject non-serializable events" in {
+        // there is no chance that a journal could create a data representation for type of event
+        val notSerializableEvent = new Object {
+          override def toString = "not serializable"
+        }
+        val msgs = (6 to 8).map { i ⇒
+          val event = if (i == 7) notSerializableEvent else s"b-$i"
+          AtomicWrite(PersistentRepr(payload = event, sequenceNr = i, persistenceId = pid, sender = Actor.noSender,
+            writerUuid = writerUuid))
+        }
 
-      probe.expectMsg(WriteMessagesSuccessful)
-      val Pid = pid
-      val WriterUuid = writerUuid
-      probe.expectMsgPF() {
-        case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid), _) ⇒ payload should be(s"b-6")
-      }
-      probe.expectMsgPF() {
-        case WriteMessageRejected(PersistentImpl(payload, 7L, Pid, _, _, Actor.noSender, WriterUuid), _, _) ⇒
-          payload should be(notSerializableEvent)
-      }
-      probe.expectMsgPF() {
-        case WriteMessageSuccess(PersistentImpl(payload, 8L, Pid, _, _, Actor.noSender, WriterUuid), _) ⇒ payload should be(s"b-8")
-      }
+        val probe = TestProbe()
+        journal ! WriteMessages(msgs, probe.ref, actorInstanceId)
 
+        probe.expectMsg(WriteMessagesSuccessful)
+        val Pid = pid
+        val WriterUuid = writerUuid
+        probe.expectMsgPF() {
+          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid), _) ⇒ payload should be(s"b-6")
+        }
+        probe.expectMsgPF() {
+          case WriteMessageRejected(PersistentImpl(payload, 7L, Pid, _, _, Actor.noSender, WriterUuid), _, _) ⇒
+            payload should be(notSerializableEvent)
+        }
+        probe.expectMsgPF() {
+          case WriteMessageSuccess(PersistentImpl(payload, 8L, Pid, _, _, Actor.noSender, WriterUuid), _) ⇒ payload should be(s"b-8")
+        }
+      }
     }
   }
 }

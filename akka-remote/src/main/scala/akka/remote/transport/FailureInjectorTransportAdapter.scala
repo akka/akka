@@ -11,7 +11,7 @@ import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListene
 import akka.remote.transport.Transport._
 import akka.util.ByteString
 import java.util.concurrent.ConcurrentHashMap
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 import scala.util.Try

@@ -3,7 +3,8 @@
  */
 package akka.persistence.japi.journal
 
-import akka.persistence.journal.{ JournalPerfSpec, JournalSpec }
+import akka.persistence.CapabilityFlag
+import akka.persistence.journal.JournalPerfSpec
 import com.typesafe.config.Config
 import org.junit.runner.RunWith
 import org.scalatest.Informer
@@ -47,4 +48,6 @@ class JavaJournalPerfSpec(config: Config) extends JournalPerfSpec(config) {
   override protected def info: Informer = new Informer {
     override def apply(message: String, payload: Option[Any]): Unit = System.out.println(message)
   }
+
+  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on
 }

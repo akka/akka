@@ -335,6 +335,8 @@ private[remote] object EndpointManager {
         readonlyToAddress -= endpoint
       }
 
+    def addressForWriter(writer: ActorRef): Option[Address] = writableToAddress.get(writer)
+
     def writableEndpointWithPolicyFor(address: Address): Option[EndpointPolicy] = addressToWritable.get(address)
 
     def hasWritableEndpointFor(address: Address): Boolean = writableEndpointWithPolicyFor(address) match {
@@ -415,11 +417,10 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   // Mapping between transports and the local addresses they listen to
   var transportMapping: Map[Address, AkkaProtocolTransport] = Map()
 
-  def retryGateEnabled = settings.RetryGateClosedFor > Duration.Zero
-  val pruneInterval: FiniteDuration = if (retryGateEnabled) settings.RetryGateClosedFor * 2 else Duration.Zero
-  val pruneTimerCancellable: Option[Cancellable] = if (retryGateEnabled)
-    Some(context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune))
-  else None
+  val pruneInterval: FiniteDuration = (settings.RetryGateClosedFor * 2).max(1.second).min(10.seconds)
+
+  val pruneTimerCancellable: Cancellable =
+    context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
 
   var pendingReadHandoffs = Map[ActorRef, AkkaProtocolHandle]()
   var stashedInbound = Map[ActorRef, Vector[InboundAssociation]]()
@@ -481,11 +482,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         Stop
 
       case NonFatal(e) ⇒
-        // logging
         e match {
           case _: EndpointDisassociatedException | _: EndpointAssociationException ⇒ // no logging
           case _ ⇒ log.error(e, e.getMessage)
         }
+        endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         Stop
     }
 
@@ -833,7 +834,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   private var normalShutdown = false
 
   override def postStop(): Unit = {
-    pruneTimerCancellable.foreach { _.cancel() }
+    pruneTimerCancellable.cancel()
     pendingReadHandoffs.valuesIterator foreach (_.disassociate(AssociationHandle.Shutdown))
 
     if (!normalShutdown) {

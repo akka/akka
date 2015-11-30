@@ -4,13 +4,13 @@
 
 package akka.persistence
 
-import scala.collection.immutable
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ List ⇒ JList }
-import akka.actor.{ ActorContext, ActorRef }
-import akka.pattern.PromiseActorRef
+
+import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
 import akka.persistence.serialization.Message
-import akka.actor.NoSerializationVerificationNeeded
+
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -38,10 +38,11 @@ object AtomicWrite {
 }
 
 final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends PersistentEnvelope with Message {
+  require(payload.nonEmpty, "payload of AtomicWrite must not be empty!")
 
   // only check that all persistenceIds are equal when there's more than one in the Seq
   if (payload match {
-    case l: List[PersistentRepr]   ⇒ l.tail.nonEmpty
+    case l: List[PersistentRepr]   ⇒ l.tail.nonEmpty // avoids calling .size
     case v: Vector[PersistentRepr] ⇒ v.size > 1
     case _                         ⇒ true // some other collection type, let's just check
   }) require(payload.forall(_.persistenceId == payload.head.persistenceId),

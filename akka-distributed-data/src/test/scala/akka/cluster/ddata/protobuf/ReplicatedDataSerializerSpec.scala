@@ -86,6 +86,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem("ReplicatedDataSe
 
       val s1 = ORSet().add(address1, "a").add(address2, "b")
       val s2 = ORSet().add(address2, "b").add(address1, "a")
+
       checkSameContent(s1.merge(s2), s2.merge(s1))
 
       val s3 = ORSet().add(address1, "a").add(address2, 17).remove(address3, 17)

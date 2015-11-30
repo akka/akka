@@ -184,7 +184,7 @@ private[cluster] final case class ClusterHeartbeatSenderState(
   oldReceiversNowUnreachable: Set[UniqueAddress],
   failureDetector: FailureDetectorRegistry[Address]) {
 
-  val activeReceivers: Set[UniqueAddress] = ring.myReceivers ++ oldReceiversNowUnreachable
+  val activeReceivers: Set[UniqueAddress] = ring.myReceivers union oldReceiversNowUnreachable
 
   def selfAddress = ring.selfAddress
 
@@ -212,7 +212,7 @@ private[cluster] final case class ClusterHeartbeatSenderState(
 
   private def membershipChange(newRing: HeartbeatNodeRing): ClusterHeartbeatSenderState = {
     val oldReceivers = ring.myReceivers
-    val removedReceivers = oldReceivers -- newRing.myReceivers
+    val removedReceivers = oldReceivers diff newRing.myReceivers
     var adjustedOldReceiversNowUnreachable = oldReceiversNowUnreachable
     removedReceivers foreach { a ⇒
       if (failureDetector.isAvailable(a.address))
@@ -260,7 +260,7 @@ private[cluster] final case class HeartbeatNodeRing(
       ha < hb || (ha == hb && Member.addressOrdering.compare(a.address, b.address) < 0)
     }
 
-    immutable.SortedSet() ++ nodes
+    immutable.SortedSet() union nodes
   }
 
   /**

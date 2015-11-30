@@ -10,5 +10,3 @@ OSGi.osgi
 Dependencies.osgi
 
 parallelExecution in Test := false
-
-MimaKeys.reportBinaryIssues := () // disable bin comp check

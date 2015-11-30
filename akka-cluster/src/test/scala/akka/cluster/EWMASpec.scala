@@ -9,7 +9,7 @@ package akka.cluster
 import language.postfixOps
 import scala.concurrent.duration._
 import akka.testkit.{ LongRunningTest, AkkaSpec }
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class EWMASpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsCollectorFactory {

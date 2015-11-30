@@ -171,7 +171,7 @@ import ReliableProxy._
  *
  * This actor is an [[akka.actor.FSM]], hence it offers the service of
  * transition callbacks to those actors which subscribe using the
- * ``SubscribeTransitionCallBack`` and ``UnsubscribeTransitionCallBack``
+ * `SubscribeTransitionCallBack` and `UnsubscribeTransitionCallBack`
  * messages; see [[akka.actor.FSM]] for more documentation. The proxy will
  * transition into `ReliableProxy.Active` state when ACKs
  * are outstanding and return to the `ReliableProxy.Idle`
@@ -211,8 +211,8 @@ import ReliableProxy._
  * See the constructor below for the arguments for this actor.  However, prefer using
  * [[akka.contrib.pattern.ReliableProxy#props]] to this actor's constructor.
  *
- * @param targetPath is the ``ActorPath`` to the actor to which all messages will be forwarded.
- *   ``targetPath`` can point to a local or remote actor, but the tunnel endpoint will be
+ * @param targetPath is the `ActorPath` to the actor to which all messages will be forwarded.
+ *   `targetPath` can point to a local or remote actor, but the tunnel endpoint will be
  *   deployed remotely on the node where the target actor lives.
  * @param retryAfter is the ACK timeout after which all outstanding messages
  *   will be resent. There is no limit on the queue size or the number of retries.

@@ -3,14 +3,14 @@
  */
 package akka.routing
 
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import language.postfixOps
-import akka.actor.Actor
+import akka.actor.{ ActorSystem, Actor, Props, ActorRef }
 import akka.testkit._
 import akka.testkit.TestEvent._
-import akka.actor.Props
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.util.Try
 
@@ -49,6 +49,49 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
   def routeeSize(router: ActorRef): Int =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees.size
+
+  "Resizer fromConfig" must {
+    def parseCfg(cfgString: String): Config = {
+      val referenceCfg = ConfigFactory.defaultReference(ActorSystem.findClassLoader())
+      ConfigFactory.parseString(cfgString).withFallback(referenceCfg.getConfig("akka.actor.deployment.default"))
+    }
+
+    "load DefaultResizer from config when resizer is enabled" in {
+      val cfg = parseCfg("""
+        resizer {
+          enabled = on
+        }
+        """)
+      Resizer.fromConfig(cfg).get shouldBe a[DefaultResizer]
+    }
+
+    "load MetricsBasedResizer from config when optimal-size-exploring-resizer is enabled" in {
+      val cfg = parseCfg("""
+        optimal-size-exploring-resizer {
+          enabled = on
+        }
+        """)
+      Resizer.fromConfig(cfg).get shouldBe a[DefaultOptimalSizeExploringResizer]
+    }
+
+    "throws exception when both resizer and optimal-size-exploring-resizer is enabled" in {
+      val cfg = parseCfg("""
+        optimal-size-exploring-resizer {
+          enabled = on
+        }
+        resizer {
+          enabled = on
+        }
+      """)
+      intercept[ResizerInitializationException] {
+        Resizer.fromConfig(cfg)
+      }
+    }
+
+    "return None if neither resizer is enabled which is default" in {
+      Resizer.fromConfig(parseCfg("")) shouldBe empty
+    }
+  }
 
   "DefaultResizer" must {
 

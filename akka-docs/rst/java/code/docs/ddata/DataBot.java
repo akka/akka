@@ -6,7 +6,7 @@ package docs.ddata;
 //#data-bot
 import static java.util.concurrent.TimeUnit.SECONDS;
 import scala.concurrent.duration.Duration;
-import scala.concurrent.forkjoin.ThreadLocalRandom;
+import java.util.concurrent.ThreadLocalRandom;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;

@@ -48,3 +48,7 @@ message EntityStopped {
   required string entityId = 1;
 }
 
+message ShardStats {
+    required string shard = 1;
+    required int32 entityCount = 2;
+}

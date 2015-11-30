@@ -814,6 +814,10 @@ To include the Journal TCK tests in your test suite simply extend the provided `
 
 .. includecode:: ./code/docs/persistence/PersistencePluginDocTest.java#journal-tck-java
 
+Please note that some of the tests are optional, and by overriding the ``supports...`` methods you give the
+TCK the needed information about which tests to run. You can implement these methods using  the provided
+``CapabilityFlag.on`` / ``CapabilityFlag.off`` values.
+
 We also provide a simple benchmarking class ``JavaJournalPerfSpec`` which includes all the tests that ``JavaJournalSpec``
 has, and also performs some longer operations on the Journal while printing it's performance stats. While it is NOT aimed
 to provide a proper benchmarking environment it can be used to get a rough feel about your journals performance in the most

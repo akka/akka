@@ -28,7 +28,7 @@ private[akka] final case class PruningState(owner: UniqueAddress, phase: Pruning
       case (_, PruningPerformed) ⇒ that
       case (PruningInitialized(thisSeen), PruningInitialized(thatSeen)) ⇒
         if (this.owner == that.owner)
-          copy(phase = PruningInitialized(thisSeen ++ thatSeen))
+          copy(phase = PruningInitialized(thisSeen union thatSeen))
         else if (Member.addressOrdering.compare(this.owner.address, that.owner.address) > 0)
           that
         else

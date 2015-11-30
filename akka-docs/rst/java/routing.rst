@@ -594,7 +594,16 @@ Dynamically Resizable Pool
 All pools can be used with a fixed number of routees or with a resize strategy to adjust the number
 of routees dynamically.
 
-Pool with resizer defined in configuration:
+There are two types of resizers: the default ``Resizer`` and the ``OptimalSizeExploringResizer``.
+
+Default Resizer
+---------------
+
+The default resizer ramps up and down pool size based on pressure, measured by the percentage of busy routees
+in the pool. It ramps up pool size if the pressure is higher than a certain threshold and backs off if the
+pressure is lower than certain threshold. Both thresholds are configurable.
+
+Pool with default resizer defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-resize-pool
 
@@ -609,6 +618,41 @@ Pool with resizer defined in code:
 
 *It is also worth pointing out that if you define the ``router`` in the configuration file then this value
 will be used instead of any programmatically sent parameters.*
+
+Optimal Size Exploring Resizer
+------------------------------
+
+The ``OptimalSizeExploringResizer`` resizes the pool to an optimal size that provides the most message throughput.
+
+It achieves this by keeping track of message throughput at each pool size and performing one of the following
+three resizing operations periodically:
+
+* Downsize if it hasn't seen all routees ever fully utilized for a period of time.
+* Explore to a random nearby pool size to try and collect throughput metrics.
+* Optimize to a nearby pool size with a better (than any other nearby sizes) throughput metrics.
+
+When the pool is fully-utilized (i.e. all routees are busy), it randomly choose between exploring and optimizing.
+When the pool has not been fully-utilized for a period of time, it will downsize the pool to the last seen max
+utilization multiplied by a configurable ratio.
+
+By constantly exploring and optimizing, the resizer will eventually walk to the optimal size and
+remain nearby. When the optimal size changes it will start walking towards the new one.
+This resizer works best when you expect the pool size to performance function to be a convex function.
+For example, when you have a CPU bound tasks, the optimal size is bound to the number of CPU cores.
+When your task is IO bound, the optimal size is bound to optimal number of concurrent connections to that IO service -
+e.g. a 4 node elastic search cluster may handle 4-8 concurrent requests at optimal speed.
+
+It keeps a performance log so it's stateful as well as having a larger memory footprint than the default ``Resizer``.
+The memory usage is O(n) where n is the number of sizes you allow, i.e. upperBound - lowerBound.
+
+Pool with ``OptimalSizeExploringResizer`` defined in configuration:
+
+.. includecode:: code/docs/routing/RouterDocSpec.scala#config-optimal-size-exploring-resize-pool
+
+.. includecode:: code/docs/routing/RouterDocTest.java#optimal-size-exploring-resize-pool
+
+Several more configuration options are available and described in ``akka.actor.deployment.default.optimal-size-exploring-resizer``
+section of the reference :ref:`configuration`.
 
 .. note::
 

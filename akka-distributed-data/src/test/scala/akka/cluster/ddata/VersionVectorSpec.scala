@@ -28,7 +28,7 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
 
     "have zero versions when created" in {
       val vv = VersionVector()
-      vv.versions should be(Map())
+      vv.size should be(0)
     }
 
     "not happen before itself" in {
@@ -36,6 +36,18 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
       val vv2 = VersionVector()
 
       vv1 <> vv2 should be(false)
+    }
+
+    "increment correctly" in {
+      val vv1 = VersionVector()
+      val vv2 = vv1 + node1
+      vv2.versionAt(node1) should be > vv1.versionAt(node1)
+      val vv3 = vv2 + node1
+      vv3.versionAt(node1) should be > vv2.versionAt(node1)
+
+      val vv4 = vv3 + node2
+      vv4.versionAt(node1) should be(vv3.versionAt(node1))
+      vv4.versionAt(node2) should be > vv3.versionAt(node2)
     }
 
     "pass misc comparison test 1" in {
@@ -159,16 +171,16 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
       val vv3_2 = vv2_2 + node2
 
       val merged1 = vv3_2 merge vv5_1
-      merged1.versions.size should be(3)
-      merged1.versions.contains(node1) should be(true)
-      merged1.versions.contains(node2) should be(true)
-      merged1.versions.contains(node3) should be(true)
+      merged1.size should be(3)
+      merged1.contains(node1) should be(true)
+      merged1.contains(node2) should be(true)
+      merged1.contains(node3) should be(true)
 
       val merged2 = vv5_1 merge vv3_2
-      merged2.versions.size should be(3)
-      merged2.versions.contains(node1) should be(true)
-      merged2.versions.contains(node2) should be(true)
-      merged2.versions.contains(node3) should be(true)
+      merged2.size should be(3)
+      merged2.contains(node1) should be(true)
+      merged2.contains(node2) should be(true)
+      merged2.contains(node3) should be(true)
 
       vv3_2 < merged1 should be(true)
       vv5_1 < merged1 should be(true)
@@ -192,18 +204,18 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
       val vv3_2 = vv2_2 + node4
 
       val merged1 = vv3_2 merge vv5_1
-      merged1.versions.size should be(4)
-      merged1.versions.contains(node1) should be(true)
-      merged1.versions.contains(node2) should be(true)
-      merged1.versions.contains(node3) should be(true)
-      merged1.versions.contains(node4) should be(true)
+      merged1.size should be(4)
+      merged1.contains(node1) should be(true)
+      merged1.contains(node2) should be(true)
+      merged1.contains(node3) should be(true)
+      merged1.contains(node4) should be(true)
 
       val merged2 = vv5_1 merge vv3_2
-      merged2.versions.size should be(4)
-      merged2.versions.contains(node1) should be(true)
-      merged2.versions.contains(node2) should be(true)
-      merged2.versions.contains(node3) should be(true)
-      merged2.versions.contains(node4) should be(true)
+      merged2.size should be(4)
+      merged2.contains(node1) should be(true)
+      merged2.contains(node2) should be(true)
+      merged2.contains(node3) should be(true)
+      merged2.contains(node4) should be(true)
 
       vv3_2 < merged1 should be(true)
       vv5_1 < merged1 should be(true)

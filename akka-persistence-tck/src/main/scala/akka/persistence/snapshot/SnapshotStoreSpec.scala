@@ -1,4 +1,9 @@
+/**
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.persistence.snapshot
+
+import akka.persistence.scalatest.OptionalTests
 
 import scala.collection.immutable.Seq
 import akka.actor._
@@ -23,7 +28,8 @@ object SnapshotStoreSpec {
  *
  * @see [[akka.persistence.japi.snapshot.JavaSnapshotStoreSpec]]
  */
-abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config) {
+abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
+  with OptionalTests with SnapshotStoreCapabilityFlags {
   implicit lazy val system = ActorSystem("SnapshotStoreSpec", config.withFallback(SnapshotStoreSpec.config))
 
   private var senderProbe: TestProbe = _

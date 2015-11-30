@@ -10,7 +10,7 @@ import scala.collection.immutable.Queue
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -1045,7 +1045,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val myKeys =
       if (totChunks == 1) dataEntries.keySet
       else dataEntries.keysIterator.filter(_.hashCode % totChunks == chunk).toSet
-    val otherMissingKeys = myKeys -- otherKeys
+    val otherMissingKeys = myKeys diff otherKeys
     val keys = (otherDifferentKeys ++ otherMissingKeys).take(maxDeltaElements)
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
@@ -1053,7 +1053,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       val g = Gossip(keys.map(k ⇒ k -> getData(k).get)(collection.breakOut), sendBack = otherDifferentKeys.nonEmpty)
       sender() ! g
     }
-    val myMissingKeys = otherKeys -- myKeys
+    val myMissingKeys = otherKeys diff myKeys
     if (myMissingKeys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip status to [{}], requesting missing [{}]", sender().path.address, myMissingKeys.mkString(", "))
@@ -1359,13 +1359,15 @@ private[akka] class WriteAggregator(
 
   def receive = {
     case WriteAck ⇒
-      remaining -= sender().path.address
+      remaining -= senderAddress()
       if (remaining.size == doneWhenRemainingSize)
         reply(ok = true)
     case SendToSecondary ⇒
       secondaryNodes.foreach { replica(_) ! writeMsg }
     case ReceiveTimeout ⇒ reply(ok = false)
   }
+
+  def senderAddress(): Address = sender().path.address
 
   def reply(ok: Boolean): Unit = {
     if (ok && envelope.data == DeletedData)

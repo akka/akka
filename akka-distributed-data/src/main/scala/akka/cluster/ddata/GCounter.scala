@@ -40,7 +40,7 @@ object GCounter {
 @SerialVersionUID(1L)
 final class GCounter private[akka] (
   private[akka] val state: Map[UniqueAddress, BigInt] = Map.empty)
-  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
   import GCounter.Zero
 
@@ -83,20 +83,24 @@ final class GCounter private[akka] (
     else state.get(key) match {
       case Some(v) ⇒
         val tot = v + delta
-        new GCounter(state + (key -> tot))
-      case None ⇒ new GCounter(state + (key -> delta))
+        assignAncestor(new GCounter(state + (key -> tot)))
+      case None ⇒ assignAncestor(new GCounter(state + (key -> delta)))
     }
   }
 
-  override def merge(that: GCounter): GCounter = {
-    var merged = that.state
-    for ((key, thisValue) ← state) {
-      val thatValue = merged.getOrElse(key, Zero)
-      if (thisValue > thatValue)
-        merged = merged.updated(key, thisValue)
+  override def merge(that: GCounter): GCounter =
+    if ((this eq that) || that.isAncestorOf(this)) this.clearAncestor()
+    else if (this.isAncestorOf(that)) that.clearAncestor()
+    else {
+      var merged = that.state
+      for ((key, thisValue) ← state) {
+        val thatValue = merged.getOrElse(key, Zero)
+        if (thisValue > thatValue)
+          merged = merged.updated(key, thisValue)
+      }
+      clearAncestor()
+      new GCounter(merged)
     }
-    new GCounter(merged)
-  }
 
   override def needPruningFrom(removedNode: UniqueAddress): Boolean =
     state.contains(removedNode)

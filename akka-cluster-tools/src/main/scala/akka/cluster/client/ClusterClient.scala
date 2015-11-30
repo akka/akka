@@ -310,7 +310,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   def sendGetContacts(): Unit = {
     val sendTo =
       if (contacts.isEmpty) initialContactsSel
-      else if (contacts.size == 1) (initialContactsSel ++ contacts)
+      else if (contacts.size == 1) (initialContactsSel union contacts)
       else contacts
     if (log.isDebugEnabled)
       log.debug(s"""Sending GetContacts to [${sendTo.mkString(",")}]""")
@@ -639,7 +639,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
         val slice = {
           val first = nodes.from(a).tail.take(numberOfContacts)
           if (first.size == numberOfContacts) first
-          else first ++ nodes.take(numberOfContacts - first.size)
+          else first union nodes.take(numberOfContacts - first.size)
         }
         val contacts = Contacts(slice.map(a ⇒ self.path.toStringWithAddress(a))(collection.breakOut))
         if (log.isDebugEnabled)
@@ -648,7 +648,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       }
 
     case state: CurrentClusterState ⇒
-      nodes = nodes.empty ++ state.members.collect { case m if m.status != MemberStatus.Joining && matchingRole(m) ⇒ m.address }
+      nodes = nodes.empty union state.members.collect { case m if m.status != MemberStatus.Joining && matchingRole(m) ⇒ m.address }
       consistentHash = ConsistentHash(nodes, virtualNodesFactor)
 
     case MemberUp(m) ⇒

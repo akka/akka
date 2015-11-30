@@ -5,7 +5,7 @@ package akka.remote
 
 import akka.testkit.AkkaSpec
 import scala.annotation.tailrec
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 
 object AckedDeliverySpec {
 

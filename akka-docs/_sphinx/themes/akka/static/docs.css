@@ -185,3 +185,43 @@ strong {color: #0B5567; }
 
 div.align-center { width: 100%; text-align: center; }
 p.caption { width: 80%; text-align: justify; font-size: 0.95em; font-style: italic; position: relative; left: 10%; }
+
+
+
+/* floaty warning about old version of docs */
+#floaty-warning {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  margin-bottom: 0;
+  z-index: 99999;
+  width: 100%;
+  background-color: rgb(84, 180, 204);
+  text-align: center;
+  padding: 10px;
+  color: #FFF;
+}
+
+/*
+ * Used when browsing 2.3.12 yet 2.4.x is out already.
+ * This is more critical than browsing 2.3.10 and 2.3.11 is latest (the default color).
+ */
+#floaty-warning .warning {
+  background-color: rgb(227, 88, 89);
+}
+
+#floaty-warning a {
+  color: white;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+#close-floaty-window {
+  position: absolute;
+  top: 1em;
+  right: 2em;
+  color: white;
+  font-weight: normal;
+  text-decoration: none;
+}

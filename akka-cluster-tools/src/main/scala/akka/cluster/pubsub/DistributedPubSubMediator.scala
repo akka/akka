@@ -7,7 +7,7 @@ package akka.cluster.pubsub
 import scala.collection.immutable
 import scala.collection.immutable.Set
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import java.net.URLEncoder
 import java.net.URLDecoder
 import akka.actor.Actor

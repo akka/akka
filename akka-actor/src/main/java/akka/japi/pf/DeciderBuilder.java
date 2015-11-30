@@ -65,7 +65,7 @@ public class DeciderBuilder {
    * @param apply      an action to apply to the argument
    * @return           a builder with the case statement added
    */
-  public static PFBuilder<Throwable, Directive> matchAny(FI.Apply<Object, Directive> apply) {
+  public static PFBuilder<Throwable, Directive> matchAny(FI.Apply<Throwable, Directive> apply) {
     return Match.matchAny(apply);
   }
 }

@@ -4,7 +4,7 @@
 package akka.cluster.ddata
 
 import scala.concurrent.duration._
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 
 import akka.cluster.Cluster
 import akka.remote.testconductor.RoleName

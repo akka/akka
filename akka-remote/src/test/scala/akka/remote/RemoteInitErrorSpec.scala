@@ -41,7 +41,7 @@ class RemoteInitErrorSpec extends FlatSpec with Matchers {
       }
     """).resolve()
 
-  def currentThreadIds() = {
+  def currentThreadIds(): Set[Long] = {
     val threads = Thread.getAllStackTraces().keySet()
     threads.collect({ case t: Thread if (!t.isDaemon()) ⇒ t.getId() })
   }
@@ -56,7 +56,7 @@ class RemoteInitErrorSpec extends FlatSpec with Matchers {
         eventually(timeout(30 seconds), interval(800 milliseconds)) {
           val current = currentThreadIds()
           // no new threads should remain compared to the start state
-          (current -- start) should be(empty)
+          (current diff start) should be(empty)
         }
       }
     }
