@@ -22,7 +22,7 @@ import akka.testkit.EventFilter
 class TcpSpec extends AkkaSpec(
   """
     |akka.io.tcp.windows-connection-abort-workaround-enabled=auto
-    |akka.stream.materializer.subscription-timeout.timeout = 3s""".stripMargin) with TcpHelper {
+    |akka.stream.materializer.subscription-timeout.timeout = 2s""".stripMargin) with TcpHelper {
   var demand = 0L
 
   "Outgoing TCP stream" must {
@@ -374,11 +374,11 @@ class TcpSpec extends AkkaSpec(
             conn.flow.join(Flow[ByteString]).run()
           })(Keep.left).run(), 3.seconds)
 
-      val result = Source(immutable.Iterable.fill(10000)(ByteString(0)))
+      val result = Source(immutable.Iterable.fill(1000)(ByteString(0)))
         .via(Tcp().outgoingConnection(serverAddress, halfClose = true))
         .runFold(0)(_ + _.size)
 
-      Await.result(result, 3.seconds) should ===(10000)
+      Await.result(result, 3.seconds) should ===(1000)
 
       binding.unbind()
     }
@@ -498,7 +498,10 @@ class TcpSpec extends AkkaSpec(
 
     "not shut down connections after the connection stream cancelled" in assertAllStagesStopped {
       val address = temporaryServerAddress()
-      Tcp().bind(address.getHostName, address.getPort).take(1).runForeach(_.flow.join(Flow[ByteString]).run())
+      Tcp().bind(address.getHostName, address.getPort).take(1).runForeach { tcp ⇒
+        Thread.sleep(1000) // we're testing here to see if it survives such race
+        tcp.flow.join(Flow[ByteString]).run()
+      }
 
       val total = Source(immutable.Iterable.fill(1000)(ByteString(0)))
         .via(Tcp().outgoingConnection(address))
@@ -507,7 +510,7 @@ class TcpSpec extends AkkaSpec(
       Await.result(total, 3.seconds) should ===(1000)
     }
 
-    "shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
+    "xoxoxo shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
       val address = temporaryServerAddress()
       val firstClientConnected = Promise[Unit]()
       val takeTwoAndDropSecond = Flow[IncomingConnection].map(conn ⇒ {
@@ -518,20 +521,19 @@ class TcpSpec extends AkkaSpec(
         .via(takeTwoAndDropSecond)
         .runForeach(_.flow.join(Flow[ByteString]).run())
 
-      val folder = Source(immutable.Iterable.fill(1000)(ByteString(0)))
+      val folder = Source(immutable.Iterable.fill(100)(ByteString(0)))
         .via(Tcp().outgoingConnection(address))
         .fold(0)(_ + _.size).toMat(Sink.head)(Keep.right)
 
       val total = folder.run()
 
       awaitAssert(firstClientConnected.future, 2.seconds)
-
       val rejected = folder.run()
 
-      Await.result(total, 3.seconds) should ===(1000)
+      Await.result(total, 10.seconds) should ===(100)
 
       a[StreamTcpException] should be thrownBy {
-        Await.result(rejected, 5.seconds) should ===(1000)
+        Await.result(rejected, 5.seconds) should ===(100)
       }
     }
   }
