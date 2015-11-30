@@ -212,7 +212,7 @@ public class FlowDocTest {
 
     FiniteDuration oneSecond = FiniteDuration.apply(1, TimeUnit.SECONDS);
     Flow<Integer, Integer, Cancellable> throttler =
-      Flow.fromGraph(FlowGraph.create(
+      Flow.fromGraph(GraphDSL.create(
         Source.tick(oneSecond, oneSecond, ""),
         (b, tickSource) -> {
           FanInShape2<String, Integer, Integer> zip = b.add(ZipWith.create(Keep.right()));

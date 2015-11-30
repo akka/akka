@@ -45,7 +45,7 @@ public class RecipeWorkerPool extends RecipeTest {
   //#worker-pool
   public static <In, Out> Flow<In, Out, BoxedUnit> balancer(
       Flow<In, Out, BoxedUnit> worker, int workerCount) {
-    return Flow.fromGraph(FlowGraph.create(b -> {
+    return Flow.fromGraph(GraphDSL.create(b -> {
         boolean waitForAllDownstreams = true;
         final UniformFanOutShape<In, In> balance =
                 b.add(Balance.<In>create(workerCount, waitForAllDownstreams));

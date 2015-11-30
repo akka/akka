@@ -70,7 +70,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     TestCase("Flow", scaladsl.Flow.getClass, javadsl.Flow.getClass),
     TestCase("Sink", scaladsl.Sink.getClass, javadsl.Sink.getClass),
     TestCase("BidiFlow", scaladsl.BidiFlow.getClass, javadsl.BidiFlow.getClass),
-    TestCase("FlowGraph", scaladsl.FlowGraph.getClass, javadsl.FlowGraph.getClass, classOf[javadsl.GraphCreate]),
+    TestCase("GraphDSL", scaladsl.GraphDSL.getClass, javadsl.GraphDSL.getClass, classOf[javadsl.GraphCreate]),
     TestCase("ZipWith", Some(scaladsl.ZipWith.getClass), None, Some(javadsl.ZipWith.getClass)),
     TestCase("Merge", scaladsl.Merge.getClass, javadsl.Merge.getClass),
     TestCase("MergePreferred", scaladsl.MergePreferred.getClass, javadsl.MergePreferred.getClass),
@@ -113,8 +113,8 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       Ignore(_ == akka.stream.scaladsl.Flow.getClass, _ == "apply", _ == 24, _ ⇒ true),
       Ignore(_ == akka.stream.scaladsl.Sink.getClass, _ == "apply", _ == 24, _ ⇒ true),
       Ignore(_ == akka.stream.scaladsl.BidiFlow.getClass, _ == "apply", _ == 24, _ ⇒ true),
-      Ignore(_ == akka.stream.scaladsl.FlowGraph.getClass, _ == "runnable", _ == 24, _ ⇒ true),
-      Ignore(_ == akka.stream.scaladsl.FlowGraph.getClass, _ == "create", _ == 24, _ ⇒ true),
+      Ignore(_ == akka.stream.scaladsl.GraphDSL.getClass, _ == "runnable", _ == 24, _ ⇒ true),
+      Ignore(_ == akka.stream.scaladsl.GraphDSL.getClass, _ == "create", _ == 24, _ ⇒ true),
       // all generated methods like scaladsl.Sink$.akka$stream$scaladsl$Sink$$newOnCompleteStage$1
       Ignore(_ ⇒ true, _.contains("$"), _ ⇒ true, _ ⇒ true))
 

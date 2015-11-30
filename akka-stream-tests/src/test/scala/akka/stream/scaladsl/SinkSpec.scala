@@ -9,7 +9,7 @@ import akka.stream.testkit._
 
 class SinkSpec extends AkkaSpec {
 
-  import FlowGraph.Implicits._
+  import GraphDSL.Implicits._
 
   implicit val mat = ActorMaterializer()
 
@@ -17,7 +17,7 @@ class SinkSpec extends AkkaSpec {
 
     "be composable without importing modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(FlowGraph.create() { implicit b ⇒
+      val sink = Sink.fromGraph(GraphDSL.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](3))
         for (i ← 0 to 2) bcast.out(i).filter(_ == i) ~> Sink(probes(i))
         SinkShape(bcast.in)
@@ -34,7 +34,7 @@ class SinkSpec extends AkkaSpec {
 
     "be composable with importing 1 module" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(FlowGraph.create(Sink(probes(0))) { implicit b ⇒
+      val sink = Sink.fromGraph(GraphDSL.create(Sink(probes(0))) { implicit b ⇒
         s0 ⇒
           val bcast = b.add(Broadcast[Int](3))
           bcast.out(0) ~> Flow[Int].filter(_ == 0) ~> s0.inlet
@@ -53,7 +53,7 @@ class SinkSpec extends AkkaSpec {
 
     "be composable with importing 2 modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(FlowGraph.create(Sink(probes(0)), Sink(probes(1)))(List(_, _)) { implicit b ⇒
+      val sink = Sink.fromGraph(GraphDSL.create(Sink(probes(0)), Sink(probes(1)))(List(_, _)) { implicit b ⇒
         (s0, s1) ⇒
           val bcast = b.add(Broadcast[Int](3))
           bcast.out(0).filter(_ == 0) ~> s0.inlet
@@ -73,7 +73,7 @@ class SinkSpec extends AkkaSpec {
 
     "be composable with importing 3 modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(FlowGraph.create(Sink(probes(0)), Sink(probes(1)), Sink(probes(2)))(List(_, _, _)) { implicit b ⇒
+      val sink = Sink.fromGraph(GraphDSL.create(Sink(probes(0)), Sink(probes(1)), Sink(probes(2)))(List(_, _, _)) { implicit b ⇒
         (s0, s1, s2) ⇒
           val bcast = b.add(Broadcast[Int](3))
           bcast.out(0).filter(_ == 0) ~> s0.inlet

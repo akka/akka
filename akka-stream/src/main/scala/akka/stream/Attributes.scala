@@ -10,7 +10,7 @@ import akka.japi.function
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
- * or [[akka.stream.scaladsl.FlowGraph]] / [[akka.stream.javadsl.FlowGraph]] materialization.
+ * or [[akka.stream.scaladsl.GraphDSL]] / [[akka.stream.javadsl.GraphDSL]] materialization.
  *
  * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
  */

@@ -154,8 +154,8 @@ object Sink {
    */
   def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(strategy: Int ⇒ Graph[UniformFanOutShape[T, U], Unit]): Sink[T, Unit] =
 
-    Sink.fromGraph(FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+    Sink.fromGraph(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
       val d = b.add(strategy(rest.size + 2))
       d.out(0) ~> first
       d.out(1) ~> second

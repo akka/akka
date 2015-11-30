@@ -279,7 +279,7 @@ public class TwitterStreamQuickstartDocTest {
     final Sink<Hashtag, Future<BoxedUnit>> writeHashtags = Sink.ignore();
 
     //#flow-graph-broadcast
-    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+    RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final UniformFanOutShape<Tweet, Tweet> bcast = b.add(Broadcast.create(2));
       final FlowShape<Tweet, Author> toAuthor =
     	  b.add(Flow.of(Tweet.class).map(t -> t.author));

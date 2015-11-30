@@ -119,8 +119,8 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
-    Source.fromGraph(FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+    Source.fromGraph(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)
       second ~> c.in(1)
@@ -330,8 +330,8 @@ object Source {
    * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
-    Source.fromGraph(FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+    Source.fromGraph(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)
       second ~> c.in(1)

@@ -80,12 +80,12 @@ public class MigrationsJava {
 
         {
             //#graph-create
-            FlowGraph.create(builder -> {
+            GraphDSL.create(builder -> {
                 //...
                 return ClosedShape.getInstance();
             });
 
-            FlowGraph.create(builder -> {
+            GraphDSL.create(builder -> {
                 //...
                 return new FlowShape<>(inlet, outlet);
             });
@@ -94,22 +94,22 @@ public class MigrationsJava {
 
         {
             //#graph-create-2
-            FlowGraph.create(builder -> {
+            GraphDSL.create(builder -> {
                 //...
                 return SourceShape.of(outlet);
             });
 
-            FlowGraph.create(builder -> {
+            GraphDSL.create(builder -> {
                 //...
                 return SinkShape.of(inlet);
             });
 
-            FlowGraph.create(builder -> {
+            GraphDSL.create(builder -> {
                 //...
                 return FlowShape.of(inlet, outlet);
             });
 
-            FlowGraph.create(builder -> {
+            GraphDSL.create(builder -> {
                 //...
                 return BidiShape.of(inlet1, outlet1, inlet2, outlet2);
             });
@@ -118,7 +118,7 @@ public class MigrationsJava {
 
         {
             //#graph-builder
-            FlowGraph.create(builder -> {
+            GraphDSL.create(builder -> {
                 builder.from(outlet).toInlet(inlet);
                 builder.from(outlet).via(builder.add(flow)).toInlet(inlet);
                 builder.from(builder.add(Source.single(0))).to(builder.add(Sink.head()));

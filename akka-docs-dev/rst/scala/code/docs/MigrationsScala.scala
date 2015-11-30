@@ -51,14 +51,14 @@ class MigrationsScala extends AkkaSpec {
         //#bidiflow-wrap
 
         //#graph-create
-        // Replaces FlowGraph.closed()
-        FlowGraph.create() { builder =>
+        // Replaces GraphDSL.closed()
+        GraphDSL.create() { builder =>
           //...
           ClosedShape
         }
 
-        // Replaces FlowGraph.partial()
-        FlowGraph.create() { builder =>
+        // Replaces GraphDSL.partial()
+        GraphDSL.create() { builder =>
           //...
           FlowShape(inlet, outlet)
         }
@@ -66,25 +66,25 @@ class MigrationsScala extends AkkaSpec {
 
         //#graph-create-2
         Source.fromGraph(
-          FlowGraph.create() { builder =>
+          GraphDSL.create() { builder =>
             //...
             SourceShape(outlet)
           })
 
         Sink.fromGraph(
-          FlowGraph.create() { builder =>
+          GraphDSL.create() { builder =>
             //...
             SinkShape(inlet)
           })
 
         Flow.fromGraph(
-          FlowGraph.create() { builder =>
+          GraphDSL.create() { builder =>
             //...
             FlowShape(inlet, outlet)
           })
 
         BidiFlow.fromGraph(
-          FlowGraph.create() { builder =>
+          GraphDSL.create() { builder =>
             //...
             BidiShape(inlet1, outlet1, inlet2, outlet2)
           })
@@ -92,8 +92,8 @@ class MigrationsScala extends AkkaSpec {
 
         //#graph-edges
         RunnableGraph.fromGraph(
-          FlowGraph.create() { implicit builder =>
-            import FlowGraph.Implicits._
+          GraphDSL.create() { implicit builder =>
+            import GraphDSL.Implicits._
             outlet ~> inlet
             outlet ~> flow ~> inlet
             //...

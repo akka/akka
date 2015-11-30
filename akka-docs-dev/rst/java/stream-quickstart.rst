@@ -107,13 +107,13 @@ Akka Streams intentionally separate the linear stream structures (Flows) from th
 in order to offer the most convenient API for both of these cases. Graphs can express arbitrarily complex stream setups
 at the expense of not reading as familiarly as collection transformations.
 
-Graphs are constructed using :class:`FlowGraph` like this:
+Graphs are constructed using :class:`GraphDSL` like this:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#flow-graph-broadcast
 
 As you can see, we use graph builder ``b`` to construct the graph using ``UniformFanOutShape`` and ``Flow`` s.
 
-``FlowGraph.create`` returns a :class:`Graph`, in this example a ``Graph<ClosedShape,Unit>`` where
+``GraphDSL.create`` returns a :class:`Graph`, in this example a ``Graph<ClosedShape,Unit>`` where
 :class:`ClosedShape` means that it is *a fully connected graph* or "closed" - there are no unconnected inputs or outputs.
 Since it is closed it is possible to transform the graph into a :class:`RunnableGraph` using ``RunnableGraph.fromGraph``.
 The runnable graph can then be ``run()`` to materialize a stream out of it.

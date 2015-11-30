@@ -31,8 +31,11 @@ Back-pressure
 Non-Blocking
   Means that a certain operation does not hinder the progress of the calling thread, even if it takes long time to
   finish the requested operation.
+Graph
+  A description of a stream processing topology, defining the pathways through which elements shall flow when the stream
+  is running.
 Processing Stage
-  The common name for all building blocks that build up a Flow or FlowGraph.
+  The common name for all building blocks that build up a Graph.
   Examples of a processing stage would be  operations like ``map()``, ``filter()``, stages added by ``transform()`` like
   :class:`PushStage`, :class:`PushPullStage`, :class:`StatefulStage` and graph junctions like ``Merge`` or ``Broadcast``.
   For the full list of built-in processing stages see :ref:`stages-overview`
@@ -67,7 +70,7 @@ it will be represented by the ``RunnableGraph`` type, indicating that it is read
 
 It is important to remember that even after constructing the ``RunnableGraph`` by connecting all the source, sink and
 different processing stages, no data will flow through it until it is materialized. Materialization is the process of
-allocating all resources needed to run the computation described by a Flow (in Akka Streams this will often involve
+allocating all resources needed to run the computation described by a Graph (in Akka Streams this will often involve
 starting up Actors). Thanks to Flows being simply a description of the processing pipeline they are *immutable,
 thread-safe, and freely shareable*, which means that it is for example safe to share and send them between actors, to have
 one actor prepare the work, and then have it be materialized at some completely different place in the code.
@@ -200,11 +203,11 @@ Stream Materialization
 When constructing flows and graphs in Akka Streams think of them as preparing a blueprint, an execution plan.
 Stream materialization is the process of taking a stream description (the graph) and allocating all the necessary resources
 it needs in order to run. In the case of Akka Streams this often means starting up Actors which power the processing,
-but is not restricted to that - it could also mean opening files or socket connections etc. – depending on what the stream needs.
+but is not restricted to that—it could also mean opening files or socket connections etc.—depending on what the stream needs.
 
 Materialization is triggered at so called "terminal operations". Most notably this includes the various forms of the ``run()``
-and ``runWith()`` methods defined on flow elements as well as a small number of special syntactic sugars for running with
-well-known sinks, such as ``runForeach(el -> )`` (being an alias to ``runWith(Sink.foreach(el -> ))``.
+and ``runWith()`` methods defined on :class:`Source` or :class:`Flow` elements as well as a small number of special syntactic sugars for running with
+well-known sinks, such as ``runForeach(el -> ...)`` (being an alias to ``runWith(Sink.foreach(el -> ...))``.
 
 Materialization is currently performed synchronously on the materializing thread.
 The actual stream processing is handled by actors started up during the streams materialization,
@@ -212,7 +215,7 @@ which will be running on the thread pools they have been configured to run on - 
 :class:`MaterializationSettings` while constructing the :class:`ActorMaterializer`.
 
 .. note::
-   Reusing *instances* of linear computation stages (Source, Sink, Flow) inside FlowGraphs is legal,
+   Reusing *instances* of linear computation stages (Source, Sink, Flow) inside composite Graphs is legal,
    yet will materialize that stage multiple times.
 
 .. _flow-combine-mat-java:

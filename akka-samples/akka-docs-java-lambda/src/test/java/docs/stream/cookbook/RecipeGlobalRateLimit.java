@@ -197,7 +197,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
         final Sink<String, TestSubscriber.Probe<String>> sink = TestSink.probe(system);
         final TestSubscriber.Probe<String> probe =
           RunnableGraph.<TestSubscriber.Probe<String>>fromGraph(
-            FlowGraph.create(sink, (builder, s) -> {
+            GraphDSL.create(sink, (builder, s) -> {
               final int inputPorts = 2;
               final UniformFanInShape<String, String> merge = builder.add(Merge.create(inputPorts));
 

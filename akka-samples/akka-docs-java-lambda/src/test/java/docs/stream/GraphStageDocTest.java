@@ -79,7 +79,7 @@ public class GraphStageDocTest {
   @Test
   public void demonstrateCustomSourceUsage() throws Exception {
     //#simple-source-usage
-    // A GraphStage is a proper Graph, just like what FlowGraph.create would return
+    // A GraphStage is a proper Graph, just like what GraphDSL.create would return
     Graph<SourceShape<Integer>, BoxedUnit> sourceGraph = new NumbersSource();
 
     // Create a Source from the Graph to access the DSL

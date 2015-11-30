@@ -174,8 +174,8 @@ class TimeoutsSpec extends AkkaSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        import FlowGraph.Implicits._
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        import GraphDSL.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
         Source(upWrite) ~> timeoutStage.in1;
         timeoutStage.out1 ~> Sink(downRead)
@@ -222,8 +222,8 @@ class TimeoutsSpec extends AkkaSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-        import FlowGraph.Implicits._
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        import GraphDSL.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
         Source(upWrite) ~> timeoutStage.in1;
         timeoutStage.out1 ~> Sink(downRead)

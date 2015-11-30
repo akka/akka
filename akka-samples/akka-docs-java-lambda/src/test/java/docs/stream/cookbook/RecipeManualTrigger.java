@@ -57,7 +57,7 @@ public class RecipeManualTrigger extends RecipeTest {
         //#manually-triggered-stream
         final RunnableGraph<Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>>> g =
           RunnableGraph.<Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>>>fromGraph(
-            FlowGraph.create(
+            GraphDSL.create(
               triggerSource,
               messageSink,
               (p, s) -> new Pair<>(p, s),
@@ -112,7 +112,7 @@ public class RecipeManualTrigger extends RecipeTest {
         //#manually-triggered-stream-zipwith
         final RunnableGraph<Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>>> g =
           RunnableGraph.<Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>>>fromGraph(
-            FlowGraph.create(
+            GraphDSL.create(
               triggerSource,
               messageSink,
               (p, s) -> new Pair<>(p, s),

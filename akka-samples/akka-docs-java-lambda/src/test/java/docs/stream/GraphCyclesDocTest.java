@@ -46,7 +46,7 @@ public class GraphCyclesDocTest {
         return s;
       });
 
-    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+    RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final UniformFanInShape<Integer, Integer> merge = b.add(Merge.create(2));
       final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
       final Outlet<Integer> src = b.add(source).outlet();
@@ -69,7 +69,7 @@ public class GraphCyclesDocTest {
         });
     //#unfair
     // WARNING! The graph below stops consuming from "source" after a few steps
-    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+    RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final MergePreferredShape<Integer> merge = b.add(MergePreferred.create(1));
       final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
       final Outlet<Integer> src = b.add(source).outlet();
@@ -91,7 +91,7 @@ public class GraphCyclesDocTest {
           return s;
         });
     //#dropping
-    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+    RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final UniformFanInShape<Integer, Integer> merge = b.add(Merge.create(2));
       final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
       final FlowShape<Integer, Integer> droppyFlow = b.add(
@@ -116,7 +116,7 @@ public class GraphCyclesDocTest {
         });
     //#zipping-dead
     // WARNING! The graph below never processes any elements
-    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+    RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final FanInShape2<Integer, Integer, Integer> zip =
         b.add(ZipWith.create((Integer left, Integer right) -> left));
       final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
@@ -139,7 +139,7 @@ public class GraphCyclesDocTest {
           return s;
         });
     //#zipping-live
-    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+    RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final FanInShape2<Integer, Integer, Integer> zip =
         b.add(ZipWith.create((Integer left, Integer right) -> left));
       final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));

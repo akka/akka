@@ -9,7 +9,7 @@ import akka.util.ByteString
 import org.scalactic.ConversionCheckedTripleEquals
 
 object GraphOpsIntegrationSpec {
-  import FlowGraph.Implicits._
+  import GraphDSL.Implicits._
 
   object Shuffle {
 
@@ -30,7 +30,7 @@ object GraphOpsIntegrationSpec {
     }
 
     def apply[In, Out](pipeline: Flow[In, Out, _]): Graph[ShufflePorts[In, Out], Unit] = {
-      FlowGraph.create() { implicit b ⇒
+      GraphDSL.create() { implicit b ⇒
         val merge = b.add(Merge[In](2))
         val balance = b.add(Balance[Out](2))
         merge.out ~> pipeline ~> balance.in
@@ -44,7 +44,7 @@ object GraphOpsIntegrationSpec {
 
 class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   import akka.stream.scaladsl.GraphOpsIntegrationSpec._
-  import FlowGraph.Implicits._
+  import GraphDSL.Implicits._
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -54,7 +54,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
   "FlowGraphs" must {
 
     "support broadcast - merge layouts" in {
-      val resultFuture = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
+      val resultFuture = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒
         (sink) ⇒
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -71,7 +71,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
 
     "support balance - merge (parallelization) layouts" in {
       val elements = 0 to 10
-      val out = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
+      val out = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒
         (sink) ⇒
           val balance = b.add(Balance[Int](5))
           val merge = b.add(Merge[Int](5))
@@ -92,7 +92,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
       val seqSink = Sink.head[Seq[Int]]
 
-      val (resultFuture2, resultFuture9, resultFuture10) = RunnableGraph.fromGraph(FlowGraph.create(seqSink, seqSink, seqSink)(Tuple3.apply) { implicit b ⇒
+      val (resultFuture2, resultFuture9, resultFuture10) = RunnableGraph.fromGraph(GraphDSL.create(seqSink, seqSink, seqSink)(Tuple3.apply) { implicit b ⇒
         (sink2, sink9, sink10) ⇒
           val b3 = b.add(Broadcast[Int](2))
           val b7 = b.add(Broadcast[Int](2))
@@ -139,7 +139,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
 
     "allow adding of flows to sources and sinks to flows" in {
 
-      val resultFuture = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
+      val resultFuture = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒
         (sink) ⇒
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -158,7 +158,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher(false))
       val s = TestSubscriber.manualProbe[Int]
       val flow = Flow[Int].map(_ * 2)
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit builder ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit builder ⇒
         Source(p) ~> flow ~> Sink(s)
         ClosedShape
       }).run()
@@ -173,7 +173,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
     "be possible to use as lego bricks" in {
       val shuffler = Shuffle(Flow[Int].map(_ + 1))
 
-      val f: Future[Seq[Int]] = RunnableGraph.fromGraph(FlowGraph.create(shuffler, shuffler, shuffler, Sink.head[Seq[Int]])((_, _, _, fut) ⇒ fut) { implicit b ⇒
+      val f: Future[Seq[Int]] = RunnableGraph.fromGraph(GraphDSL.create(shuffler, shuffler, shuffler, Sink.head[Seq[Int]])((_, _, _, fut) ⇒ fut) { implicit b ⇒
         (s1, s2, s3, sink) ⇒
           val merge = b.add(Merge[Int](2))
 

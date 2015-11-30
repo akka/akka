@@ -17,10 +17,10 @@ streams, such that the second one is consumed after the first one has completed)
 
 .. _flow-graph-scala:
 
-Constructing Flow Graphs
-------------------------
+Constructing Graphs
+-------------------
 
-Flow graphs are built from simple Flows which serve as the linear connections within the graphs as well as junctions
+Graphs are built from simple Flows which serve as the linear connections within the graphs as well as junctions
 which serve as fan-in and fan-out points for Flows. Thanks to the junctions having meaningful types based on their behaviour
 and making them explicit elements these elements should be rather straightforward to use.
 
@@ -41,7 +41,7 @@ Akka Streams currently provide these junctions (for a detailed list see :ref:`st
  - ``Zip[A,B]`` – *(2 inputs, 1 output)* is a :class:`ZipWith` specialised to zipping input streams of ``A`` and ``B`` into an ``(A,B)`` tuple stream
  - ``Concat[A]`` – *(2 inputs, 1 output)* concatenates two streams (first consume one, then the second one)
 
-One of the goals of the FlowGraph DSL is to look similar to how one would draw a graph on a whiteboard, so that it is
+One of the goals of the GraphDSL DSL is to look similar to how one would draw a graph on a whiteboard, so that it is
 simple to translate a design from whiteboard to code and be able to relate those two. Let's illustrate this by translating
 the below hand drawn graph into Akka Streams:
 
@@ -55,18 +55,18 @@ will be inferred.
 .. includecode:: code/docs/stream/FlowGraphDocSpec.scala#simple-flow-graph
 
 .. note::
-   Junction *reference equality* defines *graph node equality* (i.e. the same merge *instance* used in a FlowGraph
+   Junction *reference equality* defines *graph node equality* (i.e. the same merge *instance* used in a GraphDSL
    refers to the same location in the resulting graph).
 
-Notice the ``import FlowGraph.Implicits._`` which brings into scope the ``~>`` operator (read as "edge", "via" or "to")
+Notice the ``import GraphDSL.Implicits._`` which brings into scope the ``~>`` operator (read as "edge", "via" or "to")
 and its inverted counterpart ``<~`` (for noting down flows in the opposite direction where appropriate).
 
-By looking at the snippets above, it should be apparent that the :class:`FlowGraph.Builder` object is *mutable*.
+By looking at the snippets above, it should be apparent that the :class:`GraphDSL.Builder` object is *mutable*.
 It is used (implicitly) by the ``~>`` operator, also making it a mutable operation as well.
 The reason for this design choice is to enable simpler creation of complex graphs, which may even contain cycles.
-Once the FlowGraph has been constructed though, the :class:`FlowGraph` instance *is immutable, thread-safe, and freely shareable*.
-The same is true of all flow pieces—sources, sinks, and flows—once they are constructed.
-This means that you can safely re-use one given Flow in multiple places in a processing graph.
+Once the GraphDSL has been constructed though, the :class:`GraphDSL` instance *is immutable, thread-safe, and freely shareable*.
+The same is true of all graph pieces—sources, sinks, and flows—once they are constructed.
+This means that you can safely re-use one given Flow or junction in multiple places in a processing graph.
 
 We have seen examples of such re-use already above: the merge and broadcast junctions were imported
 into the graph using ``builder.add(...)``, an operation that will make a copy of the blueprint that
@@ -84,18 +84,18 @@ materialized as two connections between the corresponding Sources and Sinks:
 
 .. _partial-flow-graph-scala:
 
-Constructing and combining Partial Flow Graphs
-----------------------------------------------
+Constructing and combining Partial Graphs
+-----------------------------------------
 
 Sometimes it is not possible (or needed) to construct the entire computation graph in one place, but instead construct
 all of its different phases in different places and in the end connect them all into a complete graph and run it.
 
 This can be achieved by returning a different ``Shape`` than ``ClosedShape``, for example ``FlowShape(in, out)``, from the
-function given to ``FlowGraph.create``. See :ref:`predefined_shapes`) for a list of such predefined shapes.
+function given to ``GraphDSL.create``. See :ref:`predefined_shapes`) for a list of such predefined shapes.
 
 Making a ``Graph`` a :class:`RunnableGraph` requires all ports to be connected, and if they are not
 it will throw an exception at construction time, which helps to avoid simple
-wiring errors while working with graphs. A partial flow graph however allows
+wiring errors while working with graphs. A partial graph however allows
 you to return the set of yet to be connected ports from the code block that
 performs the internal wiring.
 
@@ -112,10 +112,10 @@ the undefined elements are rewired to real sources and sinks. The graph can then
 
 .. warning::
 
-   Please note that :class:`FlowGraph` is not able to provide compile time type-safety about whether or not all
+   Please note that :class:`GraphDSL` is not able to provide compile time type-safety about whether or not all
    elements have been properly connected—this validation is performed as a runtime check during the graph's instantiation.
 
-   A partial flow graph also verifies that all ports are either connected or part of the returned :class:`Shape`.
+   A partial graph also verifies that all ports are either connected or part of the returned :class:`Shape`.
 
 .. _constructing-sources-sinks-flows-from-partial-graphs-scala:
 
@@ -136,7 +136,7 @@ Being able to hide complex graphs inside of simple elements such as Sink / Sourc
 complex element and from there on treat it as simple compound stage for linear computations.
 
 In order to create a Source from a graph the method ``Source.fromGraph`` is used, to use it we must have a
-``Graph[SourceShape, T]``. This is constructed using ``FlowGraph.create`` and returning a ``SourceShape``
+``Graph[SourceShape, T]``. This is constructed using ``GraphDSL.create`` and returning a ``SourceShape``
 from the function passed in . The single outlet must be provided to the ``SourceShape.of`` method and will become
 “the sink that must be attached before this Source can run”.
 
@@ -283,7 +283,7 @@ The following example demonstrates a case where the materialized ``Future`` of a
 Graph cycles, liveness and deadlocks
 ------------------------------------
 
-Cycles in bounded flow graphs need special considerations to avoid potential deadlocks and other liveness issues.
+Cycles in bounded stream topologies need special considerations to avoid potential deadlocks and other liveness issues.
 This section shows several examples of problems that can arise from the presence of feedback arcs in stream processing
 graphs.
 
