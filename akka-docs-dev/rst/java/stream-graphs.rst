@@ -138,7 +138,7 @@ construction in action:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamPartialFlowGraphDocTest.java#source-from-partial-flow-graph
 
-Similarly the same can be done for a ``Sink<T>`` using ``SinkShape.of`` in which case the returned value must be an
+Similarly the same can be done for a ``Sink<T>`` using ``SinkShape.of`` in which case the provided value must be an
 ``Inlet<T>``. For defining a ``Flow<T>`` we need to expose both an undefined source and sink:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamPartialFlowGraphDocTest.java#flow-from-partial-flow-graph

@@ -145,7 +145,7 @@ construction in action:
 
 .. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#source-from-partial-flow-graph
 
-Similarly the same can be done for a ``Sink[T]``, using ``SinkShape.of`` in which case the returned value
+Similarly the same can be done for a ``Sink[T]``, using ``SinkShape.of`` in which case the provided value
 must be an ``Inlet[T]``. For defining a ``Flow[T]`` we need to expose both an inlet and an outlet:
 
 .. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#flow-from-partial-flow-graph
