@@ -200,6 +200,7 @@ object GraphStageLogic {
     protected def sendTerminated(): Unit = {
       val watchedBy = _watchedBy.getAndSet(StageTerminatedTombstone)
       if (!(watchedBy == StageTerminatedTombstone) && !watchedBy.isEmpty) {
+
         watchedBy foreach sendTerminated(ifLocal = false)
         watchedBy foreach sendTerminated(ifLocal = true)
       }
