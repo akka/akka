@@ -119,11 +119,8 @@ object SslTls {
     override def subModules: Set[Module] = Set.empty
 
     override def withAttributes(att: Attributes): Module = copy(attributes = att)
-    override def carbonCopy: Module = {
-      val mod = TlsModule(attributes, sslContext, firstSession, role, closing, hostInfo)
-      if (plainIn == shape.inlets.head) mod
-      else mod.replaceShape(mod.shape.asInstanceOf[BidiShape[_, _, _, _]].reversed)
-    }
+    override def carbonCopy: Module =
+      TlsModule(attributes, sslContext, firstSession, role, closing, hostInfo)
 
     override def replaceShape(s: Shape) =
       if (s == shape) this

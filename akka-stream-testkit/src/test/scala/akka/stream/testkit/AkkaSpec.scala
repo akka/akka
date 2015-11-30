@@ -19,7 +19,6 @@ import scala.concurrent.duration._
 object AkkaSpec { // FIXME: remove once going back to project dependencies
   val testConf: Config = ConfigFactory.parseString("""
       akka {
-        loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
         actor {
