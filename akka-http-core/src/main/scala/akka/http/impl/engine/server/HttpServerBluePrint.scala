@@ -7,7 +7,6 @@ package akka.http.impl.engine.server
 import java.net.InetSocketAddress
 import java.util.Random
 import scala.collection.immutable
-import akka.stream.scaladsl.One2OneBidiFlow.One2OneBidi
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.util.control.NonFatal
 import akka.event.LoggingAdapter
@@ -49,39 +48,62 @@ import akka.util.ByteString
  *                 +----------+                                   +-------------+  Context    +-----------+
  */
 private[http] object HttpServerBluePrint {
-  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer = {
+  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer =
+    stack(settings, remoteAddress, log)
+
+  def stack(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer = {
+    One2OneBidiFlow[HttpRequest, HttpResponse](settings.pipeliningLimit).reversed atop
+      requestPreparation(settings, remoteAddress) atop
+      controller(settings, log) atop
+      parsingRendering(settings, log) atop
+      protocolSwitching(settings, log) atop
+      unwrapTls
+  }
+  def unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, Unit] =
+    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x.bytes })
+
+  /** Wrap an HTTP implementation with support for switching to Websocket */
+  def protocolSwitching(settings: ServerSettings, log: LoggingAdapter)(implicit mat: Materializer): BidiFlow[ResponseRenderingOutput, ByteString, ByteString, ByteString, Unit] = {
+    val ws = websocketSetup
+
+    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
+      import FlowGraph.Implicits._
+
+      val switchTokenBroadcast = b.add(Broadcast[ResponseRenderingOutput](2))
+      val switchToWebsocket = b.add(Flow[ResponseRenderingOutput]
+        .collect { case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken })
+
+      val websocket = b.add(ws.websocketFlow)
+      val protocolRouter = b.add(WebsocketSwitchRouter)
+      val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory, log))
+      val wsSwitchTokenMerge = b.add(WsSwitchTokenMerge)
+
+      val netIn = wsSwitchTokenMerge.in0
+      val netOut = protocolMerge.out
+
+      val httpIn = switchTokenBroadcast.in
+      val httpOut = protocolRouter.out0
+
+      switchTokenBroadcast ~> protocolMerge.in0
+      protocolRouter.out1 ~> websocket ~> protocolMerge.in1
+
+      switchTokenBroadcast ~> switchToWebsocket ~> wsSwitchTokenMerge.in1
+      wsSwitchTokenMerge.out ~> protocolRouter.in
+
+      BidiShape(httpIn, netOut, netIn, httpOut)
+    })
+  }
+
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, ByteString, RequestOutput, Unit] =
+    BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log))
+
+  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, Unit] =
+    BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
+
+  def requestPreparation(settings: ServerSettings, remoteAddress: Option[InetSocketAddress])(implicit mat: Materializer): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, Unit] = {
     import settings._
 
-    // the initial header parser we initially use for every connection,
-    // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader,
-      HttpHeaderParser(parserSettings) { info ⇒
-        if (parserSettings.illegalHeaderWarnings)
-          logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
-      })
-
-    val ws = websocketSetup
-    val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
-
-    def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
-      case start: RequestStart ⇒
-        try {
-          val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, securedConnection = false, defaultHostHeader)
-          start.copy(uri = effectiveUri)
-        } catch {
-          case e: IllegalUriException ⇒
-            MessageStartError(StatusCodes.BadRequest, ErrorInfo("Request is missing required `Host` header", e.getMessage))
-        }
-      case x ⇒ x
-    }
-
-    val requestParsingFlow = Flow[ByteString].transform(() ⇒
-      // each connection uses a single (private) request parser instance for all its requests
-      // which builds a cache of all header instances seen on that connection
-      rootParser.createShallowCopy().stage).named("rootParser")
-      .map(establishAbsoluteUri)
-
-    val requestPreparationFlow =
+    val prepareRequest =
       Flow[RequestOutput]
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .via(headAndTailFlow)
@@ -105,59 +127,48 @@ private[http] object HttpServerBluePrint {
         // `buffer` will ensure demand and therefore make sure that completion is reported eagerly.
         .buffer(1, OverflowStrategy.backpressure)
 
-    val responseRenderingFlow =
-      Flow[ResponseRenderingContext]
-        .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
-        .flatMapConcat(ConstantFun.scalaIdentityFunction)
-        .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
+    BidiFlow.fromFlows(Flow[HttpResponse], prepareRequest)
+  }
 
-    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[ByteString, RequestOutput, Unit] = {
+    import settings._
 
-      // HTTP
-      val requestParsing = b.add(requestParsingFlow)
-      val requestPreparation = b.add(requestPreparationFlow)
-      val responseRendering = b.add(responseRenderingFlow)
-      val controllerStage = b.add(new ControllerStage(settings, log))
-      val csRequestParsingIn = controllerStage.in1
-      val csRequestPrepOut = controllerStage.out1
-      val csHttpResponseIn = controllerStage.in2
-      val csResponseCtxOut = controllerStage.out2
-      requestParsing.outlet ~> csRequestParsingIn
-      csResponseCtxOut ~> responseRendering.inlet
-      csRequestPrepOut ~> requestPreparation
+    // the initial header parser we initially use for every connection,
+    // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
+    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader,
+      HttpHeaderParser(parserSettings) { info ⇒
+        if (parserSettings.illegalHeaderWarnings)
+          logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
+      })
 
-      // One2OneBidi
-      val one2one = b.add(new One2OneBidi[HttpRequest, HttpResponse](settings.pipeliningLimit))
-      requestPreparation.outlet ~> one2one.in1
-      one2one.out2 ~> csHttpResponseIn
+    def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
+      case start: RequestStart ⇒
+        try {
+          val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, securedConnection = false, defaultHostHeader)
+          start.copy(uri = effectiveUri)
+        } catch {
+          case e: IllegalUriException ⇒
+            MessageStartError(StatusCodes.BadRequest, ErrorInfo("Request is missing required `Host` header", e.getMessage))
+        }
+      case x ⇒ x
+    }
 
-      // Websocket
-      val http = FlowShape(requestParsing.inlet, responseRendering.outlet)
-      val switchTokenBroadcast = b.add(Broadcast[ResponseRenderingOutput](2))
-      val switchToWebsocket = b.add(Flow[ResponseRenderingOutput]
-        .collect { case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken })
-      val websocket = b.add(ws.websocketFlow)
-      val protocolRouter = b.add(WebsocketSwitchRouter)
-      val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory, log))
-      val wsSwitchTokenMerge = b.add(WsSwitchTokenMerge)
-      switchTokenBroadcast ~> switchToWebsocket ~> wsSwitchTokenMerge.in1
-      protocolRouter.out0 ~> http ~> switchTokenBroadcast ~> protocolMerge.in0
-      protocolRouter.out1 ~> websocket ~> protocolMerge.in1
-      wsSwitchTokenMerge.out ~> protocolRouter.in
+    Flow[ByteString].transform(() ⇒
+      // each connection uses a single (private) request parser instance for all its requests
+      // which builds a cache of all header instances seen on that connection
+      rootParser.createShallowCopy().stage).named("rootParser")
+      .map(establishAbsoluteUri)
+  }
 
-      // SSL/TLS
-      val unwrapTls = b.add(Flow[SslTlsInbound] collect { case x: SessionBytes ⇒ x.bytes })
-      val wrapTls = b.add(Flow[ByteString].map[SslTlsOutbound](SendBytes))
-      unwrapTls ~> wsSwitchTokenMerge.in0
-      protocolMerge.out ~> wrapTls
+  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, Unit] = {
+    import settings._
 
-      BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest](
-        one2one.in2,
-        wrapTls.outlet,
-        unwrapTls.inlet,
-        one2one.out1)
-    })
+    val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
+
+    Flow[ResponseRenderingContext]
+      .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
+      .flatMapConcat(ConstantFun.scalaIdentityFunction)
+      .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
