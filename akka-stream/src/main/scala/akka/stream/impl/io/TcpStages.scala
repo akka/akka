@@ -4,7 +4,7 @@
 package akka.stream.impl.io
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 
 import akka.actor.{ ActorRef, Terminated }
 import akka.dispatch.ExecutionContexts
@@ -32,13 +32,15 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
                                             val backlog: Int,
                                             val options: immutable.Traversable[SocketOption],
                                             val halfClose: Boolean,
-                                            val idleTimeout: Duration)
+                                            val idleTimeout: Duration,
+                                            val bindShutdownTimeout: FiniteDuration)
   extends GraphStageWithMaterializedValue[SourceShape[StreamTcp.IncomingConnection], Future[StreamTcp.ServerBinding]] {
+  import ConnectionSourceStage._
 
   val out: Outlet[StreamTcp.IncomingConnection] = Outlet("IncomingConnections.out")
   val shape: SourceShape[StreamTcp.IncomingConnection] = SourceShape(out)
 
-  private val BindTimer = "BindTimer"
+  private val connectionFlowsAwaitingInitialization = new AtomicLong()
 
   // TODO: Timeout on bind
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[ServerBinding]) = {
@@ -72,9 +74,10 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
           case c: Connected ⇒
             push(out, connectionFor(c, sender))
           case Unbind ⇒
-            if (!isClosed(out) && (listener ne null)) listener ! Unbind
+            if (!isClosed(out) && (listener ne null)) tryUnbind()
           case Unbound ⇒ // If we're unbound then just shut down
-            completeStage()
+            if (connectionFlowsAwaitingInitialization.get() == 0) completeStage()
+            else scheduleOnce(BindShutdownTimer, bindShutdownTimeout)
           case Terminated(ref) if ref == listener ⇒
             failStage(new IllegalStateException("IO Listener actor terminated unexpectedly"))
         }
@@ -89,10 +92,19 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
         override def onDownstreamFinish(): Unit = tryUnbind()
       })
 
+      // because when we tryUnbind, we must wait for the Ubound signal before terminating
+      override def keepGoingAfterAllPortsClosed = true
+
       private def connectionFor(connected: Connected, connection: ActorRef): StreamTcp.IncomingConnection = {
+        connectionFlowsAwaitingInitialization.incrementAndGet()
+
         val tcpFlow =
           Flow.fromGraph(new IncomingConnectionStage(connection, connected.remoteAddress, halfClose))
             .via(new Detacher[ByteString]) // must read ahead for proper completions
+            .mapMaterializedValue { m ⇒
+              connectionFlowsAwaitingInitialization.decrementAndGet()
+              m
+            }
 
         // FIXME: Previous code was wrong, must add new tests
         val handler = idleTimeout match {
@@ -107,8 +119,15 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
       }
 
       private def tryUnbind(): Unit = {
-        if (listener ne null) listener ! Unbind
-        else completeStage()
+        if (listener ne null) {
+          self.unwatch(listener)
+          listener ! Unbind
+        }
+      }
+
+      override def onTimer(timerKey: Any): Unit = timerKey match {
+        case BindShutdownTimer ⇒
+          completeStage() // TODO need to manually shut down instead right?
       }
 
       override def postStop(): Unit = {
@@ -120,6 +139,11 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
     (logic, bindingPromise.future)
   }
 
+}
+
+private[stream] object ConnectionSourceStage {
+  val BindTimer = "BindTimer"
+  val BindShutdownTimer = "BindTimer"
 }
 
 /**
@@ -194,11 +218,9 @@ private[stream] object TcpConnectionStage {
       val sender = evt._1
       val msg = evt._2
       msg match {
-        case Terminated(_) ⇒
-          failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
+        case Terminated(_)      ⇒ failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
         case CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed"))
-
-        case ErrorClosed(cause) ⇒ failStage(new StreamTcpException(s"The connection closed with error $cause"))
+        case ErrorClosed(cause) ⇒ failStage(new StreamTcpException(s"The connection closed with error: $cause"))
         case Aborted            ⇒ failStage(new StreamTcpException("The connection has been aborted"))
         case Closed             ⇒ completeStage()
         case ConfirmedClosed    ⇒ completeStage()
@@ -253,7 +275,7 @@ private[stream] object TcpConnectionStage {
       case Outbound(_, _, localAddressPromise, _) ⇒
         // Fail if has not been completed with an address eariler
         localAddressPromise.tryFailure(new StreamTcpException("Connection failed."))
-      case _ ⇒
+      case _ ⇒ // do nothing...
     }
   }
 }
@@ -299,7 +321,6 @@ private[stream] class OutgoingConnectionStage(manager: ActorRef,
   val shape: FlowShape[ByteString, ByteString] = FlowShape(bytesIn, bytesOut)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[StreamTcp.OutgoingConnection]) = {
-
     // FIXME: A method like this would make soo much sense on Duration (i.e. toOption)
     val connTimeout = connectTimeout match {
       case x: FiniteDuration ⇒ Some(x)

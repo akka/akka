@@ -62,6 +62,9 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
 
+  // TODO maybe this should be a new setting, like `akka.stream.tcp.bind.timeout` / `shutdown-timeout` instead?
+  val bindShutdownTimeout = ActorMaterializer()(system).settings.subscriptionTimeoutSettings.timeout
+
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
    *
@@ -95,7 +98,8 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       backlog,
       options,
       halfClose,
-      idleTimeout))
+      idleTimeout,
+      bindShutdownTimeout))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
