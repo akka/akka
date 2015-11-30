@@ -99,32 +99,31 @@ Elements that can be used to form such "fan-out" (or "fan-in") structures are re
 One of these that we'll be using in this example is called :class:`Broadcast`, and it simply emits elements from its
 input port to all of its output ports.
 
-Akka Streams intentionally separate the linear stream structures (Flows) from the non-linear, branching ones (FlowGraphs)
+Akka Streams intentionally separate the linear stream structures (Flows) from the non-linear, branching ones (Graphs)
 in order to offer the most convenient API for both of these cases. Graphs can express arbitrarily complex stream setups
 at the expense of not reading as familiarly as collection transformations.
 
-A graph can be either ``closed`` which is also known as a "*fully connected graph*", or ``partial`` which can be seen as
-a *partial graph* (a graph with some unconnected ports), thus being a generalisation of the Flow concept, where ``Flow``
-is simply a partial graph with one unconnected input and one unconnected output. Concepts around composing and nesting
-graphs in large structures are explained explained in detail in :ref:`composition-scala`.
-
-It is also possible to wrap complex computation
-graphs as Flows, Sinks or Sources, which will be explained in detail in :ref:`constructing-sources-sinks-flows-from-partial-graphs-scala`.
-FlowGraphs are constructed like this:
+Graphs are constructed using :class:`FlowGraph` like this:
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#flow-graph-broadcast
 
-.. note::
-  The ``~>`` (read as "edge", "via" or "to") operator is only available if ``FlowGraph.Implicits._`` are imported.
-  Without this import you can still construct graphs using the ``builder.addEdge(from,[through,]to)`` method.
+As you can see, inside the :class:`FlowGraph` we use an implicit graph builder ``b`` to mutably construct the graph
+using the ``~>`` "edge operator" (also read as "connect" or "via" or "to"). The operator is provided implicitly
+by importing ``FlowGraph.Implicits._``.
 
-As you can see, inside the :class:`FlowGraph` we use an implicit graph builder to mutably construct the graph
-using the ``~>`` "edge operator" (also read as "connect" or "via" or "to"). Once we have the FlowGraph in the value ``g``
-*it is immutable, thread-safe, and freely shareable*. A graph can be ``run()`` directly - assuming all
-ports (sinks/sources) within a flow have been connected properly. It is possible to construct partial graphs
-where this is not required but this will be covered in detail in :ref:`partial-flow-graph-scala`.
+``FlowGraph.create`` returns a :class:`Graph`, in this example a :class:`Graph[ClosedShape, Unit]` where
+:class:`ClosedShape` means that it is *a fully connected graph* or "closed" - there are no unconnected inputs or outputs.
+Since it is closed it is possible to transform the graph into a :class:`RunnableGraph` using ``RunnableGraph.fromGraph``.
+The runnable graph can then be ``run()`` to materialize a stream out of it.
 
-As all Akka Streams elements, :class:`Broadcast` will properly propagate back-pressure to its upstream element.
+Both :class:`Graph` and :class:`RunnableGraph` are *immutable, thread-safe, and freely shareable*.
+
+A graph can also have one of several other shapes, with one or more unconnected ports. Having unconnected ports
+expresses a grapth that is a *partial graph*. Concepts around composing and nesting graphs in large structures are
+explained explained in detail in :ref:`composition-scala`. It is also possible to wrap complex computation graphs
+as Flows, Sinks or Sources, which will be explained in detail in
+:ref:`constructing-sources-sinks-flows-from-partial-graphs-scala`.
+
 
 Back-pressure in action
 -----------------------
