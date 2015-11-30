@@ -55,8 +55,8 @@ private object PoolSlot {
             remoteAddress: InetSocketAddress, // TODO: remove after #16168 is cleared
             settings: ConnectionPoolSettings)(implicit system: ActorSystem,
                                               fm: Materializer): Graph[FanOutShape2[RequestContext, ResponseContext, RawSlotEvent], Any] =
-    FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+    GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
 
       // TODO wouldn't be better to have them under a known parent? /user/SlotProcessor-0 seems weird
       val name = slotProcessorActorName.next()

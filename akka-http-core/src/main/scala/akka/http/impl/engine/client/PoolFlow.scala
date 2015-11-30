@@ -70,9 +70,9 @@ private object PoolFlow {
   def apply(connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
             remoteAddress: InetSocketAddress, settings: ConnectionPoolSettings, log: LoggingAdapter)(
               implicit system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, Unit] =
-    Flow.fromGraph(FlowGraph.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
+    Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
-      import FlowGraph.Implicits._
+      import GraphDSL.Implicits._
 
       val conductor = b.add(PoolConductor(maxConnections, pipeliningLimit, log))
       val slots = Vector

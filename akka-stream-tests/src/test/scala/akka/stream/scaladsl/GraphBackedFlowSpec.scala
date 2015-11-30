@@ -12,8 +12,8 @@ import org.reactivestreams.Subscriber
 object GraphFlowSpec {
   val source1 = Source(0 to 3)
 
-  val partialGraph = FlowGraph.create() { implicit b ⇒
-    import FlowGraph.Implicits._
+  val partialGraph = GraphDSL.create() { implicit b ⇒
+    import GraphDSL.Implicits._
     val source2 = Source(4 to 9)
     val source3 = Source.empty[Int]
     val source4 = Source.empty[String]
@@ -62,9 +62,9 @@ class GraphFlowSpec extends AkkaSpec {
       "work with a Source and Sink" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val flow = Flow.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
+        val flow = Flow.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             FlowShape(partial.inlet, partial.outlet.map(_.toInt).outlet)
         })
 
@@ -76,7 +76,7 @@ class GraphFlowSpec extends AkkaSpec {
       "be transformable with a Pipe" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val flow = Flow.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
+        val flow = Flow.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒ FlowShape(partial.inlet, partial.outlet)
         })
 
@@ -88,12 +88,12 @@ class GraphFlowSpec extends AkkaSpec {
       "work with another GraphFlow" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val flow1 = Flow.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
+        val flow1 = Flow.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
             FlowShape(partial.inlet, partial.outlet)
         })
 
-        val flow2 = Flow.fromGraph(FlowGraph.create(Flow[String].map(_.toInt)) { implicit b ⇒
+        val flow2 = Flow.fromGraph(GraphDSL.create(Flow[String].map(_.toInt)) { implicit b ⇒
           importFlow ⇒
             FlowShape(importFlow.inlet, importFlow.outlet)
         })
@@ -106,12 +106,12 @@ class GraphFlowSpec extends AkkaSpec {
       "be reusable multiple times" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val flow = Flow.fromGraph(FlowGraph.create(Flow[Int].map(_ * 2)) { implicit b ⇒
+        val flow = Flow.fromGraph(GraphDSL.create(Flow[Int].map(_ * 2)) { implicit b ⇒
           importFlow ⇒ FlowShape(importFlow.inlet, importFlow.outlet)
         })
 
-        RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-          import FlowGraph.Implicits._
+        RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+          import GraphDSL.Implicits._
           Source(1 to 5) ~> flow ~> flow ~> Sink(probe)
           ClosedShape
         }).run()
@@ -124,9 +124,9 @@ class GraphFlowSpec extends AkkaSpec {
       "work with a Sink" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val source = Source.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
+        val source = Source.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             source1 ~> partial.inlet
             SourceShape(partial.outlet.map(_.toInt).outlet)
         })
@@ -149,9 +149,9 @@ class GraphFlowSpec extends AkkaSpec {
 
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val source = Source.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
+        val source = Source.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             source1 ~> partial.inlet
             SourceShape(partial.outlet)
         })
@@ -164,14 +164,14 @@ class GraphFlowSpec extends AkkaSpec {
       "work with an GraphFlow" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val source = Source.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
+        val source = Source.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             source1 ~> partial.inlet
             SourceShape(partial.outlet)
         })
 
-        val flow = Flow.fromGraph(FlowGraph.create(Flow[String].map(_.toInt)) { implicit b ⇒
+        val flow = Flow.fromGraph(GraphDSL.create(Flow[String].map(_.toInt)) { implicit b ⇒
           importFlow ⇒
             FlowShape(importFlow.inlet, importFlow.outlet)
         })
@@ -184,15 +184,15 @@ class GraphFlowSpec extends AkkaSpec {
       "be reusable multiple times" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val source = Source.fromGraph(FlowGraph.create(Source(1 to 5)) { implicit b ⇒
+        val source = Source.fromGraph(GraphDSL.create(Source(1 to 5)) { implicit b ⇒
           s ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             SourceShape(s.outlet.map(_ * 2).outlet)
         })
 
-        RunnableGraph.fromGraph(FlowGraph.create(source, source)(Keep.both) { implicit b ⇒
+        RunnableGraph.fromGraph(GraphDSL.create(source, source)(Keep.both) { implicit b ⇒
           (s1, s2) ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             val merge = b.add(Merge[Int](2))
             s1.outlet ~> merge.in(0)
             merge.out ~> Sink(probe)
@@ -208,9 +208,9 @@ class GraphFlowSpec extends AkkaSpec {
       "work with a Source" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val sink = Sink.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
+        val sink = Sink.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             partial.outlet.map(_.toInt) ~> Sink(probe)
             SinkShape(partial.inlet)
         })
@@ -224,7 +224,7 @@ class GraphFlowSpec extends AkkaSpec {
         val probe = TestSubscriber.manualProbe[Int]()
         val pubSink = Sink.publisher[Int](false)
 
-        val sink = Sink.fromGraph(FlowGraph.create(pubSink) { implicit b ⇒
+        val sink = Sink.fromGraph(GraphDSL.create(pubSink) { implicit b ⇒
           p ⇒ SinkShape(p.inlet)
         })
 
@@ -237,9 +237,9 @@ class GraphFlowSpec extends AkkaSpec {
       "be transformable with a Pipe" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val sink = Sink.fromGraph(FlowGraph.create(partialGraph, Flow[String].map(_.toInt))(Keep.both) { implicit b ⇒
+        val sink = Sink.fromGraph(GraphDSL.create(partialGraph, Flow[String].map(_.toInt))(Keep.both) { implicit b ⇒
           (partial, flow) ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             flow.outlet ~> partial.inlet
             partial.outlet.map(_.toInt) ~> Sink(probe)
             SinkShape(flow.inlet)
@@ -255,14 +255,14 @@ class GraphFlowSpec extends AkkaSpec {
 
         val probe = TestSubscriber.manualProbe[Int]()
 
-        val flow = Flow.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
+        val flow = Flow.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
             FlowShape(partial.inlet, partial.outlet)
         })
 
-        val sink = Sink.fromGraph(FlowGraph.create(Flow[String].map(_.toInt)) { implicit b ⇒
+        val sink = Sink.fromGraph(GraphDSL.create(Flow[String].map(_.toInt)) { implicit b ⇒
           flow ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             flow.outlet ~> Sink(probe)
             SinkShape(flow.inlet)
         })
@@ -279,29 +279,29 @@ class GraphFlowSpec extends AkkaSpec {
         val inSource = Source.subscriber[Int]
         val outSink = Sink.publisher[Int](false)
 
-        val flow = Flow.fromGraph(FlowGraph.create(partialGraph) { implicit b ⇒
+        val flow = Flow.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             FlowShape(partial.inlet, partial.outlet.map(_.toInt).outlet)
         })
 
-        val source = Source.fromGraph(FlowGraph.create(Flow[Int].map(_.toString), inSource)(Keep.right) { implicit b ⇒
+        val source = Source.fromGraph(GraphDSL.create(Flow[Int].map(_.toString), inSource)(Keep.right) { implicit b ⇒
           (flow, src) ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             src.outlet ~> flow.inlet
             SourceShape(flow.outlet)
         })
 
-        val sink = Sink.fromGraph(FlowGraph.create(Flow[String].map(_.toInt), outSink)(Keep.right) { implicit b ⇒
+        val sink = Sink.fromGraph(GraphDSL.create(Flow[String].map(_.toInt), outSink)(Keep.right) { implicit b ⇒
           (flow, snk) ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             flow.outlet ~> snk.inlet
             SinkShape(flow.inlet)
         })
 
-        val (m1, m2, m3) = RunnableGraph.fromGraph(FlowGraph.create(source, flow, sink)(Tuple3.apply) { implicit b ⇒
+        val (m1, m2, m3) = RunnableGraph.fromGraph(GraphDSL.create(source, flow, sink)(Tuple3.apply) { implicit b ⇒
           (src, f, snk) ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             src.outlet.map(_.toInt) ~> f.inlet
             f.outlet.map(_.toString) ~> snk.inlet
             ClosedShape
@@ -320,19 +320,19 @@ class GraphFlowSpec extends AkkaSpec {
         val inSource = Source.subscriber[Int]
         val outSink = Sink.publisher[Int](false)
 
-        val source = Source.fromGraph(FlowGraph.create(inSource) { implicit b ⇒
+        val source = Source.fromGraph(GraphDSL.create(inSource) { implicit b ⇒
           src ⇒
             SourceShape(src.outlet)
         })
 
-        val sink = Sink.fromGraph(FlowGraph.create(outSink) { implicit b ⇒
+        val sink = Sink.fromGraph(GraphDSL.create(outSink) { implicit b ⇒
           snk ⇒
             SinkShape(snk.inlet)
         })
 
-        val (m1, m2) = RunnableGraph.fromGraph(FlowGraph.create(source, sink)(Keep.both) { implicit b ⇒
+        val (m1, m2) = RunnableGraph.fromGraph(GraphDSL.create(source, sink)(Keep.both) { implicit b ⇒
           (src, snk) ⇒
-            import FlowGraph.Implicits._
+            import GraphDSL.Implicits._
             src.outlet ~> snk.inlet
             ClosedShape
         }).run()

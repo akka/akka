@@ -9,10 +9,10 @@ import akka.stream.{ Graph, Attributes, Shape }
 
 trait GraphApply {
   /**
-   * Creates a new [[Graph]] by passing a [[FlowGraph.Builder]] to the given create function.
+   * Creates a new [[Graph]] by passing a [[GraphDSL.Builder]] to the given create function.
    */
-  def create[S <: Shape]()(buildBlock: FlowGraph.Builder[Unit] ⇒ S): Graph[S, Unit] = {
-    val builder = new FlowGraph.Builder
+  def create[S <: Shape]()(buildBlock: GraphDSL.Builder[Unit] ⇒ S): Graph[S, Unit] = {
+    val builder = new GraphDSL.Builder
     val s = buildBlock(builder)
     val mod = builder.module.nest().replaceShape(s)
 
@@ -21,10 +21,10 @@ trait GraphApply {
 
   /**
    * Creates a new [[Graph]] by importing the given graph `g1` and passing its [[Shape]]
-   * along with the [[FlowGraph.Builder]] to the given create function.
+   * along with the [[GraphDSL.Builder]] to the given create function.
    */
-  def create[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
-    val builder = new FlowGraph.Builder
+  def create[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: GraphDSL.Builder[Mat] ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
+    val builder = new GraphDSL.Builder
     val s1 = builder.add(g1)
     val s = buildBlock(builder)(s1)
     val mod = builder.module.nest().replaceShape(s)
@@ -37,10 +37,10 @@ trait GraphApply {
 
   /**
    * Creates a new [[Graph]] by importing the given graphs and passing their [[Shape]]s
-   * along with the [[FlowGraph.Builder]] to the given create function.
+   * along with the [[GraphDSL.Builder]] to the given create function.
    */
-  def create[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ S): Graph[S, Mat] = {
-    val builder = new FlowGraph.Builder
+  def create[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: GraphDSL.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ S): Graph[S, Mat] = {
+    val builder = new GraphDSL.Builder
     val curried = combineMat.curried
     val s##1 = builder.add(g##1, (m##1: M##1) ⇒ curried(m##1))
     [2..#val s1 = builder.add(g1, (f: M1 ⇒ Any, m1: M1) ⇒ f(m1))#

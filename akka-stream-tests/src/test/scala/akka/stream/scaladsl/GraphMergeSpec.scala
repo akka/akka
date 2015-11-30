@@ -11,11 +11,11 @@ import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 
 class GraphMergeSpec extends TwoStreamsSetup {
-  import FlowGraph.Implicits._
+  import GraphDSL.Implicits._
 
   override type Outputs = Int
 
-  override def fixture(b: FlowGraph.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
     val merge = b add Merge[Outputs](2)
 
     override def left: Inlet[Outputs] = merge.in(0)
@@ -33,7 +33,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val source3 = Source(List[Int]())
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val m1 = b.add(Merge[Int](2))
         val m2 = b.add(Merge[Int](2))
 
@@ -68,7 +68,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val merge = b.add(Merge[Int](6))
 
         source1 ~> merge.in(0)
@@ -154,7 +154,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val src1 = Source.subscriber[Int]
       val src2 = Source.subscriber[Int]
 
-      val (graphSubscriber1, graphSubscriber2) = RunnableGraph.fromGraph(FlowGraph.create(src1, src2)((_, _)) { implicit b ⇒
+      val (graphSubscriber1, graphSubscriber2) = RunnableGraph.fromGraph(GraphDSL.create(src1, src2)((_, _)) { implicit b ⇒
         (s1, s2) ⇒
           val merge = b.add(Merge[Int](2))
           s1.outlet ~> merge.in(0)

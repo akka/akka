@@ -152,7 +152,7 @@ object SslTls {
  */
 object SslTlsPlacebo {
   val forScala: scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, Unit] =
-    scaladsl.BidiFlow.fromGraph(scaladsl.FlowGraph.create() { implicit b ⇒
+    scaladsl.BidiFlow.fromGraph(scaladsl.GraphDSL.create() { implicit b ⇒
       // this constructs a session for (invalid) protocol SSL_NULL_WITH_NULL_NULL
       val session = SSLContext.getDefault.createSSLEngine.getSession
       val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(bytes) ⇒ bytes })

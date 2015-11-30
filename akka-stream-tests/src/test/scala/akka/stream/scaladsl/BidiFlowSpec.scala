@@ -14,7 +14,7 @@ import scala.collection.immutable
 
 class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   import Attributes._
-  import FlowGraph.Implicits._
+  import GraphDSL.Implicits._
 
   implicit val mat = ActorMaterializer()
 
@@ -26,7 +26,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     Flow[Long].map(x ⇒ x.toInt + 2).withAttributes(name("top")),
     Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
 
-  val bidiMat = BidiFlow.fromGraph(FlowGraph.create(Sink.head[Int]) { implicit b ⇒
+  val bidiMat = BidiFlow.fromGraph(GraphDSL.create(Sink.head[Int]) { implicit b ⇒
     s ⇒
       Source.single(42) ~> s
 
@@ -41,7 +41,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   "A BidiFlow" must {
 
     "work top/bottom in isolation" in {
-      val (top, bottom) = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b ⇒
+      val (top, bottom) = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b ⇒
         (st, sb) ⇒
           val s = b.add(bidi)
 
@@ -80,7 +80,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "materialize to its value" in {
-      val f = RunnableGraph.fromGraph(FlowGraph.create(bidiMat) { implicit b ⇒
+      val f = RunnableGraph.fromGraph(GraphDSL.create(bidiMat) { implicit b ⇒
         bidi ⇒
           Flow[String].map(Integer.valueOf(_).toInt) <~> bidi <~> Flow[Long].map(x ⇒ ByteString(s"Hello $x"))
           ClosedShape
@@ -89,7 +89,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     }
 
     "combine materialization values" in assertAllStagesStopped {
-      val left = Flow.fromGraph(FlowGraph.create(Sink.head[Int]) { implicit b ⇒
+      val left = Flow.fromGraph(GraphDSL.create(Sink.head[Int]) { implicit b ⇒
         sink ⇒
           val bcast = b.add(Broadcast[Int](2))
           val merge = b.add(Merge[Int](2))
@@ -99,7 +99,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
           flow ~> merge
           FlowShape(flow.inlet, merge.out)
       })
-      val right = Flow.fromGraph(FlowGraph.create(Sink.head[immutable.Seq[Long]]) { implicit b ⇒
+      val right = Flow.fromGraph(GraphDSL.create(Sink.head[immutable.Seq[Long]]) { implicit b ⇒
         sink ⇒
           val flow = b.add(Flow[Long].grouped(10))
           flow ~> sink

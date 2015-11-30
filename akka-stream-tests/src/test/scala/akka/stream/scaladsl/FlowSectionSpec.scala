@@ -33,8 +33,8 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
     }
 
     "have a nested flow with a different dispatcher" in {
-      val flow = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
-        import FlowGraph.Implicits._
+      val flow = Flow.fromGraph(GraphDSL.create() { implicit b ⇒
+        import GraphDSL.Implicits._
         val bcast1 = b.add(Broadcast[Int](1))
         val bcast2 = b.add(Broadcast[Int](1))
         bcast1 ~> Flow[Int].map(sendThreadNameTo(testActor)) ~> bcast2.in
@@ -51,16 +51,16 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
       val probe1 = TestProbe()
       val probe2 = TestProbe()
 
-      val flow1 = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
-        import FlowGraph.Implicits._
+      val flow1 = Flow.fromGraph(GraphDSL.create() { implicit b ⇒
+        import GraphDSL.Implicits._
         val bcast1 = b.add(Broadcast[Int](1))
         val bcast2 = b.add(Broadcast[Int](1))
         bcast1 ~> Flow[Int].map(sendThreadNameTo(probe1.ref)) ~> bcast2.in
         FlowShape(bcast1.in, bcast2.out(0))
       }).withAttributes(dispatcher("my-dispatcher1"))
 
-      val flow2 = Flow.fromGraph(FlowGraph.create() { implicit b ⇒
-        import FlowGraph.Implicits._
+      val flow2 = Flow.fromGraph(GraphDSL.create() { implicit b ⇒
+        import GraphDSL.Implicits._
         val bcast1 = b.add(Broadcast[Int](1))
         val bcast2 = b.add(Broadcast[Int](1))
         bcast1 ~> flow1.via(Flow[Int].map(sendThreadNameTo(probe2.ref))) ~> bcast2.in
