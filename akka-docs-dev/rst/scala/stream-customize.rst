@@ -72,7 +72,7 @@ output port using ``setHandler(out,handler)``. This handler has two callbacks:
 
 Also, there are two query methods available for output ports:
 
-* ``isAvailable(out)`` returns true if a data element can be grabbed from the port
+* ``isAvailable(out)`` returns true if the port can be pushed
 * ``isClosed(out)`` returns true if the port is closed. At this point the port can not be pushed and will not be pulled anymore.
 
 The relationship of the above operations, events and queries are summarized in the state machine below. Green shows
@@ -98,7 +98,7 @@ The events corresponding to an *input* port can be received in an :class:`InHand
 input port using ``setHandler(in, handler)``. This handler has three callbacks:
 
 * ``onPush()`` is called when the output port has now a new element. Now it is possible to aquire this element using
-  ``grab()`` and/or call ``pull(in)`` on the port to request the next element. It is not mandatory to grab the
+  ``grab(in)`` and/or call ``pull(in)`` on the port to request the next element. It is not mandatory to grab the
   element, but if it is pulled while the element has not been grabbed it will drop the buffered element.
 * ``onUpstreamFinish()`` is called once the upstream has completed and no longer can be pulled for new elements.
   No more ``onPush()`` will arrive after this event. If not overridden this will default to stopping the stage.
@@ -107,8 +107,8 @@ input port using ``setHandler(in, handler)``. This handler has three callbacks:
 
 Also, there are three query methods available for input ports:
 
-* ``isAvailable(out)`` returns true if the port can be grabbed.
-* ``hasBeenPulled(out)`` returns true if the port has been already pulled. Calling ``pull(in)`` in this state is illegal.
+* ``isAvailable(in)`` returns true if the port can be grabbed.
+* ``hasBeenPulled(in)`` returns true if the port has been already pulled. Calling ``pull(in)`` in this state is illegal.
 * ``isClosed(in)`` returns true if the port is closed. At this point the port can not be pulled and will not be pushed anymore.
 
 The relationship of the above operations, events and queries are summarized in the state machine below. Green shows
