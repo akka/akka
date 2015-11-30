@@ -64,10 +64,10 @@ The same is true of all flow pieces—sources, sinks, and flows—once they are 
 This means that you can safely re-use one given Flow in multiple places in a processing graph.
 
 We have seen examples of such re-use already above: the merge and broadcast junctions were imported
-into the graph using ``builder.graph(...)``, an operation that will make a copy of the blueprint that
+into the graph using ``builder.add(...)``, an operation that will make a copy of the blueprint that
 is passed to it and return the inlets and outlets of the resulting copy so that they can be wired up.
 Another alternative is to pass existing graphs—of any shape—into the factory method that produces a
-new graph. The difference between these approaches is that importing using ``b.graph(...)`` ignores the
+new graph. The difference between these approaches is that importing using ``builder.add(...)`` ignores the
 materialized value of the imported graph while importing via the factory method allows its inclusion;
 for more details see :ref:`stream-materialization-scala`.
 
@@ -85,9 +85,8 @@ Constructing and combining Partial Flow Graphs
 Sometimes it is not possible (or needed) to construct the entire computation graph in one place, but instead construct
 all of its different phases in different places and in the end connect them all into a complete graph and run it.
 
-This can be achieved using ``FlowGraph.create()`` instead of
-``FlowGraph.runnable()``, which will return a ``Graph`` instead of a
-``RunnableGraph``.  The reason of representing it as a different type is that a
+This can be achieved by using the returned :class:`Graph` from ``FlowGraph.create()`` rather than
+passing it to ``RunnableGraph.fromGraph()`` to wrap it in a :class:`RunnableGraph`.The reason of representing it as a different type is that a
 :class:`RunnableGraph` requires all ports to be connected, and if they are not
 it will throw an exception at construction time, which helps to avoid simple
 wiring errors while working with graphs. A partial flow graph however allows
@@ -102,11 +101,11 @@ the greatest int value of each zipped triple. We'll want to expose 3 input ports
 
 As you can see, first we construct the partial graph that describes how to compute the maximum of two input streams, then
 we reuse that twice while constructing the partial graph that extends this to three input streams,
-then we import it (all of its nodes and connections) explicitly to the :class:`FlowGraph` instance in which all
+then we import it (all of its nodes and connections) explicitly into the last graph in which all
 the undefined elements are rewired to real sources and sinks. The graph can then be run and yields the expected result.
 
 .. warning::
-   Please note that a :class:`FlowGraph` is not able to provide compile time type-safety about whether or not all
+   Please note that :class:`FlowGraph` is not able to provide compile time type-safety about whether or not all
    elements have been properly connected—this validation is performed as a runtime check during the graph's instantiation.
 
    A partial flow graph also verifies that all ports are either connected or part of the returned :class:`Shape`.
@@ -116,28 +115,31 @@ the undefined elements are rewired to real sources and sinks. The graph can then
 Constructing Sources, Sinks and Flows from Partial Graphs
 ---------------------------------------------------------
 
-Instead of treating a :class:`PartialFlowGraph` as simply a collection of flows and junctions which may not yet all be
+Instead of treating a ``Graph`` as simply a collection of flows and junctions which may not yet all be
 connected it is sometimes useful to expose such a complex graph as a simpler structure,
 such as a :class:`Source`, :class:`Sink` or :class:`Flow`.
 
 In fact, these concepts can be easily expressed as special cases of a partially connected graph:
 
-* :class:`Source` is a partial flow graph with *exactly one* output, that is it returns a :class:`SourceShape`.
-* :class:`Sink` is a partial flow graph with *exactly one* input, that is it returns a :class:`SinkShape`.
-* :class:`Flow` is a partial flow graph with *exactly one* input and *exactly one* output, that is it returns a :class:`FlowShape`.
+* :class:`Source` is a partial graph with *exactly one* output, that is it returns a :class:`SourceShape`.
+* :class:`Sink` is a partial graph with *exactly one* input, that is it returns a :class:`SinkShape`.
+* :class:`Flow` is a partial graph with *exactly one* input and *exactly one* output, that is it returns a :class:`FlowShape`.
 
 Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to easily create one
 complex element and from there on treat it as simple compound stage for linear computations.
 
-In order to create a Source from a partial flow graph ``Source`` provides a special apply method that takes a function
-that must return an :class:`Outlet<T>`. This unconnected sink will become “the sink that must be attached before this Source
-can run”. Refer to the example below, in which we create a Source that zips together two numbers, to see this graph
+In order to create a Source from a graph the method ``Source.fromGraph`` is used, to use it we must have a
+``Graph`` with a ``SourceShape``. This is constructed using ``FlowGraph.create`` and providing building a ``SourceShape``
+graph. The single outlet must be provided to the ``SourceShape.of`` method and will become “the sink that must
+be attached before this Source can run”.
+
+Refer to the example below, in which we create a Source that zips together two numbers, to see this graph
 construction in action:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamPartialFlowGraphDocTest.java#source-from-partial-flow-graph
 
-Similarly the same can be done for a ``Sink<T>``, in which case the returned value must be an ``Inlet<T>``.
-For defining a ``Flow<T>`` we need to expose both an undefined source and sink:
+Similarly the same can be done for a ``Sink<T>`` using ``SinkShape.of`` in which case the provided value must be an
+``Inlet<T>``. For defining a ``Flow<T>`` we need to expose both an undefined source and sink:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamPartialFlowGraphDocTest.java#flow-from-partial-flow-graph
 
