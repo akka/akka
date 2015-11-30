@@ -72,7 +72,7 @@ We have seen examples of such re-use already above: the merge and broadcast junc
 into the graph using ``builder.add(...)``, an operation that will make a copy of the blueprint that
 is passed to it and return the inlets and outlets of the resulting copy so that they can be wired up.
 Another alternative is to pass existing graphs—of any shape—into the factory method that produces a
-new graph. The difference between these approaches is that importing using ``b.add(...)`` ignores the
+new graph. The difference between these approaches is that importing using ``builder.add(...)`` ignores the
 materialized value of the imported graph while importing via the factory method allows its inclusion;
 for more details see :ref:`stream-materialization-scala`.
 
@@ -90,10 +90,10 @@ Constructing and combining Partial Flow Graphs
 Sometimes it is not possible (or needed) to construct the entire computation graph in one place, but instead construct
 all of its different phases in different places and in the end connect them all into a complete graph and run it.
 
-This can be achieved using ``FlowGraph.partial`` instead of
-``FlowGraph.closed``, which will return a ``Graph`` instead of a
-``RunnableGraph``.  The reason of representing it as a different type is that a
-:class:`RunnableGraph` requires all ports to be connected, and if they are not
+This can be achieved by returning a different ``Shape`` than ``ClosedShape``, for example ``FlowShape(in, out)``, from the
+function given to ``FlowGraph.create``. See :ref:`predefined_shapes`) for a list of such predefined shapes.
+
+Making a ``Graph`` a :class:`RunnableGraph` requires all ports to be connected, and if they are not
 it will throw an exception at construction time, which helps to avoid simple
 wiring errors while working with graphs. A partial flow graph however allows
 you to return the set of yet to be connected ports from the code block that
@@ -112,7 +112,7 @@ the undefined elements are rewired to real sources and sinks. The graph can then
 
 .. warning::
 
-   Please note that a :class:`FlowGraph` is not able to provide compile time type-safety about whether or not all
+   Please note that :class:`FlowGraph` is not able to provide compile time type-safety about whether or not all
    elements have been properly connected—this validation is performed as a runtime check during the graph's instantiation.
 
    A partial flow graph also verifies that all ports are either connected or part of the returned :class:`Shape`.
@@ -122,35 +122,38 @@ the undefined elements are rewired to real sources and sinks. The graph can then
 Constructing Sources, Sinks and Flows from Partial Graphs
 ---------------------------------------------------------
 
-Instead of treating a partial flow graph as simply a collection of flows and junctions which may not yet all be
+Instead of treating a partial graph as simply a collection of flows and junctions which may not yet all be
 connected it is sometimes useful to expose such a complex graph as a simpler structure,
 such as a :class:`Source`, :class:`Sink` or :class:`Flow`.
 
 In fact, these concepts can be easily expressed as special cases of a partially connected graph:
 
-* :class:`Source` is a partial flow graph with *exactly one* output, that is it returns a :class:`SourceShape`.
-* :class:`Sink` is a partial flow graph with *exactly one* input, that is it returns a :class:`SinkShape`.
-* :class:`Flow` is a partial flow graph with *exactly one* input and *exactly one* output, that is it returns a :class:`FlowShape`.
+* :class:`Source` is a partial graph with *exactly one* output, that is it returns a :class:`SourceShape`.
+* :class:`Sink` is a partial graph with *exactly one* input, that is it returns a :class:`SinkShape`.
+* :class:`Flow` is a partial graph with *exactly one* input and *exactly one* output, that is it returns a :class:`FlowShape`.
 
 Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to easily create one
 complex element and from there on treat it as simple compound stage for linear computations.
 
-In order to create a Source from a partial flow graph ``Source`` provides a special apply method that takes a function
-that must return an :class:`Outlet[T]`. This unconnected sink will become “the sink that must be attached before this Source
-can run”. Refer to the example below, in which we create a Source that zips together two numbers, to see this graph
+In order to create a Source from a graph the method ``Source.fromGraph`` is used, to use it we must have a
+``Graph[SourceShape, T]``. This is constructed using ``FlowGraph.create`` and returning a ``SourceShape``
+from the function passed in . The single outlet must be provided to the ``SourceShape.of`` method and will become
+“the sink that must be attached before this Source can run”.
+
+Refer to the example below, in which we create a Source that zips together two numbers, to see this graph
 construction in action:
 
 .. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#source-from-partial-flow-graph
 
-Similarly the same can be done for a ``Sink[T]``, in which case the returned value must be an ``Inlet[T]``.
-For defining a ``Flow[T]`` we need to expose both an inlet and an outlet:
+Similarly the same can be done for a ``Sink[T]``, using ``SinkShape.of`` in which case the provided value
+must be an ``Inlet[T]``. For defining a ``Flow[T]`` we need to expose both an inlet and an outlet:
 
 .. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#flow-from-partial-flow-graph
 
 Combining Sources and Sinks with simplified API
 -----------------------------------------------
 
-There is simplified API you can use to combine sources and sinks with junctions like: ``Broadcast[T]``, ``Balance[T]``,
+There is a simplified API you can use to combine sources and sinks with junctions like: ``Broadcast[T]``, ``Balance[T]``,
 ``Merge[In]`` and ``Concat[A]`` without the need for using the Graph DSL. The combine method takes care of constructing
 the necessary graph underneath. In following example we combine two sources into one (fan-in):
 
