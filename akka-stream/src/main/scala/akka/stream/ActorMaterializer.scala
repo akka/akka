@@ -5,9 +5,10 @@ package akka.stream
 
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicBoolean }
 
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
+import akka.event.LoggingAdapter
 import akka.stream.impl._
 import com.typesafe.config.Config
 
@@ -57,10 +58,9 @@ object ActorMaterializer {
       system,
       materializerSettings,
       system.dispatchers,
-      context.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher)),
+      context.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName()),
       haveShutDown,
-      FlowNameCounter(system).counter,
-      namePrefix)
+      FlowNames(system).name.copy(namePrefix))
   }
 
   /**
@@ -169,6 +169,11 @@ abstract class ActorMaterializer extends Materializer {
    * INTERNAL API
    */
   private[akka] def system: ActorSystem
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def logger: LoggingAdapter
 
   /** INTERNAL API */
   private[akka] def supervisor: ActorRef
