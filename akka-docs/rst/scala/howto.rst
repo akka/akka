@@ -154,6 +154,15 @@ and schedule the initial message send again.
 
 .. includecode:: code/docs/pattern/SchedulerPatternSpec.scala#schedule-receive
 
+
+Get all ShardActor IDs
+================
+
+How to get all actorIds for a giver shardTypeName.
+Use only for reasonably small number of actors!
+
+.. includecode:: code/docs/pattern/GetAllShardActorIdsDocSpec.scala
+
 Template Pattern
 ================
 

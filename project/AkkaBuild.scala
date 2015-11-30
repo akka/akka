@@ -216,7 +216,7 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test",
-      remote % "compile;test->test", cluster, clusterMetrics, slf4j, agent, camel, osgi,
+      remote % "compile;test->test", cluster, clusterSharding, clusterMetrics, slf4j, agent, camel, osgi,
       persistence % "compile;provided->provided;test->test", persistenceTck, persistenceQuery,
       typed % "compile;test->test", distributedData)
   )
