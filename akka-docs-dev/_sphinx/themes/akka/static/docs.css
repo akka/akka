@@ -179,32 +179,44 @@ strong {color: #0B5567; }
 .section h2:hover > a,.section h3:hover > a,.section h4:hover > a,.section h5:hover > a { visibility: visible; }
 
 
-/* floaty warning about old version of docs */
-#floaty-warning {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  margin-bottom: 0;
-  z-index: 99999;
-  width: 100%;
-  background-color: rgb(84, 180, 204);
-  text-align: center;
-  padding: 10px;
-  color: white;
+/*
+ * Used when browsing 2.3.12 yet 2.4.x is out already.
+ * This is more critical than browsing 2.3.10 and 2.3.11 is latest (the default color).
+ */
+#floaty-warning .warning {
+  background-color: rgb(227, 88, 89);
 }
 
 #floaty-warning a {
-  color: white;
+  color: white !important;
   font-weight: bold;
   text-decoration: underline;
 }
 
-#close-floaty-window {
-  position: absolute;
-  top: 1em;
-  right: 2em;
+#floaty-warning button {
+  border-radius: 4px;
+  border: none;
+  margin: 0;
+  padding: 1em 2em;
+  font-weight: bold;
   color: white;
-  font-weight: normal;
-  text-decoration: none;
+}
+
+#floaty-warning button {
+  background-color: #89CDDE;
+}
+#floaty-warning button:hover {
+  background-color: #74DDF7;
+}
+
+#floaty-warning.warning button {
+  background-color: #F98D8D;
+}
+#floaty-warning.warning button:hover {
+  background-color: #F77979;
+}
+
+#close-floaty-window {
+  padding: 1em;
+  margin-top: 1em;
 }
