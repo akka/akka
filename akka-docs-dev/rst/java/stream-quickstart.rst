@@ -103,27 +103,28 @@ Elements that can be used to form such "fan-out" (or "fan-in") structures are re
 One of these that we'll be using in this example is called :class:`Broadcast`, and it simply emits elements from its
 input port to all of its output ports.
 
-Akka Streams intentionally separate the linear stream structures (Flows) from the non-linear, branching ones (FlowGraphs)
+Akka Streams intentionally separate the linear stream structures (Flows) from the non-linear, branching ones (Graphs)
 in order to offer the most convenient API for both of these cases. Graphs can express arbitrarily complex stream setups
-at the expense of not reading as familiarly as collection transformations. 
+at the expense of not reading as familiarly as collection transformations.
 
-
-A graph can be either ``closed`` which is also known as a "*fully connected graph*", or ``partial`` which can be seen as
-a *partial graph* (a graph with some unconnected ports), thus being a generalisation of the Flow concept, where ``Flow``
-is simply a partial graph with one unconnected input and one unconnected output. Concepts around composing and nesting
-graphs in large structures are explained explained in detail in :ref:`composition-java`.
-
-It is also possible to wrap complex computation graphs as Flows, Sinks or Sources, which will be explained in
-detail in :ref:`constructing-sources-sinks-flows-from-partial-graphs-java`. FlowGraphs are constructed like this:
+Graphs are constructed using :class:`FlowGraph` like this:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#flow-graph-broadcast
 
-As you can see, we use graph builder ``b`` to construct the graph using ``UniformFanOutShape`` and ``Flow``s. Once we have the
-FlowGraph as a result of ``runnable()`` method *it is immutable, thread-safe, and freely shareable*. A graph can be ``run()`` directly -
-assuming all ports (sinks/sources) within a flow have been connected properly. It is possible also to construct several :class:`PartialFlowGraph`s and
-and then combine them into one fully connected graph. This will be covered in detail in :ref:`partial-flow-graph-java`.
+As you can see, we use graph builder ``b`` to construct the graph using ``UniformFanOutShape`` and ``Flow`` s.
 
-As all Akka Streams elements, :class:`Broadcast` will properly propagate back-pressure to its upstream element.
+``FlowGraph.create`` returns a :class:`Graph`, in this example a ``Graph<ClosedShape,Unit>`` where
+:class:`ClosedShape` means that it is *a fully connected graph* or "closed" - there are no unconnected inputs or outputs.
+Since it is closed it is possible to transform the graph into a :class:`RunnableGraph` using ``RunnableGraph.fromGraph``.
+The runnable graph can then be ``run()`` to materialize a stream out of it.
+
+Both :class:`Graph` and :class:`RunnableGraph` are *immutable, thread-safe, and freely shareable*.
+
+A graph can also have one of several other shapes, with one or more unconnected ports. Having unconnected ports
+expresses a grapth that is a *partial graph*. Concepts around composing and nesting graphs in large structures are
+explained explained in detail in :ref:`composition-java`. It is also possible to wrap complex computation graphs
+as Flows, Sinks or Sources, which will be explained in detail in :ref:`partial-flow-graph-java`.
+
 
 Back-pressure in action
 -----------------------
