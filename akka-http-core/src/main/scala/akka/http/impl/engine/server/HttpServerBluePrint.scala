@@ -47,16 +47,16 @@ import akka.util.ByteString
  *                 +----------+                                   +-------------+  Context    +-----------+
  */
 private[http] object HttpServerBluePrint {
-  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer =
-    stack(settings, remoteAddress, log)
+  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer = {
+    val theStack =
+      userHandlerGuard(settings.pipeliningLimit) atop
+        requestPreparation(settings) atop
+        controller(settings, log) atop
+        parsingRendering(settings, log) atop
+        websocketSupport(settings, log) atop
+        unwrapTls
 
-  def stack(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer = {
-    userHandlerGuard(settings.pipeliningLimit) atop
-      requestPreparation(settings, remoteAddress) atop
-      controller(settings, log) atop
-      parsingRendering(settings, log) atop
-      websocketSupport(settings, log) atop
-      unwrapTls
+    theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
   }
 
   val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, Unit] =
@@ -83,27 +83,12 @@ private[http] object HttpServerBluePrint {
   def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, Unit] =
     BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
 
-  def requestPreparation(settings: ServerSettings, remoteAddress: Option[InetSocketAddress])(implicit mat: Materializer): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, Unit] = {
-    import settings._
-
+  def requestPreparation(settings: ServerSettings)(implicit mat: Materializer): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, Unit] = {
     val prepareRequest =
       Flow[RequestOutput]
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .via(headAndTailFlow)
-        .map {
-          case (RequestStart(method, uri, protocol, hdrs, createEntity, _, _), entityParts) ⇒
-            val effectiveMethod = if (method == HttpMethods.HEAD && transparentHeadRequests) HttpMethods.GET else method
-            val effectiveHeaders =
-              if (settings.remoteAddressHeader && remoteAddress.isDefined)
-                headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
-              else hdrs
-
-            val entity = createEntity(entityParts) withSizeLimit parserSettings.maxContentLength
-            HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol)
-          case (_, src) ⇒ src.runWith(Sink.ignore)
-        }.collect {
-          case r: HttpRequest ⇒ r
-        }
+        .via(requestStartOrRunIgnore(settings))
         // FIXME #16583 / #18170
         // `buffer` is needed because of current behavior of collect which will queue completion
         // behind an ignored (= not collected) element if there is no demand.
@@ -112,6 +97,35 @@ private[http] object HttpServerBluePrint {
 
     BidiFlow.fromFlows(Flow[HttpResponse], prepareRequest)
   }
+
+  def requestStartOrRunIgnore(settings: ServerSettings)(implicit mat: Materializer): Flow[(ParserOutput.RequestOutput, Source[ParserOutput.RequestOutput, Unit]), HttpRequest, Unit] =
+    Flow.fromGraph(new FlowStage[(RequestOutput, Source[RequestOutput, Unit]), HttpRequest, Unit]("RequestStartThenRunIgnore") {
+      override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = (new GraphStageLogic(shape) {
+        val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
+
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = grab(in) match {
+            case (RequestStart(method, uri, protocol, hdrs, createEntity, _, _), entityParts) ⇒
+              val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+              val effectiveHeaders =
+                if (settings.remoteAddressHeader && remoteAddress.isDefined)
+                  headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
+                else hdrs
+
+              val entity = createEntity(entityParts) withSizeLimit settings.parserSettings.maxContentLength
+              push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
+
+            case (wat, src) ⇒
+              src.runWith(Sink.ignore)
+              pull(in)
+          }
+        })
+
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = pull(in)
+        })
+      }, ())
+    })
 
   def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[ByteString, RequestOutput, Unit] = {
     import settings._
