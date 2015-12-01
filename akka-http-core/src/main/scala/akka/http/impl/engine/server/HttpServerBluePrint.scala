@@ -7,7 +7,6 @@ package akka.http.impl.engine.server
 import java.net.InetSocketAddress
 import java.util.Random
 import scala.collection.immutable
-import akka.stream.scaladsl.One2OneBidiFlow.One2OneBidi
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.util.control.NonFatal
 import akka.event.LoggingAdapter
@@ -15,7 +14,6 @@ import akka.http.ServerSettings
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
-import akka.http.impl.engine.ws.Websocket.SwitchToWebsocketToken
 import akka.http.impl.engine.ws._
 import akka.http.impl.util._
 import akka.http.scaladsl.Http
@@ -49,39 +47,45 @@ import akka.util.ByteString
  *                 +----------+                                   +-------------+  Context    +-----------+
  */
 private[http] object HttpServerBluePrint {
-  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer = {
+  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer =
+    stack(settings, remoteAddress, log)
+
+  def stack(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter)(implicit mat: Materializer): Http.ServerLayer = {
+    One2OneBidiFlow[HttpRequest, HttpResponse](settings.pipeliningLimit).reversed atop
+      requestPreparation(settings, remoteAddress) atop
+      controller(settings, log) atop
+      parsingRendering(settings, log) atop
+      websocketSupport(settings, log) atop
+      unwrapTls
+  }
+  def unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, Unit] =
+    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x.bytes })
+
+  /** Wrap an HTTP implementation with support for switching to Websocket */
+  def websocketSupport(settings: ServerSettings, log: LoggingAdapter)(implicit mat: Materializer): BidiFlow[ResponseRenderingOutput, ByteString, ByteString, ByteString, Unit] = {
+    val ws = websocketSetup
+
+    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
+      import FlowGraph.Implicits._
+
+      val switch = b.add(new ProtocolSwitchStage(ws.installHandler, settings.websocketRandomFactory, log))
+
+      switch.toWs ~> ws.websocketFlow ~> switch.fromWs
+
+      BidiShape(switch.fromHttp, switch.toNet, switch.fromNet, switch.toHttp)
+    })
+  }
+
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, ByteString, RequestOutput, Unit] =
+    BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log))
+
+  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, Unit] =
+    BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
+
+  def requestPreparation(settings: ServerSettings, remoteAddress: Option[InetSocketAddress])(implicit mat: Materializer): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, Unit] = {
     import settings._
 
-    // the initial header parser we initially use for every connection,
-    // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader,
-      HttpHeaderParser(parserSettings) { info ⇒
-        if (parserSettings.illegalHeaderWarnings)
-          logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
-      })
-
-    val ws = websocketSetup
-    val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
-
-    def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
-      case start: RequestStart ⇒
-        try {
-          val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, securedConnection = false, defaultHostHeader)
-          start.copy(uri = effectiveUri)
-        } catch {
-          case e: IllegalUriException ⇒
-            MessageStartError(StatusCodes.BadRequest, ErrorInfo("Request is missing required `Host` header", e.getMessage))
-        }
-      case x ⇒ x
-    }
-
-    val requestParsingFlow = Flow[ByteString].transform(() ⇒
-      // each connection uses a single (private) request parser instance for all its requests
-      // which builds a cache of all header instances seen on that connection
-      rootParser.createShallowCopy().stage).named("rootParser")
-      .map(establishAbsoluteUri)
-
-    val requestPreparationFlow =
+    val prepareRequest =
       Flow[RequestOutput]
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .via(headAndTailFlow)
@@ -105,59 +109,48 @@ private[http] object HttpServerBluePrint {
         // `buffer` will ensure demand and therefore make sure that completion is reported eagerly.
         .buffer(1, OverflowStrategy.backpressure)
 
-    val responseRenderingFlow =
-      Flow[ResponseRenderingContext]
-        .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
-        .flatMapConcat(ConstantFun.scalaIdentityFunction)
-        .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
+    BidiFlow.fromFlows(Flow[HttpResponse], prepareRequest)
+  }
 
-    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[ByteString, RequestOutput, Unit] = {
+    import settings._
 
-      // HTTP
-      val requestParsing = b.add(requestParsingFlow)
-      val requestPreparation = b.add(requestPreparationFlow)
-      val responseRendering = b.add(responseRenderingFlow)
-      val controllerStage = b.add(new ControllerStage(settings, log))
-      val csRequestParsingIn = controllerStage.in1
-      val csRequestPrepOut = controllerStage.out1
-      val csHttpResponseIn = controllerStage.in2
-      val csResponseCtxOut = controllerStage.out2
-      requestParsing.outlet ~> csRequestParsingIn
-      csResponseCtxOut ~> responseRendering.inlet
-      csRequestPrepOut ~> requestPreparation
+    // the initial header parser we initially use for every connection,
+    // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
+    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader,
+      HttpHeaderParser(parserSettings) { info ⇒
+        if (parserSettings.illegalHeaderWarnings)
+          logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
+      })
 
-      // One2OneBidi
-      val one2one = b.add(new One2OneBidi[HttpRequest, HttpResponse](settings.pipeliningLimit))
-      requestPreparation.outlet ~> one2one.in1
-      one2one.out2 ~> csHttpResponseIn
+    def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
+      case start: RequestStart ⇒
+        try {
+          val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, securedConnection = false, defaultHostHeader)
+          start.copy(uri = effectiveUri)
+        } catch {
+          case e: IllegalUriException ⇒
+            MessageStartError(StatusCodes.BadRequest, ErrorInfo("Request is missing required `Host` header", e.getMessage))
+        }
+      case x ⇒ x
+    }
 
-      // Websocket
-      val http = FlowShape(requestParsing.inlet, responseRendering.outlet)
-      val switchTokenBroadcast = b.add(Broadcast[ResponseRenderingOutput](2))
-      val switchToWebsocket = b.add(Flow[ResponseRenderingOutput]
-        .collect { case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken })
-      val websocket = b.add(ws.websocketFlow)
-      val protocolRouter = b.add(WebsocketSwitchRouter)
-      val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory, log))
-      val wsSwitchTokenMerge = b.add(WsSwitchTokenMerge)
-      switchTokenBroadcast ~> switchToWebsocket ~> wsSwitchTokenMerge.in1
-      protocolRouter.out0 ~> http ~> switchTokenBroadcast ~> protocolMerge.in0
-      protocolRouter.out1 ~> websocket ~> protocolMerge.in1
-      wsSwitchTokenMerge.out ~> protocolRouter.in
+    Flow[ByteString].transform(() ⇒
+      // each connection uses a single (private) request parser instance for all its requests
+      // which builds a cache of all header instances seen on that connection
+      rootParser.createShallowCopy().stage).named("rootParser")
+      .map(establishAbsoluteUri)
+  }
 
-      // SSL/TLS
-      val unwrapTls = b.add(Flow[SslTlsInbound] collect { case x: SessionBytes ⇒ x.bytes })
-      val wrapTls = b.add(Flow[ByteString].map[SslTlsOutbound](SendBytes))
-      unwrapTls ~> wsSwitchTokenMerge.in0
-      protocolMerge.out ~> wrapTls
+  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, Unit] = {
+    import settings._
 
-      BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest](
-        one2one.in2,
-        wrapTls.outlet,
-        unwrapTls.inlet,
-        one2one.out1)
-    })
+    val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
+
+    Flow[ResponseRenderingContext]
+      .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
+      .flatMapConcat(ConstantFun.scalaIdentityFunction)
+      .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
@@ -355,93 +348,91 @@ private[http] object HttpServerBluePrint {
     }
   }
 
-  private object WebsocketSwitchRouter extends GraphStage[FanOutShape2[AnyRef, ByteString, ByteString]] {
-    private val in = Inlet[AnyRef]("in")
-    private val httpOut = Outlet[ByteString]("httpOut")
-    private val wsOut = Outlet[ByteString]("wsOut")
+  private case class ProtocolSwitchShape(
+    fromNet: Inlet[ByteString],
+    toNet: Outlet[ByteString],
+    fromHttp: Inlet[ResponseRenderingOutput],
+    toHttp: Outlet[ByteString],
+    fromWs: Inlet[ByteString],
+    toWs: Outlet[ByteString]) extends Shape {
+    def inlets: immutable.Seq[Inlet[_]] = Vector(fromNet, fromHttp, fromWs)
+    def outlets: immutable.Seq[Outlet[_]] = Vector(toNet, toHttp, toWs)
 
-    override val shape = new FanOutShape2(in, httpOut, wsOut)
+    def deepCopy(): Shape =
+      ProtocolSwitchShape(fromNet.carbonCopy(), toNet.carbonCopy(), fromHttp.carbonCopy(), toHttp.carbonCopy(), fromWs.carbonCopy(), toWs.carbonCopy())
 
-    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      var target = httpOut
-
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = {
-          grab(in) match {
-            case b: ByteString          ⇒ emit(target, b, pullIn)
-            case SwitchToWebsocketToken ⇒ target = wsOut; pullIn()
-          }
-        }
-      })
-
-      setHandler(httpOut, conditionalTerminateOutput(() ⇒ target == httpOut))
-      setHandler(wsOut, conditionalTerminateOutput(() ⇒ target == wsOut))
-
-      val pullIn = () ⇒ pull(in)
-
-      override def preStart(): Unit = pullIn()
+    def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
+      require(inlets.size == 3 && outlets.size == 3, s"ProtocolSwitchShape must have 3 inlets and outlets but had ${inlets.size} / ${outlets.size}")
+      ProtocolSwitchShape(
+        inlets(0).asInstanceOf[Inlet[ByteString]],
+        outlets(0).asInstanceOf[Outlet[ByteString]],
+        inlets(1).asInstanceOf[Inlet[ResponseRenderingOutput]],
+        outlets(1).asInstanceOf[Outlet[ByteString]],
+        inlets(2).asInstanceOf[Inlet[ByteString]],
+        outlets(2).asInstanceOf[Outlet[ByteString]])
     }
   }
+  private class ProtocolSwitchStage(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random, log: LoggingAdapter) extends GraphStage[ProtocolSwitchShape] {
+    private val fromNet = Inlet[ByteString]("fromNet")
+    private val toNet = Outlet[ByteString]("toNet")
 
-  private class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random, log: LoggingAdapter) extends GraphStage[FanInShape2[ResponseRenderingOutput, ByteString, ByteString]] {
-    private val httpIn = Inlet[ResponseRenderingOutput]("httpIn")
-    private val wsIn = Inlet[ByteString]("wsIn")
-    private val out = Outlet[ByteString]("out")
+    private val toHttp = Outlet[ByteString]("toHttp")
+    private val fromHttp = Inlet[ResponseRenderingOutput]("fromHttp")
 
-    override val shape = new FanInShape2(httpIn, wsIn, out)
+    private val toWs = Outlet[ByteString]("toWs")
+    private val fromWs = Inlet[ByteString]("fromWs")
 
-    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
+    def shape: ProtocolSwitchShape = ProtocolSwitchShape(fromNet, toNet, fromHttp, toHttp, fromWs, toWs)
+
+    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       var websocketHandlerWasInstalled = false
 
-      setHandler(httpIn, conditionalTerminateInput(() ⇒ !websocketHandlerWasInstalled))
-      setHandler(wsIn, conditionalTerminateInput(() ⇒ websocketHandlerWasInstalled))
+      setHandler(fromHttp, conditionalTerminateInput(() ⇒ !websocketHandlerWasInstalled))
+      setHandler(toHttp, ignoreTerminateOutput)
+      setHandler(fromWs, conditionalTerminateInput(() ⇒ websocketHandlerWasInstalled))
+      setHandler(toWs, ignoreTerminateOutput)
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit =
-          if (websocketHandlerWasInstalled) read(wsIn)(transferBytes)
-          else read(httpIn)(transferHttpData)
+      val pullNet = () ⇒ pull(fromNet)
+      setHandler(fromNet, new InHandler {
+        def onPush(): Unit = emit(target, grab(fromNet), pullNet)
+
+        // propagate error but don't close stage yet to prevent fromHttp/fromWs being cancelled
+        // too eagerly
+        override def onUpstreamFailure(ex: Throwable): Unit = fail(target, ex)
       })
 
-      val transferBytes = (b: ByteString) ⇒ push(out, b)
-      val transferHttpData = (r: ResponseRenderingOutput) ⇒ {
-        import ResponseRenderingOutput._
-        r match {
-          case HttpData(bytes) ⇒ push(out, bytes)
-          case SwitchToWebsocket(bytes, handlerFlow) ⇒
-            push(out, bytes)
-            val frameHandler = handlerFlow match {
-              case Left(frameHandler) ⇒ frameHandler
-              case Right(messageHandler) ⇒
-                Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory, log = log).join(messageHandler)
-            }
-            installHandler(frameHandler)
-            websocketHandlerWasInstalled = true
-        }
-      }
+      setHandler(toNet, new OutHandler {
+        import akka.http.impl.engine.rendering.ResponseRenderingOutput._
+        def onPull(): Unit =
+          if (isHttp) read(fromHttp) {
+            case HttpData(b) ⇒ push(toNet, b)
+            case SwitchToWebsocket(bytes, handlerFlow) ⇒
+              push(toNet, bytes)
+              val frameHandler = handlerFlow match {
+                case Left(frameHandler) ⇒ frameHandler
+                case Right(messageHandler) ⇒
+                  Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory, log = log).join(messageHandler)
+              }
+              installHandler(frameHandler)
+              websocketHandlerWasInstalled = true
+          }
+          else
+            read(fromWs)(push(toNet, _))
+
+        // toNet cancellation isn't allowed to stop this stage
+        override def onDownstreamFinish(): Unit = ()
+      })
+
+      def isHttp = !websocketHandlerWasInstalled
+      def isWS = websocketHandlerWasInstalled
+      def target = if (websocketHandlerWasInstalled) toWs else toHttp
+
+      override def preStart(): Unit = pull(fromNet)
 
       override def postStop(): Unit = {
         // Install a dummy handler to make sure no processors leak because they have
         // never been subscribed to, see #17494 and #17551.
         if (!websocketHandlerWasInstalled) installHandler(Flow[FrameEvent])
-      }
-    }
-  }
-
-  /** A merge for two streams that just forwards all elements and closes the connection when the first input closes. */
-  private object WsSwitchTokenMerge extends GraphStage[FanInShape2[ByteString, Websocket.SwitchToWebsocketToken.type, AnyRef]] {
-    private val bytes = Inlet[ByteString]("bytes")
-    private val token = Inlet[Websocket.SwitchToWebsocketToken.type]("token")
-    private val out = Outlet[AnyRef]("out")
-
-    override val shape = new FanInShape2(bytes, token, out)
-
-    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      passAlong(bytes, out, doFinish = true, doFail = true)
-      passAlong(token, out, doFinish = false, doFail = true)
-      setHandler(out, eagerTerminateOutput)
-      override def preStart(): Unit = {
-        pull(bytes)
-        pull(token)
       }
     }
   }
