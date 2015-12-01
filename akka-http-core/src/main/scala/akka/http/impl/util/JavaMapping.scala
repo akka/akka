@@ -155,6 +155,10 @@ private[http] object JavaMapping {
   implicit object DateTime extends Inherited[jm.DateTime, akka.http.scaladsl.model.DateTime]
 
   implicit object ContentType extends Inherited[jm.ContentType, sm.ContentType]
+  implicit object ContentTypeBinary extends Inherited[jm.ContentType.Binary, sm.ContentType.Binary]
+  implicit object ContentTypeNonBinary extends Inherited[jm.ContentType.NonBinary, sm.ContentType.NonBinary]
+  implicit object ContentTypeWithFixedCharset extends Inherited[jm.ContentType.WithFixedCharset, sm.ContentType.WithFixedCharset]
+  implicit object ContentTypeWithCharset extends Inherited[jm.ContentType.WithCharset, sm.ContentType.WithCharset]
   implicit object ContentTypeRange extends Inherited[jm.ContentTypeRange, sm.ContentTypeRange]
   implicit object Host extends Inherited[jm.Host, sm.Uri.Host]
   implicit object HttpCharset extends Inherited[jm.HttpCharset, sm.HttpCharset]
@@ -167,6 +171,10 @@ private[http] object JavaMapping {
   implicit object HttpResponse extends Inherited[jm.HttpResponse, sm.HttpResponse]
   implicit object MediaRange extends Inherited[jm.MediaRange, sm.MediaRange]
   implicit object MediaType extends Inherited[jm.MediaType, sm.MediaType]
+  implicit object MediaTypeBinary extends Inherited[jm.MediaType.Binary, sm.MediaType.Binary]
+  implicit object MediaTypeNonBinary extends Inherited[jm.MediaType.NonBinary, sm.MediaType.NonBinary]
+  implicit object MediaTypeFixedCharset extends Inherited[jm.MediaType.WithFixedCharset, sm.MediaType.WithFixedCharset]
+  implicit object MediaTypeOpenCharset extends Inherited[jm.MediaType.WithOpenCharset, sm.MediaType.WithOpenCharset]
   implicit object StatusCode extends Inherited[jm.StatusCode, sm.StatusCode]
 
   implicit object ContentRange extends Inherited[jm.ContentRange, sm.ContentRange]

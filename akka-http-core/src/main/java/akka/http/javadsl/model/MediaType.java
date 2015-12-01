@@ -7,33 +7,61 @@ package akka.http.javadsl.model;
 /**
  * Represents an Http media-type. A media-type consists of a main-type and a sub-type.
  */
-public abstract class MediaType {
-    /**
-     * Returns the main-type of this media-type.
-     */
-    public abstract String mainType();
+public interface MediaType {
 
     /**
-     * Returns the sub-type of this media-type.
+     * The main-type of this media-type.
      */
-    public abstract String subType();
+    String mainType();
+
+    /**
+     * The sub-type of this media-type.
+     */
+    String subType();
+
+    /**
+     * True when this media-type is generally compressible.
+     */
+    boolean compressible();
+
+    /**
+     * True when this media-type is not character-based.
+     */
+    boolean binary();
+
+    boolean isApplication();
+    boolean isAudio();
+    boolean isImage();
+    boolean isMessage();
+    boolean isMultipart();
+    boolean isText();
+    boolean isVideo();
 
     /**
      * Creates a media-range from this media-type.
      */
-    public MediaRange toRange() {
-        return MediaRanges.create(this);
-    }
-
-    /**
-     * Creates a ContentType from this media-type
-     */
-    public ContentType toContentType() { return ContentType.create(this); }
+    MediaRange toRange();
 
     /**
      * Creates a media-range from this media-type with a given qValue.
      */
-    public MediaRange toRange(float qValue) {
-        return MediaRanges.create(this, qValue);
+    MediaRange toRange(float qValue);
+
+    interface Binary extends MediaType {
+        ContentType.Binary toContentType();
+    }
+
+    interface NonBinary extends MediaType {
+    }
+
+    interface WithFixedCharset extends NonBinary {
+        ContentType.WithFixedCharset toContentType();
+    }
+
+    interface WithOpenCharset extends NonBinary {
+        ContentType.WithCharset toContentType(HttpCharset charset);
+    }
+
+    interface Multipart extends WithOpenCharset {
     }
 }

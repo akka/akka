@@ -130,7 +130,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       val contentType = convertedHeaders.collectFirst {
         case ct: `Content-Type` ⇒ ct.contentType
       }
-      contentType shouldEqual Some(ContentTypes.`text/plain`)
+      contentType shouldEqual Some(ContentTypes.`text/plain(UTF-8)`)
 
       val contentLength = convertedHeaders.collectFirst {
         case cl: `Content-Length` ⇒ cl.length
@@ -207,7 +207,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       // to be able to directly create a ContentType and ContentLength
       // headers.
       ExampleLibrary.contentLength(3)
-      ExampleLibrary.contentType(ContentTypes.`text/plain`)
+      ExampleLibrary.contentType(ContentTypes.`text/plain(UTF-8)`)
     }
 
   }
