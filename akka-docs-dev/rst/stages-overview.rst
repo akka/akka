@@ -126,7 +126,7 @@ zipWith                all of the inputs has an element available               
 concat                 the current stream has an element available; if the current input completes, it tries the next one                          downstream backpressures                                                                                                        all upstreams complete
 =====================  =========================================================================================================================   ==============================================================================================================================  =====================================================================================
 
-(*) This behavior is changeable to completing when any upstream completes by setting ``eagerClose=true``.
+(*) This behavior is changeable to completing when any upstream completes by setting ``eagerComplete=true``.
 
 Fan-out stages
 ^^^^^^^^^^^^^^

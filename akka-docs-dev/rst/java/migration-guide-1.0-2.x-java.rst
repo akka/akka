@@ -8,7 +8,7 @@ The 2.0 release contains some structural changes that require some
 simple, mechanical source-level changes in client code.
 
 
-Introduced proper named constructor methods insted of ``wrap()``
+Introduced proper named constructor methods instead of ``wrap()``
 ================================================================
 
 There were several, unrelated uses of ``wrap()`` which made it hard to find and hard to understand the intention of
