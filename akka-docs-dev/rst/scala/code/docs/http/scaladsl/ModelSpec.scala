@@ -32,12 +32,13 @@ class ModelSpec extends AkkaSpec {
     // customize every detail of HTTP request
     import HttpProtocols._
     import MediaTypes._
+    import HttpCharsets._
     val userData = ByteString("abc")
     val authorization = headers.Authorization(BasicHttpCredentials("user", "pass"))
     HttpRequest(
       PUT,
       uri = "/user",
-      entity = HttpEntity(`text/plain`, userData),
+      entity = HttpEntity(`text/plain` withCharset `UTF-8`, userData),
       headers = List(authorization),
       protocol = `HTTP/1.0`)
     //#construct-request

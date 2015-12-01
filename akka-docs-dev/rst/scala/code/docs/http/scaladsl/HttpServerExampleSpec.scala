@@ -150,7 +150,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
       .via(reactToConnectionFailure)
       .map { request =>
         // simple text "echo" response:
-        HttpResponse(entity = HttpEntity(ContentTypes.`text/plain`, request.entity.dataBytes))
+        HttpResponse(entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, request.entity.dataBytes))
       }
 
     serverSource
@@ -173,7 +173,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
 
     val requestHandler: HttpRequest => HttpResponse = {
       case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
-        HttpResponse(entity = HttpEntity(MediaTypes.`text/html`,
+        HttpResponse(entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
           "<html><body>Hello world!</body></html>"))
 
       case HttpRequest(GET, Uri.Path("/ping"), _, _, _) =>
@@ -207,7 +207,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers {
 
     val requestHandler: HttpRequest => HttpResponse = {
       case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
-        HttpResponse(entity = HttpEntity(MediaTypes.`text/html`,
+        HttpResponse(entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
           "<html><body>Hello world!</body></html>"))
 
       case HttpRequest(GET, Uri.Path("/ping"), _, _, _) =>

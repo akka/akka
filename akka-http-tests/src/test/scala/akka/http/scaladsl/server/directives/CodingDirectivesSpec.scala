@@ -201,7 +201,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
         () ⇒ text.grouped(8).map { chars ⇒
           Chunk(chars.mkString): ChunkStreamPart
         }
-      val chunkedTextEntity = HttpEntity.Chunked(MediaTypes.`text/plain`, Source(textChunks))
+      val chunkedTextEntity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, Source(textChunks))
 
       Post() ~> `Accept-Encoding`(gzip) ~> {
         encodeResponseWith(Gzip) {
@@ -344,6 +344,13 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
     "negotiate the correct content encoding" in {
       Get("/") ~> `Accept-Encoding`(identity.withQValue(.5f), deflate.withQValue(0f), gzip) ~> {
         encodeResponseWith(NoCoding, Deflate, Gzip) { yeah }
+      } ~> check {
+        response should haveContentEncoding(gzip)
+        strictify(responseEntity) shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahGzipped)
+      }
+
+      Get("/") ~> `Accept-Encoding`(HttpEncodingRange.`*`, deflate withQValue 0.2) ~> {
+        encodeResponseWith(Deflate, Gzip) { yeah }
       } ~> check {
         response should haveContentEncoding(gzip)
         strictify(responseEntity) shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahGzipped)

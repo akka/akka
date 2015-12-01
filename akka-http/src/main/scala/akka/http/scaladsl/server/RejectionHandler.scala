@@ -188,8 +188,8 @@ object RejectionHandler {
       }
       .handleAll[UnacceptedResponseContentTypeRejection] { rejections ⇒
         val supported = rejections.flatMap(_.supported)
-        complete((NotAcceptable, "Resource representation is only available with these Content-Types:\n" +
-          supported.map(_.value).mkString("\n")))
+        val msg = supported.map(_.format).mkString("Resource representation is only available with these types:\n", "\n", "")
+        complete((NotAcceptable, msg))
       }
       .handleAll[UnacceptedResponseEncodingRejection] { rejections ⇒
         val supported = rejections.flatMap(_.supported)

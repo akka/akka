@@ -121,7 +121,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
       def entityData() = StreamUtils.oneTimeSource(Source.single(ByteString(content)))
 
       Get() ~> addHeader(Range(ByteRange(5, 10), ByteRange(0, 1), ByteRange(1, 2))) ~> {
-        wrs { complete(HttpEntity.Default(MediaTypes.`text/plain`, content.length, entityData())) }
+        wrs { complete(HttpEntity.Default(ContentTypes.`text/plain(UTF-8)`, content.length, entityData())) }
       } ~> check {
         header[`Content-Range`] should be(None)
         val parts = Await.result(responseAs[Multipart.ByteRanges].parts.grouped(1000).runWith(Sink.head), 1.second)

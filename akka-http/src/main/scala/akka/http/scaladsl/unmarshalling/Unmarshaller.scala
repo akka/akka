@@ -90,7 +90,7 @@ object Unmarshaller
 
   implicit class EnhancedFromEntityUnmarshaller[A](val underlying: FromEntityUnmarshaller[A]) extends AnyVal {
     def mapWithCharset[B](f: (A, HttpCharset) ⇒ B): FromEntityUnmarshaller[B] =
-      underlying.mapWithInput { (entity, data) ⇒ f(data, entity.contentType.charset) }
+      underlying.mapWithInput { (entity, data) ⇒ f(data, Unmarshaller.bestUnmarshallingCharsetFor(entity)) }
 
     /**
      * Modifies the underlying [[Unmarshaller]] to only accept content-types matching one of the given ranges.
@@ -113,6 +113,16 @@ object Unmarshaller
     implicit ec: ExecutionContext, mat: Materializer): PartialFunction[Throwable, Future[T]] = {
     case UnsupportedContentTypeException(supported) ⇒ underlying(entity withContentType supported.head.specimen)
   }
+
+  /**
+   * Returns the best charset for unmarshalling the given entity to a character-based representation.
+   * Falls back to UTF-8 if no better alternative can be determined.
+   */
+  def bestUnmarshallingCharsetFor(entity: HttpEntity): HttpCharset =
+    entity.contentType match {
+      case x: ContentType.NonBinary ⇒ x.charset
+      case _                        ⇒ HttpCharsets.`UTF-8`
+    }
 
   /**
    * Signals that unmarshalling failed because the entity was unexpectedly empty.

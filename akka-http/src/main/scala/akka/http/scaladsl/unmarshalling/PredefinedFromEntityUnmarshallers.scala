@@ -21,29 +21,32 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
 
   implicit def charArrayUnmarshaller: FromEntityUnmarshaller[Array[Char]] =
     byteStringUnmarshaller mapWithInput { (entity, bytes) ⇒
-      val charBuffer = entity.contentType.charset.nioCharset.decode(bytes.asByteBuffer)
-      val array = new Array[Char](charBuffer.length())
-      charBuffer.get(array)
-      array
+      if (entity.isKnownEmpty) Array.emptyCharArray
+      else {
+        val charBuffer = Unmarshaller.bestUnmarshallingCharsetFor(entity).nioCharset.decode(bytes.asByteBuffer)
+        val array = new Array[Char](charBuffer.length())
+        charBuffer.get(array)
+        array
+      }
     }
 
   implicit def stringUnmarshaller: FromEntityUnmarshaller[String] =
     byteStringUnmarshaller mapWithInput { (entity, bytes) ⇒
-      // FIXME: add `ByteString::decodeString(java.nio.Charset): String` overload!!!
-      bytes.decodeString(entity.contentType.charset.nioCharset.name) // ouch!!!
+      if (entity.isKnownEmpty) ""
+      else bytes.decodeString(Unmarshaller.bestUnmarshallingCharsetFor(entity).nioCharset.name)
     }
 
   implicit def defaultUrlEncodedFormDataUnmarshaller: FromEntityUnmarshaller[FormData] =
     urlEncodedFormDataUnmarshaller(MediaTypes.`application/x-www-form-urlencoded`)
   def urlEncodedFormDataUnmarshaller(ranges: ContentTypeRange*): FromEntityUnmarshaller[FormData] =
     stringUnmarshaller.forContentTypes(ranges: _*).mapWithInput { (entity, string) ⇒
-      try {
-        val nioCharset = entity.contentType.definedCharset.getOrElse(HttpCharsets.`UTF-8`).nioCharset
-        val query = Uri.Query(string, nioCharset)
-        FormData(query)
-      } catch {
-        case IllegalUriException(info) ⇒
-          throw new IllegalArgumentException(info.formatPretty.replace("Query,", "form content,"))
+      if (entity.isKnownEmpty) FormData.Empty
+      else {
+        try FormData(Uri.Query(string, Unmarshaller.bestUnmarshallingCharsetFor(entity).nioCharset))
+        catch {
+          case IllegalUriException(info) ⇒
+            throw new IllegalArgumentException(info.formatPretty.replace("Query,", "form content,"))
+        }
       }
     }
 }
