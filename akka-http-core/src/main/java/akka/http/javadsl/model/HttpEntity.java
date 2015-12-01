@@ -40,48 +40,48 @@ public interface HttpEntity {
     /**
      * Returns the content-type of this entity
      */
-    public abstract ContentType contentType();
+    ContentType contentType();
 
     /**
      * The empty entity.
      */
-    public static final HttpEntityStrict EMPTY = HttpEntity$.MODULE$.Empty();
+    HttpEntityStrict EMPTY = HttpEntity$.MODULE$.Empty();
 
     /**
      * Returns if this entity is known to be empty. Open-ended entity types like
      * HttpEntityChunked and HttpCloseDelimited will always return false here.
      */
-    public abstract boolean isKnownEmpty();
+    boolean isKnownEmpty();
 
     /**
      * Returns if this entity is a subtype of HttpEntityChunked.
      */
-    public abstract boolean isChunked();
+    boolean isChunked();
 
     /**
      * Returns if this entity is a subtype of HttpEntityDefault.
      */
-    public abstract boolean isDefault();
+    boolean isDefault();
 
     /**
      * Returns if this entity is a subtype of HttpEntityCloseDelimited.
      */
-    public abstract boolean isCloseDelimited();
+    boolean isCloseDelimited();
 
     /**
      * Returns if this entity is a subtype of HttpEntityIndefiniteLength.
      */
-    public abstract boolean isIndefiniteLength();
+    boolean isIndefiniteLength();
 
     /**
      * Returns Some(contentLength) if the length is defined and none otherwise.
      */
-    public abstract Option<Long> getContentLengthOption();
+    Option<Long> getContentLengthOption();
 
     /**
      * Returns a stream of data bytes this entity consists of.
      */
-    public abstract Source<ByteString, Object> getDataBytes();
+    Source<ByteString, Object> getDataBytes();
 
     /**
      * Returns a future of a strict entity that contains the same data as this entity
@@ -92,5 +92,5 @@ public interface HttpEntity {
      * Use getDataBytes and stream processing instead if the expected data is big or
      * is likely to take a long time.
      */
-    public abstract Future<HttpEntityStrict> toStrict(long timeoutMillis, Materializer materializer);
+    Future<HttpEntityStrict> toStrict(long timeoutMillis, Materializer materializer);
 }
