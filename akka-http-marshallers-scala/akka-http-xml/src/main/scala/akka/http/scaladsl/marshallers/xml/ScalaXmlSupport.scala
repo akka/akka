@@ -8,7 +8,6 @@ import java.io.{ ByteArrayInputStream, InputStreamReader }
 import javax.xml.parsers.{ SAXParserFactory, SAXParser }
 import scala.collection.immutable
 import scala.xml.{ XML, NodeSeq }
-import akka.stream.Materializer
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model._
@@ -16,10 +15,10 @@ import MediaTypes._
 
 trait ScalaXmlSupport {
   implicit def defaultNodeSeqMarshaller: ToEntityMarshaller[NodeSeq] =
-    Marshaller.oneOf(ScalaXmlSupport.nodeSeqContentTypes.map(nodeSeqMarshaller): _*)
+    Marshaller.oneOf(ScalaXmlSupport.nodeSeqMediaTypes.map(nodeSeqMarshaller): _*)
 
-  def nodeSeqMarshaller(contentType: ContentType): ToEntityMarshaller[NodeSeq] =
-    Marshaller.StringMarshaller.wrap(contentType)(_.toString())
+  def nodeSeqMarshaller(mediaType: MediaType.NonBinary): ToEntityMarshaller[NodeSeq] =
+    Marshaller.StringMarshaller.wrap(mediaType)(_.toString())
 
   implicit def defaultNodeSeqUnmarshaller: FromEntityUnmarshaller[NodeSeq] =
     nodeSeqUnmarshaller(ScalaXmlSupport.nodeSeqContentTypeRanges: _*)
@@ -35,13 +34,12 @@ trait ScalaXmlSupport {
   /**
    * Provides a SAXParser for the NodeSeqUnmarshaller to use. Override to provide a custom SAXParser implementation.
    * Will be called once for for every request to be unmarshalled. The default implementation calls [[ScalaXmlSupport.createSaferSAXParser]].
-   * @return
    */
   protected def createSAXParser(): SAXParser = ScalaXmlSupport.createSaferSAXParser()
 }
 object ScalaXmlSupport extends ScalaXmlSupport {
-  val nodeSeqContentTypes: immutable.Seq[ContentType] = List(`text/xml`, `application/xml`, `text/html`, `application/xhtml+xml`)
-  val nodeSeqContentTypeRanges: immutable.Seq[ContentTypeRange] = nodeSeqContentTypes.map(ContentTypeRange(_))
+  val nodeSeqMediaTypes: immutable.Seq[MediaType.NonBinary] = List(`text/xml`, `application/xml`, `text/html`, `application/xhtml+xml`)
+  val nodeSeqContentTypeRanges: immutable.Seq[ContentTypeRange] = nodeSeqMediaTypes.map(ContentTypeRange(_))
 
   /** Creates a safer SAXParser. */
   def createSaferSAXParser(): SAXParser = {

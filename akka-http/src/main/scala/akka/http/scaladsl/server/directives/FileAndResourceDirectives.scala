@@ -265,7 +265,7 @@ object ContentTypeResolver {
           case x  ⇒ fileName.substring(x + 1)
         }
         val mediaType = MediaTypes.forExtension(ext) getOrElse MediaTypes.`application/octet-stream`
-        ContentType(mediaType) withDefaultCharset charset
+        ContentType(mediaType, () ⇒ charset)
       }
     }
 

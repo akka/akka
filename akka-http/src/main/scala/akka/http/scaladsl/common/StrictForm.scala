@@ -56,7 +56,9 @@ object StrictForm {
     def unmarshallerFromFSU[T](fsu: FromStringUnmarshaller[T]): FromStrictFormFieldUnmarshaller[T] =
       Unmarshaller.withMaterializer(implicit ec ⇒ implicit mat ⇒ {
         case FromString(value) ⇒ fsu(value)
-        case FromPart(value)   ⇒ fsu(value.entity.data.decodeString(value.entity.contentType.charset.nioCharset.name))
+        case FromPart(value) ⇒
+          val charsetName = value.entity.contentType.asInstanceOf[ContentType.NonBinary].charset.nioCharset.name
+          fsu(value.entity.data.decodeString(charsetName))
       })
 
     @implicitNotFound("In order to unmarshal a `StrictForm.Field` to type `${T}` you need to supply a " +
@@ -76,8 +78,10 @@ object StrictForm {
       implicit def fromFSU[T](implicit fsu: FromStringUnmarshaller[T]) =
         new FieldUnmarshaller[T] {
           def unmarshalString(value: String)(implicit ec: ExecutionContext, mat: Materializer) = fsu(value)
-          def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer) =
-            fsu(value.entity.data.decodeString(value.entity.contentType.charset.nioCharset.name))
+          def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer) = {
+            val charsetName = value.entity.contentType.asInstanceOf[ContentType.NonBinary].charset.nioCharset.name
+            fsu(value.entity.data.decodeString(charsetName))
+          }
         }
       implicit def fromFEU[T](implicit feu: FromEntityUnmarshaller[T]) =
         new FieldUnmarshaller[T] {
