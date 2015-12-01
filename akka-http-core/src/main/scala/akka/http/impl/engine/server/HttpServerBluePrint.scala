@@ -14,7 +14,6 @@ import akka.http.ServerSettings
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
-import akka.http.impl.engine.ws.Websocket.SwitchToWebsocketToken
 import akka.http.impl.engine.ws._
 import akka.http.impl.util._
 import akka.http.scaladsl.Http
@@ -56,41 +55,24 @@ private[http] object HttpServerBluePrint {
       requestPreparation(settings, remoteAddress) atop
       controller(settings, log) atop
       parsingRendering(settings, log) atop
-      protocolSwitching(settings, log) atop
+      websocketSupport(settings, log) atop
       unwrapTls
   }
   def unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, Unit] =
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x.bytes })
 
   /** Wrap an HTTP implementation with support for switching to Websocket */
-  def protocolSwitching(settings: ServerSettings, log: LoggingAdapter)(implicit mat: Materializer): BidiFlow[ResponseRenderingOutput, ByteString, ByteString, ByteString, Unit] = {
+  def websocketSupport(settings: ServerSettings, log: LoggingAdapter)(implicit mat: Materializer): BidiFlow[ResponseRenderingOutput, ByteString, ByteString, ByteString, Unit] = {
     val ws = websocketSetup
 
     BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
       import FlowGraph.Implicits._
 
-      val switchTokenBroadcast = b.add(Broadcast[ResponseRenderingOutput](2))
-      val switchToWebsocket = b.add(Flow[ResponseRenderingOutput]
-        .collect { case _: ResponseRenderingOutput.SwitchToWebsocket ⇒ SwitchToWebsocketToken })
+      val switch = b.add(new ProtocolSwitchStage(ws.installHandler, settings.websocketRandomFactory, log))
 
-      val websocket = b.add(ws.websocketFlow)
-      val protocolRouter = b.add(WebsocketSwitchRouter)
-      val protocolMerge = b.add(new WebsocketMerge(ws.installHandler, settings.websocketRandomFactory, log))
-      val wsSwitchTokenMerge = b.add(WsSwitchTokenMerge)
+      switch.toWs ~> ws.websocketFlow ~> switch.fromWs
 
-      val netIn = wsSwitchTokenMerge.in0
-      val netOut = protocolMerge.out
-
-      val httpIn = switchTokenBroadcast.in
-      val httpOut = protocolRouter.out0
-
-      switchTokenBroadcast ~> protocolMerge.in0
-      protocolRouter.out1 ~> websocket ~> protocolMerge.in1
-
-      switchTokenBroadcast ~> switchToWebsocket ~> wsSwitchTokenMerge.in1
-      wsSwitchTokenMerge.out ~> protocolRouter.in
-
-      BidiShape(httpIn, netOut, netIn, httpOut)
+      BidiShape(switch.fromHttp, switch.toNet, switch.fromNet, switch.toHttp)
     })
   }
 
@@ -366,93 +348,91 @@ private[http] object HttpServerBluePrint {
     }
   }
 
-  private object WebsocketSwitchRouter extends GraphStage[FanOutShape2[AnyRef, ByteString, ByteString]] {
-    private val in = Inlet[AnyRef]("in")
-    private val httpOut = Outlet[ByteString]("httpOut")
-    private val wsOut = Outlet[ByteString]("wsOut")
+  private case class ProtocolSwitchShape(
+    fromNet: Inlet[ByteString],
+    toNet: Outlet[ByteString],
+    fromHttp: Inlet[ResponseRenderingOutput],
+    toHttp: Outlet[ByteString],
+    fromWs: Inlet[ByteString],
+    toWs: Outlet[ByteString]) extends Shape {
+    def inlets: immutable.Seq[Inlet[_]] = Vector(fromNet, fromHttp, fromWs)
+    def outlets: immutable.Seq[Outlet[_]] = Vector(toNet, toHttp, toWs)
 
-    override val shape = new FanOutShape2(in, httpOut, wsOut)
+    def deepCopy(): Shape =
+      ProtocolSwitchShape(fromNet.carbonCopy(), toNet.carbonCopy(), fromHttp.carbonCopy(), toHttp.carbonCopy(), fromWs.carbonCopy(), toWs.carbonCopy())
 
-    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      var target = httpOut
-
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = {
-          grab(in) match {
-            case b: ByteString          ⇒ emit(target, b, pullIn)
-            case SwitchToWebsocketToken ⇒ target = wsOut; pullIn()
-          }
-        }
-      })
-
-      setHandler(httpOut, conditionalTerminateOutput(() ⇒ target == httpOut))
-      setHandler(wsOut, conditionalTerminateOutput(() ⇒ target == wsOut))
-
-      val pullIn = () ⇒ pull(in)
-
-      override def preStart(): Unit = pullIn()
+    def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
+      require(inlets.size == 3 && outlets.size == 3, s"ProtocolSwitchShape must have 3 inlets and outlets but had ${inlets.size} / ${outlets.size}")
+      ProtocolSwitchShape(
+        inlets(0).asInstanceOf[Inlet[ByteString]],
+        outlets(0).asInstanceOf[Outlet[ByteString]],
+        inlets(1).asInstanceOf[Inlet[ResponseRenderingOutput]],
+        outlets(1).asInstanceOf[Outlet[ByteString]],
+        inlets(2).asInstanceOf[Inlet[ByteString]],
+        outlets(2).asInstanceOf[Outlet[ByteString]])
     }
   }
+  private class ProtocolSwitchStage(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random, log: LoggingAdapter) extends GraphStage[ProtocolSwitchShape] {
+    private val fromNet = Inlet[ByteString]("fromNet")
+    private val toNet = Outlet[ByteString]("toNet")
 
-  private class WebsocketMerge(installHandler: Flow[FrameEvent, FrameEvent, Any] ⇒ Unit, websocketRandomFactory: () ⇒ Random, log: LoggingAdapter) extends GraphStage[FanInShape2[ResponseRenderingOutput, ByteString, ByteString]] {
-    private val httpIn = Inlet[ResponseRenderingOutput]("httpIn")
-    private val wsIn = Inlet[ByteString]("wsIn")
-    private val out = Outlet[ByteString]("out")
+    private val toHttp = Outlet[ByteString]("toHttp")
+    private val fromHttp = Inlet[ResponseRenderingOutput]("fromHttp")
 
-    override val shape = new FanInShape2(httpIn, wsIn, out)
+    private val toWs = Outlet[ByteString]("toWs")
+    private val fromWs = Inlet[ByteString]("fromWs")
 
-    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
+    def shape: ProtocolSwitchShape = ProtocolSwitchShape(fromNet, toNet, fromHttp, toHttp, fromWs, toWs)
+
+    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       var websocketHandlerWasInstalled = false
 
-      setHandler(httpIn, conditionalTerminateInput(() ⇒ !websocketHandlerWasInstalled))
-      setHandler(wsIn, conditionalTerminateInput(() ⇒ websocketHandlerWasInstalled))
+      setHandler(fromHttp, conditionalTerminateInput(() ⇒ !websocketHandlerWasInstalled))
+      setHandler(toHttp, ignoreTerminateOutput)
+      setHandler(fromWs, conditionalTerminateInput(() ⇒ websocketHandlerWasInstalled))
+      setHandler(toWs, ignoreTerminateOutput)
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit =
-          if (websocketHandlerWasInstalled) read(wsIn)(transferBytes)
-          else read(httpIn)(transferHttpData)
+      val pullNet = () ⇒ pull(fromNet)
+      setHandler(fromNet, new InHandler {
+        def onPush(): Unit = emit(target, grab(fromNet), pullNet)
+
+        // propagate error but don't close stage yet to prevent fromHttp/fromWs being cancelled
+        // too eagerly
+        override def onUpstreamFailure(ex: Throwable): Unit = fail(target, ex)
       })
 
-      val transferBytes = (b: ByteString) ⇒ push(out, b)
-      val transferHttpData = (r: ResponseRenderingOutput) ⇒ {
-        import ResponseRenderingOutput._
-        r match {
-          case HttpData(bytes) ⇒ push(out, bytes)
-          case SwitchToWebsocket(bytes, handlerFlow) ⇒
-            push(out, bytes)
-            val frameHandler = handlerFlow match {
-              case Left(frameHandler) ⇒ frameHandler
-              case Right(messageHandler) ⇒
-                Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory, log = log).join(messageHandler)
-            }
-            installHandler(frameHandler)
-            websocketHandlerWasInstalled = true
-        }
-      }
+      setHandler(toNet, new OutHandler {
+        import akka.http.impl.engine.rendering.ResponseRenderingOutput._
+        def onPull(): Unit =
+          if (isHttp) read(fromHttp) {
+            case HttpData(b) ⇒ push(toNet, b)
+            case SwitchToWebsocket(bytes, handlerFlow) ⇒
+              push(toNet, bytes)
+              val frameHandler = handlerFlow match {
+                case Left(frameHandler) ⇒ frameHandler
+                case Right(messageHandler) ⇒
+                  Websocket.stack(serverSide = true, maskingRandomFactory = websocketRandomFactory, log = log).join(messageHandler)
+              }
+              installHandler(frameHandler)
+              websocketHandlerWasInstalled = true
+          }
+          else
+            read(fromWs)(push(toNet, _))
+
+        // toNet cancellation isn't allowed to stop this stage
+        override def onDownstreamFinish(): Unit = ()
+      })
+
+      def isHttp = !websocketHandlerWasInstalled
+      def isWS = websocketHandlerWasInstalled
+      def target = if (websocketHandlerWasInstalled) toWs else toHttp
+
+      override def preStart(): Unit = pull(fromNet)
 
       override def postStop(): Unit = {
         // Install a dummy handler to make sure no processors leak because they have
         // never been subscribed to, see #17494 and #17551.
         if (!websocketHandlerWasInstalled) installHandler(Flow[FrameEvent])
-      }
-    }
-  }
-
-  /** A merge for two streams that just forwards all elements and closes the connection when the first input closes. */
-  private object WsSwitchTokenMerge extends GraphStage[FanInShape2[ByteString, Websocket.SwitchToWebsocketToken.type, AnyRef]] {
-    private val bytes = Inlet[ByteString]("bytes")
-    private val token = Inlet[Websocket.SwitchToWebsocketToken.type]("token")
-    private val out = Outlet[AnyRef]("out")
-
-    override val shape = new FanInShape2(bytes, token, out)
-
-    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      passAlong(bytes, out, doFinish = true, doFail = true)
-      passAlong(token, out, doFinish = false, doFail = true)
-      setHandler(out, eagerTerminateOutput)
-      override def preStart(): Unit = {
-        pull(bytes)
-        pull(token)
       }
     }
   }
