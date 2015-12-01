@@ -164,7 +164,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
           try {
             def runIdleRequest(uri: Uri): Future[HttpResponse] = {
-              val itNeverEnds = Chunked.fromData(ContentTypes.`text/plain`, Source.maybe[ByteString])
+              val itNeverEnds = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
               Http().outgoingConnection(hostname, port)
                 .runWith(Source.single(HttpRequest(PUT, uri, entity = itNeverEnds)), Sink.head)
                 ._2
@@ -197,7 +197,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
           try {
             def runRequest(uri: Uri): Future[HttpResponse] = {
-              val itNeverSends = Chunked.fromData(ContentTypes.`text/plain`, Source.maybe[ByteString])
+              val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
               Http().outgoingConnection(hostname, port, settings = clientSettings)
                 .runWith(Source.single(HttpRequest(POST, uri, entity = itNeverSends)), Sink.head)
                 ._2
@@ -232,7 +232,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
             val pool = Http().cachedHostConnectionPool[Int](hostname, port, clientPoolSettings)
 
             def runRequest(uri: Uri): Future[(Try[HttpResponse], Int)] = {
-              val itNeverSends = Chunked.fromData(ContentTypes.`text/plain`, Source.maybe[ByteString])
+              val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
               Source.single(HttpRequest(POST, uri, entity = itNeverSends) -> 1)
                 .via(pool)
                 .runWith(Sink.head)
@@ -265,7 +265,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
           try {
             def runRequest(uri: Uri): Future[HttpResponse] = {
-              val itNeverSends = Chunked.fromData(ContentTypes.`text/plain`, Source.maybe[ByteString])
+              val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
               Http().singleRequest(HttpRequest(POST, uri, entity = itNeverSends), settings = clientPoolSettings)
             }
 
@@ -368,7 +368,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         val (serverIn, serverOut) = acceptConnection()
 
         val chunks = List(Chunk("abc"), Chunk("defg"), Chunk("hijkl"), LastChunk)
-        val chunkedContentType: ContentType = MediaTypes.`application/base64`
+        val chunkedContentType: ContentType = MediaTypes.`application/base64` withCharset HttpCharsets.`UTF-8`
         val chunkedEntity = HttpEntity.Chunked(chunkedContentType, Source(chunks))
 
         val clientOutSub = clientOut.expectSubscription()

@@ -385,12 +385,12 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |""")
       inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responses.sendNext(HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain`, ByteString("abcd"))))
+          responses.sendNext(HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString("abcd"))))
           expectResponseWithWipedDate(
             """|HTTP/1.1 200 OK
                |Server: akka-http/test
                |Date: XXXX
-               |Content-Type: text/plain
+               |Content-Type: text/plain; charset=UTF-8
                |Content-Length: 4
                |
                |""")
@@ -405,14 +405,14 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responses.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain`, 4, Source(data))))
+          responses.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain(UTF-8)`, 4, Source(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
           expectResponseWithWipedDate(
             """|HTTP/1.1 200 OK
                |Server: akka-http/test
                |Date: XXXX
-               |Content-Type: text/plain
+               |Content-Type: text/plain; charset=UTF-8
                |Content-Length: 4
                |
                |""")
@@ -427,14 +427,14 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responses.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain`, Source(data))))
+          responses.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain(UTF-8)`, Source(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
           expectResponseWithWipedDate(
             """|HTTP/1.1 200 OK
                |Server: akka-http/test
                |Date: XXXX
-               |Content-Type: text/plain
+               |Content-Type: text/plain; charset=UTF-8
                |
                |""")
       }
@@ -450,7 +450,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       val data = TestPublisher.manualProbe[ChunkStreamPart]()
       inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responses.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain`, Source(data))))
+          responses.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, Source(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
           expectResponseWithWipedDate(
@@ -458,7 +458,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
                |Server: akka-http/test
                |Date: XXXX
                |Transfer-Encoding: chunked
-               |Content-Type: text/plain
+               |Content-Type: text/plain; charset=UTF-8
                |
                |""")
       }
@@ -473,7 +473,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest()) {
         case HttpRequest(GET, _, _, _, _) ⇒
-          responses.sendNext(HttpResponse(entity = CloseDelimited(ContentTypes.`text/plain`, Source(data))))
+          responses.sendNext(HttpResponse(entity = CloseDelimited(ContentTypes.`text/plain(UTF-8)`, Source(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
           netOut.expectBytes(1)
@@ -884,6 +884,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       "the config setting applied before another attribute (default entity)" in new LengthVerificationTest(maxContentLength = 10) {
         def nameDataSource(name: String): RequestEntity ⇒ RequestEntity = {
           case x: HttpEntity.Default ⇒ x.copy(data = x.data named name)
+          case _                     ⇒ ??? // prevent a compile-time warning
         }
         sendDefaultRequestWithLength(10)
         expectRequest().mapEntity(nameDataSource("foo")).expectEntity[HttpEntity.Default](10)

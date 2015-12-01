@@ -178,7 +178,7 @@ object HttpEntity {
   implicit def apply(string: String): Strict = apply(ContentTypes.`text/plain(UTF-8)`, string)
   implicit def apply(bytes: Array[Byte]): Strict = apply(ContentTypes.`application/octet-stream`, bytes)
   implicit def apply(data: ByteString): Strict = apply(ContentTypes.`application/octet-stream`, data)
-  def apply(contentType: ContentType, string: String): Strict =
+  def apply(contentType: ContentType.NonBinary, string: String): Strict =
     if (string.isEmpty) empty(contentType) else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
   def apply(contentType: ContentType, bytes: Array[Byte]): Strict =
     if (bytes.length == 0) empty(contentType) else apply(contentType, ByteString(bytes))
