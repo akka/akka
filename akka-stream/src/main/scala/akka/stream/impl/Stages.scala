@@ -233,10 +233,6 @@ private[stream] object Stages {
     def after(f: Any ⇒ Boolean) = Split(el ⇒ if (f(el)) SplitAfter else Continue, name("splitAfter"))
   }
 
-  final case class ConcatAll(f: Any ⇒ Source[Any, _], attributes: Attributes = concatAll) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-  }
-
   final case class DirectProcessor(p: () ⇒ (Processor[Any, Any], Any), attributes: Attributes = processor) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }

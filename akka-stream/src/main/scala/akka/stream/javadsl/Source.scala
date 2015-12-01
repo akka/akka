@@ -931,10 +931,25 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * '''Completes when''' upstream completes and all consumed substreams complete
    *
    * '''Cancels when''' downstream cancels
-   *
    */
-  def flatMapConcat[T](f: function.Function[Out, Source[T, _]]): Source[T, Mat] =
-    new Source(delegate.flatMapConcat[T](x ⇒ f(x).asScala))
+  def flatMapConcat[T, M](f: function.Function[Out, Source[T, M]]): Source[T, Mat] =
+    new Source(delegate.flatMapConcat[T, M](x ⇒ f(x).asScala))
+
+  /**
+   * Transform each input element into a `Source` of output elements that is
+   * then flattened into the output stream by merging, where at most `breadth`
+   * substreams are being consumed at any given time.
+   *
+   * '''Emits when''' a currently consumed substream has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all consumed substreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def flatMapMerge[T, M](breadth: Int, f: function.Function[Out, Source[T, M]]): Source[T, Mat] =
+    new Source(delegate.flatMapMerge(breadth, o ⇒ f(o).asScala))
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed

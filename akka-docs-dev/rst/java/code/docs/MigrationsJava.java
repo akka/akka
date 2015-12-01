@@ -147,8 +147,8 @@ public class MigrationsJava {
 
         //#flatMapConcat
         Flow.<Source<Integer, BoxedUnit>>create().
-          <Integer>flatMapConcat(new Function<Source<Integer, BoxedUnit>, Source<Integer, ?>>(){
-            @Override public Source<Integer, ?> apply(Source<Integer, BoxedUnit> param) throws Exception {
+          <Integer, BoxedUnit>flatMapConcat(new Function<Source<Integer, BoxedUnit>, Source<Integer, BoxedUnit>>(){
+            @Override public Source<Integer, BoxedUnit> apply(Source<Integer, BoxedUnit> param) throws Exception {
               return param;
             }
           });
