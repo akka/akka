@@ -27,7 +27,7 @@ private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonAc
         }
       } else {
         val (p, q) = MediaRange.splitOffQValue(params.toMap)
-        MediaRange(getMediaType(main, sub, p), q)
+        MediaRange(getMediaType(main, sub, p contains "charset", p), q)
       }
     }
   }
