@@ -4,8 +4,9 @@
 package akka
 
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
-import net.virtualvoid.sbt.graph.backend.IvyReport
-import net.virtualvoid.sbt.graph.ModuleId
+import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
+import net.virtualvoid.sbt.graph.DependencyGraphKeys._
+import net.virtualvoid.sbt.graph.ModuleGraph
 import org.kohsuke.github._
 import sbtunidoc.Plugin.UnidocKeys.unidoc
 import sbt.Keys._
@@ -77,45 +78,24 @@ object ValidatePullRequest extends AutoPlugin {
   val additionalTasks = taskKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
 
   def changedDirectoryIsDependency(changedDirs: Set[String],
-                                   target: File,
-                                   scalaBinaryVersion: String, version: String,
-                                   organization: String, name: String)(log: Logger): Boolean = {
-    changedDirs.exists { modifiedProject ⇒
-      Set(Compile, Test, Runtime, Provided, Optional) exists { ivyScope: Configuration ⇒
-        log.debug(s"Analysing [$ivyScope] scoped dependencies...")
+                                    name: String,
+                                    graphsToTest: Seq[(Configuration, ModuleGraph)])(log: Logger): Boolean = {
+    val dirsOrExperimental = changedDirs.flatMap(dir => Set(dir, s"$dir-experimental"))
+    graphsToTest exists { case (ivyScope, deps) =>
+      log.debug(s"Analysing [$ivyScope] scoped dependencies...")
 
-        def moduleId(artifactName: String) = ModuleId("com.typesafe.akka", artifactName + "_" + scalaBinaryVersion, version)
-        val modifiedModuleIds = Set(moduleId(modifiedProject), moduleId(modifiedProject + "-experimental"))
+      deps.nodes.foreach { m ⇒ log.debug(" -> " + m.id) }
 
-        def resolutionFilename(includeScalaVersion: Boolean) =
-          s"%s-%s-%s.xml".format(
-            organization,
-            name + (if (includeScalaVersion) "_" + scalaBinaryVersion else ""),
-            ivyScope.toString())
-        def resolutionFile(includeScalaVersion: Boolean) =
-          target / "resolution-cache" / "reports" / resolutionFilename(includeScalaVersion)
-
-        val ivyReportFile = {
-          val f1 = resolutionFile(includeScalaVersion = true)
-          val f2 = resolutionFile(includeScalaVersion = false)
-          if (f1.exists()) f1 else f2
-        }
-
-        val deps = IvyReport.fromReportFile(ivyReportFile.getAbsolutePath)
-        deps.nodes.foreach { m ⇒ log.debug(" -> " + m.id) }
-
-        // if this project depends on a modified module, we must test it
-        deps.nodes.exists { m =>
-          // match just by name, we'd rather include too much than too little
-          val dependsOnModule = modifiedModuleIds find { _.name == m.id.name }
-          val depends = dependsOnModule.isDefined
-          if (depends) log.info(s"Project [$name] must be verified, because depends on [$dependsOnModule]")
-          depends
-        }
+      // if this project depends on a modified module, we must test it
+      deps.nodes.exists { m =>
+        // match just by name, we'd rather include too much than too little
+        val dependsOnModule = dirsOrExperimental.find(m.id.name contains _)
+        val depends = dependsOnModule.isDefined
+        if (depends) log.info(s"Project [$name] must be verified, because depends on [${dependsOnModule.get}]")
+        depends
       }
     }
   }
-
 
   override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++ Seq(
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
@@ -178,12 +158,27 @@ object ValidatePullRequest extends AutoPlugin {
       val changedDirs = (changedDirectories in ValidatePR).value
       val githubCommandEnforcedBuildAll = (githubEnforcedBuildAll in ValidatePR).value
 
+      val thisProjectId = CrossVersion(scalaVersion.value, scalaBinaryVersion.value)(projectID.value)
+
+      def graphFor(updateReport: UpdateReport, config: Configuration): (Configuration, ModuleGraph) =
+        config -> SbtUpdateReport.fromConfigurationReport(updateReport.configuration(config.name).get, thisProjectId)
+
+      def isDependency: Boolean =
+        changedDirectoryIsDependency(
+          changedDirs,
+          name.value,
+          Seq(
+            graphFor((update in Compile).value, Compile),
+            graphFor((update in Test).value, Test),
+            graphFor((update in Runtime).value, Runtime),
+            graphFor((update in Provided).value, Provided),
+            graphFor((update in Optional).value, Optional)))(log)
+
       if (githubCommandEnforcedBuildAll.isDefined)
         githubCommandEnforcedBuildAll.get
       else if (changedDirs contains "project")
         BuildProjectChangedQuick
-      else if (changedDirectoryIsDependency(changedDirs, target.value, scalaBinaryVersion.value, version.value,
-                                            organization.value, name.value)(log))
+      else if (isDependency)
         BuildQuick
       else
         BuildSkip
