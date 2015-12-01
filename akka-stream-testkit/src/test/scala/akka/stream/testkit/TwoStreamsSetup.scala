@@ -9,18 +9,18 @@ import akka.stream.testkit.Utils._
 
 abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
 
-  abstract class Fixture(b: FlowGraph.Builder[_]) {
+  abstract class Fixture(b: GraphDSL.Builder[_]) {
     def left: Inlet[Int]
     def right: Inlet[Int]
     def out: Outlet[Outputs]
   }
 
-  def fixture(b: FlowGraph.Builder[_]): Fixture
+  def fixture(b: GraphDSL.Builder[_]): Fixture
 
   override def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
     val subscriber = TestSubscriber.probe[Outputs]()
-    RunnableGraph.fromGraph(FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+    RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
       val f = fixture(b)
 
       Source(p1) ~> f.left

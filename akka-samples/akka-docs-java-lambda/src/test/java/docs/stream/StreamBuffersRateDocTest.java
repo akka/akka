@@ -84,7 +84,7 @@ public class StreamBuffersRateDocTest {
         Flow.of(String.class).conflate(
             first -> 1, (count, elem) -> count + 1);
 
-    RunnableGraph.fromGraph(FlowGraph.create(b -> {
+    RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final FanInShape2<String, Integer, Integer> zipper =
           b.add(ZipWith.create((String tick, Integer count) -> count));
       b.from(b.add(msgSource)).via(b.add(conflate)).toInlet(zipper.in1());

@@ -555,7 +555,7 @@ class Concat[T](inputCount: Int) extends GraphStage[UniformFanInShape[T, T]] {
   }
 }
 
-object FlowGraph extends GraphApply {
+object GraphDSL extends GraphApply {
 
   class Builder[+M] private[stream] () {
     private var moduleInProgress: Module = EmptyModule
@@ -563,7 +563,7 @@ object FlowGraph extends GraphApply {
     /**
      * INTERNAL API
      */
-    private[FlowGraph] def addEdge[T, U >: T](from: Outlet[T], to: Inlet[U]): Unit =
+    private[GraphDSL] def addEdge[T, U >: T](from: Outlet[T], to: Inlet[U]): Unit =
       moduleInProgress = moduleInProgress.wire(from, to)
 
     /**
@@ -634,7 +634,7 @@ object FlowGraph extends GraphApply {
     private[stream] def module: Module = moduleInProgress
 
     /** Converts this Scala DSL element to it's Java DSL counterpart. */
-    def asJava: javadsl.FlowGraph.Builder[M] = new javadsl.FlowGraph.Builder()(this)
+    def asJava: javadsl.GraphDSL.Builder[M] = new javadsl.GraphDSL.Builder()(this)
   }
 
   object Implicits {

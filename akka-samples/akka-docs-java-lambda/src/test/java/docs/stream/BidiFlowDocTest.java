@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import akka.stream.javadsl.FlowGraph;
+import akka.stream.javadsl.GraphDSL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -111,7 +111,7 @@ public class BidiFlowDocTest {
   @SuppressWarnings("unused")
   //#codec
   public final BidiFlow<Message, ByteString, ByteString, Message, BoxedUnit> codecVerbose =
-      BidiFlow.fromGraph(FlowGraph.create(b -> {
+      BidiFlow.fromGraph(GraphDSL.create(b -> {
         final FlowShape<Message, ByteString> top =
                 b.add(Flow.of(Message.class).map(BidiFlowDocTest::toBytes));
         final FlowShape<ByteString, Message> bottom =
@@ -187,7 +187,7 @@ public class BidiFlowDocTest {
   }
   
   public final BidiFlow<ByteString, ByteString, ByteString, ByteString, BoxedUnit> framing =
-      BidiFlow.fromGraph(FlowGraph.create(b -> {
+      BidiFlow.fromGraph(GraphDSL.create(b -> {
         final FlowShape<ByteString, ByteString> top =
                 b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::addLengthHeader));
         final FlowShape<ByteString, ByteString> bottom =

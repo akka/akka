@@ -148,9 +148,9 @@ class FlowDocSpec extends AkkaSpec {
   "various ways of transforming materialized values" in {
     import scala.concurrent.duration._
 
-    val throttler = Flow.fromGraph(FlowGraph.create(Source.tick(1.second, 1.second, "test")) { implicit builder =>
+    val throttler = Flow.fromGraph(GraphDSL.create(Source.tick(1.second, 1.second, "test")) { implicit builder =>
       tickSource =>
-        import FlowGraph.Implicits._
+        import GraphDSL.Implicits._
         val zip = builder.add(ZipWith[String, Int, Int](Keep.right))
         tickSource ~> zip.in0
         FlowShape(zip.in1, zip.out)
@@ -211,9 +211,9 @@ class FlowDocSpec extends AkkaSpec {
 
     // The result of r11 can be also achieved by using the Graph API
     val r12: RunnableGraph[(Promise[Option[Int]], Cancellable, Future[Int])] =
-      RunnableGraph.fromGraph(FlowGraph.create(source, flow, sink)((_, _, _)) { implicit builder =>
+      RunnableGraph.fromGraph(GraphDSL.create(source, flow, sink)((_, _, _)) { implicit builder =>
         (src, f, dst) =>
-          import FlowGraph.Implicits._
+          import GraphDSL.Implicits._
           src ~> f ~> dst
           ClosedShape
       })

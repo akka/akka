@@ -339,7 +339,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       }
     }
 
-    "work in a FlowGraph" in {
+    "work in a GraphDSL" in {
       implicit val materializer = ActorMaterializer()
       val probe1 = TestProbe()
       val probe2 = TestProbe()
@@ -350,9 +350,9 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val sink1 = Sink(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
       val sink2: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe2.ref))
 
-      val senderRef2 = RunnableGraph.fromGraph(FlowGraph.create(Source.actorPublisher[Int](senderProps)) { implicit b ⇒
+      val senderRef2 = RunnableGraph.fromGraph(GraphDSL.create(Source.actorPublisher[Int](senderProps)) { implicit b ⇒
         source2 ⇒
-          import FlowGraph.Implicits._
+          import GraphDSL.Implicits._
 
           val merge = b.add(Merge[Int](2))
           val bcast = b.add(Broadcast[String](2))

@@ -116,7 +116,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
    * Turn this BidiFlow around by 180 degrees, logically flipping it upside down in a protocol stack.
    */
   def reversed: BidiFlow[I2, O2, I1, O1, Mat] = {
-    BidiFlow.fromGraph(FlowGraph.create(this) { implicit b ⇒
+    BidiFlow.fromGraph(GraphDSL.create(this) { implicit b ⇒
       reversed ⇒
         BidiShape(reversed.in2, reversed.out2, reversed.in1, reversed.out1)
     })
@@ -169,7 +169,7 @@ object BidiFlow {
   def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](
     flow1: Graph[FlowShape[I1, O1], M1],
     flow2: Graph[FlowShape[I2, O2], M2])(combine: (M1, M2) ⇒ M): BidiFlow[I1, O1, I2, O2, M] =
-    fromGraph(FlowGraph.create(flow1, flow2)(combine) {
+    fromGraph(GraphDSL.create(flow1, flow2)(combine) {
       implicit b ⇒ (f1, f2) ⇒ BidiShape(f1.inlet, f1.outlet, f2.inlet, f2.outlet)
     })
 

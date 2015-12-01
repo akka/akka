@@ -104,7 +104,7 @@ public class CompositionDocTest {
   public void complexGraph() throws Exception {
     //#complex-graph
     RunnableGraph.fromGraph(
-      FlowGraph.create(builder -> {
+      GraphDSL.create(builder -> {
       final Outlet<Integer> A = builder.add(Source.single(0)).outlet();
       final UniformFanOutShape<Integer, Integer> B = builder.add(Broadcast.create(2));
       final UniformFanInShape<Integer, Integer> C = builder.add(Merge.create(2));
@@ -124,7 +124,7 @@ public class CompositionDocTest {
 
     //#complex-graph-alt
     RunnableGraph.fromGraph(
-      FlowGraph.create(builder -> {
+      GraphDSL.create(builder -> {
       final SourceShape<Integer> A = builder.add(Source.single(0));
       final UniformFanOutShape<Integer, Integer> B = builder.add(Broadcast.create(2));
       final UniformFanInShape<Integer, Integer> C = builder.add(Merge.create(2));
@@ -150,7 +150,7 @@ public class CompositionDocTest {
   public void partialGraph() throws Exception {
     //#partial-graph
     final Graph<FlowShape<Integer, Integer>, BoxedUnit> partial =
-      FlowGraph.create(builder -> {
+      GraphDSL.create(builder -> {
         final UniformFanOutShape<Integer, Integer> B = builder.add(Broadcast.create(2));
         final UniformFanInShape<Integer, Integer> C = builder.add(Merge.create(2));
         final UniformFanOutShape<Integer, Integer> E = builder.add(Balance.create(2));
@@ -176,7 +176,7 @@ public class CompositionDocTest {
 
     // Simple way to create a graph backed Source
     final Source<Integer, BoxedUnit> source = Source.fromGraph(
-      FlowGraph.create(builder -> {
+      GraphDSL.create(builder -> {
         final UniformFanInShape<Integer, Integer> merge = builder.add(Merge.create(2));
         builder.from(builder.add(Source.single(0))).toFanIn(merge);
         builder.from(builder.add(Source.from(Arrays.asList(2, 3, 4)))).toFanIn(merge);
@@ -204,7 +204,7 @@ public class CompositionDocTest {
       Source.single(0).to(Sink.foreach(System.out::println));
     final RunnableGraph<BoxedUnit> closed2 =
       RunnableGraph.fromGraph(
-        FlowGraph.create(builder -> {
+        GraphDSL.create(builder -> {
           final ClosedShape embeddedClosed = builder.add(closed1);
           return embeddedClosed; // Could return ClosedShape.getInstance()
     }));

@@ -62,7 +62,7 @@ public class RecipeDroppyBroadcast extends RecipeTest {
         final Source<Integer, BoxedUnit> myData = Source.from(nums);
 
         //#droppy-bcast2
-        RunnableGraph.fromGraph(FlowGraph.create(builder -> {
+        RunnableGraph.fromGraph(GraphDSL.create(builder -> {
           final int outputCount = 3;
           final UniformFanOutShape<Integer, Integer> bcast =
             builder.add(Broadcast.create(outputCount));

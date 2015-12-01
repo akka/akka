@@ -7,7 +7,7 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 class GraphPartialSpec extends AkkaSpec {
-  import FlowGraph.Implicits._
+  import GraphDSL.Implicits._
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -15,10 +15,10 @@ class GraphPartialSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer(settings)
 
   "FlowFlowGraph.partial" must {
-    import FlowGraph.Implicits._
+    import GraphDSL.Implicits._
 
     "be able to build and reuse simple partial graphs" in {
-      val doubler = FlowGraph.create() { implicit b ⇒
+      val doubler = GraphDSL.create() { implicit b ⇒
         val bcast = b.add(Broadcast[Int](2))
         val zip = b.add(ZipWith((a: Int, b: Int) ⇒ a + b))
 
@@ -27,7 +27,7 @@ class GraphPartialSpec extends AkkaSpec {
         FlowShape(bcast.in, zip.out)
       }
 
-      val (_, _, result) = RunnableGraph.fromGraph(FlowGraph.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
+      val (_, _, result) = RunnableGraph.fromGraph(GraphDSL.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
           Source(List(1, 2, 3)) ~> d1.inlet
           d1.outlet ~> d2.inlet
@@ -39,7 +39,7 @@ class GraphPartialSpec extends AkkaSpec {
     }
 
     "be able to build and reuse simple materializing partial graphs" in {
-      val doubler = FlowGraph.create(Sink.head[Seq[Int]]) { implicit b ⇒
+      val doubler = GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒
         sink ⇒
           val bcast = b.add(Broadcast[Int](3))
           val zip = b.add(ZipWith((a: Int, b: Int) ⇒ a + b))
@@ -50,7 +50,7 @@ class GraphPartialSpec extends AkkaSpec {
           FlowShape(bcast.in, zip.out)
       }
 
-      val (sub1, sub2, result) = RunnableGraph.fromGraph(FlowGraph.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
+      val (sub1, sub2, result) = RunnableGraph.fromGraph(GraphDSL.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
           Source(List(1, 2, 3)) ~> d1.inlet
           d1.outlet ~> d2.inlet
@@ -66,7 +66,7 @@ class GraphPartialSpec extends AkkaSpec {
     "be able to build and reuse complex materializing partial graphs" in {
       val summer = Sink.fold[Int, Int](0)(_ + _)
 
-      val doubler = FlowGraph.create(summer, summer)(Tuple2.apply) { implicit b ⇒
+      val doubler = GraphDSL.create(summer, summer)(Tuple2.apply) { implicit b ⇒
         (s1, s2) ⇒
           val bcast = b.add(Broadcast[Int](3))
           val bcast2 = b.add(Broadcast[Int](2))
@@ -82,7 +82,7 @@ class GraphPartialSpec extends AkkaSpec {
           FlowShape(bcast.in, bcast2.out(1))
       }
 
-      val (sub1, sub2, result) = RunnableGraph.fromGraph(FlowGraph.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
+      val (sub1, sub2, result) = RunnableGraph.fromGraph(GraphDSL.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
           Source(List(1, 2, 3)) ~> d1.inlet
           d1.outlet ~> d2.inlet
@@ -98,14 +98,14 @@ class GraphPartialSpec extends AkkaSpec {
     }
 
     "be able to expose the ports of imported graphs" in {
-      val p = FlowGraph.create(Flow[Int].map(_ + 1)) { implicit b ⇒
+      val p = GraphDSL.create(Flow[Int].map(_ + 1)) { implicit b ⇒
         flow ⇒
           FlowShape(flow.inlet, flow.outlet)
       }
 
-      val fut = RunnableGraph.fromGraph(FlowGraph.create(Sink.head[Int], p)(Keep.left) { implicit b ⇒
+      val fut = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Int], p)(Keep.left) { implicit b ⇒
         (sink, flow) ⇒
-          import FlowGraph.Implicits._
+          import GraphDSL.Implicits._
           Source.single(0) ~> flow.inlet
           flow.outlet ~> sink.inlet
           ClosedShape

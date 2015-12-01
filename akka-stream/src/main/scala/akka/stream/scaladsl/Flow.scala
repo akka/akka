@@ -285,7 +285,7 @@ object Flow {
    * Helper to create `Flow` from a `Sink`and a `Source`.
    */
   def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
-    fromGraph(FlowGraph.create(sink, source)(f) { implicit b ⇒ (in, out) ⇒ FlowShape(in.inlet, out.outlet) })
+    fromGraph(GraphDSL.create(sink, source)(f) { implicit b ⇒ (in, out) ⇒ FlowShape(in.inlet, out.outlet) })
 }
 
 object RunnableGraph {
@@ -1192,9 +1192,9 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#zip]].
    */
   def zipMat[U, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[(Out, U), Mat3] =
-    this.viaMat(FlowGraph.create(that) { implicit b ⇒
+    this.viaMat(GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import FlowGraph.Implicits._
+        import GraphDSL.Implicits._
         val zip = b.add(Zip[Out, U]())
         r ~> zip.in1
         FlowShape(zip.in0, zip.out)
@@ -1222,9 +1222,9 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#zipWith]].
    */
   def zipWithMat[Out2, Out3, Mat2, Mat3](that: Graph[SourceShape[Out2], Mat2])(combine: (Out, Out2) ⇒ Out3)(matF: (Mat, Mat2) ⇒ Mat3): Repr[Out3, Mat3] =
-    this.viaMat(FlowGraph.create(that) { implicit b ⇒
+    this.viaMat(GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import FlowGraph.Implicits._
+        import GraphDSL.Implicits._
         val zip = b.add(ZipWith[Out, Out2, Out3](combine))
         r ~> zip.in1
         FlowShape(zip.in0, zip.out)
@@ -1252,9 +1252,9 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#merge]].
    */
   def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
-    this.viaMat(FlowGraph.create(that) { implicit b ⇒
+    this.viaMat(GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import FlowGraph.Implicits._
+        import GraphDSL.Implicits._
         val merge = b.add(Merge[U](2))
         r ~> merge.in(1)
         FlowShape(merge.in(0), merge.out)
@@ -1294,9 +1294,9 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#concat]].
    */
   def concatMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
-    this.viaMat(FlowGraph.create(that) { implicit b ⇒
+    this.viaMat(GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import FlowGraph.Implicits._
+        import GraphDSL.Implicits._
         val merge = b.add(Concat[U]())
         r ~> merge.in(1)
         FlowShape(merge.in(0), merge.out)
@@ -1332,9 +1332,9 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#alsoTo]]
    */
   def alsoToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[Out, Mat3] =
-    this.viaMat(FlowGraph.create(that) { implicit b ⇒
+    this.viaMat(GraphDSL.create(that) { implicit b ⇒
       r ⇒
-        import FlowGraph.Implicits._
+        import GraphDSL.Implicits._
         val bcast = b.add(Broadcast[Out](2))
         bcast.out(1) ~> r
         FlowShape(bcast.in, bcast.out(0))

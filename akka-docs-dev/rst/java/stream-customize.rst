@@ -15,7 +15,7 @@ Custom processing with GraphStage
 =================================
 
 The :class:`GraphStage` abstraction can be used to create arbitrary graph processing stages with any number of input
-or output ports. It is a counterpart of the ``FlowGraph.create()`` method which creates new stream processing
+or output ports. It is a counterpart of the ``GraphDSL.create()`` method which creates new stream processing
 stages by composing  others. Where :class:`GraphStage` differs is that it creates a stage that is itself not divisible into
 smaller ones, and allows state to be maintained inside it in a safe way.
 

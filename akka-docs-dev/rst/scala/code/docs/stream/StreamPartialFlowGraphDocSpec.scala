@@ -19,8 +19,8 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   "build with open ports" in {
     //#simple-partial-flow-graph
-    val pickMaxOfThree = FlowGraph.create() { implicit b =>
-      import FlowGraph.Implicits._
+    val pickMaxOfThree = GraphDSL.create() { implicit b =>
+      import GraphDSL.Implicits._
 
       val zip1 = b.add(ZipWith[Int, Int, Int](math.max _))
       val zip2 = b.add(ZipWith[Int, Int, Int](math.max _))
@@ -31,9 +31,9 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
     val resultSink = Sink.head[Int]
 
-    val g = RunnableGraph.fromGraph(FlowGraph.create(resultSink) { implicit b =>
+    val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b =>
       sink =>
-        import FlowGraph.Implicits._
+        import GraphDSL.Implicits._
 
         // importing the partial graph will return its shape (inlets & outlets)
         val pm3 = b.add(pickMaxOfThree)
@@ -52,8 +52,8 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   "build source from partial flow graph" in {
     //#source-from-partial-flow-graph
-    val pairs = Source.fromGraph(FlowGraph.create() { implicit b =>
-      import FlowGraph.Implicits._
+    val pairs = Source.fromGraph(GraphDSL.create() { implicit b =>
+      import GraphDSL.Implicits._
 
       // prepare graph elements
       val zip = b.add(Zip[Int, Int]())
@@ -75,8 +75,8 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
   "build flow from partial flow graph" in {
     //#flow-from-partial-flow-graph
     val pairUpWithToString =
-      Flow.fromGraph(FlowGraph.create() { implicit b =>
-        import FlowGraph.Implicits._
+      Flow.fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
 
         // prepare graph elements
         val broadcast = b.add(Broadcast[Int](2))

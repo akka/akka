@@ -55,7 +55,7 @@ public class FlowGraphDocTest {
 
     final RunnableGraph<Future<List<String>>> result =
       RunnableGraph.<Future<List<String>>>fromGraph(
-        FlowGraph
+        GraphDSL
           .create(
             sink,
             (builder, out) -> {
@@ -83,7 +83,7 @@ public class FlowGraphDocTest {
       //#simple-graph
       final RunnableGraph<BoxedUnit> g =
         RunnableGraph.<BoxedUnit>fromGraph(
-          FlowGraph
+          GraphDSL
             .create((b) -> {
                 final SourceShape<Integer> source1 = b.add(Source.from(Arrays.asList(1, 2, 3, 4, 5)));
                 final SourceShape<Integer> source2 = b.add(Source.from(Arrays.asList(1, 2, 3, 4, 5)));
@@ -111,7 +111,7 @@ public class FlowGraphDocTest {
 
     final RunnableGraph<Pair<Future<Integer>, Future<Integer>>> g =
       RunnableGraph.<Pair<Future<Integer>, Future<Integer>>>fromGraph(
-        FlowGraph.create(
+        GraphDSL.create(
           topHeadSink, // import this sink into the graph
           bottomHeadSink, // and this as well
           Keep.both(),
@@ -145,7 +145,7 @@ public class FlowGraphDocTest {
       });
 
     final Flow<Integer, Integer, Future<Integer>> foldingFlow = Flow.fromGraph(
-      FlowGraph.create(foldSink,
+      GraphDSL.create(foldSink,
       (b, fold) -> {
         return FlowShape.of(
           fold.inlet(),
@@ -156,7 +156,7 @@ public class FlowGraphDocTest {
     //#flow-graph-matvalue-cycle
     // This cannot produce any value:
     final Source<Integer, Future<Integer>> cyclicSource = Source.fromGraph(
-      FlowGraph.create(foldSink,
+      GraphDSL.create(foldSink,
       (b, fold) -> {
         // - Fold cannot complete until its upstream mapAsync completes
         // - mapAsync cannot complete until the materialized Future produced by

@@ -86,10 +86,10 @@ it makes sense to make the Server initiate the conversation by emitting a "hello
 
 .. includecode:: code/docs/stream/io/StreamTcpDocSpec.scala#welcome-banner-chat-server
 
-The way we constructed a :class:`Flow` using a :class:`PartialFlowGraph` is explained in detail in
+The way we constructed a :class:`Flow` using the :class:`GraphDSL` is explained in detail in
 :ref:`constructing-sources-sinks-flows-from-partial-graphs-scala`, however the basic concepts is rather simple–
 we can encapsulate arbitrarily complex logic within a :class:`Flow` as long as it exposes the same interface, which means
-exposing exactly one :class:`UndefinedSink` and exactly one :class:`UndefinedSource` which will be connected to the TCP
+exposing exactly one :class:`Outlet` and exactly one :class:`Inlet` which will be connected to the TCP
 pipeline. In this example we use a :class:`Concat` graph processing stage to inject the initial message, and then
 continue with handling all incoming data using the echo handler. You should use this pattern of encapsulating complex
 logic in Flows and attaching those to :class:`StreamIO` in order to implement your custom and possibly sophisticated TCP servers.

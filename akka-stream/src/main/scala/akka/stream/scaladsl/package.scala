@@ -26,7 +26,7 @@ package akka.stream
  *
  * You can create your `Source`, `Flow` and `Sink` in any order and then wire them together before
  * they are materialized by connecting them using [[Flow#via]] and [[Flow#to]], or connecting them into a
- * [[FlowGraph]] with fan-in and fan-out elements.
+ * [[GraphDSL]] with fan-in and fan-out elements.
  *
  * See <a href="https://github.com/reactive-streams/reactive-streams/">Reactive Streams</a> for
  * details on [[org.reactivestreams.Publisher]] and [[org.reactivestreams.Subscriber]].

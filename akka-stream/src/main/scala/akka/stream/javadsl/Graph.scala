@@ -270,18 +270,18 @@ object Concat {
 
 // flow graph //
 
-object FlowGraph extends GraphCreate {
+object GraphDSL extends GraphCreate {
 
   /**
-   * Start building a [[FlowGraph]].
+   * Start building a [[GraphDSL]].
    *
    * The [[Builder]] is mutable and not thread-safe,
-   * thus you should construct your Graph and then share the constructed immutable [[FlowGraph]].
+   * thus you should construct your Graph and then share the constructed immutable [[GraphDSL]].
    */
-  def builder[M](): Builder[M] = new Builder()(new scaladsl.FlowGraph.Builder[M])
+  def builder[M](): Builder[M] = new Builder()(new scaladsl.GraphDSL.Builder[M])
 
-  final class Builder[+Mat]()(private implicit val delegate: scaladsl.FlowGraph.Builder[Mat]) { self ⇒
-    import akka.stream.scaladsl.FlowGraph.Implicits._
+  final class Builder[+Mat]()(private implicit val delegate: scaladsl.GraphDSL.Builder[Mat]) { self ⇒
+    import akka.stream.scaladsl.GraphDSL.Implicits._
 
     /**
      * Import a graph into this module, performing a deep copy, discarding its

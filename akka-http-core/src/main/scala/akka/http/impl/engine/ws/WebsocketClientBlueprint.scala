@@ -109,8 +109,8 @@ object WebsocketClientBlueprint {
       }
     }
 
-    BidiFlow.fromGraph(FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+    BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
 
       val networkIn = b.add(Flow[ByteString].transform(() ⇒ new UpgradeStage))
       val wsIn = b.add(Flow[ByteString])

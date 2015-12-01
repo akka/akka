@@ -65,8 +65,8 @@ private object PoolConductor {
 
   */
   def apply(slotCount: Int, pipeliningLimit: Int, log: LoggingAdapter): Graph[Ports, Any] =
-    FlowGraph.create() { implicit b ⇒
-      import FlowGraph.Implicits._
+    GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
 
       val retryMerge = b.add(MergePreferred[RequestContext](1, eagerClose = true))
       val slotSelector = b.add(new SlotSelector(slotCount, pipeliningLimit, log))

@@ -72,8 +72,8 @@ class StreamTcpDocSpec extends AkkaSpec {
 
     connections runForeach { connection =>
 
-      val serverLogic = Flow.fromGraph(FlowGraph.create() { implicit b =>
-        import FlowGraph.Implicits._
+      val serverLogic = Flow.fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
 
         // server logic, parses incoming commands
         val commandParser = new PushStage[String, String] {

@@ -11,7 +11,7 @@ import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.stream.*;
 import akka.stream.impl.ConstantFun;
-import akka.stream.javadsl.FlowGraph.Builder;
+import akka.stream.javadsl.GraphDSL.Builder;
 import akka.stream.stage.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
@@ -390,7 +390,7 @@ public class FlowTest extends StreamTest {
     final Sink<String, Publisher<String>> publisher = Sink.publisher(false);
 
     final Source<String, BoxedUnit> source = Source.fromGraph(
-            FlowGraph.create(new Function<FlowGraph.Builder<BoxedUnit>, SourceShape<String>>() {
+            GraphDSL.create(new Function<GraphDSL.Builder<BoxedUnit>, SourceShape<String>>() {
               @Override
               public SourceShape<String> apply(Builder<BoxedUnit> b) throws Exception {
                 final UniformFanInShape<String, String> merge = b.add(Merge.<String>create(2));
@@ -414,7 +414,7 @@ public class FlowTest extends StreamTest {
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<Integer> input2 = Arrays.asList(1, 2, 3);
 
-    RunnableGraph.fromGraph(FlowGraph.create(new Function<Builder<BoxedUnit>, ClosedShape>(){
+    RunnableGraph.fromGraph(GraphDSL.create(new Function<Builder<BoxedUnit>, ClosedShape>(){
       public ClosedShape apply(Builder<BoxedUnit> b) {
         final Outlet<String> in1 = b.add(Source.from(input1)).outlet();
         final Outlet<Integer> in2 = b.add(Source.from(input2)).outlet();
@@ -646,7 +646,7 @@ public class FlowTest extends StreamTest {
   @Test
   public void mustBeAbleToBroadcastEagerCancel() throws Exception {
     final Sink<String, BoxedUnit> sink = Sink.fromGraph(
-      FlowGraph.create(new Function<FlowGraph.Builder<BoxedUnit>, SinkShape<String>>() {
+      GraphDSL.create(new Function<GraphDSL.Builder<BoxedUnit>, SinkShape<String>>() {
         @Override
         public SinkShape<String> apply(Builder<BoxedUnit> b) throws Exception {
           final UniformFanOutShape<String, String> broadcast = b.add(Broadcast.<String>create(2, true));
