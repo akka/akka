@@ -223,5 +223,4 @@ private[http] object Websocket {
   }
 
   object Tick
-  case object SwitchToWebsocketToken
 }
