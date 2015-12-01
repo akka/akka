@@ -7,16 +7,15 @@ package akka.http.scaladsl.marshallers.xml
 import java.io.File
 
 import akka.http.scaladsl.TestUtils
-import scala.concurrent.duration._
 import org.xml.sax.SAXParseException
-
-import scala.concurrent.{ Future, Await }
 import scala.xml.NodeSeq
+import scala.concurrent.{ Future, Await }
+import scala.concurrent.duration._
 import org.scalatest.{ Inside, FreeSpec, Matchers }
+import akka.util.ByteString
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.{ Unmarshaller, Unmarshal }
 import akka.http.scaladsl.model._
-import HttpCharsets._
 import MediaTypes._
 
 class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest with Inside {
@@ -25,13 +24,13 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
   "NodeSeqMarshaller should" - {
     "marshal xml snippets to `text/xml` content in UTF-8" in {
       marshal(<employee><nr>Ha“llo</nr></employee>) shouldEqual
-        HttpEntity(ContentType(`text/xml`, `UTF-8`), "<employee><nr>Ha“llo</nr></employee>")
+        HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<employee><nr>Ha“llo</nr></employee>")
     }
     "unmarshal `text/xml` content in UTF-8 to NodeSeqs" in {
-      Unmarshal(HttpEntity(`text/xml`, "<int>Hällö</int>")).to[NodeSeq].map(_.text) should evaluateTo("Hällö")
+      Unmarshal(HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>Hällö</int>")).to[NodeSeq].map(_.text) should evaluateTo("Hällö")
     }
     "reject `application/octet-stream`" in {
-      Unmarshal(HttpEntity(`application/octet-stream`, "<int>Hällö</int>")).to[NodeSeq].map(_.text) should
+      Unmarshal(HttpEntity(`application/octet-stream`, ByteString("<int>Hällö</int>"))).to[NodeSeq].map(_.text) should
         haveFailedWith(Unmarshaller.UnsupportedContentTypeException(nodeSeqContentTypeRanges: _*))
     }
 
@@ -43,7 +42,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
                      |   <!ELEMENT foo ANY >
                      |   <!ENTITY xxe SYSTEM "${f.toURI}">]><foo>hello&xxe;</foo>""".stripMargin
 
-          shouldHaveFailedWithSAXParseException(Unmarshal(HttpEntity(`text/xml`, xml)).to[NodeSeq])
+          shouldHaveFailedWithSAXParseException(Unmarshal(HttpEntity(ContentTypes.`text/xml(UTF-8)`, xml)).to[NodeSeq])
         }
       }
       "parse XML bodies without loading in a related schema from a parameter" in {
@@ -58,7 +57,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
                        |   %xpe;
                        |   %pe;
                        |   ]><foo>hello&xxe;</foo>""".stripMargin
-            shouldHaveFailedWithSAXParseException(Unmarshal(HttpEntity(`text/xml`, xml)).to[NodeSeq])
+            shouldHaveFailedWithSAXParseException(Unmarshal(HttpEntity(ContentTypes.`text/xml(UTF-8)`, xml)).to[NodeSeq])
           }
         }
       }
@@ -73,7 +72,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
            | ]>
            | <billion>&laugh30;</billion>""".stripMargin
 
-        shouldHaveFailedWithSAXParseException(Unmarshal(HttpEntity(`text/xml`, xml)).to[NodeSeq])
+        shouldHaveFailedWithSAXParseException(Unmarshal(HttpEntity(ContentTypes.`text/xml(UTF-8)`, xml)).to[NodeSeq])
       }
       "gracefully fail when an entity expands to be very large" in {
         val as = "a" * 50000
@@ -83,7 +82,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
                   | <!ENTITY a "$as">
                   | ]>
                   | <kaboom>$entities</kaboom>""".stripMargin
-        shouldHaveFailedWithSAXParseException(Unmarshal(HttpEntity(`text/xml`, xml)).to[NodeSeq])
+        shouldHaveFailedWithSAXParseException(Unmarshal(HttpEntity(ContentTypes.`text/xml(UTF-8)`, xml)).to[NodeSeq])
       }
     }
   }

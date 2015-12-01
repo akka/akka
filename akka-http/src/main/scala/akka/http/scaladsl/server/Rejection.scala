@@ -112,7 +112,7 @@ case object RequestEntityExpectedRejection extends Rejection
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content type is accepted by the client
  */
-case class UnacceptedResponseContentTypeRejection(supported: immutable.Set[ContentType]) extends Rejection
+case class UnacceptedResponseContentTypeRejection(supported: immutable.Set[ContentNegotiator.Alternative]) extends Rejection
 
 /**
  * Rejection created by encoding filters.

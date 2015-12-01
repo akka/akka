@@ -25,7 +25,7 @@ trait MultipartUnmarshallers {
   def multipartGeneralUnmarshaller(defaultCharset: HttpCharset)(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.General] =
     multipartUnmarshaller[Multipart.General, Multipart.General.BodyPart, Multipart.General.BodyPart.Strict](
       mediaRange = `multipart/*`,
-      defaultContentType = ContentTypes.`text/plain` withCharset defaultCharset,
+      defaultContentType = MediaTypes.`text/plain` withCharset defaultCharset,
       createBodyPart = Multipart.General.BodyPart(_, _),
       createStreamed = Multipart.General(_, _),
       createStrictBodyPart = Multipart.General.BodyPart.Strict,
@@ -45,7 +45,7 @@ trait MultipartUnmarshallers {
   def multipartByteRangesUnmarshaller(defaultCharset: HttpCharset)(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.ByteRanges] =
     multipartUnmarshaller[Multipart.ByteRanges, Multipart.ByteRanges.BodyPart, Multipart.ByteRanges.BodyPart.Strict](
       mediaRange = `multipart/byteranges`,
-      defaultContentType = ContentTypes.`text/plain` withCharset defaultCharset,
+      defaultContentType = MediaTypes.`text/plain` withCharset defaultCharset,
       createBodyPart = (entity, headers) ⇒ Multipart.General.BodyPart(entity, headers).toByteRangesBodyPart.get,
       createStreamed = (_, parts) ⇒ Multipart.ByteRanges(parts),
       createStrictBodyPart = (entity, headers) ⇒ Multipart.General.BodyPart.Strict(entity, headers).toByteRangesBodyPart.get,
@@ -54,9 +54,9 @@ trait MultipartUnmarshallers {
   def multipartUnmarshaller[T <: Multipart, BP <: Multipart.BodyPart, BPS <: Multipart.BodyPart.Strict](mediaRange: MediaRange,
                                                                                                         defaultContentType: ContentType,
                                                                                                         createBodyPart: (BodyPartEntity, List[HttpHeader]) ⇒ BP,
-                                                                                                        createStreamed: (MultipartMediaType, Source[BP, Any]) ⇒ T,
+                                                                                                        createStreamed: (MediaType.Multipart, Source[BP, Any]) ⇒ T,
                                                                                                         createStrictBodyPart: (HttpEntity.Strict, List[HttpHeader]) ⇒ BPS,
-                                                                                                        createStrict: (MultipartMediaType, immutable.Seq[BPS]) ⇒ T)(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[T] =
+                                                                                                        createStrict: (MediaType.Multipart, immutable.Seq[BPS]) ⇒ T)(implicit log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[T] =
     Unmarshaller { implicit ec ⇒
       entity ⇒
         if (entity.contentType.mediaType.isMultipart && mediaRange.matches(entity.contentType.mediaType)) {
@@ -68,7 +68,7 @@ trait MultipartUnmarshallers {
               val parser = new BodyPartParser(defaultContentType, boundary, log)
               FastFuture.successful {
                 entity match {
-                  case HttpEntity.Strict(ContentType(mediaType: MultipartMediaType, _), data) ⇒
+                  case HttpEntity.Strict(ContentType(mediaType: MediaType.Multipart, _), data) ⇒
                     val builder = new VectorBuilder[BPS]()
                     val iter = new IteratorInterpreter[ByteString, BodyPartParser.Output](
                       Iterator.single(data), List(parser)).iterator
@@ -93,7 +93,7 @@ trait MultipartUnmarshallers {
                         case (BodyPartStart(headers, createEntity), entityParts) ⇒ createBodyPart(createEntity(entityParts), headers)
                         case (ParseError(errorInfo), _)                          ⇒ throw ParsingException(errorInfo)
                       }
-                    createStreamed(entity.contentType.mediaType.asInstanceOf[MultipartMediaType], bodyParts)
+                    createStreamed(entity.contentType.mediaType.asInstanceOf[MediaType.Multipart], bodyParts)
                 }
               }
           }

@@ -24,18 +24,18 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   val multipartForm = Multipart.FormData {
     Map(
       "firstName" -> HttpEntity("Mike"),
-      "age" -> HttpEntity(`text/xml`, "<int>42</int>"),
+      "age" -> HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
       "VIPBoolean" -> HttpEntity("true"))
   }
   val multipartFormWithTextHtml = Multipart.FormData {
     Map(
       "firstName" -> HttpEntity("Mike"),
-      "age" -> HttpEntity(`text/xml`, "<int>42</int>"),
-      "VIP" -> HttpEntity(`text/html`, "<b>yes</b>"),
+      "age" -> HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
+      "VIP" -> HttpEntity(ContentTypes.`text/html(UTF-8)`, "<b>yes</b>"),
       "super" -> HttpEntity("no"))
   }
   val multipartFormWithFile = Multipart.FormData(
-    Multipart.FormData.BodyPart.Strict("file", HttpEntity(MediaTypes.`text/xml`, "<int>42</int>"),
+    Multipart.FormData.BodyPart.Strict("file", HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
       Map("filename" -> "age.xml")))
 
   "The 'formFields' extraction directive" should {

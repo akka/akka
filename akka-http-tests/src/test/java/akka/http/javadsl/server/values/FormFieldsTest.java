@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.server.values;
 
+import akka.http.javadsl.model.HttpCharsets;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.server.RequestVal;
@@ -50,7 +51,7 @@ public class FormFieldsTest extends JUnitRouteTest {
 
         return
             HttpRequest.POST("/test")
-                .withEntity(MediaTypes.APPLICATION_X_WWW_FORM_URLENCODED.toContentType(), sb.toString());
+                .withEntity(MediaTypes.APPLICATION_X_WWW_FORM_URLENCODED.toContentType(HttpCharsets.UTF_8), sb.toString());
     }
     private HttpRequest singleParameterUrlEncodedRequest(String name, String value) {
         return urlEncodedRequest(entry(name, value));

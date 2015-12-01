@@ -5,10 +5,9 @@
 package akka.http.scaladsl.marshallers.sprayjson
 
 import scala.language.implicitConversions
-import akka.stream.Materializer
 import akka.http.scaladsl.marshalling.{ ToEntityMarshaller, Marshaller }
 import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
-import akka.http.scaladsl.model.{ ContentTypes, HttpCharsets }
+import akka.http.scaladsl.model.{ MediaTypes, HttpCharsets }
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import spray.json._
 
@@ -33,6 +32,6 @@ trait SprayJsonSupport {
   implicit def sprayJsonMarshaller[T](implicit writer: RootJsonWriter[T], printer: JsonPrinter = PrettyPrinter): ToEntityMarshaller[T] =
     sprayJsValueMarshaller compose writer.write
   implicit def sprayJsValueMarshaller(implicit printer: JsonPrinter = PrettyPrinter): ToEntityMarshaller[JsValue] =
-    Marshaller.StringMarshaller.wrap(ContentTypes.`application/json`)(printer)
+    Marshaller.StringMarshaller.wrap(MediaTypes.`application/json`)(printer)
 }
 object SprayJsonSupport extends SprayJsonSupport
