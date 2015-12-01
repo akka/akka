@@ -29,7 +29,7 @@ private[http] final case class RequestContextImpl(underlying: ScalaRequestContex
       case r: RouteResultImpl ⇒ r.underlying
     }(executionContext())
   def complete(text: String): RouteResult = underlying.complete(text)
-  def complete(contentType: ContentType, text: String): RouteResult =
+  def complete(contentType: ContentType.NonBinary, text: String): RouteResult =
     underlying.complete(HttpEntity(contentType.asScala, text))
 
   def completeWithStatus(statusCode: Int): RouteResult =

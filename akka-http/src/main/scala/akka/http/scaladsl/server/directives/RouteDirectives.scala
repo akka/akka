@@ -34,7 +34,7 @@ trait RouteDirectives {
             headers = headers.Location(uri) :: Nil,
             entity = redirectionType.htmlTemplate match {
               case ""       ⇒ HttpEntity.Empty
-              case template ⇒ HttpEntity(MediaTypes.`text/html`, template format uri)
+              case template ⇒ HttpEntity(ContentTypes.`text/html(UTF-8)`, template format uri)
             })
         }
       //#

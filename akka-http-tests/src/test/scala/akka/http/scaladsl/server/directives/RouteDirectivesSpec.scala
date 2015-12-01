@@ -6,9 +6,9 @@ package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-import akka.stream.scaladsl.Sink
 import org.scalatest.FreeSpec
 import scala.concurrent.{ Future, Promise }
+import akka.testkit.EventFilter
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.server._
@@ -16,9 +16,6 @@ import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import headers._
 import StatusCodes._
-import MediaTypes._
-import scala.xml.NodeSeq
-import akka.testkit.EventFilter
 
 class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
 
@@ -122,7 +119,8 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       } ~> check {
         response shouldEqual HttpResponse(
           status = 302,
-          entity = HttpEntity(`text/html`, "The requested resource temporarily resides under <a href=\"/foo\">this URI</a>."),
+          entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
+            "The requested resource temporarily resides under <a href=\"/foo\">this URI</a>."),
           headers = Location("/foo") :: Nil)
       }
     }

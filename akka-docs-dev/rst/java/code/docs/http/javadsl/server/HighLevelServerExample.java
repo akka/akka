@@ -51,7 +51,7 @@ public class HighLevelServerExample extends HttpApp {
                     // matches the empty path
                     pathSingleSlash().route(
                         // return a constant string with a certain content type
-                        complete(ContentTypes.TEXT_HTML,
+                        complete(ContentTypes.TEXT_HTML_UTF8,
                                 "<html><body>Hello world!</body></html>")
                     ),
                     path("ping").route(

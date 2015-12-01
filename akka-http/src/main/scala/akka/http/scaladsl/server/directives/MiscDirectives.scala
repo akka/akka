@@ -51,19 +51,10 @@ trait MiscDirectives {
    * has equal preference for (even if this preference is zero!)
    * the order of the arguments is used as a tie breaker (First one wins).
    */
-  def selectPreferredLanguage(first: Language, more: Language*): Directive1[Language] = {
-    val available = first :: List(more: _*) // we use List rather than Seq since element count is likely very small
-    BasicDirectives.extractRequest.map { req ⇒
-      val sortedWithQValues = available.zip(available.map(req.qValueForLanguage(_))).sortBy(-_._2)
-      val firstBest = sortedWithQValues.head
-      val moreBest = sortedWithQValues.tail.takeWhile(_._2 == firstBest._2)
-      if (moreBest.nonEmpty) {
-        // we have several languages that have the same qvalue, so we pick the one the `Accept-Header` lists first
-        val allBest = firstBest :: moreBest
-        req.acceptedLanguageRanges.flatMap(range ⇒ allBest.find(t ⇒ range.matches(t._1))).head._1
-      } else firstBest._1 // we have a single best match, so pick that
+  def selectPreferredLanguage(first: Language, more: Language*): Directive1[Language] =
+    BasicDirectives.extractRequest.map { request ⇒
+      LanguageNegotiator(request.headers).pickLanguage(first :: List(more: _*)) getOrElse first
     }
-  }
 }
 
 object MiscDirectives extends MiscDirectives {

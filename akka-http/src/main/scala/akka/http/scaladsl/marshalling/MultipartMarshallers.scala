@@ -13,8 +13,8 @@ trait MultipartMarshallers {
   implicit def multipartMarshaller[T <: Multipart](implicit log: LoggingAdapter = NoLogging): ToEntityMarshaller[T] =
     Marshaller strict { value ⇒
       val boundary = randomBoundary()
-      val contentType = ContentType(value.mediaType withBoundary boundary)
-      Marshalling.WithOpenCharset(contentType.mediaType, { charset ⇒
+      val mediaType = value.mediaType withBoundary boundary
+      Marshalling.WithOpenCharset(mediaType, { charset ⇒
         value.toEntity(charset, boundary)(log)
       })
     }

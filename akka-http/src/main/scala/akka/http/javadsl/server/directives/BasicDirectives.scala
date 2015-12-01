@@ -33,7 +33,7 @@ abstract class BasicDirectives extends BasicDirectivesBase {
   /**
    * A route that completes the request with a static text
    */
-  def complete(contentType: ContentType, text: String): Route =
+  def complete(contentType: ContentType.NonBinary, text: String): Route =
     new OpaqueRoute() {
       def handle(ctx: RequestContext): RouteResult =
         ctx.complete(contentType, text)

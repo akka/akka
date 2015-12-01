@@ -5,16 +5,15 @@
 package akka.http.scaladsl.marshalling
 
 import scala.concurrent.{ ExecutionContext, Future }
-import akka.http.scaladsl.model.HttpCharsets._
+import akka.http.scaladsl.server.ContentNegotiator
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
 
 object Marshal {
   def apply[T](value: T): Marshal[T] = new Marshal(value)
 
-  case class UnacceptableResponseContentTypeException(supported: Set[ContentType]) extends RuntimeException
-
-  private class MarshallingWeight(val weight: Float, val marshal: () ⇒ HttpResponse)
+  case class UnacceptableResponseContentTypeException(supported: Set[ContentNegotiator.Alternative])
+    extends RuntimeException
 }
 
 class Marshal[A](val value: A) {
@@ -25,9 +24,9 @@ class Marshal[A](val value: A) {
   def to[B](implicit m: Marshaller[A, B], ec: ExecutionContext): Future[B] =
     m(value).fast.map {
       _.head match {
-        case Marshalling.WithFixedCharset(_, _, marshal) ⇒ marshal()
-        case Marshalling.WithOpenCharset(_, marshal)     ⇒ marshal(HttpCharsets.`UTF-8`)
-        case Marshalling.Opaque(marshal)                 ⇒ marshal()
+        case Marshalling.WithFixedContentType(_, marshal) ⇒ marshal()
+        case Marshalling.WithOpenCharset(_, marshal)      ⇒ marshal(HttpCharsets.`UTF-8`)
+        case Marshalling.Opaque(marshal)                  ⇒ marshal()
       }
     }
 
@@ -36,40 +35,32 @@ class Marshal[A](val value: A) {
    */
   def toResponseFor(request: HttpRequest)(implicit m: ToResponseMarshaller[A], ec: ExecutionContext): Future[HttpResponse] = {
     import akka.http.scaladsl.marshalling.Marshal._
-    val mediaRanges = request.acceptedMediaRanges // cache for performance
-    val charsetRanges = request.acceptedCharsetRanges // cache for performance
-    def qValueMT(mediaType: MediaType) = request.qValueForMediaType(mediaType, mediaRanges)
-    def qValueCS(charset: HttpCharset) = request.qValueForCharset(charset, charsetRanges)
+    val ctn = ContentNegotiator(request.headers)
 
     m(value).fast.map { marshallings ⇒
-      val defaultMarshallingWeight = new MarshallingWeight(0f, { () ⇒
-        val supportedContentTypes = marshallings collect {
-          case Marshalling.WithFixedCharset(mt, cs, _) ⇒ ContentType(mt, cs)
-          case Marshalling.WithOpenCharset(mt, _)      ⇒ ContentType(mt)
-        }
-        throw UnacceptableResponseContentTypeException(supportedContentTypes.toSet)
-      })
-      def choose(acc: MarshallingWeight, mt: MediaType, cs: HttpCharset, marshal: () ⇒ HttpResponse) = {
-        val weight = math.min(qValueMT(mt), qValueCS(cs))
-        if (weight > acc.weight) new MarshallingWeight(weight, marshal) else acc
-      }
-      val best = marshallings.foldLeft(defaultMarshallingWeight) {
-        case (acc, Marshalling.WithFixedCharset(mt, cs, marshal)) ⇒
-          choose(acc, mt, cs, marshal)
-        case (acc, Marshalling.WithOpenCharset(mt, marshal)) ⇒
-          def withCharset(cs: HttpCharset) = choose(acc, mt, cs, () ⇒ marshal(cs))
-          // logic for choosing the charset adapted from http://tools.ietf.org/html/rfc7231#section-5.3.3
-          if (qValueCS(`UTF-8`) == 1f) withCharset(`UTF-8`) // prefer UTF-8 if fully accepted
-          else charsetRanges match {
-            // pick the charset which the highest q-value (head of charsetRanges) if it isn't explicitly rejected
-            case (HttpCharsetRange.One(cs, qValue)) +: _ if qValue > 0f ⇒ withCharset(cs)
-            case _ ⇒ acc
+      val supportedAlternatives: List[ContentNegotiator.Alternative] =
+        marshallings.collect {
+          case Marshalling.WithFixedContentType(ct, _) ⇒ ContentNegotiator.Alternative(ct)
+          case Marshalling.WithOpenCharset(mt, _)      ⇒ ContentNegotiator.Alternative(mt)
+        }(collection.breakOut)
+      val bestMarshal = {
+        if (supportedAlternatives.nonEmpty) {
+          ctn.pickContentType(supportedAlternatives).flatMap {
+            case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset) ⇒
+              marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
+            case best @ ContentType.WithCharset(bestMT, bestCS) ⇒
+              marshallings collectFirst {
+                case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal
+                case Marshalling.WithOpenCharset(`bestMT`, marshal)    ⇒ () ⇒ marshal(bestCS)
+              }
           }
-
-        case (acc, Marshalling.Opaque(marshal)) ⇒
-          if (acc.weight == 0f) new MarshallingWeight(Float.MinPositiveValue, marshal) else acc
+        } else None
+      } orElse {
+        marshallings collectFirst { case Marshalling.Opaque(marshal) ⇒ marshal }
+      } getOrElse {
+        throw UnacceptableResponseContentTypeException(supportedAlternatives.toSet)
       }
-      best.marshal()
+      bestMarshal()
     }
   }
 }

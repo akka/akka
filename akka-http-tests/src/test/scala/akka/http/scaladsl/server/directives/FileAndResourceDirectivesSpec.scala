@@ -9,6 +9,7 @@ import java.io.File
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Properties
+import akka.util.ByteString
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ Inside, Inspectors }
 import akka.http.scaladsl.model.MediaTypes._
@@ -37,7 +38,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         writeAllText("This is PDF", file)
         Get() ~> getFromFile(file.getPath) ~> check {
           mediaType shouldEqual `application/pdf`
-          definedCharset shouldEqual None
+          charsetOption shouldEqual None
           responseAs[String] shouldEqual "This is PDF"
           headers should contain(`Last-Modified`(DateTime(file.lastModified)))
         }
@@ -71,7 +72,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         val rangeHeader = Range(ByteRange(1, 10), ByteRange.suffix(10))
-        Get() ~> addHeader(rangeHeader) ~> getFromFile(file, ContentTypes.`text/plain`) ~> check {
+        Get() ~> addHeader(rangeHeader) ~> getFromFile(file, ContentTypes.`text/plain(UTF-8)`) ~> check {
           status shouldEqual StatusCodes.PartialContent
           header[`Content-Range`] shouldEqual None
           mediaType.withParams(Map.empty) shouldEqual `multipart/byteranges`
