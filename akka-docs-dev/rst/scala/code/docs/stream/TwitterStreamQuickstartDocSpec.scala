@@ -118,8 +118,8 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     // format: OFF
     //#flow-graph-broadcast
-    val g = RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
-      import FlowGraph.Implicits._
+    val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+      import GraphDSL.Implicits._
 
       val bcast = b.add(Broadcast[Tweet](2))
       tweets ~> bcast.in

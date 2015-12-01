@@ -136,9 +136,9 @@ class SourceSpec extends AkkaSpec {
       val source = Source.subscriber[Int]
       val out = TestSubscriber.manualProbe[Int]
 
-      val s = Source.fromGraph(FlowGraph.create(source, source, source, source, source)(Seq(_, _, _, _, _)) { implicit b ⇒
+      val s = Source.fromGraph(GraphDSL.create(source, source, source, source, source)(Seq(_, _, _, _, _)) { implicit b ⇒
         (i0, i1, i2, i3, i4) ⇒
-          import FlowGraph.Implicits._
+          import GraphDSL.Implicits._
           val m = b.add(Merge[Int](5))
           i0.outlet ~> m.in(0)
           i1.outlet ~> m.in(1)
@@ -212,7 +212,7 @@ class SourceSpec extends AkkaSpec {
 
   "Repeat Source" must {
     "repeat as long as it takes" in {
-      import FlowGraph.Implicits._
+      import GraphDSL.Implicits._
       val result = Await.result(Source.repeat(42).grouped(10000).runWith(Sink.head), 1.second)
       result.size should ===(10000)
       result.toSet should ===(Set(42))

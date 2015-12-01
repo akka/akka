@@ -92,18 +92,20 @@ Should be replaced by
 
 .. includecode:: code/docs/MigrationsScala.scala#bidiflow-wrap
 
-FlowGraph builder methods have been renamed
+FlowGraph class and builder methods have been renamed
 ===========================================
 
+Due to incorrect overlap with the :class:`Flow` concept we renamed the :class:`FlowGraph` class to :class:`GraphDSL`.
 There is now only one graph creation method called ``create`` which is analogous to the old ``partial`` method. For
 closed graphs now it is explicitly required to return ``ClosedShape`` at the end of the builder block.
 
 Update procedure
 ----------------
 
-1. Replace all occurrences of ``FlowGraph.partial()`` or ``FlowGraph.closed()`` with ``FlowGraph.create()``
-2. Add ``ClosedShape`` as a return value of the builder block if it was ``FlowGraph.closed()`` before
-3. Wrap the closed graph with  ``RunnableGraph.fromGraph`` if it was ``FlowGraph.closed()`` before
+1. Search and replace all occurrences of ``FlowGraph`` with ``GraphDSL``.
+2. Replace all occurrences of ``GraphDSL.partial()`` or ``GraphDSL.closed()`` with ``GraphDSL.create()``.
+3. Add ``ClosedShape`` as a return value of the builder block if it was ``FlowGraph.closed()`` before.
+4. Wrap the closed graph with ``RunnableGraph.fromGraph`` if it was ``FlowGraph.closed()`` before.
 
 Example
 ^^^^^^^
@@ -131,7 +133,7 @@ Methods that create Source, Sink, Flow from Graphs have been removed
 Previously there were convenience methods available on ``Sink``, ``Source``, ``Flow`` an ``BidiFlow`` to create
 these DSL elements from a graph builder directly. Now this requires two explicit steps to reduce the number of overloaded
 methods (helps Java 8 type inference) and also reduces the ways how these elements can be created. There is only one
-graph creation method to learn (``FlowGraph.create``) and then there is only one conversion method to use ``fromGraph()``.
+graph creation method to learn (``GraphDSL.create``) and then there is only one conversion method to use ``fromGraph()``.
 
 This means that the following methods have been removed:
  - ``adapt()`` method on ``Source``, ``Sink``, ``Flow`` and ``BidiFlow`` (both DSLs)
@@ -144,7 +146,7 @@ Update procedure
 Everywhere where ``Source``, ``Sink``, ``Flow`` and ``BidiFlow`` is created from a graph using a builder have to
 be replaced with two steps
 
-1. Create a ``Graph`` with the correct ``Shape`` using ``FlowGraph.create`` (e.g.. for  ``Source`` it means first
+1. Create a ``Graph`` with the correct ``Shape`` using ``GraphDSL.create`` (e.g.. for  ``Source`` it means first
    creating a ``Graph`` with ``SourceShape``)
 2. Create the required DSL element by calling ``fromGraph()`` on the required DSL element (e.g. ``Source.fromGraph``)
    passing the graph created in the previous step
@@ -187,7 +189,7 @@ Several Graph builder methods have been removed
 
 The ``addEdge`` methods have been removed from the DSL to reduce the ways connections can be made and to reduce the
 number of overloads. Now only the ``~>`` notation is available which requires the import of the implicits
-``FlowGraph.Implicits._``.
+``GraphDSL.Implicits._``.
 
 Update procedure
 ----------------

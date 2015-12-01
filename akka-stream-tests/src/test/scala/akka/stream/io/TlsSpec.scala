@@ -85,7 +85,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  import FlowGraph.Implicits._
+  import GraphDSL.Implicits._
 
   "SslTls" must {
 
@@ -399,7 +399,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
-        RunnableGraph.fromGraph(FlowGraph.create(Source.subscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
+        RunnableGraph.fromGraph(GraphDSL.create(Source.subscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
           (s, o1, o2) ⇒
             val tls = b.add(clientTls(EagerClose))
             s ~> tls.in1; tls.out1 ~> o1
@@ -417,7 +417,7 @@ class TlsSpec extends AkkaSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off
     "reliably cancel subscriptions when UserIn fails early" in assertAllStagesStopped {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
-        RunnableGraph.fromGraph(FlowGraph.create(Source.subscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
+        RunnableGraph.fromGraph(GraphDSL.create(Source.subscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒
           (s, o1, o2) ⇒
             val tls = b.add(clientTls(EagerClose))
             Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1

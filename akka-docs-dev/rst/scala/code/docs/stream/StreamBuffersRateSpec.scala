@@ -39,8 +39,8 @@ class StreamBuffersRateSpec extends AkkaSpec {
     import scala.concurrent.duration._
     case class Tick()
 
-    RunnableGraph.fromGraph(FlowGraph.create() { implicit b =>
-      import FlowGraph.Implicits._
+    RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+      import GraphDSL.Implicits._
 
       val zipper = b.add(ZipWith[Tick, Int, Int]((tick, count) => count))
 
