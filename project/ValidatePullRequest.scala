@@ -4,8 +4,8 @@
 package akka
 
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
-import net.virtualvoid.sbt.graph.IvyGraphMLDependencies
-import net.virtualvoid.sbt.graph.IvyGraphMLDependencies.ModuleId
+import net.virtualvoid.sbt.graph.backend.IvyReport
+import net.virtualvoid.sbt.graph.ModuleId
 import org.kohsuke.github._
 import sbtunidoc.Plugin.UnidocKeys.unidoc
 import sbt.Keys._
@@ -101,7 +101,7 @@ object ValidatePullRequest extends AutoPlugin {
           if (f1.exists()) f1 else f2
         }
 
-        val deps = IvyGraphMLDependencies.graph(ivyReportFile.getAbsolutePath)
+        val deps = IvyReport.fromReportFile(ivyReportFile.getAbsolutePath)
         deps.nodes.foreach { m ⇒ log.debug(" -> " + m.id) }
 
         // if this project depends on a modified module, we must test it
