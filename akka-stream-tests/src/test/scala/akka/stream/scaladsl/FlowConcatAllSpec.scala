@@ -54,7 +54,7 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "on onError on master stream cancel the current open substream and signal error" in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[Source[Int, _]]()
+      val publisher = TestPublisher.manualProbe[Source[Int, Unit]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source(publisher).flatMapConcat(ConstantFun.scalaIdentityFunction).to(Sink(subscriber)).run()
 
@@ -74,7 +74,7 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "on onError on master stream cancel the currently opening substream and signal error" in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[Source[Int, _]]()
+      val publisher = TestPublisher.manualProbe[Source[Int, Unit]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source(publisher).flatMapConcat(ConstantFun.scalaIdentityFunction).to(Sink(subscriber)).run()
 
@@ -114,7 +114,7 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "on onError on open substream, cancel the master stream and signal error " in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[Source[Int, _]]()
+      val publisher = TestPublisher.manualProbe[Source[Int, Unit]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source(publisher).flatMapConcat(ConstantFun.scalaIdentityFunction).to(Sink(subscriber)).run()
 
@@ -134,7 +134,7 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "on cancellation cancel the current open substream and the master stream" in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[Source[Int, _]]()
+      val publisher = TestPublisher.manualProbe[Source[Int, Unit]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source(publisher).flatMapConcat(ConstantFun.scalaIdentityFunction).to(Sink(subscriber)).run()
 
@@ -155,7 +155,7 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "on cancellation cancel the currently opening substream and the master stream" in assertAllStagesStopped {
-      val publisher = TestPublisher.manualProbe[Source[Int, _]]()
+      val publisher = TestPublisher.manualProbe[Source[Int, Unit]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
       Source(publisher).flatMapConcat(ConstantFun.scalaIdentityFunction).to(Sink(subscriber)).run()
 
@@ -178,11 +178,11 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "pass along early cancellation" in assertAllStagesStopped {
-      val up = TestPublisher.manualProbe[Source[Int, _]]()
+      val up = TestPublisher.manualProbe[Source[Int, Unit]]()
       val down = TestSubscriber.manualProbe[Int]()
 
       val flowSubscriber = Source
-        .subscriber[Source[Int, _]]
+        .subscriber[Source[Int, Unit]]
         .flatMapConcat(ConstantFun.scalaIdentityFunction)
         .to(Sink(down))
         .run()

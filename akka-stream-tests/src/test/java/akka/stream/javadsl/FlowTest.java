@@ -482,18 +482,50 @@ public class FlowTest extends StreamTest {
     final Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
     final Iterable<Integer> input2 = Arrays.asList(4, 5);
 
-    final List<Source<Integer, ?>> mainInputs = new ArrayList<Source<Integer,?>>();
+    final List<Source<Integer, BoxedUnit>> mainInputs = new ArrayList<Source<Integer,BoxedUnit>>();
     mainInputs.add(Source.from(input1));
     mainInputs.add(Source.from(input2));
 
-    final Flow<Source<Integer, ?>, List<Integer>, ?> flow = Flow.<Source<Integer, ?>>create().
-      flatMapConcat(ConstantFun.<Source<Integer, ?>>javaIdentityFunction()).grouped(6);
+    final Flow<Source<Integer, BoxedUnit>, List<Integer>, ?> flow = Flow.<Source<Integer, BoxedUnit>>create().
+      flatMapConcat(ConstantFun.<Source<Integer, BoxedUnit>>javaIdentityFunction()).grouped(6);
     Future<List<Integer>> future = Source.from(mainInputs).via(flow)
         .runWith(Sink.<List<Integer>>head(), materializer);
 
     List<Integer> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
 
     assertEquals(Arrays.asList(1, 2, 3, 4, 5), result);
+  }
+  
+  @Test
+  public void mustBeAbleToUseFlatMapMerge() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<Integer> input1 = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    final Iterable<Integer> input2 = Arrays.asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19);
+    final Iterable<Integer> input3 = Arrays.asList(20, 21, 22, 23, 24, 25, 26, 27, 28, 29);
+    final Iterable<Integer> input4 = Arrays.asList(30, 31, 32, 33, 34, 35, 36, 37, 38, 39);
+
+    final List<Source<Integer, BoxedUnit>> mainInputs = new ArrayList<Source<Integer,BoxedUnit>>();
+    mainInputs.add(Source.from(input1));
+    mainInputs.add(Source.from(input2));
+    mainInputs.add(Source.from(input3));
+    mainInputs.add(Source.from(input4));
+
+    final Flow<Source<Integer, BoxedUnit>, List<Integer>, ?> flow = Flow.<Source<Integer, BoxedUnit>>create().
+      flatMapMerge(3, ConstantFun.<Source<Integer, BoxedUnit>>javaIdentityFunction()).grouped(60);
+    Future<List<Integer>> future = Source.from(mainInputs).via(flow)
+        .runWith(Sink.<List<Integer>>head(), materializer);
+
+    List<Integer> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
+    final Set<Integer> set = new HashSet<Integer>();
+    for (Integer i: result) {
+      set.add(i);
+    }
+    final Set<Integer> expected = new HashSet<Integer>();
+    for (int i = 0; i < 40; ++i) {
+      expected.add(i);
+    }
+
+    assertEquals(expected, set);
   }
 
   @Test
