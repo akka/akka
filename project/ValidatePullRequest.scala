@@ -97,39 +97,16 @@ object ValidatePullRequest extends AutoPlugin {
     }
   }
 
-  override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++ Seq(
-    testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
-    testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
-    testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
-
-    sourceBranch in ValidatePR := {
+  override lazy val buildSettings = Seq(
+    sourceBranch in Global in ValidatePR := {
       sys.env.get(SourceBranchEnvVarName) orElse
-      sys.env.get(SourcePullIdJenkinsEnvVarName).map("pullreq/" + _) getOrElse // Set by "GitHub pull request builder plugin"
-      "HEAD"
+        sys.env.get(SourcePullIdJenkinsEnvVarName).map("pullreq/" + _) getOrElse // Set by "GitHub pull request builder plugin"
+        "HEAD"
     },
 
-    changedDirectories in ValidatePR := {
-      val log = streams.value.log
+    buildAllKeyword in Global in ValidatePR := """PLS BUILD ALL""".r,
 
-      val prId = (sourceBranch in ValidatePR).value
-
-      // TODO could use jgit
-      log.info(s"Diffing [$prId] to determine changed modules in PR...")
-      val gitOutput = "git diff HEAD^ --name-only".!!.split("\n")
-
-      val moduleNames =
-        gitOutput
-          .map(l ⇒ l.trim.takeWhile(_ != '/'))
-          .filter(dir => dir.startsWith("akka-") || dir == "project")
-          .toSet
-
-      log.info("Detected changes in directories: " + moduleNames.mkString("[", ", ", "]"))
-      moduleNames
-    },
-
-    buildAllKeyword in ValidatePR := """PLS BUILD ALL""".r,
-
-    githubEnforcedBuildAll in ValidatePR := {
+    githubEnforcedBuildAll in Global in ValidatePR := {
       sys.env.get(PullIdEnvVarName).map(_.toInt) flatMap { prId =>
         val log = streams.value.log
         val buildAllMagicPhrase = (buildAllKeyword in ValidatePR).value
@@ -151,6 +128,31 @@ object ValidatePullRequest extends AutoPlugin {
         }
       }
     },
+
+    changedDirectories in Global in ValidatePR := {
+      val log = streams.value.log
+
+      val prId = (sourceBranch in ValidatePR).value
+
+      // TODO could use jgit
+      log.info(s"Diffing [$prId] to determine changed modules in PR...")
+      val gitOutput = "git diff HEAD^ --name-only".!!.split("\n")
+
+      val moduleNames =
+        gitOutput
+          .map(l ⇒ l.trim.takeWhile(_ != '/'))
+          .filter(dir => dir.startsWith("akka-") || dir == "project")
+          .toSet
+
+      log.info("Detected changes in directories: " + moduleNames.mkString("[", ", ", "]"))
+      moduleNames
+    }
+  )
+
+  override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++ Seq(
+    testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
+    testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
+    testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
 
     projectBuildMode in ValidatePR := {
       val log = streams.value.log
