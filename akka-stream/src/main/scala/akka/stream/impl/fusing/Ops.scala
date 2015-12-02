@@ -239,43 +239,35 @@ private[akka] final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, de
 /**
  * INTERNAL API
  */
-private[akka] final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) extends StatefulStage[T, T] {
-  private var needsToEmitStart = start.isDefined
+private[akka] final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) extends GraphStage[FlowShape[T, T]] {
 
-  override def initial: StageState[T, T] =
-    start match {
-      case Some(initial) ⇒ firstWithInitial(initial)
-      case _             ⇒ first
-    }
+  private val in = Inlet[T]("in")
+  private val out = Outlet[T]("out")
 
-  def firstWithInitial(initial: T) = new StageState[T, T] {
-    override def onPush(elem: T, ctx: Context[T]) = {
-      needsToEmitStart = false
-      emit(Iterator(initial, elem), ctx, running)
-    }
-  }
+  override val shape = FlowShape(in, out)
 
-  def first = new StageState[T, T] {
-    override def onPush(elem: T, ctx: Context[T]) = {
-      become(running)
-      ctx.push(elem)
-    }
-  }
+  override def createLogic(attr: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    var s_ = start.isDefined
+    var m_ = false
+    var e_ = end.isDefined
 
-  def running = new StageState[T, T] {
-    override def onPush(elem: T, ctx: Context[T]): SyncDirective =
-      emit(Iterator(inject, elem), ctx)
-  }
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = push(out, grab(in))
+    })
 
-  override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
-    end match {
-      case Some(e) if needsToEmitStart ⇒
-        terminationEmit(Iterator(start.get, end.get), ctx)
-      case Some(e) ⇒
-        terminationEmit(Iterator(end.get), ctx)
-      case _ ⇒
-        terminationEmit(Iterator(), ctx)
-    }
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = {
+        if (s_) { // emit start
+          push(out, start.get)
+          s_ = false
+        } else { // emit inject
+          if (m_) push(out, inject)
+          else pull(in)
+
+          m_ = !m_
+        }
+      }
+    })
   }
 }
 
