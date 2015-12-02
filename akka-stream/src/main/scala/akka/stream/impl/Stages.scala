@@ -188,10 +188,6 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Scan(zero, f, supervision(attr))
   }
 
-  final case class Intersperse[T](start: Option[T], inject: T, end: Option[T], attributes: Attributes = intersperse) extends SymbolicStage[T, T] {
-    override def create(attr: Attributes) = fusing.Intersperse(start, inject, end)
-  }
-
   final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, attributes: Attributes = fold) extends SymbolicStage[In, Out] {
     override def create(attr: Attributes): Stage[In, Out] = fusing.Fold(zero, f, supervision(attr))
   }
