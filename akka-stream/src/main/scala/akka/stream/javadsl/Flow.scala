@@ -509,6 +509,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * [[akka.stream.DelayOverflowStrategy]] it might drop elements or backpressure the upstream if
    * there is no space available in the buffer.
    *
+   * Delay precession is 10ms to avoid unnecessary timer scheduling cycles
+   *
    * Internal buffer has default capacity 16. You can set buffer size by calling `withAttributes(inputBuffer)`
    *
    * '''Emits when''' there is a pending element in the buffer and configured time for this element elapsed
