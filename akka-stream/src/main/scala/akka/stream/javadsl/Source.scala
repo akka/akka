@@ -112,17 +112,28 @@ object Source {
   }
 
   /**
-   * Creates [[Source]] with `start` as the first element and each next element as `previous + 1` until
-   * it reaches `end`. It allows to create `Source` out of range as simply as on scala `Source(1 to N)`
+   * Creates [[Source]] that represents integer values in range ''[start;end]'', step equals to 1.
+   * It allows to create `Source` out of range as simply as on Scala `Source(1 to N)`
+   *
+   * Uses [[scala.collection.immutable.Range.inclusive(Int, Int)]] internally
+   *
+   * @see [[scala.collection.immutable.Range.inclusive(Int, Int)]]
    */
-  def range(start: Int, end: Int): javadsl.Source[Integer, Unit] = {
-    require(start <= end, "start must be less or equal than end")
-    from(new util.AbstractList[Integer]() {
-      override def get(index: Int) = start + index
-      override def size = end - start + 1
-      override def toString = s"Range($start to $end)"
+  def range(start: Int, end: Int): javadsl.Source[Integer, Unit] = range(start, end, 1)
+
+  /**
+   * Creates [[Source]] that represents integer values in range ''[start;end]'', with the given step.
+   * It allows to create `Source` out of range as simply as on Scala `Source(1 to N)`
+   *
+   * Uses [[scala.collection.immutable.Range.inclusive(Int, Int, Int)]] internally
+   *
+   * @see [[scala.collection.immutable.Range.inclusive(Int, Int, Int)]]
+   */
+  def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, Unit] =
+    fromIterator[Integer](new function.Creator[util.Iterator[Integer]]() {
+      def create(): util.Iterator[Integer] =
+        Range.inclusive(start, end, step).iterator.asJava.asInstanceOf[util.Iterator[Integer]]
     })
-  }
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
