@@ -899,7 +899,7 @@ private[stream] class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrateg
       }
 
       def grabAndPull(pullCondition: Boolean): Unit = {
-        buffer.enqueue((System.currentTimeMillis(), grab(in)))
+        buffer.enqueue((System.nanoTime(), grab(in)))
         if (pullCondition) pull(in)
       }
 
@@ -921,13 +921,13 @@ private[stream] class Delay[T](d: FiniteDuration, strategy: DelayOverflowStrateg
 
     def completeIfReady(): Unit = if (willStop && buffer.isEmpty) completeStage()
 
-    def nextElementWaitTime(): Long = d.toMillis - (System.currentTimeMillis() - buffer.peek()._1)
+    def nextElementWaitTime(): Long = d.toMillis - (System.nanoTime() - buffer.peek()._1) * 1000 * 1000
 
     final override protected def onTimer(key: Any): Unit = {
       push(out, buffer.dequeue()._2)
       if (!buffer.isEmpty) {
         val waitTime = nextElementWaitTime()
-        if (waitTime > 0) scheduleOnce(timerName, waitTime.millis)
+        if (waitTime > 10) scheduleOnce(timerName, waitTime.millis)
       }
       completeIfReady()
     }
