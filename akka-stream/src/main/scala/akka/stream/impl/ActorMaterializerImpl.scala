@@ -262,7 +262,6 @@ private[akka] object ActorProcessorFactory {
       case GroupBy(f, _)         ⇒ (GroupByProcessorImpl.props(settings, f), ())
       case PrefixAndTail(n, _)   ⇒ (PrefixAndTailImpl.props(settings, n), ())
       case Split(d, _)           ⇒ (SplitWhereProcessorImpl.props(settings, d), ())
-      case ConcatAll(f, _)       ⇒ (ConcatAllImpl.props(f, materializer), ())
       case DirectProcessor(p, m) ⇒ throw new AssertionError("DirectProcessor cannot end up in ActorProcessorFactory")
     }
   }

@@ -852,10 +852,25 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Completes when''' upstream completes and all consumed substreams complete
    *
    * '''Cancels when''' downstream cancels
-   *
    */
-  def flatMapConcat[T](f: function.Function[Out, Source[T, _]]): Flow[In, T, Mat] =
-    new Flow(delegate.flatMapConcat[T](x ⇒ f(x).asScala))
+  def flatMapConcat[T, M](f: function.Function[Out, Source[T, M]]): Flow[In, T, Mat] =
+    new Flow(delegate.flatMapConcat[T, M](x ⇒ f(x).asScala))
+
+  /**
+   * Transform each input element into a `Source` of output elements that is
+   * then flattened into the output stream by merging, where at most `breadth`
+   * substreams are being consumed at any given time.
+   *
+   * '''Emits when''' a currently consumed substream has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all consumed substreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def flatMapMerge[T, M](breadth: Int, f: function.Function[Out, Source[T, M]]): Flow[In, T, Mat] =
+    new Flow(delegate.flatMapMerge(breadth, o ⇒ f(o).asScala))
 
   /**
    * Concatenate the given [[Source]] to this [[Flow]], meaning that once this

@@ -13,12 +13,12 @@ import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, MapAsync, MapAsyncUn
 import akka.stream.stage.AbstractStage.{ PushPullGraphStage, PushPullGraphStageWithMaterializedValue }
 import akka.stream.stage._
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.language.higherKinds
+import akka.stream.impl.fusing.FlattenMerge
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -329,6 +329,13 @@ final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Mo
 trait FlowOps[+Out, +Mat] {
   import akka.stream.impl.Stages._
   type Repr[+O, +M] <: FlowOps[O, M]
+
+  /*
+   * Repr is actually self-bounded, but that would be a cyclic type declaration that is illegal in Scala.
+   * Therefore we need to help the compiler by specifying that Repr
+   */
+  import language.implicitConversions
+  private implicit def reprFlatten[O1, M1, O2, M2](r: Repr[O1, M1]#Repr[O2, M2]): Repr[O2, M2] = r.asInstanceOf[Repr[O2, M2]]
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
@@ -1009,10 +1016,23 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes and all consumed substreams complete
    *
    * '''Cancels when''' downstream cancels
-   *
    */
-  def flatMapConcat[T](f: Out ⇒ Source[T, _]): Repr[T, Mat] =
-    deprecatedAndThen(ConcatAll(f.asInstanceOf[Any ⇒ Source[Any, _]]))
+  def flatMapConcat[T, M](f: Out ⇒ Source[T, M]): Repr[T, Mat] = map(f).via(new FlattenMerge[T, M](1))
+
+  /**
+   * Transform each input element into a `Source` of output elements that is
+   * then flattened into the output stream by merging, where at most `breadth`
+   * substreams are being consumed at any given time.
+   *
+   * '''Emits when''' a currently consumed substream has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all consumed substreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def flatMapMerge[T, M](breadth: Int, f: Out ⇒ Source[T, M]): Repr[T, Mat] = map(f).via(new FlattenMerge[T, M](breadth))
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed
@@ -1348,4 +1368,3 @@ trait FlowOps[+Out, +Mat] {
 
   private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U, Mat]
 }
-
