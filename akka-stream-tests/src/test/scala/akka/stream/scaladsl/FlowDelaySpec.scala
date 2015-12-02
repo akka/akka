@@ -120,8 +120,8 @@ class FlowDelaySpec extends AkkaSpec {
       c.expectNoMsg(300.millis)
       pSub.sendNext(17)
       c.expectNext(100.millis, 1)
+      //fail will terminate despite of non empty internal buffer
       pSub.sendError(new RuntimeException() with NoStackTrace)
-      c.expectError()
     }
   }
 }
