@@ -163,7 +163,7 @@ class MarshallingDirectivesSpec extends RoutingSpec with Inside {
 
     "render JSON with UTF-8 encoding if no `Accept-Charset` request header is present" in {
       Get() ~> complete(foo) ~> check {
-        responseEntity shouldEqual HttpEntity(ContentType(`application/json`, `UTF-8`), foo.toJson.prettyPrint)
+        responseEntity shouldEqual HttpEntity(ContentType(`application/json`, `UTF-8`), foo.toJson.compactPrint)
       }
     }
     "reject JSON rendering if an `Accept-Charset` request header requests a non-UTF-8 encoding" in {

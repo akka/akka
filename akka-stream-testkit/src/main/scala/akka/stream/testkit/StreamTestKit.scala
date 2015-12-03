@@ -539,7 +539,7 @@ object TestSubscriber {
         self.expectEvent(deadline.timeLeft) match {
           case OnError(ex) ⇒
             // TODO once on JDK7+ this could be made an AssertionError, since it can carry ex in its cause param
-            throw new AssertionError(s"toStrict received OnError(${ex.getMessage}) while draining stream! Accumulated elements: ${b.result()}")
+            throw new RuntimeException(s"toStrict received OnError(${ex.getMessage}) while draining stream! Accumulated elements: ${b.result()}", ex)
           case OnComplete ⇒
             b.result()
           case OnNext(i: I @unchecked) ⇒

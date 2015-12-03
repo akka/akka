@@ -338,7 +338,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
                 redirectToTrailingSlashIfMissing(StatusCodes.FOUND, complete("Ok"))
             );
 
-        route.run(HttpRequest.GET("/home").addHeader(Host.create("example.com")))
+        route.run(HttpRequest.GET("/home"))
             .assertStatusCode(302)
             .assertHeaderExists("Location", "http://example.com/home/");
 
@@ -354,7 +354,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
                 redirectToNoTrailingSlashIfPresent(StatusCodes.FOUND, complete("Ok"))
             );
 
-        route.run(HttpRequest.GET("/home/").addHeader(Host.create("example.com")))
+        route.run(HttpRequest.GET("/home/"))
             .assertStatusCode(302)
             .assertHeaderExists("Location", "http://example.com/home");
 

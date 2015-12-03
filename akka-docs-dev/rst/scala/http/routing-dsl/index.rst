@@ -20,6 +20,7 @@ static content serving.
    case-class-extraction
    testkit
    websocket-support
+   json-streaming-routing
 
 
 Minimal Example

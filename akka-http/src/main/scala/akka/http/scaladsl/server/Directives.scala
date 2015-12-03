@@ -20,6 +20,7 @@ trait Directives extends RouteConcatenation
   with HeaderDirectives
   with HostDirectives
   with MarshallingDirectives
+  with EntityStreamingDirectives
   with MethodDirectives
   with MiscDirectives
   with ParameterDirectives

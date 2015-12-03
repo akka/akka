@@ -1,5 +1,5 @@
-JSON Support
-============
+JSON (Un)Marshalling Support
+============================
 
 Akka HTTP's :ref:`marshalling <http-marshalling-scala>` and :ref:`unmarshalling <http-unmarshalling-scala>`
 infrastructure makes it rather easy to seamlessly support specific wire representations of your data objects, like JSON,
