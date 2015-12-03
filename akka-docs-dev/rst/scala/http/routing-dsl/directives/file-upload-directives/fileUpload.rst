@@ -23,3 +23,7 @@ Example
 
 .. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FileUploadDirectivesExamplesSpec.scala
    :snippet: fileUpload
+
+::
+
+   curl --form "csv=@uploadFile.txt" http://<host>:<port>
