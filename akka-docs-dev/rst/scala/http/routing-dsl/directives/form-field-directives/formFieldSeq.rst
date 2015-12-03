@@ -21,7 +21,7 @@ Warning
 -------
 The directive reads all incoming HTT form fields without any configured upper bound.
 It means, that requests with form fields holding significant amount of data (ie. during a file upload)
-can cause performance issues or even an ``OutOfMemoryError``s.
+can cause performance issues or even an ``OutOfMemoryError`` s.
 
 Example
 -------
