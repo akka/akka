@@ -25,5 +25,5 @@ See :ref:`-formFieldSeq-` for details.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
-   :snippet: parameterMap
+.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala
+   :snippet: formFieldMap
