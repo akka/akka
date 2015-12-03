@@ -57,7 +57,7 @@ object WSClientAutobahnTest extends App {
     }
     import Console._
     info.flatMap { i ⇒
-      val prefix = f"$YELLOW${i.caseInfo.id}%-7s$RESET - $WHITE${i.caseInfo.description}$RESET ... "
+      val prefix = f"$YELLOW${i.caseInfo.id}%-7s$RESET - $RESET${i.caseInfo.description}$RESET ... "
       //println(prefix)
 
       status.onComplete {
@@ -102,6 +102,7 @@ object WSClientAutobahnTest extends App {
 
   def echo = Flow[Message].viaMat(completionSignal)(Keep.right)
 
+  import Console._
   if (args.size >= 1) {
     // run one
     val testId = args(0)
@@ -111,10 +112,10 @@ object WSClientAutobahnTest extends App {
       richRunCase(info.index)
     }.onComplete {
       case Success(res) ⇒
-        println(s"Run successfully finished!")
+        println(s"[OK] Run successfully finished!")
         updateReportsAndShutdown()
       case Failure(e) ⇒
-        println("Run failed with this exception")
+        println(s"[${RED}FAILED$RESET] Run failed with this exception: ")
         e.printStackTrace()
         updateReportsAndShutdown()
     }
@@ -127,7 +128,6 @@ object WSClientAutobahnTest extends App {
       val grouped =
         results.groupBy(_.status.behavior)
 
-      import Console._
       println(s"${results.size} tests run.")
       println()
       println(s"${GREEN}OK$RESET: ${grouped.getOrElse("OK", Nil).size}")
@@ -136,7 +136,7 @@ object WSClientAutobahnTest extends App {
         case (status, cases) ⇒ println(s"$RED$status$RESET: ${cases.size}")
       }
       println()
-      println("Not OK tests")
+      println("Not OK tests: ")
       println()
       results.filterNot(_.status.behavior == "OK").foreach { r ⇒
         println(f"$RED${r.status.behavior}%-20s$RESET $YELLOW${r.info.id}%-7s$RESET - $WHITE${r.info.description}$RESET")
