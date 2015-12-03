@@ -19,6 +19,10 @@ object WSServerAutobahnTest extends App {
   implicit val system = ActorSystem("WSServerTest")
   implicit val fm = ActorMaterializer()
 
+  val host = sys.env.getOrElse("akka.ws-host", "127.0.0.1")
+  val port = sys.env.getOrElse("akka.ws-port", "9001").toInt
+  val mode = sys.env.getOrElse("akka.ws-mode", "read") // read or sleep
+
   try {
     val binding = Http().bindAndHandleSync({
       case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebsocket].isDefined ⇒
@@ -28,13 +32,16 @@ object WSServerAutobahnTest extends App {
         }
       case _: HttpRequest ⇒ HttpResponse(404, entity = "Unknown resource!")
     },
-      interface = "172.17.42.1", // adapt to your docker host IP address if necessary
-      port = 9001)
+      interface = host, // adapt to your docker host IP address if necessary
+      port = port)
 
-    Await.result(binding, 1.second) // throws if binding fails
-    println("Server online at http://172.17.42.1:9001")
-    println("Press RETURN to stop...")
-    Console.readLine()
+    Await.result(binding, 3.second) // throws if binding fails
+    println(s"Server online at http://${host}:${port}")
+    mode match {
+      case "sleep" => while (true) Thread.sleep(1.minute.toMillis)
+      case "read" => Console.readLine("Press RETURN to stop...")
+      case _ => throw new Exception("akka.ws-mode MUST be sleep or read.")
+    }
   } finally {
     system.shutdown()
   }
