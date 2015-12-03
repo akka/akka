@@ -21,6 +21,11 @@ The order of values is *not* specified.
 
 See :ref:`-formFields-` for an in-depth description.
 
+Warning
+-------
+Use of this directive can result in performance degradation or even in ``OutOfMemoryError``s.
+See :ref:`-formFieldSeq-` for details.
+
 Example
 -------
 

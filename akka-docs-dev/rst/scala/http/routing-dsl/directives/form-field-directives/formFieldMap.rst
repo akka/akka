@@ -17,6 +17,11 @@ If form data contain a field value several times, the map will contain the last 
 
 See :ref:`-formFields-` for an in-depth description.
 
+Warning
+-------
+Use of this directive can result in performance degradation or even in ``OutOfMemoryError``s.
+See :ref:`-formFieldSeq-` for details.
+
 Example
 -------
 
