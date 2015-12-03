@@ -60,7 +60,7 @@ trait FormFieldDirectives extends ToNameReceptacleEnhancements {
 
 object FormFieldDirectives extends FormFieldDirectives {
 
-  val _formFieldSeq: Directive1[immutable.Seq[(String, String)]] = {
+  private val _formFieldSeq: Directive1[immutable.Seq[(String, String)]] = {
     import BasicDirectives._
     import FutureDirectives._
     import akka.http.scaladsl.unmarshalling._
@@ -83,7 +83,7 @@ object FormFieldDirectives extends FormFieldDirectives {
     }
   }
 
-  val _formFieldMultiMap: Directive1[Map[String, List[String]]] = {
+  private val _formFieldMultiMap: Directive1[Map[String, List[String]]] = {
     @tailrec def append(
       map: Map[String, List[String]],
       fields: immutable.Seq[(String, String)]): Map[String, List[String]] = {
@@ -101,7 +101,7 @@ object FormFieldDirectives extends FormFieldDirectives {
     }
   }
 
-  val _formFieldMap: Directive1[Map[String, String]] = _formFieldSeq.map(_.toMap)
+  private val _formFieldMap: Directive1[Map[String, String]] = _formFieldSeq.map(_.toMap)
 
   sealed trait FieldMagnet {
     type Out
