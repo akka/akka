@@ -43,7 +43,7 @@ object Unmarshaller
   /**
    * Creates an `Unmarshaller` from the given function.
    */
-  def apply[A, B](f: ExecutionContext ⇒  A ⇒ Future[B]): Unmarshaller[A, B] =
+  def apply[A, B](f: ExecutionContext ⇒ A ⇒ Future[B]): Unmarshaller[A, B] =
     withMaterializer(ec => _ => f(ec))
 
   def withMaterializer[A, B](f: ExecutionContext ⇒ Materializer => A ⇒ Future[B]): Unmarshaller[A, B] =
@@ -93,25 +93,29 @@ object Unmarshaller
       underlying.mapWithInput { (entity, data) ⇒ f(data, Unmarshaller.bestUnmarshallingCharsetFor(entity)) }
 
     /**
-     * Modifies the underlying [[Unmarshaller]] to only accept content-types matching one of the given ranges.
-     * If the underlying [[Unmarshaller]] already contains a content-type filter (also wrapped at some level),
-     * this filter is *replaced* by this method, not stacked!
+     * Modifies the underlying [[Unmarshaller]] to only accept Content-Types matching one of the given ranges.
+     * Note that you can only restrict to a subset of the Content-Types accepted by the underlying unmarshaller,
+     * i.e. the given ranges must be completely supported also by the underlying Unmarshaller!
+     * If a violation of this rule is detected at runtime, i.e. if an entity is encountered whose Content-Type
+     * is matched by one of the given ranges but rejected by the underlying unmarshaller
+     * an IllegalStateException will be thrown!
      */
     def forContentTypes(ranges: ContentTypeRange*): FromEntityUnmarshaller[A] =
       Unmarshaller.withMaterializer { implicit ec ⇒
         implicit mat ⇒
           entity ⇒
             if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
-              underlying(entity).fast recoverWith retryWithPatchedContentType(underlying, entity)
+              underlying(entity).fast.recover[A](barkAtUnsupportedContentTypeException(ranges, entity.contentType))
             } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
       }
-  }
 
-  // must be moved out of the the [[EnhancedFromEntityUnmarshaller]] value class due to bug in scala 2.10:
-  // https://issues.scala-lang.org/browse/SI-8018
-  private def retryWithPatchedContentType[T](underlying: FromEntityUnmarshaller[T], entity: HttpEntity)(
-    implicit ec: ExecutionContext, mat: Materializer): PartialFunction[Throwable, Future[T]] = {
-    case UnsupportedContentTypeException(supported) ⇒ underlying(entity withContentType supported.head.specimen)
+    // TODO: move back into the [[EnhancedFromEntityUnmarshaller]] value class after the upgrade to Scala 2.11,
+    // Scala 2.10 suffers from this bug: https://issues.scala-lang.org/browse/SI-8018
+    private def barkAtUnsupportedContentTypeException(ranges: Seq[ContentTypeRange],
+                                                      newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
+      case UnsupportedContentTypeException(supported) ⇒ throw new IllegalStateException(
+        s"Illegal use of `unmarshaller.forContentTypes($ranges)`: $newContentType is not supported by underlying marshaller!")
+    }
   }
 
   /**
