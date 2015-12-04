@@ -574,7 +574,7 @@ trait FlowOps[+Out, +Mat] {
   def grouped(n: Int): Repr[immutable.Seq[Out]] = andThen(Grouped(n))
 
   /**
-   * TODO: description
+   * TODO: description (Add a see also: take(n))
    */
   def limit[T](n: Long): Repr[Out, Mat] = andThen(Limit(n))
 
