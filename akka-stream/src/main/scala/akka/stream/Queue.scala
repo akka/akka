@@ -29,8 +29,8 @@ trait SinkQueue[T] {
 
   /**
    * Method pulls elements from stream and returns future that:
-   * - fails if stream is finished
-   * - completes with None in case if stream is completed after we got future
+   * - fails if stream is failed
+   * - completes with None in case if stream is completed
    * - completes with `Some(element)` in case next element is available from stream.
    */
   def pull(): Future[Option[T]]

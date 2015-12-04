@@ -203,14 +203,20 @@ object Sink {
    * [[akka.stream.SinkQueue.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
    * `Future` completes when element is available.
    *
-   * `Sink` will request at most `bufferSize` number of elements from
-   * upstream and then stop back pressure.
+   * Before calling pull method second time you need to wait until previous Future completes.
+   * Pull returns Failed future with ''IllegalStateException'' if previous future has not yet completed.
    *
-   * @param bufferSize The size of the buffer in element count
-   * @param timeout Timeout for ``SinkQueue.pull():Future[Option[T] ]``
+   * `Sink` will request at most number of elements equal to size of `inputBuffer` from
+   * upstream and then stop back pressure.  You can configure size of input
+   * buffer by using [[Sink.withAttributes]] method.
+   *
+   * For stream completion you need to pull all elements from [[akka.stream.SinkQueue]] including last None
+   * as completion marker
+   *
+   * @see [[akka.stream.SinkQueue]]
    */
-  def queue[T](bufferSize: Int, timeout: FiniteDuration): Sink[T, SinkQueue[T]] =
-    new Sink(scaladsl.Sink.queue(bufferSize, timeout))
+  def queue[T](): Sink[T, SinkQueue[T]] =
+    new Sink(scaladsl.Sink.queue())
 
   /**
    * Creates a Sink that writes incoming [[ByteString]] elements to the given file.
