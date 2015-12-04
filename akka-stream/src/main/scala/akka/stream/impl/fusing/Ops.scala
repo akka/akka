@@ -323,9 +323,10 @@ private[akka] final case class Limit[T](n: Long) extends PushStage[T, T] {
   private var left = n
 
   override def onPush(elem: T, ctx: Context[T]): SyncDirective = {
-    left -= 1
-    if (left >= 0) ctx.push(elem)
-    else ctx.fail(new StreamLimitReachedException(n))
+    if (left > 0) {
+      left -= 1
+      ctx.push(elem)
+    } else ctx.fail(new StreamLimitReachedException(n))
   }
 }
 
