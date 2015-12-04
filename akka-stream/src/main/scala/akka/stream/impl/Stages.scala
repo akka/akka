@@ -155,7 +155,7 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, immutable.Seq[T]] = fusing.Grouped(n)
   }
 
-  final case class Limit[T](n: Int, attributes: Attributes = limit) extends SymbolicStage[T, T] {
+  final case class Limit[T](n: Long, attributes: Attributes = limit) extends SymbolicStage[T, T] {
     override def create(attr: Attributes): Stage[T, T] = fusing.Limit(n)
   }
 

@@ -319,7 +319,7 @@ private[akka] final case class Grouped[T](n: Int) extends PushPullStage[T, immut
  * INTERNAL API
  */
 
-private[akka] final case class Limit[T](n: Int) extends PushStage[T, T] {
+private[akka] final case class Limit[T](n: Long) extends PushStage[T, T] {
   private var left = n
 
   override def onPush(elem: T, ctx: Context[T]): SyncDirective = {

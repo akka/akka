@@ -576,7 +576,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * TODO: description
    */
-  def limit[T](n: Int): Repr[Out, Mat] = andThen(Limit(n))
+  def limit[T](n: Long): Repr[Out, Mat] = andThen(Limit(n))
 
   /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
