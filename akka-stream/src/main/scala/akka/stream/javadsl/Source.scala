@@ -18,6 +18,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.collection.immutable.Range.Inclusive
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.language.{ higherKinds, implicitConversions }
@@ -132,7 +133,9 @@ object Source {
   def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, Unit] =
     fromIterator[Integer](new function.Creator[util.Iterator[Integer]]() {
       def create(): util.Iterator[Integer] =
-        Range.inclusive(start, end, step).iterator.asJava.asInstanceOf[util.Iterator[Integer]]
+        new Inclusive(start, end, step) {
+          override def toString: String = s"Range($start to $end, step = $step)"
+        }.iterator.asJava.asInstanceOf[util.Iterator[Integer]]
     })
 
   /**
