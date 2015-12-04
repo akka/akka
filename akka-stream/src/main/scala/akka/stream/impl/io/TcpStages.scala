@@ -38,6 +38,7 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
   import ConnectionSourceStage._
 
   val out: Outlet[StreamTcp.IncomingConnection] = Outlet("IncomingConnections.out")
+  override def initialAttributes = Attributes.name("ConnectionSource")
   val shape: SourceShape[StreamTcp.IncomingConnection] = SourceShape(out)
 
   private val connectionFlowsAwaitingInitialization = new AtomicLong()
@@ -291,6 +292,7 @@ private[stream] class IncomingConnectionStage(connection: ActorRef, remoteAddres
 
   val bytesIn: Inlet[ByteString] = Inlet("IncomingTCP.in")
   val bytesOut: Outlet[ByteString] = Outlet("IncomingTCP.out")
+  override def initialAttributes = Attributes.name("IncomingConnection")
   val shape: FlowShape[ByteString, ByteString] = FlowShape(bytesIn, bytesOut)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
@@ -318,6 +320,7 @@ private[stream] class OutgoingConnectionStage(manager: ActorRef,
 
   val bytesIn: Inlet[ByteString] = Inlet("IncomingTCP.in")
   val bytesOut: Outlet[ByteString] = Outlet("IncomingTCP.out")
+  override def initialAttributes = Attributes.name("OutgoingConnection")
   val shape: FlowShape[ByteString, ByteString] = FlowShape(bytesIn, bytesOut)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[StreamTcp.OutgoingConnection]) = {

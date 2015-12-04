@@ -17,6 +17,7 @@ import java.{ util ⇒ ju }
 final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Source[T, M], T]] {
   private val in = Inlet[Source[T, M]]("flatten.in")
   private val out = Outlet[T]("flatten.out")
+  override def initialAttributes = Attributes.name("FlattenMerge")
   override val shape = FlowShape(in, out)
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
@@ -152,6 +153,7 @@ private[fusing] final class LocalSource[T](var sub: LocalSinkSubscription[T] = n
  */
 private[fusing] final class LocalSink[T](notifier: ActorSubscriberMessage ⇒ Unit) extends GraphStageWithMaterializedValue[SinkShape[T], LocalSinkSubscription[T]] {
   private val in = Inlet[T]("LocalSink.in")
+  override def initialAttributes = Attributes.name("LocalSink")
   override val shape = SinkShape(in)
   override def createLogicAndMaterializedValue(attr: Attributes) = {
     class Logic extends GraphStageLogic(shape) {

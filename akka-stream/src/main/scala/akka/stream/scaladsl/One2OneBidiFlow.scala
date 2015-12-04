@@ -31,6 +31,8 @@ object One2OneBidiFlow {
     val inOut = Outlet[I]("inOut")
     val outIn = Inlet[O]("outIn")
     val outOut = Outlet[O]("outOut")
+
+    override def initialAttributes = Attributes.name("One2OneBidi")
     val shape = BidiShape(inIn, inOut, outIn, outOut)
 
     override def toString = "One2OneBidi"

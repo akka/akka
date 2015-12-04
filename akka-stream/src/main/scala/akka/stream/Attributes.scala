@@ -100,6 +100,11 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     getFirstAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]])
 
   /**
+   * Test whether the given attribute is contained within this attributes list.
+   */
+  def contains(attr: Attribute): Boolean = attributeList.contains(attr)
+
+  /**
    * Adds given attributes to the end of these attributes.
    */
   def and(other: Attributes): Attributes =
@@ -157,6 +162,7 @@ object Attributes {
     /** Use to disable logging on certain operations when configuring [[Attributes.LogLevels]] */
     final val Off: Logging.LogLevel = Logging.levelFor("off").get
   }
+  final case object AsyncBoundary extends Attribute
 
   /**
    * INTERNAL API

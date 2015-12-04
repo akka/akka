@@ -4,7 +4,6 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
-
 import akka.actor._
 import akka.event.Logging
 import akka.dispatch.Dispatchers
@@ -15,9 +14,10 @@ import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphModule }
 import akka.stream.impl.io.SslTlsCipherActor
 import akka.stream.io.SslTls.TlsModule
 import org.reactivestreams._
-
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, ExecutionContextExecutor }
+import akka.stream.impl.fusing.GraphStageModule
+import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 
 /**
  * INTERNAL API
@@ -123,25 +123,32 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
             assignPort(tls.plainIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.UserIn))
             assignPort(tls.cipherIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.TransportIn))
 
-          case graph: GraphModule ⇒
-            val calculatedSettings = effectiveSettings(effectiveAttributes)
-            val (inHandlers, outHandlers, logics, mat) = graph.assembly.materialize(effectiveAttributes)
+          case graph: GraphModule ⇒ matGraph(graph, effectiveAttributes)
 
-            val props = ActorGraphInterpreter.props(
-              graph.assembly, inHandlers, outHandlers, logics, graph.shape, calculatedSettings, ActorMaterializerImpl.this)
-
-            val impl = actorOf(props, stageName(effectiveAttributes), calculatedSettings.dispatcher)
-            for ((inlet, i) ← graph.shape.inlets.iterator.zipWithIndex) {
-              val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, i)
-              assignPort(inlet, subscriber)
-            }
-            for ((outlet, i) ← graph.shape.outlets.iterator.zipWithIndex) {
-              val publisher = new ActorPublisher[Any](impl) { override val wakeUpMsg = ActorGraphInterpreter.SubscribePending(i) }
-              impl ! ActorGraphInterpreter.ExposedPublisher(i, publisher)
-              assignPort(outlet, publisher)
-            }
-            mat
+          case stage: GraphStageModule ⇒
+            val graph = GraphModule(GraphAssembly(stage.shape.inlets, stage.shape.outlets, stage.stage), stage.shape, stage.attributes)
+            matGraph(graph, effectiveAttributes)
         }
+      }
+
+      private def matGraph(graph: GraphModule, effectiveAttributes: Attributes): Any = {
+        val calculatedSettings = effectiveSettings(effectiveAttributes)
+        val (inHandlers, outHandlers, logics, mat) = graph.assembly.materialize(effectiveAttributes)
+
+        val props = ActorGraphInterpreter.props(
+          graph.assembly, inHandlers, outHandlers, logics, graph.shape, calculatedSettings, ActorMaterializerImpl.this)
+
+        val impl = actorOf(props, stageName(effectiveAttributes), calculatedSettings.dispatcher)
+        for ((inlet, i) ← graph.shape.inlets.iterator.zipWithIndex) {
+          val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, i)
+          assignPort(inlet, subscriber)
+        }
+        for ((outlet, i) ← graph.shape.outlets.iterator.zipWithIndex) {
+          val publisher = new ActorPublisher[Any](impl) { override val wakeUpMsg = ActorGraphInterpreter.SubscribePending(i) }
+          impl ! ActorGraphInterpreter.ExposedPublisher(i, publisher)
+          assignPort(outlet, publisher)
+        }
+        mat
       }
 
       // FIXME: Remove this, only stream-of-stream ops need it

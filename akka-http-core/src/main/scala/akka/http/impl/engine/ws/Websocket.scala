@@ -154,6 +154,8 @@ private[http] object Websocket {
     private val bypass = Outlet[BypassEvent]("bypass-out")
     private val user = Outlet[MessagePart]("message-out")
 
+    override def initialAttributes = Attributes.name("BypassRouter")
+
     val shape = new FanOutShape2(in, bypass, user)
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
@@ -185,6 +187,8 @@ private[http] object Websocket {
     private val tick = Inlet[Tick.type]("tick-in")
     private val out = Outlet[AnyRef]("out")
 
+    override def initialAttributes = Attributes.name("BypassMerge")
+
     val shape = new FanInShape3(bypass, user, tick, out)
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
@@ -207,6 +211,8 @@ private[http] object Websocket {
   private object LiftCompletions extends GraphStage[FlowShape[FrameStart, AnyRef]] {
     private val in = Inlet[FrameStart]("in")
     private val out = Outlet[AnyRef]("out")
+
+    override def initialAttributes = Attributes.name("LiftCompletions")
 
     val shape = new FlowShape(in, out)
 

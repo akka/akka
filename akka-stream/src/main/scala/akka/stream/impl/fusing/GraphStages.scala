@@ -4,13 +4,30 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.AtomicBoolean
-
 import akka.actor.Cancellable
 import akka.stream._
 import akka.stream.stage._
-
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
+import akka.stream.impl.StreamLayout._
+
+/**
+ * INTERNAL API
+ */
+private[akka] final class GraphStageModule(override val shape: Shape,
+                                           override val attributes: Attributes,
+                                           val stage: GraphStageWithMaterializedValue[Shape, Any]) extends Module {
+  def carbonCopy: Module = replaceShape(shape.deepCopy())
+
+  def replaceShape(s: Shape): Module =
+    CopiedModule(s, attributes, this)
+
+  def subModules: Set[Module] = Set.empty
+
+  def withAttributes(attributes: Attributes): Module = new GraphStageModule(shape, attributes, stage)
+
+  override def toString: String = s"GraphStageModule($stage)"
+}
 
 /**
  * INTERNAL API
@@ -27,6 +44,7 @@ object GraphStages {
   }
 
   class Identity[T] extends SimpleLinearGraphStage[T] {
+    override def initialAttributes = Attributes.name("Identity")
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       setHandler(in, new InHandler {
@@ -44,6 +62,7 @@ object GraphStages {
   class Detacher[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T]("in")
     val out = Outlet[T]("out")
+    override def initialAttributes = Attributes.name("Detacher")
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -94,6 +113,7 @@ object GraphStages {
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
 
     val out = Outlet[T]("TimerSource.out")
+    override def initialAttributes = Attributes.name("TickSource")
     override val shape = SourceShape(out)
 
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Cancellable) = {

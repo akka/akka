@@ -38,6 +38,7 @@ object Merge {
 class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Merge.in" + i))
   val out: Outlet[T] = Outlet[T]("Merge.out")
+  override def initialAttributes = Attributes.name("Merge")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -139,6 +140,7 @@ object MergePreferred {
  * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
 class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
+  override def initialAttributes = Attributes.name("MergePreferred")
   override val shape: MergePreferred.MergePreferredShape[T] =
     new MergePreferred.MergePreferredShape(secondaryPorts, "MergePreferred")
 
@@ -254,6 +256,7 @@ object Broadcast {
 class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
   val in: Inlet[T] = Inlet[T]("Broadast.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Broadcast.out" + i))
+  override def initialAttributes = Attributes.name("Broadcast")
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape(in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -352,6 +355,7 @@ object Balance {
 class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
   val in: Inlet[T] = Inlet[T]("Balance.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Balance.out" + i))
+  override def initialAttributes = Attributes.name("Balance")
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -519,6 +523,7 @@ object Concat {
 class Concat[T](inputCount: Int) extends GraphStage[UniformFanInShape[T, T]] {
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputCount)(i ⇒ Inlet[T]("Concat.in" + i))
   val out: Outlet[T] = Outlet[T]("Concat.out")
+  override def initialAttributes = Attributes.name("Concat")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {

@@ -115,6 +115,8 @@ private[http] object OutgoingConnectionBlueprint {
     private val responses = Inlet[HttpResponse]("responses")
     private val out = Outlet[HttpRequest]("out")
 
+    override def initialAttributes = Attributes.name("TerminationMerge")
+
     val shape = new FanInShape2(requests, responses, out)
 
     override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
@@ -144,6 +146,8 @@ private[http] object OutgoingConnectionBlueprint {
     private val dataInput = Inlet[ByteString]("data")
     private val methodBypassInput = Inlet[HttpMethod]("method")
     private val out = Outlet[List[ResponseOutput]]("out")
+
+    override def initialAttributes = Attributes.name("ResponseParsingMerge")
 
     val shape = new FanInShape2(dataInput, methodBypassInput, out)
 

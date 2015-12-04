@@ -5,7 +5,6 @@ package akka.stream.stage
 
 import java.util
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicReference }
-
 import akka.actor._
 import akka.actor.dungeon.DeathWatch
 import akka.dispatch.sysmsg.{ Unwatch, Watch, DeathWatchNotification, SystemMessage }
@@ -20,21 +19,17 @@ import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.mutable.ArrayBuffer
 import scala.annotation.tailrec
+import akka.stream.impl.fusing.GraphStageModule
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
 
-  final override private[stream] lazy val module: Module =
-    GraphModule(
-      GraphAssembly(shape.inlets, shape.outlets, this),
-      shape,
-      Attributes.none)
+  protected def initialAttributes: Attributes = Attributes.none
 
-  /**
-   * This method throws an [[UnsupportedOperationException]] by default. The subclass can override this method
-   * and provide a correct implementation that creates an exact copy of the stage with the provided new attributes.
-   */
+  final override private[stream] lazy val module: Module =
+    new GraphStageModule(shape, initialAttributes, this)
+
   final override def withAttributes(attr: Attributes): Graph[S, M] = new Graph[S, M] {
     override def shape = GraphStageWithMaterializedValue.this.shape
     override private[stream] def module = GraphStageWithMaterializedValue.this.module.withAttributes(attr)

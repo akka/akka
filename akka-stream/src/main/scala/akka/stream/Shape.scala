@@ -22,6 +22,10 @@ sealed abstract class InPort { self: Inlet[_] ⇒
    * INTERNAL API
    */
   private[stream] var id: Int = -1
+  /**
+   * INTERNAL API
+   */
+  private[stream] def inlet: Inlet[_] = this
 }
 /**
  * An output port of a StreamLayout.Module. This type logically belongs
@@ -37,6 +41,10 @@ sealed abstract class OutPort { self: Outlet[_] ⇒
    * INTERNAL API
    */
   private[stream] var id: Int = -1
+  /**
+   * INTERNAL API
+   */
+  private[stream] def outlet: Outlet[_] = this
 }
 
 /**
