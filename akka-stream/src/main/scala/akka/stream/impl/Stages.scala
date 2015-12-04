@@ -95,7 +95,7 @@ private[stream] object Stages {
     val ignoreSink = name("ignoreSink")
     val actorRefSink = name("actorRefSink")
     val actorSubscriberSink = name("actorSubscriberSink")
-    val acknowledgeSink = name("acknowledgeSink")
+    val queueSink = name("queueSink")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher
     val fileSink = name("fileSource") and IODispatcher
