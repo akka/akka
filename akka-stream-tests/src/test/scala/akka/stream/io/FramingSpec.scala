@@ -153,7 +153,7 @@ class FramingSpec extends AkkaSpec {
         fieldLength ← fieldLengths
       } {
 
-        val encodedFrames = frameLengths.filter(_ < (1 << (fieldLength * 8))).map { length ⇒
+        val encodedFrames = frameLengths.filter(_ < (1L << (fieldLength * 8))).map { length ⇒
           val payload = referenceChunk.take(length)
           encode(payload, fieldOffset, fieldLength, byteOrder)
         }
