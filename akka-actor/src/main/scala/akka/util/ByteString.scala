@@ -93,6 +93,9 @@ object ByteString {
 
   def newBuilder: ByteStringBuilder = new ByteStringBuilder
 
+  /** Java API */
+  def createBuilder: ByteStringBuilder = new ByteStringBuilder
+
   implicit val canBuildFrom: CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] =
     new CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] {
       def apply(ignore: TraversableOnce[Byte]): ByteStringBuilder = newBuilder
