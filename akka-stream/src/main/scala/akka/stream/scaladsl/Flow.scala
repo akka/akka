@@ -576,7 +576,9 @@ trait FlowOps[+Out, +Mat] {
   /**
    * TODO: description (Add a see also: take(n))
    */
-  def limit[T](n: Long): Repr[Out, Mat] = andThen(Limit(n))
+  def limit(n: Long): Repr[Out, Mat] = andThen(LimitWeighted(n, { _ ⇒ 1 }))
+
+  def limitWeighted[T](n: Long)(costFn: Out ⇒ Long): Repr[Out, Mat] = andThen(LimitWeighted(n, costFn))
 
   /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group

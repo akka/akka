@@ -159,6 +159,10 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, T] = fusing.Limit(n)
   }
 
+  final case class LimitWeighted[T](n: Long, costFn: T ⇒ Long, attributes: Attributes = limit) extends SymbolicStage[T, T] {
+    override def create(attr: Attributes): Stage[T, T] = fusing.LimitWeighted(n, costFn)
+  }
+
   final case class Sliding[T](n: Int, step: Int, attributes: Attributes = sliding) extends SymbolicStage[T, immutable.Seq[T]] {
     require(n > 0, "n must be greater than 0")
     require(step > 0, "step must be greater than 0")
