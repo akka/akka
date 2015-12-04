@@ -8,6 +8,7 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 import akka.stream._
 import akka.stream.impl.StreamLayout._
+import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import akka.stream.Attributes.AsyncBoundary
 import scala.util.control.NonFatal
 
@@ -71,16 +72,38 @@ object Fusing {
           struct.rewire(copyOf.shape, shape, indent)
           ret
         case _ ⇒
+          struct.enterMatCtx()
           val subMat: Predef.Map[Module, MaterializedValueNode] =
             m.subModules.map(sub ⇒ sub -> descend(sub, attributes, struct, localGroup, indent + "  "))(collection.breakOut)
           val down = m.downstreams.toSet -- m.subModules.map(_.downstreams).reduce(_ ++ _)
           down.foreach {
             case (start, end) ⇒ struct.wire(start, end, indent)
           }
-          rewriteMat(subMat, m.materializedValueComputation)
+          val newMat = rewriteMat(subMat, m.materializedValueComputation)
+          val matSrcs = struct.exitMatCtx()
+          matSrcs.foreach { c ⇒
+            if (Debug) log(s"materialized value source: ${struct.hash(c)}")
+            val ms = c.copyOf match {
+              case g: GraphStageModule ⇒ g.stage.asInstanceOf[MaterializedValueSource[Any]]
+            }
+            if (Debug) require(find(ms.computation, m.materializedValueComputation), s"mismatch:\n  ${ms.computation}\n  ${m.materializedValueComputation}")
+            val replacement = CopiedModule(c.shape, c.attributes, new MaterializedValueSource[Any](newMat, ms.out).module)
+            struct.replace(c, replacement, localGroup)
+          }
+          newMat
       }
     }
   }
+
+  private def find(m1: MaterializedValueNode, m2: MaterializedValueNode): Boolean =
+    if (m1 == m2) true
+    else
+      m2 match {
+        case Atomic(_)               ⇒ false
+        case Ignore                  ⇒ false
+        case Transform(_, dep)       ⇒ find(m1, dep)
+        case Combine(_, left, right) ⇒ find(m1, left) || find(m1, right)
+      }
 
   private def rewriteMat(subMat: Predef.Map[Module, MaterializedValueNode],
                          mat: MaterializedValueNode): MaterializedValueNode =
@@ -99,8 +122,14 @@ object Fusing {
 
   final class StructuralInfo {
     val modules: ju.Set[Module] = new ju.HashSet
-
     val groups: ju.Deque[ju.Set[Module]] = new ju.LinkedList
+
+    def replace(oldMod: Module, newMod: Module, localGroup: ju.Set[Module]): Unit = {
+      modules.remove(oldMod)
+      modules.add(newMod)
+      localGroup.remove(oldMod)
+      localGroup.add(newMod)
+    }
 
     val newIns: ju.Map[InPort, List[InPort]] = new ju.HashMap
     val newOuts: ju.Map[OutPort, List[OutPort]] = new ju.HashMap
@@ -120,6 +149,22 @@ object Fusing {
           x
       }
 
+    private var matSrc: List[List[CopiedModule]] = Nil
+
+    def enterMatCtx(): Unit = matSrc ::= Nil
+    def exitMatCtx(): List[CopiedModule] =
+      matSrc match {
+        case x :: xs ⇒
+          matSrc = xs
+          x
+        case Nil ⇒ throw new IllegalArgumentException("exitMatCtx with empty stack")
+      }
+    def pushMatSrc(m: CopiedModule): Unit =
+      matSrc match {
+        case x :: xs ⇒ matSrc = (m :: x) :: xs
+        case Nil     ⇒ throw new IllegalArgumentException("pushMatSrc without context")
+      }
+
     val downstreams: ju.Map[OutPort, InPort] = new ju.HashMap
     val upstreams: ju.Map[InPort, OutPort] = new ju.HashMap
 
@@ -131,8 +176,8 @@ object Fusing {
       newOuts.asScala.foreach { case (k, v) ⇒ println(s"    $k (${hash(k)}) -> ${v.map(hash).mkString(",")}") }
     }
 
-    private def hash(obj: AnyRef) = f"${System.identityHashCode(obj)}%08x"
-    private def printShape(s: Shape) = s"${s.getClass.getSimpleName}(ins=${s.inlets.map(hash).mkString(",")} outs=${s.outlets.map(hash).mkString(",")})"
+    def hash(obj: AnyRef) = f"${System.identityHashCode(obj)}%08x"
+    def printShape(s: Shape) = s"${s.getClass.getSimpleName}(ins=${s.inlets.map(hash).mkString(",")} outs=${s.outlets.map(hash).mkString(",")})"
 
     def newGroup(indent: String): ju.Set[Module] = {
       val group = new ju.HashSet[Module]
@@ -148,6 +193,10 @@ object Fusing {
       modules.add(copy)
       m.shape.inlets.iterator.zip(copy.shape.inlets.iterator).foreach { p ⇒ addMapping(p._1, p._2, newIns) }
       m.shape.outlets.iterator.zip(copy.shape.outlets.iterator).foreach { p ⇒ addMapping(p._1, p._2, newOuts) }
+      copy.copyOf match {
+        case GraphStageModule(_, _, _: MaterializedValueSource[_]) ⇒ pushMatSrc(copy)
+        case _ ⇒
+      }
       Atomic(copy)
     }
 

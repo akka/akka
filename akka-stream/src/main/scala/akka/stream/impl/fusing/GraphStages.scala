@@ -5,6 +5,7 @@ package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.Cancellable
+import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.stream.stage._
 import scala.concurrent.{ Future, Promise }
@@ -14,9 +15,9 @@ import akka.stream.impl.StreamLayout._
 /**
  * INTERNAL API
  */
-private[akka] final class GraphStageModule(override val shape: Shape,
-                                           override val attributes: Attributes,
-                                           val stage: GraphStageWithMaterializedValue[Shape, Any]) extends Module {
+private[akka] final case class GraphStageModule(shape: Shape,
+                                                attributes: Attributes,
+                                                stage: GraphStageWithMaterializedValue[Shape, Any]) extends Module {
   def carbonCopy: Module = replaceShape(shape.deepCopy())
 
   def replaceShape(s: Shape): Module =
@@ -25,8 +26,6 @@ private[akka] final class GraphStageModule(override val shape: Shape,
   def subModules: Set[Module] = Set.empty
 
   def withAttributes(attributes: Attributes): Module = new GraphStageModule(shape, attributes, stage)
-
-  override def toString: String = s"GraphStageModule($stage)"
 }
 
 /**
@@ -145,5 +144,31 @@ object GraphStages {
 
       (logic, cancellable)
     }
+  }
+
+  /**
+   * INTERNAL API.
+   *
+   * This source is not reusable, it is only created internally.
+   */
+  private[stream] class MaterializedValueSource[T](val computation: MaterializedValueNode, val out: Outlet[T]) extends GraphStage[SourceShape[T]] {
+    def this(computation: MaterializedValueNode) = this(computation, Outlet[T]("matValue"))
+    override def initialAttributes: Attributes = Attributes.name("matValueSource")
+    override val shape = SourceShape(out)
+
+    private val promise = Promise[T]
+    def setValue(t: T): Unit = promise.success(t)
+
+    def copy: MaterializedValueSource[T] = new MaterializedValueSource(computation, out)
+
+    override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+      setHandler(out, eagerTerminateOutput)
+      override def preStart(): Unit = {
+        val cb = getAsyncCallback[T](t ⇒ emit(out, t, () ⇒ completeStage()))
+        promise.future.foreach(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
+      }
+    }
+
+    override def toString: String = s"MatValSrc($computation)"
   }
 }

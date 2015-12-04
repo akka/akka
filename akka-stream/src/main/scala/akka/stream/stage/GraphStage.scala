@@ -27,8 +27,7 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
 
   protected def initialAttributes: Attributes = Attributes.none
 
-  final override private[stream] lazy val module: Module =
-    new GraphStageModule(shape, initialAttributes, this)
+  final override private[stream] lazy val module: Module = GraphStageModule(shape, initialAttributes, this)
 
   final override def withAttributes(attr: Attributes): Graph[S, M] = new Graph[S, M] {
     override def shape = GraphStageWithMaterializedValue.this.shape

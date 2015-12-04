@@ -11,6 +11,7 @@ import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
+import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 
 object Merge {
   /**
@@ -624,9 +625,9 @@ object GraphDSL extends GraphApply {
      * @return The outlet that will emit the materialized value.
      */
     def materializedValue: Outlet[M @uncheckedVariance] = {
-      val module = new MaterializedValueSource[Any]
-      moduleInProgress = moduleInProgress.compose(module)
-      module.shape.outlet.asInstanceOf[Outlet[M]]
+      val source = new MaterializedValueSource[M](moduleInProgress.materializedValueComputation)
+      moduleInProgress = moduleInProgress.composeNoMat(source.module)
+      source.out
     }
 
     private[stream] def deprecatedAndThen(port: OutPort, op: StageModule): Unit = {
