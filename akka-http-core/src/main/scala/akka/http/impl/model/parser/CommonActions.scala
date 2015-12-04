@@ -32,7 +32,7 @@ private[parser] trait CommonActions {
             if (charsetDefined)
               MediaType.customWithOpenCharset(mainLower, subType, params = params, allowArbitrarySubtypes = true)
             else
-              MediaType.customBinary(mainLower, subType, compressible = true, params = params,
+              MediaType.customBinary(mainLower, subType, MediaType.Compressible, params = params,
                 allowArbitrarySubtypes = true)
         }
     }

@@ -9,7 +9,6 @@ import java.io.File
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Properties
-import akka.util.ByteString
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ Inside, Inspectors }
 import akka.http.scaladsl.model.MediaTypes._
@@ -89,6 +88,30 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         Get() ~> getFromFile(file) ~> check {
           mediaType shouldEqual NoMediaType
           responseAs[String] shouldEqual ""
+        }
+      } finally file.delete
+    }
+
+    "support precompressed files with registered MediaType" in {
+      val file = File.createTempFile("akkaHttpTest", ".svgz")
+      try {
+        writeAllText("123", file)
+        Get() ~> getFromFile(file) ~> check {
+          mediaType shouldEqual `image/svg+xml`
+          header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
+          responseAs[String] shouldEqual "123"
+        }
+      } finally file.delete
+    }
+
+    "support files with registered MediaType and .gz suffix" in {
+      val file = File.createTempFile("akkaHttpTest", ".js.gz")
+      try {
+        writeAllText("456", file)
+        Get() ~> getFromFile(file) ~> check {
+          mediaType shouldEqual `application/javascript`
+          header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
+          responseAs[String] shouldEqual "456"
         }
       } finally file.delete
     }
