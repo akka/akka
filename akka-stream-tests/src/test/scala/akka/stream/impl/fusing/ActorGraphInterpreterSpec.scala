@@ -18,7 +18,7 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
   "ActorGraphInterpreter" must {
 
     "be able to interpret a simple identity graph stage" in assertAllStagesStopped {
-      val identity = new GraphStages.Identity[Int]
+      val identity = GraphStages.identity[Int]
 
       Await.result(
         Source(1 to 100).via(identity).grouped(200).runWith(Sink.head),
@@ -27,7 +27,7 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
     }
 
     "be able to reuse a simple identity graph stage" in assertAllStagesStopped {
-      val identity = new GraphStages.Identity[Int]
+      val identity = GraphStages.identity[Int]
 
       Await.result(
         Source(1 to 100)

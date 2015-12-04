@@ -43,8 +43,8 @@ object GraphStages {
     override val shape = FlowShape(in, out)
   }
 
-  class Identity[T] extends SimpleLinearGraphStage[T] {
-    override def initialAttributes = Attributes.name("Identity")
+  object Identity extends SimpleLinearGraphStage[Any] {
+    override def initialAttributes = Attributes.name("identityOp")
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       setHandler(in, new InHandler {
@@ -58,6 +58,8 @@ object GraphStages {
 
     override def toString = "Identity"
   }
+
+  def identity[T] = Identity.asInstanceOf[SimpleLinearGraphStage[T]]
 
   class Detacher[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T]("in")

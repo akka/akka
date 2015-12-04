@@ -18,6 +18,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, ExecutionContextExecutor }
 import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
+import akka.stream.impl.fusing.Fusing
 
 /**
  * INTERNAL API
@@ -71,7 +72,9 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
   override def scheduleOnce(delay: FiniteDuration, task: Runnable) =
     system.scheduler.scheduleOnce(delay, task)(executionContext)
 
-  override def materialize[Mat](runnableGraph: Graph[ClosedShape, Mat]): Mat = {
+  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat = {
+    val runnableGraph = Fusing.aggressive(_runnableGraph)
+
     if (haveShutDown.get())
       throw new IllegalStateException("Attempted to call materialize() after the ActorMaterializer has been shut down.")
     if (StreamLayout.Debug) StreamLayout.validate(runnableGraph.module)

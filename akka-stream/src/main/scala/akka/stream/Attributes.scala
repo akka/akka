@@ -119,9 +119,9 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     Attributes(attributeList :+ other)
 
   /**
-   * INTERNAL API
+   * Extracts Name attributes and concatenates them.
    */
-  private[akka] def nameLifted: Option[String] = Option(nameOrDefault(null))
+  def nameLifted: Option[String] = Option(nameOrDefault(null))
 
   /**
    * INTERNAL API

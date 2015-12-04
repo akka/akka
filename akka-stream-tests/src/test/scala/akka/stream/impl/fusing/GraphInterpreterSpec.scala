@@ -15,7 +15,7 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
   "GraphInterpreter" must {
 
     // Reusable components
-    val identity = new Identity[Int]
+    val identity = GraphStages.identity[Int]
     val detacher = new Detacher[Int]
     val zip = Zip[Int, String]
     val bcast = Broadcast[Int](2)

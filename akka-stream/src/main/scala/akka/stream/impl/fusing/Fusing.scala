@@ -62,7 +62,7 @@ object Fusing {
 
     if (m.isAtomic) {
       if (Debug) log(s"atomic module $m")
-      struct.addModule(m, localGroup, indent)
+      struct.addModule(m, localGroup, inheritedAttributes, indent)
     } else {
       val attributes = inheritedAttributes and m.attributes
       m match {
@@ -141,23 +141,15 @@ object Fusing {
       group
     }
 
-    def addModule(m: Module, group: ju.Set[Module], indent: String): Atomic =
-      if (modules.contains(m)) {
-        val copy = CopiedModule(m.shape.deepCopy(), m.attributes, realModule(m))
-        if (Debug) println(indent + s"adding copy ${hash(copy)} ${printShape(copy.shape)} of ${printShape(m.shape)}")
-        group.add(copy)
-        modules.add(copy)
-        m.inPorts.iterator.zip(copy.inPorts.iterator).foreach { p ⇒ addMapping(p._1, p._2, newIns) }
-        m.outPorts.iterator.zip(copy.outPorts.iterator).foreach { p ⇒ addMapping(p._1, p._2, newOuts) }
-        Atomic(copy)
-      } else {
-        if (Debug) println(indent + s"adding original ${hash(m)} ${printShape(m.shape)}")
-        group.add(m)
-        modules.add(m)
-        m.inPorts.iterator.foreach { p ⇒ addMapping(p, p, newIns) }
-        m.outPorts.iterator.foreach { p ⇒ addMapping(p, p, newOuts) }
-        Atomic(m)
-      }
+    def addModule(m: Module, group: ju.Set[Module], inheritedAttributes: Attributes, indent: String): Atomic = {
+      val copy = CopiedModule(m.shape.deepCopy(), inheritedAttributes, realModule(m))
+      if (Debug) println(indent + s"adding copy ${hash(copy)} ${printShape(copy.shape)} of ${printShape(m.shape)}")
+      group.add(copy)
+      modules.add(copy)
+      m.shape.inlets.iterator.zip(copy.shape.inlets.iterator).foreach { p ⇒ addMapping(p._1, p._2, newIns) }
+      m.shape.outlets.iterator.zip(copy.shape.outlets.iterator).foreach { p ⇒ addMapping(p._1, p._2, newOuts) }
+      Atomic(copy)
+    }
 
     def wire(out: OutPort, in: InPort, indent: String): Unit = {
       if (Debug) println(indent + s"wiring $out (${hash(out)}) -> $in (${hash(in)})")

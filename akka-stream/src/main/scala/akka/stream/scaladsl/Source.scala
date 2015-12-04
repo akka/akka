@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import java.io.{ OutputStream, InputStream, File }
-
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
@@ -15,12 +14,12 @@ import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
 import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ Future, Promise }
 import scala.language.higherKinds
+import akka.stream.impl.fusing.GraphStages
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -36,7 +35,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   override val shape: SourceShape[Out] = module.shape.asInstanceOf[SourceShape[Out]]
 
   def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    if (flow.module eq Stages.identityGraph.module) this.asInstanceOf[Source[T, Mat3]]
+    if (flow.module eq GraphStages.Identity.module) this.asInstanceOf[Source[T, Mat3]]
     else {
       val flowCopy = flow.module.carbonCopy
       new Source(
