@@ -73,6 +73,16 @@ abstract class SinkStage[In, M](name: String) extends GraphStageWithMaterialized
   override val shape: SinkShape[In] = SinkShape(in)
 }
 
+/**
+ * A FlowStage represents a reusable graph stream processing stage. A FlowStage consists of a [[akka.stream.Shape]] which describes
+ * its input and output ports.
+ */
+abstract class FlowStage[In, Out, M](name: String) extends GraphStageWithMaterializedValue[FlowShape[In, Out], M] {
+  val in: Inlet[In] = Inlet[In](name + ".in")
+  val out: Outlet[Out] = Outlet[Out](name + ".out")
+  override val shape: FlowShape[In, Out] = FlowShape(in, out)
+}
+
 private object TimerMessages {
   final case class Scheduled(timerKey: Any, timerId: Int, repeating: Boolean) extends DeadLetterSuppression
   final case class Timer(id: Int, task: Cancellable)
