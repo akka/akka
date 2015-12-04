@@ -21,11 +21,6 @@ final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpChar
     case HttpCharsetRange.`*` ⇒ r ~~ mediaRange
     case x                    ⇒ r ~~ mediaRange ~~ ContentType.`; charset=` ~~ x
   }
-
-  /**
-   * Returns a [[ContentType]] instance which fits this range.
-   */
-  def specimen: ContentType = ContentType(mediaRange.specimen, () ⇒ charsetRange.specimen)
 }
 
 object ContentTypeRange {
