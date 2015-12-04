@@ -29,7 +29,7 @@ public final class FormData {
    * Converts this FormData to a RequestEntity using the given encoding.
    */
   public RequestEntity toEntity(HttpCharset charset) {
-    return HttpEntities.create(ContentType.create(MediaTypes.APPLICATION_X_WWW_FORM_URLENCODED, charset), fields.render(charset));
+    return HttpEntities.create(ContentTypes.create(MediaTypes.APPLICATION_X_WWW_FORM_URLENCODED, charset), fields.render(charset));
   }
 
   /**

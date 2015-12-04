@@ -35,7 +35,7 @@ public class ModelDocTest {
         Authorization authorization = Authorization.basic("user", "pass");
         HttpRequest complexRequest =
             HttpRequest.PUT("/user")
-                .withEntity(HttpEntities.create(MediaTypes.TEXT_PLAIN.toContentType(), "abc"))
+                .withEntity(HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, "abc"))
                 .addHeader(authorization)
                 .withProtocol(HttpProtocols.HTTP_1_0);
         //#construct-request

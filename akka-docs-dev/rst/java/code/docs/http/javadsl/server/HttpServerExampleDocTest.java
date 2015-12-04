@@ -156,7 +156,7 @@ public class HttpServerExampleDocTest {
                     .via(failureDetection)
                     .map(request -> {
                       Source<ByteString, Object> bytes = request.entity().getDataBytes();
-                      HttpEntity.Chunked entity = HttpEntities.create(ContentTypes.TEXT_PLAIN, bytes);
+                      HttpEntityChunked entity = HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, bytes);
 
                       return HttpResponse.create()
                         .withEntity(entity);
@@ -199,7 +199,7 @@ public class HttpServerExampleDocTest {
                             if (uri.path().equals("/"))
                                 return
                                     HttpResponse.create()
-                                        .withEntity(ContentTypes.TEXT_HTML,
+                                        .withEntity(ContentTypes.TEXT_HTML_UTF8,
                                             "<html><body>Hello world!</body></html>");
                             else if (uri.path().equals("/hello")) {
                                 String name = Util.getOrElse(uri.query().get("name"), "Mister X");

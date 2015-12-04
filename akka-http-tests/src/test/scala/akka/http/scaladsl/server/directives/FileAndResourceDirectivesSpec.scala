@@ -37,7 +37,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         writeAllText("This is PDF", file)
         Get() ~> getFromFile(file.getPath) ~> check {
           mediaType shouldEqual `application/pdf`
-          definedCharset shouldEqual None
+          charsetOption shouldEqual None
           responseAs[String] shouldEqual "This is PDF"
           headers should contain(`Last-Modified`(DateTime(file.lastModified)))
         }
@@ -71,7 +71,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         val rangeHeader = Range(ByteRange(1, 10), ByteRange.suffix(10))
-        Get() ~> addHeader(rangeHeader) ~> getFromFile(file, ContentTypes.`text/plain`) ~> check {
+        Get() ~> addHeader(rangeHeader) ~> getFromFile(file, ContentTypes.`text/plain(UTF-8)`) ~> check {
           status shouldEqual StatusCodes.PartialContent
           header[`Content-Range`] shouldEqual None
           mediaType.withParams(Map.empty) shouldEqual `multipart/byteranges`
@@ -88,6 +88,30 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         Get() ~> getFromFile(file) ~> check {
           mediaType shouldEqual NoMediaType
           responseAs[String] shouldEqual ""
+        }
+      } finally file.delete
+    }
+
+    "support precompressed files with registered MediaType" in {
+      val file = File.createTempFile("akkaHttpTest", ".svgz")
+      try {
+        writeAllText("123", file)
+        Get() ~> getFromFile(file) ~> check {
+          mediaType shouldEqual `image/svg+xml`
+          header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
+          responseAs[String] shouldEqual "123"
+        }
+      } finally file.delete
+    }
+
+    "support files with registered MediaType and .gz suffix" in {
+      val file = File.createTempFile("akkaHttpTest", ".js.gz")
+      try {
+        writeAllText("456", file)
+        Get() ~> getFromFile(file) ~> check {
+          mediaType shouldEqual `application/javascript`
+          header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
+          responseAs[String] shouldEqual "456"
         }
       } finally file.delete
     }

@@ -9,33 +9,33 @@ import akka.japi.Option;
 /**
  * Represents an Http content-type. A content-type consists of a media-type and an optional charset.
  */
-public abstract class ContentType {
-    /**
-     * Returns the media-type of this content-type.
-     */
-    public abstract MediaType mediaType();
+public interface ContentType {
 
     /**
-     * Returns the charset of this content-type.
+     * The media-type of this content-type.
      */
-    public abstract HttpCharset charset();
+    MediaType mediaType();
 
     /**
-     * Returns the optionally defined charset of this content-type.
+     * True if this ContentType is non-textual.
      */
-    public abstract Option<HttpCharset> getDefinedCharset();
+    boolean binary();
 
     /**
-     * Creates a content-type from a media-type and a charset.
+     * Returns the charset if this ContentType is non-binary.
      */
-    public static ContentType create(MediaType mediaType, HttpCharset charset) {
-        return akka.http.scaladsl.model.ContentType.apply((akka.http.scaladsl.model.MediaType) mediaType, (akka.http.scaladsl.model.HttpCharset) charset);
+    Option<HttpCharset> getCharsetOption();
+
+    interface Binary extends ContentType {
     }
 
-    /**
-     * Creates a content-type from a media-type without specifying a charset.
-     */
-    public static ContentType create(MediaType mediaType) {
-        return akka.http.scaladsl.model.ContentType.apply((akka.http.scaladsl.model.MediaType) mediaType);
+    interface NonBinary extends ContentType {
+        HttpCharset charset();
+    }
+
+    interface WithFixedCharset extends NonBinary {
+    }
+
+    interface WithCharset extends NonBinary {
     }
 }

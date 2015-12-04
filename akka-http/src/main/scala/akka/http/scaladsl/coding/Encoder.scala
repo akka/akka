@@ -46,7 +46,7 @@ object Encoder {
     case res @ HttpResponse(status, _, _, _) ⇒ isCompressible(res) && status.isSuccess
   }
   private[coding] def isCompressible(msg: HttpMessage): Boolean =
-    msg.entity.contentType.mediaType.compressible
+    msg.entity.contentType.mediaType.isCompressible
 
   private[coding] val isContentEncodingHeader: HttpHeader ⇒ Boolean = _.isInstanceOf[`Content-Encoding`]
 }

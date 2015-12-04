@@ -20,7 +20,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "content"
     }
-    Get("/") ~> `Accept-Encoding`(`identity;q=MIN`) ~> route ~> check {
+    Get("/") ~> `Accept-Encoding`(deflate) ~> route ~> check {
       rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
     }
   }
@@ -47,9 +47,6 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     // tests:
     Get("/") ~> route ~> check {
       response should haveContentEncoding(gzip)
-    }
-    Get("/") ~> `Accept-Encoding`() ~> route ~> check {
-      rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
     }
     Get("/") ~> `Accept-Encoding`(gzip, deflate) ~> route ~> check {
       response should haveContentEncoding(gzip)

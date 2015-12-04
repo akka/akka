@@ -19,39 +19,50 @@ sealed abstract class Marshaller[-A, +B] {
 
   /**
    * Reuses this Marshaller's logic to produce a new Marshaller from another type `C` which overrides
-   * the produced [[ContentType]] with another one.
-   * Depending on whether the given [[ContentType]] has a defined charset or not and whether the underlying
-   * marshaller marshals with a fixed charset it can happen, that the wrapping becomes illegal.
-   * For example, a marshaller producing content encoded with UTF-16 cannot be wrapped with a [[ContentType]]
-   * that has a defined charset of UTF-8, since akka-http will never recode entities.
+   * the [[MediaType]] of the marshalling result with the given one.
+   * Note that not all wrappings are legal. f the underlying [[MediaType]] has constraints with regard to the
+   * charsets it allows the new [[MediaType]] must be compatible, since akka-http will never recode entities.
    * If the wrapping is illegal the [[Future]] produced by the resulting marshaller will contain a [[RuntimeException]].
    */
-  def wrap[C, D >: B](contentType: ContentType)(f: C ⇒ A)(implicit mto: MediaTypeOverrider[D]): Marshaller[C, D] =
-    wrapWithEC[C, D](contentType)(_ ⇒ f)
+  def wrap[C, D >: B](newMediaType: MediaType)(f: C ⇒ A)(implicit mto: ContentTypeOverrider[D]): Marshaller[C, D] =
+    wrapWithEC[C, D](newMediaType)(_ ⇒ f)
 
   /**
    * Reuses this Marshaller's logic to produce a new Marshaller from another type `C` which overrides
-   * the produced [[ContentType]] with another one.
-   * Depending on whether the given [[ContentType]] has a defined charset or not and whether the underlying
-   * marshaller marshals with a fixed charset it can happen, that the wrapping becomes illegal.
-   * For example, a marshaller producing content encoded with UTF-16 cannot be wrapped with a [[ContentType]]
-   * that has a defined charset of UTF-8, since akka-http will never recode entities.
+   * the [[MediaType]] of the marshalling result with the given one.
+   * Note that not all wrappings are legal. f the underlying [[MediaType]] has constraints with regard to the
+   * charsets it allows the new [[MediaType]] must be compatible, since akka-http will never recode entities.
    * If the wrapping is illegal the [[Future]] produced by the resulting marshaller will contain a [[RuntimeException]].
    */
-  def wrapWithEC[C, D >: B](contentType: ContentType)(f: ExecutionContext ⇒ C ⇒ A)(implicit mto: MediaTypeOverrider[D]): Marshaller[C, D] =
+  def wrapWithEC[C, D >: B](newMediaType: MediaType)(f: ExecutionContext ⇒ C ⇒ A)(implicit cto: ContentTypeOverrider[D]): Marshaller[C, D] =
     Marshaller { implicit ec ⇒
       value ⇒
         import Marshalling._
         this(f(ec)(value)).fast map {
           _ map {
-            case WithFixedCharset(_, cs, marshal) if contentType.hasOpenCharset || contentType.charset == cs ⇒
-              WithFixedCharset(contentType.mediaType, cs, () ⇒ mto(marshal(), contentType.mediaType))
-            case WithOpenCharset(_, marshal) if contentType.hasOpenCharset ⇒
-              WithOpenCharset(contentType.mediaType, cs ⇒ mto(marshal(cs), contentType.mediaType))
-            case WithOpenCharset(_, marshal) ⇒
-              WithFixedCharset(contentType.mediaType, contentType.charset, () ⇒ mto(marshal(contentType.charset), contentType.mediaType))
-            case Opaque(marshal) if contentType.definedCharset.isEmpty ⇒ Opaque(() ⇒ mto(marshal(), contentType.mediaType))
-            case x ⇒ sys.error(s"Illegal marshaller wrapping. Marshalling `$x` cannot be wrapped with ContentType `$contentType`")
+            (_, newMediaType) match {
+              case (WithFixedContentType(_, marshal), newMT: MediaType.Binary) ⇒
+                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+              case (WithFixedContentType(oldCT: ContentType.Binary, marshal), newMT: MediaType.WithFixedCharset) ⇒
+                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+              case (WithFixedContentType(oldCT: ContentType.NonBinary, marshal), newMT: MediaType.WithFixedCharset) if oldCT.charset == newMT.charset ⇒
+                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+              case (WithFixedContentType(oldCT: ContentType.NonBinary, marshal), newMT: MediaType.WithOpenCharset) ⇒
+                val newCT = newMT withCharset oldCT.charset
+                WithFixedContentType(newCT, () ⇒ cto(marshal(), newCT))
+
+              case (WithOpenCharset(oldMT, marshal), newMT: MediaType.WithOpenCharset) ⇒
+                WithOpenCharset(newMT, cs ⇒ cto(marshal(cs), newMT withCharset cs))
+              case (WithOpenCharset(oldMT, marshal), newMT: MediaType.WithFixedCharset) ⇒
+                WithFixedContentType(newMT, () ⇒ cto(marshal(newMT.charset), newMT))
+
+              case (Opaque(marshal), newMT: MediaType.Binary) ⇒
+                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+              case (Opaque(marshal), newMT: MediaType.WithFixedCharset) ⇒
+                WithFixedContentType(newMT, () ⇒ cto(marshal(), newMT))
+
+              case x ⇒ sys.error(s"Illegal marshaller wrapping. Marshalling `$x` cannot be wrapped with MediaType `$newMediaType`")
+            }
           }
         }
     }
@@ -103,13 +114,13 @@ object Marshaller
   /**
    * Helper for creating a synchronous [[Marshaller]] to content with a fixed charset from the given function.
    */
-  def withFixedCharset[A, B](mediaType: MediaType, charset: HttpCharset)(marshal: A ⇒ B): Marshaller[A, B] =
-    strict { value ⇒ Marshalling.WithFixedCharset(mediaType, charset, () ⇒ marshal(value)) }
+  def withFixedContentType[A, B](contentType: ContentType)(marshal: A ⇒ B): Marshaller[A, B] =
+    strict { value ⇒ Marshalling.WithFixedContentType(contentType, () ⇒ marshal(value)) }
 
   /**
    * Helper for creating a synchronous [[Marshaller]] to content with a negotiable charset from the given function.
    */
-  def withOpenCharset[A, B](mediaType: MediaType)(marshal: (A, HttpCharset) ⇒ B): Marshaller[A, B] =
+  def withOpenCharset[A, B](mediaType: MediaType.WithOpenCharset)(marshal: (A, HttpCharset) ⇒ B): Marshaller[A, B] =
     strict { value ⇒ Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset)) }
 
   /**
@@ -136,19 +147,19 @@ sealed trait Marshalling[+A] {
 }
 
 object Marshalling {
+
   /**
-   * A Marshalling to a specific MediaType and charset.
+   * A Marshalling to a specific [[ContentType]].
    */
-  final case class WithFixedCharset[A](mediaType: MediaType,
-                                       charset: HttpCharset,
-                                       marshal: () ⇒ A) extends Marshalling[A] {
-    def map[B](f: A ⇒ B): WithFixedCharset[B] = copy(marshal = () ⇒ f(marshal()))
+  final case class WithFixedContentType[A](contentType: ContentType,
+                                           marshal: () ⇒ A) extends Marshalling[A] {
+    def map[B](f: A ⇒ B): WithFixedContentType[B] = copy(marshal = () ⇒ f(marshal()))
   }
 
   /**
-   * A Marshalling to a specific MediaType and a potentially flexible charset.
+   * A Marshalling to a specific [[MediaType]] with a flexible charset.
    */
-  final case class WithOpenCharset[A](mediaType: MediaType,
+  final case class WithOpenCharset[A](mediaType: MediaType.WithOpenCharset,
                                       marshal: HttpCharset ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): WithOpenCharset[B] = copy(marshal = cs ⇒ f(marshal(cs)))
   }

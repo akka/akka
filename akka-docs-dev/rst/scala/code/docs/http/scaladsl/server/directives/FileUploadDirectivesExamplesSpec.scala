@@ -3,15 +3,11 @@
  */
 package docs.http.scaladsl.server.directives
 
-import java.io.File
-
-import akka.http.scaladsl.model.{ MediaTypes, HttpEntity, Multipart, StatusCodes }
+import akka.http.scaladsl.model._
 import akka.stream.io.Framing
 import akka.util.ByteString
 import docs.http.scaladsl.server.RoutingSpec
-
 import scala.concurrent.Future
-import scala.util.{ Success, Failure }
 
 class FileUploadDirectivesExamplesSpec extends RoutingSpec {
 
@@ -32,7 +28,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec {
       Multipart.FormData(
         Multipart.FormData.BodyPart.Strict(
           "csv",
-          HttpEntity(MediaTypes.`text/plain`, "1,5,7\n11,13,17"),
+          HttpEntity(ContentTypes.`text/plain(UTF-8)`, "1,5,7\n11,13,17"),
           Map("filename" -> "data.csv")))
 
     Post("/", multipartForm) ~> route ~> check {
@@ -68,7 +64,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec {
     val multipartForm =
       Multipart.FormData(Multipart.FormData.BodyPart.Strict(
         "csv",
-        HttpEntity(MediaTypes.`text/plain`, "2,3,5\n7,11,13,17,23\n29,31,37\n"),
+        HttpEntity(ContentTypes.`text/plain(UTF-8)`, "2,3,5\n7,11,13,17,23\n29,31,37\n"),
         Map("filename" -> "primes.csv")))
 
     Post("/", multipartForm) ~> route ~> check {

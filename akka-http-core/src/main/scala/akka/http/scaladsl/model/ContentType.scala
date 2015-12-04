@@ -12,17 +12,15 @@ import akka.http.impl.util.JavaMapping.Implicits._
 
 final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRange) extends jm.ContentTypeRange with ValueRenderable {
   def matches(contentType: jm.ContentType) =
-    mediaRange.matches(contentType.mediaType) && charsetRange.matches(contentType.charset)
+    contentType match {
+      case ContentType.Binary(mt)   ⇒ mediaRange.matches(mt)
+      case x: ContentType.NonBinary ⇒ mediaRange.matches(x.mediaType) && charsetRange.matches(x.charset)
+    }
 
   def render[R <: Rendering](r: R): r.type = charsetRange match {
     case HttpCharsetRange.`*` ⇒ r ~~ mediaRange
     case x                    ⇒ r ~~ mediaRange ~~ ContentType.`; charset=` ~~ x
   }
-
-  /**
-   * Returns a [[ContentType]] instance which fits this range.
-   */
-  def specimen: ContentType = ContentType(mediaRange.specimen, charsetRange.specimen)
 }
 
 object ContentTypeRange {
@@ -31,54 +29,65 @@ object ContentTypeRange {
   implicit def apply(mediaType: MediaType): ContentTypeRange = apply(mediaType, HttpCharsetRange.`*`)
   implicit def apply(mediaRange: MediaRange): ContentTypeRange = apply(mediaRange, HttpCharsetRange.`*`)
   implicit def apply(contentType: ContentType): ContentTypeRange =
-    contentType.definedCharset match {
-      case Some(charset) ⇒ apply(contentType.mediaType, charset)
-      case None          ⇒ ContentTypeRange(contentType.mediaType)
+    contentType match {
+      case ContentType.Binary(mt)           ⇒ ContentTypeRange(mt)
+      case ContentType.WithFixedCharset(mt) ⇒ ContentTypeRange(mt)
+      case ContentType.WithCharset(mt, cs)  ⇒ ContentTypeRange(mt, cs)
     }
 }
 
-abstract case class ContentType private (mediaType: MediaType, definedCharset: Option[HttpCharset]) extends jm.ContentType with ValueRenderable {
-  private[http] def render[R <: Rendering](r: R): r.type = definedCharset match {
-    case Some(cs) ⇒ r ~~ mediaType ~~ ContentType.`; charset=` ~~ cs
-    case _        ⇒ r ~~ mediaType
-  }
-  def charset: HttpCharset = definedCharset orElse mediaType.encoding.charset getOrElse HttpCharsets.`UTF-8`
+/**
+ * A `ContentType` represents a specific MediaType / HttpCharset combination.
+ *
+ * If the MediaType is not flexible with regard to the charset used, e.g. because it's a binary MediaType or
+ * the charset is fixed, then the `ContentType` is a simple wrapper.
+ */
+sealed trait ContentType extends jm.ContentType with ValueRenderable {
+  def mediaType: MediaType
+  def charsetOption: Option[HttpCharset]
 
-  def hasOpenCharset: Boolean = definedCharset.isEmpty && mediaType.encoding == MediaType.Encoding.Open
-
-  def withMediaType(mediaType: MediaType) =
-    if (mediaType != this.mediaType) ContentType(mediaType, definedCharset) else this
-  def withCharset(charset: HttpCharset) =
-    if (definedCharset.isEmpty || charset != definedCharset.get) ContentType(mediaType, charset) else this
-  def withoutDefinedCharset =
-    if (definedCharset.isDefined) ContentType(mediaType, None) else this
-  def withDefaultCharset(charset: HttpCharset) =
-    if (mediaType.encoding == MediaType.Encoding.Open && definedCharset.isEmpty) ContentType(mediaType, charset) else this
+  private[http] def render[R <: Rendering](r: R): r.type = r ~~ mediaType
 
   /** Java API */
-  def getDefinedCharset: JOption[jm.HttpCharset] = definedCharset.asJava
+  def getCharsetOption: JOption[jm.HttpCharset] = charsetOption.asJava
 }
 
 object ContentType {
-  private[http] case object `; charset=` extends SingletonValueRenderable
-
-  implicit def apply(mediaType: MediaType): ContentType = apply(mediaType, None)
-
-  def apply(mediaType: MediaType, charset: HttpCharset): ContentType = apply(mediaType, Some(charset))
-
-  def apply(mediaType: MediaType, charset: Option[HttpCharset]): ContentType = {
-    val definedCharset =
-      charset match {
-        case None ⇒ None
-        case Some(cs) ⇒ mediaType.encoding match {
-          case MediaType.Encoding.Open        ⇒ charset
-          case MediaType.Encoding.Fixed(`cs`) ⇒ None
-          case x ⇒ throw new IllegalArgumentException(
-            s"MediaType $mediaType has a $x encoding and doesn't allow a custom `charset` $cs")
-        }
-      }
-    new ContentType(mediaType, definedCharset) {}
+  final case class Binary(mediaType: MediaType.Binary) extends jm.ContentType.Binary with ContentType {
+    def binary = true
+    def charsetOption = None
   }
+
+  sealed trait NonBinary extends jm.ContentType.NonBinary with ContentType {
+    def binary = false
+    def charset: HttpCharset
+    def charsetOption = Some(charset)
+  }
+
+  final case class WithFixedCharset(val mediaType: MediaType.WithFixedCharset)
+    extends jm.ContentType.WithFixedCharset with NonBinary {
+    def charset = mediaType.charset
+  }
+
+  final case class WithCharset(val mediaType: MediaType.WithOpenCharset, val charset: HttpCharset)
+    extends jm.ContentType.WithCharset with NonBinary {
+
+    private[http] override def render[R <: Rendering](r: R): r.type =
+      super.render(r) ~~ ContentType.`; charset=` ~~ charset
+  }
+
+  implicit def apply(mediaType: MediaType.Binary): Binary = Binary(mediaType)
+  implicit def apply(mediaType: MediaType.WithFixedCharset): WithFixedCharset = WithFixedCharset(mediaType)
+  def apply(mediaType: MediaType.WithOpenCharset, charset: HttpCharset): WithCharset = WithCharset(mediaType, charset)
+  def apply(mediaType: MediaType, charset: () ⇒ HttpCharset): ContentType =
+    mediaType match {
+      case x: MediaType.Binary           ⇒ ContentType(x)
+      case x: MediaType.WithFixedCharset ⇒ ContentType(x)
+      case x: MediaType.WithOpenCharset  ⇒ ContentType(x, charset())
+    }
+
+  def unapply(contentType: ContentType): Option[(MediaType, Option[HttpCharset])] =
+    Some(contentType.mediaType → contentType.charsetOption)
 
   /**
    * Tries to parse a ``ContentType`` value from the given String. Returns ``Right(contentType)`` if successful and
@@ -86,19 +95,16 @@ object ContentType {
    */
   def parse(value: String): Either[List[ErrorInfo], ContentType] =
     headers.`Content-Type`.parseFromValueString(value).right.map(_.contentType)
+
+  private[http] case object `; charset=` extends SingletonValueRenderable
 }
 
 object ContentTypes {
   val `application/json` = ContentType(MediaTypes.`application/json`)
   val `application/octet-stream` = ContentType(MediaTypes.`application/octet-stream`)
-
-  val `text/plain` = ContentType(MediaTypes.`text/plain`)
-  val `text/plain(UTF-8)` = ContentType(MediaTypes.`text/plain`, HttpCharsets.`UTF-8`)
-  val `text/html` = ContentType(MediaTypes.`text/html`)
-  val `text/xml` = ContentType(MediaTypes.`text/xml`)
-
-  val `application/x-www-form-urlencoded` = ContentType(MediaTypes.`application/x-www-form-urlencoded`)
-  val `multipart/form-data` = ContentType(MediaTypes.`multipart/form-data`)
+  val `text/plain(UTF-8)` = MediaTypes.`text/plain` withCharset HttpCharsets.`UTF-8`
+  val `text/html(UTF-8)` = MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`
+  val `text/xml(UTF-8)` = MediaTypes.`text/xml` withCharset HttpCharsets.`UTF-8`
 
   // used for explicitly suppressing the rendering of Content-Type headers on requests and responses
   val NoContentType = ContentType(MediaTypes.NoMediaType)

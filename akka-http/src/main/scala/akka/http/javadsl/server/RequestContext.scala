@@ -4,11 +4,9 @@
 
 package akka.http.javadsl.server
 
+import scala.concurrent.{ ExecutionContext, Future }
 import akka.http.javadsl.model._
 import akka.stream.Materializer
-import akka.util.ByteString
-
-import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * The RequestContext represents the state of the request while it is routed through
@@ -50,7 +48,7 @@ trait RequestContext {
   /**
    * Completes the request with the given string as an entity of the given type.
    */
-  def complete(contentType: ContentType, text: String): RouteResult
+  def complete(contentType: ContentType.NonBinary, text: String): RouteResult
 
   /**
    * Completes the request with the given status code and no entity.

@@ -52,7 +52,7 @@ private[http] class RejectionHandlerWrapper(javaHandler: server.RejectionHandler
         case RequestEntityExpectedRejection ⇒
           handleRequestEntityExpectedRejection(ctx)
         case UnacceptedResponseContentTypeRejection(supported) ⇒
-          handleUnacceptedResponseContentTypeRejection(ctx, supported.toList.toSeq.asJava)
+          handleUnacceptedResponseContentTypeRejection(ctx, supported.toList.map(_.format).toSeq.asJava)
         case UnacceptedResponseEncodingRejection(supported) ⇒
           handleUnacceptedResponseEncodingRejection(ctx, supported.toList.toSeq.asJava)
         case AuthenticationFailedRejection(cause, challenge) ⇒

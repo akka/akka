@@ -20,11 +20,6 @@ sealed abstract class HttpCharsetRange extends jm.HttpCharsetRange with ValueRen
   def qValue: Float
   def matches(charset: HttpCharset): Boolean
 
-  /**
-   * Returns a [[HttpCharset]] instance which fits this range.
-   */
-  def specimen: HttpCharset
-
   /** Java API */
   def matches(charset: jm.HttpCharset): Boolean = {
     import akka.http.impl.util.JavaMapping.Implicits._
@@ -37,8 +32,6 @@ object HttpCharsetRange {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
     final def render[R <: Rendering](r: R): r.type = if (qValue < 1.0f) r ~~ "*;q=" ~~ qValue else r ~~ '*'
     def matches(charset: HttpCharset) = true
-    def matchesAll: Boolean = true
-    def specimen: HttpCharset = HttpCharsets.`UTF-8`
     def withQValue(qValue: Float) =
       if (qValue == 1.0f) `*` else if (qValue != this.qValue) `*`(qValue.toFloat) else this
   }
@@ -47,8 +40,6 @@ object HttpCharsetRange {
   final case class One(charset: HttpCharset, qValue: Float) extends HttpCharsetRange {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
     def matches(charset: HttpCharset) = this.charset.value.equalsIgnoreCase(charset.value)
-    def matchesAll: Boolean = false
-    def specimen: HttpCharset = charset
     def withQValue(qValue: Float) = One(charset, qValue)
     def render[R <: Rendering](r: R): r.type = if (qValue < 1.0f) r ~~ charset ~~ ";q=" ~~ qValue else r ~~ charset
   }
