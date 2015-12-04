@@ -17,9 +17,4 @@ public abstract class ContentTypeRange {
      * Returns true if this range includes the given content type.
      */
     public abstract boolean matches(ContentType contentType);
-
-    /**
-     * Returns a ContentType instance which fits this range.
-     */
-    public abstract ContentType specimen();
 }
