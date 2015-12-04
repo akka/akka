@@ -22,7 +22,7 @@ public interface MediaType {
     /**
      * True when this media-type is generally compressible.
      */
-    boolean compressible();
+    boolean isCompressible();
 
     /**
      * True when this media-type is not character-based.

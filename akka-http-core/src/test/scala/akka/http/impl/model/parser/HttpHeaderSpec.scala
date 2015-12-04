@@ -19,7 +19,7 @@ import HttpEncodings._
 import HttpMethods._
 
 class HttpHeaderSpec extends FreeSpec with Matchers {
-  val `application/vnd.spray` = MediaType.applicationBinary("vnd.spray", compressible = true)
+  val `application/vnd.spray` = MediaType.applicationBinary("vnd.spray", MediaType.Compressible)
   val PROPFIND = HttpMethod.custom("PROPFIND")
 
   "The HTTP header model must correctly parse and render the headers" - {
@@ -38,9 +38,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Accept: */*, text/*; foo=bar, custom/custom; bar=\"b>az\"" =!=
         Accept(`*/*`,
           MediaRange.custom("text", Map("foo" -> "bar")),
-          MediaType.customBinary("custom", "custom", compressible = true, params = Map("bar" -> "b>az")))
+          MediaType.customBinary("custom", "custom", MediaType.Compressible, params = Map("bar" -> "b>az")))
       "Accept: application/*+xml; version=2" =!=
-        Accept(MediaType.customBinary("application", "*+xml", compressible = true, params = Map("version" -> "2")))
+        Accept(MediaType.customBinary("application", "*+xml", MediaType.Compressible, params = Map("version" -> "2")))
     }
 
     "Accept-Charset" in {
@@ -208,7 +208,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Content-Type`(`multipart/mixed` withBoundary "ABC/123" withCharset `UTF-8`)
         .renderedTo("""multipart/mixed; boundary="ABC/123"; charset=UTF-8""")
       "Content-Type: application/*" =!=
-        `Content-Type`(MediaType.customBinary("application", "*", compressible = false, allowArbitrarySubtypes = true))
+        `Content-Type`(MediaType.customBinary("application", "*", MediaType.Compressible, allowArbitrarySubtypes = true))
     }
 
     "Content-Range" in {
