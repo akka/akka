@@ -174,7 +174,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
 
       "status 400, a few headers and a body with an explicitly suppressed Content Type header" in new TestSetup() {
         HttpResponse(400, List(Age(30), Connection("Keep-Alive")),
-          HttpEntity(contentType = ContentTypes.NoContentType, "Small f*ck up overhere!")) should renderTo {
+          HttpEntity(ContentTypes.NoContentType, ByteString("Small f*ck up overhere!"))) should renderTo {
             """HTTP/1.1 400 Bad Request
               |Age: 30
               |Server: akka-http/1.0.0
@@ -202,7 +202,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     "a response with a Default (streamed with explicit content-length body," - {
       "status 400 and a few headers" in new TestSetup() {
         HttpResponse(400, List(Age(30), Connection("Keep-Alive")),
-          entity = Default(contentType = ContentTypes.`text/plain(UTF-8)`, 23, source(ByteString("Small f*ck up overhere!")))) should renderTo {
+          entity = Default(ContentTypes.`text/plain(UTF-8)`, 23, source(ByteString("Small f*ck up overhere!")))) should renderTo {
             """HTTP/1.1 400 Bad Request
               |Age: 30
               |Server: akka-http/1.0.0

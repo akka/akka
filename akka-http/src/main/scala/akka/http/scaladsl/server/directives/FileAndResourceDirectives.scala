@@ -26,7 +26,6 @@ trait FileAndResourceDirectives {
   import RouteDirectives._
   import BasicDirectives._
   import RouteConcatenation._
-  import RangeDirectives._
 
   /**
    * Completes GET requests with the content of the given file.
@@ -51,12 +50,10 @@ trait FileAndResourceDirectives {
       if (file.isFile && file.canRead)
         conditionalFor(file.length, file.lastModified) {
           if (file.length > 0) {
-            withRangeSupport {
-              extractSettings { settings ⇒
-                complete {
-                  HttpEntity.Default(contentType, file.length,
-                    Source.file(file).withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
-                }
+            withRangeSupportAndPrecompressedMediaTypeSupportAndExtractSettings { settings ⇒
+              complete {
+                HttpEntity.Default(contentType, file.length,
+                  Source.file(file).withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
               }
             }
           } else complete(HttpEntity.Empty)
@@ -90,13 +87,11 @@ trait FileAndResourceDirectives {
           case Some(ResourceFile(url, length, lastModified)) ⇒
             conditionalFor(length, lastModified) {
               if (length > 0) {
-                withRangeSupport {
-                  extractSettings { settings ⇒
-                    complete {
-                      HttpEntity.Default(contentType, length,
-                        Source.inputStream(() ⇒ url.openStream())
-                          .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
-                    }
+                withRangeSupportAndPrecompressedMediaTypeSupportAndExtractSettings { settings ⇒
+                  complete {
+                    HttpEntity.Default(contentType, length,
+                      Source.inputStream(() ⇒ url.openStream())
+                        .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
                   }
                 }
               } else complete(HttpEntity.Empty)
@@ -186,6 +181,11 @@ trait FileAndResourceDirectives {
 }
 
 object FileAndResourceDirectives extends FileAndResourceDirectives {
+  private val withRangeSupportAndPrecompressedMediaTypeSupportAndExtractSettings =
+    RangeDirectives.withRangeSupport &
+      CodingDirectives.withPrecompressedMediaTypeSupport &
+      BasicDirectives.extractSettings
+
   private def withTrailingSlash(path: String): String = if (path endsWith "/") path else path + '/'
   private def fileSystemPath(base: String, path: Uri.Path, log: LoggingAdapter, separator: Char = File.separatorChar): String = {
     import java.lang.StringBuilder
@@ -260,12 +260,17 @@ object ContentTypeResolver {
   def withDefaultCharset(charset: HttpCharset): ContentTypeResolver =
     new ContentTypeResolver {
       def apply(fileName: String) = {
-        val ext = fileName.lastIndexOf('.') match {
-          case -1 ⇒ ""
-          case x  ⇒ fileName.substring(x + 1)
-        }
-        val mediaType = MediaTypes.forExtension(ext) getOrElse MediaTypes.`application/octet-stream`
-        ContentType(mediaType) withDefaultCharset charset
+        val lastDotIx = fileName.lastIndexOf('.')
+        val mediaType = if (lastDotIx >= 0) {
+          fileName.substring(lastDotIx + 1) match {
+            case "gz" ⇒ fileName.lastIndexOf('.', lastDotIx - 1) match {
+              case -1 ⇒ MediaTypes.`application/octet-stream`
+              case x  ⇒ MediaTypes.forExtension(fileName.substring(x + 1, lastDotIx)).withComp(MediaType.Gzipped)
+            }
+            case ext ⇒ MediaTypes.forExtension(ext)
+          }
+        } else MediaTypes.`application/octet-stream`
+        ContentType(mediaType, () ⇒ charset)
       }
     }
 

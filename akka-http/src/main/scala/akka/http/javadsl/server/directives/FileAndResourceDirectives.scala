@@ -37,11 +37,6 @@ trait FileAndResourceRoute extends Route {
   def withContentType(contentType: ContentType): Route
 
   /**
-   * Returns a variant of this route that responds with the given constant [[MediaType]].
-   */
-  def withContentType(mediaType: MediaType): Route
-
-  /**
    * Returns a variant of this route that uses the specified [[ContentTypeResolver]] to determine
    * which [[ContentType]] to respond with by file name.
    */
@@ -55,8 +50,6 @@ object FileAndResourceRoute {
   private[http] def apply(f: ContentTypeResolver ⇒ Route): FileAndResourceRoute =
     new FileAndResourceRouteWithDefaultResolver(f) with FileAndResourceRoute {
       def withContentType(contentType: ContentType): Route = resolveContentTypeWith(StaticContentTypeResolver(contentType))
-      def withContentType(mediaType: MediaType): Route = withContentType(mediaType.toContentType)
-
       def resolveContentTypeWith(resolver: ContentTypeResolver): Route = f(resolver)
     }
 
@@ -66,8 +59,6 @@ object FileAndResourceRoute {
   private[http] def forFixedName(fileName: String)(f: ContentType ⇒ Route): FileAndResourceRoute =
     new FileAndResourceRouteWithDefaultResolver(resolver ⇒ f(resolver.resolve(fileName))) with FileAndResourceRoute {
       def withContentType(contentType: ContentType): Route = resolveContentTypeWith(StaticContentTypeResolver(contentType))
-      def withContentType(mediaType: MediaType): Route = withContentType(mediaType.toContentType)
-
       def resolveContentTypeWith(resolver: ContentTypeResolver): Route = f(resolver.resolve(fileName))
     }
 }

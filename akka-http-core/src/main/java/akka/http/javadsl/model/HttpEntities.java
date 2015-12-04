@@ -28,8 +28,8 @@ public final class HttpEntities {
         return HttpEntity$.MODULE$.apply(bytes);
     }
 
-    public static HttpEntityStrict create(ContentType contentType, String string) {
-        return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType) contentType, string);
+    public static HttpEntityStrict create(ContentType.NonBinary contentType, String string) {
+        return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType.NonBinary) contentType, string);
     }
 
     public static HttpEntityStrict create(ContentType contentType, byte[] bytes) {
@@ -52,7 +52,7 @@ public final class HttpEntities {
         return new akka.http.scaladsl.model.HttpEntity.Default((akka.http.scaladsl.model.ContentType) contentType, contentLength, data.asScala());
     }
 
-    public static HttpEntity.Chunked create(ContentType contentType, Source<ByteString, Object> data) {
+    public static HttpEntityChunked create(ContentType contentType, Source<ByteString, Object> data) {
         return HttpEntity.Chunked$.MODULE$.fromData((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
     }
 

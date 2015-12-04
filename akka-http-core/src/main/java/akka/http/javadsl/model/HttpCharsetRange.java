@@ -9,10 +9,6 @@ package akka.http.javadsl.model;
  * charset. {@link HttpCharsetRanges} contains static constructors for HttpCharsetRanges.
  */
 public abstract class HttpCharsetRange {
-    /**
-     * Returns if this range matches all charsets.
-     */
-    public abstract boolean matchesAll();
 
     /**
      * The qValue for this range.

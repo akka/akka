@@ -154,7 +154,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Content-Type: application/pdf
           |Content-Length: 0
           |
-          |""" should parseTo(HttpRequest(GET, "/data", List(Host("x")), HttpEntity(`application/pdf`, "")))
+          |""" should parseTo(HttpRequest(GET, "/data", List(Host("x")), HttpEntity.empty(`application/pdf`)))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 

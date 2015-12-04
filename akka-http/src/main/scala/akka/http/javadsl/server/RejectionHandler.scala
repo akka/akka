@@ -7,7 +7,7 @@ package akka.http.javadsl.server
 import java.{ lang ⇒ jl }
 
 import akka.http.impl.server.PassRejectionRouteResult
-import akka.http.javadsl.model.{ ContentType, ContentTypeRange, HttpMethod }
+import akka.http.javadsl.model.{ ContentTypeRange, HttpMethod }
 import akka.http.javadsl.model.headers.{ HttpChallenge, ByteRange, HttpEncoding }
 import akka.http.scaladsl.server.Rejection
 
@@ -122,9 +122,9 @@ abstract class RejectionHandler {
   /**
    * Callback called to handle rejection created by marshallers.
    * Signals that the request was rejected because the service is not capable of producing a response entity whose
-   * content type is accepted by the client
+   * content type is accepted by the client.
    */
-  def handleUnacceptedResponseContentTypeRejection(ctx: RequestContext, supported: jl.Iterable[ContentType]): RouteResult = passRejection()
+  def handleUnacceptedResponseContentTypeRejection(ctx: RequestContext, supported: jl.Iterable[String]): RouteResult = passRejection()
 
   /**
    * Callback called to handle rejection created by encoding filters.

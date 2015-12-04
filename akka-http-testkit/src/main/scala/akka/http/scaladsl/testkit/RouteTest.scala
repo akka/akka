@@ -52,22 +52,24 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
 
   def check[T](body: ⇒ T): RouteTestResult ⇒ T = result ⇒ dynRR.withValue(result.awaitResult)(body)
 
+  private def responseSafe = if (dynRR.value ne null) dynRR.value.response else "<not available anymore>"
+
   def handled: Boolean = result.handled
   def response: HttpResponse = result.response
   def responseEntity: HttpEntity = result.entity
   def chunks: immutable.Seq[HttpEntity.ChunkStreamPart] = result.chunks
   def entityAs[T: FromEntityUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
-    def msg(e: Throwable) = s"Could not unmarshal entity to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $e\n\nResponse was: $response"
+    def msg(e: Throwable) = s"Could not unmarshal entity to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $e\n\nResponse was: $responseSafe"
     Await.result(Unmarshal(responseEntity).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
   }
   def responseAs[T: FromResponseUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
-    def msg(e: Throwable) = s"Could not unmarshal response to type '${implicitly[ClassTag[T]]}' for `responseAs` assertion: $e\n\nResponse was: $response"
+    def msg(e: Throwable) = s"Could not unmarshal response to type '${implicitly[ClassTag[T]]}' for `responseAs` assertion: $e\n\nResponse was: $responseSafe"
     Await.result(Unmarshal(response).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
   }
   def contentType: ContentType = responseEntity.contentType
   def mediaType: MediaType = contentType.mediaType
-  def charset: HttpCharset = contentType.charset
-  def definedCharset: Option[HttpCharset] = contentType.definedCharset
+  def charsetOption: Option[HttpCharset] = contentType.charsetOption
+  def charset: HttpCharset = charsetOption getOrElse sys.error("Binary entity does not have charset")
   def headers: immutable.Seq[HttpHeader] = response.headers
   def header[T <: HttpHeader: ClassTag]: Option[T] = response.header[T]
   def header(name: String): Option[HttpHeader] = response.headers.find(_.is(name.toLowerCase))

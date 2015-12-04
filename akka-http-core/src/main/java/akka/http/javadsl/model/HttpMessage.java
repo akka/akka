@@ -89,7 +89,7 @@ public interface HttpMessage {
         /**
          * Returns a copy of Self message with a new entity.
          */
-        Self withEntity(ContentType type, String string);
+        Self withEntity(ContentType.NonBinary type, String string);
 
         /**
          * Returns a copy of Self message with a new entity.
