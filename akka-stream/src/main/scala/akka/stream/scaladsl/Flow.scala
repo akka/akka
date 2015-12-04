@@ -576,7 +576,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * TODO: description (Add a see also: take(n))
    */
-  def limit(n: Long): Repr[Out, Mat] = andThen(LimitWeighted(n, { _ ⇒ 1 }))
+  def limit(n: Long): Repr[Out, Mat] = limitWeighted(n)(_ ⇒ 1)
 
   def limitWeighted[T](n: Long)(costFn: Out ⇒ Long): Repr[Out, Mat] = andThen(LimitWeighted(n, costFn))
 
