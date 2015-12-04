@@ -35,6 +35,7 @@ private[stream] object Stages {
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val grouped = name("grouped")
     val limit = name("limit")
+    val limitWeighted = name("limitWeighted")
     val sliding = name("sliding")
     val take = name("take")
     val drop = name("drop")
@@ -159,7 +160,7 @@ private[stream] object Stages {
     override def create(attr: Attributes): Stage[T, T] = fusing.Limit(n)
   }
 
-  final case class LimitWeighted[T](n: Long, costFn: T ⇒ Long, attributes: Attributes = limit) extends SymbolicStage[T, T] {
+  final case class LimitWeighted[T](n: Long, costFn: T ⇒ Long, attributes: Attributes = limitWeighted) extends SymbolicStage[T, T] {
     override def create(attr: Attributes): Stage[T, T] = fusing.LimitWeighted(n, costFn)
   }
 
