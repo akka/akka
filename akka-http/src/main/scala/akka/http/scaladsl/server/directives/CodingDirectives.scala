@@ -108,6 +108,16 @@ trait CodingDirectives {
    */
   def decodeRequest: Directive0 =
     decodeRequestWith(DefaultCoders: _*)
+
+  /**
+   * Inspects the response entity and adds a `Content-Encoding: gzip` response header if
+   * the entities media-type is precompressed with gzip and no `Content-Encoding` header is present yet.
+   */
+  def withPrecompressedMediaTypeSupport: Directive0 =
+    mapResponse { response ⇒
+      if (response.entity.contentType.mediaType.comp != MediaType.Gzipped) response
+      else response.withDefaultHeaders(headers.`Content-Encoding`(HttpEncodings.gzip))
+    }
 }
 
 object CodingDirectives extends CodingDirectives {
