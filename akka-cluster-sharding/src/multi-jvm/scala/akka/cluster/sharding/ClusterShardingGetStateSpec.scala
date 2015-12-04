@@ -161,9 +161,8 @@ abstract class ClusterShardingGetStateSpec extends MultiNodeSpec(ClusterSharding
           val regions = probe.expectMsgType[ShardRegion.CurrentRegions].regions
           regions.size === 2
           regions.foreach { region ⇒
-            val path = RootActorPath(region) / "system" / "sharding" / shardTypeName
-
-            system.actorSelection(path).tell(ShardRegion.GetShardRegionState, probe.ref)
+            val remoteShardRegion = ClusterSharding(system).remoteShardRegion(region, shardTypeName)
+            remoteShardRegion.tell(ShardRegion.GetShardRegionState, probe.ref)
           }
           val states = probe.receiveWhile(messages = regions.size) {
             case msg: ShardRegion.CurrentShardRegionState ⇒ msg

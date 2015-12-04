@@ -8,6 +8,9 @@ import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.Await
 import akka.actor.Actor
+import akka.actor.Address
+import akka.actor.ActorSelection
+import akka.actor.RootActorPath
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Deploy
@@ -387,6 +390,17 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def shardRegion(typeName: String): ActorRef = regions.get(typeName) match {
     case null ⇒ throw new IllegalArgumentException(s"Shard type [$typeName] must be started first")
     case ref  ⇒ ref
+  }
+
+  /**
+    * Retrieve the actor selection of the [[ShardRegion]] actor responsible for the named entity type
+    * possibly existing on a remote node. Can be used to query specific [[ShardRegion]] ac
+    * The entity type must be registered with the [[#start]] method before it can be used here.
+    * Messages to the entity is always sent via the `ShardRegion`.
+    */
+  def remoteShardRegion(region: Address, typeName: String): ActorSelection = {
+    val guardianName = system.settings.config.getString("akka.cluster.sharding.guardian-name")
+    system.actorSelection(RootActorPath(region) / "system" / guardianName / typeName)
   }
 
 }

@@ -1,4 +1,3 @@
-
 .. _howto-scala:
 
 ######################
@@ -154,6 +153,15 @@ and schedule the initial message send again.
    under pressure, but only schedule a new tick message when we have seen the previous one.
 
 .. includecode:: code/docs/pattern/SchedulerPatternSpec.scala#schedule-receive
+
+
+Get all ShardActor IDs
+================
+
+How to get all actorIds for a giver shardTypeName.
+Use only for reasonably small number of actors!
+
+.. includecode:: code/docs/pattern/GetAllShardActorIdsDocSpec.scala
 
 Template Pattern
 ================
