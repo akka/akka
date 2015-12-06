@@ -239,7 +239,7 @@ private[akka] final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, de
 /**
  * INTERNAL API
  */
-private[akka] final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) extends GraphStage[FlowShape[T, T]] {
+final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) extends GraphStage[FlowShape[T, T]] {
 
   private val in = Inlet[T]("in")
   private val out = Outlet[T]("out")
@@ -247,26 +247,40 @@ private[akka] final case class Intersperse[T](start: Option[T], inject: T, end: 
   override val shape = FlowShape(in, out)
 
   override def createLogic(attr: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-    var s_ = start.isDefined
-    var m_ = false
-    var e_ = end.isDefined
+    var first = true // is this the first element?
 
     setHandler(in, new InHandler {
-      override def onPush(): Unit = push(out, grab(in))
+      override def onPush(): Unit = {
+        if (first) {
+          first = false
+          // emit: start if defined, elem
+          if (start.isDefined) emitMultipe(out, Iterator(start.get, grab(in)))
+          else emit(out, grab(in))
+        } else {
+          // emit: inject, elem
+          emitMultipe(out, Iterator(inject, grab(in)))
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (first) {
+          // this branch is only called if upstream is an empty one
+          // emit: start if defined, end if defined, otherwise emit nothing
+          if (start.isDefined && end.isDefined) emitMultipe(out, Iterator(start.get, end.get))
+          else if (start.isDefined && !end.isDefined) emit(out, start.get)
+          else if (!start.isDefined && end.isDefined) emit(out, end.get)
+          else { /* emit nothing */ }
+        } else {
+          // emit: end if defined, otherwise emit nothing
+          if (end.isDefined) emit(out, end.get)
+          else { /* emit nothing */ }
+        }
+        completeStage()
+      }
     })
 
     setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
-        if (s_) { // emit start
-          push(out, start.get)
-          s_ = false
-        } else { // emit inject
-          if (m_) push(out, inject)
-          else pull(in)
-
-          m_ = !m_
-        }
-      }
+      override def onPull(): Unit = pull(in)
     })
   }
 }
