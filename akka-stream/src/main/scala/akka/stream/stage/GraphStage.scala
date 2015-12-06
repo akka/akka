@@ -699,7 +699,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * is needed and reinstalls the current handler upon receiving an `onPull()`
    * signal.
    */
-  final protected def emitMultipe[T](out: Outlet[T], elems: Iterator[T]): Unit = emitMultiple(out, elems, DoNothing)
+  final protected def emitMultiple[T](out: Outlet[T], elems: Iterator[T]): Unit = emitMultiple(out, elems, DoNothing)
 
   /**
    * Emit an element through the given outlet and continue with the given thunk
