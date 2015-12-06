@@ -11,13 +11,16 @@ import akka.stream.impl.StreamLayout._
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import akka.stream.Attributes.AsyncBoundary
 import scala.util.control.NonFatal
+import akka.stream.stage.GraphStageWithMaterializedValue
+import scala.annotation.tailrec
+import java.util.Arrays
 
 object Fusing {
 
   final val Debug = false
 
   def aggressive[S <: Shape, M](g: Graph[S, M]): FusedGraph[S, M] = {
-    val struct = new StructuralInfo
+    val struct = new BuildStructuralInfo
     val matValue =
       try descend(g.module, Attributes.none, struct, struct.newGroup(""), "")
       catch {
@@ -28,26 +31,144 @@ object Fusing {
     val shape = g.shape.copyFromPorts(
       struct.newInlets(g.shape.inlets),
       struct.newOutlets(g.shape.outlets)).asInstanceOf[S]
+    // must come first, fuse() removes assembly-internal connections from struct
+    val info = struct.toInfo
+    val modules = fuse(struct)
     val module = CompositeModule(
-      struct.modules.asScala.to[immutable.Set],
+      modules,
       shape,
       immutable.Map.empty ++ struct.downstreams.asScala,
       immutable.Map.empty ++ struct.upstreams.asScala,
       matValue,
-      Attributes.none)
+      Attributes.none,
+      info)
     validate(module)
-    FusedGraph(module, shape, struct)
+    FusedGraph(module, shape)
   }
 
   case class FusedGraph[S <: Shape, M](override val module: Module,
-                                       override val shape: S,
-                                       info: StructuralInfo) extends Graph[S, M] {
+                                       override val shape: S) extends Graph[S, M] {
     override def withAttributes(attr: Attributes) = copy(module = module.withAttributes(attr))
   }
 
+  private def fuse(struct: BuildStructuralInfo): Set[Module] =
+    struct.groups.asScala.flatMap { group ⇒
+      if (group.size == 0) Nil
+      else if (group.size == 1) group.iterator.next() :: Nil
+      else fuseGroup(struct, group) :: Nil
+    }(collection.breakOut)
+
+  private def fuseGroup(struct: BuildStructuralInfo, group: ju.Set[Module]): GraphModule = {
+    val stages = new Array[GraphStageWithMaterializedValue[Shape, Any]](group.size)
+    val matValIDs = new Array[Module](group.size)
+    val attributes = new Array[Attributes](group.size)
+
+    /*
+     * The overall GraphAssembly arrays are constructed in three parts:
+     * - 1) exposed inputs (ins)
+     * - 2) connections (ins and outs)
+     * - 3) exposed outputs (outs)
+     */
+    val insB1, insB2 = new ju.ArrayList[Inlet[_]]
+    val outsB3 = new ju.ArrayList[Outlet[_]]
+    val inOwnersB1, inOwnersB2 = new ju.ArrayList[Int]
+    val outOwnersB3 = new ju.ArrayList[Int]
+
+    // for the shape of the GraphModule
+    val inlets = new ju.ArrayList[Inlet[_]]
+    val outlets = new ju.ArrayList[Outlet[_]]
+
+    // connection slots are allocated from the inputs side, outs find their place by this map
+    val outConns: ju.Map[OutPort, Int] = new ju.HashMap
+
+    var pos = 0
+    var it = group.iterator
+    val ups = struct.upstreams
+    val downs = struct.downstreams
+    val outGroup = struct.outGroup
+    while (it.hasNext) it.next() match {
+      case copy @ CopiedModule(shape, attr, gsm: GraphStageModule) ⇒
+        stages(pos) = gsm.stage
+        matValIDs(pos) = copy
+        attributes(pos) = attr
+
+        shape.inlets.iterator.zip(gsm.shape.inlets.iterator).foreach {
+          case (in, orig) ⇒
+            val out = ups.get(in)
+            val internal = (out != null) && (outGroup.get(out) eq group)
+            if (internal) {
+              ups.remove(in)
+              downs.remove(out)
+              outConns.put(out, insB2.size)
+              insB2.add(orig)
+              inOwnersB2.add(pos)
+            } else {
+              insB1.add(orig)
+              inOwnersB1.add(pos)
+              inlets.add(in)
+            }
+        }
+
+        pos += 1
+    }
+
+    val outsB2 = new Array[Outlet[_]](insB2.size)
+    val outOwnersB2 = new Array[Int](insB2.size)
+
+    pos = 0
+    it = group.iterator
+    while (it.hasNext) it.next() match {
+      case CopiedModule(shape, _, gsm: GraphStageModule) ⇒
+        shape.outlets.iterator.zip(gsm.shape.outlets.iterator).foreach {
+          case (out, orig) ⇒
+            if (outConns.containsKey(out)) {
+              val idx = outConns.remove(out)
+              outsB2(idx) = orig
+              outOwnersB2(idx) = pos
+            } else {
+              outsB3.add(orig)
+              outOwnersB3.add(pos)
+              outlets.add(out)
+            }
+        }
+        pos += 1
+    }
+
+    val shape = AmorphousShape(inlets.asScala.to[immutable.Seq], outlets.asScala.to[immutable.Seq])
+
+    val connStart = insB1.size
+    val conns = insB2.size
+    val outStart = connStart + conns
+    val size = outStart + outsB3.size
+
+    val ins = new Array[Inlet[_]](size)
+    copyToArray(insB2.iterator, ins, copyToArray(insB1.iterator, ins, 0))
+
+    val inOwners = new Array[Int](size)
+    Arrays.fill(inOwners, copyToArray(inOwnersB2.iterator, inOwners, copyToArray(inOwnersB1.iterator, inOwners, 0)), size, -1)
+
+    val outs = new Array[Outlet[_]](size)
+    System.arraycopy(outsB2, 0, outs, connStart, conns)
+    copyToArray(outsB3.iterator, outs, outStart)
+
+    val outOwners = new Array[Int](size)
+    Arrays.fill(outOwners, 0, connStart, -1)
+    System.arraycopy(outOwnersB2, 0, outOwners, connStart, conns)
+    copyToArray(outOwnersB3.iterator, outOwners, outStart)
+
+    // FIXME attributes should contain some naming info and async boundary where needed
+    GraphModule(new GraphInterpreter.GraphAssembly(stages, attributes, ins, inOwners, outs, outOwners), shape, Attributes.none, matValIDs)
+  }
+
+  @tailrec private def copyToArray[T](it: ju.Iterator[T], array: Array[T], idx: Int): Int =
+    if (it.hasNext) {
+      array(idx) = it.next()
+      copyToArray(it, array, idx + 1)
+    } else idx
+
   private def descend(m: Module,
                       inheritedAttributes: Attributes,
-                      struct: StructuralInfo,
+                      struct: BuildStructuralInfo,
                       openGroup: ju.Set[Module],
                       indent: String): MaterializedValueNode = {
     def log(msg: String): Unit = println(indent + msg)
@@ -120,9 +241,17 @@ object Fusing {
       else throw new IllegalArgumentException("null encountered: " + msg)
   }
 
-  final class StructuralInfo {
+  final case class StructuralInfo(upstreams: immutable.Map[InPort, OutPort], downstreams: immutable.Map[OutPort, InPort])
+
+  final class BuildStructuralInfo {
+    def toInfo: StructuralInfo =
+      StructuralInfo(immutable.Map.empty ++ upstreams.asScala,
+        immutable.Map.empty ++ downstreams.asScala)
+
     val modules: ju.Set[Module] = new ju.HashSet
     val groups: ju.Deque[ju.Set[Module]] = new ju.LinkedList
+
+    val outGroup: ju.Map[OutPort, ju.Set[Module]] = new ju.HashMap
 
     def replace(oldMod: Module, newMod: Module, localGroup: ju.Set[Module]): Unit = {
       modules.remove(oldMod)
@@ -191,6 +320,7 @@ object Fusing {
       if (Debug) println(indent + s"adding copy ${hash(copy)} ${printShape(copy.shape)} of ${printShape(m.shape)}")
       group.add(copy)
       modules.add(copy)
+      copy.shape.outlets.foreach(o ⇒ outGroup.put(o, group))
       m.shape.inlets.iterator.zip(copy.shape.inlets.iterator).foreach { p ⇒ addMapping(p._1, p._2, newIns) }
       m.shape.outlets.iterator.zip(copy.shape.outlets.iterator).foreach { p ⇒ addMapping(p._1, p._2, newOuts) }
       copy.copyOf match {

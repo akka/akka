@@ -4,6 +4,7 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
+import java.{ util ⇒ ju }
 import akka.actor._
 import akka.event.Logging
 import akka.dispatch.Dispatchers
@@ -88,7 +89,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
         name
       }
 
-      override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes): Any = {
+      override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes, matVal: ju.Map[Module, Any]): Unit = {
 
         def newMaterializationContext() =
           new MaterializationContext(ActorMaterializerImpl.this, effectiveAttributes, stageName(effectiveAttributes))
@@ -96,18 +97,18 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
           case sink: SinkModule[_, _] ⇒
             val (sub, mat) = sink.create(newMaterializationContext())
             assignPort(sink.shape.inlet, sub.asInstanceOf[Subscriber[Any]])
-            mat
+            matVal.put(atomic, mat)
           case source: SourceModule[_, _] ⇒
             val (pub, mat) = source.create(newMaterializationContext())
             assignPort(source.shape.outlet, pub.asInstanceOf[Publisher[Any]])
-            mat
+            matVal.put(atomic, mat)
 
           // FIXME: Remove this, only stream-of-stream ops need it
           case stage: StageModule ⇒
             val (processor, mat) = processorFor(stage, effectiveAttributes, effectiveSettings(effectiveAttributes))
             assignPort(stage.inPort, processor)
             assignPort(stage.outPort, processor)
-            mat
+            matVal.put(atomic, mat)
 
           case tls: TlsModule ⇒ // TODO solve this so TlsModule doesn't need special treatment here
             val es = effectiveSettings(effectiveAttributes)
@@ -126,17 +127,22 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
             assignPort(tls.plainIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.UserIn))
             assignPort(tls.cipherIn, FanIn.SubInput[Any](impl, SslTlsCipherActor.TransportIn))
 
-          case graph: GraphModule ⇒ matGraph(graph, effectiveAttributes)
+            matVal.put(atomic, ())
+
+          case graph: GraphModule ⇒
+            matGraph(graph, effectiveAttributes, matVal)
 
           case stage: GraphStageModule ⇒
-            val graph = GraphModule(GraphAssembly(stage.shape.inlets, stage.shape.outlets, stage.stage), stage.shape, stage.attributes)
-            matGraph(graph, effectiveAttributes)
+            val graph =
+              GraphModule(GraphAssembly(stage.shape.inlets, stage.shape.outlets, stage.stage),
+                stage.shape, stage.attributes, Array(stage))
+            matGraph(graph, effectiveAttributes, matVal)
         }
       }
 
-      private def matGraph(graph: GraphModule, effectiveAttributes: Attributes): Any = {
+      private def matGraph(graph: GraphModule, effectiveAttributes: Attributes, matVal: ju.Map[Module, Any]): Unit = {
         val calculatedSettings = effectiveSettings(effectiveAttributes)
-        val (inHandlers, outHandlers, logics, mat) = graph.assembly.materialize(effectiveAttributes)
+        val (inHandlers, outHandlers, logics) = graph.assembly.materialize(effectiveAttributes, graph.matValIDs, matVal, registerSrc)
 
         val props = ActorGraphInterpreter.props(
           graph.assembly, inHandlers, outHandlers, logics, graph.shape, calculatedSettings, ActorMaterializerImpl.this)
@@ -151,7 +157,6 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
           impl ! ActorGraphInterpreter.ExposedPublisher(i, publisher)
           assignPort(outlet, publisher)
         }
-        mat
       }
 
       // FIXME: Remove this, only stream-of-stream ops need it

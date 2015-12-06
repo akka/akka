@@ -21,7 +21,8 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes) extends Module {
+private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
+                                       matValIDs: Array[Module]) extends Module {
   override def subModules: Set[Module] = Set.empty
   override def withAttributes(newAttr: Attributes): Module = copy(attributes = newAttr)
 

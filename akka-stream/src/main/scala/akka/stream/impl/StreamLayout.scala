@@ -19,6 +19,7 @@ import scala.collection.JavaConverters._
 import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
+import akka.stream.impl.fusing.GraphModule
 
 /**
  * INTERNAL API
@@ -83,7 +84,12 @@ private[akka] object StreamLayout {
         case Combine(f, left, right) ⇒ atomics(left) ++ atomics(right)
       }
     val atomic = atomics(materializedValueComputation)
-    if ((atomic -- subModules - m).nonEmpty) problems ::= s"computation refers to non-existent modules [${atomic -- subModules - m mkString ","}]"
+    val graphValues = subModules.flatMap {
+      case GraphModule(_, _, _, mvids) ⇒ mvids
+      case _                           ⇒ Nil
+    }
+    if ((atomic -- subModules -- graphValues - m).nonEmpty)
+      problems ::= s"computation refers to non-existent modules [${atomic -- subModules -- graphValues - m mkString ","}]"
 
     val print = doPrint || problems.nonEmpty
 
@@ -104,6 +110,11 @@ private[akka] object StreamLayout {
   // TODO: Cycles
 
   sealed trait MaterializedValueNode {
+    /*
+     * These nodes are used in hash maps and therefore must have efficient implementations
+     * of hashCode and equals. There is no value in allowing aliases to be equal, so using
+     * reference equality.
+     */
     override def hashCode: Int = super.hashCode
     override def equals(other: Any): Boolean = super.equals(other)
   }
@@ -193,7 +204,7 @@ private[akka] object StreamLayout {
       if (Debug) validate(this)
 
       CompositeModule(
-        subModules = if (this.isSealed) Set(this) else this.subModules,
+        if (this.isSealed) Set(this) else this.subModules,
         shape,
         downstreams,
         upstreams,
@@ -283,7 +294,7 @@ private[akka] object StreamLayout {
       if (Debug) validate(this)
 
       CompositeModule(
-        subModules = Set(this),
+        Set(this),
         shape,
         /*
          * Composite modules always maintain the flattened upstreams/downstreams map (i.e. they contain all the
@@ -368,7 +379,8 @@ private[akka] object StreamLayout {
     override val downstreams: Map[OutPort, InPort],
     override val upstreams: Map[InPort, OutPort],
     override val materializedValueComputation: MaterializedValueNode,
-    attributes: Attributes) extends Module {
+    attributes: Attributes,
+    extra: Any = null) extends Module {
 
     override def replaceShape(s: Shape): Module = {
       shape.requireSamePortsAs(s)
@@ -494,6 +506,8 @@ private[stream] final class VirtualProcessor[T] extends Processor[T, T] {
  */
 private[stream] object MaterializerSession {
   class MaterializationPanic(cause: Throwable) extends RuntimeException("Materialization aborted.", cause) with NoStackTrace
+
+  final val Debug = false
 }
 
 /**
@@ -578,7 +592,8 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
     parent and current
 
   private val matValSrc: ju.Map[MaterializedValueNode, List[MaterializedValueSource[Any]]] = new ju.HashMap
-  private def registerSrc(ms: MaterializedValueSource[Any]): Unit = {
+  def registerSrc(ms: MaterializedValueSource[Any]): Unit = {
+    if (MaterializerSession.Debug) println(s"registering source $ms")
     matValSrc.get(ms.computation) match {
       case null ⇒ matValSrc.put(ms.computation, ms :: Nil)
       case xs   ⇒ matValSrc.put(ms.computation, ms :: xs)
@@ -594,9 +609,9 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
         case GraphStageModule(shape, attributes, mv: MaterializedValueSource[_]) ⇒
           val copy = mv.copy.asInstanceOf[MaterializedValueSource[Any]]
           registerSrc(copy)
-          materializeAtomic(copy.module, subEffectiveAttributes)
+          materializeAtomic(copy.module, subEffectiveAttributes, materializedValues)
         case atomic if atomic.isAtomic ⇒
-          materializedValues.put(atomic, materializeAtomic(atomic, subEffectiveAttributes))
+          materializeAtomic(atomic, subEffectiveAttributes, materializedValues)
         case copied: CopiedModule ⇒
           enterScope(copied)
           materializedValues.put(copied, materializeModule(copied, subEffectiveAttributes))
@@ -606,25 +621,36 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
       }
     }
 
-    resolveMaterialized(module.materializedValueComputation, materializedValues)
+    if (MaterializerSession.Debug) {
+      println("RESOLVING")
+      println(s"  module = $module")
+      println(s"  computation = ${module.materializedValueComputation}")
+      println(s"  matValSrc = $matValSrc")
+      println(s"  matVals = $materializedValues")
+    }
+    resolveMaterialized(module.materializedValueComputation, materializedValues, "  ")
   }
 
   protected def materializeComposite(composite: Module, effectiveAttributes: Attributes): Any = {
     materializeModule(composite, effectiveAttributes)
   }
 
-  protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes): Any
+  protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes, matVal: ju.Map[Module, Any]): Unit
 
-  private def resolveMaterialized(matNode: MaterializedValueNode, matVal: ju.Map[Module, Any]): Any = {
+  private def resolveMaterialized(matNode: MaterializedValueNode, matVal: ju.Map[Module, Any], indent: String): Any = {
+    if (MaterializerSession.Debug) println(indent + matNode)
     val ret = matNode match {
       case Atomic(m)          ⇒ matVal.get(m)
-      case Combine(f, d1, d2) ⇒ f(resolveMaterialized(d1, matVal), resolveMaterialized(d2, matVal))
-      case Transform(f, d)    ⇒ f(resolveMaterialized(d, matVal))
+      case Combine(f, d1, d2) ⇒ f(resolveMaterialized(d1, matVal, indent + "  "), resolveMaterialized(d2, matVal, indent + "  "))
+      case Transform(f, d)    ⇒ f(resolveMaterialized(d, matVal, indent + "  "))
       case Ignore             ⇒ ()
     }
+    if (MaterializerSession.Debug) println(indent + s"result = $ret")
     matValSrc.remove(matNode) match {
       case null ⇒ // nothing to do
-      case srcs ⇒ srcs.foreach(_.setValue(ret))
+      case srcs ⇒
+        if (MaterializerSession.Debug) println(indent + s"triggering sources $srcs")
+        srcs.foreach(_.setValue(ret))
     }
     ret
   }

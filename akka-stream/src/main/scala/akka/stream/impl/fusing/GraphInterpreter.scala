@@ -4,14 +4,17 @@
 package akka.stream.impl.fusing
 
 import java.util.Arrays
-
 import akka.event.LoggingAdapter
 import akka.stream.stage._
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.stream._
+import akka.stream.impl.StreamLayout._
+import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
+import java.{ util ⇒ ju }
+import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 
 /**
  * INTERNAL API
@@ -113,9 +116,11 @@ private[stream] object GraphInterpreter {
      *  - array of the logics
      *  - materialized value
      */
-    def materialize(inheritedAttributes: Attributes): (Array[InHandler], Array[OutHandler], Array[GraphStageLogic], Any) = {
+    def materialize(inheritedAttributes: Attributes,
+                    copiedModules: Array[Module],
+                    matVal: ju.Map[Module, Any],
+                    register: MaterializedValueSource[Any] ⇒ Unit): (Array[InHandler], Array[OutHandler], Array[GraphStageLogic]) = {
       val logics = Array.ofDim[GraphStageLogic](stages.length)
-      var finalMat: Any = ()
 
       var i = 0
       while (i < stages.length) {
@@ -140,10 +145,12 @@ private[stream] object GraphInterpreter {
           idx += 1
         }
 
-        // FIXME: Support for materialized values in fused islands is not yet figured out!
-        val logicAndMat = stages(i).createLogicAndMaterializedValue(inheritedAttributes and originalAttributes(i))
-        // FIXME: Current temporary hack to support non-fused stages. If there is one stage that will be under index 0.
-        if (i == 0) finalMat = logicAndMat._2
+        val stage = stages(i)
+        if (stage.isInstanceOf[MaterializedValueSource[_]])
+          register(stage.asInstanceOf[MaterializedValueSource[Any]])
+
+        val logicAndMat = stage.createLogicAndMaterializedValue(inheritedAttributes and originalAttributes(i))
+        matVal.put(copiedModules(i), logicAndMat._2)
 
         logics(i) = logicAndMat._1
         i += 1
@@ -174,7 +181,7 @@ private[stream] object GraphInterpreter {
         i += 1
       }
 
-      (inHandlers, outHandlers, logics, finalMat)
+      (inHandlers, outHandlers, logics)
     }
 
     override def toString: String =
