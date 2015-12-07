@@ -1435,6 +1435,35 @@ trait FlowOps[+Out, +Mat] {
     }
 
   /**
+   * Prepend the given [[Source]] to this [[Flow]], meaning that before elements
+   * are generated from this Flow, the Source's elements will be produced until it
+   * is exhausted, at which point Flow elements will start being produced.
+   *
+   * Note that this Flow will be materialized together with the [[Source]] and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If the given [[Source]] gets upstream error - no elements from this [[Flow]] will be pulled.
+   *
+   * '''Emits when''' element is available from the given [[Source]] or from current stream when the [[Source]] is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' this [[Flow]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def prepend[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Repr[U] =
+    via(prependGraph(that))
+
+  protected def prependGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
+    GraphDSL.create(that) { implicit b ⇒
+      r ⇒
+        val merge = b.add(Concat[U]())
+        r ~> merge.in(0)
+        FlowShape(merge.in(1), merge.out)
+    }
+
+  /**
    * Concatenates this [[Flow]] with the given [[Source]] so the first element
    * emitted by that source is emitted after the last element of this
    * flow.
@@ -1606,6 +1635,21 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def concatMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
     viaMat(concatGraph(that))(matF)
+
+  /**
+   * Prepend the given [[Source]] to this [[Flow]], meaning that before elements
+   * are generated from this Flow, the Source's elements will be produced until it
+   * is exhausted, at which point Flow elements will start being produced.
+   *
+   * Note that this Flow will be materialized together with the [[Source]] and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If the given [[Source]] gets upstream error - no elements from this [[Flow]] will be pulled.
+   *
+   * @see [[#prepend]].
+   */
+  def prependMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+    viaMat(prependGraph(that))(matF)
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
