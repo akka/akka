@@ -713,6 +713,27 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
     new SubSource(delegate.concat(that))
 
   /**
+   * Prepend the given [[Source]] to this [[Flow]], meaning that before elements
+   * are generated from this Flow, the Source's elements will be produced until it
+   * is exhausted, at which point Flow elements will start being produced.
+   *
+   * Note that this Flow will be materialized together with the [[Source]] and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If the given [[Source]] gets upstream error - no elements from this [[Flow]] will be pulled.
+   *
+   * '''Emits when''' element is available from the given [[Source]] or from current stream when the [[Source]] is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' this [[Flow]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def prepend[T >: Out, M](that: Graph[SourceShape[T], M]): SubSource[T, Mat] =
+    new SubSource(delegate.prepend(that))
+
+  /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
    * through will also be sent to the [[Sink]].
    *
