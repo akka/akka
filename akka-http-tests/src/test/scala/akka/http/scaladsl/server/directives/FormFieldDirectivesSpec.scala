@@ -41,21 +41,21 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   "The 'formFields' extraction directive" should {
     "properly extract the value of www-urlencoded form fields" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName, "age".as[Int], 'sex?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
     }
     "properly extract the value of www-urlencoded form fields when an explicit unmarshaller is given" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName, "age".as(HexInt), 'sex?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age".as(HexInt), 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike66Nonefalse" }
     }
     "properly extract the value of multipart form fields" in {
       Post("/", multipartForm) ~> {
-        formFields('firstName, "age", 'sex?, "VIP" ? nodeSeq) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age", 'sex.?, "VIP" ? nodeSeq) { (firstName, age, sex, vip) ⇒
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike<int>42</int>None<b>yes</b>" }
@@ -78,7 +78,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     "properly extract the value if only a urlencoded deserializer is available for a multipart field that comes without a" +
       "Content-Type (or text/plain)" in {
         Post("/", multipartForm) ~> {
-          formFields('firstName, "age", 'sex?, "VIPBoolean" ? false) { (firstName, age, sex, vip) ⇒
+          formFields('firstName, "age", 'sex.?, "VIPBoolean" ? false) { (firstName, age, sex, vip) ⇒
             complete(firstName + age + sex + vip)
           }
         } ~> check {
@@ -96,7 +96,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     }
     "work even if only a FromEntityUnmarshaller is available for a www-urlencoded field" in {
       Post("/", urlEncodedFormWithVip) ~> {
-        formFields('firstName, "age", 'sex?, "super" ? nodeSeq) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age", 'sex.?, "super" ? nodeSeq) { (firstName, age, sex, vip) ⇒
           complete(firstName + age + sex + vip)
         }
       } ~> check {
@@ -107,17 +107,17 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   "The 'formField' requirement directive" should {
     "block requests that do not contain the required formField" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('name ! "Mr. Mike") { completeOk }
+        formField('name ! "Mr. Mike") { completeOk }
       } ~> check { handled shouldEqual false }
     }
     "block requests that contain the required parameter but with an unmatching value" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName ! "Pete") { completeOk }
+        formField('firstName ! "Pete") { completeOk }
       } ~> check { handled shouldEqual false }
     }
     "let requests pass that contain the required parameter with its required value" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName ! "Mike") { completeOk }
+        formField('firstName ! "Mike") { completeOk }
       } ~> check { response shouldEqual Ok }
     }
   }
@@ -125,17 +125,17 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   "The 'formField' requirement with explicit unmarshaller directive" should {
     "block requests that do not contain the required formField" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('oldAge.as(HexInt) ! 78) { completeOk }
+        formField('oldAge.as(HexInt) ! 78) { completeOk }
       } ~> check { handled shouldEqual false }
     }
     "block requests that contain the required parameter but with an unmatching value" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('age.as(HexInt) ! 78) { completeOk }
+        formField('age.as(HexInt) ! 78) { completeOk }
       } ~> check { handled shouldEqual false }
     }
     "let requests pass that contain the required parameter with its required value" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('age.as(HexInt) ! 66 /* hex! */ ) { completeOk }
+        formField('age.as(HexInt) ! 66 /* hex! */ ) { completeOk }
       } ~> check { response shouldEqual Ok }
     }
   }
@@ -143,22 +143,22 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   "The 'formField' repeated directive" should {
     "extract an empty Iterable when the parameter is absent" in {
       Post("/", FormData("age" -> "42")) ~> {
-        formFields('hobby.*) { echoComplete }
+        formField('hobby.*) { echoComplete }
       } ~> check { responseAs[String] === "List()" }
     }
     "extract all occurrences into an Iterable when parameter is present" in {
       Post("/", FormData("age" -> "42", "hobby" -> "cooking", "hobby" -> "reading")) ~> {
-        formFields('hobby.*) { echoComplete }
+        formField('hobby.*) { echoComplete }
       } ~> check { responseAs[String] === "List(cooking, reading)" }
     }
     "extract as Iterable[Int]" in {
       Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "5")) ~> {
-        formFields('number.as[Int]*) { echoComplete }
+        formField('number.as[Int].*) { echoComplete }
       } ~> check { responseAs[String] === "List(3, 5)" }
     }
     "extract as Iterable[Int] with an explicit deserializer" in {
       Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "A")) ~> {
-        formFields('number.as(HexInt)*) { echoComplete }
+        formField('number.as(HexInt).*) { echoComplete }
       } ~> check { responseAs[String] === "List(3, 10)" }
     }
   }
