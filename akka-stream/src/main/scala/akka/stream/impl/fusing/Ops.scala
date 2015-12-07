@@ -880,9 +880,10 @@ private[stream] class TakeWithin[T](timeout: FiniteDuration) extends SimpleLinea
 }
 
 private[stream] class DropWithin[T](timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
-  private var allow = false
-
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+
+    private var allow = false
+
     setHandler(in, new InHandler {
       override def onPush(): Unit =
         if (allow) push(out, grab(in))
