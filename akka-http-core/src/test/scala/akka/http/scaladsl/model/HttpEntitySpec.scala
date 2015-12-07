@@ -9,7 +9,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.{ Promise, Await }
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, MustMatchers, FreeSpec }
-import org.scalatest.matchers.Matcher
+import org.scalatest.matchers.{ MatchResult, Matcher }
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
@@ -17,12 +17,15 @@ import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.impl.util.StreamUtils
 
+import scala.util.Random
+
 class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   val tpe: ContentType = ContentTypes.`application/octet-stream`
   val abc = ByteString("abc")
   val de = ByteString("de")
   val fgh = ByteString("fgh")
   val ijk = ByteString("ijk")
+  val longByteString = ByteString(Random.alphanumeric.take(6000).mkString)
 
   val testConf: Config = ConfigFactory.parseString("""
   akka.event-handlers = ["akka.testkit.TestEventListener"]
@@ -117,6 +120,38 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
           transformTo(Strict(tpe, doubleChars("abcfghijk") ++ trailer))
       }
     }
+    "support toString" - {
+      "Strict with binary MediaType" in {
+        val binaryType = ContentTypes.`application/octet-stream`
+        val entity = Strict(binaryType, abc)
+        entity must renderStrictDataAs(entity.data.toString())
+      }
+      "Strict with non-binary MediaType and less than 4000 bytes" in {
+        val nonBinaryType = ContentTypes.`application/json`
+        val entity = Strict(nonBinaryType, abc)
+        entity must renderStrictDataAs(entity.data.decodeString(nonBinaryType.charset.value))
+      }
+      "Strict with non-binary MediaType and over 4000 bytes" in {
+        val nonBinaryType = ContentTypes.`application/json`
+        val entity = Strict(nonBinaryType, longByteString)
+        val expectedRendering =
+          entity.data.decodeString(nonBinaryType.charset.value).take(4000) +
+            " ... (and 2000 more chars)"
+        entity must renderStrictDataAs(expectedRendering)
+      }
+      "Default" in {
+        val entity = Default(tpe, 11, source(abc, de, fgh, ijk))
+        entity.toString must include(entity.productPrefix)
+      }
+      "CloseDelimited" in {
+        val entity = CloseDelimited(tpe, source(abc, de, fgh, ijk))
+        entity.toString must include(entity.productPrefix)
+      }
+      "Chunked" in {
+        val entity = Chunked(tpe, source(Chunk(abc)))
+        entity.toString must include(entity.productPrefix)
+      }
+    }
   }
 
   def source[T](elems: T*) = Source(elems.toList)
@@ -134,6 +169,15 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
     equal(strict).matcher[Strict].compose { x ⇒
       val transformed = x.transformDataBytes(duplicateBytesTransformer)
       Await.result(transformed.toStrict(250.millis), 250.millis)
+    }
+
+  def renderStrictDataAs(dataRendering: String): Matcher[Strict] =
+    Matcher { strict: Strict ⇒
+      val expectedRendering = s"${strict.productPrefix}(${strict.contentType},$dataRendering)"
+      MatchResult(
+        strict.toString == expectedRendering,
+        strict.toString + " != " + expectedRendering,
+        strict.toString + " == " + expectedRendering)
     }
 
   def duplicateBytesTransformer(): Flow[ByteString, ByteString, Unit] =

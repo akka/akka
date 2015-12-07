@@ -16,6 +16,7 @@ import akka.stream.stage._
 import akka.stream._
 import akka.{ japi, stream }
 import akka.http.javadsl.model.HttpEntityStrict
+import akka.http.scaladsl.model.ContentType.{ NonBinary, Binary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -239,6 +240,21 @@ object HttpEntity {
       else Default(contentType, data.length, limitableByteSource(Source.single(data))) withSizeLimit maxBytes
 
     override def productPrefix = "HttpEntity.Strict"
+
+    override def toString = {
+      val dataAsString = contentType match {
+        case _: Binary ⇒
+          data.toString()
+        case nb: NonBinary ⇒
+          val decodedString = data.decodeString(nb.charset.value)
+          if (decodedString.length > 4000)
+            decodedString.take(4000) + s" ... (and ${decodedString.length - 4000} more chars)"
+          else
+            decodedString
+      }
+
+      s"$productPrefix($contentType,$dataAsString)"
+    }
   }
 
   /**
