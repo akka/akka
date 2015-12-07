@@ -8,14 +8,11 @@ import akka.http.javadsl.server.RequestVal
 import akka.http.javadsl.server.values.FormField
 import akka.http.scaladsl.common.{ StrictForm, NameUnmarshallerReceptacle, NameReceptacle }
 import akka.http.scaladsl.unmarshalling._
-import akka.http.scaladsl.util.FastFuture
 import akka.japi.{ Option ⇒ JOption }
 
-import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.ClassTag
-import akka.http.scaladsl.server.directives.FormFieldDirectives
+import akka.http.scaladsl.server.directives.FormFieldDirectives._
 import akka.http.scaladsl.server.{ Directives, Directive1 }
-import FormFieldDirectives._
 
 /**
  * INTERNAL API
