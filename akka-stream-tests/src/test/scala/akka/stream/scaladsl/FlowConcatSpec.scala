@@ -40,6 +40,23 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       subs.expectComplete()
     }
 
+    "be able to prepend a Source to a Flow" in {
+      val s1: Source[String, _] = Source(List(1, 2, 3)).map(_.toString + "-s")
+      val s2: Source[Int, _] = Source(List(4, 5, 6))
+      val f2: Flow[Int, String, _] = Flow[Int].map(_.toString + "-s")
+
+      val subs = TestSubscriber.manualProbe[Any]()
+      val subSink = Sink.asPublisher[Any](false)
+
+      val (_, res) = f2.prepend(s1).runWith(s2, subSink)
+
+      res.subscribe(subs)
+      val sub = subs.expectSubscription()
+      sub.request(9)
+      (1 to 6).foreach(e ⇒ subs.expectNext(e.toString + "-s"))
+      subs.expectComplete()
+    }
+
     commonTests()
 
     "work with one immediately completed and one nonempty publisher" in assertAllStagesStopped {

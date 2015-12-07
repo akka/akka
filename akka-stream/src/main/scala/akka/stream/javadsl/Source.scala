@@ -447,6 +447,43 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.concatMat(that)(combinerToScala(matF)))
 
   /**
+   * Prepend the given [[Source]] to this one, meaning that once the given source
+   * is exhausted and all result elements have been generated, the current source's
+   * elements will be produced.
+   *
+   * Note that the current [[Source]] is materialized together with this Flow and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If the given [[Source]] gets upstream error - no elements from this [[Source]] will be pulled.
+   *
+   * '''Emits when''' element is available from current source or from the given [[Source]] when current is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def prepend[T >: Out, M](that: Graph[SourceShape[T], M]): javadsl.Source[T, Mat] =
+    new Source(delegate.prepend(that))
+
+  /**
+   * Prepend the given [[Source]] to this one, meaning that once the given source
+   * is exhausted and all result elements have been generated, the current source's
+   * elements will be produced.
+   *
+   * Note that the current [[Source]] is materialized together with this Flow and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If the given [[Source]] gets upstream error - no elements from this [[Source]] will be pulled.
+   *
+   * @see [[#prepend]].
+   */
+  def prependMat[T >: Out, M, M2](that: Graph[SourceShape[T], M],
+                                  matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+    new Source(delegate.prependMat(that)(combinerToScala(matF)))
+
+  /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
    * through will also be sent to the [[Sink]].
    *
