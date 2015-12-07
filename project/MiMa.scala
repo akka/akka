@@ -565,12 +565,14 @@ object MiMa extends AutoPlugin {
 
     Map(
       "2.3.11" -> Seq(
-        ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.clearActorFields"), // #17805, incomatibility with 2.4.x fixed in 2.3.12
+        ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.clearActorFields"), // #17805, incompatibility with 2.4.x fixed in 2.3.12
         ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Pair.toString") // reported on PR validation machine which uses Java 1.8.0_45
       ),
       "2.3.14" -> bcIssuesBetween23and24,
       "2.4.0" -> Seq(
         FilterAnyProblem("akka.remote.transport.ProtocolStateActor"),
+        FilterAnyProblem("akka.persistence.journal.inmem.InmemJournal"),
+        FilterAnyProblem("akka.persistence.journal.inmem.InmemStore"),
 
         //#18353 Changes to methods and fields private to remoting actors
         ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointManager.retryGateEnabled"),
