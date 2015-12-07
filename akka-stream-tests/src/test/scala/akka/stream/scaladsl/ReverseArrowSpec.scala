@@ -77,8 +77,9 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work from UniformFanInShape" in {
       Await.result(RunnableGraph.fromGraph(GraphDSL.create(sink) { implicit b ⇒
         s ⇒
-          val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](1))
+          val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](2))
           f <~ source
+          f <~ Source.empty
           f ~> s
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
@@ -87,8 +88,9 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work from UniformFanOutShape" in {
       Await.result(RunnableGraph.fromGraph(GraphDSL.create(sink) { implicit b ⇒
         s ⇒
-          val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](1))
+          val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](2))
           f <~ source
+          f ~> Sink.ignore
           f ~> s
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
@@ -133,8 +135,9 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work towards UniformFanInShape" in {
       Await.result(RunnableGraph.fromGraph(GraphDSL.create(sink) { implicit b ⇒
         s ⇒
-          val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](1))
+          val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](2))
           s <~ f
+          Source.empty ~> f
           source ~> f
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
@@ -143,8 +146,9 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "fail towards already full UniformFanInShape" in {
       Await.result(RunnableGraph.fromGraph(GraphDSL.create(sink) { implicit b ⇒
         s ⇒
-          val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](1))
+          val f: UniformFanInShape[Int, Int] = b.add(Merge[Int](2))
           val src = b.add(source)
+          Source.empty ~> f
           src ~> f
           (the[IllegalArgumentException] thrownBy (s <~ f <~ src)).getMessage should include("no more inlets free")
           ClosedShape
@@ -154,8 +158,9 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work towards UniformFanOutShape" in {
       Await.result(RunnableGraph.fromGraph(GraphDSL.create(sink) { implicit b ⇒
         s ⇒
-          val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](1))
+          val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](2))
           s <~ f
+          Sink.ignore <~ f
           source ~> f
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
@@ -164,9 +169,11 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "fail towards already full UniformFanOutShape" in {
       Await.result(RunnableGraph.fromGraph(GraphDSL.create(sink) { implicit b ⇒
         s ⇒
-          val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](1))
+          val f: UniformFanOutShape[Int, Int] = b.add(Broadcast[Int](2))
+          val sink2: SinkShape[Int] = b.add(Sink.ignore)
           val src = b.add(source)
           src ~> f
+          sink2 <~ f
           (the[IllegalArgumentException] thrownBy (s <~ f <~ src)).getMessage should include("already connected")
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
