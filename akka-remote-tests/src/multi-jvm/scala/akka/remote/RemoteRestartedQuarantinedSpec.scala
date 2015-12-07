@@ -100,6 +100,7 @@ abstract class RemoteRestartedQuarantinedSpec
       runOn(second) {
         val addr = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val firstAddress = node(first).address
+        system.eventStream.subscribe(testActor, classOf[ThisActorSystemQuarantinedEvent])
 
         val (_, ref) = identifyWithUid(first, "subject")
 
@@ -112,6 +113,10 @@ abstract class RemoteRestartedQuarantinedSpec
               ref ! "boo!"
             }
           }
+        }
+
+        expectMsgPF(10 seconds) {
+          case ThisActorSystemQuarantinedEvent(local, remote) ⇒
         }
 
         enterBarrier("still-quarantined")

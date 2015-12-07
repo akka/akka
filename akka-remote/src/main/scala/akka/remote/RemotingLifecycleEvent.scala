@@ -3,6 +3,7 @@
  */
 package akka.remote
 
+import akka.event.Logging.LogLevel
 import akka.event.{ LoggingAdapter, Logging }
 import akka.actor.{ ActorSystem, Address }
 
@@ -85,6 +86,12 @@ final case class QuarantinedEvent(address: Address, uid: Int) extends RemotingLi
     s"Association to [$address] having UID [$uid] is irrecoverably failed. UID is now quarantined and all " +
       "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover " +
       "from this situation."
+}
+
+@SerialVersionUID(1L)
+final case class ThisActorSystemQuarantinedEvent(localAddress: Address, remoteAddress: Address) extends RemotingLifecycleEvent {
+  override def logLevel: LogLevel = Logging.WarningLevel
+  override val toString: String = s"The remote system ${remoteAddress} has quarantined this system ${localAddress}."
 }
 
 /**
