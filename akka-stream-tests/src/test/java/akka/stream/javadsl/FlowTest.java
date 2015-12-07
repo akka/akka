@@ -409,6 +409,25 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUsePrepend() {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<String> input1 = Arrays.asList("A", "B", "C");
+    final Iterable<String> input2 = Arrays.asList("D", "E", "F");
+
+    final Source<String, ?> in1 = Source.from(input1);
+    final Source<String, ?> in2 = Source.from(input2);
+    final Flow<String, String, ?> flow = Flow.of(String.class);
+    in2.via(flow.prepend(in1)).runForeach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }, materializer);
+
+    List<Object> output = Arrays.asList(probe.receiveN(6));
+    assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
+  }
+
+  @Test
   public void mustBeAbleToUsePrefixAndTail() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
