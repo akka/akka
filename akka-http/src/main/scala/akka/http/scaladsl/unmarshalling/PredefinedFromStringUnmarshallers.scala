@@ -9,28 +9,16 @@ import scala.collection.immutable
 trait PredefinedFromStringUnmarshallers {
 
   implicit val byteFromStringUnmarshaller: Unmarshaller[String, Byte] =
-    Unmarshaller.strict[String, Byte] { string ⇒
-      try string.toByte
-      catch numberFormatError(string, "8-bit signed integer")
-    }
+    Unmarshaller.strict(byteFromString)
 
   implicit val shortFromStringUnmarshaller: Unmarshaller[String, Short] =
-    Unmarshaller.strict[String, Short] { string ⇒
-      try string.toShort
-      catch numberFormatError(string, "16-bit signed integer")
-    }
+    Unmarshaller.strict(shortFromString)
 
   implicit val intFromStringUnmarshaller: Unmarshaller[String, Int] =
-    Unmarshaller.strict[String, Int] { string ⇒
-      try string.toInt
-      catch numberFormatError(string, "32-bit signed integer")
-    }
+    Unmarshaller.strict(intFromString)
 
   implicit val longFromStringUnmarshaller: Unmarshaller[String, Long] =
-    Unmarshaller.strict[String, Long] { string ⇒
-      try string.toLong
-      catch numberFormatError(string, "64-bit signed integer")
-    }
+    Unmarshaller.strict(longFromString)
 
   val HexByte: Unmarshaller[String, Byte] =
     Unmarshaller.strict[String, Byte] { string ⇒
@@ -78,10 +66,38 @@ trait PredefinedFromStringUnmarshallers {
       }
     }
 
-  val CsvString: Unmarshaller[String, immutable.Seq[String]] =
+  val CsvStringSeq: Unmarshaller[String, immutable.Seq[String]] =
     Unmarshaller.strict[String, immutable.Seq[String]] { string ⇒
       string.split(",").toList
     }
+
+  val CsvByteSeq: Unmarshaller[String, immutable.Seq[Byte]] =
+    CsvStringSeq.map(_.map(byteFromString))
+
+  val CsvShortSeq: Unmarshaller[String, immutable.Seq[Short]] =
+    CsvStringSeq.map(_.map(shortFromString))
+
+  val CsvIntSeq: Unmarshaller[String, immutable.Seq[Int]] =
+    CsvStringSeq.map(_.map(intFromString))
+
+  val CsvLongSeq: Unmarshaller[String, immutable.Seq[Long]] =
+    CsvStringSeq.map(_.map(longFromString))
+
+  private def byteFromString(string: String) =
+    try string.toByte
+    catch numberFormatError(string, "8-bit signed integer")
+
+  private def shortFromString(string: String) =
+    try string.toShort
+    catch numberFormatError(string, "16-bit signed integer")
+
+  private def intFromString(string: String) =
+    try string.toInt
+    catch numberFormatError(string, "32-bit signed integer")
+
+  private def longFromString(string: String) =
+    try string.toLong
+    catch numberFormatError(string, "64-bit signed integer")
 
   private def numberFormatError(value: String, target: String): PartialFunction[Throwable, Nothing] = {
     case e: NumberFormatException ⇒
