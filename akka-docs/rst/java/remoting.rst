@@ -377,6 +377,9 @@ contains the addresses the remoting listens on.
 
 To be notified  when the remoting subsystem has been shut down, listen to ``RemotingShutdownEvent``.
 
+To be notified when the current system is quarantined by the remote system, listen to ``ThisActorSystemQuarantinedEvent``,
+which includes the addresses of local and remote ActorSystems.
+
 To intercept generic remoting related errors, listen to ``RemotingErrorEvent`` which holds the ``Throwable`` cause.
 
 Remote Security

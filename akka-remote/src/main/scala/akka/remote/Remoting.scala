@@ -441,7 +441,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   override val supervisorStrategy =
     OneForOneStrategy(loggingEnabled = false) {
-      case e @ InvalidAssociation(localAddress, remoteAddress, reason) ⇒
+      case e @ InvalidAssociation(localAddress, remoteAddress, reason, disassiciationInfo) ⇒
         keepQuarantinedOr(remoteAddress) {
           val causedBy = if (reason.getCause == null) "" else s"Caused by: [${reason.getCause.getMessage}]"
           log.warning("Tried to associate with unreachable remote address [{}]. " +
@@ -449,6 +449,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             "Reason: [{}] {}",
             remoteAddress, settings.RetryGateClosedFor.toMillis, reason.getMessage, causedBy)
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
+        }
+        disassiciationInfo.foreach {
+          case AssociationHandle.Quarantined ⇒
+            context.system.eventStream.publish(ThisActorSystemQuarantinedEvent(localAddress, remoteAddress))
+          case _ ⇒ // do nothing
         }
         Stop
 
