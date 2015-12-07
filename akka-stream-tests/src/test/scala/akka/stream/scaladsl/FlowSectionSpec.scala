@@ -33,15 +33,8 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
     }
 
     "have a nested flow with a different dispatcher" in {
-      val flow = Flow.fromGraph(GraphDSL.create() { implicit b ⇒
-        import GraphDSL.Implicits._
-        val bcast1 = b.add(Broadcast[Int](1))
-        val bcast2 = b.add(Broadcast[Int](1))
-        bcast1 ~> Flow[Int].map(sendThreadNameTo(testActor)) ~> bcast2.in
-        FlowShape(bcast1.in, bcast2.out(0))
-      }).withAttributes(dispatcher("my-dispatcher1"))
-
-      Source.single(1).via(flow).to(Sink.ignore).run()
+      Source.single(1).via(
+        Flow[Int].map(sendThreadNameTo(testActor)).withAttributes(dispatcher("my-dispatcher1"))).to(Sink.ignore).run()
 
       expectMsgType[String] should include("my-dispatcher1")
     }
@@ -51,21 +44,9 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
       val probe1 = TestProbe()
       val probe2 = TestProbe()
 
-      val flow1 = Flow.fromGraph(GraphDSL.create() { implicit b ⇒
-        import GraphDSL.Implicits._
-        val bcast1 = b.add(Broadcast[Int](1))
-        val bcast2 = b.add(Broadcast[Int](1))
-        bcast1 ~> Flow[Int].map(sendThreadNameTo(probe1.ref)) ~> bcast2.in
-        FlowShape(bcast1.in, bcast2.out(0))
-      }).withAttributes(dispatcher("my-dispatcher1"))
+      val flow1 = Flow[Int].map(sendThreadNameTo(probe1.ref)).withAttributes(dispatcher("my-dispatcher1"))
 
-      val flow2 = Flow.fromGraph(GraphDSL.create() { implicit b ⇒
-        import GraphDSL.Implicits._
-        val bcast1 = b.add(Broadcast[Int](1))
-        val bcast2 = b.add(Broadcast[Int](1))
-        bcast1 ~> flow1.via(Flow[Int].map(sendThreadNameTo(probe2.ref))) ~> bcast2.in
-        FlowShape(bcast1.in, bcast2.out(0))
-      }).withAttributes(dispatcher("my-dispatcher2"))
+      val flow2 = flow1.via(Flow[Int].map(sendThreadNameTo(probe2.ref))).withAttributes(dispatcher("my-dispatcher2"))
 
       Source.single(1).via(flow2).to(Sink.ignore).run()
 
@@ -75,8 +56,7 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
     }
 
     "include name in toString" in {
-      //FIXME: Flow has no simple toString anymore
-      pending
+      pending //FIXME: Flow has no simple toString anymore
       val n = "Uppercase reverser"
       val f1 = Flow[String].map(_.toLowerCase)
       val f2 = Flow[String].map(_.toUpperCase).map(_.reverse).named(n).map(_.toLowerCase)
