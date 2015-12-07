@@ -20,7 +20,6 @@ import akka.testkit.EventFilter
 import javax.net.ssl.SSLException
 
 class TlsEndpointVerificationSpec extends AkkaSpec("""
-    #akka.loggers = []
     akka.loglevel = DEBUG
     akka.io.tcp.trace-logging = off
     akka.io.tcp.windows-connection-abort-workaround-enabled=auto""") with ScalaFutures {
