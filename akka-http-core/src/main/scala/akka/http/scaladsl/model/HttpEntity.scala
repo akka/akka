@@ -16,9 +16,12 @@ import akka.stream.stage._
 import akka.stream._
 import akka.{ japi, stream }
 import akka.http.javadsl.model.HttpEntityStrict
+import akka.http.scaladsl.model.ContentType.{ NonBinary, Binary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
+
+import scala.util.control.NonFatal
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
@@ -239,6 +242,27 @@ object HttpEntity {
       else Default(contentType, data.length, limitableByteSource(Source.single(data))) withSizeLimit maxBytes
 
     override def productPrefix = "HttpEntity.Strict"
+
+    override def toString = {
+      val dataAsString = contentType match {
+        case _: Binary ⇒
+          data.toString()
+        case nb: NonBinary ⇒
+          try {
+            val maxBytes = 4096
+            if (data.length > maxBytes) {
+              val truncatedString = data.take(maxBytes).decodeString(nb.charset.value).dropRight(1)
+              s"$truncatedString ... (${data.length} bytes total)"
+            } else
+              data.decodeString(nb.charset.value)
+          } catch {
+            case NonFatal(e) ⇒
+              data.toString()
+          }
+      }
+
+      s"$productPrefix($contentType,$dataAsString)"
+    }
   }
 
   /**
