@@ -82,13 +82,11 @@ class SinkForeachParallelSpec extends AkkaSpec {
           Await.ready(latch, 10.seconds)
         }
       }).withAttributes(supervisionStrategy(resumingDecider)))
-      p.onFailure { case e ⇒ assert(e.getMessage.equals("err1")); Unit }
 
       latch.countDown()
       probe.expectMsgAllOf(1, 2, 4)
 
       Await.result(p, 5.seconds)
-      assert(p.isCompleted)
     }
 
     "finish after function thrown exception" in assertAllStagesStopped {
