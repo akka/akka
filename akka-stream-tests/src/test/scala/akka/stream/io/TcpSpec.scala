@@ -510,7 +510,7 @@ class TcpSpec extends AkkaSpec(
       Await.result(total, 3.seconds) should ===(1000)
     }
 
-    "xoxoxo shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
+    "shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
       val address = temporaryServerAddress()
       val firstClientConnected = Promise[Unit]()
       val takeTwoAndDropSecond = Flow[IncomingConnection].map(conn ⇒ {
