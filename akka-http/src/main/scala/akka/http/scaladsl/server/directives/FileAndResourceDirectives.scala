@@ -9,7 +9,7 @@ import java.io.File
 import java.net.{ URI, URL }
 
 import akka.stream.ActorAttributes
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ FileIO, StreamConverters }
 
 import scala.annotation.tailrec
 import akka.actor.ActorSystem
@@ -53,7 +53,7 @@ trait FileAndResourceDirectives {
             withRangeSupportAndPrecompressedMediaTypeSupportAndExtractSettings { settings ⇒
               complete {
                 HttpEntity.Default(contentType, file.length,
-                  Source.file(file).withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
+                  FileIO.fromFile(file).withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
               }
             }
           } else complete(HttpEntity.Empty)
@@ -90,7 +90,7 @@ trait FileAndResourceDirectives {
                 withRangeSupportAndPrecompressedMediaTypeSupportAndExtractSettings { settings ⇒
                   complete {
                     HttpEntity.Default(contentType, length,
-                      Source.inputStream(() ⇒ url.openStream())
+                      StreamConverters.fromInputStream(() ⇒ url.openStream())
                         .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
                   }
                 }

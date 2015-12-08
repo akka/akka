@@ -197,7 +197,7 @@ object HttpEntity {
     val fileLength = file.length
     if (fileLength > 0)
       Default(contentType, fileLength,
-        if (chunkSize > 0) Source.file(file, chunkSize) else Source.file(file))
+        if (chunkSize > 0) FileIO.fromFile(file, chunkSize) else FileIO.fromFile(file))
     else empty(contentType)
   }
 
