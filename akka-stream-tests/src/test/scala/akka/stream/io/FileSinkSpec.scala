@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.StreamTestKit
@@ -45,7 +45,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "write lines to a file" in assertAllStagesStopped {
       targetFile { f ⇒
         val completion = Source(TestByteStrings)
-          .runWith(Sink.file(f))
+          .runWith(FileIO.toFile(f))
 
         val size = Await.result(completion, 3.seconds)
         size should equal(6006)
@@ -58,7 +58,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         def write(lines: List[String]) =
           Source(lines)
             .map(ByteString(_))
-            .runWith(Sink.file(f))
+            .runWith(FileIO.toFile(f))
 
         val completion1 = write(TestLines)
         Await.result(completion1, 3.seconds)
@@ -77,7 +77,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         def write(lines: List[String] = TestLines) =
           Source(lines)
             .map(ByteString(_))
-            .runWith(Sink.file(f, append = true))
+            .runWith(FileIO.toFile(f, append = true))
 
         val completion1 = write()
         val written1 = Await.result(completion1, 3.seconds)
@@ -98,7 +98,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         implicit val timeout = Timeout(3.seconds)
 
         try {
-          Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(Sink.file(f))(materializer)
+          Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(FileIO.toFile(f))(materializer)
 
           materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
@@ -117,7 +117,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
         try {
           Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head))
-            .to(Sink.file(f))
+            .to(FileIO.toFile(f))
             .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
             .run()(materializer)
 

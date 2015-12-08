@@ -16,7 +16,7 @@ import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.io.FileSourceSpec.Settings
-import akka.stream.scaladsl.{ Source, Sink }
+import akka.stream.scaladsl.{ FileIO, Sink }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
@@ -74,7 +74,7 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       val chunkSize = 512
       val bufferAttributes = Attributes.inputBuffer(1, 2)
 
-      val p = Source.file(testFile, chunkSize)
+      val p = FileIO.fromFile(testFile, chunkSize)
         .withAttributes(bufferAttributes)
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[ByteString]()
@@ -111,7 +111,7 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
       val demandAllButOneChunks = TestText.length / chunkSize - 1
 
-      val p = Source.file(testFile, chunkSize)
+      val p = FileIO.fromFile(testFile, chunkSize)
         .withAttributes(bufferAttributes)
         .runWith(Sink.asPublisher(false))
 
@@ -140,7 +140,7 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "onError whent trying to read from file which does not exist" in assertAllStagesStopped {
-      val p = Source.file(notExistingFile).runWith(Sink.asPublisher(false))
+      val p = FileIO.fromFile(notExistingFile).runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
 
@@ -156,7 +156,7 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
         import settings._
 
         s"count lines in real file (chunkSize = $chunkSize, readAhead = $readAhead)" in {
-          val s = Source.file(manyLines, chunkSize = chunkSize)
+          val s = FileIO.fromFile(manyLines, chunkSize = chunkSize)
             .withAttributes(Attributes.inputBuffer(readAhead, readAhead))
 
           val f = s.runWith(Sink.fold(0) { case (acc, l) ⇒ acc + l.utf8String.count(_ == '\n') })
@@ -172,7 +172,7 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       implicit val timeout = Timeout(500.millis)
 
       try {
-        val p = Source.file(manyLines).runWith(TestSink.probe)(materializer)
+        val p = FileIO.fromFile(manyLines).runWith(TestSink.probe)(materializer)
 
         materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
@@ -188,7 +188,7 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       implicit val timeout = Timeout(500.millis)
 
       try {
-        val p = Source.file(manyLines)
+        val p = FileIO.fromFile(manyLines)
           .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
           .runWith(TestSink.probe)(materializer)
 
