@@ -18,7 +18,6 @@ import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, BeforeAndAfterAll, WordSpecLike }
-import sun.security.provider.ConfigFile
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, Future }
