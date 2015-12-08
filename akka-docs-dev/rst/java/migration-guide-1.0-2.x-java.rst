@@ -562,17 +562,17 @@ should be replaced by:
 SynchronousFileSource and SynchronousFileSink
 =============================================
 
-Both have been replaced by ``Source.file(…)`` and ``Sink.file(…)`` due to discoverability issues
+Both have been replaced by ``FileIO.toFile(…)`` and ``FileIO.fromFile(…)`` due to discoverability issues
 paired with names which leaked internal implementation details.
 
 Update procedure
 ----------------
 
-Replace ``SynchronousFileSource.create(`` with ``Source.file(``
+Replace ``SynchronousFileSource.create(`` with ``FileIO.fromFile(``
 
-Replace ``SynchronousFileSink.create(`` with ``Sink.file(``
+Replace ``SynchronousFileSink.create(`` with ``FileIO.toFile(``
 
-Replace ``SynchronousFileSink.appendTo(f)`` with ``Sink.file(f, true)``
+Replace ``SynchronousFileSink.appendTo(f)`` with ``FileIO.toFile(f, true)``
 
 Example
 ^^^^^^^
@@ -598,14 +598,14 @@ should be replaced by
 InputStreamSource and OutputStreamSink
 ======================================
 
-Both have been replaced by ``Source.inputStream(…)`` and ``Sink.outputStream(…)`` due to discoverability issues.
+Both have been replaced by ``StreamConverters.fromInputStream(…)`` and ``StreamConverters.fromOutputStream(…)`` due to discoverability issues.
 
 Update procedure
 ----------------
 
-Replace ``InputStreamSource.create(`` with ``Source.inputStream(``
+Replace ``InputStreamSource.create(`` with ``StreamConverters.fromInputStream(``
 
-Replace ``OutputStreamSink.create(`` with ``Sink.outputStream(``
+Replace ``OutputStreamSink.create(`` with ``StreamConverters.fromOutputStream(``
 
 Example
 ^^^^^^^
@@ -644,14 +644,14 @@ should be replaced by
 OutputStreamSource and InputStreamSink
 ======================================
 
-Both have been replaced by ``Source.outputStream(…)`` and ``Sink.inputStream(…)`` due to discoverability issues.
+Both have been replaced by ``StreamConverters.asOutputStream(…)`` and ``StreamConverters.asInputStream(…)`` due to discoverability issues.
 
 Update procedure
 ----------------
 
-Replace ``OutputStreamSource.create(`` with ``Source.outputStream(``
+Replace ``OutputStreamSource.create(`` with ``StreamConverters.asOutputStream(``
 
-Replace ``InputStreamSink.create(`` with ``Sink.inputStream(``
+Replace ``InputStreamSink.create(`` with ``StreamConverters.asInputStream(``
 
 Example
 ^^^^^^^

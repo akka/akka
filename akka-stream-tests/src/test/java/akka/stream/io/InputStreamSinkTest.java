@@ -8,6 +8,7 @@ import akka.stream.StreamTest;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.javadsl.StreamConverters;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.testkit.Utils;
 import akka.util.ByteString;
@@ -36,7 +37,7 @@ public class InputStreamSinkTest  extends StreamTest {
     public void mustReadEventViaInputStream() throws Exception {
         final FiniteDuration timeout = FiniteDuration.create(300, TimeUnit.MILLISECONDS);
 
-        final Sink<ByteString, InputStream> sink = Sink.inputStream(timeout);
+        final Sink<ByteString, InputStream> sink = StreamConverters.asInputStream(timeout);
         final List<ByteString> list = Collections.singletonList(ByteString.fromString("a"));
         final InputStream stream = Source.from(list).runWith(sink, materializer);
 

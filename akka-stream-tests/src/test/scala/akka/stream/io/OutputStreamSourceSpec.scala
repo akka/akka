@@ -11,7 +11,7 @@ import akka.stream._
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
 import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
-import akka.stream.scaladsl.{ Keep, Source }
+import akka.stream.scaladsl.{ Keep, Source, StreamConverters }
 import akka.stream.stage.OutHandler
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
@@ -70,7 +70,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   "OutputStreamSource" must {
     "read bytes from OutputStream" in assertAllStagesStopped {
-      val (outputStream, probe) = Source.outputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
+      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
       val s = probe.expectSubscription()
 
       outputStream.write(bytesArray)
@@ -81,7 +81,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "block flush call until send all buffer to downstream" in assertAllStagesStopped {
-      val (outputStream, probe) = Source.outputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
+      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
       val s = probe.expectSubscription()
 
       outputStream.write(bytesArray)
@@ -99,7 +99,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "not block flushes when buffer is empty" in assertAllStagesStopped {
-      val (outputStream, probe) = Source.outputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
+      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
       val s = probe.expectSubscription()
 
       outputStream.write(bytesArray)
@@ -117,7 +117,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "block writes when buffer is full" in assertAllStagesStopped {
-      val (outputStream, probe) = Source.outputStream().toMat(TestSink.probe[ByteString])(Keep.both)
+      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both)
         .withAttributes(Attributes.inputBuffer(16, 16)).run
       val s = probe.expectSubscription()
 
@@ -138,7 +138,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     }
 
     "throw error when write after stream is closed" in assertAllStagesStopped {
-      val (outputStream, probe) = Source.outputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
+      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
 
       probe.expectSubscription()
       outputStream.close()
@@ -151,7 +151,7 @@ class OutputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
       val materializer = ActorMaterializer()(sys)
 
       try {
-        Source.outputStream().runWith(TestSink.probe[ByteString])(materializer)
+        StreamConverters.asOutputStream().runWith(TestSink.probe[ByteString])(materializer)
         materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "outputStreamSource").get
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
