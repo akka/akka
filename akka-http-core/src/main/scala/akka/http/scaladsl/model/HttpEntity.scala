@@ -4,6 +4,9 @@
 
 package akka.http.scaladsl.model
 
+import java.nio.{ CharBuffer, ByteBuffer }
+import java.nio.charset.{ CoderResult, CharsetDecoder }
+
 import language.implicitConversions
 import java.io.File
 import java.lang.{ Iterable ⇒ JIterable, Long ⇒ JLong }
@@ -246,11 +249,12 @@ object HttpEntity {
         case _: Binary ⇒
           data.toString()
         case nb: NonBinary ⇒
-          val decodedString = data.decodeString(nb.charset.value)
-          if (decodedString.length > 4000)
-            decodedString.take(4000) + s" ... (and ${decodedString.length - 4000} more chars)"
-          else
-            decodedString
+          val maxBytes = 4096
+          if (data.length > maxBytes) {
+            val truncatedString = data.take(maxBytes).decodeString(nb.charset.value).dropRight(1)
+            s"$truncatedString ... (${data.length} bytes total)"
+          } else
+            data.decodeString(nb.charset.value)
       }
 
       s"$productPrefix($contentType,$dataAsString)"

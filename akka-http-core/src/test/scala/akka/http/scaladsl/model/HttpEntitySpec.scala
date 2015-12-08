@@ -25,13 +25,11 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   val de = ByteString("de")
   val fgh = ByteString("fgh")
   val ijk = ByteString("ijk")
-  val longByteString = ByteString(Random.alphanumeric.take(6000).mkString)
 
   val testConf: Config = ConfigFactory.parseString("""
   akka.event-handlers = ["akka.testkit.TestEventListener"]
   akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  import system.dispatcher
 
   implicit val materializer = ActorMaterializer()
   override def afterAll() = system.shutdown()
@@ -126,18 +124,16 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         val entity = Strict(binaryType, abc)
         entity must renderStrictDataAs(entity.data.toString())
       }
-      "Strict with non-binary MediaType and less than 4000 bytes" in {
+      "Strict with non-binary MediaType and less than 4096 bytes" in {
         val nonBinaryType = ContentTypes.`application/json`
         val entity = Strict(nonBinaryType, abc)
         entity must renderStrictDataAs(entity.data.decodeString(nonBinaryType.charset.value))
       }
-      "Strict with non-binary MediaType and over 4000 bytes" in {
-        val nonBinaryType = ContentTypes.`application/json`
-        val entity = Strict(nonBinaryType, longByteString)
-        val expectedRendering =
-          entity.data.decodeString(nonBinaryType.charset.value).take(4000) +
-            " ... (and 2000 more chars)"
-        entity must renderStrictDataAs(expectedRendering)
+      "Strict with non-binary MediaType and over 4096 bytes" in {
+        val utf8Type = ContentTypes.`text/plain(UTF-8)`
+        val longString = Random.alphanumeric.take(10000).mkString
+        val entity = Strict(utf8Type, ByteString.apply(longString, utf8Type.charset.value))
+        entity must renderStrictDataAs(s"${longString.take(4095)} ... (10000 bytes total)")
       }
       "Default" in {
         val entity = Default(tpe, 11, source(abc, de, fgh, ijk))
