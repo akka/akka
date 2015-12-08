@@ -238,7 +238,7 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     /**
-     * See [[HttpEntity#withSizeLimit]].#
+     * See [[HttpEntity#withSizeLimit]].
      */
     def withSizeLimit(maxBytes: Long): UniversalEntity =
       if (data.length <= maxBytes) this
