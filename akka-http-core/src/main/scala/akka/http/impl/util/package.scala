@@ -93,11 +93,11 @@ package object util {
     }
   }
 
-  private[http] def errorLogger[T](log: LoggingAdapter, msg: String): PushStage[T, T] =
+  private[http] def errorHandling[T](handler: Throwable ⇒ Unit): PushStage[T, T] =
     new PushStage[T, T] {
       override def onPush(element: T, ctx: Context[T]): SyncDirective = ctx.push(element)
       override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
-        log.error(cause, msg)
+        handler(cause)
         super.onUpstreamFailure(cause, ctx)
       }
     }
