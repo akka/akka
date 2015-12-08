@@ -37,7 +37,6 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
 
   import InputStreamPublisher._
 
-  val buffs = new DirectByteBufferPool(chunkSize, maxBuffer)
   var eofReachedAtOffset = Long.MinValue
 
   var readBytesTotal = 0L
@@ -87,6 +86,8 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
 
   /** BLOCKING I/O READ */
   def loadChunk() = try {
+
+    // this is used directly by ByteString1C, therefore create a new one every time
     val arr = Array.ofDim[Byte](chunkSize)
 
     // blocking read
