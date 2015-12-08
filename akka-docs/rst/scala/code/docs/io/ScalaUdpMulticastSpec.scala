@@ -19,10 +19,15 @@ class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")
 
   "listener" should {
     "send message back to sink" in {
-      val Some(ipv6Iface) = NetworkInterface.getNetworkInterfaces.collectFirst {
-        // awdl0 is a special interface on OSX that we cannot use
-        case iface if iface.getInetAddresses.exists(_.isInstanceOf[Inet6Address]) && iface.getDisplayName != "awdl0" => iface
+
+      def okInterfaceToUse(iface: NetworkInterface): Boolean = {
+        iface.getInetAddresses.exists(_.isInstanceOf[Inet6Address]) &&
+          // awdl0 is a special interface on OSX that we cannot use
+          iface.getDisplayName != "awdl0" &&
+          // we do not want to use virtual docker interfaces
+          !iface.getDisplayName.contains("docker")
       }
+      val Some(ipv6Iface) = NetworkInterface.getNetworkInterfaces.find(okInterfaceToUse)
 
       // host assigned link local multicast address http://tools.ietf.org/html/rfc3307#section-4.3.2
       // generate a random 32 bit multicast address with the high order bit set
