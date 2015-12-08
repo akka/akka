@@ -250,19 +250,19 @@ final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) ext
     val startInHandler = new InHandler {
       override def onPush(): Unit = {
         // if else (to avoid using Iterator[T].flatten in hot code)
-        if (start.isDefined) emitMultipe(out, Iterator(start.get, grab(in)))
+        if (start.isDefined) emitMultiple(out, Iterator(start.get, grab(in)))
         else emit(out, grab(in))
         setHandler(in, restInHandler) // switch handler
       }
 
       override def onUpstreamFinish(): Unit = {
-        emitMultipe(out, Iterator(start, end).flatten)
+        emitMultiple(out, Iterator(start, end).flatten)
         completeStage()
       }
     }
 
     val restInHandler = new InHandler {
-      override def onPush(): Unit = emitMultipe(out, Iterator(inject, grab(in)))
+      override def onPush(): Unit = emitMultiple(out, Iterator(inject, grab(in)))
 
       override def onUpstreamFinish(): Unit = {
         if (end.isDefined) emit(out, end.get)
