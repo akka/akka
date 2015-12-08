@@ -246,19 +246,21 @@ class FlowGraphCompileSpec extends AkkaSpec {
         fruitMerge ~> Sink.head[Fruit]
         "fruitMerge ~> Sink.head[Apple]" shouldNot compile
 
-        val appleMerge = b.add(Merge[Apple](1))
+        val appleMerge = b.add(Merge[Apple](2))
         "Source[Fruit](apples) ~> appleMerge" shouldNot compile
+        Source.empty[Apple] ~> appleMerge
         Source[Apple](apples) ~> appleMerge
         appleMerge ~> Sink.head[Fruit]
 
-        val appleMerge2 = b.add(Merge[Apple](1))
+        val appleMerge2 = b.add(Merge[Apple](2))
+        Source.empty[Apple] ~> appleMerge2
         Source[Apple](apples) ~> appleMerge2
         appleMerge2 ~> Sink.head[Apple]
 
-        val fruitBcast = b.add(Broadcast[Fruit](1))
-        Source[Fruit](apples) ~> fruitBcast
-        //Source[Apple](apples) ~> fruitBcast // FIXME: should compile #16997
+        val fruitBcast = b.add(Broadcast[Fruit](2))
+        Source[Apple](apples) ~> fruitBcast
         fruitBcast ~> Sink.head[Fruit]
+        fruitBcast ~> Sink.ignore
         "fruitBcast ~> Sink.head[Apple]" shouldNot compile
 
         val appleBcast = b.add(Broadcast[Apple](2))
