@@ -101,7 +101,7 @@ class FlowMapBenchmark {
 
     flow = mkMaps(Source(syncTestPublisher), numberOfMapOps) {
       if (UseGraphStageIdentity)
-        new GraphStages.Identity[Int]
+        GraphStages.identity[Int]
       else
         Flow[Int].map(identity)
     }

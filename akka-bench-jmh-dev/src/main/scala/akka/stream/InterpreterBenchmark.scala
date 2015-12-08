@@ -2,7 +2,7 @@ package akka.stream
 
 import akka.event._
 import akka.stream.impl.fusing.{ GraphInterpreterSpecKit, GraphStages, Map => MapStage }
-import akka.stream.impl.fusing.GraphStages.Identity
+import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
 import akka.stream.stage._
 import org.openjdk.jmh.annotations._
@@ -28,7 +28,7 @@ class InterpreterBenchmark {
   def graph_interpreter_100k_elements() {
     new GraphInterpreterSpecKit {
       new TestSetup {
-        val identities = Vector.fill(numberOfIds)(new Identity[Int])
+        val identities = Vector.fill(numberOfIds)(GraphStages.identity[Int])
         val source = new GraphDataSource("source", data100k)
         val sink = new GraphDataSink[Int]("sink", data100k.size)
 

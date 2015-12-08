@@ -350,6 +350,7 @@ private[stream] class ActorGraphInterpreter(
       outputs(id).requestMore(demand)
       runBatch()
     case Resume ⇒
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name}  resume")
       resumeScheduled = false
       if (interpreter.isSuspended) runBatch()
     case AsyncInput(logic, event, handler) ⇒
@@ -373,8 +374,10 @@ private[stream] class ActorGraphInterpreter(
       inputs(id).onComplete()
       runBatch()
     case OnSubscribe(id: Int, subscription: Subscription) ⇒
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onSubscribe id=$id")
       subscribesPending -= 1
       inputs(id).onSubscribe(subscription)
+      runBatch()
     case Cancel(id: Int) ⇒
       if (GraphInterpreter.Debug) println(s"${interpreter.Name}  cancel id=$id")
       outputs(id).cancel()

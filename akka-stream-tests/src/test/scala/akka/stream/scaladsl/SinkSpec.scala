@@ -23,13 +23,11 @@ class SinkSpec extends AkkaSpec {
         SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
-      for (i ← 0 to 2) {
-        val p = probes(i)
-        val s = p.expectSubscription()
-        s.request(3)
-        p.expectNext(i)
-        p.expectComplete()
-      }
+
+      val subscriptions = probes.map(_.expectSubscription())
+      subscriptions.foreach { s ⇒ s.request(3) }
+      probes.zipWithIndex.foreach { case (p, i) ⇒ p.expectNext(i) }
+      probes.foreach { case p ⇒ p.expectComplete() }
     }
 
     "be composable with importing 1 module" in {
@@ -42,13 +40,11 @@ class SinkSpec extends AkkaSpec {
           SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
-      for (i ← 0 to 2) {
-        val p = probes(i)
-        val s = p.expectSubscription()
-        s.request(3)
-        p.expectNext(i)
-        p.expectComplete()
-      }
+
+      val subscriptions = probes.map(_.expectSubscription())
+      subscriptions.foreach { s ⇒ s.request(3) }
+      probes.zipWithIndex.foreach { case (p, i) ⇒ p.expectNext(i) }
+      probes.foreach { case p ⇒ p.expectComplete() }
     }
 
     "be composable with importing 2 modules" in {
@@ -62,13 +58,11 @@ class SinkSpec extends AkkaSpec {
           SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
-      for (i ← 0 to 2) {
-        val p = probes(i)
-        val s = p.expectSubscription()
-        s.request(3)
-        p.expectNext(i)
-        p.expectComplete()
-      }
+
+      val subscriptions = probes.map(_.expectSubscription())
+      subscriptions.foreach { s ⇒ s.request(3) }
+      probes.zipWithIndex.foreach { case (p, i) ⇒ p.expectNext(i) }
+      probes.foreach { case p ⇒ p.expectComplete() }
     }
 
     "be composable with importing 3 modules" in {
@@ -82,13 +76,11 @@ class SinkSpec extends AkkaSpec {
           SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
-      for (i ← 0 to 2) {
-        val p = probes(i)
-        val s = p.expectSubscription()
-        s.request(3)
-        p.expectNext(i)
-        p.expectComplete()
-      }
+
+      val subscriptions = probes.map(_.expectSubscription())
+      subscriptions.foreach { s ⇒ s.request(3) }
+      probes.zipWithIndex.foreach { case (p, i) ⇒ p.expectNext(i) }
+      probes.foreach { case p ⇒ p.expectComplete() }
     }
 
     "combine to many outputs with simplified API" in {

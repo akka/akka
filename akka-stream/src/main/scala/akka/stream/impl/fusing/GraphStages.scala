@@ -6,6 +6,7 @@ package akka.stream.impl.fusing
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
+import akka.event.Logging
 import akka.stream._
 import akka.stream.stage._
 import scala.concurrent.{ Future, Promise }
@@ -37,8 +38,8 @@ object GraphStages {
    * INERNAL API
    */
   private[stream] abstract class SimpleLinearGraphStage[T] extends GraphStage[FlowShape[T, T]] {
-    val in = Inlet[T]("in")
-    val out = Outlet[T]("out")
+    val in = Inlet[T](Logging.simpleName(this) + ".in")
+    val out = Outlet[T](Logging.simpleName(this) + ".out")
     override val shape = FlowShape(in, out)
   }
 
