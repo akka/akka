@@ -195,32 +195,32 @@ public class MigrationsJava {
 
         //#file-source-sink
         final Source<ByteString, Future<Long>> fileSrc =
-          Source.file(new File("."));
+          FileIO.fromFile(new File("."));
 
         final Source<ByteString, Future<Long>> otherFileSrc =
-          Source.file(new File("."), 1024);
+          FileIO.fromFile(new File("."), 1024);
 
         final Sink<ByteString, Future<Long>> fileSink =
-          Sink.file(new File("."));
+          FileIO.toFile(new File("."));
         //#file-source-sink
 
         //#input-output-stream-source-sink
         final Source<ByteString, Future<java.lang.Long>> inputStreamSrc =
-          Source.inputStream(new Creator<InputStream>(){
+          StreamConverters.fromInputStream(new Creator<InputStream>(){
             public InputStream create() {
               return new SomeInputStream();
             }
           });
 
         final Source<ByteString, Future<java.lang.Long>> otherInputStreamSrc =
-          Source.inputStream(new Creator<InputStream>(){
+          StreamConverters.fromInputStream(new Creator<InputStream>(){
             public InputStream create() {
               return new SomeInputStream();
             }
           }, 1024);
 
         final Sink<ByteString, Future<java.lang.Long>> outputStreamSink =
-          Sink.outputStream(new Creator<OutputStream>(){
+          StreamConverters.fromOutputStream(new Creator<OutputStream>(){
             public OutputStream create() {
               return new SomeOutputStream();
             }
@@ -232,16 +232,16 @@ public class MigrationsJava {
       final FiniteDuration timeout = FiniteDuration.Zero();
 
       final Source<ByteString, OutputStream> outputStreamSrc =
-          Source.outputStream();
+          StreamConverters.asOutputStream();
 
         final Source<ByteString, OutputStream> otherOutputStreamSrc =
-          Source.outputStream(timeout);
+          StreamConverters.asOutputStream(timeout);
 
         final Sink<ByteString, InputStream> someInputStreamSink =
-          Sink.inputStream();
+          StreamConverters.asInputStream();
 
         final Sink<ByteString, InputStream> someOtherInputStreamSink =
-          Sink.inputStream(timeout);
+          StreamConverters.asInputStream(timeout);
         //#output-input-stream-source-sink
 
     }

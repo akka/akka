@@ -245,34 +245,34 @@ class MigrationsScala extends AkkaSpec {
         //#query-param
 
         //#file-source-sink
-        val fileSrc = Source.file(new File("."))
+        val fileSrc = FileIO.fromFile(new File("."))
 
-        val otherFileSrc = Source.file(new File("."), 1024)
+        val otherFileSrc = FileIO.fromFile(new File("."), 1024)
 
-        val someFileSink = Sink.file(new File("."))
+        val someFileSink = FileIO.toFile(new File("."))
         //#file-source-sink
 
         class SomeInputStream extends java.io.InputStream { override def read(): Int = 0 }
         class SomeOutputStream extends java.io.OutputStream { override def write(b: Int): Unit = () }
 
         //#input-output-stream-source-sink
-        val inputStreamSrc = Source.inputStream(() => new SomeInputStream())
+        val inputStreamSrc = StreamConverters.fromInputStream(() => new SomeInputStream())
 
-        val otherInputStreamSrc = Source.inputStream(() => new SomeInputStream())
+        val otherInputStreamSrc = StreamConverters.fromInputStream(() => new SomeInputStream())
 
-        val someOutputStreamSink = Sink.outputStream(() => new SomeOutputStream())
+        val someOutputStreamSink = StreamConverters.fromOutputStream(() => new SomeOutputStream())
         //#input-output-stream-source-sink
 
         //#output-input-stream-source-sink
         val timeout: FiniteDuration = 0.seconds
 
-        val outputStreamSrc = Source.outputStream()
+        val outputStreamSrc = StreamConverters.asOutputStream()
 
-        val otherOutputStreamSrc = Source.outputStream(timeout)
+        val otherOutputStreamSrc = StreamConverters.asOutputStream(timeout)
 
-        val someInputStreamSink = Sink.inputStream()
+        val someInputStreamSink = StreamConverters.asInputStream()
 
-        val someOtherInputStreamSink = Sink.inputStream(timeout)
+        val someOtherInputStreamSink = StreamConverters.asInputStream(timeout)
         //#output-input-stream-source-sink
       }
     }

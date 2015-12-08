@@ -34,7 +34,7 @@ trait FileUploadDirectives {
         case (fileInfo, bytes) ⇒
 
           val destination = File.createTempFile("akka-http-upload", ".tmp")
-          val uploadedF: Future[(FileInfo, File)] = bytes.runWith(Sink.file(destination))
+          val uploadedF: Future[(FileInfo, File)] = bytes.runWith(FileIO.toFile(destination))
             .map(_ ⇒ (fileInfo, destination))
 
           onComplete[(FileInfo, File)](uploadedF).flatMap {

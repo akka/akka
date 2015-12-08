@@ -5,7 +5,7 @@ package akka.stream.io
 
 import java.io.OutputStream
 
-import akka.stream.scaladsl.{ Source, Sink }
+import akka.stream.scaladsl.{ Source, Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
@@ -26,7 +26,7 @@ class OutputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       val datas = List(ByteString("a"), ByteString("c"), ByteString("c"))
 
       val completion = Source(datas)
-        .runWith(Sink.outputStream(() ⇒ new OutputStream {
+        .runWith(StreamConverters.fromOutputStream(() ⇒ new OutputStream {
           override def write(i: Int): Unit = ()
           override def write(bytes: Array[Byte]): Unit = p.ref ! ByteString(bytes).utf8String
         }))
@@ -40,7 +40,7 @@ class OutputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "close underlying stream when error received" in assertAllStagesStopped {
       val p = TestProbe()
       Source.failed(new TE("Boom!"))
-        .runWith(Sink.outputStream(() ⇒ new OutputStream {
+        .runWith(StreamConverters.fromOutputStream(() ⇒ new OutputStream {
           override def write(i: Int): Unit = ()
           override def close() = p.ref ! "closed"
         }))
@@ -51,7 +51,7 @@ class OutputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "close underlying stream when completion received" in assertAllStagesStopped {
       val p = TestProbe()
       Source.empty
-        .runWith(Sink.outputStream(() ⇒ new OutputStream {
+        .runWith(StreamConverters.fromOutputStream(() ⇒ new OutputStream {
           override def write(i: Int): Unit = ()
           override def write(bytes: Array[Byte]): Unit = p.ref ! ByteString(bytes).utf8String
           override def close() = p.ref ! "closed"
