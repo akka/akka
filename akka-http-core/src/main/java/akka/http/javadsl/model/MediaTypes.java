@@ -190,7 +190,8 @@ public abstract class MediaTypes {
     public static MediaType custom(String value, boolean binary, boolean compressible) {
         akka.http.scaladsl.model.MediaType.Compressibility comp = compressible ?
                 akka.http.scaladsl.model.MediaType.Compressible$.MODULE$ : akka.http.scaladsl.model.MediaType.NotCompressible$.MODULE$;
-        return akka.http.scaladsl.model.MediaType.custom(value, binary, comp , List.<String>empty());
+        return akka.http.scaladsl.model.MediaType.custom(value, binary, comp , 
+            akka.http.scaladsl.model.MediaType.custom$default$4());
     }
 
     /**
