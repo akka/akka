@@ -91,6 +91,11 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
       accept(`text/plain` withCharset `UTF-16`) should reject
     }
 
+    "Accept-Charset: *;q=0.1" test { accept ⇒
+      accept(`text/plain`) should select(`text/plain`, `UTF-8`)
+      accept(`image/gif`) should select(`image/gif`)
+    }
+
     "Accept-Charset: us;q=0.1,*;q=0" test { accept ⇒
       accept(`text/plain`) should select(`text/plain`, `US-ASCII`)
       accept(`text/plain` withCharset `UTF-8`) should reject
