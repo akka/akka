@@ -170,6 +170,7 @@ private[fusing] object StreamOfStreams {
 
     def pull(): Unit = {
       if (sub ne null) sub(RequestOne)
+      else if (subF eq null) throw new IllegalStateException("not yet initialized, subscription future not set")
       else throw new IllegalStateException("not yet initialized, subscription future has " + subF.value)
     }
 
