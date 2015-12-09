@@ -54,6 +54,8 @@ class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) extends Gr
 
     private def pending: Boolean = pendingHead != pendingTail
 
+    override def preStart(): Unit = in.foreach(tryPull)
+
     private def enqueue(in: Inlet[T]): Unit = {
       pendingQueue(pendingTail % inputPorts) = in
       pendingTail += 1
@@ -92,10 +94,7 @@ class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) extends Gr
 
     setHandler(out, new OutHandler {
       override def onPull(): Unit = {
-        if (!initialized) {
-          initialized = true
-          in.foreach(tryPull)
-        } else if (pending)
+        if (pending)
           dequeueAndDispatch()
       }
     })
