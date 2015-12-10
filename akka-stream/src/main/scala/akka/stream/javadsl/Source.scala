@@ -143,6 +143,26 @@ object Source {
     new Source(scaladsl.Source.repeat(element))
 
   /**
+   * create a `Source` that will unfold a value of type `S` into
+   * a pair of the next state `S` and output elements of type `E`.
+   */
+  def unfold[S, E](s: S, f: function.Function[S, Option[(S, E)]]): Source[E, Unit] =
+    new Source(scaladsl.Source.unfold(s)((s: S) ⇒ f.apply(s)))
+
+  /**
+   * same as unfold, but uses an async function to generate the next state-element tuple.
+   */
+  def unfoldAsync[S, E](s: S, f: function.Function[S, Future[Option[(S, E)]]]): Source[E, Unit] =
+    new Source(scaladsl.Source.unfoldAsync(s)((s: S) ⇒ f.apply(s)))
+
+  /**
+   * simpler unfold, for infinite sequences.
+   */
+  def unfoldInf[S, E](s: S, f: function.Function[S, (S, E)]): Source[E, Unit] = {
+    new Source(scaladsl.Source.unfoldInf(s)((s: S) ⇒ f.apply(s)))
+  }
+
+  /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T, Unit] =
