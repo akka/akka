@@ -7,27 +7,21 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import org.reactivestreams.Publisher
 
-class FlowMergeSpec extends BaseTwoStreamsSetup {
+class FlowInterleaveSpec extends BaseTwoStreamsSetup {
 
   override type Outputs = Int
 
   override def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
     val subscriber = TestSubscriber.probe[Outputs]()
-    Source(p1).merge(Source(p2)).runWith(Sink(subscriber))
+    Source(p1).interleave(Source(p2), 2).runWith(Sink(subscriber))
     subscriber
   }
 
-  "A Merge for Flow " must {
+  "An Interleave for Flow " must {
 
     "work in the happy case" in assertAllStagesStopped {
-      // Different input sizes (4 and 6)
-      val source1 = Source(0 to 3)
-      val source2 = Source(4 to 9)
-      val source3 = Source(List[Int]())
       val probe = TestSubscriber.manualProbe[Int]()
-
-      source1.merge(source3).merge(source2)
-        .map(_ * 2).map(_ / 2).map(_ + 1).runWith(Sink(probe))
+      Source(0 to 3).interleave(Source(List[Int]()), 2).interleave(Source(4 to 9), 2).runWith(Sink(probe))
 
       val subscription = probe.expectSubscription()
 
@@ -37,7 +31,25 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
         collected += probe.expectNext()
       }
 
-      collected should be(Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+      collected should be(Set(0, 1, 4, 5, 2, 3, 6, 7, 8, 9))
+      probe.expectComplete()
+    }
+
+    "work when bucket is not equal elements in stream" in assertAllStagesStopped {
+      val probe = TestSubscriber.manualProbe[Int]()
+
+      Source(0 to 2).interleave(Source(3 to 5), 2).runWith(Sink(probe))
+      probe.expectSubscription().request(10)
+      probe.expectNext(0, 1, 3, 4, 2, 5)
+      probe.expectComplete()
+    }
+
+    "work with bucket = 1" in assertAllStagesStopped {
+      val probe = TestSubscriber.manualProbe[Int]()
+
+      Source(0 to 2).interleave(Source(3 to 5), 1).runWith(Sink(probe))
+      probe.expectSubscription().request(10)
+      probe.expectNext(0, 3, 1, 4, 2, 5)
       probe.expectComplete()
     }
 
@@ -72,8 +84,16 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
     }
 
     "work with one immediately failed and one nonempty publisher" in {
-      // This is nondeterministic, multiple scenarios can happen
-      pending
+      val subscriber1 = setup(failedPublisher, nonemptyPublisher(1 to 4))
+      val subscription1 = subscriber1.expectSubscription()
+      subscription1.request(4)
+      subscriber1.expectError(TestException)
+
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), failedPublisher)
+      val subscription2 = subscriber2.expectSubscription()
+      subscription2.request(4)
+      subscriber2.expectError(TestException)
+
     }
 
     "work with one delayed failed and one nonempty publisher" in {
@@ -87,7 +107,7 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val down = TestSubscriber.manualProbe[Int]()
 
       val (graphSubscriber1, graphSubscriber2) = Source.subscriber[Int]
-        .mergeMat(Source.subscriber[Int])((_, _)).toMat(Sink(down))(Keep.left).run
+        .interleaveMat(Source.subscriber[Int], 2)((_, _)).toMat(Sink(down))(Keep.left).run
 
       val downstream = down.expectSubscription()
       downstream.cancel()
@@ -97,4 +117,5 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       up2.expectSubscription().expectCancellation()
     }
   }
+
 }
