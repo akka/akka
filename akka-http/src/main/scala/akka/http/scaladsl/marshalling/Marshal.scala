@@ -63,6 +63,7 @@ class Marshal[A](val value: A) {
           else charsetRanges match {
             // pick the charset which the highest q-value (head of charsetRanges) if it isn't explicitly rejected
             case (HttpCharsetRange.One(cs, qValue)) +: _ if qValue > 0f ⇒ withCharset(cs)
+            case HttpCharsetRange.`*`(qValue) +: _ if qValue > 0f ⇒ withCharset(`UTF-8`)
             case _ ⇒ acc
           }
 
