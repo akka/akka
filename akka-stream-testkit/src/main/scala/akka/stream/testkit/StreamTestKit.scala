@@ -42,7 +42,7 @@ object TestPublisher {
   }
 
   /**
-   * Publisher that signals error to subscribers immediately, before handing out subscription.
+   * Publisher that signals error to subscribers immediately after handing out subscription.
    */
   def error[T](cause: Throwable): Publisher[T] = ErrorPublisher(cause, "error").asInstanceOf[Publisher[T]]
 
@@ -251,7 +251,10 @@ object TestSubscriber {
     /**
      * Expect and return a stream element.
      */
-    def expectNext(): I = probe.expectMsgType[OnNext[I]].element
+    def expectNext(): I = probe.receiveOne(probe.remaining) match {
+      case OnNext(elem) ⇒ elem.asInstanceOf[I]
+      case other        ⇒ throw new AssertionError("expected OnNext, found " + other)
+    }
 
     /**
      * Fluent DSL

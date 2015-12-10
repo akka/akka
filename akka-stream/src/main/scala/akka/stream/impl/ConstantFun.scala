@@ -15,11 +15,9 @@ private[akka] object ConstantFun {
     def apply(p1: AnyRef, p2: AnyRef): AnyRef JPair AnyRef = JPair(p1, p2)
   }
 
-  private[this] val ScalaIdentityFunction = (a: Any) ⇒ a
-
   def javaCreatePairFunction[A, B]: JFun2[A, B, JPair[A, B]] = JavaPairFunction.asInstanceOf[JFun2[A, B, JPair[A, B]]]
 
   def javaIdentityFunction[T]: JFun[T, T] = JavaIdentityFunction.asInstanceOf[JFun[T, T]]
 
-  def scalaIdentityFunction[T]: T ⇒ T = ScalaIdentityFunction.asInstanceOf[T ⇒ T]
+  def scalaIdentityFunction[T]: T ⇒ T = conforms
 }

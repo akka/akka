@@ -206,7 +206,8 @@ object Source {
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: java.util.List[Source[T, _]], strategy: function.Function[java.lang.Integer, Graph[UniformFanInShape[T, U], Unit]]): Source[U, Unit] = {
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: java.util.List[Source[T, _]],
+                    strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], Unit]]): Source[U, Unit] = {
     import scala.collection.JavaConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num ⇒ strategy.apply(num)))
@@ -341,24 +342,78 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
 
   /**
    * Transform this [[Source]] by appending the given processing stages.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Source           |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   *     |  | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the other Flow’s value), use
+   * `viaMat` if a different strategy is needed.
    */
   def via[T, M](flow: Graph[FlowShape[Out, T], M]): javadsl.Source[T, Mat] =
     new Source(delegate.via(flow))
 
   /**
    * Transform this [[Source]] by appending the given processing stages.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Source           |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   *     |  | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * flow into the materialized value of the resulting Flow.
    */
   def viaMat[T, M, M2](flow: Graph[FlowShape[Out, T], M], combine: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
     new Source(delegate.viaMat(flow)(combinerToScala(combine)))
 
   /**
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting RunnableGraph    |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   *     |  | this | ~Out~> | sink |  |
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The materialized value of the combined [[Sink]] will be the materialized
+   * value of the current flow (ignoring the given Sink’s value), use
+   * `toMat` if a different strategy is needed.
    */
   def to[M](sink: Graph[SinkShape[Out], M]): javadsl.RunnableGraph[Mat] =
     RunnableGraph.fromGraph(delegate.to(sink))
 
   /**
    * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting RunnableGraph    |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   *     |  | this | ~Out~> | sink |  |
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * Sink into the materialized value of the resulting Sink.
    */
   def toMat[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableGraph[M2] =
     RunnableGraph.fromGraph(delegate.toMat(sink)(combinerToScala(combine)))
@@ -533,6 +588,14 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
+   *
+   * '''Emits when''' the mapping function returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def map[T](f: function.Function[Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.map(f.apply))
@@ -541,18 +604,40 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * Recover allows to send last element on failure and gracefully complete the stream
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
    */
   def recover[T >: Out](pf: PartialFunction[Throwable, T]): javadsl.Source[T, Mat] =
     new Source(delegate.recover(pf))
 
   /**
-   * Transform each input element into a sequence of output elements that is
+   * Transform each input element into an `Iterable of output elements that is
    * then flattened into the output stream.
    *
-   * The returned list MUST NOT contain `null` values,
+   * Make sure that the `Iterable` is immutable or at least not modified after
+   * being used as an output sequence. Otherwise the stream may fail with
+   * `ConcurrentModificationException` or other more subtle errors may occur.
+   *
+   * The returned `Iterable` MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
+   *
+   * '''Emits when''' the mapping function returns an element or there are still remaining elements
+   * from the previously calculated collection
+   *
+   * '''Backpressures when''' downstream backpressures or there are still remaining elements from the
+   * previously calculated collection
+   *
+   * '''Completes when''' upstream completes and all remaining elements has been emitted
+   *
+   * '''Cancels when''' downstream cancels
    */
-  def mapConcat[T](f: function.Function[Out, java.util.List[T]]): javadsl.Source[T, Mat] =
+  def mapConcat[T](f: function.Function[Out, _ <: java.lang.Iterable[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.mapConcat(elem ⇒ Util.immutableSeq(f.apply(elem))))
 
   /**
@@ -561,6 +646,25 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * value of that future will be emitted downstreams. As many futures as requested elements by
    * downstream may run in parallel and may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
+   *
+   * If the function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
+   * the stream will be completed with failure.
+   *
+   * If the function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
+   * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
+   *
+   * The function `f` is always invoked on the elements in the order they arrive.
+   *
+   * '''Emits when''' the Future returned by the provided function finishes for the next element in sequence
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
+   * backpressures or the first future is not completed
+   *
+   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   *
+   * '''Cancels when''' downstream cancels
    *
    * @see [[#mapAsyncUnordered]]
    */
@@ -575,6 +679,25 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
    * in the same order as received from upstream.
    *
+   * If the function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
+   * the stream will be completed with failure.
+   *
+   * If the function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
+   * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
+   *
+   * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
+   * returned by `f` might be emitted in a different order).
+   *
+   * '''Emits when''' any of the Futures returned by the provided function complete
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures has been completed and all elements has been emitted
+   *
+   * '''Cancels when''' downstream cancels
+   *
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, Future[T]]): javadsl.Source[T, Mat] =
@@ -582,12 +705,29 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
 
   /**
    * Only pass on those elements that satisfy the given predicate.
+   *
+   * '''Emits when''' the given predicate returns true for the element
+   *
+   * '''Backpressures when''' the given predicate returns true for the element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
    */
   def filter(p: function.Predicate[Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.filter(p.test))
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
+   *
+   * '''Emits when''' the given predicate returns false for the element
+   *
+   * '''Backpressures when''' the given predicate returns false for the element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def filterNot(p: function.Predicate[Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.filterNot(p.test))
@@ -596,6 +736,14 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
+   *
+   * '''Emits when''' the provided partial function is defined for the element
+   *
+   * '''Backpressures when''' the partial function is defined for the element and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def collect[T](pf: PartialFunction[Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.collect(pf))
@@ -604,7 +752,15 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * Chunk up this stream into groups of the given size, with the last group
    * possibly smaller than requested due to end-of-stream.
    *
-   * @param n must be positive, otherwise [[IllegalArgumentException]] is thrown.
+   * `n` must be positive, otherwise IllegalArgumentException is thrown.
+   *
+   * '''Emits when''' the specified number of elements has been accumulated or upstream completed
+   *
+   * '''Backpressures when''' a group has been assembled and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def grouped(n: Int): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
     new Source(delegate.grouped(n).map(_.asJava))
@@ -613,8 +769,16 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
    * possibly smaller than requested due to end-of-stream.
    *
-   * @param n must be positive, otherwise [[IllegalArgumentException]] is thrown.
-   * @param step must be positive, otherwise [[IllegalArgumentException]] is thrown.
+   * `n` must be positive, otherwise IllegalArgumentException is thrown.
+   * `step` must be positive, otherwise IllegalArgumentException is thrown.
+   *
+   * '''Emits when''' enough elements have been collected within the window or upstream completed
+   *
+   * '''Backpressures when''' a window has been assembled and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def sliding(n: Int, step: Int): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
     new Source(delegate.sliding(n, step).map(_.asJava))
@@ -623,16 +787,39 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * Similar to `fold` but is not a terminal operation,
    * emits its current value which starts at `zero` and then
    * applies the current and next value to the given function `f`,
-   * yielding the next current value.
+   * emitting the next current value.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision#restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * '''Emits when''' the function scanning the element returns a new element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def scan[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.scan(zero)(f.apply))
 
   /**
-   * Similar to `scan` but only emits the current value once, when completing.
-   * Its current value which starts at `zero` and then
-   * applies the current and next value to the given function `f`,
+   * Similar to `scan` but only emits its result when the upstream completes,
+   * after which it also completes. Applies the given function `f` towards its current and next value,
    * yielding the next current value.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision#restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * '''Emits when''' upstream completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def fold[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.fold(zero)(f.apply))
@@ -702,7 +889,16 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * The last group before end-of-stream will contain the buffered elements
    * since the previously emitted group.
    *
-   * @param n must be positive, and `d` must be greater than 0 seconds, otherwise [[IllegalArgumentException]] is thrown.
+   * '''Emits when''' the configured time elapses since the last group has been emitted
+   *
+   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
    */
   def groupedWithin(n: Int, d: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
     new Source(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
@@ -710,29 +906,62 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   /**
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
+   *
+   * '''Emits when''' the specified number of elements has been dropped already
+   *
+   * '''Backpressures when''' the specified number of elements has been dropped and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def drop(n: Long): javadsl.Source[Out, Mat] =
     new Source(delegate.drop(n))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
+   *
+   * '''Emits when''' the specified time elapsed and a new upstream element arrives
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    */
   def dropWithin(d: FiniteDuration): javadsl.Source[Out, Mat] =
     new Source(delegate.dropWithin(d))
 
   /**
-   * Terminate processing (and cancel the upstream publisher) after predicate returned false for the first time.
-   * Due to input buffering some elements may have been
+   * Terminate processing (and cancel the upstream publisher) after predicate
+   * returns false for the first time. Due to input buffering some elements may have been
    * requested from upstream publishers that will then not be processed downstream
    * of this step.
    *
-   * @param p predicate is evaluated for each new element until first time returns false
+   * The stream will be completed without producing any elements if predicate is false for
+   * the first stream element.
+   *
+   * '''Emits when''' the predicate is true
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' predicate returned false or upstream completes
+   *
+   * '''Cancels when''' predicate returned false or downstream cancels
    */
   def takeWhile(p: function.Predicate[Out]): javadsl.Source[Out, Mat] = new Source(delegate.takeWhile(p.test))
 
   /**
    * Discard elements at the beginning of the stream while predicate is true.
    * No elements will be dropped after predicate first time returned false.
+   *
+   * '''Emits when''' predicate returned false and for all following stream elements
+   *
+   * '''Backpressures when''' predicate returned false and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    *
    * @param p predicate is evaluated for each new element until first time returns false
    */
@@ -744,7 +973,16 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * requested from upstream publishers that will then not be processed downstream
    * of this step.
    *
-   * @param n if `n` is zero or negative the stream will be completed without producing any elements.
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
+   *
+   * '''Emits when''' the specified number of elements to take has not yet been reached
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the defined number of elements has been taken or upstream completes
+   *
+   * '''Cancels when''' the defined number of elements has been taken or downstream cancels
    */
   def take(n: Long): javadsl.Source[Out, Mat] =
     new Source(delegate.take(n))
@@ -757,6 +995,14 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * Note that this can be combined with [[#take]] to limit the number of elements
    * within the duration.
+   *
+   * '''Emits when''' an upstream element arrives
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or timer fires
+   *
+   * '''Cancels when''' downstream cancels or timer fires
    */
   def takeWithin(d: FiniteDuration): javadsl.Source[Out, Mat] =
     new Source(delegate.takeWithin(d))
@@ -768,6 +1014,14 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
+   *
+   * '''Emits when''' downstream stops backpressuring and there is a conflated element available
+   *
+   * '''Backpressures when''' never
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
    *
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
@@ -784,6 +1038,17 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * This means that if the upstream is actually faster than the upstream it will be backpressured by the downstream
    * subscriber.
    *
+   * Expand does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
+   * Exceptions from the `seed` or `extrapolate` functions will complete the stream with failure.
+   *
+   * '''Emits when''' downstream stops backpressuring
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
    * @param seed Provides the first state for extrapolation using the first unconsumed element
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
@@ -798,6 +1063,17 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
    * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements or backpressure the upstream if
    * there is no space available
+   *
+   * '''Emits when''' downstream stops backpressuring and there is a pending element in the buffer
+   *
+   * '''Backpressures when''' depending on OverflowStrategy
+   *  * Backpressure - backpressures when buffer is full
+   *  * DropHead, DropTail, DropBuffer - never backpressures
+   *  * Fail - fails the stream if buffer gets full
+   *
+   * '''Completes when''' upstream completes and buffered elements has been drained
+   *
+   * '''Cancels when''' downstream cancels
    *
    * @param size The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
@@ -814,7 +1090,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.transform(() ⇒ mkStage.create()))
 
   /**
-   * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements)
+   * Takes up to `n` elements from the stream (less than `n` if the upstream completes before emitting `n` elements)
    * and returns a pair containing a strict sequence of the taken element
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
@@ -824,6 +1100,15 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *    has not yet been emitted
    *  - the tail substream signals the error after the prefix and tail has been emitted by the main stream
    *    (at that point the main stream has already completed)
+   *
+   * '''Emits when''' the configured number of prefix elements are available. Emits this prefix, and the rest
+   * as a substream
+   *
+   * '''Backpressures when''' downstream backpressures or substream backpressures
+   *
+   * '''Completes when''' prefix elements has been consumed and substream has been consumed
+   *
+   * '''Cancels when''' downstream cancels or substream cancels
    */
   def prefixAndTail(n: Int): javadsl.Source[akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
     new Source(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ akka.japi.Pair(taken.asJava, tail.asJava) })
@@ -832,15 +1117,43 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element
    * using the given function. When a new key is encountered for the first time
-   * it is emitted to the downstream subscriber together with a fresh
-   * flow that will eventually produce all the elements of the substream
-   * for that key. Not consuming the elements from the created streams will
-   * stop this processor from processing more elements, therefore you must take
-   * care to unblock (or cancel) all of the produced streams even if you want
-   * to consume only one of them.
+   * a new substream is opened and subsequently fed with all elements belonging to
+   * that key.
+   *
+   * The object returned from this method is not a normal [[Flow]],
+   * it is a [[SubSource]]. This means that after this combinator all transformations
+   * are applied to all encountered substreams in the same fashion. Substream mode
+   * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
+   * or by merging the substreams back together; see the `to` and `mergeBack` methods
+   * on [[SubSource]] for more information.
+   *
+   * It is important to note that the substreams also propagate back-pressure as
+   * any other stream, which means that blocking one substream will block the `groupBy`
+   * operator itself—and thereby all substreams—once all internal or
+   * explicit buffers are filled.
+   *
+   * If the group by function `f` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision#stop]] the stream and substreams will be completed
+   * with failure.
+   *
+   * If the group by function `f` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision#resume]] or [[akka.stream.Supervision#restart]]
+   * the element is dropped and the stream and substreams continue.
+   *
+   * '''Emits when''' an element for which the grouping function returns a group that has not yet been created.
+   * Emits the new group
+   *
+   * '''Backpressures when''' there is an element pending for a group whose substream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels and all substreams cancel
+   *
+   * @param maxSubstreams configures the maximum number of substreams (keys)
+   *        that are supported; if more distinct keys are encountered then the stream fails
    */
-  def groupBy[K](f: function.Function[Out, K]): javadsl.Source[akka.japi.Pair[K, javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
-    new Source(delegate.groupBy(f.apply).map { case (k, p) ⇒ akka.japi.Pair(k, p.asJava) }) // TODO optimize to one step
+  def groupBy[K](maxSubstreams: Int, f: function.Function[Out, K]): SubSource[Out @uncheckedVariance, Mat] =
+    new SubSource(delegate.groupBy(maxSubstreams, f.apply))
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -863,6 +1176,18 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * true, false        // subsequent substreams operate the same way
    * }}}
    *
+   * The object returned from this method is not a normal [[Flow]],
+   * it is a [[SubSource]]. This means that after this combinator all transformations
+   * are applied to all encountered substreams in the same fashion. Substream mode
+   * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
+   * or by merging the substreams back together; see the `to` and `mergeBack` methods
+   * on [[SubSource]] for more information.
+   *
+   * It is important to note that the substreams also propagate back-pressure as
+   * any other stream, which means that blocking one substream will block the `splitWhen`
+   * operator itself—and thereby all substreams—once all internal or
+   * explicit buffers are filled.
+   *
    * If the split predicate `p` throws an exception and the supervision decision
    * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
    * with failure.
@@ -881,8 +1206,8 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * See also [[Source.splitAfter]].
    */
-  def splitWhen(p: function.Predicate[Out]): javadsl.Source[javadsl.Source[Out, Unit], Mat] =
-    new Source(delegate.splitWhen(p.test).map(_.asJava))
+  def splitWhen(p: function.Predicate[Out]): SubSource[Out, Mat] =
+    new SubSource(delegate.splitWhen(p.test))
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -895,6 +1220,18 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * false, true,        // elements go into second substream
    * false, false, true  // elements go into third substream
    * }}}
+   *
+   * The object returned from this method is not a normal [[Flow]],
+   * it is a [[SubSource]]. This means that after this combinator all transformations
+   * are applied to all encountered substreams in the same fashion. Substream mode
+   * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
+   * or by merging the substreams back together; see the `to` and `mergeBack` methods
+   * on [[SubSource]] for more information.
+   *
+   * It is important to note that the substreams also propagate back-pressure as
+   * any other stream, which means that blocking one substream will block the `splitAfter`
+   * operator itself—and thereby all substreams—once all internal or
+   * explicit buffers are filled.
    *
    * If the split predicate `p` throws an exception and the supervision decision
    * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
@@ -916,8 +1253,8 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * See also [[Source.splitWhen]].
    */
-  def splitAfter[U >: Out](p: function.Predicate[Out]): javadsl.Source[Source[Out, Unit], Mat] =
-    new Source(delegate.splitAfter(p.test).map(_.asJava))
+  def splitAfter[U >: Out](p: function.Predicate[Out]): SubSource[Out, Mat] =
+    new SubSource(delegate.splitAfter(p.test))
 
   /**
    * Transform each input element into a `Source` of output elements that is
@@ -932,8 +1269,8 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels
    */
-  def flatMapConcat[T, M](f: function.Function[Out, Source[T, M]]): Source[T, Mat] =
-    new Source(delegate.flatMapConcat[T, M](x ⇒ f(x).asScala))
+  def flatMapConcat[T, M](f: function.Function[Out, _ <: Graph[SourceShape[T], M]]): Source[T, Mat] =
+    new Source(delegate.flatMapConcat[T, M](x ⇒ f(x)))
 
   /**
    * Transform each input element into a `Source` of output elements that is
@@ -948,8 +1285,8 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels
    */
-  def flatMapMerge[T, M](breadth: Int, f: function.Function[Out, Source[T, M]]): Source[T, Mat] =
-    new Source(delegate.flatMapMerge(breadth, o ⇒ f(o).asScala))
+  def flatMapMerge[T, M](breadth: Int, f: function.Function[Out, _ <: Graph[SourceShape[T], M]]): Source[T, Mat] =
+    new Source(delegate.flatMapMerge(breadth, o ⇒ f(o)))
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed

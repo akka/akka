@@ -15,14 +15,21 @@ import akka.japi.function.Function;
 import akka.japi.function.Function2;
 import akka.testkit.JavaTestKit;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.runtime.BoxedUnit;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-public class RecipeReduceByKey extends RecipeTest {
+public class RecipeReduceByKeyTest extends RecipeTest {
   static ActorSystem system;
 
   @BeforeClass
@@ -46,27 +53,24 @@ public class RecipeReduceByKey extends RecipeTest {
 
         //#word-count
         final int MAXIMUM_DISTINCT_WORDS = 1000;
-
-        // split the words into separate streams first
-        final Source<Pair<String, Source<String, BoxedUnit>>, BoxedUnit> wordStreams = words
-          .groupBy(i -> i);
-
-        // add counting logic to the streams
-        Source<Future<Pair<String, Integer>>, BoxedUnit> countedWords = wordStreams.map(pair -> {
-          final String word = pair.first();
-          final Source<String, BoxedUnit> wordStream = pair.second();
-          return wordStream.runFold(
-            new Pair<>(word, 0),
-            (acc, w) -> new Pair<>(word, acc.second() + 1), mat);
-        });
-
-        // get a stream of word counts
-        final Source<Pair<String, Integer>, BoxedUnit> counts = countedWords
-          .buffer(MAXIMUM_DISTINCT_WORDS, OverflowStrategy.fail())
-          .mapAsync(4, i -> i);
+        
+        final Source<Pair<String, Integer>, BoxedUnit> counts = words
+            // split the words into separate streams first
+          .groupBy(MAXIMUM_DISTINCT_WORDS, i -> i)
+          // add counting logic to the streams
+          .fold(new Pair<>("", 0), (pair, elem) -> new Pair<>(elem, pair.second() + 1))
+          // get a stream of word counts
+          .mergeSubstreams();
         //#word-count
 
-        counts.runWith(Sink.ignore(), mat);
+        final Future<List<Pair<String, Integer>>> f = counts.grouped(10).runWith(Sink.head(), mat);
+        final Set<Pair<String, Integer>> result = Await.result(f, getRemainingTime()).stream().collect(Collectors.toSet());
+        final Set<Pair<String, Integer>> expected = new HashSet<>();
+        expected.add(new Pair<>("hello", 2));
+        expected.add(new Pair<>("world", 1));
+        expected.add(new Pair<>("and", 1));
+        expected.add(new Pair<>("akka", 1));
+        Assert.assertEquals(expected, result);
       }
     };
   }
@@ -79,20 +83,14 @@ public class RecipeReduceByKey extends RecipeTest {
       Function2<Out, In, Out> fold,
       Materializer mat) {
 
-    Flow<In, Pair<K, Source<In, BoxedUnit>>, BoxedUnit> groupStreams = Flow.<In> create()
-      .groupBy(groupKey);
-
-    Flow<In, Future<Pair<K, Out>>, BoxedUnit> reducedValues = groupStreams.map(pair -> {
-      K key = pair.first();
-      Source<In, BoxedUnit> groupStream = pair.second();
-
-      return groupStream.runFold(new Pair<>(key, foldZero.apply(key)), (acc, elem) -> {
-        Out aggregated = acc.second();
-        return new Pair<>(key, fold.apply(aggregated, elem));
-      } , mat);
-    });
-
-    return reducedValues.buffer(maximumGroupSize, OverflowStrategy.fail()).mapAsync(4, i -> i);
+    return Flow.<In> create()
+      .groupBy(maximumGroupSize, i -> i)
+      .fold((Pair<K, Out>) null, (pair, elem) -> {
+        final K key = groupKey.apply(elem);
+        if (pair == null) return new Pair<>(key, fold.apply(foldZero.apply(key), elem));
+        else return new Pair<>(key, fold.apply(pair.second(), elem));
+      })
+      .mergeSubstreams();
   }
   //#reduce-by-key-general
 
@@ -107,13 +105,20 @@ public class RecipeReduceByKey extends RecipeTest {
 
         Source<Pair<String, Integer>, BoxedUnit> counts = words.via(reduceByKey(
           MAXIMUM_DISTINCT_WORDS,
-          word -> word, // TODO
+          word -> word,
           key -> 0,
           (count, elem) -> count + 1,
           mat));
 
         //#reduce-by-key-general2
-        counts.runWith(Sink.ignore(), mat);
+        final Future<List<Pair<String, Integer>>> f = counts.grouped(10).runWith(Sink.head(), mat);
+        final Set<Pair<String, Integer>> result = Await.result(f, getRemainingTime()).stream().collect(Collectors.toSet());
+        final Set<Pair<String, Integer>> expected = new HashSet<>();
+        expected.add(new Pair<>("hello", 2));
+        expected.add(new Pair<>("world", 1));
+        expected.add(new Pair<>("and", 1));
+        expected.add(new Pair<>("akka", 1));
+        Assert.assertEquals(expected, result);
       }
     };
   }

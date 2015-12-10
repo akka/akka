@@ -19,20 +19,28 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
+import akka.stream.impl.SubFlowImpl
+import akka.stream.impl.fusing.GraphInterpreter
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
 final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
-  extends FlowOps[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
+  extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]
 
-  override type Repr[+O, +M] = Flow[In @uncheckedVariance, O, M]
+  override type Repr[+O] = Flow[In @uncheckedVariance, O, Mat @uncheckedVariance]
+  override type ReprMat[+O, +M] = Flow[In @uncheckedVariance, O, M]
+
+  override type Closed = Sink[In @uncheckedVariance, Mat @uncheckedVariance]
+  override type ClosedMat[+M] = Sink[In @uncheckedVariance, M]
 
   private[stream] def isIdentity: Boolean = this.module eq Stages.identityGraph.module
 
-  def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
+  override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
+
+  override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] =
     if (this.isIdentity) {
       Flow.fromGraph(flow.asInstanceOf[Graph[FlowShape[In, T], Mat2]])
         .mapMaterializedValue(combine(().asInstanceOf[Mat], _))
@@ -43,7 +51,6 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
           .fuse(flowCopy, shape.outlet, flowCopy.shape.inlets.head, combine)
           .replaceShape(FlowShape(shape.inlet, flowCopy.shape.outlets.head)))
     }
-  }
 
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
@@ -96,7 +103,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   /**
    * Transform the materialized value of this Flow, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Repr[Out, Mat2] =
+  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Flow(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
 
   /**
@@ -183,16 +190,16 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   /** INTERNAL API */
   // FIXME: Only exists to keep old stuff alive
-  private[stream] override def deprecatedAndThen[U](op: StageModule): Repr[U, Mat] = {
+  private[stream] override def deprecatedAndThen[U](op: StageModule): Repr[U] = {
     //No need to copy here, op is a fresh instance
-    if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat]]
+    if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U]]
     else new Flow(module.fuse(op, shape.outlet, op.inPort).replaceShape(FlowShape(shape.inlet, op.outPort)))
   }
 
   // FIXME: Only exists to keep old stuff alive
-  private[akka] def deprecatedAndThenMat[U, Mat2, O >: Out](processorFactory: () ⇒ (Processor[O, U], Mat2)): Repr[U, Mat2] = {
+  private[akka] def deprecatedAndThenMat[U, Mat2, O >: Out](processorFactory: () ⇒ (Processor[O, U], Mat2)): ReprMat[U, Mat2] = {
     val op = DirectProcessor(processorFactory.asInstanceOf[() ⇒ (Processor[Any, Any], Any)])
-    if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U, Mat2]]
+    if (this.isIdentity) new Flow(op).asInstanceOf[ReprMat[U, Mat2]]
     else new Flow[In, U, Mat2](module.fuse(op, shape.outlet, op.inPort, Keep.right).replaceShape(FlowShape(shape.inlet, op.outPort)))
   }
 
@@ -201,11 +208,11 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
-  override def withAttributes(attr: Attributes): Repr[Out, Mat] =
+  override def withAttributes(attr: Attributes): Repr[Out] =
     if (this.module eq EmptyModule) this
     else new Flow(module.withAttributes(attr).nest())
 
-  override def named(name: String): Repr[Out, Mat] = withAttributes(Attributes.name(name))
+  override def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
@@ -222,7 +229,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    *
    * @return A [[RunnableGraph]] that materializes to a Processor when run() is called on it.
    */
-  def toProcessor: RunnableGraph[Processor[In @uncheckedVariance, Out @uncheckedVariance]] = {
+  def toProcessor: RunnableGraph[Processor[In @uncheckedVariance, Out @uncheckedVariance]] =
     Source.subscriber[In].via(this).toMat(Sink.publisher[Out](false))(Keep.both[Subscriber[In], Publisher[Out]])
       .mapMaterializedValue {
         case (sub, pub) ⇒ new Processor[In, Out] {
@@ -233,7 +240,6 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
           override def subscribe(s: Subscriber[_ >: Out]): Unit = pub.subscribe(s)
         }
       }
-  }
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(this)
@@ -325,17 +331,25 @@ final case class RunnableGraph[+Mat](private[stream] val module: StreamLayout.Mo
 
 /**
  * Scala API: Operations offered by Sources and Flows with a free output side: the DSL flows left-to-right only.
+ *
+ * INTERNAL API: extending this trait is not supported under the binary compatibility rules for Akka.
  */
 trait FlowOps[+Out, +Mat] {
   import akka.stream.impl.Stages._
-  type Repr[+O, +M] <: FlowOps[O, M]
+
+  type Repr[+O] <: FlowOps[O, Mat]
+
+  // result of closing a Source is RunnableGraph, closing a Flow is Sink
+  type Closed
 
   /*
    * Repr is actually self-bounded, but that would be a cyclic type declaration that is illegal in Scala.
-   * Therefore we need to help the compiler by specifying that Repr
+   * Therefore we need to help the compiler by specifying that Repr expressions can be flattened.
    */
   import language.implicitConversions
-  private implicit def reprFlatten[O1, M1, O2, M2](r: Repr[O1, M1]#Repr[O2, M2]): Repr[O2, M2] = r.asInstanceOf[Repr[O2, M2]]
+  private implicit def reprFlatten0[O1](r: Repr[O1]#Closed): Closed = r.asInstanceOf[Closed]
+  private implicit def reprFlatten1[O1, O2](r: Repr[O1]#Repr[O2]): Repr[O2] = r.asInstanceOf[Repr[O2]]
+  private implicit def reprFlatten2[O1, O2, O3](r: Repr[O1]#Repr[O2]#Repr[O3]): Repr[O3] = r.asInstanceOf[Repr[O3]]
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
@@ -354,25 +368,7 @@ trait FlowOps[+Out, +Mat] {
    * value of the current flow (ignoring the other Flow’s value), use
    * [[Flow#viaMat viaMat]] if a different strategy is needed.
    */
-  def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T, Mat] = viaMat(flow)(Keep.left)
-
-  /**
-   * Transform this [[Flow]] by appending the given processing steps.
-   * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
-   * }}}
-   * The `combine` function is used to compose the materialized values of this flow and that
-   * flow into the materialized value of the resulting Flow.
-   */
-  def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Repr[T, Mat3]
+  def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T]
 
   /**
    * Recover allows to send last element on failure and gracefully complete the stream
@@ -388,7 +384,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T, Mat] = andThen(Recover(pf))
+  def recover[T >: Out](pf: PartialFunction[Throwable, T]): Repr[T] = andThen(Recover(pf))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -403,7 +399,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def map[T](f: Out ⇒ T): Repr[T, Mat] = andThen(Map(f))
+  def map[T](f: Out ⇒ T): Repr[T] = andThen(Map(f))
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -423,7 +419,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T, Mat] = andThen(MapConcat(f))
+  def mapConcat[T](f: Out ⇒ immutable.Iterable[T]): Repr[T] = andThen(MapConcat(f))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -454,7 +450,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] = via(MapAsync(parallelism, f))
+  def mapAsync[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T] = via(MapAsync(parallelism, f))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -485,7 +481,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T, Mat] = via(MapAsyncUnordered(parallelism, f))
+  def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T] = via(MapAsyncUnordered(parallelism, f))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
@@ -498,7 +494,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def filter(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(Filter(p))
+  def filter(p: Out ⇒ Boolean): Repr[Out] = andThen(Filter(p))
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
@@ -511,7 +507,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def filterNot(p: Out ⇒ Boolean): Repr[Out, Mat] =
+  def filterNot(p: Out ⇒ Boolean): Repr[Out] =
     via(Flow[Out].filter(!p(_)).withAttributes(name("filterNot")))
 
   /**
@@ -531,7 +527,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' predicate returned false or downstream cancels
    */
-  def takeWhile(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(TakeWhile(p))
+  def takeWhile(p: Out ⇒ Boolean): Repr[Out] = andThen(TakeWhile(p))
 
   /**
    * Discard elements at the beginning of the stream while predicate is true.
@@ -545,7 +541,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def dropWhile(p: Out ⇒ Boolean): Repr[Out, Mat] = andThen(DropWhile(p))
+  def dropWhile(p: Out ⇒ Boolean): Repr[Out] = andThen(DropWhile(p))
 
   /**
    * Transform this stream by applying the given partial function to each of the elements
@@ -560,7 +556,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def collect[T](pf: PartialFunction[Out, T]): Repr[T, Mat] = andThen(Collect(pf))
+  def collect[T](pf: PartialFunction[Out, T]): Repr[T] = andThen(Collect(pf))
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -576,7 +572,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def grouped(n: Int): Repr[immutable.Seq[Out], Mat] = andThen(Grouped(n))
+  def grouped(n: Int): Repr[immutable.Seq[Out]] = andThen(Grouped(n))
 
   /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
@@ -593,7 +589,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Out], Mat] = andThen(Sliding(n, step))
+  def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Out]] = andThen(Sliding(n, step))
 
   /**
    * Similar to `fold` but is not a terminal operation,
@@ -613,7 +609,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T, Mat] = andThen(Scan(zero, f))
+  def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = andThen(Scan(zero, f))
 
   /**
    * Similar to `scan` but only emits its result when the upstream completes,
@@ -632,7 +628,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T, Mat] = andThen(Fold(zero, f))
+  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = andThen(Fold(zero, f))
 
   /**
    * Intersperses stream with provided element, similar to how [[scala.collection.immutable.List.mkString]]
@@ -665,7 +661,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse[T >: Out](start: T, inject: T, end: T): Repr[T, Mat] = {
+  def intersperse[T >: Out](start: T, inject: T, end: T): Repr[T] = {
     ReactiveStreamsCompliance.requireNonNullElement(start)
     ReactiveStreamsCompliance.requireNonNullElement(inject)
     ReactiveStreamsCompliance.requireNonNullElement(end)
@@ -694,7 +690,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse[T >: Out](inject: T): Repr[T, Mat] = {
+  def intersperse[T >: Out](inject: T): Repr[T] = {
     ReactiveStreamsCompliance.requireNonNullElement(inject)
     andThen(Intersperse(None, inject, None))
   }
@@ -717,7 +713,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream completes
    */
-  def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out], Mat] = {
+  def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out]] = {
     require(n > 0, "n must be greater than 0")
     require(d > Duration.Zero)
     via(new GroupedWithin[Out](n, d).withAttributes(name("groupedWithin")))
@@ -735,7 +731,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def drop(n: Long): Repr[Out, Mat] = andThen(Drop(n))
+  def drop(n: Long): Repr[Out] = andThen(Drop(n))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
@@ -748,7 +744,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def dropWithin(d: FiniteDuration): Repr[Out, Mat] =
+  def dropWithin(d: FiniteDuration): Repr[Out] =
     via(new DropWithin[Out](d).withAttributes(name("dropWithin")))
 
   /**
@@ -768,7 +764,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' the defined number of elements has been taken or downstream cancels
    */
-  def take(n: Long): Repr[Out, Mat] = andThen(Take(n))
+  def take(n: Long): Repr[Out] = andThen(Take(n))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
@@ -787,7 +783,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
-  def takeWithin(d: FiniteDuration): Repr[Out, Mat] = via(new TakeWithin[Out](d).withAttributes(name("takeWithin")))
+  def takeWithin(d: FiniteDuration): Repr[Out] = via(new TakeWithin[Out](d).withAttributes(name("takeWithin")))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -808,7 +804,7 @@ trait FlowOps[+Out, +Mat] {
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
-  def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S, Mat] = andThen(Conflate(seed, aggregate))
+  def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] = andThen(Conflate(seed, aggregate))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
@@ -834,7 +830,7 @@ trait FlowOps[+Out, +Mat] {
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: Out ⇒ S)(extrapolate: S ⇒ (U, S)): Repr[U, Mat] = andThen(Expand(seed, extrapolate))
+  def expand[S, U](seed: Out ⇒ S)(extrapolate: S ⇒ (U, S)): Repr[U] = andThen(Expand(seed, extrapolate))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -855,18 +851,15 @@ trait FlowOps[+Out, +Mat] {
    * @param size The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out, Mat] = andThen(Buffer(size, overflowStrategy))
+  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] = andThen(Buffer(size, overflowStrategy))
 
   /**
    * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
-  def transform[T](mkStage: () ⇒ Stage[Out, T]): Repr[T, Mat] =
+  def transform[T](mkStage: () ⇒ Stage[Out, T]): Repr[T] =
     via(new PushPullGraphStage((attr) ⇒ mkStage(), Attributes.none))
-
-  private[akka] def transformMaterializing[T, M](mkStageAndMaterialized: () ⇒ (Stage[Out, T], M)): Repr[T, M] =
-    viaMat(new PushPullGraphStageWithMaterializedValue[Out, T, Unit, M]((attr) ⇒ mkStageAndMaterialized(), Attributes.none))(Keep.right)
 
   /**
    * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements)
@@ -890,19 +883,27 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels or substream cancels
    *
    */
-  def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, Unit]), Mat] =
+  def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, Unit])] =
     deprecatedAndThen(PrefixAndTail(n))
 
   /**
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element
    * using the given function. When a new key is encountered for the first time
-   * it is emitted to the downstream subscriber together with a fresh
-   * flow that will eventually produce all the elements of the substream
-   * for that key. Not consuming the elements from the created streams will
-   * stop this processor from processing more elements, therefore you must take
-   * care to unblock (or cancel) all of the produced streams even if you want
-   * to consume only one of them.
+   * a new substream is opened and subsequently fed with all elements belonging to
+   * that key.
+   *
+   * The object returned from this method is not a normal [[Source]] or [[Flow]],
+   * it is a [[SubFlow]]. This means that after this combinator all transformations
+   * are applied to all encountered substreams in the same fashion. Substream mode
+   * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
+   * or by merging the substreams back together; see the `to` and `mergeBack` methods
+   * on [[SubFlow]] for more information.
+   *
+   * It is important to note that the substreams also propagate back-pressure as
+   * any other stream, which means that blocking one substream will block the `groupBy`
+   * operator itself—and thereby all substreams—once all internal or
+   * explicit buffers are filled.
    *
    * If the group by function `f` throws an exception and the supervision decision
    * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
@@ -921,9 +922,25 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels and all substreams cancel
    *
+   * @param maxSubstreams configures the maximum number of substreams (keys)
+   *        that are supported; if more distinct keys are encountered then the stream fails
    */
-  def groupBy[K, U >: Out](f: Out ⇒ K): Repr[(K, Source[U, Unit]), Mat] =
-    deprecatedAndThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
+  def groupBy[K](maxSubstreams: Int, f: Out ⇒ K): SubFlow[Out, Mat, Repr, Closed] = {
+    implicit def mat = GraphInterpreter.currentInterpreter.materializer
+    val merge = new SubFlowImpl.MergeBack[Out, Repr] {
+      override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
+        deprecatedAndThen[Source[Out, Unit]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
+          .map(_.via(flow))
+          .flatMapMerge(maxSubstreams, conforms)
+      /*
+       * FIXME remove all those commented workarounds above by implementing flatMapMerge(breadth)
+       */
+    }
+    val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
+      deprecatedAndThen[Source[Out, Unit]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
+        .to(Sink.foreach(_.runWith(s)))
+    new SubFlowImpl(Flow[Out], merge, finish)
+  }
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -946,6 +963,18 @@ trait FlowOps[+Out, +Mat] {
    * true, false        // subsequent substreams operate the same way
    * }}}
    *
+   * The object returned from this method is not a normal [[Source]] or [[Flow]],
+   * it is a [[SubFlow]]. This means that after this combinator all transformations
+   * are applied to all encountered substreams in the same fashion. Substream mode
+   * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
+   * or by merging the substreams back together; see the `to` and `mergeBack` methods
+   * on [[SubFlow]] for more information.
+   *
+   * It is important to note that the substreams also propagate back-pressure as
+   * any other stream, which means that blocking one substream will block the `splitWhen`
+   * operator itself—and thereby all substreams—once all internal or
+   * explicit buffers are filled.
+   *
    * If the split predicate `p` throws an exception and the supervision decision
    * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
    * with failure.
@@ -966,8 +995,18 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.splitAfter]].
    */
-  def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Source[U, Unit], Mat] =
-    deprecatedAndThen(Split.when(p.asInstanceOf[Any ⇒ Boolean]))
+  def splitWhen(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
+    val merge = new SubFlowImpl.MergeBack[Out, Repr] {
+      override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
+        deprecatedAndThen[Source[Out, Unit]](Split.when(p.asInstanceOf[Any ⇒ Boolean]))
+          .map(_.via(flow))
+          .flatMapConcat(conforms)
+    }
+    val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
+      deprecatedAndThen[Source[Out, Unit]](Split.when(p.asInstanceOf[Any ⇒ Boolean]))
+        .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
+    new SubFlowImpl(Flow[Out], merge, finish)
+  }
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -980,6 +1019,18 @@ trait FlowOps[+Out, +Mat] {
    * false, true,        // elements go into second substream
    * false, false, true  // elements go into third substream
    * }}}
+   *
+   * The object returned from this method is not a normal [[Source]] or [[Flow]],
+   * it is a [[SubFlow]]. This means that after this combinator all transformations
+   * are applied to all encountered substreams in the same fashion. Substream mode
+   * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
+   * or by merging the substreams back together; see the `to` and `mergeBack` methods
+   * on [[SubFlow]] for more information.
+   *
+   * It is important to note that the substreams also propagate back-pressure as
+   * any other stream, which means that blocking one substream will block the `splitAfter`
+   * operator itself—and thereby all substreams—once all internal or
+   * explicit buffers are filled.
    *
    * If the split predicate `p` throws an exception and the supervision decision
    * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
@@ -1001,8 +1052,18 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.splitWhen]].
    */
-  def splitAfter[U >: Out](p: Out ⇒ Boolean): Repr[Source[U, Unit], Mat] =
-    deprecatedAndThen(Split.after(p.asInstanceOf[Any ⇒ Boolean]))
+  def splitAfter(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
+    val merge = new SubFlowImpl.MergeBack[Out, Repr] {
+      override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
+        deprecatedAndThen[Source[Out, Unit]](Split.after(p.asInstanceOf[Any ⇒ Boolean]))
+          .map(_.via(flow))
+          .flatMapConcat(conforms)
+    }
+    val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
+      deprecatedAndThen[Source[Out, Unit]](Split.after(p.asInstanceOf[Any ⇒ Boolean]))
+        .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
+    new SubFlowImpl(Flow[Out], merge, finish)
+  }
 
   /**
    * Transform each input element into a `Source` of output elements that is
@@ -1017,7 +1078,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def flatMapConcat[T, M](f: Out ⇒ Source[T, M]): Repr[T, Mat] = map(f).via(new FlattenMerge[T, M](1))
+  def flatMapConcat[T, M](f: Out ⇒ Graph[SourceShape[T], M]): Repr[T] = map(f).via(new FlattenMerge[T, M](1))
 
   /**
    * Transform each input element into a `Source` of output elements that is
@@ -1032,7 +1093,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def flatMapMerge[T, M](breadth: Int, f: Out ⇒ Source[T, M]): Repr[T, Mat] = map(f).via(new FlattenMerge[T, M](breadth))
+  def flatMapMerge[T, M](breadth: Int, f: Out ⇒ Graph[SourceShape[T], M]): Repr[T] = map(f).via(new FlattenMerge[T, M](breadth))
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed
@@ -1046,7 +1107,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def initialTimeout(timeout: FiniteDuration): Repr[Out, Mat] = via(new Timers.Initial[Out](timeout))
+  def initialTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.Initial[Out](timeout))
 
   /**
    * If the completion of the stream does not happen until the provided timeout, the stream is failed
@@ -1060,7 +1121,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def completionTimeout(timeout: FiniteDuration): Repr[Out, Mat] = via(new Timers.Completion[Out](timeout))
+  def completionTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.Completion[Out](timeout))
 
   /**
    * If the time between two processed elements exceed the provided timeout, the stream is failed
@@ -1074,7 +1135,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def idleTimeout(timeout: FiniteDuration): Repr[Out, Mat] = via(new Timers.Idle[Out](timeout))
+  def idleTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.Idle[Out](timeout))
 
   /**
    * Injects additional elements if the upstream does not emit for a configured amount of time. In other words, this
@@ -1093,7 +1154,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def keepAlive[U >: Out](maxIdle: FiniteDuration, injectedElem: () ⇒ U): Repr[U, Mat] =
+  def keepAlive[U >: Out](maxIdle: FiniteDuration, injectedElem: () ⇒ U): Repr[U] =
     via(new Timers.IdleInject[Out, U](maxIdle, injectedElem))
 
   /**
@@ -1120,7 +1181,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
-               mode: ThrottleMode): Repr[Out, Mat] = {
+               mode: ThrottleMode): Repr[Out] = {
     require(elements > 0, "elements must be > 0")
     require(per.toMillis > 0, "per time must be > 0")
     require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
@@ -1154,7 +1215,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
-               costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out, Mat] = {
+               costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] = {
     require(per.toMillis > 0, "per time must be > 0")
     require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
     via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
@@ -1171,7 +1232,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def initialDelay(delay: FiniteDuration): Repr[Out, Mat] = via(new Timers.DelayInitial[Out](delay))
+  def initialDelay(delay: FiniteDuration): Repr[Out] = via(new Timers.DelayInitial[Out](delay))
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.
@@ -1190,7 +1251,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def log(name: String, extract: Out ⇒ Any = ConstantFun.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Out, Mat] =
+  def log(name: String, extract: Out ⇒ Any = ConstantFun.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Out] =
     andThen(Stages.Log(name, extract.asInstanceOf[Any ⇒ Any], Option(log)))
 
   /**
@@ -1204,21 +1265,16 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def zip[U](that: Graph[SourceShape[U], _]): Repr[(Out, U), Mat] = zipMat(that)(Keep.left)
+  def zip[U](that: Graph[SourceShape[U], _]): Repr[(Out, U)] = via(zipGraph(that))
 
-  /**
-   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
-   *
-   * @see [[#zip]].
-   */
-  def zipMat[U, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[(Out, U), Mat3] =
-    this.viaMat(GraphDSL.create(that) { implicit b ⇒
+  protected def zipGraph[U, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, (Out, U)], M] =
+    GraphDSL.create(that) { implicit b ⇒
       r ⇒
         import GraphDSL.Implicits._
         val zip = b.add(Zip[Out, U]())
         r ~> zip.in1
         FlowShape(zip.in0, zip.out)
-    })(matF)
+    }
 
   /**
    * Put together the elements of current flow and the given [[Source]]
@@ -1232,23 +1288,17 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWith[Out2, Out3](that: Graph[SourceShape[Out2], _])(combine: (Out, Out2) ⇒ Out3): Repr[Out3, Mat] =
-    zipWithMat(that)(combine)(Keep.left)
+  def zipWith[Out2, Out3](that: Graph[SourceShape[Out2], _])(combine: (Out, Out2) ⇒ Out3): Repr[Out3] =
+    via(zipWithGraph(that)(combine))
 
-  /**
-   * Put together the elements of current flow and the given [[Source]]
-   * into a stream of combined elements using a combiner function.
-   *
-   * @see [[#zipWith]].
-   */
-  def zipWithMat[Out2, Out3, Mat2, Mat3](that: Graph[SourceShape[Out2], Mat2])(combine: (Out, Out2) ⇒ Out3)(matF: (Mat, Mat2) ⇒ Mat3): Repr[Out3, Mat3] =
-    this.viaMat(GraphDSL.create(that) { implicit b ⇒
+  protected def zipWithGraph[Out2, Out3, M](that: Graph[SourceShape[Out2], M])(combine: (Out, Out2) ⇒ Out3): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
+    GraphDSL.create(that) { implicit b ⇒
       r ⇒
         import GraphDSL.Implicits._
         val zip = b.add(ZipWith[Out, Out2, Out3](combine))
         r ~> zip.in1
         FlowShape(zip.in0, zip.out)
-    })(matF)
+    }
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
@@ -1262,23 +1312,17 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge[U >: Out](that: Graph[SourceShape[U], _]): Repr[U, Mat] =
-    mergeMat(that)(Keep.left)
+  def merge[U >: Out](that: Graph[SourceShape[U], _]): Repr[U] =
+    via(mergeGraph(that))
 
-  /**
-   * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
-   * picking randomly when several elements ready.
-   *
-   * @see [[#merge]].
-   */
-  def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
-    this.viaMat(GraphDSL.create(that) { implicit b ⇒
+  protected def mergeGraph[U >: Out, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    GraphDSL.create(that) { implicit b ⇒
       r ⇒
         import GraphDSL.Implicits._
         val merge = b.add(Merge[U](2))
         r ~> merge.in(1)
         FlowShape(merge.in(0), merge.out)
-    })(matF)
+    }
 
   /**
    * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
@@ -1298,29 +1342,17 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def concat[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Repr[U, Mat] =
-    concatMat(that)(Keep.left)
+  def concat[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Repr[U] =
+    via(concatGraph(that))
 
-  /**
-   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
-   * Flow’s input is exhausted and all result elements have been generated,
-   * the Source’s elements will be produced.
-   *
-   * Note that the [[Source]] is materialized together with this Flow and just kept
-   * from producing elements by asserting back-pressure until its time comes.
-   *
-   * If this [[Flow]] gets upstream error - no elements from the given [[Source]] will be pulled.
-   *
-   * @see [[#concat]].
-   */
-  def concatMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
-    this.viaMat(GraphDSL.create(that) { implicit b ⇒
+  protected def concatGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
+    GraphDSL.create(that) { implicit b ⇒
       r ⇒
         import GraphDSL.Implicits._
         val merge = b.add(Concat[U]())
         r ~> merge.in(1)
         FlowShape(merge.in(0), merge.out)
-    })(matF)
+    }
 
   /**
    * Concatenates this [[Flow]] with the given [[Source]] so the first element
@@ -1329,7 +1361,26 @@ trait FlowOps[+Out, +Mat] {
    *
    * This is a shorthand for [[concat]]
    */
-  def ++[U >: Out, M](that: Graph[SourceShape[U], M]): Repr[U, Mat] = concat(that)
+  def ++[U >: Out, M](that: Graph[SourceShape[U], M]): Repr[U] = concat(that)
+
+  /**
+   * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Sink             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | flow | ~Out~> | sink |  |
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The materialized value of the combined [[Sink]] will be the materialized
+   * value of the current flow (ignoring the given Sink’s value), use
+   * [[Flow#toMat[Mat2* toMat]] if a different strategy is needed.
+   */
+  def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
@@ -1343,7 +1394,112 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out, Mat] = alsoToMat(that)(Keep.left)
+  def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out] = via(alsoToGraph(that))
+
+  protected def alsoToGraph[M](that: Graph[SinkShape[Out], M]): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
+    GraphDSL.create(that) { implicit b ⇒
+      r ⇒
+        import GraphDSL.Implicits._
+        val bcast = b.add(Broadcast[Out](2))
+        bcast.out(1) ~> r
+        FlowShape(bcast.in, bcast.out(0))
+    }
+
+  def withAttributes(attr: Attributes): Repr[Out]
+
+  def named(name: String): Repr[Out] = withAttributes(Attributes.name(name))
+
+  /** INTERNAL API */
+  private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T] =
+    via(SymbolicGraphStage(op))
+
+  private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U]
+}
+
+/**
+ * INTERNAL API: extending this trait is not supported under the binary compatibility rules for Akka.
+ */
+trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
+
+  type ReprMat[+O, +M] <: FlowOpsMat[O, M]
+  type ClosedMat[+M] <: Graph[_, M]
+
+  /**
+   * Transform this [[Flow]] by appending the given processing steps.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Flow             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | this | ~Out~> | flow | ~~> T
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * flow into the materialized value of the resulting Flow.
+   */
+  def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[T, Mat3]
+
+  /**
+   * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
+   * {{{
+   *     +----------------------------+
+   *     | Resulting Sink             |
+   *     |                            |
+   *     |  +------+        +------+  |
+   *     |  |      |        |      |  |
+   * In ~~> | flow | ~Out~> | sink |  |
+   *     |  |      |        |      |  |
+   *     |  +------+        +------+  |
+   *     +----------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * Sink into the materialized value of the resulting Sink.
+   */
+  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ClosedMat[Mat3]
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * @see [[#zip]].
+   */
+  def zipMat[U, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[(Out, U), Mat3] =
+    viaMat(zipGraph(that))(matF)
+
+  /**
+   * Put together the elements of current flow and the given [[Source]]
+   * into a stream of combined elements using a combiner function.
+   *
+   * @see [[#zipWith]].
+   */
+  def zipWithMat[Out2, Out3, Mat2, Mat3](that: Graph[SourceShape[Out2], Mat2])(combine: (Out, Out2) ⇒ Out3)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out3, Mat3] =
+    viaMat(zipWithGraph(that)(combine))(matF)
+
+  /**
+   * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
+   * picking randomly when several elements ready.
+   *
+   * @see [[#merge]].
+   */
+  def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+    viaMat(mergeGraph(that))(matF)
+
+  /**
+   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced.
+   *
+   * Note that the [[Source]] is materialized together with this Flow and just kept
+   * from producing elements by asserting back-pressure until its time comes.
+   *
+   * If this [[Flow]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   *
+   * @see [[#concat]].
+   */
+  def concatMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+    viaMat(concatGraph(that))(matF)
 
   /**
    * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
@@ -1351,20 +1507,13 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#alsoTo]]
    */
-  def alsoToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): Repr[Out, Mat3] =
-    this.viaMat(GraphDSL.create(that) { implicit b ⇒
-      r ⇒
-        import GraphDSL.Implicits._
-        val bcast = b.add(Broadcast[Out](2))
-        bcast.out(1) ~> r
-        FlowShape(bcast.in, bcast.out(0))
-    })(matF)
+  def alsoToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
+    viaMat(alsoToGraph(that))(matF)
 
-  def withAttributes(attr: Attributes): Repr[Out, Mat]
+  /**
+   * INTERNAL API.
+   */
+  private[akka] def transformMaterializing[T, M](mkStageAndMaterialized: () ⇒ (Stage[Out, T], M)): ReprMat[T, M] =
+    viaMat(new PushPullGraphStageWithMaterializedValue[Out, T, Unit, M]((attr) ⇒ mkStageAndMaterialized(), Attributes.none))(Keep.right)
 
-  /** INTERNAL API */
-  private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T, Mat] =
-    via(SymbolicGraphStage(op))
-
-  private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U, Mat]
 }

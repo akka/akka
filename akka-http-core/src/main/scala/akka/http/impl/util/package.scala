@@ -47,14 +47,6 @@ package object util {
   private[http] implicit def enhanceByteStringsMat[Mat](byteStrings: Source[ByteString, Mat]): EnhancedByteStringSource[Mat] =
     new EnhancedByteStringSource(byteStrings)
 
-  private[http] def headAndTailFlow[T]: Flow[Source[T, Any], (T, Source[T, Unit]), Unit] =
-    Flow[Source[T, Any]]
-      .flatMapConcat {
-        _.prefixAndTail(1)
-          .filter(_._1.nonEmpty)
-          .map { case (prefix, tail) ⇒ (prefix.head, tail) }
-      }
-
   private[http] def printEvent[T](marker: String): Flow[T, T, Unit] =
     Flow[T].transform(() ⇒ new PushPullStage[T, T] {
       override def onPush(element: T, ctx: Context[T]): SyncDirective = {
@@ -109,10 +101,6 @@ package object util {
         super.onUpstreamFailure(cause, ctx)
       }
     }
-
-  private[this] val _identityFunc: Any ⇒ Any = x ⇒ x
-  /** Returns a constant identity function to avoid allocating the closure */
-  private[http] def identityFunc[T]: T ⇒ T = _identityFunc.asInstanceOf[T ⇒ T]
 
   private[http] def humanReadableByteCount(bytes: Long, si: Boolean): String = {
     val unit = if (si) 1000 else 1024

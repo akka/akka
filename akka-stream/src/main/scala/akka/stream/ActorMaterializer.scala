@@ -324,6 +324,9 @@ final class ActorMaterializerSettings(
     })
   }
 
+  def withSubscriptionTimeoutSettings(sub: StreamSubscriptionTimeoutSettings): ActorMaterializerSettings =
+    copy(subscriptionTimeoutSettings = sub)
+
   def withFuzzing(enable: Boolean): ActorMaterializerSettings = {
     if (enable == this.fuzzingMode) this
     else copy(fuzzingMode = enable)
@@ -379,4 +382,3 @@ object StreamSubscriptionTimeoutTerminationMode {
   def cancel = CancelTermination
 
 }
-

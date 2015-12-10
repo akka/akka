@@ -35,7 +35,7 @@ trait BasicDirectives {
     Directive { inner ⇒ ctx ⇒ inner(())(ctx).fast.flatMap(f)(ctx.executionContext) }
 
   def mapRouteResultPF(f: PartialFunction[RouteResult, RouteResult]): Directive0 =
-    mapRouteResult(f.applyOrElse(_, akka.http.impl.util.identityFunc[RouteResult]))
+    mapRouteResult(f.applyOrElse(_, conforms[RouteResult]))
 
   def mapRouteResultWithPF(f: PartialFunction[RouteResult, Future[RouteResult]]): Directive0 =
     mapRouteResultWith(f.applyOrElse(_, FastFuture.successful[RouteResult]))
@@ -195,5 +195,5 @@ object BasicDirectives extends BasicDirectives {
   private val _extractMaterializer: Directive1[Materializer] = extract(_.materializer)
   private val _extractLog: Directive1[LoggingAdapter] = extract(_.log)
   private val _extractSettings: Directive1[RoutingSettings] = extract(_.settings)
-  private val _extractRequestContext: Directive1[RequestContext] = extract(akka.http.impl.util.identityFunc)
+  private val _extractRequestContext: Directive1[RequestContext] = extract(conforms)
 }

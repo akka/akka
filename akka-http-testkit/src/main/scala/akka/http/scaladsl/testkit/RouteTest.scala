@@ -110,7 +110,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
    * The result of the pipeline is the result that can later be checked with `check`. See the
    * "separate running route from checking" example from ScalatestRouteTestSpec.scala.
    */
-  def runRoute: RouteTestResult ⇒ RouteTestResult = akka.http.impl.util.identityFunc
+  def runRoute: RouteTestResult ⇒ RouteTestResult = conforms
 
   // there is already an implicit class WithTransformation in scope (inherited from akka.http.scaladsl.testkit.TransformerPipelineSupport)
   // however, this one takes precedence
