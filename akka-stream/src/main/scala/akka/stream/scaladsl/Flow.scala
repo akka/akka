@@ -1301,6 +1301,51 @@ trait FlowOps[+Out, +Mat] {
     }
 
   /**
+   * Interleave represents deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It takes `request` number of elements from this flow to emit downstream, then - same amount for given source,
+   * then repeat process from the beginning.
+   *
+   * Example:
+   * {{{
+   * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2) // 1, 2, 4, 5, 3, 6, 7
+   * }}}
+   *
+   * After [[Flow]] or [[Source]] is complete than all the rest elements will be emitted from the second one
+   *
+   * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
+   *
+   * '''Emits when''' element is available from current stream or from the given [[Source]] depending on what was pulled
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' the [[Flow]] and given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def interleave[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2], request: Int): Repr[U, Mat] =
+    interleaveMat(that, request)(Keep.left)
+
+  /**
+   * Interleave represents deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It takes `request` number of elements from this flow to emit downstream, then - same amount for given source,
+   * then repeat process from the beginning.
+   *
+   * After [[Flow]] or [[Source]] is complete than all the rest elements will be emitted from the second one
+   *
+   * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
+   *
+   * @see [[#interleave]].
+   */
+  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int)(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
+    this.viaMat(GraphDSL.create(that) { implicit b ⇒
+      r ⇒
+        import GraphDSL.Implicits._
+        val interleave = b.add(Interleave[U](2, request))
+        r ~> interleave.in(1)
+        FlowShape(interleave.in(0), interleave.out)
+    })(matF)
+
+  /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *
