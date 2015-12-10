@@ -13,8 +13,8 @@ import akka.stream.actor.ActorPublisherMessage._
 import java.{ util ⇒ ju }
 import scala.concurrent._
 
-final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Source[T, M], T]] {
-  private val in = Inlet[Source[T, M]]("flatten.in")
+final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[SourceShape[T], M], T]] {
+  private val in = Inlet[Graph[SourceShape[T], M]]("flatten.in")
   private val out = Outlet[T]("flatten.out")
   override val shape = FlowShape(in, out)
 
@@ -96,25 +96,26 @@ final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Source
       override def onPull(): Unit = if (q.hasData && isAvailable(out)) pushOut()
     }
 
-    def addSource(source: Source[T, M]): Unit = {
+    def addSource(source: Graph[SourceShape[T], M]): Unit = {
       val localSource = new LocalSource[T]()
       sources += localSource
-      val subF = source.runWith(new LocalSink(getAsyncCallback[ActorSubscriberMessage] {
-        case OnNext(elem) ⇒
-          val elemT = elem.asInstanceOf[T]
-          if (isAvailable(out)) {
-            push(out, elemT)
-            localSource.pull()
-          } else {
-            localSource.elem = elemT
-            q.enqueue(localSource)
-          }
-        case OnComplete ⇒
-          localSource.deactivate()
-          if (localSource.elem == null) removeSource(localSource)
-        case OnError(ex) ⇒
-          failStage(ex)
-      }.invoke))(interpreter.materializer)
+      val subF = Source.fromGraph(source)
+        .runWith(new LocalSink(getAsyncCallback[ActorSubscriberMessage] {
+          case OnNext(elem) ⇒
+            val elemT = elem.asInstanceOf[T]
+            if (isAvailable(out)) {
+              push(out, elemT)
+              localSource.pull()
+            } else {
+              localSource.elem = elemT
+              q.enqueue(localSource)
+            }
+          case OnComplete ⇒
+            localSource.deactivate()
+            if (localSource.elem == null) removeSource(localSource)
+          case OnError(ex) ⇒
+            failStage(ex)
+        }.invoke))(interpreter.materializer)
       localSource.activate(subF)
     }
 

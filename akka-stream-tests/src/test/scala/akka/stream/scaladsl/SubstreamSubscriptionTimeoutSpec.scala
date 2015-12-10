@@ -14,6 +14,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
+  import FlowGroupBySpec._
 
   def this(subscriptionTimeout: FiniteDuration) {
     this(
@@ -41,7 +42,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
     "timeout and cancel substream publishers when no-one subscribes to them after some time (time them out)" in assertAllStagesStopped {
       val publisherProbe = TestPublisher.manualProbe[Int]()
-      val publisher = Source(publisherProbe).groupBy(_ % 3).runWith(Sink.publisher(false))
+      val publisher = Source(publisherProbe).groupBy(3, _ % 3).lift(_ % 3).runWith(Sink.publisher(false))
       val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
       publisher.subscribe(subscriber)
 
@@ -83,7 +84,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
     "timeout and stop groupBy parent actor if none of the substreams are actually consumed" in assertAllStagesStopped {
       val publisherProbe = TestPublisher.manualProbe[Int]()
-      val publisher = Source(publisherProbe).groupBy(_ % 2).runWith(Sink.publisher(false))
+      val publisher = Source(publisherProbe).groupBy(2, _ % 2).lift(_ % 2).runWith(Sink.publisher(false))
       val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
       publisher.subscribe(subscriber)
 
@@ -99,16 +100,11 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
       val (_, s1) = subscriber.expectNext()
       val (_, s2) = subscriber.expectNext()
-
-      val groupByActor = watchGroupByActor(4) // update this number based on how many streams the test above has...
-
-      // it should be terminated after none of it's substreams are used within the timeout
-      expectTerminated(groupByActor, 1000.millis)
     }
 
     "not timeout and cancel substream publishers when they have been subscribed to" in {
       val publisherProbe = TestPublisher.manualProbe[Int]()
-      val publisher = Source(publisherProbe).groupBy(_ % 2).runWith(Sink.publisher(false))
+      val publisher = Source(publisherProbe).groupBy(2, _ % 2).lift(_ % 2).runWith(Sink.publisher(false))
       val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
       publisher.subscribe(subscriber)
 
@@ -145,23 +141,6 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
       s1SubscriberProbe.expectNext(3)
       s2SubscriberProbe.expectNext(4)
     }
-  }
-
-  private def watchGroupByActor(flowNr: Int): ActorRef = {
-    implicit val t = Timeout(300.millis)
-    import akka.pattern.ask
-
-    val path = (materializer.supervisor.path / s"flow-${flowNr}-1-groupBy").toStringWithoutAddress
-    val gropByPath = system.actorSelection(path)
-    val groupByActor = try {
-      Await.result((gropByPath ? Identify("")).mapTo[ActorIdentity], 300.millis).ref.get
-    } catch {
-      case ex: Exception ⇒
-        alert(s"Unable to find groupBy actor by path: [$path], please adjust it's flowId, here's the current actor tree:\n" +
-          system.asInstanceOf[ExtendedActorSystem].printTree)
-        throw ex
-    }
-    watch(groupByActor)
   }
 
 }

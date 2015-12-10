@@ -656,19 +656,19 @@ object GraphDSL extends GraphApply {
       else junction.in(n)
     }
 
-    sealed trait CombinerBase[T] extends Any {
-      def importAndGetPort(b: Builder[_]): Outlet[T]
+    sealed trait CombinerBase[+T] extends Any {
+      def importAndGetPort(b: Builder[_]): Outlet[T @uncheckedVariance]
 
       def ~>[U >: T](to: Inlet[U])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), to)
 
-      def ~>[Out](via: Graph[FlowShape[T, Out], Any])(implicit b: Builder[_]): PortOps[Out, Unit] = {
+      def ~>[Out](via: Graph[FlowShape[T, Out], Any])(implicit b: Builder[_]): PortOps[Out] = {
         val s = b.add(via)
         b.addEdge(importAndGetPort(b), s.inlet)
         s.outlet
       }
 
-      def ~>[Out](junction: UniformFanInShape[T, Out])(implicit b: Builder[_]): PortOps[Out, Unit] = {
+      def ~>[Out](junction: UniformFanInShape[T, Out])(implicit b: Builder[_]): PortOps[Out] = {
         def bind(n: Int): Unit = {
           if (n == junction.inSeq.length)
             throw new IllegalArgumentException(s"no more inlets free on $junction")
@@ -679,7 +679,7 @@ object GraphDSL extends GraphApply {
         junction.out
       }
 
-      def ~>[Out](junction: UniformFanOutShape[T, Out])(implicit b: Builder[_]): PortOps[Out, Unit] = {
+      def ~>[Out](junction: UniformFanOutShape[T, Out])(implicit b: Builder[_]): PortOps[Out] = {
         b.addEdge(importAndGetPort(b), junction.in)
         try findOut(b, junction, 0)
         catch {
@@ -687,7 +687,7 @@ object GraphDSL extends GraphApply {
         }
       }
 
-      def ~>[Out](flow: FlowShape[T, Out])(implicit b: Builder[_]): PortOps[Out, Unit] = {
+      def ~>[Out](flow: FlowShape[T, Out])(implicit b: Builder[_]): PortOps[Out] = {
         b.addEdge(importAndGetPort(b), flow.inlet)
         flow.outlet
       }
@@ -744,31 +744,37 @@ object GraphDSL extends GraphApply {
 
     // Although Mat is always Unit, it cannot be removed as a type parameter, otherwise the "override type"
     // won't work below
-    class PortOps[Out, Mat](val outlet: Outlet[Out], b: Builder[_]) extends FlowOps[Out, Mat] with CombinerBase[Out] {
-      override type Repr[+O, +M] = PortOps[O, M] @uncheckedVariance
+    trait PortOps[+Out] extends FlowOps[Out, Unit] with CombinerBase[Out] {
+      override type Repr[+O] = PortOps[O]
+      override type Closed = Unit
+      def outlet: Outlet[Out @uncheckedVariance]
+    }
 
-      override def withAttributes(attr: Attributes): Repr[Out, Mat] =
+    private class PortOpsImpl[+Out](override val outlet: Outlet[Out @uncheckedVariance], b: Builder[_])
+      extends PortOps[Out] {
+
+      override def withAttributes(attr: Attributes): Repr[Out] =
         throw new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
 
-      override def importAndGetPort(b: Builder[_]): Outlet[Out] = outlet
+      override def importAndGetPort(b: Builder[_]): Outlet[Out @uncheckedVariance] = outlet
 
-      override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T, Mat] =
-        super.~>(flow)(b).asInstanceOf[Repr[T, Mat]]
+      override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] =
+        super.~>(flow)(b)
 
-      override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3) =
-        throw new UnsupportedOperationException("Cannot use viaMat on a port")
-
-      override private[scaladsl] def deprecatedAndThen[U](op: StageModule): PortOps[U, Mat] = {
+      override private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U] = {
         b.deprecatedAndThen(outlet, op)
-        new PortOps(op.shape.outlet.asInstanceOf[Outlet[U]], b)
+        new PortOpsImpl(op.shape.outlet.asInstanceOf[Outlet[U]], b)
       }
+
+      def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed =
+        super.~>(sink)(b)
 
     }
 
-    final class DisabledPortOps[Out, Mat](msg: String) extends PortOps[Out, Mat](null, null) {
+    private class DisabledPortOps[Out, Mat](msg: String) extends PortOpsImpl[Out](null, null) {
       override def importAndGetPort(b: Builder[_]): Outlet[Out] = throw new IllegalArgumentException(msg)
 
-      override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3) =
+      override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] =
         throw new IllegalArgumentException(msg)
     }
 
@@ -872,14 +878,14 @@ object GraphDSL extends GraphApply {
 
     import scala.language.implicitConversions
 
-    implicit def port2flow[T](from: Outlet[T])(implicit b: Builder[_]): PortOps[T, Unit] =
-      new PortOps(from, b)
+    implicit def port2flow[T](from: Outlet[T])(implicit b: Builder[_]): PortOps[T] =
+      new PortOpsImpl(from, b)
 
-    implicit def fanOut2flow[I, O](j: UniformFanOutShape[I, O])(implicit b: Builder[_]): PortOps[O, Unit] =
-      new PortOps(findOut(b, j, 0), b)
+    implicit def fanOut2flow[I, O](j: UniformFanOutShape[I, O])(implicit b: Builder[_]): PortOps[O] =
+      new PortOpsImpl(findOut(b, j, 0), b)
 
-    implicit def flow2flow[I, O](f: FlowShape[I, O])(implicit b: Builder[_]): PortOps[O, Unit] =
-      new PortOps(f.outlet, b)
+    implicit def flow2flow[I, O](f: FlowShape[I, O])(implicit b: Builder[_]): PortOps[O] =
+      new PortOpsImpl(f.outlet, b)
 
     implicit final class SourceArrow[T](val s: Graph[SourceShape[T], _]) extends AnyVal with CombinerBase[T] {
       override def importAndGetPort(b: Builder[_]): Outlet[T] = b.add(s).outlet

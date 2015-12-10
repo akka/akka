@@ -107,23 +107,28 @@ Implementing reduce-by-key
 elements.
 
 The "hello world" of reduce-by-key style operations is *wordcount* which we demonstrate below. Given a stream of words
-we first create a new stream ``wordStreams`` that groups the words according to the ``i -> i`` function, i.e. now
+we first create a new stream that groups the words according to the ``i -> i`` function, i.e. now
 we have a stream of streams, where every substream will serve identical words.
 
-To count the words, we need to process the stream of streams (the actual groups containing identical words). By mapping
-over the groups and using ``fold`` (remember that ``fold`` automatically materializes and runs the stream it is used
-on) we get a stream with elements of ``Future[String,Int]``. Now all we need is to flatten this stream, which
-can be achieved by calling ``mapAsync`` with ``i -> i`` identity function.
+To count the words, we need to process the stream of streams (the actual groups
+containing identical words). ``groupBy`` returns a :class:`SubSource`, which
+means that we transform the resulting substreams directly. In this case we use
+the ``fold`` combinator to aggregate the word itself and the number of its
+occurrences within a :class:`Pair<String, Integer>`. Each substream will then
+emit one final value—precisely such a pair—when the overall input completes. As
+a last step we merge back these values from the substreams into one single
+output stream.
 
-There is one tricky issue to be noted here. The careful reader probably noticed that we put a ``buffer`` between the
-``mapAsync()`` operation that flattens the stream of futures and the actual stream of futures. The reason for this is
-that the substreams produced by ``groupBy()`` can only complete when the original upstream source completes. This means
-that ``mapAsync()`` cannot pull for more substreams because it still waits on folding futures to finish, but these
-futures never finish if the additional group streams are not consumed. This typical deadlock situation is resolved by
-this buffer which either able to contain all the group streams (which ensures that they are already running and folding)
-or fails with an explicit failure instead of a silent deadlock.
+One noteworthy detail pertains to the ``MAXIMUM_DISTINCT_WORDS`` parameter:
+this defines the breadth of the merge operation. Akka Streams is focused on
+bounded resource consumption and the number of concurrently open inputs to the
+merge operator describes the amount of resources needed by the merge itself.
+Therefore only a finite number of substreams can be active at any given time.
+If the ``groupBy`` operator encounters more keys than this number then the
+stream cannot continue without violating its resource bound, in this case
+``groupBy`` will terminate with a failure.
 
-.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeReduceByKey.java#word-count
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeReduceByKeyTest.java#word-count
 
 By extracting the parts specific to *wordcount* into
 
@@ -133,13 +138,14 @@ By extracting the parts specific to *wordcount* into
 
 we get a generalized version below:
 
-.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeReduceByKey.java#reduce-by-key-general
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeReduceByKeyTest.java#reduce-by-key-general
 
-.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeReduceByKey.java#reduce-by-key-general2
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeReduceByKeyTest.java#reduce-by-key-general2
 
 .. note::
-  Please note that the reduce-by-key version we discussed above is sequential, in other words it is **NOT** a
-  parallelization pattern like mapReduce and similar frameworks.
+  Please note that the reduce-by-key version we discussed above is sequential
+  in reading the overall input stream, in other words it is **NOT** a
+  parallelization pattern like MapReduce and similar frameworks.
 
 Sorting elements to multiple groups with groupBy
 ------------------------------------------------
@@ -150,12 +156,12 @@ Sometimes we want to map elements into multiple groups simultaneously.
 To achieve the desired result, we attack the problem in two steps:
 
 * first, using a function ``topicMapper`` that gives a list of topics (groups) a message belongs to, we transform our
-  stream of ``Message`` to a stream of ``(Message, Topic)`` where for each topic the message belongs to a separate pair
+  stream of ``Message`` to a stream of :class:`Pair<Message, Topic>`` where for each topic the message belongs to a separate pair
   will be emitted. This is achieved by using ``mapConcat``
 * Then we take this new stream of message topic pairs (containing a separate pair for each topic a given message
   belongs to) and feed it into groupBy, using the topic as the group key.
 
-.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeMultiGroupBy.java#multi-groupby
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/cookbook/RecipeMultiGroupByTest.java#multi-groupby
 
 Working with Graphs
 ===================

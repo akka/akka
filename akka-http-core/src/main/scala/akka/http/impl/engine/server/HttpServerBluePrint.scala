@@ -87,7 +87,9 @@ private[http] object HttpServerBluePrint {
     BidiFlow.fromFlows(Flow[HttpResponse],
       Flow[RequestOutput]
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
-        .via(headAndTailFlow)
+        .prefixAndTail(1)
+        .map(p ⇒ p._1.head -> p._2)
+        .concatSubstreams
         .via(requestStartOrRunIgnore(settings)))
 
   def requestStartOrRunIgnore(settings: ServerSettings)(implicit mat: Materializer): Flow[(ParserOutput.RequestOutput, Source[ParserOutput.RequestOutput, Unit]), HttpRequest, Unit] =
