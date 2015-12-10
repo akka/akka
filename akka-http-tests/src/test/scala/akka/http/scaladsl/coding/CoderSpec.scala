@@ -32,6 +32,18 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
   def extraTests(): Unit = {}
 
   s"The ${Coder.encoding.value} codec" should {
+    "produce valid data on immediate finish" in {
+      streamDecode(Coder.newCompressor.finish()) should readAs(emptyText)
+    }
+    "properly encode an empty string" in {
+      streamDecode(ourEncode(emptyTextBytes)) should readAs(emptyText)
+    }
+    "properly decode an empty string" in {
+      ourDecode(streamEncode(emptyTextBytes)) should readAs(emptyText)
+    }
+    "properly round-trip encode/decode an empty string" in {
+      ourDecode(ourEncode(emptyTextBytes)) should readAs(emptyText)
+    }
     "properly encode a small string" in {
       streamDecode(ourEncode(smallTextBytes)) should readAs(smallText)
     }
