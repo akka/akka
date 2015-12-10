@@ -62,6 +62,9 @@ private[stream] object Stages {
     val unzip = name("unzip")
     val concat = name("concat")
     val repeat = name("repeat")
+    val unfold = name("unfold")
+    val unfoldAsync = name("unfoldAsync")
+    val unfoldInf = name("unfoldInf")
 
     val publisherSource = name("publisherSource")
     val iterableSource = name("iterableSource")
