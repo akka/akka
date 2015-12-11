@@ -17,7 +17,7 @@ class FlowSlidingSpec extends AkkaSpec {
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val mat = ActorMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "Sliding" must {
     "work with n = 3, step = 1" in assertAllStagesStopped {

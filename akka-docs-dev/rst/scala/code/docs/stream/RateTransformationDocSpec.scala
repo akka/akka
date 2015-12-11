@@ -19,7 +19,7 @@ class RateTransformationDocSpec extends AkkaSpec {
   type Seq[+A] = immutable.Seq[A]
   val Seq = immutable.Seq
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "conflate should summarize" in {
     //#conflate-summarize

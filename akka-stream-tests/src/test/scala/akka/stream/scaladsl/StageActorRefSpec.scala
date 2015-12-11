@@ -17,7 +17,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
 
 class StageActorRefSpec extends AkkaSpec with ImplicitSender with ScalaFutures {
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   import StageActorRefSpec._
   import ControlProtocol._

@@ -42,7 +42,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec {
     // adding integers as a service ;)
     val route =
       extractRequestContext { ctx =>
-        implicit val mat = ctx.materializer
+        implicit val materializer = ctx.materializer
         implicit val ec = ctx.executionContext
 
         fileUpload("csv") {

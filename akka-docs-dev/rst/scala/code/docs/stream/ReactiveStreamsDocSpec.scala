@@ -11,7 +11,7 @@ import org.reactivestreams.Processor
 class ReactiveStreamsDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   //#imports
   import org.reactivestreams.Publisher

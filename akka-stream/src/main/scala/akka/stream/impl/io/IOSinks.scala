@@ -21,14 +21,14 @@ private[akka] final class FileSink(f: File, append: Boolean, val attributes: Att
   extends SinkModule[ByteString, Future[Long]](shape) {
 
   override def create(context: MaterializationContext) = {
-    val mat = ActorMaterializer.downcast(context.materializer)
-    val settings = mat.effectiveSettings(context.effectiveAttributes)
+    val materializer = ActorMaterializer.downcast(context.materializer)
+    val settings = materializer.effectiveSettings(context.effectiveAttributes)
 
     val bytesWrittenPromise = Promise[Long]()
     val props = FileSubscriber.props(f, bytesWrittenPromise, settings.maxInputBufferSize, append)
     val dispatcher = context.effectiveAttributes.get[Dispatcher](IODispatcher).dispatcher
 
-    val ref = mat.actorOf(context, props.withDispatcher(dispatcher))
+    val ref = materializer.actorOf(context, props.withDispatcher(dispatcher))
     (akka.stream.actor.ActorSubscriber[ByteString](ref), bytesWrittenPromise.future)
   }
 
@@ -48,15 +48,15 @@ private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, va
   extends SinkModule[ByteString, Future[Long]](shape) {
 
   override def create(context: MaterializationContext) = {
-    val mat = ActorMaterializer.downcast(context.materializer)
-    val settings = mat.effectiveSettings(context.effectiveAttributes)
+    val materializer = ActorMaterializer.downcast(context.materializer)
+    val settings = materializer.effectiveSettings(context.effectiveAttributes)
     val bytesWrittenPromise = Promise[Long]()
 
     val os = createOutput() // if it fails, we fail the materialization
 
     val props = OutputStreamSubscriber.props(os, bytesWrittenPromise, settings.maxInputBufferSize)
 
-    val ref = mat.actorOf(context, props)
+    val ref = materializer.actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[ByteString](ref), bytesWrittenPromise.future)
   }
 

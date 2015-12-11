@@ -69,7 +69,7 @@ object ActorPublisherDocSpec {
 class ActorPublisherDocSpec extends AkkaSpec {
   import ActorPublisherDocSpec._
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "illustrate usage of ActorPublisher" in {
     def println(s: String): Unit =

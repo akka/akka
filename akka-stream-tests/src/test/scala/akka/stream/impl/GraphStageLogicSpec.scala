@@ -16,7 +16,7 @@ import scala.concurrent.duration.Duration
 
 class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with ConversionCheckedTripleEquals {
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   object emit1234 extends GraphStage[FlowShape[Int, Int]] {
     val in = Inlet[Int]("in")

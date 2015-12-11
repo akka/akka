@@ -39,7 +39,7 @@ object GraphStageTimersSpec {
 class GraphStageTimersSpec extends AkkaSpec {
   import GraphStageTimersSpec._
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   class TestStage(probe: ActorRef, sideChannel: SideChannel) extends SimpleLinearGraphStage[Int] {
     override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {

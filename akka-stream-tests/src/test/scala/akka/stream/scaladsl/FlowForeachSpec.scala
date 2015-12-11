@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 class FlowForeachSpec extends AkkaSpec {
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   "A Foreach" must {
