@@ -233,11 +233,11 @@ object Interleave {
    * to take from each input.
    *
    * @param inputPorts number of input ports
-   * @param request number of elements to send downstream before switching to next input port
+   * @param segmentSize number of elements to send downstream before switching to next input port
    * @param eagerClose if true, interleave completes upstream if any of its upstream completes.
    */
-  def apply[T](inputPorts: Int, request: Int, eagerClose: Boolean = false): Interleave[T] =
-    new Interleave(inputPorts, request, eagerClose)
+  def apply[T](inputPorts: Int, segmentSize: Int, eagerClose: Boolean = false): Interleave[T] =
+    new Interleave(inputPorts, segmentSize, eagerClose)
 }
 
 /**
@@ -253,7 +253,10 @@ object Interleave {
  * '''Cancels when''' downstream cancels
  *
  */
-class Interleave[T] private (val inputPorts: Int, val request: Int, val eagerClose: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
+final class Interleave[T] private (val inputPorts: Int, val segmentSize: Int, val eagerClose: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
+  require(inputPorts > 1, "input ports must be > 1")
+  require(segmentSize > 0, "segmentSize must be > 0")
+
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Interleave.in" + i))
   val out: Outlet[T] = Outlet[T]("Interleave.out")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
@@ -280,7 +283,7 @@ class Interleave[T] private (val inputPorts: Int, val request: Int, val eagerClo
         override def onPush(): Unit = {
           push(out, grab(i))
           counter += 1
-          if (counter == request) switchToNextInput()
+          if (counter == segmentSize) switchToNextInput()
         }
 
         override def onUpstreamFinish() = {
