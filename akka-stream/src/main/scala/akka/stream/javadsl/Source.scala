@@ -499,9 +499,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.alsoToMat(that)(combinerToScala(matF)))
 
   /**
-   * Interleave represents deterministic merge of the given [[Source]] with elements of this [[Source]].
-   * It takes `request` number of elements from this source to emit downstream, then - same amount for given one,
-   * then repeat process from the beginning.
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Source]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
    *
    * Example:
    * {{{
@@ -513,21 +513,22 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * If one of sources gets upstream error - stream completes with failure.
    *
-   * '''Emits when''' element is available from current stream or from the given [[Source]] depending on what was pulled
+   * '''Emits when''' element is available from the currently consumed upstream
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures. Signal to current
+   * upstream, switch to next upstream when received `segmentSize` elements
    *
    * '''Completes when''' this [[Source]] and given one completes
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave[T >: Out](that: Graph[SourceShape[T], _], result: Int): javadsl.Source[T, Mat] =
-    new Source(delegate.interleave(that, result))
+  def interleave[T >: Out](that: Graph[SourceShape[T], _], segmentSize: Int): javadsl.Source[T, Mat] =
+    new Source(delegate.interleave(that, segmentSize))
 
   /**
-   * Interleave represents deterministic merge of the given [[Source]] with elements of this [[Source]].
-   * It takes `request` number of elements from this source to emit downstream, then - same amount for given source,
-   * then repeat process from the beginning.
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Source]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
    *
    * After one of sources is complete than all the rest elements will be emitted from the second one
    *
@@ -535,9 +536,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * @see [[#interleave]].
    */
-  def interleaveMat[T >: Out, M, M2](that: Graph[SourceShape[T], M], result: Int,
+  def interleaveMat[T >: Out, M, M2](that: Graph[SourceShape[T], M], segmentSize: Int,
                                      matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
-    new Source(delegate.interleaveMat(that, result)(combinerToScala(matF)))
+    new Source(delegate.interleaveMat(that, segmentSize)(combinerToScala(matF)))
 
   /**
    * Merge the given [[Source]] to the current one, taking elements as they arrive from input streams,

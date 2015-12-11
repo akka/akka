@@ -22,11 +22,11 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
     "work in the happy case" in assertAllStagesStopped {
       // Different input sizes (4 and 6)
       val source1 = Source(0 to 3)
-      val source2 = Source(4 to 9)
-      val source3 = Source(List[Int]())
+      val source2 = Source(List[Int]())
+      val source3 = Source(4 to 9)
       val probe = TestSubscriber.manualProbe[Int]()
 
-      source1.merge(source3).merge(source2)
+      source1.merge(source2).merge(source3)
         .map(_ * 2).map(_ / 2).map(_ + 1).runWith(Sink(probe))
 
       val subscription = probe.expectSubscription()

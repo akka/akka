@@ -1301,46 +1301,47 @@ trait FlowOps[+Out, +Mat] {
     }
 
   /**
-   * Interleave represents deterministic merge of the given [[Source]] with elements of this [[Flow]].
-   * It takes `request` number of elements from this flow to emit downstream, then - same amount for given source,
-   * then repeat process from the beginning.
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that`
+   * source, then repeat process.
    *
    * Example:
    * {{{
    * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2) // 1, 2, 4, 5, 3, 6, 7
    * }}}
    *
-   * After [[Flow]] or [[Source]] is complete than all the rest elements will be emitted from the second one
+   * After one of upstreams is complete than all the rest elements will be emitted from the second one
    *
-   * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
+   * If it gets error from one of upstreams - stream completes with failure.
    *
-   * '''Emits when''' element is available from current stream or from the given [[Source]] depending on what was pulled
+   * '''Emits when''' element is available from the currently consumed upstream
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures. Signal to current
+   * upstream, switch to next upstream when received `segmentSize` elements
    *
    * '''Completes when''' the [[Flow]] and given [[Source]] completes
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2], request: Int): Repr[U, Mat] =
-    interleaveMat(that, request)(Keep.left)
+  def interleave[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2], segmentSize: Int): Repr[U, Mat] =
+    interleaveMat(that, segmentSize)(Keep.left)
 
   /**
-   * Interleave represents deterministic merge of the given [[Source]] with elements of this [[Flow]].
-   * It takes `request` number of elements from this flow to emit downstream, then - same amount for given source,
-   * then repeat process from the beginning.
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
    *
-   * After [[Flow]] or [[Source]] is complete than all the rest elements will be emitted from the second one
+   * After one of upstreams is complete than all the rest elements will be emitted from the second one
    *
-   * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
+   * If it gets error from one of upstreams - stream completes with failure.
    *
    * @see [[#interleave]].
    */
-  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int)(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
+  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], segmentSize: Int)(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
     this.viaMat(GraphDSL.create(that) { implicit b ⇒
       r ⇒
         import GraphDSL.Implicits._
-        val interleave = b.add(Interleave[U](2, request))
+        val interleave = b.add(Interleave[U](2, segmentSize))
         r ~> interleave.in(1)
         FlowShape(interleave.in(0), interleave.out)
     })(matF)
