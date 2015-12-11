@@ -23,7 +23,7 @@ object FlowGroupBySpec {
   import language.higherKinds
 
   implicit class Lift[M](val f: SubFlow[Int, M, Source[Int, M]#Repr, RunnableGraph[M]]) extends AnyVal {
-    def lift(key: Int ⇒ Int) = f.prefixAndTail(1).map(p ⇒ key(p._1.head) -> (Source.single(p._1.head) ++ p._2)).mergeSubstreams
+    def lift(key: Int ⇒ Int) = f.prefixAndTail(1).map(p ⇒ key(p._1.head) -> (Source.single(p._1.head) ++ p._2)).concatSubstreams
   }
 
 }
@@ -117,7 +117,8 @@ class FlowGroupBySpec extends AkkaSpec with ScalaFutures with ConversionCheckedT
         .mergeSubstreams
         .grouped(10)
         .runWith(Sink.head)
-        .futureValue(Timeout(3.seconds)) should ===(List(List("Aaa", "Abb"), List("Bcc"), List("Cdd", "Cee")))
+        .futureValue(Timeout(3.seconds))
+        .sortBy(_.head) should ===(List(List("Aaa", "Abb"), List("Bcc"), List("Cdd", "Cee")))
     }
 
     "accept cancellation of substreams" in assertAllStagesStopped {
