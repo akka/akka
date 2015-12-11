@@ -34,7 +34,7 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
     }""").withFallback(ConfigFactory.load())
   implicit val system = ActorSystem("DontLeakActorsOnFailingConnectionSpecs", config)
   import system.dispatcher
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   val log = Logging(system, getClass)
 
