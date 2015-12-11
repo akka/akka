@@ -1323,28 +1323,18 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2], segmentSize: Int): Repr[U, Mat] =
-    interleaveMat(that, segmentSize)(Keep.left)
+  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int): Repr[U] =
+    via(interleaveGraph(that, segmentSize))
 
-  /**
-   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
-   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
-   * then repeat process.
-   *
-   * After one of upstreams is complete than all the rest elements will be emitted from the second one
-   *
-   * If it gets error from one of upstreams - stream completes with failure.
-   *
-   * @see [[#interleave]].
-   */
-  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], segmentSize: Int)(matF: (Mat, Mat2) ⇒ Mat3): Repr[U, Mat3] =
-    this.viaMat(GraphDSL.create(that) { implicit b ⇒
+  protected def interleaveGraph[U >: Out, M](that: Graph[SourceShape[U], M],
+                                             segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    GraphDSL.create(that) { implicit b ⇒
       r ⇒
         import GraphDSL.Implicits._
         val interleave = b.add(Interleave[U](2, segmentSize))
         r ~> interleave.in(1)
         FlowShape(interleave.in(0), interleave.out)
-    })(matF)
+    }
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
@@ -1531,6 +1521,20 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def mergeMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
     viaMat(mergeGraph(that))(matF)
+
+  /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
+   *
+   * After one of upstreams is complete than all the rest elements will be emitted from the second one
+   *
+   * If it gets error from one of upstreams - stream completes with failure.
+   *
+   * @see [[#interleave]].
+   */
+  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+    viaMat(interleaveGraph(that, request))(matF)
 
   /**
    * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
