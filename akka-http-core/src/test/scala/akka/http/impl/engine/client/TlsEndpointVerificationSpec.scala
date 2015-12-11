@@ -21,8 +21,7 @@ import javax.net.ssl.SSLException
 
 class TlsEndpointVerificationSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
-    akka.io.tcp.trace-logging = off
-    akka.io.tcp.windows-connection-abort-workaround-enabled=auto""") with ScalaFutures {
+    akka.io.tcp.trace-logging = off""") with ScalaFutures {
   implicit val materializer = ActorMaterializer()
   val timeout = Timeout(Span(3, Seconds))
 
