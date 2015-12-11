@@ -226,11 +226,11 @@ class InputStreamSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
     "use dedicated default-blocking-io-dispatcher by default" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-      val mat = ActorMaterializer()(sys)
+      val materializer = ActorMaterializer()(sys)
 
       try {
-        TestSource.probe[ByteString].runWith(Sink.inputStream())(mat)
-        mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        TestSource.probe[ByteString].runWith(Sink.inputStream())(materializer)
+        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "inputStreamSink").get
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
       } finally shutdown(sys)

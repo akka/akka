@@ -22,7 +22,7 @@ import scala.util.{ Failure, Success }
 object EchoTestClientApp extends App {
   implicit val system = ActorSystem()
   import system.dispatcher
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   def delayedCompletion(delay: FiniteDuration): Source[Nothing, Unit] =
     Source.single(1)

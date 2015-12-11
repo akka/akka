@@ -13,7 +13,7 @@ import akka.actor.PoisonPill
 import akka.actor.Status
 
 class ActorRefSourceSpec extends AkkaSpec {
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A ActorRefSource" must {
 

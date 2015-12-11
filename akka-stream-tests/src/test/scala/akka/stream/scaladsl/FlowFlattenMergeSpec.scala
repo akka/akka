@@ -15,7 +15,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestLatch
 
 class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTripleEquals {
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   def src10(i: Int) = Source(i until (i + 10))

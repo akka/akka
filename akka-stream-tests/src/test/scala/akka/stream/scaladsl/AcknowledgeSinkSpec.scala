@@ -15,7 +15,7 @@ import scala.util.control.NoStackTrace
 
 class AcknowledgeSinkSpec extends AkkaSpec {
   implicit val ec = system.dispatcher
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   val ex = new RuntimeException("ex") with NoStackTrace
 

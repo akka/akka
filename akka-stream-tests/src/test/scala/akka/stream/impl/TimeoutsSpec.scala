@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
 class TimeoutsSpec extends AkkaSpec {
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "InitialTimeout" must {
 

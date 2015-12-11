@@ -20,7 +20,7 @@ object FlowSectionSpec {
 
 class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A flow" can {
 
