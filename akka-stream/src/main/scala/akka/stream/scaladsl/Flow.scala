@@ -931,10 +931,7 @@ trait FlowOps[+Out, +Mat] {
       override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
         deprecatedAndThen[Source[Out, Unit]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
           .map(_.via(flow))
-          .flatMapMerge(maxSubstreams, conforms)
-      /*
-       * FIXME remove all those commented workarounds above by implementing flatMapMerge(breadth)
-       */
+          .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
       deprecatedAndThen[Source[Out, Unit]](GroupBy(maxSubstreams, f.asInstanceOf[Any ⇒ Any]))
@@ -1000,7 +997,7 @@ trait FlowOps[+Out, +Mat] {
       override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
         deprecatedAndThen[Source[Out, Unit]](Split.when(p.asInstanceOf[Any ⇒ Boolean]))
           .map(_.via(flow))
-          .flatMapConcat(conforms)
+          .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
       deprecatedAndThen[Source[Out, Unit]](Split.when(p.asInstanceOf[Any ⇒ Boolean]))
@@ -1057,7 +1054,7 @@ trait FlowOps[+Out, +Mat] {
       override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
         deprecatedAndThen[Source[Out, Unit]](Split.after(p.asInstanceOf[Any ⇒ Boolean]))
           .map(_.via(flow))
-          .flatMapConcat(conforms)
+          .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
       deprecatedAndThen[Source[Out, Unit]](Split.after(p.asInstanceOf[Any ⇒ Boolean]))
