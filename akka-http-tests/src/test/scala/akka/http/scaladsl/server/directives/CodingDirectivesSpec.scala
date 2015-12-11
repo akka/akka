@@ -215,7 +215,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       }
     }
     "correctly encode the chunk stream produced by an empty chunked response" in {
-      val emptyChunkedEntity = HttpEntity.Chunked(MediaTypes.`text/plain`, Source.empty)
+      val emptyChunkedEntity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, Source.empty)
 
       Post() ~> `Accept-Encoding`(gzip) ~> {
         encodeResponseWith(Gzip) {
