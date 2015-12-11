@@ -5,7 +5,7 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
 class StreamBuffersRateSpec extends AkkaSpec {
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "Demonstrate pipelining" in {
     def println(s: Any) = ()

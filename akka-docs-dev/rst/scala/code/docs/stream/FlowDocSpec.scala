@@ -18,7 +18,7 @@ class FlowDocSpec extends AkkaSpec {
   import akka.stream.ActorMaterializer
   //#imports
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "source is immutable" in {
     //#source-immutable

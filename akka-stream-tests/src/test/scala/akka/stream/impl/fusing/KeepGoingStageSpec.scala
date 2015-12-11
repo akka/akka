@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 class KeepGoingStageSpec extends AkkaSpec {
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   trait PingCmd extends NoSerializationVerificationNeeded
   case class Register(probe: ActorRef) extends PingCmd

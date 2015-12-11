@@ -12,7 +12,7 @@ import scala.concurrent._
 import akka.pattern.pipe
 
 class AcknowledgeSourceSpec extends AkkaSpec {
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
 
   def assertSuccess(b: Boolean, fb: Future[Boolean]): Unit =

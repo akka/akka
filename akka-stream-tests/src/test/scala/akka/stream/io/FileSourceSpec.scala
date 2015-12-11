@@ -168,13 +168,13 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-      val mat = ActorMaterializer()(sys)
+      val materializer = ActorMaterializer()(sys)
       implicit val timeout = Timeout(500.millis)
 
       try {
-        val p = Source.file(manyLines).runWith(TestSink.probe)(mat)
+        val p = Source.file(manyLines).runWith(TestSink.probe)(materializer)
 
-        mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
         try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher") finally p.cancel()
       } finally shutdown(sys)
@@ -184,15 +184,15 @@ class FileSourceSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "allow overriding the dispatcher using Attributes" in {
       pending
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-      val mat = ActorMaterializer()(sys)
+      val materializer = ActorMaterializer()(sys)
       implicit val timeout = Timeout(500.millis)
 
       try {
         val p = Source.file(manyLines)
           .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
-          .runWith(TestSink.probe)(mat)
+          .runWith(TestSink.probe)(materializer)
 
-        mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
         try assertDispatcher(ref, "akka.actor.default-dispatcher") finally p.cancel()
       } finally shutdown(sys)

@@ -16,7 +16,7 @@ object FlowGraphCompileSpec {
 class FlowGraphCompileSpec extends AkkaSpec {
   import FlowGraphCompileSpec._
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   def op[In, Out]: () ⇒ PushStage[In, Out] = { () ⇒
     new PushStage[In, Out] {

@@ -14,7 +14,7 @@ class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INF
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val mat = ActorMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   "A Flow using join" must {
     "allow for cycles" in {

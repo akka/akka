@@ -22,7 +22,7 @@ object ActorRefSinkSpec {
 
 class ActorRefSinkSpec extends AkkaSpec {
   import ActorRefSinkSpec._
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A ActorRefSink" must {
 

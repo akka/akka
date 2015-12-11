@@ -72,7 +72,7 @@ object ActorSubscriberDocSpec {
 class ActorSubscriberDocSpec extends AkkaSpec {
   import ActorSubscriberDocSpec._
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "illustrate usage of ActorSubscriber" in {
     val replyTo = testActor

@@ -13,7 +13,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class ActorGraphInterpreterSpec extends AkkaSpec {
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "ActorGraphInterpreter" must {
 

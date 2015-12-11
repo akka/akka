@@ -6,7 +6,7 @@ import akka.stream.testkit.AkkaSpec
 
 class GraphCyclesSpec extends AkkaSpec {
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "Cycle demonstration" must {
     val source = Source(() => Iterator.from(0))

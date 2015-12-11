@@ -12,7 +12,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit._
 
 class One2OneBidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A One2OneBidiFlow" must {
 
