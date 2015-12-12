@@ -269,6 +269,16 @@ object TestSubscriber {
     /**
      * Fluent DSL
      *
+     * Expect a stream element during specified time or timeout.
+     */
+    def expectNext(d: FiniteDuration, element: I): Self = {
+      probe.expectMsg(d, OnNext(element))
+      self
+    }
+
+    /**
+     * Fluent DSL
+     *
      * Expect multiple stream elements.
      */
     @annotation.varargs def expectNext(e1: I, e2: I, es: I*): Self =

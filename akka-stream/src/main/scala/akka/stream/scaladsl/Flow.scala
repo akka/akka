@@ -9,7 +9,7 @@ import akka.stream._
 import akka.stream.impl.Stages.{ DirectProcessor, StageModule, SymbolicGraphStage }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.impl._
-import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, MapAsync, MapAsyncUnordered, TakeWithin }
+import akka.stream.impl.fusing._
 import akka.stream.stage.AbstractStage.{ PushPullGraphStage, PushPullGraphStageWithMaterializedValue }
 import akka.stream.stage._
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
@@ -720,6 +720,34 @@ trait FlowOps[+Out, +Mat] {
   }
 
   /**
+   * Shifts elements emission in time by a specified amount. It allows to store elements
+   * in internal buffer while waiting for next element to be emitted. Depending on the defined
+   * [[akka.stream.DelayOverflowStrategy]] it might drop elements or backpressure the upstream if
+   * there is no space available in the buffer.
+   *
+   * Delay precision is 10ms to avoid unnecessary timer scheduling cycles
+   *
+   * Internal buffer has default capacity 16. You can set buffer size by calling `withAttributes(inputBuffer)`
+   *
+   * '''Emits when''' there is a pending element in the buffer and configured time for this element elapsed
+   *  * EmitEarly - strategy do not wait to emit element if buffer is full
+   *
+   * '''Backpressures when''' depending on OverflowStrategy
+   *  * Backpressure - backpressures when buffer is full
+   *  * DropHead, DropTail, DropBuffer - never backpressures
+   *  * Fail - fails the stream if buffer gets full
+   *
+   * '''Completes when''' upstream completes and buffered elements has been drained
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param of time to shift all messages
+   * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
+   */
+  def delay(of: FiniteDuration, strategy: DelayOverflowStrategy = DelayOverflowStrategy.dropTail): Repr[Out] =
+    via(new Delay[Out](of, strategy).withAttributes(name("delay")))
+
+  /**
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    *
@@ -881,7 +909,6 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' prefix elements has been consumed and substream has been consumed
    *
    * '''Cancels when''' downstream cancels or substream cancels
-   *
    */
   def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, Unit])] =
     deprecatedAndThen(PrefixAndTail(n))
