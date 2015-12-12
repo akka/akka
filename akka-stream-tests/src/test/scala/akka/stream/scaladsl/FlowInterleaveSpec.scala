@@ -21,7 +21,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
 
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
-      Source(0 to 3).interleave(Source(List[Int]()), 2).interleave(Source(4 to 9), 2).runWith(Sink(probe))
+      Source(0 to 3).interleave(Source(List[Int]()), 2).interleave(Source(4 to 9), 3).runWith(Sink(probe))
 
       val subscription = probe.expectSubscription()
 
@@ -31,11 +31,11 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
         collected += probe.expectNext()
       }
 
-      collected should be(Set(0, 1, 4, 5, 2, 3, 6, 7, 8, 9))
+      collected should be(Set(0, 1, 4, 5, 6, 2, 3, 7, 8, 9))
       probe.expectComplete()
     }
 
-    "work when bucket is not equal elements in stream" in assertAllStagesStopped {
+    "work when segmentSize is not equal elements in stream" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
 
       Source(0 to 2).interleave(Source(3 to 5), 2).runWith(Sink(probe))
@@ -44,13 +44,33 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       probe.expectComplete()
     }
 
-    "work with bucket = 1" in assertAllStagesStopped {
+    "work with segmentSize = 1" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
 
       Source(0 to 2).interleave(Source(3 to 5), 1).runWith(Sink(probe))
       probe.expectSubscription().request(10)
       probe.expectNext(0, 3, 1, 4, 2, 5)
       probe.expectComplete()
+    }
+
+    "not work with segmentSize = 0" in assertAllStagesStopped {
+      an[IllegalArgumentException] mustBe thrownBy(Source(0 to 2).interleave(Source(3 to 5), 0).runWith(Sink.head))
+    }
+
+    "not work when segmentSize > than stream elements" in assertAllStagesStopped {
+      val probe = TestSubscriber.manualProbe[Int]()
+      Source(0 to 2).interleave(Source(3 to 15), 10).runWith(Sink(probe))
+      probe.expectSubscription().request(25)
+      (0 to 15).foreach(probe.expectNext)
+      probe.expectComplete()
+
+      val probe2 = TestSubscriber.manualProbe[Int]()
+      Source(1 to 20).interleave(Source(21 to 25), 10).runWith(Sink(probe2))
+      probe2.expectSubscription().request(100)
+      (1 to 10).foreach(probe2.expectNext)
+      (21 to 25).foreach(probe2.expectNext)
+      (11 to 20).foreach(probe2.expectNext)
+      probe2.expectComplete()
     }
 
     commonTests()
