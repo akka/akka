@@ -58,7 +58,7 @@ private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: Overf
         log.debug("Dropping element because there is no downstream demand: [{}]", elem)
       else if (!buffer.isFull)
         buffer.enqueue(elem)
-      else overflowStrategy match {
+      else (overflowStrategy: @unchecked) match {
         case DropHead ⇒
           log.debug("Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
           buffer.dropHead()

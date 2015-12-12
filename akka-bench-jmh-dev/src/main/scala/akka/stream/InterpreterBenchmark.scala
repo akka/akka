@@ -79,8 +79,6 @@ object InterpreterBenchmark {
         if (expected > 0) pull(in)
         // Otherwise do nothing, it will exit the interpreter
       }
-      override def onUpstreamFinish(): Unit = completeStage()
-      override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
     })
 
     def requestOne(): Unit = pull(in)

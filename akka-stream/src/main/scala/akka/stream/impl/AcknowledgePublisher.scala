@@ -53,7 +53,7 @@ private[akka] class AcknowledgePublisher(bufferSize: Int, overflowStrategy: Over
         sendAck(false)
       } else if (!buffer.isFull)
         enqueueAndSendAck(elem)
-      else overflowStrategy match {
+      else (overflowStrategy: @unchecked) match {
         case DropHead ⇒
           log.debug("Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
           buffer.dropHead()
