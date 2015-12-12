@@ -3,23 +3,21 @@
  */
 package akka.stream.stage
 
-import java.util
-import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicReference }
+import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
-import akka.actor.dungeon.DeathWatch
-import akka.dispatch.sysmsg.{ Unwatch, Watch, DeathWatchNotification, SystemMessage }
-import akka.event.{ LoggingAdapter, Logging }
-import akka.event.Logging.{ Warning, Debug }
+import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Unwatch, Watch }
+import akka.event.LoggingAdapter
 import akka.stream._
-import akka.stream.impl.{ SeqActorName, ActorMaterializerImpl, ReactiveStreamsCompliance }
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.fusing.{ GraphModule, GraphInterpreter }
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
+import akka.stream.impl.fusing.{ GraphInterpreter, GraphModule }
+import akka.stream.impl.{ ReactiveStreamsCompliance, SeqActorName }
+
+import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
-import scala.collection.mutable.ArrayBuffer
-import scala.annotation.tailrec
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
