@@ -484,6 +484,28 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustWorkFromRange() throws Exception {
+    Future<List<Integer>> f = Source.range(0, 10).grouped(20).runWith(Sink.<List<Integer>> head(), materializer);
+    final List<Integer> result = Await.result(f, FiniteDuration.create(3, TimeUnit.SECONDS));
+    assertEquals(11, result.size());
+    Integer counter = 0;
+    for (Integer i: result)
+      assertEquals(i, counter++);
+  }
+
+  @Test
+  public void mustWorkFromRangeWithStep() throws Exception {
+    Future<List<Integer>> f = Source.range(0, 10, 2).grouped(20).runWith(Sink.<List<Integer>> head(), materializer);
+    final List<Integer> result = Await.result(f, FiniteDuration.create(3, TimeUnit.SECONDS));
+    assertEquals(6, result.size());
+    Integer counter = 0;
+    for (Integer i: result) {
+      assertEquals(i, counter);
+      counter+=2;
+    }
+  }
+
+  @Test
   public void mustRepeat() throws Exception {
     final Future<List<Integer>> f = Source.repeat(42).grouped(10000).runWith(Sink.<List<Integer>> head(), materializer);
     final List<Integer> result = Await.result(f, FiniteDuration.create(3, TimeUnit.SECONDS));

@@ -4,6 +4,7 @@
 package akka.stream.javadsl
 
 import java.io.{ OutputStream, InputStream, File }
+import java.util
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
@@ -19,6 +20,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.collection.immutable.Range.Inclusive
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.language.{ higherKinds, implicitConversions }
@@ -111,6 +113,32 @@ object Source {
     }
     new Source(scaladsl.Source(scalaIterable))
   }
+
+  /**
+   * Creates [[Source]] that represents integer values in range ''[start;end]'', step equals to 1.
+   * It allows to create `Source` out of range as simply as on Scala `Source(1 to N)`
+   *
+   * Uses [[scala.collection.immutable.Range.inclusive(Int, Int)]] internally
+   *
+   * @see [[scala.collection.immutable.Range.inclusive(Int, Int)]]
+   */
+  def range(start: Int, end: Int): javadsl.Source[Integer, Unit] = range(start, end, 1)
+
+  /**
+   * Creates [[Source]] that represents integer values in range ''[start;end]'', with the given step.
+   * It allows to create `Source` out of range as simply as on Scala `Source(1 to N)`
+   *
+   * Uses [[scala.collection.immutable.Range.inclusive(Int, Int, Int)]] internally
+   *
+   * @see [[scala.collection.immutable.Range.inclusive(Int, Int, Int)]]
+   */
+  def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, Unit] =
+    fromIterator[Integer](new function.Creator[util.Iterator[Integer]]() {
+      def create(): util.Iterator[Integer] =
+        new Inclusive(start, end, step) {
+          override def toString: String = s"Range($start to $end, step = $step)"
+        }.iterator.asJava.asInstanceOf[util.Iterator[Integer]]
+    })
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
