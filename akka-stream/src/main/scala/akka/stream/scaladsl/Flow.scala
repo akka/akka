@@ -9,7 +9,7 @@ import akka.stream._
 import akka.stream.impl.Stages.{ DirectProcessor, StageModule, SymbolicGraphStage }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.impl._
-import akka.stream.impl.fusing.{ DropWithin, GroupedWithin, MapAsync, MapAsyncUnordered, TakeWithin }
+import akka.stream.impl.fusing._
 import akka.stream.stage.AbstractStage.{ PushPullGraphStage, PushPullGraphStageWithMaterializedValue }
 import akka.stream.stage._
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
@@ -665,7 +665,7 @@ trait FlowOps[+Out, +Mat] {
     ReactiveStreamsCompliance.requireNonNullElement(start)
     ReactiveStreamsCompliance.requireNonNullElement(inject)
     ReactiveStreamsCompliance.requireNonNullElement(end)
-    andThen(Intersperse(Some(start), inject, Some(end)))
+    via(Intersperse(Some(start), inject, Some(end)))
   }
 
   /**
@@ -692,7 +692,7 @@ trait FlowOps[+Out, +Mat] {
    */
   def intersperse[T >: Out](inject: T): Repr[T] = {
     ReactiveStreamsCompliance.requireNonNullElement(inject)
-    andThen(Intersperse(None, inject, None))
+    via(Intersperse(None, inject, None))
   }
 
   /**
