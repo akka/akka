@@ -665,7 +665,7 @@ trait FlowOps[+Out, +Mat] {
     ReactiveStreamsCompliance.requireNonNullElement(start)
     ReactiveStreamsCompliance.requireNonNullElement(inject)
     ReactiveStreamsCompliance.requireNonNullElement(end)
-    andThen(Intersperse(Some(start), inject, Some(end)))
+    via(Intersperse(Some(start), inject, Some(end)))
   }
 
   /**
@@ -692,7 +692,7 @@ trait FlowOps[+Out, +Mat] {
    */
   def intersperse[T >: Out](inject: T): Repr[T] = {
     ReactiveStreamsCompliance.requireNonNullElement(inject)
-    andThen(Intersperse(None, inject, None))
+    via(Intersperse(None, inject, None))
   }
 
   /**

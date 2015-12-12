@@ -8,6 +8,7 @@ import java.io.{ InputStream, OutputStream, File }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout
 import akka.stream.{ javadsl, scaladsl, _ }
 import akka.util.ByteString
@@ -152,6 +153,23 @@ object Sink {
    */
   def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, Unit] =
     new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage))
+
+  /**
+   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
+   * First element is always `onInitMessage`, then stream is waiting for acknowledgement message
+   * `ackMessage` from the given actor which means that it is ready to process
+   * elements. It also requires `ackMessage` message after each stream element
+   * to make backpressure work.
+   *
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully the given `onCompleteMessage`
+   * will be sent to the destination actor.
+   * When the stream is completed with failure - result of `onFailureMessage(throwable)`
+   * message will be sent to the destination actor.
+   */
+  def actorRefWithAck[In](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
+                          onFailureMessage: function.Function[Throwable, Any]): Sink[In, Unit] =
+    new Sink(scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply))
 
   /**
    * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
