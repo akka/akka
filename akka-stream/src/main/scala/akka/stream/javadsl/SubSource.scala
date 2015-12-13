@@ -27,17 +27,34 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
   def asScala: scaladsl.SubFlow[Out, Mat, scaladsl.Source[Out, Mat]#Repr, scaladsl.RunnableGraph[Mat]] @uncheckedVariance = delegate
 
   /**
-   * Flatten the sub-flows back into the super-flow by performing a merge.
+   * Flatten the sub-flows back into the super-source by performing a merge
+   * without parallelism limit (i.e. having an unbounded number of sub-flows
+   * active concurrently).
+   *
+   * This is identical in effect to `mergeSubstreamsWithParallelism(Integer.MAX_VALUE)`.
    */
   def mergeSubstreams(): Source[Out, Mat] =
     new Source(delegate.mergeSubstreams)
 
   /**
-   * Flatten the sub-flows back into the super-flow by concatenating them.
+   * Flatten the sub-flows back into the super-source by performing a merge
+   * with the given parallelism limit. This means that only up to `parallelism`
+   * substreams will be executed at any given time. Substreams that are not
+   * yet executed are also not materialized, meaning that back-pressure will
+   * be exerted at the operator that creates the substreams when the parallelism
+   * limit is reached.
+   */
+  def mergeSubstreamsWithParallelism(parallelism: Int): Source[Out, Mat] =
+    new Source(delegate.mergeSubstreamsWithParallelism(parallelism))
+
+  /**
+   * Flatten the sub-flows back into the super-source by concatenating them.
    * This is usually a bad idea when combined with `groupBy` since it can
    * easily lead to deadlock—the concatenation does not consume from the second
    * substream until the first has finished and the `groupBy` stage will get
    * back-pressure from the second stream.
+   *
+   * This is identical in effect to `mergeSubstreamsWithParallelism(1)`.
    */
   def concatSubstreams(): Source[Out, Mat] =
     new Source(delegate.concatSubstreams)
