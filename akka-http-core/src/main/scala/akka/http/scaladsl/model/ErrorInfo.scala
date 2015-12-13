@@ -72,8 +72,19 @@ object EntityStreamException {
   def apply(summary: String, detail: String = ""): EntityStreamException = apply(ErrorInfo(summary, detail))
 }
 
+/**
+ * This exception is thrown when the size of the HTTP Entity exceeds the configured limit.
+ * It is possible to configure the limit using configuration options `akka.http.parsing.max-content-length`
+ * or specifically for the server or client side by setting `akka.http.[server|client].parsing.max-content-length`.
+ *
+ * The limit can also be configured in code, by calling [[HttpEntity#withSizeLimit]]
+ * on the entity before materializing its `dataBytes` stream.
+ */
 case class EntityStreamSizeException(limit: Long, actualSize: Option[Long] = None) extends RuntimeException {
-  override def toString = s"EntityStreamSizeException($limit, $actualSize)"
+  override def toString =
+    s"EntityStreamSizeException: actual entity size ($actualSize) exceeded content length limit ($limit bytes)! " +
+      s"You can configure this by setting `akka.http.[server|client].parsing.max-content-length` or calling `HttpEntity.withSizeLimit` " +
+      s"before materializing the dataBytes stream."
 }
 
 case class RequestTimeoutException(request: HttpRequest, message: String) extends RuntimeException(message)
