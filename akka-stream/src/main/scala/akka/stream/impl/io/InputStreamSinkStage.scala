@@ -12,7 +12,7 @@ import akka.util.ByteString
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import akka.stream.Attributes
+import akka.stream.{ Inlet, SinkShape, Attributes }
 
 private[akka] object InputStreamSinkStage {
 
@@ -33,7 +33,12 @@ private[akka] object InputStreamSinkStage {
 /**
  * INTERNAL API
  */
-private[akka] class InputStreamSinkStage(readTimeout: FiniteDuration) extends SinkStage[ByteString, InputStream]("InputStreamSink") {
+private[akka] class InputStreamSinkStage(readTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
+
+  val in = Inlet[ByteString]("InputStreamSink.in")
+  override val shape: SinkShape[ByteString] = SinkShape.of(in)
+
+  // has to be in this order as module depends on shape
   val maxBuffer = module.attributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
   require(maxBuffer > 0, "Buffer size must be greater than 0")
 
