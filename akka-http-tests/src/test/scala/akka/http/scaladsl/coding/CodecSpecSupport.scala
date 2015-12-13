@@ -22,9 +22,11 @@ trait CodecSpecSupport extends Matchers with BeforeAndAfterAll { self: Suite ⇒
     i
   }
 
+  lazy val emptyTextBytes = ByteString(emptyText, "UTF8")
   lazy val smallTextBytes = ByteString(smallText, "UTF8")
   lazy val largeTextBytes = ByteString(largeText, "UTF8")
 
+  val emptyText = ""
   val smallText = "Yeah!"
   val largeText =
     """Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore
