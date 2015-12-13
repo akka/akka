@@ -7,7 +7,7 @@ package directives
 
 import org.scalatest.{ FreeSpec, Inside }
 import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
-import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvString
+import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvStringSeq
 
 class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Inside {
   "when used with 'as[Int]' the parameter directive should" - {
@@ -53,9 +53,9 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
     }
   }
 
-  "when used with 'as(CsvString)' the parameter directive should" - {
+  "when used with 'as(CsvStringSeq)' the parameter directive should" - {
     val route =
-      parameter("names".as(CsvString)) { names ⇒
+      parameter("names".as(CsvStringSeq)) { names ⇒
         complete(s"The parameters are ${names.mkString(", ")}")
       }
 
