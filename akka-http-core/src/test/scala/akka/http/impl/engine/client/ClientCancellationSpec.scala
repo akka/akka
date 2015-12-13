@@ -10,10 +10,8 @@ import akka.stream.testkit.{ TestSubscriber, TestPublisher, AkkaSpec, TestUtils,
 import akka.http.scaladsl.model.headers
 
 class ClientCancellationSpec extends AkkaSpec("""
-    #akka.loggers = []
     akka.loglevel = DEBUG
-    #akka.io.tcp.trace-logging = off
-    akka.io.tcp.windows-connection-abort-workaround-enabled=auto""") {
+    akka.io.tcp.trace-logging = off""") {
 
   implicit val materializer = ActorMaterializer()
   val noncheckedMaterializer = ActorMaterializer()
