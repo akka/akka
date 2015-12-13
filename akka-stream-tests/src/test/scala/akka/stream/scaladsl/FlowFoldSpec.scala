@@ -12,7 +12,7 @@ import akka.stream.testkit.Utils._
 import scala.concurrent.duration._
 
 class FlowFoldSpec extends AkkaSpec {
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A Fold" must {
     val input = 1 to 100

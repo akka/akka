@@ -14,7 +14,11 @@ import scala.concurrent.Await
 
 class FlowSlidingSpec extends AkkaSpec with GeneratorDrivenPropertyChecks {
   import system.dispatcher
-  implicit val mat = ActorMaterializer(ActorMaterializerSettings(system))
+  val settings = ActorMaterializerSettings(system)
+    .withInputBuffer(initialSize = 2, maxSize = 16)
+
+  implicit val materializer = ActorMaterializer(settings)
+
   "Sliding" must {
     import org.scalacheck.Shrink.shrinkAny
     def check(gen: Gen[(Int, Int, Int)]): Unit =

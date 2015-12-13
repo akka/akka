@@ -11,7 +11,7 @@ class SinkSpec extends AkkaSpec {
 
   import GraphDSL.Implicits._
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A Sink" must {
 

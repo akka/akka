@@ -16,7 +16,7 @@ class FlowGraphDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "build simple graph" in {
     //format: OFF

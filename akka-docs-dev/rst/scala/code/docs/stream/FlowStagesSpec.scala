@@ -15,7 +15,7 @@ class FlowStagesSpec extends AkkaSpec with ScalaFutures {
   import akka.stream.stage._
   //#import-stage
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "stages demo" must {
 

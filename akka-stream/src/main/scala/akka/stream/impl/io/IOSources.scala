@@ -23,14 +23,14 @@ private[akka] final class FileSource(f: File, chunkSize: Int, val attributes: At
   require(chunkSize > 0, "chunkSize must be greater than 0")
   override def create(context: MaterializationContext) = {
     // FIXME rewrite to be based on GraphStage rather than dangerous downcasts
-    val mat = ActorMaterializer.downcast(context.materializer)
-    val settings = mat.effectiveSettings(context.effectiveAttributes)
+    val materializer = ActorMaterializer.downcast(context.materializer)
+    val settings = materializer.effectiveSettings(context.effectiveAttributes)
 
     val bytesReadPromise = Promise[Long]()
     val props = FilePublisher.props(f, bytesReadPromise, chunkSize, settings.initialInputBufferSize, settings.maxInputBufferSize)
     val dispatcher = context.effectiveAttributes.get[Dispatcher](IODispatcher).dispatcher
 
-    val ref = mat.actorOf(context, props.withDispatcher(dispatcher))
+    val ref = materializer.actorOf(context, props.withDispatcher(dispatcher))
 
     (akka.stream.actor.ActorPublisher[ByteString](ref), bytesReadPromise.future)
   }
@@ -49,8 +49,8 @@ private[akka] final class FileSource(f: File, chunkSize: Int, val attributes: At
 private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[Long]](shape) {
   override def create(context: MaterializationContext) = {
-    val mat = ActorMaterializer.downcast(context.materializer)
-    val settings = mat.effectiveSettings(context.effectiveAttributes)
+    val materializer = ActorMaterializer.downcast(context.materializer)
+    val settings = materializer.effectiveSettings(context.effectiveAttributes)
     val bytesReadPromise = Promise[Long]()
 
     val pub = try {
@@ -58,7 +58,7 @@ private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStrea
 
       val props = InputStreamPublisher.props(is, bytesReadPromise, chunkSize, settings.initialInputBufferSize, settings.maxInputBufferSize)
 
-      val ref = mat.actorOf(context, props)
+      val ref = materializer.actorOf(context, props)
       akka.stream.actor.ActorPublisher[ByteString](ref)
     } catch {
       case ex: Exception ⇒

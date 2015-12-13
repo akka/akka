@@ -124,7 +124,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "calling external service with mapAsync" in {
     val probe = TestProbe()
@@ -322,7 +322,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = ActorMaterializer(
+    implicit val materializer = ActorMaterializer(
       ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
@@ -354,7 +354,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = ActorMaterializer(
+    implicit val materializer = ActorMaterializer(
       ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))

@@ -94,13 +94,13 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-        val mat = ActorMaterializer()(sys)
+        val materializer = ActorMaterializer()(sys)
         implicit val timeout = Timeout(3.seconds)
 
         try {
-          Source(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(Sink.file(f))(mat)
+          Source(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(Sink.file(f))(materializer)
 
-          mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
           assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
         } finally shutdown(sys)
@@ -112,16 +112,16 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
       pending
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-        val mat = ActorMaterializer()(sys)
+        val materializer = ActorMaterializer()(sys)
         implicit val timeout = Timeout(3.seconds)
 
         try {
           Source(() ⇒ Iterator.continually(TestByteStrings.head))
             .to(Sink.file(f))
             .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
-            .run()(mat)
+            .run()(materializer)
 
-          mat.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
           assertDispatcher(ref, "akka.actor.default-dispatcher")
         } finally shutdown(sys)

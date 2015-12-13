@@ -77,11 +77,11 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   "extractMaterializer-0" in {
     val route =
       path("sample") {
-        extractMaterializer { mat =>
+        extractMaterializer { materializer =>
           complete {
-            // explicitly use the `mat` materializer:
-            Source.single(s"Materialized by ${mat.##}!")
-              .runWith(Sink.head)(mat)
+            // explicitly use the `materializer`:
+            Source.single(s"Materialized by ${materializer.##}!")
+              .runWith(Sink.head)(materializer)
           }
         }
       } // default materializer will be used
