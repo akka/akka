@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.directives.RouteDirectives
 import akka.http.scaladsl.server.util._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
+import akka.http.impl.util._
 
 /**
  * A directive that provides a tuple of values of type `L` to create an inner route.
@@ -40,7 +41,20 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
    * Converts this directive into one which, instead of a tuple of type ``L``, creates an
    * instance of type ``A`` (which is usually a case class).
    */
-  def as[A](constructor: ConstructFromTuple[L, A]): Directive1[A] = tmap(constructor)
+  def as[A](constructor: ConstructFromTuple[L, A]): Directive1[A] = {
+    def validatedMap[R](f: L ⇒ R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
+      Directive[tupler.Out] { inner ⇒
+        tapply { values ⇒
+          ctx ⇒
+            try inner(tupler(f(values)))(ctx)
+            catch {
+              case e: IllegalArgumentException ⇒ ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
+            }
+        }
+      }(tupler.OutIsTuple)
+
+    validatedMap(constructor)
+  }
 
   /**
    * Maps over this directive using the given function, which can produce either a tuple or any other value
