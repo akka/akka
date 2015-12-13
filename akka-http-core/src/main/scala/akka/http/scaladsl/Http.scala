@@ -12,6 +12,7 @@ import javax.net.ssl.{ SSLContext, SSLParameters }
 import akka.actor._
 import akka.event.LoggingAdapter
 import akka.http._
+import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebsocketClientBlueprint
@@ -27,7 +28,7 @@ import akka.stream.scaladsl._
 import com.typesafe.config.Config
 
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.concurrent.{ ExecutionContext, Future, Promise, TimeoutException }
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -71,7 +72,8 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     connections.map {
       case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
         val layer = serverLayer(settings, Some(remoteAddress), log)
-        IncomingConnection(localAddress, remoteAddress, layer atop tlsStage join flow)
+        val flowWithTimeoutRecovered = flow.recover { case t: TimeoutException ⇒ throw new HttpConnectionTimeoutException(t.getMessage) }
+        IncomingConnection(localAddress, remoteAddress, layer atop tlsStage join flowWithTimeoutRecovered)
     }.mapMaterializedValue {
       _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
     }

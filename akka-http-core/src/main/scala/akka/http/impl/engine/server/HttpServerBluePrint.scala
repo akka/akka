@@ -11,6 +11,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.util.control.NonFatal
 import akka.event.LoggingAdapter
 import akka.http.ServerSettings
+import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
@@ -156,10 +157,16 @@ private[http] object HttpServerBluePrint {
 
     val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
 
+    val errorHandler: Throwable ⇒ Unit = {
+      // idle timeouts should not result in errors in the log. See 19058.
+      case timeout: HttpConnectionTimeoutException ⇒ log.debug(s"Closing HttpConnection due to timeout: ${timeout.getMessage}")
+      case t                                       ⇒ log.error(t, "Outgoing response stream error")
+    }
+
     Flow[ResponseRenderingContext]
       .via(Flow[ResponseRenderingContext].transform(() ⇒ responseRendererFactory.newRenderer).named("renderer"))
       .flatMapConcat(ConstantFun.scalaIdentityFunction)
-      .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorLogger(log, "Outgoing response stream error")).named("errorLogger"))
+      .via(Flow[ResponseRenderingOutput].transform(() ⇒ errorHandling(errorHandler)).named("errorLogger"))
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
