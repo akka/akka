@@ -37,7 +37,7 @@ class GzipCompressor extends DeflateCompressor {
     header() ++ super.compressWithBuffer(input, buffer)
   }
   override protected def flushWithBuffer(buffer: Array[Byte]): ByteString = header() ++ super.flushWithBuffer(buffer)
-  override protected def finishWithBuffer(buffer: Array[Byte]): ByteString = super.finishWithBuffer(buffer) ++ trailer()
+  override protected def finishWithBuffer(buffer: Array[Byte]): ByteString = header() ++ super.finishWithBuffer(buffer) ++ trailer()
 
   private def updateCrc(input: ByteString): Unit = {
     checkSum.update(input.toArray)
