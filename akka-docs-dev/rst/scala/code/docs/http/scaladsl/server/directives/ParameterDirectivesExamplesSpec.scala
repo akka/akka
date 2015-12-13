@@ -192,9 +192,9 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
       responseAs[String] shouldEqual "The parameters are x = '1', x = '2'"
     }
   }
-  "csv" in {
+  "csv string sequence" in {
     val route =
-      parameter("names".as(CsvString)) { names =>
+      parameter("names".as(CsvStringSeq)) { names =>
         complete(s"The parameters are ${names.mkString(", ")}")
       }
 
@@ -204,6 +204,50 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
     }
     Get("/?names=Caplin,John") ~> route ~> check {
       responseAs[String] shouldEqual "The parameters are Caplin, John"
+    }
+  }
+  "csv byte sequence" in {
+    val route =
+      parameter("numbers".as(CsvByteSeq)) { bytes =>
+        complete(s"The numbers are ${bytes.mkString(", ")}")
+      }
+
+    // tests:
+    Get(s"/?numbers=2,${Byte.MaxValue}") ~> route ~> check {
+      responseAs[String] shouldEqual s"The numbers are 2, ${Byte.MaxValue}"
+    }
+  }
+  "csv short sequence" in {
+    val route =
+      parameter("numbers".as(CsvShortSeq)) { shorts =>
+        complete(s"The numbers are ${shorts.mkString(", ")}")
+      }
+
+    // tests:
+    Get(s"/?numbers=2,${Short.MaxValue}") ~> route ~> check {
+      responseAs[String] shouldEqual s"The numbers are 2, ${Short.MaxValue}"
+    }
+  }
+  "csv int sequence" in {
+    val route =
+      parameter("numbers".as(CsvIntSeq)) { ints =>
+        complete(s"The numbers are ${ints.mkString(", ")}")
+      }
+
+    // tests:
+    Get(s"/?numbers=2,${Int.MaxValue}") ~> route ~> check {
+      responseAs[String] shouldEqual s"The numbers are 2, ${Int.MaxValue}"
+    }
+  }
+  "csv long sequence" in {
+    val route =
+      parameter("numbers".as(CsvLongSeq)) { longs =>
+        complete(s"The numbers are ${longs.mkString(", ")}")
+      }
+
+    // tests:
+    Get(s"/?numbers=2,${Long.MaxValue}") ~> route ~> check {
+      responseAs[String] shouldEqual s"The numbers are 2, ${Long.MaxValue}"
     }
   }
 }
