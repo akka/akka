@@ -33,7 +33,6 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     akka.loglevel = ERROR
     akka.stdout-loglevel = ERROR
     akka.log-dead-letters = OFF
-    akka.io.tcp.windows-connection-abort-workaround-enabled = auto
   """)
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
