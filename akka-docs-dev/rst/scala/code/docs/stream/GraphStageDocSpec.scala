@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 class GraphStageDocSpec extends AkkaSpec {
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "Demonstrate creation of GraphStage boilerplate" in {
     //#boilerplate-example

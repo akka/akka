@@ -67,7 +67,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#first-sample
   }
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "filter and map" in {
     //#first-sample

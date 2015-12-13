@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.ws._
 object WSClientAutobahnTest extends App {
   implicit val system = ActorSystem()
   import system.dispatcher
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   val Agent = "akka-http"
   val Parallelism = 4

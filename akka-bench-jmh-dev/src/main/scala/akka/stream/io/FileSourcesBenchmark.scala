@@ -26,7 +26,7 @@ import scala.concurrent.{Promise, Await, Future}
 class FileSourcesBenchmark {
 
   implicit val system = ActorSystem("file-sources-benchmark")
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   val file: File = {
     val line = ByteString("x" * 2048 + "\n")

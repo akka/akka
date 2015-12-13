@@ -19,7 +19,7 @@ import scala.concurrent.Future
 class StreamTcpDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   // silence sysout
   def println(s: String) = ()

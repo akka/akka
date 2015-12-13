@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 
 class StreamTestKitSpec extends AkkaSpec {
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   val ex = new Exception("Boom!")
 

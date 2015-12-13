@@ -130,7 +130,7 @@ object BidiFlowDocSpec {
 class BidiFlowDocSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   import BidiFlowDocSpec._
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A BidiFlow" must {
 

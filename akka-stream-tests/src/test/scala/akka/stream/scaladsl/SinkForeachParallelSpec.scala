@@ -16,7 +16,7 @@ import scala.util.control.NoStackTrace
 
 class SinkForeachParallelSpec extends AkkaSpec {
 
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "A ForeachParallel" must {
     "produce elements in the order they are ready" in assertAllStagesStopped {

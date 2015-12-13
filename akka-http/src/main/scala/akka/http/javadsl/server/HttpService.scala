@@ -18,8 +18,8 @@ trait HttpServiceBase {
    */
   def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem): Future[ServerBinding] = {
     implicit val sys = system
-    implicit val mat = ActorMaterializer()
-    handleConnectionsWithRoute(interface, port, route, system, mat)
+    implicit val materializer = ActorMaterializer()
+    handleConnectionsWithRoute(interface, port, route, system, materializer)
   }
 
   /**
@@ -32,8 +32,8 @@ trait HttpServiceBase {
    * Uses the route to handle incoming connections and requests for the ServerBinding.
    */
   def handleConnectionsWithRoute(interface: String, port: Int, route: Route, system: ActorSystem, materializer: Materializer): Future[ServerBinding] = {
-    implicit val sys = system
-    implicit val mat = materializer
+    implicit val s = system
+    implicit val m = materializer
 
     import system.dispatcher
     val r: server.Route = RouteImplementation(route)

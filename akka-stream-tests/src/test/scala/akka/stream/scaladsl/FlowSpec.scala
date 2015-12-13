@@ -36,7 +36,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
-  implicit val mat = ActorMaterializer(settings)
+  implicit val materializer = ActorMaterializer(settings)
 
   val identity: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ in.map(e ⇒ e)
   val identity2: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ identity(in)
@@ -48,9 +48,9 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     _logics: Array[GraphStageLogic],
     _shape: Shape,
     _settings: ActorMaterializerSettings,
-    _mat: Materializer,
+    _materializer: Materializer,
     brokenMessage: Any)
-    extends ActorGraphInterpreter(_assembly, _inHandlers, _outHandlers, _logics, _shape, _settings, _mat) {
+    extends ActorGraphInterpreter(_assembly, _inHandlers, _outHandlers, _logics, _shape, _settings, _materializer) {
 
     import akka.stream.actor.ActorSubscriberMessage._
 
@@ -76,7 +76,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
 
-    val props = Props(new BrokenActorInterpreter(assembly, inHandlers, outHandlers, logics, stage.shape, settings, mat, "a3"))
+    val props = Props(new BrokenActorInterpreter(assembly, inHandlers, outHandlers, logics, stage.shape, settings, materializer, "a3"))
       .withDispatcher("akka.test.stream-dispatcher").withDeploy(Deploy.local)
     val impl = system.actorOf(props, "borken-stage-actor")
 
