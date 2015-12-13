@@ -84,7 +84,7 @@ private[http] object OutgoingConnectionBlueprint {
       val terminationFanout = b.add(Broadcast[HttpResponse](2))
       val terminationMerge = b.add(TerminationMerge)
 
-      val logger = b.add(Flow[ByteString].transform(() ⇒ errorLogger(log, "Outgoing request stream error")).named("errorLogger"))
+      val logger = b.add(Flow[ByteString].transform(() ⇒ errorHandling((t: Throwable) ⇒ log.error(t, "Outgoing request stream error"))).named("errorLogger"))
       val wrapTls = b.add(Flow[ByteString].map(SendBytes))
       terminationMerge.out ~> requestRendering ~> logger ~> wrapTls
 
