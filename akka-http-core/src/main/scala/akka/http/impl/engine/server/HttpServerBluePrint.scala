@@ -93,8 +93,12 @@ private[http] object HttpServerBluePrint {
         .via(requestStartOrRunIgnore(settings)))
 
   def requestStartOrRunIgnore(settings: ServerSettings)(implicit mat: Materializer): Flow[(ParserOutput.RequestOutput, Source[ParserOutput.RequestOutput, Unit]), HttpRequest, Unit] =
-    Flow.fromGraph(new FlowStage[(RequestOutput, Source[RequestOutput, Unit]), HttpRequest, Unit]("RequestStartThenRunIgnore") {
-      override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = (new GraphStageLogic(shape) {
+    Flow.fromGraph(new GraphStage[FlowShape[(RequestOutput, Source[RequestOutput, Unit]), HttpRequest]] {
+      val in = Inlet[(RequestOutput, Source[RequestOutput, Unit])]("RequestStartThenRunIgnore.in")
+      val out = Outlet[HttpRequest]("RequestStartThenRunIgnore.out")
+      override val shape: FlowShape[(RequestOutput, Source[RequestOutput, Unit]), HttpRequest] = FlowShape.of(in, out)
+
+      override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
         val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
 
         setHandler(in, new InHandler {
@@ -118,7 +122,7 @@ private[http] object HttpServerBluePrint {
         setHandler(out, new OutHandler {
           override def onPull(): Unit = pull(in)
         })
-      }, ())
+      }
     })
 
   def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[ByteString, RequestOutput, Unit] = {
