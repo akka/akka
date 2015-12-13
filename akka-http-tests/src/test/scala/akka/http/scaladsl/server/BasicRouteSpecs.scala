@@ -119,6 +119,17 @@ class BasicRouteSpecs extends RoutingSpec {
         responseAs[String] shouldEqual "Person(john,38)"
       }
     }
+    "reject if case class requirements fail" in {
+      case class MyValidNumber(i: Int) {
+        require(i > 10)
+      }
+
+      val abcPath = path("abc" / IntNumber).as(MyValidNumber)(echoComplete)
+
+      Get("/abc/5") ~> abcPath ~> check {
+        rejection shouldBe a[ValidationRejection]
+      }
+    }
   }
   "Dynamic execution of inner routes of Directive0" should {
     "re-execute inner routes every time" in {
