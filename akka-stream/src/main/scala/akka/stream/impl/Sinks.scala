@@ -7,7 +7,7 @@ import akka.actor.{ ActorRef, Props }
 import akka.stream.actor.ActorPublisherMessage.Request
 import akka.stream.impl.StreamLayout.Module
 import akka.stream._
-import akka.stream.stage.{ InHandler, GraphStageLogic, SinkStage }
+import akka.stream.stage.{ GraphStageWithMaterializedValue, InHandler, GraphStageLogic }
 import akka.util.Timeout
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
@@ -193,7 +193,12 @@ private[akka] final class AcknowledgeSink[In](bufferSize: Int, val attributes: A
   override def toString: String = "AcknowledgeSink"
 }
 
-private[akka] final class LastOptionStage[T] extends SinkStage[T, Future[Option[T]]]("lastOption") {
+private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
+
+  val in = Inlet[T]("lastOption.in")
+
+  override val shape: SinkShape[T] = SinkShape.of(in)
+
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val p: Promise[Option[T]] = Promise()
     (new GraphStageLogic(shape) {
@@ -223,7 +228,12 @@ private[akka] final class LastOptionStage[T] extends SinkStage[T, Future[Option[
   }
 }
 
-private[akka] final class HeadOptionStage[T] extends SinkStage[T, Future[Option[T]]]("headOption") {
+private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
+
+  val in = Inlet[T]("headOption.in")
+
+  override val shape: SinkShape[T] = SinkShape.of(in)
+
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val p: Promise[Option[T]] = Promise()
     (new GraphStageLogic(shape) {

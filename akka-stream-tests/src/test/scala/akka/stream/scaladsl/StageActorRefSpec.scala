@@ -7,7 +7,7 @@ import akka.actor.{ Kill, PoisonPill, NoSerializationVerificationNeeded, ActorRe
 import akka.event.Logging
 import akka.stream._
 import akka.stream.stage.GraphStageLogic.StageActorRef
-import akka.stream.stage.{ GraphStageLogic, InHandler, SinkStage }
+import akka.stream.stage.{ GraphStageWithMaterializedValue, GraphStage, GraphStageLogic, InHandler }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.{ TestProbe, TestEvent, EventFilter, ImplicitSender }
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -178,7 +178,10 @@ object StageActorRefSpec {
 
   import ControlProtocol._
 
-  case class SumTestStage(probe: ActorRef) extends SinkStage[Int, Future[Int]]("IntSum") {
+  case class SumTestStage(probe: ActorRef) extends GraphStageWithMaterializedValue[SinkShape[Int], Future[Int]] {
+    val in = Inlet[Int]("IntSum.in")
+    override val shape: SinkShape[Int] = SinkShape.of(in)
+
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Int]) = {
       val p: Promise[Int] = Promise()
 
