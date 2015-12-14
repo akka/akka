@@ -166,6 +166,7 @@ them. This check makes sure that the total entity size is less than or equal to 
 However, a single global limit for all requests (or responses) is often too inflexible for applications that need to
 allow large limits for *some* requests (or responses) but want to clamp down on all messages not belonging into that
 group.
+
 In order to give you maximum flexibility in defining entity size limits according to your needs the ``HttpEntity``
 features a ``withSizeLimit`` method, which lets you adjust the globally configured maximum size for this particular
 entity, be it to increase or decrease any previously set value.
@@ -173,7 +174,7 @@ This means that your application will receive all requests (or responses) from t
 ``Content-Length`` exceeds the configured limit (because you might want to increase the limit yourself).
 Only when the actual data stream ``Source`` contained in the entity is materialized will the boundary checks be
 actually applied. In case the length verification fails the respective stream will be terminated with an
-``EntityStreamException`` either directly at materialization time (if the ``Content-Length`` is known) or whenever more
+:class:`EntityStreamSizeException` either directly at materialization time (if the ``Content-Length`` is known) or whenever more
 data bytes than allowed have been read.
 
 When called on ``Strict`` entities the ``withSizeLimit`` method will return the entity itself if the length is within
