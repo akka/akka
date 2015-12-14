@@ -344,7 +344,10 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
     def expectWireData(bs: ByteString) = netOut.expectBytes(bs)
     def expectNoWireData() = netOut.expectNoBytes(noMsgTimeout)
 
-    def expectNetworkClose(): Unit = netOut.expectComplete()
+    def expectNetworkClose(): Unit = {
+      netOut.request(1)
+      netOut.expectComplete()
+    }
     def expectNetworkAbort(): Unit = netOut.expectError()
     def closeNetworkInput(): Unit = netIn.sendComplete()
 

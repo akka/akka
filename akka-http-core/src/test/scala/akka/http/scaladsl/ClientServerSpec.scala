@@ -392,8 +392,10 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         Await.result(chunkStream2.grouped(1000).runWith(Sink.head), 100.millis) shouldEqual chunks
 
         clientOutSub.sendComplete()
+        serverInSub.request(1)
         serverIn.expectComplete()
         serverOutSub.expectCancellation()
+        clientInSub.request(1)
         clientIn.expectComplete()
 
         connSourceSub.cancel()

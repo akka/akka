@@ -45,19 +45,19 @@ private object PoolConductor {
   /*
     Stream Setup
     ============
-                                                                                                  Request- 
+                                                                                                  Request-
     Request-   +-----------+     +-----------+    Switch-    +-------------+     +-----------+    Context
     Context    |   retry   |     |   slot-   |    Command    |   doubler   |     |   route   +-------------->
     +--------->|   Merge   +---->| Selector  +-------------->| (MapConcat) +---->|  (Flexi   +-------------->
                |           |     |           |               |             |     |   Route)  +-------------->
-               +----+------+     +-----+-----+               +-------------+     +-----------+       to slots     
-                    ^                  ^ 
+               +----+------+     +-----+-----+               +-------------+     +-----------+       to slots
+                    ^                  ^
                     |                  | SlotEvent
                     |             +----+----+
                     |             | flatten | mapAsync
                     |             +----+----+
                     |                  | RawSlotEvent
-                    | Request-         |                                                               
+                    | Request-         |
                     | Context     +---------+
                     +-------------+  retry  |<-------- RawSlotEvent (from slotEventMerge)
                                   |  Split  |
@@ -112,6 +112,8 @@ private object PoolConductor {
     private val ctxIn = Inlet[RequestContext]("requestContext")
     private val slotIn = Inlet[SlotEvent]("slotEvents")
     private val out = Outlet[SwitchCommand]("switchCommand")
+
+    override def initialAttributes = Attributes.name("SlotSelector")
 
     override val shape = new FanInShape2(ctxIn, slotIn, out)
 
@@ -204,6 +206,8 @@ private object PoolConductor {
   }
 
   private class Route(slotCount: Int) extends GraphStage[UniformFanOutShape[SwitchCommand, RequestContext]] {
+
+    override def initialAttributes = Attributes.name("PoolConductor.Route")
 
     override val shape = new UniformFanOutShape[SwitchCommand, RequestContext](slotCount)
 
