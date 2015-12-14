@@ -157,7 +157,7 @@ private[stream] object ActorGraphInterpreter {
       if (!(upstreamCompleted || downstreamCanceled) && (upstream ne null)) {
         upstream.cancel()
       }
-      onError(e)
+      if (!isClosed(out)) onError(e)
     }
 
     def onComplete(): Unit =
