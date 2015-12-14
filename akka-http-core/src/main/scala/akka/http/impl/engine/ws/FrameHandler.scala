@@ -26,6 +26,8 @@ private[http] object FrameHandler {
     type Ctx = Context[Output]
     def initial: State = Idle
 
+    override def toString: String = s"HandlerStage(server=$server)"
+
     private object Idle extends StateWithControlFrameHandling {
       def handleRegularFrameStart(start: FrameStart)(implicit ctx: Ctx): SyncDirective =
         (start.header.opcode, start.isFullMessage) match {

@@ -14,6 +14,7 @@ import akka.util.ByteString
 import akka.http.scaladsl.model.ws._
 import Protocol.Opcode
 import akka.testkit.EventFilter
+import akka.stream.OverflowStrategy
 
 class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   import WSTestUtils._
@@ -821,22 +822,20 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
     val messageOut = TestPublisher.probe[Message]()
 
     val messageHandler: Flow[Message, Message, Unit] =
-      Flow.fromGraph {
-        GraphDSL.create() { implicit b ⇒
-          val in = b.add(Sink(messageIn)).inlet
-          val out = b.add(Source(messageOut)).outlet
-
-          FlowShape[Message, Message](in, out)
-        }
-      }
+      Flow.fromSinkAndSource(
+        Flow[Message].buffer(1, OverflowStrategy.backpressure).to(Sink(messageIn)), // alternatively need to request(1) before expectComplete
+        Source(messageOut))
 
     Source(netIn)
       .via(printEvent("netIn"))
       .via(FrameEventParser)
-      .via(Websocket.stack(serverSide, maskingRandomFactory = Randoms.SecureRandomInstances, closeTimeout = closeTimeout, log = system.log).join(messageHandler))
+      .via(Websocket
+        .stack(serverSide, maskingRandomFactory = Randoms.SecureRandomInstances, closeTimeout = closeTimeout, log = system.log)
+        .join(messageHandler))
       .via(printEvent("frameRendererIn"))
       .transform(() ⇒ new FrameEventRenderer)
       .via(printEvent("frameRendererOut"))
+      .buffer(1, OverflowStrategy.backpressure) // alternatively need to request(1) before expectComplete
       .to(netOut.sink)
       .run()
 

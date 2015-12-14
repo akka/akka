@@ -16,6 +16,8 @@ import scala.concurrent._
 final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[SourceShape[T], M], T]] {
   private val in = Inlet[Graph[SourceShape[T], M]]("flatten.in")
   private val out = Outlet[T]("flatten.out")
+
+  override def initialAttributes = Attributes.name("FlattenMerge")
   override val shape = FlowShape(in, out)
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
@@ -187,6 +189,8 @@ private[fusing] object StreamOfStreams {
     extends GraphStageWithMaterializedValue[SinkShape[T], Future[LocalSinkSubscription]] {
 
     private val in = Inlet[T]("LocalSink.in")
+
+    override def initialAttributes = Attributes.name("LocalSink")
     override val shape = SinkShape(in)
 
     override def createLogicAndMaterializedValue(attr: Attributes): (GraphStageLogic, Future[LocalSinkSubscription]) = {

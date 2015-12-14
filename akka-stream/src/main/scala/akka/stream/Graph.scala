@@ -25,4 +25,6 @@ trait Graph[+S <: Shape, +M] {
   def withAttributes(attr: Attributes): Graph[S, M]
 
   def named(name: String): Graph[S, M] = withAttributes(Attributes.name(name))
+
+  def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(module.attributes and attr)
 }

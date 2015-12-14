@@ -175,7 +175,8 @@ class StreamLayoutSpec extends AkkaSpec {
     var publishers = Vector.empty[TestPublisher]
     var subscribers = Vector.empty[TestSubscriber]
 
-    override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes): Unit = {
+    override protected def materializeAtomic(atomic: Module, effectiveAttributes: Attributes,
+                                             matVal: java.util.Map[Module, Any]): Unit = {
       for (inPort ← atomic.inPorts) {
         val subscriber = TestSubscriber(atomic, inPort)
         subscribers :+= subscriber
