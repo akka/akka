@@ -245,15 +245,15 @@ object Source {
   }
 
   /**
-   * create a `Source` that will unfold a value of type `S` into
+   * Create a `Source` that will unfold a value of type `S` into
    * a pair of the next state `S` and output elements of type `E`.
    *
-   * for example, all the fibonacci numbers under 10M:
+   * For example, all the Fibonacci numbers under 10M:
    *
    * {{{
-   *   Source.unfold(0 → 1){
-   *    case (a,_) if a > 10000000 ⇒ None
-   *    case (a,b) ⇒ Some((b → (a + b)) → a)
+   *   Source.unfold(0 → 1) {
+   *    case (a, _) if a > 10000000 ⇒ None
+   *    case (a, b) ⇒ Some((b → (a + b)) → a)
    *   }
    * }}}
    */
@@ -261,14 +261,14 @@ object Source {
     Source.fromGraph(new Unfold(s, f)).withAttributes(DefaultAttributes.unfold)
 
   /**
-   * same as unfold, but uses an async function to generate the next state-element tuple.
+   * Same as [[unfold]], but uses an async function to generate the next state-element tuple.
    *
    * async fibonacci example:
    *
    * {{{
-   *   Source.unfoldAsync(0 → 1){
-   *    case (a,_) if a > 10000000 ⇒ Future.successful(None)
-   *    case (a,b) ⇒ Future{
+   *   Source.unfoldAsync(0 → 1) {
+   *    case (a, _) if a > 10000000 ⇒ Future.successful(None)
+   *    case (a, b) ⇒ Future{
    *      Thread.sleep(1000)
    *      Some((b → (a + b)) → a)
    *    }
@@ -279,11 +279,11 @@ object Source {
     Source.fromGraph(new UnfoldAsync(s, f)).withAttributes(DefaultAttributes.unfoldAsync)
 
   /**
-   * simpler unfold, for infinite sequences.
+   * Simpler [[unfold]], for infinite sequences.
    *
    * {{{
-   *   Source.unfoldInf(0 → 1){
-   *    case (a,b) ⇒ (b → (a + b)) → a
+   *   Source.unfoldInf(0 → 1) {
+   *    case (a, b) ⇒ (b → (a + b)) → a
    *   }
    * }}}
    */
