@@ -36,18 +36,12 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
 
       override def keepGoingAfterAllPortsClosed: Boolean = true
 
-      private val callback: AsyncCallback[Unit] = getAsyncCallback((_: Unit) ⇒ {
-        if (!buffer.isEmpty) sendData()
-        else acknowledgementReceived = true
-      })
-
-      private val deathWatchCallback: AsyncCallback[Unit] =
-        getAsyncCallback((Unit) ⇒ completeStage())
-
       private def receive(evt: (ActorRef, Any)): Unit = {
         evt._2 match {
-          case `ackMessage`      ⇒ callback.invoke(())
-          case Terminated(`ref`) ⇒ deathWatchCallback.invoke(())
+          case `ackMessage` ⇒
+            if (!buffer.isEmpty) sendData()
+            else acknowledgementReceived = true
+          case Terminated(`ref`) ⇒ completeStage()
           case _                 ⇒ //ignore all other messages
         }
       }
