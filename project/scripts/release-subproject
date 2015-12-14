@@ -333,10 +333,8 @@ trap arrgh_interrupt SIGHUP SIGINT SIGTERM
 echolog "Pushing to git origin..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to git origin. Commands:"
-  echodry "  git push origin ${release_branch}"
   echodry "  git push origin --tags"
 else
-  important git push origin ${release_branch}
   important git push origin --tags
 fi
 
