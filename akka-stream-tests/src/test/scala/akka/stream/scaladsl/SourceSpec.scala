@@ -219,6 +219,44 @@ class SourceSpec extends AkkaSpec {
     }
   }
 
+  "Unfold Source" must {
+    val expected = List(9227465, 5702887, 3524578, 2178309, 1346269, 832040, 514229, 317811, 196418, 121393, 75025, 46368, 28657, 17711, 10946, 6765, 4181, 2584, 1597, 987, 610, 377, 233, 144, 89, 55, 34, 21, 13, 8, 5, 3, 2, 1, 1, 0)
+
+    "generate a finite fibonacci sequence" in {
+      import GraphDSL.Implicits._
+
+      val source = Source.unfold((0, 1)) {
+        case (a, _) if a > 10000000 ⇒ None
+        case (a, b)                 ⇒ Some((b, a + b) → a)
+      }
+      val result = Await.result(source.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }, 1.second)
+      result should ===(expected)
+    }
+
+    "generate a finite fibonacci sequence asynchronously" in {
+      import GraphDSL.Implicits._
+      import scala.concurrent.Future
+      import scala.concurrent.ExecutionContext.Implicits.global
+
+      val source = Source.unfoldAsync((0, 1)) {
+        case (a, _) if a > 10000000 ⇒ Future.successful(None)
+        case (a, b)                 ⇒ Future(Some((b, a + b) → a))
+      }
+      val result = Await.result(source.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }, 1.second)
+      result should ===(expected)
+    }
+
+    "generate an infinite fibonacci sequence" in {
+      import GraphDSL.Implicits._
+
+      val source = Source.unfoldInf((0, 1)) {
+        case (a, b) ⇒ (b, a + b) → a
+      }
+      val result = Await.result(source.take(36).runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }, 1.second)
+      result should ===(expected)
+    }
+  }
+
   "Iterator Source" must {
     "properly iterate" in {
       val result = Await.result(Source(() ⇒ Iterator.iterate(false)(!_)).grouped(10).runWith(Sink.head), 1.second)
