@@ -529,6 +529,48 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.alsoToMat(that)(combinerToScala(matF)))
 
   /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Source]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
+   *
+   * Example:
+   * {{{
+   * Source.from(Arrays.asList(1, 2, 3)).interleave(Source.from(Arrays.asList(4, 5, 6, 7), 2)
+   * // 1, 2, 4, 5, 3, 6, 7
+   * }}}
+   *
+   * After one of sources is complete than all the rest elements will be emitted from the second one
+   *
+   * If one of sources gets upstream error - stream completes with failure.
+   *
+   * '''Emits when''' element is available from the currently consumed upstream
+   *
+   * '''Backpressures when''' downstream backpressures. Signal to current
+   * upstream, switch to next upstream when received `segmentSize` elements
+   *
+   * '''Completes when''' this [[Source]] and given one completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def interleave[T >: Out](that: Graph[SourceShape[T], _], segmentSize: Int): javadsl.Source[T, Mat] =
+    new Source(delegate.interleave(that, segmentSize))
+
+  /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Source]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
+   *
+   * After one of sources is complete than all the rest elements will be emitted from the second one
+   *
+   * If one of sources gets upstream error - stream completes with failure.
+   *
+   * @see [[#interleave]].
+   */
+  def interleaveMat[T >: Out, M, M2](that: Graph[SourceShape[T], M], segmentSize: Int,
+                                     matF: function.Function2[Mat, M, M2]): javadsl.Source[T, M2] =
+    new Source(delegate.interleaveMat(that, segmentSize)(combinerToScala(matF)))
+
+  /**
    * Merge the given [[Source]] to the current one, taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *
