@@ -227,6 +227,97 @@ final class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: 
   }
 }
 
+object Interleave {
+  /**
+   * Create a new `Interleave` with the specified number of input ports and given size of elements
+   * to take from each input.
+   *
+   * @param inputPorts number of input ports
+   * @param segmentSize number of elements to send downstream before switching to next input port
+   * @param eagerClose if true, interleave completes upstream if any of its upstream completes.
+   */
+  def apply[T](inputPorts: Int, segmentSize: Int, eagerClose: Boolean = false): Interleave[T] =
+    new Interleave(inputPorts, segmentSize, eagerClose)
+}
+
+/**
+ * Interleave represents deterministic merge which takes N elements per input stream,
+ * in-order of inputs, emits them downstream and then cycles/"wraps-around" the inputs.
+ *
+ * '''Emits when''' element is available from current input (depending on phase)
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+ *
+ * '''Cancels when''' downstream cancels
+ *
+ */
+final class Interleave[T] private (val inputPorts: Int, val segmentSize: Int, val eagerClose: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
+  require(inputPorts > 1, "input ports must be > 1")
+  require(segmentSize > 0, "segmentSize must be > 0")
+
+  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Interleave.in" + i))
+  val out: Outlet[T] = Outlet[T]("Interleave.out")
+  override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    private var counter = 0
+    private var currentUpstreamIndex = 0
+    private var runningUpstreams = inputPorts
+    private def upstreamsClosed = runningUpstreams == 0
+    private def currentUpstream = in(currentUpstreamIndex)
+
+    private def switchToNextInput(): Unit = {
+      @tailrec
+      def nextInletIndex(index: Int): Int = {
+        val successor = index + 1 match {
+          case `inputPorts` ⇒ 0
+          case x            ⇒ x
+        }
+        if (!isClosed(in(successor))) successor
+        else {
+          if (successor != currentUpstreamIndex) nextInletIndex(successor)
+          else {
+            completeStage()
+            0 // return dummy/min value to exit stage logic gracefully
+          }
+        }
+      }
+      counter = 0
+      currentUpstreamIndex = nextInletIndex(currentUpstreamIndex)
+    }
+
+    in.foreach { i ⇒
+      setHandler(i, new InHandler {
+        override def onPush(): Unit = {
+          push(out, grab(i))
+          counter += 1
+          if (counter == segmentSize) switchToNextInput()
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          if (!eagerClose) {
+            runningUpstreams -= 1
+            if (!upstreamsClosed) {
+              if (i == currentUpstream) {
+                switchToNextInput()
+                if (isAvailable(out)) pull(currentUpstream)
+              }
+            } else completeStage()
+          } else completeStage()
+        }
+      })
+    }
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = if (!hasBeenPulled(currentUpstream)) tryPull(currentUpstream)
+    })
+  }
+
+  override def toString = "Interleave"
+}
+
 object Broadcast {
   /**
    * Create a new `Broadcast` with the specified number of output ports.

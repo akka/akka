@@ -1033,6 +1033,49 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.alsoToMat(that)(combinerToScala(matF)))
 
   /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
+   *
+   * Example:
+   * {{{
+   * Source<Integer, ?> src = Source.from(Arrays.asList(1, 2, 3))
+   * Flow<Integer, Integer, ?> flow = flow.interleave(Source.from(Arrays.asList(4, 5, 6, 7)), 2)
+   * src.via(flow) // 1, 2, 4, 5, 3, 6, 7
+   * }}}
+   *
+   * After one of upstreams is complete than all the rest elements will be emitted from the second one
+   *
+   * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
+   *
+   * '''Emits when''' element is available from the currently consumed upstream
+   *
+   * '''Backpressures when''' downstream backpressures. Signal to current
+   * upstream, switch to next upstream when received `segmentSize` elements
+   *
+   * '''Completes when''' the [[Flow]] and given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def interleave[T >: Out](that: Graph[SourceShape[T], _], segmentSize: Int): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.interleave(that, segmentSize))
+
+  /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
+   *
+   * After one of upstreams is compete than all the rest elements will be emitted from the second one
+   *
+   * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
+   *
+   * @see [[#interleave]].
+   */
+  def interleaveMat[T >: Out, M, M2](that: Graph[SourceShape[T], M], segmentSize: Int,
+                                     matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
+    new Flow(delegate.interleaveMat(that, segmentSize)(combinerToScala(matF)))
+
+  /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *
