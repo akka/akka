@@ -368,6 +368,18 @@ Update procedure
 
 1. All custom shapes must use ``@uncheckedVariance`` on their ``Inlet`` and ``Outlet`` members.
 
+Renamed ``inlet()`` and ``outlet()`` to ``in()`` and ``out()`` in ``SourceShape``, ``SinkShape`` and ``FlowShape``
+==========================================================================================================
+
+The input and output ports of these shapes where called ``inlet()`` and ``outlet()`` compared to other shapes that
+consistently used ``in()`` and ``out()``. Now all :class:`Shape` s use ``in()`` and ``out()``.
+
+Update procedure
+----------------
+
+Change all references to ``inlet()`` to ``in()`` and all references to ``outlet()`` to ``out()`` when referring to the ports
+of :class:`FlowShape`, :class:`SourceShape` and :class:`SinkShape`.
+
 Semantic change in ``isHoldingUpstream`` in the DetachedStage DSL
 =================================================================
 
@@ -557,7 +569,7 @@ should be replaced by
 .. includecode:: code/docs/MigrationsScala.scala#file-source-sink
 
 InputStreamSource and OutputStreamSink
-============================================
+======================================
 
 Both have been replaced by ``Source.inputStream(…)`` and ``Sink.outputStream(…)`` due to discoverability issues.
 

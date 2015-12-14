@@ -78,13 +78,13 @@ class CompositionDocSpec extends AkkaSpec {
     //#complex-graph
     import GraphDSL.Implicits._
     RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
-      val A: Outlet[Int]                  = builder.add(Source.single(0)).outlet
+      val A: Outlet[Int]                  = builder.add(Source.single(0)).out
       val B: UniformFanOutShape[Int, Int] = builder.add(Broadcast[Int](2))
       val C: UniformFanInShape[Int, Int]  = builder.add(Merge[Int](2))
       val D: FlowShape[Int, Int]          = builder.add(Flow[Int].map(_ + 1))
       val E: UniformFanOutShape[Int, Int] = builder.add(Balance[Int](2))
       val F: UniformFanInShape[Int, Int]  = builder.add(Merge[Int](2))
-      val G: Inlet[Any]                   = builder.add(Sink.foreach(println)).inlet
+      val G: Inlet[Any]                   = builder.add(Sink.foreach(println)).in
 
                     C     <~      F
       A  ~>  B  ~>  C     ~>      F

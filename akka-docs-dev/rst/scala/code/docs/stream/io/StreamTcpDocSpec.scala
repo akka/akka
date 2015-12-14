@@ -108,7 +108,7 @@ class StreamTcpDocSpec extends AkkaSpec {
         // then we continue using the echo-logic Flow
         echo.outlet ~> concat.in(1)
 
-        FlowShape(echo.inlet, concat.out)
+        FlowShape(echo.in, concat.out)
       })
 
       connection.handleWith(serverLogic)

@@ -146,8 +146,8 @@ private[http] object Websocket {
 
       BidiShape(
         split.in,
-        messagePreparation.outlet,
-        messageRendering.inlet,
+        messagePreparation.out,
+        messageRendering.in,
         merge.out)
     }.named("ws-message-api"))
   }

@@ -31,7 +31,7 @@ private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out
   // This is okay since the only caller of this method is right below.
   protected def newInstance(shape: SourceShape[Out] @uncheckedVariance): SourceModule[Out, Mat]
 
-  override def carbonCopy: Module = newInstance(SourceShape(shape.outlet.carbonCopy()))
+  override def carbonCopy: Module = newInstance(SourceShape(shape.out.carbonCopy()))
 
   override def subModules: Set[Module] = Set.empty
 
@@ -40,7 +40,7 @@ private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out
     val thatN = attr.nameOrDefault(null)
 
     if ((thatN eq null) || thisN == thatN) shape
-    else shape.copy(outlet = Outlet(thatN + ".out"))
+    else shape.copy(out = Outlet(thatN + ".out"))
   }
 }
 

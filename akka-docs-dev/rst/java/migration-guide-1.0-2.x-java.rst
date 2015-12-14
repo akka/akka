@@ -45,7 +45,6 @@ Update procedure
    ``BidiFlow.fromFlows`` or ``BidiFlow.fromFlowsMat``
 5. Replace all uses of ``BidiFlow.apply()`` (Scala DSL) or ``BidiFlow.create()`` (Java DSL) when it converts two
    functions to a ``BidiFlow`` with ``BidiFlow.fromFunctions``
-
 Example
 ^^^^^^^
 
@@ -85,6 +84,20 @@ and
 Should be replaced by
 
 .. includecode:: code/docs/MigrationsJava.java#bidi-wrap
+
+
+Renamed ``inlet()`` and ``outlet()`` to ``in()`` and ``out()`` in ``SourceShape``, ``SinkShape`` and ``FlowShape``
+==========================================================================================================
+
+The input and output ports of these shapes where called ``inlet()`` and ``outlet()`` compared to other shapes that
+consistently used ``in()`` and ``out()``. Now all :class:`Shape` s use ``in()`` and ``out()``.
+
+Update procedure
+----------------
+
+Change all references to ``inlet()`` to ``in()`` and all references to ``outlet()`` to ``out()`` when referring to the ports
+of :class:`FlowShape`, :class:`SourceShape` and :class:`SinkShape`.
+
 
 FlowGraph class and builder methods have been renamed
 =====================================================

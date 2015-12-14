@@ -29,7 +29,7 @@ private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) exte
   // This is okay since we the only caller of this method is right below.
   protected def newInstance(s: SinkShape[In] @uncheckedVariance): SinkModule[In, Mat]
 
-  override def carbonCopy: Module = newInstance(SinkShape(shape.inlet.carbonCopy()))
+  override def carbonCopy: Module = newInstance(SinkShape(shape.in.carbonCopy()))
 
   override def subModules: Set[Module] = Set.empty
 
@@ -38,7 +38,7 @@ private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) exte
     val thatN = attr.nameOrDefault(null)
 
     if ((thatN eq null) || thisN == thatN) shape
-    else shape.copy(inlet = Inlet(thatN + ".in"))
+    else shape.copy(in = Inlet(thatN + ".in"))
   }
 }
 

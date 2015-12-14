@@ -141,11 +141,11 @@ class SourceSpec extends AkkaSpec {
         (i0, i1, i2, i3, i4) ⇒
           import GraphDSL.Implicits._
           val m = b.add(Merge[Int](5))
-          i0.outlet ~> m.in(0)
-          i1.outlet ~> m.in(1)
-          i2.outlet ~> m.in(2)
-          i3.outlet ~> m.in(3)
-          i4.outlet ~> m.in(4)
+          i0.out ~> m.in(0)
+          i1.out ~> m.in(1)
+          i2.out ~> m.in(2)
+          i3.out ~> m.in(3)
+          i4.out ~> m.in(4)
           SourceShape(m.out)
       }).to(Sink(out)).run()
 
