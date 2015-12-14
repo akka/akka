@@ -245,6 +245,64 @@ object Source {
   }
 
   /**
+   * create a `Source` that will unfold a value of type `S` into
+   * a pair of the next state `S` and output elements of type `E`.
+   *
+   * for example, all the fibonacci numbers under 10M:
+   *
+   * {{{
+   *   Source.unfold(0 → 1){
+   *    case (a,_) if a > 10000000 ⇒ None
+   *    case (a,b) ⇒ Some((b → (a + b)) → a)
+   *   }
+   * }}}
+   */
+  def unfold[S, E](s: S)(f: S ⇒ Option[(S, E)]): Source[E, Unit] =
+    Source.fromGraph(new Unfold(s, f)).withAttributes(DefaultAttributes.unfold)
+
+  /**
+   * same as unfold, but uses an async function to generate the next state-element tuple.
+   *
+   * async fibonacci example:
+   *
+   * {{{
+   *   Source.unfoldAsync(0 → 1){
+   *    case (a,_) if a > 10000000 ⇒ Future.successful(None)
+   *    case (a,b) ⇒ Future{
+   *      Thread.sleep(1000)
+   *      Some((b → (a + b)) → a)
+   *    }
+   *   }
+   * }}}
+   */
+  def unfoldAsync[S, E](s: S)(f: S ⇒ Future[Option[(S, E)]]): Source[E, Unit] =
+    Source.fromGraph(new UnfoldAsync(s, f)).withAttributes(DefaultAttributes.unfoldAsync)
+
+  /**
+   * simpler unfold, for infinite sequences.
+   *
+   * {{{
+   *   Source.unfoldInf(0 → 1){
+   *    case (a,b) ⇒ (b → (a + b)) → a
+   *   }
+   * }}}
+   */
+  def unfoldInf[S, E](s: S)(f: S ⇒ (S, E)): Source[E, Unit] = {
+    Source.fromGraph(GraphDSL.create() { implicit b ⇒
+      import GraphDSL.Implicits._
+
+      val uzip = b.add(UnzipWith(f))
+      val cnct = b.add(Concat[S]())
+      val init = Source.single(s)
+
+      init ~> cnct ~> uzip.in
+      cnct <~ uzip.out0
+
+      SourceShape(uzip.out1)
+    }).withAttributes(DefaultAttributes.unfoldInf)
+  }
+
+  /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
    */
   def empty[T]: Source[T, Unit] = _empty
