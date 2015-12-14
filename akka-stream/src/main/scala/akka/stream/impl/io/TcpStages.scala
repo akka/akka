@@ -173,8 +173,8 @@ private[stream] object TcpConnectionStage {
   class TcpStreamLogic(val shape: FlowShape[ByteString, ByteString], val role: TcpRole) extends GraphStageLogic(shape) {
     implicit private var self: StageActorRef = _
 
-    private def bytesIn = shape.inlet
-    private def bytesOut = shape.outlet
+    private def bytesIn = shape.in
+    private def bytesOut = shape.out
     private var connection: ActorRef = _
 
     // No reading until role have been decided

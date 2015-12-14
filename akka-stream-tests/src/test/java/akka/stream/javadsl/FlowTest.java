@@ -364,8 +364,8 @@ public class FlowTest extends StreamTest {
 
     RunnableGraph.fromGraph(GraphDSL.create(new Function<Builder<BoxedUnit>, ClosedShape>(){
       public ClosedShape apply(Builder<BoxedUnit> b) {
-        final Outlet<String> in1 = b.add(Source.from(input1)).outlet();
-        final Outlet<Integer> in2 = b.add(Source.from(input2)).outlet();
+        final Outlet<String> in1 = b.add(Source.from(input1)).out();
+        final Outlet<Integer> in2 = b.add(Source.from(input2)).out();
         final FanInShape2<String, Integer, Pair<String, Integer>> zip = b.add(Zip.<String, Integer>create());
         final SinkShape<Pair<String, Integer>> out =
           b.add(Sink.foreach(new Procedure<Pair<String, Integer>>() {

@@ -100,8 +100,8 @@ private[http] object OutgoingConnectionBlueprint {
 
       BidiShape(
         methodBypassFanout.in,
-        wrapTls.outlet,
-        unwrapTls.inlet,
+        wrapTls.out,
+        unwrapTls.in,
         terminationFanout.out(1))
     })
 

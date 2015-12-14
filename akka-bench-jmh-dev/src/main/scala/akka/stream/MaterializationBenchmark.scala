@@ -42,7 +42,7 @@ object MaterializationBenchmark {
     for (_ <- 1 to numOfNestedGraphs) {
       flow = GraphDSL.create(flow) { b ⇒
         flow ⇒
-          FlowShape(flow.inlet, flow.outlet)
+          FlowShape(flow.in, flow.out)
       }
     }
 
@@ -58,13 +58,13 @@ object MaterializationBenchmark {
     RunnableGraph.fromGraph(GraphDSL.create(Source.single(())) { implicit b ⇒ source ⇒
       import GraphDSL.Implicits._
       val flow = Flow[Unit].map(identity)
-      var outlet: Outlet[Unit] = source.outlet
+      var out: Outlet[Unit] = source.out
       for (i <- 0 until numOfFlows) {
         val flowShape = b.add(flow)
-        outlet ~> flowShape
-        outlet = flowShape.outlet
+        out ~> flowShape
+        out = flowShape.outlet
       }
-      outlet ~> Sink.ignore
+      out ~> Sink.ignore
       ClosedShape
     })
 }

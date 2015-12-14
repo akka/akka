@@ -62,7 +62,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
           Source(List(1, 2, 3)) ~> bcast.in
           bcast.out(0) ~> merge.in(0)
           bcast.out(1).map(_ + 3) ~> merge.in(1)
-          merge.out.grouped(10) ~> sink.inlet
+          merge.out.grouped(10) ~> sink.in
           ClosedShape
       }).run()
 
@@ -80,7 +80,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
 
           for (i ← 0 until 5) balance.out(i) ~> merge.in(i)
 
-          merge.out.grouped(elements.size * 2) ~> sink.inlet
+          merge.out.grouped(elements.size * 2) ~> sink.in
           ClosedShape
       }).run()
 
@@ -118,15 +118,15 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
 
           // Second layer
           m11.out ~> b11.in
-          b11.out(0).grouped(1000) ~> sink2.inlet // Vertex 2 is omitted since it has only one in and out
+          b11.out(0).grouped(1000) ~> sink2.in // Vertex 2 is omitted since it has only one in and out
           b11.out(1) ~> m9.in(0)
           b11.out(2) ~> m10.in(1)
 
           m8.out ~> m9.in(1)
 
           // Third layer
-          m9.out.grouped(1000) ~> sink9.inlet
-          m10.out.grouped(1000) ~> sink10.inlet
+          m9.out.grouped(1000) ~> sink9.in
+          m10.out.grouped(1000) ~> sink10.in
 
           ClosedShape
       }).run()
@@ -147,7 +147,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEqual
           Source(List(1, 2, 3)).map(_ * 2) ~> bcast.in
           bcast.out(0) ~> merge.in(0)
           bcast.out(1).map(_ + 3) ~> merge.in(1)
-          merge.out.grouped(10) ~> sink.inlet
+          merge.out.grouped(10) ~> sink.in
           ClosedShape
       }).run()
 

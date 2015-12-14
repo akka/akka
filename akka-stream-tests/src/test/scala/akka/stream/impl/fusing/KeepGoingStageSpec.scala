@@ -66,8 +66,8 @@ class KeepGoingStageSpec extends AkkaSpec {
             } finally listener.foreach(_ ! EndOfEventHandler)
         }
 
-        setHandler(shape.inlet, new InHandler {
-          override def onPush(): Unit = pull(shape.inlet)
+        setHandler(shape.in, new InHandler {
+          override def onPush(): Unit = pull(shape.in)
 
           // Ignore finish
           override def onUpstreamFinish(): Unit = listener.foreach(_ ! UpstreamCompleted)
