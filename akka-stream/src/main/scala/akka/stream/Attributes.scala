@@ -74,30 +74,45 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     attributeList.find(c isInstance _).map(c cast _)
 
   /**
-   * Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
+   * Scala API: get all attributes of a given type (or subtypes thereof).
+   */
+  def filtered[T <: Attribute: ClassTag]: List[T] = {
+    val c = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    attributeList.collect {
+      case a if c.isAssignableFrom(a.getClass) ⇒ c.cast(a)
+    }
+  }
+
+  /**
+   * Scala API: Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
-  def get[T <: Attribute: ClassTag](default: T) =
+  def get[T <: Attribute: ClassTag](default: T): T =
     getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
 
   /**
-   * Get the first (least specific) attribute of a given type parameter T `Class` or subclass thereof.
+   * Scala API: Get the first (least specific) attribute of a given type parameter T `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
-  def getFirst[T <: Attribute: ClassTag](default: T) =
+  def getFirst[T <: Attribute: ClassTag](default: T): T =
     getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
 
   /**
-   * Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
+   * Scala API: Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
    */
-  def get[T <: Attribute: ClassTag] =
+  def get[T <: Attribute: ClassTag]: Option[T] =
     getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]])
 
   /**
-   * Get the first (least specific) attribute of a given type parameter T `Class` or subclass thereof.
+   * Scala API: Get the first (least specific) attribute of a given type parameter T `Class` or subclass thereof.
    */
-  def getFirst[T <: Attribute: ClassTag] =
+  def getFirst[T <: Attribute: ClassTag]: Option[T] =
     getFirstAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]])
+
+  /**
+   * Test whether the given attribute is contained within this attributes list.
+   */
+  def contains(attr: Attribute): Boolean = attributeList.contains(attr)
 
   /**
    * Adds given attributes to the end of these attributes.
@@ -114,9 +129,9 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     Attributes(attributeList :+ other)
 
   /**
-   * INTERNAL API
+   * Extracts Name attributes and concatenates them.
    */
-  private[akka] def nameLifted: Option[String] = Option(nameOrDefault(null))
+  def nameLifted: Option[String] = Option(nameOrDefault(null))
 
   /**
    * INTERNAL API
@@ -157,6 +172,7 @@ object Attributes {
     /** Use to disable logging on certain operations when configuring [[Attributes.LogLevels]] */
     final val Off: Logging.LogLevel = Logging.levelFor("off").get
   }
+  final case object AsyncBoundary extends Attribute
 
   /**
    * INTERNAL API
@@ -165,6 +181,8 @@ object Attributes {
     apply(List(attribute))
 
   val none: Attributes = Attributes()
+
+  val asyncBoundary: Attributes = Attributes(AsyncBoundary)
 
   /**
    * Specifies the name of the operation.

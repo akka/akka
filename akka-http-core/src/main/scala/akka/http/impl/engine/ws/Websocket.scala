@@ -152,10 +152,12 @@ private[http] object Websocket {
     }.named("ws-message-api"))
   }
 
-  private object BypassRouter extends GraphStage[FanOutShape2[Output, BypassEvent, MessagePart]] {
+  private case object BypassRouter extends GraphStage[FanOutShape2[Output, BypassEvent, MessagePart]] {
     private val in = Inlet[Output]("in")
     private val bypass = Outlet[BypassEvent]("bypass-out")
     private val user = Outlet[MessagePart]("message-out")
+
+    override def initialAttributes = Attributes.name("BypassRouter")
 
     val shape = new FanOutShape2(in, bypass, user)
 
@@ -182,11 +184,13 @@ private[http] object Websocket {
     }
   }
 
-  private object BypassMerge extends GraphStage[FanInShape3[BypassEvent, AnyRef, Tick.type, AnyRef]] {
+  private case object BypassMerge extends GraphStage[FanInShape3[BypassEvent, AnyRef, Tick.type, AnyRef]] {
     private val bypass = Inlet[BypassEvent]("bypass-in")
     private val user = Inlet[AnyRef]("message-in")
     private val tick = Inlet[Tick.type]("tick-in")
     private val out = Outlet[AnyRef]("out")
+
+    override def initialAttributes = Attributes.name("BypassMerge")
 
     val shape = new FanInShape3(bypass, user, tick, out)
 
@@ -207,9 +211,11 @@ private[http] object Websocket {
     }
   }
 
-  private object LiftCompletions extends GraphStage[FlowShape[FrameStart, AnyRef]] {
+  private case object LiftCompletions extends GraphStage[FlowShape[FrameStart, AnyRef]] {
     private val in = Inlet[FrameStart]("in")
     private val out = Outlet[AnyRef]("out")
+
+    override def initialAttributes = Attributes.name("LiftCompletions")
 
     val shape = new FlowShape(in, out)
 
@@ -225,5 +231,5 @@ private[http] object Websocket {
     }
   }
 
-  object Tick
+  case object Tick
 }

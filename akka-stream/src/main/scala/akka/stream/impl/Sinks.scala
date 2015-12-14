@@ -226,6 +226,8 @@ private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedV
       })
     }, p.future)
   }
+
+  override def toString: String = "LastOptionStage"
 }
 
 private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
@@ -256,4 +258,6 @@ private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedV
       })
     }, p.future)
   }
+
+  override def toString: String = "HeadOptionStage"
 }

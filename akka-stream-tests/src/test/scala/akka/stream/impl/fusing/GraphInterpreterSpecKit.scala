@@ -70,7 +70,8 @@ trait GraphInterpreterSpecKit {
       def init(): Unit = {
         val assembly = buildAssembly()
 
-        val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
+        val (inHandlers, outHandlers, logics) =
+          assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
         _interpreter = new GraphInterpreter(assembly, NoMaterializer, NoLogging, inHandlers, outHandlers, logics,
           (_, _, _) ⇒ (), fuzzingMode = false)
 
@@ -87,7 +88,8 @@ trait GraphInterpreterSpecKit {
     }
 
     def manualInit(assembly: GraphAssembly): Unit = {
-      val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
+      val (inHandlers, outHandlers, logics) =
+        assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
       _interpreter = new GraphInterpreter(assembly, NoMaterializer, NoLogging, inHandlers, outHandlers, logics,
         (_, _, _) ⇒ (), fuzzingMode = false)
     }

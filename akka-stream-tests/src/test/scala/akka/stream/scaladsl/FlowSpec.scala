@@ -74,7 +74,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       Array(null, stage.shape.outlet),
       Array(-1, 0))
 
-    val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
+    val (inHandlers, outHandlers, logics) =
+      assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
 
     val props = Props(new BrokenActorInterpreter(assembly, inHandlers, outHandlers, logics, stage.shape, settings, materializer, "a3"))
       .withDispatcher("akka.test.stream-dispatcher").withDeploy(Deploy.local)

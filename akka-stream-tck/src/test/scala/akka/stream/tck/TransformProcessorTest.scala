@@ -5,7 +5,6 @@ package akka.stream.tck
 
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.impl.ActorMaterializerImpl
-import akka.stream.impl.Stages.Identity
 import akka.stream.scaladsl.Flow
 import akka.stream.Attributes
 import akka.stream.stage.{ Context, PushStage }
