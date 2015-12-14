@@ -46,8 +46,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
       val flowCopy = flow.module.carbonCopy
       new Flow(
         module
-          .fuse(flowCopy, shape.outlet, flowCopy.shape.inlets.head, combine)
-          .replaceShape(FlowShape(shape.inlet, flowCopy.shape.outlets.head)))
+          .fuse(flowCopy, shape.out, flowCopy.shape.inlets.head, combine)
+          .replaceShape(FlowShape(shape.in, flowCopy.shape.outlets.head)))
     }
 
   /**
@@ -93,8 +93,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
       val sinkCopy = sink.module.carbonCopy
       new Sink(
         module
-          .fuse(sinkCopy, shape.outlet, sinkCopy.shape.inlets.head, combine)
-          .replaceShape(SinkShape(shape.inlet)))
+          .fuse(sinkCopy, shape.out, sinkCopy.shape.inlets.head, combine)
+          .replaceShape(SinkShape(shape.in)))
     }
   }
 
@@ -136,8 +136,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     RunnableGraph(
       module
         .compose(flowCopy, combine)
-        .wire(shape.outlet, flowCopy.shape.inlets.head)
-        .wire(flowCopy.shape.outlets.head, shape.inlet))
+        .wire(shape.out, flowCopy.shape.inlets.head)
+        .wire(flowCopy.shape.outlets.head, shape.in))
   }
 
   /**
@@ -181,8 +181,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     val outs = copy.shape.outlets
     new Flow(module
       .compose(copy, combine)
-      .wire(shape.outlet, ins.head)
-      .wire(outs(1), shape.inlet)
+      .wire(shape.out, ins.head)
+      .wire(outs(1), shape.in)
       .replaceShape(FlowShape(ins(1), outs.head)))
   }
 
@@ -191,14 +191,14 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   private[stream] override def deprecatedAndThen[U](op: StageModule): Repr[U] = {
     //No need to copy here, op is a fresh instance
     if (this.isIdentity) new Flow(op).asInstanceOf[Repr[U]]
-    else new Flow(module.fuse(op, shape.outlet, op.inPort).replaceShape(FlowShape(shape.inlet, op.outPort)))
+    else new Flow(module.fuse(op, shape.out, op.inPort).replaceShape(FlowShape(shape.in, op.outPort)))
   }
 
   // FIXME: Only exists to keep old stuff alive
   private[akka] def deprecatedAndThenMat[U, Mat2, O >: Out](processorFactory: () ⇒ (Processor[O, U], Mat2)): ReprMat[U, Mat2] = {
     val op = DirectProcessor(processorFactory.asInstanceOf[() ⇒ (Processor[Any, Any], Any)])
     if (this.isIdentity) new Flow(op).asInstanceOf[ReprMat[U, Mat2]]
-    else new Flow[In, U, Mat2](module.fuse(op, shape.outlet, op.inPort, Keep.right).replaceShape(FlowShape(shape.inlet, op.outPort)))
+    else new Flow[In, U, Mat2](module.fuse(op, shape.out, op.inPort, Keep.right).replaceShape(FlowShape(shape.in, op.outPort)))
   }
 
   /**
@@ -289,7 +289,7 @@ object Flow {
    * Helper to create `Flow` from a `Sink`and a `Source`.
    */
   def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(f: (M1, M2) ⇒ M): Flow[I, O, M] =
-    fromGraph(GraphDSL.create(sink, source)(f) { implicit b ⇒ (in, out) ⇒ FlowShape(in.inlet, out.outlet) })
+    fromGraph(GraphDSL.create(sink, source)(f) { implicit b ⇒ (in, out) ⇒ FlowShape(in.in, out.out) })
 }
 
 object RunnableGraph {

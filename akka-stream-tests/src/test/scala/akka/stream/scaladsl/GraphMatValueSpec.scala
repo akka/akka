@@ -83,16 +83,16 @@ class GraphMatValueSpec extends AkkaSpec {
         (s1, s2) ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
 
-          s1.outlet.mapAsync(4)(identity) ~> zip.in0
-          s2.outlet.mapAsync(4)(identity).map(_ * 100) ~> zip.in1
+          s1.out.mapAsync(4)(identity) ~> zip.in0
+          s2.out.mapAsync(4)(identity).map(_ * 100) ~> zip.in1
           SourceShape(zip.out)
       })
 
       val compositeSource2 = Source.fromGraph(GraphDSL.create(compositeSource1, compositeSource1)(Keep.both) { implicit b ⇒
         (s1, s2) ⇒
           val zip = b.add(ZipWith[Int, Int, Int](_ + _))
-          s1.outlet ~> zip.in0
-          s2.outlet.map(_ * 10000) ~> zip.in1
+          s1.out ~> zip.in0
+          s2.out.map(_ * 10000) ~> zip.in1
           SourceShape(zip.out)
       })
 

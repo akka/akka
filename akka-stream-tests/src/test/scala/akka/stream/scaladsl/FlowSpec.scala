@@ -69,9 +69,9 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     val assembly = new GraphAssembly(
       Array(stage),
       Array(Attributes.none),
-      Array(stage.shape.inlet, null),
+      Array(stage.shape.in, null),
       Array(0, -1),
-      Array(null, stage.shape.outlet),
+      Array(null, stage.shape.out),
       Array(-1, 0))
 
     val (inHandlers, outHandlers, logics) =

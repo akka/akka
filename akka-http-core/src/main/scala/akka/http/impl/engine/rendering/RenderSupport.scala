@@ -36,7 +36,7 @@ private object RenderSupport {
       frst ⇒
         import GraphDSL.Implicits._
         second ~> Sink.cancelled
-        SourceShape(frst.outlet)
+        SourceShape(frst.out)
     })
   }
 

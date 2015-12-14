@@ -812,8 +812,8 @@ object GraphDSL extends GraphApply {
 
       def ~>[Out](via: Graph[FlowShape[T, Out], Any])(implicit b: Builder[_]): PortOps[Out] = {
         val s = b.add(via)
-        b.addEdge(importAndGetPort(b), s.inlet)
-        s.outlet
+        b.addEdge(importAndGetPort(b), s.in)
+        s.out
       }
 
       def ~>[Out](junction: UniformFanInShape[T, Out])(implicit b: Builder[_]): PortOps[Out] = {
@@ -836,15 +836,15 @@ object GraphDSL extends GraphApply {
       }
 
       def ~>[Out](flow: FlowShape[T, Out])(implicit b: Builder[_]): PortOps[Out] = {
-        b.addEdge(importAndGetPort(b), flow.inlet)
-        flow.outlet
+        b.addEdge(importAndGetPort(b), flow.in)
+        flow.out
       }
 
       def ~>(to: Graph[SinkShape[T], _])(implicit b: Builder[_]): Unit =
-        b.addEdge(importAndGetPort(b), b.add(to).inlet)
+        b.addEdge(importAndGetPort(b), b.add(to).in)
 
       def ~>(to: SinkShape[T])(implicit b: Builder[_]): Unit =
-        b.addEdge(importAndGetPort(b), to.inlet)
+        b.addEdge(importAndGetPort(b), to.in)
     }
 
     sealed trait ReverseCombinerBase[T] extends Any {
@@ -855,8 +855,8 @@ object GraphDSL extends GraphApply {
 
       def <~[In](via: Graph[FlowShape[In, T], _])(implicit b: Builder[_]): ReversePortOps[In] = {
         val s = b.add(via)
-        b.addEdge(s.outlet, importAndGetPortReverse(b))
-        s.inlet
+        b.addEdge(s.out, importAndGetPortReverse(b))
+        s.in
       }
 
       def <~[In](junction: UniformFanOutShape[In, T])(implicit b: Builder[_]): ReversePortOps[In] = {
@@ -879,15 +879,15 @@ object GraphDSL extends GraphApply {
       }
 
       def <~[In](flow: FlowShape[In, T])(implicit b: Builder[_]): ReversePortOps[In] = {
-        b.addEdge(flow.outlet, importAndGetPortReverse(b))
-        flow.inlet
+        b.addEdge(flow.out, importAndGetPortReverse(b))
+        flow.in
       }
 
       def <~(from: Graph[SourceShape[T], _])(implicit b: Builder[_]): Unit =
-        b.addEdge(b.add(from).outlet, importAndGetPortReverse(b))
+        b.addEdge(b.add(from).out, importAndGetPortReverse(b))
 
       def <~(from: SourceShape[T])(implicit b: Builder[_]): Unit =
-        b.addEdge(from.outlet, importAndGetPortReverse(b))
+        b.addEdge(from.out, importAndGetPortReverse(b))
     }
 
     // Although Mat is always Unit, it cannot be removed as a type parameter, otherwise the "override type"
@@ -911,7 +911,7 @@ object GraphDSL extends GraphApply {
 
       override private[scaladsl] def deprecatedAndThen[U](op: StageModule): Repr[U] = {
         b.deprecatedAndThen(outlet, op)
-        new PortOpsImpl(op.shape.outlet.asInstanceOf[Outlet[U]], b)
+        new PortOpsImpl(op.shape.out.asInstanceOf[Outlet[U]], b)
       }
 
       def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed =
@@ -944,33 +944,33 @@ object GraphDSL extends GraphApply {
     }
 
     implicit final class SinkArrow[T](val s: Graph[SinkShape[T], _]) extends AnyVal with ReverseCombinerBase[T] {
-      override def importAndGetPortReverse(b: Builder[_]): Inlet[T] = b.add(s).inlet
+      override def importAndGetPortReverse(b: Builder[_]): Inlet[T] = b.add(s).in
     }
 
     implicit final class SinkShapeArrow[T](val s: SinkShape[T]) extends AnyVal with ReverseCombinerBase[T] {
-      override def importAndGetPortReverse(b: Builder[_]): Inlet[T] = s.inlet
+      override def importAndGetPortReverse(b: Builder[_]): Inlet[T] = s.in
     }
 
     implicit final class FlowShapeArrow[I, O](val f: FlowShape[I, O]) extends AnyVal with ReverseCombinerBase[I] {
-      override def importAndGetPortReverse(b: Builder[_]): Inlet[I] = f.inlet
+      override def importAndGetPortReverse(b: Builder[_]): Inlet[I] = f.in
 
       def <~>[I2, O2, Mat](bidi: Graph[BidiShape[O, O2, I2, I], Mat])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
         val shape = b.add(bidi)
-        b.addEdge(f.outlet, shape.in1)
-        b.addEdge(shape.out2, f.inlet)
+        b.addEdge(f.out, shape.in1)
+        b.addEdge(shape.out2, f.in)
         shape
       }
 
       def <~>[I2, O2](bidi: BidiShape[O, O2, I2, I])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
-        b.addEdge(f.outlet, bidi.in1)
-        b.addEdge(bidi.out2, f.inlet)
+        b.addEdge(f.out, bidi.in1)
+        b.addEdge(bidi.out2, f.in)
         bidi
       }
 
       def <~>[M](flow: Graph[FlowShape[O, I], M])(implicit b: Builder[_]): Unit = {
         val shape = b.add(flow)
-        b.addEdge(shape.outlet, f.inlet)
-        b.addEdge(f.outlet, shape.inlet)
+        b.addEdge(shape.out, f.in)
+        b.addEdge(f.out, shape.in)
       }
     }
 
@@ -978,23 +978,23 @@ object GraphDSL extends GraphApply {
       def <~>[I2, O2, Mat](bidi: Graph[BidiShape[O, O2, I2, I], Mat])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
         val shape = b.add(bidi)
         val flow = b.add(f)
-        b.addEdge(flow.outlet, shape.in1)
-        b.addEdge(shape.out2, flow.inlet)
+        b.addEdge(flow.out, shape.in1)
+        b.addEdge(shape.out2, flow.in)
         shape
       }
 
       def <~>[I2, O2](bidi: BidiShape[O, O2, I2, I])(implicit b: Builder[_]): BidiShape[O, O2, I2, I] = {
         val flow = b.add(f)
-        b.addEdge(flow.outlet, bidi.in1)
-        b.addEdge(bidi.out2, flow.inlet)
+        b.addEdge(flow.out, bidi.in1)
+        b.addEdge(bidi.out2, flow.in)
         bidi
       }
 
       def <~>[M2](flow: Graph[FlowShape[O, I], M2])(implicit b: Builder[_]): Unit = {
         val shape = b.add(flow)
         val ff = b.add(f)
-        b.addEdge(shape.outlet, ff.inlet)
-        b.addEdge(ff.outlet, shape.inlet)
+        b.addEdge(shape.out, ff.in)
+        b.addEdge(ff.out, shape.in)
       }
     }
 
@@ -1013,14 +1013,14 @@ object GraphDSL extends GraphApply {
       }
 
       def <~>(flow: FlowShape[O1, I2])(implicit b: Builder[_]): Unit = {
-        b.addEdge(bidi.out1, flow.inlet)
-        b.addEdge(flow.outlet, bidi.in2)
+        b.addEdge(bidi.out1, flow.in)
+        b.addEdge(flow.out, bidi.in2)
       }
 
       def <~>[M](f: Graph[FlowShape[O1, I2], M])(implicit b: Builder[_]): Unit = {
         val flow = b.add(f)
-        b.addEdge(bidi.out1, flow.inlet)
-        b.addEdge(flow.outlet, bidi.in2)
+        b.addEdge(bidi.out1, flow.in)
+        b.addEdge(flow.out, bidi.in2)
       }
     }
 
@@ -1033,14 +1033,14 @@ object GraphDSL extends GraphApply {
       new PortOpsImpl(findOut(b, j, 0), b)
 
     implicit def flow2flow[I, O](f: FlowShape[I, O])(implicit b: Builder[_]): PortOps[O] =
-      new PortOpsImpl(f.outlet, b)
+      new PortOpsImpl(f.out, b)
 
     implicit final class SourceArrow[T](val s: Graph[SourceShape[T], _]) extends AnyVal with CombinerBase[T] {
-      override def importAndGetPort(b: Builder[_]): Outlet[T] = b.add(s).outlet
+      override def importAndGetPort(b: Builder[_]): Outlet[T] = b.add(s).out
     }
 
     implicit final class SourceShapeArrow[T](val s: SourceShape[T]) extends AnyVal with CombinerBase[T] {
-      override def importAndGetPort(b: Builder[_]): Outlet[T] = s.outlet
+      override def importAndGetPort(b: Builder[_]): Outlet[T] = s.out
     }
   }
 }
