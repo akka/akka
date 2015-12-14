@@ -21,17 +21,17 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
 
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
-      Source(0 to 3).interleave(Source(List[Int]()), 2).interleave(Source(4 to 9), 3).runWith(Sink(probe))
+      Source(0 to 3).interleave(Source(4 to 6), 2).interleave(Source(7 to 11), 3).runWith(Sink(probe))
 
       val subscription = probe.expectSubscription()
 
-      var collected = Set.empty[Int]
-      for (_ ← 1 to 10) {
+      var collected = Seq.empty[Int]
+      for (_ ← 1 to 12) {
         subscription.request(1)
-        collected += probe.expectNext()
+        collected :+= probe.expectNext()
       }
 
-      collected should be(Set(0, 1, 4, 5, 6, 2, 3, 7, 8, 9))
+      collected should be(Seq(0, 1, 4, 7, 8, 9, 5, 2, 3, 10, 11, 6))
       probe.expectComplete()
     }
 

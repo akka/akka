@@ -271,8 +271,18 @@ final class Interleave[T] private (val inputPorts: Int, val segmentSize: Int, va
     private def switchToNextInput(): Unit = {
       @tailrec
       def nextInletIndex(index: Int): Int = {
-        val reduced = (index + 1) % inputPorts
-        if (!isClosed(in(reduced))) reduced else nextInletIndex(index + 1)
+        val successor = index + 1 match {
+          case `inputPorts` ⇒ 0
+          case x            ⇒ x
+        }
+        if (!isClosed(in(successor))) successor
+        else {
+          if (successor != currentUpstreamIndex) nextInletIndex(successor)
+          else {
+            completeStage()
+            0 // return dummy/min value to exit stage logic gracefully
+          }
+        }
       }
       counter = 0
       currentUpstreamIndex = nextInletIndex(currentUpstreamIndex)
@@ -286,11 +296,8 @@ final class Interleave[T] private (val inputPorts: Int, val segmentSize: Int, va
           if (counter == segmentSize) switchToNextInput()
         }
 
-        override def onUpstreamFinish() = {
-          if (eagerClose) {
-            in.foreach(cancel)
-            completeStage()
-          } else {
+        override def onUpstreamFinish(): Unit = {
+          if (!eagerClose) {
             runningUpstreams -= 1
             if (!upstreamsClosed) {
               if (i == currentUpstream) {
@@ -298,13 +305,13 @@ final class Interleave[T] private (val inputPorts: Int, val segmentSize: Int, va
                 if (isAvailable(out)) pull(currentUpstream)
               }
             } else completeStage()
-          }
+          } else completeStage()
         }
       })
     }
 
     setHandler(out, new OutHandler {
-      override def onPull(): Unit = if (!hasBeenPulled(currentUpstream)) pull(currentUpstream)
+      override def onPull(): Unit = if (!hasBeenPulled(currentUpstream)) tryPull(currentUpstream)
     })
   }
 
