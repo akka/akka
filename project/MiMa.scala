@@ -582,7 +582,10 @@ object MiMa extends AutoPlugin {
         FilterAnyProblem("akka.cluster.sharding.DDataShardCoordinator"),
 
         // #18328 optimize VersionVector for size 1
-        FilterAnyProblem("akka.cluster.ddata.VersionVector")
+        FilterAnyProblem("akka.cluster.ddata.VersionVector"),
+
+        // #19133 change in internal actor
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.gated")
       )
     )
   }
