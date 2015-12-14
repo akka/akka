@@ -122,9 +122,9 @@ object WebsocketClientBlueprint {
       wsIn.outlet ~> httpRequestBytesAndThenWSBytes
 
       BidiShape(
-        networkIn.inlet,
-        networkIn.outlet,
-        wsIn.inlet,
+        networkIn.in,
+        networkIn.out,
+        wsIn.in,
         httpRequestBytesAndThenWSBytes.out)
     }) mapMaterializedValue (_ ⇒ result.future)
   }
