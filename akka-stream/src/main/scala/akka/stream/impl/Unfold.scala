@@ -10,19 +10,13 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 /**
- * Unfold `GraphStage` class
- * @param s initial state
- * @param f unfold function
- * @tparam S state
- * @tparam E element
+ * INTERNAL API
  */
-private[akka] class Unfold[S, E](s: S, f: S ⇒ Option[(S, E)]) extends GraphStage[SourceShape[E]] {
-
-  val out: Outlet[E] = Outlet("Unfold")
-
+private[akka] final class Unfold[S, E](s: S, f: S ⇒ Option[(S, E)]) extends GraphStage[SourceShape[E]] {
+  val out: Outlet[E] = Outlet("Unfold.out")
   override val shape: SourceShape[E] = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
       private[this] var state = s
 
@@ -36,36 +30,27 @@ private[akka] class Unfold[S, E](s: S, f: S ⇒ Option[(S, E)]) extends GraphSta
         }
       })
     }
-  }
 }
 
 /**
- * UnfoldAsync `GraphStage` class
- * @param s initial state
- * @param f unfold function
- * @tparam S state
- * @tparam E element
+ * INTERNAL API
  */
-private[akka] class UnfoldAsync[S, E](s: S, f: S ⇒ Future[Option[(S, E)]]) extends GraphStage[SourceShape[E]] {
-
-  val out: Outlet[E] = Outlet("UnfoldAsync")
-
+private[akka] final class UnfoldAsync[S, E](s: S, f: S ⇒ Future[Option[(S, E)]]) extends GraphStage[SourceShape[E]] {
+  val out: Outlet[E] = Outlet("UnfoldAsync.out")
   override val shape: SourceShape[E] = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
       private[this] var state = s
-
       private[this] var asyncHandler: Function1[Try[Option[(S, E)]], Unit] = _
 
       override def preStart() = {
         val ac = getAsyncCallback[Try[Option[(S, E)]]] {
           case Failure(ex)   ⇒ fail(out, ex)
           case Success(None) ⇒ complete(out)
-          case Success(Some((newS, elem))) ⇒ {
+          case Success(Some((newS, elem))) ⇒
             push(out, elem)
             state = newS
-          }
         }
         asyncHandler = ac.invoke
       }
@@ -75,5 +60,4 @@ private[akka] class UnfoldAsync[S, E](s: S, f: S ⇒ Future[Option[(S, E)]]) ext
           f(state).onComplete(asyncHandler)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
       })
     }
-  }
 }
