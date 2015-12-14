@@ -31,7 +31,7 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
     }
 
   def ~[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] = {
-    implicit def joinProducesTuple = Tuple.yes[join.Out]
+    implicit val joinProducesTuple = Tuple.yes[join.Out]
     transform(_.andThen((restL, valuesL) ⇒ other(restL).map(join(valuesL, _))))
   }
 
@@ -179,43 +179,47 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
       def apply[T](value: T, more: M[T]): M[T]
     }
     object MOps {
-      implicit object OptionMOps extends MOps[Option] {
-        def apply(): Option[Nothing] = None
-        def apply[T](value: T): Option[T] = Some(value)
-        def apply[T](value: T, more: Option[T]): Option[T] = Some(value)
+      implicit val OptionMOps: MOps[Option] =
+        new MOps[Option] {
+          def apply(): Option[Nothing] = None
+          def apply[T](value: T): Option[T] = Some(value)
+          def apply[T](value: T, more: Option[T]): Option[T] = Some(value)
+        }
+      implicit val ListMOps: MOps[List] =
+        new MOps[List] {
+          def apply(): List[Nothing] = Nil
+          def apply[T](value: T): List[T] = value :: Nil
+          def apply[T](value: T, more: List[T]): List[T] = value :: more
+        }
+    }
+    implicit def liftUnit[M[+_]]: Lift[Unit, M] { type Out = Unit } =
+      new Lift[Unit, M] {
+        type Out = Unit
+        def OutIsTuple = implicitly[Tuple[Out]]
+        def apply() = ()
+        def apply(value: Unit) = value
+        def apply(value: Unit, more: Out) = value
       }
-      implicit object ListMOps extends MOps[List] {
-        def apply(): List[Nothing] = Nil
-        def apply[T](value: T): List[T] = value :: Nil
-        def apply[T](value: T, more: List[T]): List[T] = value :: more
+    implicit def liftSingleElement[A, M[+_]](implicit mops: MOps[M]): Lift[Tuple1[A], M] { type Out = Tuple1[M[A]] } =
+      new Lift[Tuple1[A], M] {
+        type Out = Tuple1[M[A]]
+        def OutIsTuple = implicitly[Tuple[Out]]
+        def apply() = Tuple1(mops())
+        def apply(value: Tuple1[A]) = Tuple1(mops(value._1))
+        def apply(value: Tuple1[A], more: Out) = Tuple1(mops(value._1, more._1))
       }
-    }
-    implicit def liftUnit[M[+_]] = new Lift[Unit, M] {
-      type Out = Unit
-      def OutIsTuple = implicitly[Tuple[Out]]
-      def apply() = ()
-      def apply(value: Unit) = value
-      def apply(value: Unit, more: Out) = value
-    }
-    implicit def liftSingleElement[A, M[+_]](implicit mops: MOps[M]) = new Lift[Tuple1[A], M] {
-      type Out = Tuple1[M[A]]
-      def OutIsTuple = implicitly[Tuple[Out]]
-      def apply() = Tuple1(mops())
-      def apply(value: Tuple1[A]) = Tuple1(mops(value._1))
-      def apply(value: Tuple1[A], more: Out) = Tuple1(mops(value._1, more._1))
-    }
-
   }
 
   trait LowLevelLiftImplicits {
     import Lift._
-    implicit def default[T, M[+_]](implicit mops: MOps[M]) = new Lift[T, M] {
-      type Out = Tuple1[M[T]]
-      def OutIsTuple = implicitly[Tuple[Out]]
-      def apply() = Tuple1(mops())
-      def apply(value: T) = Tuple1(mops(value))
-      def apply(value: T, more: Out) = Tuple1(mops(value, more._1))
-    }
+    implicit def default[T, M[+_]](implicit mops: MOps[M]): Lift[T, M] { type Out = Tuple1[M[T]] } =
+      new Lift[T, M] {
+        type Out = Tuple1[M[T]]
+        def OutIsTuple = implicitly[Tuple[Out]]
+        def apply() = Tuple1(mops())
+        def apply(value: T) = Tuple1(mops(value))
+        def apply(value: T, more: Out) = Tuple1(mops(value, more._1))
+      }
   }
 }
 

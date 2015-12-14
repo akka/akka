@@ -24,7 +24,7 @@ private[http] object HeaderImpl {
     type U = T with scaladsl.model.HttpHeader
 
     // cast is safe because creation of javadsl.model.HttpHeader that are not <: scaladsl.model.HttpHeader is forbidden
-    implicit def uClassTag = tClassTag.asInstanceOf[ClassTag[U]]
+    implicit def uClassTag: ClassTag[U] = tClassTag.asInstanceOf[ClassTag[U]]
 
     new Header[U] {
       val instanceDirective: Directive1[U] =

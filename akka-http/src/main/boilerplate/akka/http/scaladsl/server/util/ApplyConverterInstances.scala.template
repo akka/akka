@@ -7,7 +7,7 @@ package akka.http.scaladsl.server.util
 import akka.http.scaladsl.server.Route
 
 private[util] abstract class ApplyConverterInstances {
-  [#implicit def hac1[[#T1#]] = new ApplyConverter[Tuple1[[#T1#]]] {
+  [#implicit def hac1[[#T1#]]: ApplyConverter[Tuple1[[#T1#]]] { type In = ([#T1#]) ⇒ Route } = new ApplyConverter[Tuple1[[#T1#]]] {
     type In = ([#T1#]) ⇒ Route
     def apply(fn: In): (Tuple1[[#T1#]]) ⇒ Route = {
       case Tuple1([#t1#]) ⇒ fn([#t1#])
