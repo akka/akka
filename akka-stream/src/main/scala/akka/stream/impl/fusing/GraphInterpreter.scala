@@ -521,7 +521,7 @@ private[stream] final class GraphInterpreter(
         catch {
           case NonFatal(e) ⇒
             if (activeStage == null) throw e
-            else activeStage.failStage(e)
+            else activeStage.failStage(e, isInternal = true)
         }
         afterStageHasRun(activeStage)
         eventsRemaining -= 1
@@ -671,13 +671,16 @@ private[stream] final class GraphInterpreter(
     if ((currentState & OutClosed) == 0) completeConnection(assembly.outOwners(connection))
   }
 
-  private[stream] def fail(connection: Int, ex: Throwable): Unit = {
+  private[stream] def fail(connection: Int, ex: Throwable, isInternal: Boolean): Unit = {
     val currentState = portStates(connection)
     if (Debug) println(s"$Name   fail($connection, $ex) [$currentState]")
-    portStates(connection) = currentState | (OutClosed | InFailed)
-    if ((currentState & InClosed) == 0) {
+    portStates(connection) = currentState | OutClosed
+    if ((currentState & (InClosed | OutClosed)) == 0) {
+      portStates(connection) = currentState | (OutClosed | InFailed)
       connectionSlots(connection) = Failed(ex, connectionSlots(connection))
       if ((currentState & (Pulling | Pushing)) == 0) enqueue(connection)
+    } else if (isInternal) {
+      log.error(ex, "Error after stage was closed.")
     }
     if ((currentState & OutClosed) == 0) completeConnection(assembly.outOwners(connection))
   }

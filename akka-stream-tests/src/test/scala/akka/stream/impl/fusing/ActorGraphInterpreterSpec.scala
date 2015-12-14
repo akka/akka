@@ -8,6 +8,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils._
+import akka.testkit.EventFilter
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -229,6 +230,30 @@ class ActorGraphInterpreterSpec extends AkkaSpec {
 
       Await.result(f1, 3.seconds) should ===(1 to 100)
       Await.result(f2, 3.seconds) should ===(1 to 10)
+    }
+
+    "be able to properly report errors if an error happens for an already completed stage" in {
+
+      val failyStage = new GraphStage[SourceShape[Int]] {
+        override val shape: SourceShape[Int] = new SourceShape(Outlet[Int]("test.out"))
+
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+
+          setHandler(shape.outlet, new OutHandler {
+            override def onPull(): Unit = {
+              completeStage()
+              // This cannot be propagated now since the stage is already closed
+              push(shape.outlet, -1)
+            }
+          })
+
+        }
+      }
+
+      EventFilter[IllegalArgumentException](message = "Error after stage was closed.", occurrences = 1).intercept {
+        Await.result(Source.fromGraph(failyStage).runWith(Sink.ignore), 3.seconds)
+      }
+
     }
 
   }

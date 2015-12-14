@@ -11,9 +11,10 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.Utils.TE
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
-import akka.event.NoLogging
 
-trait GraphInterpreterSpecKit {
+trait GraphInterpreterSpecKit extends AkkaSpec {
+
+  val logger = Logging(system, "InterpreterSpecKit")
 
   abstract class Builder {
     private var _interpreter: GraphInterpreter = _
@@ -72,7 +73,7 @@ trait GraphInterpreterSpecKit {
 
         val (inHandlers, outHandlers, logics) =
           assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
-        _interpreter = new GraphInterpreter(assembly, NoMaterializer, NoLogging, inHandlers, outHandlers, logics,
+        _interpreter = new GraphInterpreter(assembly, NoMaterializer, logger, inHandlers, outHandlers, logics,
           (_, _, _) ⇒ (), fuzzingMode = false)
 
         for ((upstream, i) ← upstreams.zipWithIndex) {
@@ -90,7 +91,7 @@ trait GraphInterpreterSpecKit {
     def manualInit(assembly: GraphAssembly): Unit = {
       val (inHandlers, outHandlers, logics) =
         assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
-      _interpreter = new GraphInterpreter(assembly, NoMaterializer, NoLogging, inHandlers, outHandlers, logics,
+      _interpreter = new GraphInterpreter(assembly, NoMaterializer, logger, inHandlers, outHandlers, logics,
         (_, _, _) ⇒ (), fuzzingMode = false)
     }
 
