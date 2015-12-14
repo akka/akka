@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.net.BindException;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.Await;
@@ -22,6 +23,7 @@ import akka.japi.function.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.testkit.TestUtils;
 import akka.util.ByteString;
+import akka.testkit.JavaTestKit;
 
 public class TcpTest extends StreamTest {
   public TcpTest() {
@@ -83,12 +85,22 @@ public class TcpTest extends StreamTest {
     final ServerBinding b = Await.result(future, FiniteDuration.create(5, TimeUnit.SECONDS));
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
 
-    try {
-      Await.result(binding.to(echoHandler).run(materializer), FiniteDuration.create(5, TimeUnit.SECONDS));
-      assertTrue("Expected BindFailedException, but nothing was reported", false);
-    } catch (BindFailedException e) {
-      // expected
-    }
+    new JavaTestKit(system) {{
+      new EventFilter<Void>(BindException.class) {
+        @Override
+        protected Void run() {
+          try {
+            Await.result(binding.to(echoHandler).run(materializer), FiniteDuration.create(5, TimeUnit.SECONDS));
+            assertTrue("Expected BindFailedException, but nothing was reported", false);
+          } catch (BindFailedException e) {
+            // expected
+          } catch (Exception e) {
+            throw new AssertionError("failed", e);
+          }
+          return null;
+        }
+      }.occurrences(1).exec();
+    }};
   }
 
   @Test

@@ -24,6 +24,7 @@ trait ZipWithApply {
 
 [2..20#/** `ZipWith` specialized for 1 inputs */
 class ZipWith1[[#A1#], O] (zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape1[[#A1#], O]] {
+  override def initialAttributes = Attributes.name("ZipWith1")
   override val shape: FanInShape1[[#A1#], O] = new FanInShape1[[#A1#], O]("ZipWith1")
   def out: Outlet[O] = shape.out
   [#val in0: Inlet[A1] = shape.in0#

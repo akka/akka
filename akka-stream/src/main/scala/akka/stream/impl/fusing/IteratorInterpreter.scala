@@ -8,6 +8,7 @@ import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter.{ GraphAssembly, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage._
+import java.{ util ⇒ ju }
 
 /**
  * INTERNAL API
@@ -136,7 +137,8 @@ private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: S
     }
     val assembly = new GraphAssembly(stages, attributes, ins, inOwners, outs, outOwners)
 
-    val (inHandlers, outHandlers, logics, _) = assembly.materialize(Attributes.none)
+    val (inHandlers, outHandlers, logics) =
+      assembly.materialize(Attributes.none, assembly.stages.map(_.module), new ju.HashMap, _ ⇒ ())
     val interpreter = new GraphInterpreter(
       assembly,
       NoMaterializer,

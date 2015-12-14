@@ -136,4 +136,6 @@ private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
     } else if (data.length == 1) invalid("close code must be length 2 but was 1") // must be >= length 2 if not empty
     else None
   }
+
+  override def toString: String = "FrameEventParser"
 }

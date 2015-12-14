@@ -118,8 +118,6 @@ private[stream] object Stages {
       symbolicStage.attributes) {
   }
 
-  val identityGraph = SymbolicGraphStage[Any, Any, Any](Identity)
-
   sealed trait SymbolicStage[-In, +Out] {
     def attributes: Attributes
     def create(effectiveAttributes: Attributes): Stage[In, Out]
@@ -129,14 +127,6 @@ private[stream] object Stages {
     protected def supervision(attributes: Attributes): Decider =
       attributes.get[SupervisionStrategy](SupervisionStrategy(Supervision.stoppingDecider)).decider
 
-  }
-
-  object Identity extends SymbolicStage[Any, Any] {
-    override val attributes: Attributes = identityOp
-
-    def apply[T]: SymbolicStage[T, T] = this.asInstanceOf[SymbolicStage[T, T]]
-
-    override def create(attr: Attributes): Stage[Any, Any] = fusing.Map(conforms, supervision(attr))
   }
 
   final case class Map[In, Out](f: In ⇒ Out, attributes: Attributes = map) extends SymbolicStage[In, Out] {

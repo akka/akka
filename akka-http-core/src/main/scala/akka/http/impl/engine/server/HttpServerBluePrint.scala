@@ -179,6 +179,9 @@ private[http] object HttpServerBluePrint {
     private val requestPrepOut = Outlet[RequestOutput]("requestPrepOut")
     private val httpResponseIn = Inlet[HttpResponse]("httpResponseIn")
     private val responseCtxOut = Outlet[ResponseRenderingContext]("responseCtxOut")
+
+    override def initialAttributes = Attributes.name("ControllerStage")
+
     val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponseIn, responseCtxOut)
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
@@ -411,6 +414,8 @@ private[http] object HttpServerBluePrint {
 
     private val toWs = Outlet[ByteString]("toWs")
     private val fromWs = Inlet[ByteString]("fromWs")
+
+    override def initialAttributes = Attributes.name("ProtocolSwitchStage")
 
     def shape: ProtocolSwitchShape = ProtocolSwitchShape(fromNet, toNet, fromHttp, toHttp, fromWs, toWs)
 

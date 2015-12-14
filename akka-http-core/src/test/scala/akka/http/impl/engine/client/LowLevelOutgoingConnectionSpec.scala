@@ -253,6 +253,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
+        responsesSub.request(1)
         val error @ IllegalResponseException(info) = responses.expectError()
         info.summary shouldEqual "The server-side HTTP version is not supported"
         netOut.expectError(error)
@@ -296,6 +297,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         sendWireData("HTTP/1.1 200 OK")
         netInSub.sendComplete()
 
+        responsesSub.request(1)
         val error @ IllegalResponseException(info) = responses.expectError()
         info.summary shouldEqual "Illegal HTTP message start"
         netOut.expectError(error)

@@ -19,8 +19,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
-import akka.stream.impl.SubFlowImpl
-import akka.stream.impl.fusing.GraphInterpreter
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -36,7 +34,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
   override type Closed = Sink[In @uncheckedVariance, Mat @uncheckedVariance]
   override type ClosedMat[+M] = Sink[In @uncheckedVariance, M]
 
-  private[stream] def isIdentity: Boolean = this.module eq Stages.identityGraph.module
+  private[stream] def isIdentity: Boolean = this.module eq GraphStages.Identity.module
 
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
@@ -248,7 +246,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 }
 
 object Flow {
-  private[this] val identity: Flow[Any, Any, Unit] = new Flow[Any, Any, Unit](SymbolicGraphStage(Stages.Identity).module)
+  private[this] val identity: Flow[Any, Any, Unit] = new Flow[Any, Any, Unit](GraphStages.Identity.module)
 
   /**
    * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]

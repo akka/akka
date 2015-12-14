@@ -18,6 +18,7 @@ import akka.http.impl.util._
 import akka.http.ServerSettings
 import akka.http.scaladsl.model.headers.{ ProductVersion, Server }
 import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+import akka.stream.OverflowStrategy
 
 abstract class HttpServerTestSetupBase {
   implicit def system: ActorSystem
@@ -38,7 +39,7 @@ abstract class HttpServerTestSetupBase {
       server ⇒
         import GraphDSL.Implicits._
         Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
-        server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> netOut.sink
+        server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x }.buffer(1, OverflowStrategy.backpressure) ~> netOut.sink
         server.out2 ~> Sink(requests)
         Source(responses) ~> server.in1
         ClosedShape

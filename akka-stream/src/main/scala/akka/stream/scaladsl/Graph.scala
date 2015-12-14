@@ -11,6 +11,7 @@ import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
+import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 
 object Merge {
   /**
@@ -39,6 +40,7 @@ final class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) exte
   require(inputPorts > 1, "A Merge must have more than 1 input port")
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Merge.in" + i))
   val out: Outlet[T] = Outlet[T]("Merge.out")
+  override def initialAttributes = Attributes.name("Merge")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -52,6 +54,8 @@ final class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) exte
     private def upstreamsClosed = runningUpstreams == 0
 
     private def pending: Boolean = pendingHead != pendingTail
+
+    override def preStart(): Unit = in.foreach(tryPull)
 
     private def enqueue(in: Inlet[T]): Unit = {
       pendingQueue(pendingTail % inputPorts) = in
@@ -91,10 +95,7 @@ final class Merge[T] private (val inputPorts: Int, val eagerClose: Boolean) exte
 
     setHandler(out, new OutHandler {
       override def onPull(): Unit = {
-        if (!initialized) {
-          initialized = true
-          in.foreach(tryPull)
-        } else if (pending)
+        if (pending)
           dequeueAndDispatch()
       }
     })
@@ -141,6 +142,8 @@ object MergePreferred {
  */
 final class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
   require(secondaryPorts >= 1, "A MergePreferred must have more than 0 secondary input ports")
+
+  override def initialAttributes = Attributes.name("MergePreferred")
   override val shape: MergePreferred.MergePreferredShape[T] =
     new MergePreferred.MergePreferredShape(secondaryPorts, "MergePreferred")
 
@@ -396,6 +399,7 @@ final class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) ext
   require(outputPorts > 1, "A Broadcast must have more than 1 output ports")
   val in: Inlet[T] = Inlet[T]("Broadast.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Broadcast.out" + i))
+  override def initialAttributes = Attributes.name("Broadcast")
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape(in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -494,6 +498,7 @@ final class Balance[T](val outputPorts: Int, waitForAllDownstreams: Boolean) ext
   require(outputPorts > 1, "A Balance must have more than 1 output ports")
   val in: Inlet[T] = Inlet[T]("Balance.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Balance.out" + i))
+  override def initialAttributes = Attributes.name("Balance")
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
@@ -660,6 +665,7 @@ final class Concat[T](inputPorts: Int) extends GraphStage[UniformFanInShape[T, T
   require(inputPorts > 1, "A Concat must have more than 1 input ports")
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("Concat.in" + i))
   val out: Outlet[T] = Outlet[T]("Concat.out")
+  override def initialAttributes = Attributes.name("Concat")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
@@ -694,6 +700,8 @@ final class Concat[T](inputPorts: Int) extends GraphStage[UniformFanInShape[T, T
       override def onPull() = pull(in(activeStream))
     })
   }
+
+  override def toString: String = s"Concat($inputPorts)"
 }
 
 object GraphDSL extends GraphApply {
@@ -760,9 +768,9 @@ object GraphDSL extends GraphApply {
      * @return The outlet that will emit the materialized value.
      */
     def materializedValue: Outlet[M @uncheckedVariance] = {
-      val module = new MaterializedValueSource[Any]
-      moduleInProgress = moduleInProgress.compose(module)
-      module.shape.outlet.asInstanceOf[Outlet[M]]
+      val source = new MaterializedValueSource[M](moduleInProgress.materializedValueComputation)
+      moduleInProgress = moduleInProgress.composeNoMat(source.module)
+      source.out
     }
 
     private[stream] def deprecatedAndThen(port: OutPort, op: StageModule): Unit = {
