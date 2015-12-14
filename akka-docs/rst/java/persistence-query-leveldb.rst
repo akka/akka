@@ -80,7 +80,7 @@ executions of the query.
 
 The stream is not completed when it reaches the end of the currently used `persistenceIds`,
 but it continues to push new `persistenceIds` when new persistent actors are created.
-Corresponding query that is completed when it reaches the end of the currently
+Corresponding query that is completed when it reaches the end of the
 currently used `persistenceIds` is provided by ``currentPersistenceIds``.
 
 The LevelDB write journal is notifying the query side as soon as new ``persistenceIds`` are
