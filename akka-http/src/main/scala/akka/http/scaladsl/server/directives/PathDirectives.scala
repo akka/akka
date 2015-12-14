@@ -35,7 +35,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * If matched the value extracted by the PathMatcher is extracted on the directive level.
    */
   def rawPathPrefix[L](pm: PathMatcher[L]): Directive[L] = {
-    implicit def LIsTuple = pm.ev
+    implicit val LIsTuple = pm.ev
     extract(ctx ⇒ pm(ctx.unmatchedPath)).flatMap {
       case Matched(rest, values) ⇒ tprovide(values) & mapRequestContext(_ withUnmatchedPath rest)
       case Unmatched             ⇒ reject
@@ -54,7 +54,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * actually "consumed".
    */
   def rawPathPrefixTest[L](pm: PathMatcher[L]): Directive[L] = {
-    implicit def LIsTuple = pm.ev
+    implicit val LIsTuple = pm.ev
     extract(ctx ⇒ pm(ctx.unmatchedPath)).flatMap {
       case Matched(_, values) ⇒ tprovide(values)
       case Unmatched          ⇒ reject
@@ -68,7 +68,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * order, i.e. `pathSuffix("baz" / "bar")` would match `/foo/bar/baz`!
    */
   def pathSuffix[L](pm: PathMatcher[L]): Directive[L] = {
-    implicit def LIsTuple = pm.ev
+    implicit val LIsTuple = pm.ev
     extract(ctx ⇒ pm(ctx.unmatchedPath.reverse)).flatMap {
       case Matched(rest, values) ⇒ tprovide(values) & mapRequestContext(_.withUnmatchedPath(rest.reverse))
       case Unmatched             ⇒ reject
@@ -83,7 +83,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * order, i.e. `pathSuffixTest("baz" / "bar")` would match `/foo/bar/baz`!
    */
   def pathSuffixTest[L](pm: PathMatcher[L]): Directive[L] = {
-    implicit def LIsTuple = pm.ev
+    implicit val LIsTuple = pm.ev
     extract(ctx ⇒ pm(ctx.unmatchedPath.reverse)).flatMap {
       case Matched(_, values) ⇒ tprovide(values)
       case Unmatched          ⇒ reject
