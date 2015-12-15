@@ -6,8 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import org.scalatest.{ FreeSpec, Inside }
-import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
-import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvStringSeq
+import akka.http.scaladsl.unmarshalling.Unmarshaller._
 
 class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Inside {
   "when used with 'as[Int]' the parameter directive should" - {
@@ -33,17 +32,17 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
     "create typed optional parameters that" - {
       "extract Some(value) when present" in {
         Get("/?amount=12") ~> {
-          parameter("amount".as[Int]?) { echoComplete }
+          parameter("amount".as[Int].?) { echoComplete }
         } ~> check { responseAs[String] shouldEqual "Some(12)" }
       }
       "extract None when not present" in {
         Get() ~> {
-          parameter("amount".as[Int]?) { echoComplete }
+          parameter("amount".as[Int].?) { echoComplete }
         } ~> check { responseAs[String] shouldEqual "None" }
       }
       "cause a MalformedQueryParamRejection on illegal Int values" in {
         Get("/?amount=x") ~> {
-          parameter("amount".as[Int]?) { echoComplete }
+          parameter("amount".as[Int].?) { echoComplete }
         } ~> check {
           inside(rejection) {
             case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit signed integer value", Some(_)) ⇒
@@ -53,9 +52,9 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
     }
   }
 
-  "when used with 'as(CsvStringSeq)' the parameter directive should" - {
+  "when used with 'as(CsvSeq[...])' the parameter directive should" - {
     val route =
-      parameter("names".as(CsvStringSeq)) { names ⇒
+      parameter("names".as(CsvSeq[String])) { names ⇒
         complete(s"The parameters are ${names.mkString(", ")}")
       }
 
@@ -94,17 +93,17 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
     "create typed optional parameters that" - {
       "extract Some(value) when present" in {
         Get("/?amount=A") ~> {
-          parameter("amount".as(HexInt)?) { echoComplete }
+          parameter("amount".as(HexInt).?) { echoComplete }
         } ~> check { responseAs[String] shouldEqual "Some(10)" }
       }
       "extract None when not present" in {
         Get() ~> {
-          parameter("amount".as(HexInt)?) { echoComplete }
+          parameter("amount".as(HexInt).?) { echoComplete }
         } ~> check { responseAs[String] shouldEqual "None" }
       }
       "cause a MalformedQueryParamRejection on illegal Int values" in {
         Get("/?amount=x") ~> {
-          parameter("amount".as(HexInt)?) { echoComplete }
+          parameter("amount".as(HexInt).?) { echoComplete }
         } ~> check {
           inside(rejection) {
             case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit hexadecimal integer value", Some(_)) ⇒
@@ -148,8 +147,8 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
       } ~> check { responseAs[String] shouldEqual "EllenParsons" }
     }
     "correctly extract an optional parameter" in {
-      Get("/?foo=bar") ~> parameters('foo ?) { echoComplete } ~> check { responseAs[String] shouldEqual "Some(bar)" }
-      Get("/?foo=bar") ~> parameters('baz ?) { echoComplete } ~> check { responseAs[String] shouldEqual "None" }
+      Get("/?foo=bar") ~> parameters('foo.?) { echoComplete } ~> check { responseAs[String] shouldEqual "Some(bar)" }
+      Get("/?foo=bar") ~> parameters('baz.?) { echoComplete } ~> check { responseAs[String] shouldEqual "None" }
     }
     "ignore additional parameters" in {
       Get("/?name=Parsons&FirstName=Ellen&age=29") ~> {
@@ -167,7 +166,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
     }
     "supply the default value if an optional parameter is missing" in {
       Get("/?name=Parsons&FirstName=Ellen") ~> {
-        parameters("name"?, 'FirstName, 'age ? "29", 'eyes?) { (name, firstName, age, eyes) ⇒
+        parameters("name".?, 'FirstName, 'age ? "29", 'eyes.?) { (name, firstName, age, eyes) ⇒
           complete(firstName + name + age + eyes)
         }
       } ~> check { responseAs[String] shouldEqual "EllenSome(Parsons)29None" }
@@ -214,12 +213,12 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
     }
     "extract as Iterable[Int]" in {
       Get("/person?age=19&number=3&number=5") ~> {
-        parameter('number.as[Int]*) { echoComplete }
+        parameter('number.as[Int].*) { echoComplete }
       } ~> check { responseAs[String] === "List(3, 5)" }
     }
     "extract as Iterable[Int] with an explicit deserializer" in {
       Get("/person?age=19&number=3&number=A") ~> {
-        parameter('number.as(HexInt)*) { echoComplete }
+        parameter('number.as(HexInt).*) { echoComplete }
       } ~> check { responseAs[String] === "List(3, 10)" }
     }
   }
