@@ -356,6 +356,20 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     else
       clusterDaemons ! InternalClusterAction.AddOnMemberRemovedListener(callback)
   }
+
+  /**
+   * Generate the remote actor path by replacing the Address in the RootActor Path for the given
+   * ActorRef with the cluster's `selfAddress`, unless address' host is already defined
+   */
+  def remotePathOf(actorRef: ActorRef): ActorPath = {
+    val path = actorRef.path
+    if (path.address.host.isDefined) {
+      path
+    } else {
+      path.root.copy(selfAddress) / path.elements withUid path.uid
+    }
+  }
+
   // ========================================================
   // ===================== INTERNAL API =====================
   // ========================================================
