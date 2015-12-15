@@ -250,6 +250,25 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUsePrepend() {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<String> input1 = Arrays.asList("A", "B", "C");
+    final Iterable<String> input2 = Arrays.asList("D", "E", "F");
+
+    final Source<String, ?> in1 = Source.from(input1);
+    final Source<String, ?> in2 = Source.from(input2);
+
+    in2.prepend(in1).runForeach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }, materializer);
+
+    List<Object> output = Arrays.asList(probe.receiveN(6));
+    assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
+  }
+
+  @Test
   public void mustBeAbleToUseCallableInput() {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input1 = Arrays.asList(4, 3, 2, 1, 0);
