@@ -130,6 +130,17 @@ class BasicRouteSpecs extends RoutingSpec {
         rejection shouldBe a[ValidationRejection]
       }
     }
+    "catch IllegalArgumentException if case class requirements fail" in EventFilter[IllegalArgumentException](occurrences = 1).intercept {
+      case class MyValidNumber(i: Int) {
+        require(i > 10)
+      }
+
+      val abcPath = path("abc" / IntNumber).strictlyAs(MyValidNumber)(echoComplete)
+
+      Get("/abc/5") ~> abcPath ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+      }
+    }
   }
   "Dynamic execution of inner routes of Directive0" should {
     "re-execute inner routes every time" in {
