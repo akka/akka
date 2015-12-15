@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ ClosedShape, SourceShape, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream._
 import akka.stream.testkit._
 
 import scala.concurrent.Await
@@ -104,6 +104,16 @@ class GraphMatValueSpec extends AkkaSpec {
       Await.result(f3, 3.seconds) should ===(55)
       Await.result(f4, 3.seconds) should ===(55)
 
+    }
+
+    "work also when the source’s module is copied" in {
+      val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) {
+        implicit builder ⇒
+          fold ⇒
+            FlowShape(fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
+      })
+
+      Await.result(Source(1 to 10).via(foldFlow).runWith(Sink.head), 3.seconds) should ===(55)
     }
 
   }
