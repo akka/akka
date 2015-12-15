@@ -18,7 +18,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work from Inlets" in {
       Await.result(RunnableGraph.fromGraph(GraphDSL.create(sink) { implicit b ⇒
         s ⇒
-          s.inlet <~ source
+          s.in <~ source
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
@@ -44,7 +44,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
     "not work from Outlets" in {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val o: Outlet[Int] = b.add(source).outlet
+        val o: Outlet[Int] = b.add(source).out
         "o <~ source" shouldNot compile
         sink <~ o
         ClosedShape
@@ -99,7 +99,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work towards Outlets" in {
       Await.result(RunnableGraph.fromGraph(GraphDSL.create(sink) { implicit b ⇒
         s ⇒
-          val o: Outlet[Int] = b.add(source).outlet
+          val o: Outlet[Int] = b.add(source).out
           s <~ o
           ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))

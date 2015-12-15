@@ -55,7 +55,7 @@ public class BidiFlowTest extends StreamTest {
                           }
                         }));
                       return new BidiShape<Integer, Long, ByteString, String>(top
-                              .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
+                              .in(), top.out(), bottom.in(), bottom.out());
                   }
               }));
 
@@ -81,7 +81,7 @@ public class BidiFlowTest extends StreamTest {
                                   }
                                 }));
                               return new BidiShape<Long, Integer, String, ByteString>(top
-                                      .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
+                                      .in(), top.out(), bottom.in(), bottom.out());
                           }
                       }));
 
@@ -109,7 +109,7 @@ public class BidiFlowTest extends StreamTest {
                 }
               }));
             return new BidiShape<Integer, Long, ByteString, String>(top
-              .inlet(), top.outlet(), bottom.inlet(), bottom.outlet());
+              .in(), top.out(), bottom.in(), bottom.out());
           }
         }));
 
@@ -248,7 +248,7 @@ public class BidiFlowTest extends StreamTest {
                     b.from(bcast).to(sink)
                             .from(b.add(Source.single(1))).viaFanOut(bcast).toFanIn(merge)
                             .from(flow).toFanIn(merge);
-                    return new FlowShape<String, Integer>(flow.inlet(), merge.out());
+                    return new FlowShape<String, Integer>(flow.in(), merge.out());
                 }
             }));
     final Flow<Long, ByteString, Future<List<Long>>> right = Flow.fromGraph(GraphDSL.create(
@@ -258,7 +258,7 @@ public class BidiFlowTest extends StreamTest {
                                                          SinkShape<List<Long>> sink) throws Exception {
                     final FlowShape<Long, List<Long>> flow = b.add(Flow.of(Long.class).grouped(10));
                     b.from(flow).to(sink);
-                    return new FlowShape<Long, ByteString>(flow.inlet(), b.add(Source.single(ByteString.fromString("10"))).outlet());
+                    return new FlowShape<Long, ByteString>(flow.in(), b.add(Source.single(ByteString.fromString("10"))).out());
                 }
             }));
     final Pair<Pair<Future<Integer>, Future<Integer>>, Future<List<Long>>> result =

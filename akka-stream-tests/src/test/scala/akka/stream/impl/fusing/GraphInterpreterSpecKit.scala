@@ -339,9 +339,9 @@ trait GraphInterpreterSpecKit {
 
       while (i < ops.length) {
         val stage = ops(i).asInstanceOf[PushPullGraphStage[_, _, _]]
-        ins(i) = stage.shape.inlet
+        ins(i) = stage.shape.in
         inOwners(i) = i
-        outs(i + 1) = stage.shape.outlet
+        outs(i + 1) = stage.shape.out
         outOwners(i + 1) = i
         i += 1
       }

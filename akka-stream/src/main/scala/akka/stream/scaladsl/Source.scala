@@ -48,7 +48,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
       val flowCopy = flow.module.carbonCopy
       new Source(
         module
-          .fuse(flowCopy, shape.outlet, flowCopy.shape.inlets.head, combine)
+          .fuse(flowCopy, shape.out, flowCopy.shape.inlets.head, combine)
           .replaceShape(SourceShape(flowCopy.shape.outlets.head)))
     }
   }
@@ -65,7 +65,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
    */
   def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableGraph[Mat3] = {
     val sinkCopy = sink.module.carbonCopy
-    RunnableGraph(module.fuse(sinkCopy, shape.outlet, sinkCopy.shape.inlets.head, combine))
+    RunnableGraph(module.fuse(sinkCopy, shape.out, sinkCopy.shape.inlets.head, combine))
   }
 
   /**
@@ -79,7 +79,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
     // No need to copy here, op is a fresh instance
     new Source(
       module
-        .fuse(op, shape.outlet, op.inPort)
+        .fuse(op, shape.out, op.inPort)
         .replaceShape(SourceShape(op.outPort)))
   }
 

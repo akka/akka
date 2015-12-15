@@ -41,7 +41,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
         Source.single(1) ~> pm3.in(0)
         Source.single(2) ~> pm3.in(1)
         Source.single(3) ~> pm3.in(2)
-        pm3.out ~> sink.inlet
+        pm3.out ~> sink.in
         ClosedShape
     })
 

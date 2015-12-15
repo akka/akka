@@ -51,7 +51,7 @@ private[stream] object AbstractStage {
       // No need to refer to the handle in a private val
       val handler = new InHandler with OutHandler {
         override def onPush(): Unit =
-          try { currentStage.onPush(grab(shape.inlet), ctx) } catch { case NonFatal(ex) ⇒ onSupervision(ex) }
+          try { currentStage.onPush(grab(shape.in), ctx) } catch { case NonFatal(ex) ⇒ onSupervision(ex) }
 
         override def onPull(): Unit = currentStage.onPull(ctx)
 
@@ -62,8 +62,8 @@ private[stream] object AbstractStage {
         override def onDownstreamFinish(): Unit = currentStage.onDownstreamFinish(ctx)
       }
 
-      setHandler(shape.inlet, handler)
-      setHandler(shape.outlet, handler)
+      setHandler(shape.in, handler)
+      setHandler(shape.out, handler)
     }
 
     private def onSupervision(ex: Throwable): Unit = {
@@ -81,22 +81,22 @@ private[stream] object AbstractStage {
     }
 
     private def resetAfterSupervise(): Unit = {
-      val mustPull = currentStage.isDetached || isAvailable(shape.outlet)
-      if (!hasBeenPulled(shape.inlet) && mustPull) pull(shape.inlet)
+      val mustPull = currentStage.isDetached || isAvailable(shape.out)
+      if (!hasBeenPulled(shape.in) && mustPull) pull(shape.in)
     }
 
     override protected[stream] def beforePreStart(): Unit = {
       super.beforePreStart()
-      if (currentStage.isDetached) pull(shape.inlet)
+      if (currentStage.isDetached) pull(shape.in)
     }
 
     final override def push(elem: Out): DownstreamDirective = {
-      push(shape.outlet, elem)
+      push(shape.out, elem)
       null
     }
 
     final override def pull(): UpstreamDirective = {
-      pull(shape.inlet)
+      pull(shape.in)
       null
     }
 
@@ -106,7 +106,7 @@ private[stream] object AbstractStage {
     }
 
     final override def pushAndFinish(elem: Out): DownstreamDirective = {
-      push(shape.outlet, elem)
+      push(shape.out, elem)
       completeStage()
       null
     }
@@ -116,10 +116,10 @@ private[stream] object AbstractStage {
       null
     }
 
-    final override def isFinishing: Boolean = isClosed(shape.inlet)
+    final override def isFinishing: Boolean = isClosed(shape.in)
 
     final override def absorbTermination(): TerminationDirective = {
-      if (isClosed(shape.outlet)) {
+      if (isClosed(shape.out)) {
         val ex = new UnsupportedOperationException("It is not allowed to call absorbTermination() from onDownstreamFinish.")
         // This MUST be logged here, since the downstream has cancelled, i.e. there is noone to send onError to, the
         // stage is just about to finish so noone will catch it anyway just the interpreter
@@ -127,29 +127,29 @@ private[stream] object AbstractStage {
         interpreter.log.error(ex.getMessage)
         throw ex // We still throw for correctness (although a finish() would also work here)
       }
-      if (isAvailable(shape.outlet)) currentStage.onPull(ctx)
+      if (isAvailable(shape.out)) currentStage.onPull(ctx)
       null
     }
 
     override def pushAndPull(elem: Out): FreeDirective = {
-      push(shape.outlet, elem)
-      pull(shape.inlet)
+      push(shape.out, elem)
+      pull(shape.in)
       null
     }
 
     final override def holdUpstreamAndPush(elem: Out): UpstreamDirective = {
-      push(shape.outlet, elem)
+      push(shape.out, elem)
       null
     }
 
     final override def holdDownstreamAndPull(): DownstreamDirective = {
-      pull(shape.inlet)
+      pull(shape.in)
       null
     }
 
-    final override def isHoldingDownstream: Boolean = isAvailable(shape.outlet)
+    final override def isHoldingDownstream: Boolean = isAvailable(shape.out)
 
-    final override def isHoldingUpstream: Boolean = !(isClosed(shape.inlet) || hasBeenPulled(shape.inlet))
+    final override def isHoldingUpstream: Boolean = !(isClosed(shape.in) || hasBeenPulled(shape.in))
 
     final override def holdDownstream(): DownstreamDirective = null
 

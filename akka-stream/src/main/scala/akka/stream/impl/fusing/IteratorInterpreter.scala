@@ -129,9 +129,9 @@ private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: S
       val op = opsIterator.next().asInstanceOf[Stage[Any, Any]]
       val stage = new PushPullGraphStage((_) ⇒ op, Attributes.none)
       stages(i) = stage
-      ins(i) = stage.shape.inlet
+      ins(i) = stage.shape.in
       inOwners(i) = i
-      outs(i + 1) = stage.shape.outlet
+      outs(i + 1) = stage.shape.out
       outOwners(i + 1) = i
       i += 1
     }
