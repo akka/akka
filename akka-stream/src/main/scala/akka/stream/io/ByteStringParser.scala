@@ -15,6 +15,7 @@ abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] 
   private val bytesIn = Inlet[ByteString]("bytesIn")
   private val objOut = Outlet[T]("objOut")
 
+  override def initialAttributes = Attributes.name("ByteStringParser")
   final override val shape = FlowShape(bytesIn, objOut)
 
   class ParsingLogic extends GraphStageLogic(shape) {

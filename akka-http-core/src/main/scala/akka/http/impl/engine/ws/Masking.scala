@@ -37,6 +37,7 @@ private[http] object Masking {
       if (header.mask.isDefined) throw new ProtocolException("Frame mustn't already be masked")
       header.copy(mask = Some(mask))
     }
+    override def toString: String = s"Masking($random)"
   }
   private class Unmasking extends Masker {
     def extractMask(header: FrameHeader): Int = header.mask match {
@@ -44,6 +45,7 @@ private[http] object Masking {
       case None       ⇒ throw new ProtocolException("Frame wasn't masked")
     }
     def setNewMask(header: FrameHeader, mask: Int): FrameHeader = header.copy(mask = None)
+    override def toString: String = "Unmasking"
   }
 
   /** Implements both masking and unmasking which is mostly symmetric (because of XOR) */

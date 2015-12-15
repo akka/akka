@@ -21,7 +21,8 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes) extends Module {
+private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, attributes: Attributes,
+                                       matValIDs: Array[Module]) extends Module {
   override def subModules: Set[Module] = Set.empty
   override def withAttributes(newAttr: Attributes): Module = copy(attributes = newAttr)
 
@@ -32,6 +33,8 @@ private[stream] case class GraphModule(assembly: GraphAssembly, shape: Shape, at
 
   override final def replaceShape(newShape: Shape): Module =
     CopiedModule(newShape, attributes, copyOf = this)
+
+  override def toString: String = s"GraphModule\n  ${assembly.toString.replace("\n", "\n  ")}\n  shape=$shape, attributes=$attributes"
 }
 
 /**
@@ -191,8 +194,11 @@ private[stream] object ActorGraphInterpreter {
       }
 
       override def onDownstreamFinish(): Unit = cancel()
+
+      override def toString: String = BatchingActorInputBoundary.this.toString
     })
 
+    override def toString: String = s"BatchingActorInputBoundary(id=$id, fill=$inputBufferElements/$size, completed=$upstreamCompleted, canceled=$downstreamCanceled)"
   }
 
   private[stream] class ActorOutputBoundary(actor: ActorRef, id: Int) extends DownstreamBoundaryStageLogic[Any] {
@@ -243,6 +249,8 @@ private[stream] object ActorGraphInterpreter {
       override def onUpstreamFinish(): Unit = complete()
 
       override def onUpstreamFailure(cause: Throwable): Unit = fail(cause)
+
+      override def toString: String = ActorOutputBoundary.this.toString
     })
 
     def subscribePending(): Unit =
@@ -282,6 +290,7 @@ private[stream] object ActorGraphInterpreter {
       cancel(in)
     }
 
+    override def toString: String = s"ActorOutputBoundary(id=$id, demand=$downstreamDemand, finished=$downstreamCompleted)"
   }
 
 }
@@ -314,10 +323,14 @@ private[stream] class ActorGraphInterpreter(
 
   private var subscribesPending = inputs.length
 
-  // Limits the number of events processed by the interpreter before scheduling a self-message for fairness with other
-  // actors.
-  // TODO: Better heuristic here (take into account buffer size, connection count, 4 events per element, have a max)
-  val eventLimit = settings.maxInputBufferSize * (inputs.length + outputs.length) * 2
+  /*
+   * Limits the number of events processed by the interpreter before scheduling
+   * a self-message for fairness with other actors. The basic assumption here is
+   * to give each input buffer slot a chance to run through the whole pipeline
+   * and back (for the demand).
+   */
+  val eventLimit = settings.maxInputBufferSize * (assembly.ins.length + assembly.outs.length)
+
   // Limits the number of events processed by the interpreter on an abort event.
   // TODO: Better heuristic here
   private val abortLimit = eventLimit * 2
@@ -336,6 +349,7 @@ private[stream] class ActorGraphInterpreter(
       i += 1
     }
     interpreter.init()
+    runBatch()
   }
 
   override def receive: Receive = {
@@ -349,6 +363,7 @@ private[stream] class ActorGraphInterpreter(
       outputs(id).requestMore(demand)
       runBatch()
     case Resume ⇒
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name}  resume")
       resumeScheduled = false
       if (interpreter.isSuspended) runBatch()
     case AsyncInput(logic, event, handler) ⇒
@@ -372,8 +387,10 @@ private[stream] class ActorGraphInterpreter(
       inputs(id).onComplete()
       runBatch()
     case OnSubscribe(id: Int, subscription: Subscription) ⇒
+      if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onSubscribe id=$id")
       subscribesPending -= 1
       inputs(id).onSubscribe(subscription)
+      runBatch()
     case Cancel(id: Int) ⇒
       if (GraphInterpreter.Debug) println(s"${interpreter.Name}  cancel id=$id")
       outputs(id).cancel()

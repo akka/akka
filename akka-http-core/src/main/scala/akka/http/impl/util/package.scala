@@ -123,6 +123,9 @@ package util {
 
     val in = Inlet[ByteString]("in")
     val out = Outlet[HttpEntity.Strict]("out")
+
+    override def initialAttributes = Attributes.name("ToStrict")
+
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {

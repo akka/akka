@@ -634,6 +634,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       rec(100000)
 
       netIn.sendComplete()
+      requests.request(1)
       requests.expectComplete()
       netOut.expectComplete()
     }
