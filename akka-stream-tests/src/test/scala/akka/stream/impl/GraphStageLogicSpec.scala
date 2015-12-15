@@ -5,6 +5,7 @@ package akka.stream.impl
 
 import akka.stream.testkit.AkkaSpec
 import akka.stream._
+import akka.stream.Fusing.aggressive
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit.Utils.assertAllStagesStopped
@@ -66,12 +67,6 @@ class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with Con
     }
   }
 
-  class FusedGraph[S <: Shape](ga: GraphAssembly, s: S, a: Attributes = Attributes.none) extends Graph[S, Unit] {
-    override def shape = s
-    override val module = GraphModule(ga, s, a, ga.stages.map(_.module))
-    override def withAttributes(attr: Attributes) = new FusedGraph(ga, s, attr)
-  }
-
   "A GraphStageLogic" must {
 
     "emit all things before completing" in assertAllStagesStopped {
@@ -84,38 +79,21 @@ class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with Con
     }
 
     "emit all things before completing with two fused stages" in assertAllStagesStopped {
-      new Builder {
-        val g = new FusedGraph(
-          builder(emit1234, emit5678)
-            .connect(Upstream, emit1234.in)
-            .connect(emit1234.out, emit5678.in)
-            .connect(emit5678.out, Downstream)
-            .buildAssembly(),
-          FlowShape(emit1234.in, emit5678.out))
+      val g = aggressive(Flow[Int].via(emit1234).via(emit5678))
 
-        Source.empty.via(g).runWith(TestSink.probe)
-          .request(9)
-          .expectNextN(1 to 8)
-          .expectComplete()
-      }
+      Source.empty.via(g).runWith(TestSink.probe)
+        .request(9)
+        .expectNextN(1 to 8)
+        .expectComplete()
     }
 
     "emit all things before completing with three fused stages" in assertAllStagesStopped {
-      new Builder {
-        val g = new FusedGraph(
-          builder(emit1234, passThrough, emit5678)
-            .connect(Upstream, emit1234.in)
-            .connect(emit1234.out, passThrough.in)
-            .connect(passThrough.out, emit5678.in)
-            .connect(emit5678.out, Downstream)
-            .buildAssembly(),
-          FlowShape(emit1234.in, emit5678.out))
+      val g = aggressive(Flow[Int].via(emit1234).via(passThrough).via(emit5678))
 
-        Source.empty.via(g).runWith(TestSink.probe)
-          .request(9)
-          .expectNextN(1 to 8)
-          .expectComplete()
-      }
+      Source.empty.via(g).runWith(TestSink.probe)
+        .request(9)
+        .expectNextN(1 to 8)
+        .expectComplete()
     }
 
     "invoke lifecycle hooks in the right order" in assertAllStagesStopped {
