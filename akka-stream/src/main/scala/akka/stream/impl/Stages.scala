@@ -208,10 +208,6 @@ private[stream] object Stages {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }
 
-  final case class PrefixAndTail(n: Int, attributes: Attributes = prefixAndTail) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-  }
-
   final case class Split(p: Any ⇒ SplitDecision, attributes: Attributes = split) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
   }

@@ -110,7 +110,7 @@ class GraphMatValueSpec extends AkkaSpec {
       val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) {
         implicit builder ⇒
           fold ⇒
-            FlowShape(fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
+            FlowShape(fold.in, builder.materializedValue.mapAsync(4)(identity).outlet)
       })
 
       Await.result(Source(1 to 10).via(foldFlow).runWith(Sink.head), 3.seconds) should ===(55)

@@ -8,7 +8,7 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NoStackTrace
-import akka.stream.{ Attributes, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream._
 import org.reactivestreams.Subscriber
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -88,6 +88,48 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val subscriber = TestSubscriber.manualProbe[Int]()
       tail.to(Sink(subscriber)).run()
       subscriber.expectSubscriptionAndComplete()
+    }
+
+    "throw if tail is attempted to be materialized twice" in assertAllStagesStopped {
+      val futureSink = newHeadSink
+      val fut = Source(1 to 2).prefixAndTail(1).runWith(futureSink)
+      val (takes, tail) = Await.result(fut, 3.seconds)
+      takes should be(Seq(1))
+
+      val subscriber1 = TestSubscriber.probe[Int]()
+      tail.to(Sink(subscriber1)).run()
+
+      val subscriber2 = TestSubscriber.probe[Int]()
+      tail.to(Sink(subscriber2)).run()
+      subscriber2.expectSubscriptionAndError().getMessage should ===("Tail Source cannot be materialized more than once.")
+
+      subscriber1.requestNext(2).expectComplete()
+
+    }
+
+    "signal error if substream has been not subscribed in time" in assertAllStagesStopped {
+      val tightTimeoutMaterializer =
+        ActorMaterializer(ActorMaterializerSettings(system)
+          .withSubscriptionTimeoutSettings(
+            StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 500.millisecond)))
+
+      val futureSink = newHeadSink
+      val fut = Source(1 to 2).prefixAndTail(1).runWith(futureSink)(tightTimeoutMaterializer)
+      val (takes, tail) = Await.result(fut, 3.seconds)
+      takes should be(Seq(1))
+
+      val subscriber = TestSubscriber.probe[Int]()
+      Thread.sleep(1000)
+
+      tail.to(Sink(subscriber)).run()(tightTimeoutMaterializer)
+      subscriber.expectSubscriptionAndError().getMessage should ===("Tail Source has not been materialized in 500 milliseconds.")
+    }
+
+    "shut down main stage if substream is empty, even when not subscribed" in assertAllStagesStopped {
+      val futureSink = newHeadSink
+      val fut = Source.single(1).prefixAndTail(1).runWith(futureSink)
+      val (takes, tail) = Await.result(fut, 3.seconds)
+      takes should be(Seq(1))
     }
 
     "handle onError when no substream open" in assertAllStagesStopped {
