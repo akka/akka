@@ -11,6 +11,7 @@ import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
+import akka.stream.impl.fusing.GraphStages.Detacher
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 
 object Merge {
@@ -158,15 +159,13 @@ final class MergePreferred[T] private (val secondaryPorts: Int, val eagerClose: 
       if (eagerClose || openInputs == 0) completeStage()
     }
 
+    override def preStart(): Unit = {
+      tryPull(preferred)
+      shape.inSeq.foreach(tryPull)
+    }
+
     setHandler(out, new OutHandler {
-      private var first = true
-      override def onPull(): Unit = {
-        if (first) {
-          first = false
-          tryPull(preferred)
-          shape.inSeq.foreach(tryPull)
-        }
-      }
+      override def onPull(): Unit = ()
     })
 
     val pullMe = Array.tabulate(secondaryPorts)(i ⇒ {
@@ -643,7 +642,16 @@ object Concat {
   /**
    * Create a new `Concat`.
    */
-  def apply[T](inputPorts: Int = 2): Concat[T] = new Concat(inputPorts)
+  def apply[T](inputCount: Int = 2) = GraphDSL.create() { implicit builder =>
+    import GraphDSL.Implicits._
+    val concat = builder.add(new Concat[T](inputCount))
+    val ds = concat.inSeq.map { inlet =>
+      val detacher = builder.add(new Detacher[T])
+      detacher ~> inlet
+      detacher.inlet
+    }
+    UniformFanInShape(concat.out, ds:_*)
+  }
 }
 
 /**

@@ -3,13 +3,17 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.{ FlowShape, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ FlowShape, ActorMaterializer, ActorMaterializerSettings, OverflowStrategy }
+import akka.stream.impl.fusing.GraphStages.Detacher
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.TestSource
 import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.stream.OverflowStrategy
-import org.scalatest.concurrent.ScalaFutures
 
 class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INFO")) with ScalaFutures {
 
@@ -18,8 +22,11 @@ class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INF
 
   implicit val materializer = ActorMaterializer(settings)
 
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(2, Seconds), interval = Span(200, Millis))
+
   "A Flow using join" must {
-    "allow for cycles" in {
+    "allow for cycles" in assertAllStagesStopped {
       val end = 47
       val (even, odd) = (0 to end).partition(_ % 2 == 0)
       val result = Set() ++ even ++ odd ++ odd.map(_ * 10)
@@ -51,14 +58,14 @@ class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INF
       sub.cancel()
     }
 
-    "propagate one element" in {
+    "allow for merge cycle" in assertAllStagesStopped {
       val source = Source.single("lonely traveler")
 
       val flow1 = Flow.fromGraph(GraphDSL.create(Sink.head[String]) { implicit b ⇒
         sink ⇒
           import GraphDSL.Implicits._
           val merge = b.add(Merge[String](2))
-          val broadcast = b.add(Broadcast[String](2))
+          val broadcast = b.add(Broadcast[String](2, eagerCancel = true))
           source ~> merge.in(0)
           merge.out ~> broadcast.in
           broadcast.out(0) ~> sink
@@ -67,6 +74,77 @@ class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INF
       })
 
       whenReady(flow1.join(Flow[String]).run())(_ shouldBe "lonely traveler")
+    }
+
+    "allow for merge preferred cycle" in assertAllStagesStopped {
+      val source = Source.single("lonely traveler")
+
+      val flow1 = Flow.fromGraph(GraphDSL.create(Sink.head[String]) { implicit b ⇒
+        sink ⇒
+          import GraphDSL.Implicits._
+          val merge = b.add(MergePreferred[String](1))
+          val broadcast = b.add(Broadcast[String](2, eagerCancel = true))
+          source ~> merge.preferred
+          merge.out ~> broadcast.in
+          broadcast.out(0) ~> sink
+
+          FlowShape(merge.in(0), broadcast.out(1))
+      })
+
+      whenReady(flow1.join(Flow[String]).run())(_ shouldBe "lonely traveler")
+    }
+
+    "allow for concat cycle" in assertAllStagesStopped {
+      val flow = Flow.fromGraph(GraphDSL.create(TestSource.probe[String](system), Sink.head[String])(Keep.both) { implicit b ⇒
+        (source, sink) ⇒
+          import GraphDSL.Implicits._
+          val concat = b.add(Concat[String](2))
+          val broadcast = b.add(Broadcast[String](2, eagerCancel = true))
+          val flow = b.add(Flow[String])
+          source ~> concat.in(0)
+          flow ~> concat.in(1)
+          concat.out ~> broadcast.in
+          broadcast.out(0) ~> sink
+
+          FlowShape(flow.inlet, broadcast.out(1))
+      })
+
+      val (probe, result) = flow.join(Flow[String]).run()
+      probe.sendNext("lonely traveler")
+      whenReady(result) { r ⇒
+        r shouldBe "lonely traveler"
+        probe.sendComplete()
+      }
+    }
+
+    "allow for zip cycle" in assertAllStagesStopped {
+      val source = Source.single("lonely traveler")
+
+      val flow = Flow.fromGraph(GraphDSL.create(Sink.head[(String, String)]) { implicit b ⇒
+        sink ⇒
+          import GraphDSL.Implicits._
+          val zip = b.add(Zip[String, String])
+          val broadcast = b.add(Broadcast[(String, String)](2))
+          source ~> zip.in0
+          zip.out ~> broadcast.in
+          broadcast.out(0) ~> sink
+
+          FlowShape(zip.in1, broadcast.out(1))
+      })
+
+      val feedback = Flow.fromGraph(GraphDSL.create(Source.single("ignition")) { implicit b ⇒
+        ignition ⇒
+          import GraphDSL.Implicits._
+          val flow = b.add(Flow[(String, String)].map(_._1))
+          val merge = b.add(Merge[String](2))
+
+          ignition ~> merge.in(0)
+          flow ~> merge.in(1)
+
+          FlowShape(flow.inlet, merge.out)
+      })
+
+      whenReady(flow.join(feedback).run())(_ shouldBe ("lonely traveler", "ignition"))
     }
   }
 }
