@@ -10,7 +10,7 @@ import akka.stream._
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import scala.collection.immutable
+import scala.collection.{ immutable, mutable }
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 
 object Merge {
@@ -463,6 +463,91 @@ final class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) ext
   }
 
   override def toString = "Broadcast"
+
+}
+
+object Partition {
+
+  /**
+   * Create a new `Partition` stage with the specified input type.
+   *
+   * @param outputPorts number of output ports
+   * @param partitioner function deciding which output each element will be targeted
+   */
+  def apply[T](outputPorts: Int, partitioner: T ⇒ Int): Partition[T] = new Partition(outputPorts, partitioner)
+}
+
+/**
+ * Fan-out the stream to several streams. emitting an incoming upstream element to one downstream consumer according
+ * to the partitioner function applied to the element
+ *
+ * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' one of the outputs backpressure
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when'''
+ *   when one of the downstreams cancel
+ */
+
+class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends GraphStage[UniformFanOutShape[T, T]] {
+
+  val in: Inlet[T] = Inlet[T]("Partition.in")
+  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i))
+  override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
+  private val outPulled = Array.fill[Boolean](outputPorts)(false)
+  private val outPending = mutable.Map.empty[Int, T]
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    var downstreamRunning = outputPorts
+
+    setHandler(in, new InHandler {
+      override def onPush() = {
+        val elem = grab(in)
+        val idx = partitioner(elem)
+        if (outPulled(idx)) {
+          if (!isClosed(out(idx))) {
+            push(out(idx), elem)
+            outPulled(idx) = false
+            if (outPulled.exists(x ⇒ x) && !hasBeenPulled(in))
+              pull(in)
+          }
+        } else {
+          outPending.put(idx, elem)
+        }
+      }
+    })
+
+    out.zipWithIndex.foreach {
+      case (o, idx) ⇒
+        setHandler(o, new OutHandler {
+          override def onPull() = {
+            outPending.get(idx) match {
+              case Some(elem) ⇒
+                if (!isClosed(o)) {
+                  push(o, elem)
+                }
+                outPending.remove(idx)
+                if (!hasBeenPulled(in)) {
+                  pull(in)
+                }
+              case None ⇒
+                outPulled(idx) = true
+                if (outPending.isEmpty && !hasBeenPulled(in)) {
+                  pull(in)
+                }
+            }
+          }
+
+          override def onDownstreamFinish(): Unit = {
+            completeStage()
+          }
+        })
+    }
+  }
+
+  override def toString = "Partition"
 
 }
 
