@@ -37,7 +37,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
           val merge = b.add(MergePreferred[Int](3))
           preferred ~> merge.preferred
 
-          merge.out.grouped(numElements * 2) ~> sink.inlet
+          merge.out.grouped(numElements * 2) ~> sink.in
           aux ~> merge.in(0)
           aux ~> merge.in(1)
           aux ~> merge.in(2)
@@ -53,7 +53,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
           val merge = b.add(MergePreferred[Int](3))
           Source(1 to 100) ~> merge.preferred
 
-          merge.out.grouped(500) ~> sink.inlet
+          merge.out.grouped(500) ~> sink.in
           Source(101 to 200) ~> merge.in(0)
           Source(201 to 300) ~> merge.in(1)
           Source(301 to 400) ~> merge.in(2)

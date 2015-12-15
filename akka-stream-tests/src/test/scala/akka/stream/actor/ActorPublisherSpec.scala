@@ -358,7 +358,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
           val bcast = b.add(Broadcast[String](2))
 
           source1 ~> merge.in(0)
-          source2.outlet ~> merge.in(1)
+          source2.out ~> merge.in(1)
 
           merge.out.map(_.toString) ~> bcast.in
 

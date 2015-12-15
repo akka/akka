@@ -307,14 +307,14 @@ object GraphDSL extends GraphCreate {
     def materializedValue: Outlet[Mat @uncheckedVariance] = delegate.materializedValue
 
     def from[T](out: Outlet[T]): ForwardOps[T] = new ForwardOps(out)
-    def from[T](src: SourceShape[T]): ForwardOps[T] = new ForwardOps(src.outlet)
-    def from[I, O](f: FlowShape[I, O]): ForwardOps[O] = new ForwardOps(f.outlet)
+    def from[T](src: SourceShape[T]): ForwardOps[T] = new ForwardOps(src.out)
+    def from[I, O](f: FlowShape[I, O]): ForwardOps[O] = new ForwardOps(f.out)
     def from[I, O](j: UniformFanInShape[I, O]): ForwardOps[O] = new ForwardOps(j.out)
     def from[I, O](j: UniformFanOutShape[I, O]): ForwardOps[O] = new ForwardOps(findOut(delegate, j, 0))
 
     def to[T](in: Inlet[T]): ReverseOps[T] = new ReverseOps(in)
-    def to[T](dst: SinkShape[T]): ReverseOps[T] = new ReverseOps(dst.inlet)
-    def to[I, O](f: FlowShape[I, O]): ReverseOps[I] = new ReverseOps(f.inlet)
+    def to[T](dst: SinkShape[T]): ReverseOps[T] = new ReverseOps(dst.in)
+    def to[I, O](f: FlowShape[I, O]): ReverseOps[I] = new ReverseOps(f.in)
     def to[I, O](j: UniformFanInShape[I, O]): ReverseOps[I] = new ReverseOps(findIn(delegate, j, 0))
     def to[I, O](j: UniformFanOutShape[I, O]): ReverseOps[I] = new ReverseOps(j.in)
 

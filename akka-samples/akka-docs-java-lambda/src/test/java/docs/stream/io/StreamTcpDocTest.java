@@ -136,7 +136,7 @@ public class StreamTcpDocTest {
               .from(builder.add(welcome)).toFanIn(concat)
               .from(echo).toFanIn(concat);
 
-            return FlowShape.of(echo.inlet(), concat.out());
+            return FlowShape.of(echo.in(), concat.out());
       }));
 
       connection.handleWith(serverLogic, mat);

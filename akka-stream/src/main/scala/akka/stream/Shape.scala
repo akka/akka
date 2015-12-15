@@ -232,11 +232,11 @@ case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Se
  * A Source [[Shape]] has exactly one output and no inputs, it models a source
  * of data.
  */
-final case class SourceShape[+T](outlet: Outlet[T @uncheckedVariance]) extends Shape {
+final case class SourceShape[+T](out: Outlet[T @uncheckedVariance]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = EmptyImmutableSeq
-  override val outlets: immutable.Seq[Outlet[_]] = List(outlet)
+  override val outlets: immutable.Seq[Outlet[_]] = List(out)
 
-  override def deepCopy(): SourceShape[T] = SourceShape(outlet.carbonCopy())
+  override def deepCopy(): SourceShape[T] = SourceShape(out.carbonCopy())
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
     require(inlets.isEmpty, s"proposed inlets [${inlets.mkString(", ")}] do not fit SourceShape")
     require(outlets.size == 1, s"proposed outlets [${outlets.mkString(", ")}] do not fit SourceShape")
@@ -254,11 +254,11 @@ object SourceShape {
  * outside like a pipe (but it can be a complex topology of streams within of
  * course).
  */
-final case class FlowShape[-I, +O](inlet: Inlet[I @uncheckedVariance], outlet: Outlet[O @uncheckedVariance]) extends Shape {
-  override val inlets: immutable.Seq[Inlet[_]] = List(inlet)
-  override val outlets: immutable.Seq[Outlet[_]] = List(outlet)
+final case class FlowShape[-I, +O](in: Inlet[I @uncheckedVariance], out: Outlet[O @uncheckedVariance]) extends Shape {
+  override val inlets: immutable.Seq[Inlet[_]] = List(in)
+  override val outlets: immutable.Seq[Outlet[_]] = List(out)
 
-  override def deepCopy(): FlowShape[I, O] = FlowShape(inlet.carbonCopy(), outlet.carbonCopy())
+  override def deepCopy(): FlowShape[I, O] = FlowShape(in.carbonCopy(), out.carbonCopy())
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
     require(inlets.size == 1, s"proposed inlets [${inlets.mkString(", ")}] do not fit FlowShape")
     require(outlets.size == 1, s"proposed outlets [${outlets.mkString(", ")}] do not fit FlowShape")
@@ -274,11 +274,11 @@ object FlowShape {
 /**
  * A Sink [[Shape]] has exactly one input and no outputs, it models a data sink.
  */
-final case class SinkShape[-T](inlet: Inlet[T @uncheckedVariance]) extends Shape {
-  override val inlets: immutable.Seq[Inlet[_]] = List(inlet)
+final case class SinkShape[-T](in: Inlet[T @uncheckedVariance]) extends Shape {
+  override val inlets: immutable.Seq[Inlet[_]] = List(in)
   override val outlets: immutable.Seq[Outlet[_]] = EmptyImmutableSeq
 
-  override def deepCopy(): SinkShape[T] = SinkShape(inlet.carbonCopy())
+  override def deepCopy(): SinkShape[T] = SinkShape(in.carbonCopy())
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
     require(inlets.size == 1, s"proposed inlets [${inlets.mkString(", ")}] do not fit SinkShape")
     require(outlets.isEmpty, s"proposed outlets [${outlets.mkString(", ")}] do not fit SinkShape")
@@ -315,7 +315,7 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1 @uncheckedVa
   /**
    * Java API for creating from a pair of unidirectional flows.
    */
-  def this(top: FlowShape[In1, Out1], bottom: FlowShape[In2, Out2]) = this(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
+  def this(top: FlowShape[In1, Out1], bottom: FlowShape[In2, Out2]) = this(top.in, top.out, bottom.in, bottom.out)
 
   override def deepCopy(): BidiShape[In1, Out1, In2, Out2] =
     BidiShape(in1.carbonCopy(), out1.carbonCopy(), in2.carbonCopy(), out2.carbonCopy())
@@ -330,7 +330,7 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1 @uncheckedVa
 //#bidi-shape
 object BidiShape {
   def fromFlows[I1, O1, I2, O2](top: FlowShape[I1, O1], bottom: FlowShape[I2, O2]): BidiShape[I1, O1, I2, O2] =
-    BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
+    BidiShape(top.in, top.out, bottom.in, bottom.out)
 
   /** Java API */
   def of[In1, Out1, In2, Out2](in1: Inlet[In1 @uncheckedVariance],

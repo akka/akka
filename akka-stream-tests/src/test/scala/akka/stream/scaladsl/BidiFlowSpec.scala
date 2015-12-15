@@ -32,7 +32,7 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
 
       val top = b.add(Flow[Int].map(x ⇒ x.toLong + 2))
       val bottom = b.add(Flow[ByteString].map(_.decodeString("UTF-8")))
-      BidiShape(top.inlet, top.outlet, bottom.inlet, bottom.outlet)
+      BidiShape(top.in, top.out, bottom.in, bottom.out)
   })
 
   val str = "Hello World"
@@ -97,13 +97,13 @@ class BidiFlowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
           bcast ~> sink
           Source.single(1) ~> bcast ~> merge
           flow ~> merge
-          FlowShape(flow.inlet, merge.out)
+          FlowShape(flow.in, merge.out)
       })
       val right = Flow.fromGraph(GraphDSL.create(Sink.head[immutable.Seq[Long]]) { implicit b ⇒
         sink ⇒
           val flow = b.add(Flow[Long].grouped(10))
           flow ~> sink
-          FlowShape(flow.inlet, b.add(Source.single(ByteString("10"))).outlet)
+          FlowShape(flow.in, b.add(Source.single(ByteString("10"))).out)
       })
       val ((l, m), r) = left.joinMat(bidiMat)(Keep.both).joinMat(right)(Keep.both).run()
       Await.result(l, 1.second) should ===(1)

@@ -157,8 +157,8 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val (graphSubscriber1, graphSubscriber2) = RunnableGraph.fromGraph(GraphDSL.create(src1, src2)((_, _)) { implicit b ⇒
         (s1, s2) ⇒
           val merge = b.add(Merge[Int](2))
-          s1.outlet ~> merge.in(0)
-          s2.outlet ~> merge.in(1)
+          s1.out ~> merge.in(0)
+          s2.out ~> merge.in(1)
           merge.out ~> Sink(down)
           ClosedShape
       }).run()

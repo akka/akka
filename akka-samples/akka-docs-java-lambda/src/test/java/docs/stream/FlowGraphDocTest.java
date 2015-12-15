@@ -62,7 +62,7 @@ public class FlowGraphDocTest {
               final UniformFanOutShape<Integer, Integer> bcast = builder.add(Broadcast.create(2));
               final UniformFanInShape<Integer, Integer> merge = builder.add(Merge.create(2));
 
-              final Outlet<Integer> source = builder.add(in).outlet();
+              final Outlet<Integer> source = builder.add(in).out();
               builder.from(source).via(builder.add(f1))
                 .viaFanOut(bcast).via(builder.add(f2)).viaFanIn(merge)
                 .via(builder.add(f3.grouped(1000))).to(out);
@@ -148,7 +148,7 @@ public class FlowGraphDocTest {
       GraphDSL.create(foldSink,
       (b, fold) -> {
         return FlowShape.of(
-          fold.inlet(),
+          fold.in(),
           b.from(b.materializedValue()).via(b.add(flatten)).out());
       }));
       //#flow-graph-matvalue
