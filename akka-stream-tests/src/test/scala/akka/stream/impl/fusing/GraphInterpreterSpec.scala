@@ -15,8 +15,8 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
   "GraphInterpreter" must {
 
     // Reusable components
-    val identity = new Identity[Int]
-    val detacher = new Detacher[Int]
+    val identity = GraphStages.identity[Int]
+    val detach = detacher[Int]
     val zip = Zip[Int, String]
     val bcast = Broadcast[Int](2)
     val merge = Merge[Int](2)
@@ -71,9 +71,9 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       val source = new UpstreamProbe[Int]("source")
       val sink = new DownstreamProbe[Int]("sink")
 
-      builder(detacher)
-        .connect(source, detacher.in)
-        .connect(detacher.out, sink)
+      builder(detach)
+        .connect(source, detach.shape.inlet)
+        .connect(detach.shape.outlet, sink)
         .init()
 
       lastEvents() should ===(Set.empty)
@@ -309,12 +309,12 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       val source = new UpstreamProbe[Int]("source")
       val sink = new DownstreamProbe[Int]("sink")
 
-      builder(detacher, balance, merge)
+      builder(detach, balance, merge)
         .connect(source, merge.in(0))
         .connect(merge.out, balance.in)
         .connect(balance.out(0), sink)
-        .connect(balance.out(1), detacher.in)
-        .connect(detacher.out, merge.in(1))
+        .connect(balance.out(1), detach.shape.inlet)
+        .connect(detach.shape.outlet, merge.in(1))
         .init()
 
       lastEvents() should ===(Set.empty)

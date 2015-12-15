@@ -8,18 +8,20 @@ import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.{ DefaultAttributes, StageModule }
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.fusing.GraphStages.TickSource
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.impl.fusing.GraphStages._
 import akka.stream.impl.io.{ OutputStreamSourceStage, InputStreamSource, FileSource }
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
 import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
+import scala.language.higherKinds
 import scala.collection.immutable
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.concurrent.{ Future, Promise }
-import scala.language.higherKinds
-import scala.annotation.unchecked.uncheckedVariance
+import akka.stream.impl.fusing.Buffer
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -41,7 +43,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    if (flow.module eq Stages.identityGraph.module) this.asInstanceOf[Source[T, Mat3]]
+    if (flow.module eq GraphStages.Identity.module) this.asInstanceOf[Source[T, Mat3]]
     else {
       val flowCopy = flow.module.carbonCopy
       new Source(
@@ -191,7 +193,7 @@ object Source {
    * beginning) regardless of when they subscribed.
    */
   def apply[T](iterable: immutable.Iterable[T]): Source[T, Unit] =
-    Source.single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
+    single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -200,11 +202,7 @@ object Source {
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
   def apply[T](future: Future[T]): Source[T, Unit] =
-    new Source(
-      new PublisherSource(
-        SingleElementPublisher(future, "FutureSource"),
-        DefaultAttributes.futureSource,
-        shape("FutureSource"))).mapAsyncUnordered(1)(ConstantFun.scalaIdentityFunction)
+    single(future).mapAsyncUnordered(1)(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.futureSource)
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -221,28 +219,19 @@ object Source {
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
   def single[T](element: T): Source[T, Unit] =
-    new Source(
-      new PublisherSource(
-        SingleElementPublisher(element, "SingleSource"),
-        DefaultAttributes.singleSource,
-        shape("SingleSource")))
+    fromGraph(new GraphStages.SingleSource(element).withAttributes(DefaultAttributes.singleSource))
 
   /**
    * Create a `Source` that will continually emit the given element.
    */
-  def repeat[T](element: T): Source[T, Unit] = {
-    ReactiveStreamsCompliance.requireNonNullElement(element)
-    new Source(
-      new PublisherSource(
-        SingleElementPublisher(
-          new immutable.Iterable[T] {
-            override val iterator: Iterator[T] = Iterator.continually(element)
+  def repeat[T](element: T): Source[T, Unit] =
+    single(new immutable.Iterable[T] {
+      override val iterator: Iterator[T] = Iterator.continually(element)
 
-            override def toString: String = "repeat(" + element + ")"
-          }, "RepeatSource"),
-        DefaultAttributes.repeat,
-        shape("RepeatSource"))).mapConcat(ConstantFun.scalaIdentityFunction)
-  }
+      override def toString: String = "repeat(" + element + ")"
+    })
+      .mapConcat(ConstantFun.scalaIdentityFunction)
+      .withAttributes(DefaultAttributes.repeat)
 
   /**
    * Create a `Source` that will unfold a value of type `S` into
@@ -296,7 +285,7 @@ object Source {
       val init = Source.single(s)
 
       init ~> cnct ~> uzip.in
-      cnct <~ uzip.out0
+      cnct <~ Flow[S].buffer(2, OverflowStrategy.backpressure) <~ uzip.out0
 
       SourceShape(uzip.out1)
     }).withAttributes(DefaultAttributes.unfoldInf)

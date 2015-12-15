@@ -69,7 +69,7 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
       val customDispatcher = TestProbe()
 
       val f1 = Flow[Int].map(sendThreadNameTo(defaultDispatcher.ref))
-      val f2 = Flow[Int].map(sendThreadNameTo(customDispatcher.ref))
+      val f2 = Flow[Int].map(sendThreadNameTo(customDispatcher.ref)).map(x ⇒ x)
         .withAttributes(dispatcher("my-dispatcher1") and name("separate-disptacher"))
 
       Source(0 to 2).via(f1).via(f2).runWith(Sink.ignore)

@@ -196,6 +196,9 @@ final case class AbruptTerminationException(actor: ActorRef)
 
 object ActorMaterializerSettings {
 
+  /**
+   * Create [[ActorMaterializerSettings]] from individual settings (Scala).
+   */
   def apply(
     initialInputBufferSize: Int,
     maxInputBufferSize: Int,
@@ -204,25 +207,20 @@ object ActorMaterializerSettings {
     subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
     debugLogging: Boolean,
     outputBurstLimit: Int,
-    fuzzingMode: Boolean) =
+    fuzzingMode: Boolean,
+    autoFusing: Boolean) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode)
+      outputBurstLimit, fuzzingMode, autoFusing)
 
   /**
-   * Create [[ActorMaterializerSettings]].
-   *
-   * You can refine the configuration based settings using [[ActorMaterializerSettings#withInputBuffer]],
-   * [[ActorMaterializerSettings#withDispatcher]]
+   * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Scala).
    */
   def apply(system: ActorSystem): ActorMaterializerSettings =
     apply(system.settings.config.getConfig("akka.stream.materializer"))
 
   /**
-   * Create [[ActorMaterializerSettings]].
-   *
-   * You can refine the configuration based settings using [[ActorMaterializerSettings#withInputBuffer]],
-   * [[ActorMaterializerSettings#withDispatcher]]
+   * Create [[ActorMaterializerSettings]] from a Config subsection (Scala).
    */
   def apply(config: Config): ActorMaterializerSettings =
     ActorMaterializerSettings(
@@ -233,22 +231,34 @@ object ActorMaterializerSettings {
       subscriptionTimeoutSettings = StreamSubscriptionTimeoutSettings(config),
       debugLogging = config.getBoolean("debug-logging"),
       outputBurstLimit = config.getInt("output-burst-limit"),
-      fuzzingMode = config.getBoolean("debug.fuzzing-mode"))
+      fuzzingMode = config.getBoolean("debug.fuzzing-mode"),
+      autoFusing = config.getBoolean("auto-fusing"))
 
   /**
-   * Java API
-   *
-   * You can refine the configuration based settings using [[ActorMaterializerSettings#withInputBuffer]],
-   * [[ActorMaterializerSettings#withDispatcher]]
+   * Create [[ActorMaterializerSettings]] from individual settings (Java).
+   */
+  def create(
+    initialInputBufferSize: Int,
+    maxInputBufferSize: Int,
+    dispatcher: String,
+    supervisionDecider: Supervision.Decider,
+    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+    debugLogging: Boolean,
+    outputBurstLimit: Int,
+    fuzzingMode: Boolean,
+    autoFusing: Boolean) =
+    new ActorMaterializerSettings(
+      initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
+      outputBurstLimit, fuzzingMode, autoFusing)
+
+  /**
+   * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Java).
    */
   def create(system: ActorSystem): ActorMaterializerSettings =
     apply(system)
 
   /**
-   * Java API
-   *
-   * You can refine the configuration based settings using [[ActorMaterializerSettings#withInputBuffer]],
-   * [[ActorMaterializerSettings#withDispatcher]]
+   * Create [[ActorMaterializerSettings]] from a Config subsection (Java).
    */
   def create(config: Config): ActorMaterializerSettings =
     apply(config)
@@ -256,10 +266,8 @@ object ActorMaterializerSettings {
 }
 
 /**
- * The buffers employed by the generated Processors can be configured by
- * creating an appropriate instance of this class.
- *
- * This will likely be replaced in the future by auto-tuning these values at runtime.
+ * This class describes the configurable properties of the [[ActorMaterializer]].
+ * Please refer to the `withX` methods for descriptions of the individual settings.
  */
 final class ActorMaterializerSettings(
   val initialInputBufferSize: Int,
@@ -269,7 +277,8 @@ final class ActorMaterializerSettings(
   val subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
   val debugLogging: Boolean,
   val outputBurstLimit: Int,
-  val fuzzingMode: Boolean) {
+  val fuzzingMode: Boolean,
+  val autoFusing: Boolean) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
@@ -284,16 +293,29 @@ final class ActorMaterializerSettings(
     subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings = this.subscriptionTimeoutSettings,
     debugLogging: Boolean = this.debugLogging,
     outputBurstLimit: Int = this.outputBurstLimit,
-    fuzzingMode: Boolean = this.fuzzingMode) =
+    fuzzingMode: Boolean = this.fuzzingMode,
+    autoFusing: Boolean = this.autoFusing) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode)
+      outputBurstLimit, fuzzingMode, autoFusing)
 
+  /**
+   * Each asynchronous piece of a materialized stream topology is executed by one Actor
+   * that manages an input buffer for all inlets of its shape. This setting configures
+   * the initial and maximal input buffer in number of elements for each inlet.
+   *
+   * FIXME: Currently only the initialSize is used, auto-tuning is not yet implemented.
+   */
   def withInputBuffer(initialSize: Int, maxSize: Int): ActorMaterializerSettings = {
     if (initialSize == this.initialInputBufferSize && maxSize == this.maxInputBufferSize) this
     else copy(initialInputBufferSize = initialSize, maxInputBufferSize = maxSize)
   }
 
+  /**
+   * This setting configures the default dispatcher to be used by streams materialized
+   * with the [[ActorMaterializer]]. This can be overridden for individual parts of the
+   * stream topology by using [[akka.stream.Attributes#dispatcher]].
+   */
   def withDispatcher(dispatcher: String): ActorMaterializerSettings = {
     if (this.dispatcher == dispatcher) this
     else copy(dispatcher = dispatcher)
@@ -324,35 +346,91 @@ final class ActorMaterializerSettings(
     })
   }
 
-  def withSubscriptionTimeoutSettings(sub: StreamSubscriptionTimeoutSettings): ActorMaterializerSettings =
-    copy(subscriptionTimeoutSettings = sub)
-
-  def withFuzzing(enable: Boolean): ActorMaterializerSettings = {
+  /**
+   * Test utility: fuzzing mode means that GraphStage events are not processed
+   * in FIFO order within a fused subgraph, but randomized.
+   */
+  def withFuzzing(enable: Boolean): ActorMaterializerSettings =
     if (enable == this.fuzzingMode) this
     else copy(fuzzingMode = enable)
-  }
 
-  def withDebugLogging(enable: Boolean): ActorMaterializerSettings = {
+  /**
+   * Maximum number of elements emitted in batch if downstream signals large demand.
+   */
+  def withOutputBurstLimit(limit: Int): ActorMaterializerSettings =
+    if (limit == this.outputBurstLimit) this
+    else copy(outputBurstLimit = limit)
+
+  /**
+   * Enable to log all elements that are dropped due to failures (at DEBUG level).
+   */
+  def withDebugLogging(enable: Boolean): ActorMaterializerSettings =
     if (enable == this.debugLogging) this
     else copy(debugLogging = enable)
-  }
+
+  /**
+   * Enable automatic fusing of all graphs that are run. For short-lived streams
+   * this may cause an initial runtime overhead, but most of the time fusing is
+   * desirable since it reduces the number of Actors that are created.
+   */
+  def withAutoFusing(enable: Boolean): ActorMaterializerSettings =
+    if (enable == this.autoFusing) this
+    else copy(autoFusing = enable)
+
+  /**
+   * Leaked publishers and subscribers are cleaned up when they are not used within a given
+   * deadline, configured by [[StreamSubscriptionTimeoutSettings]].
+   */
+  def withSubscriptionTimeoutSettings(settings: StreamSubscriptionTimeoutSettings): ActorMaterializerSettings =
+    if (settings == this.subscriptionTimeoutSettings) this
+    else copy(subscriptionTimeoutSettings = settings)
 
   private def requirePowerOfTwo(n: Integer, name: String): Unit = {
     require(n > 0, s"$name must be > 0")
     require((n & (n - 1)) == 0, s"$name must be a power of two")
   }
+
+  override def equals(other: Any): Boolean = other match {
+    case s: ActorMaterializerSettings ⇒
+      s.initialInputBufferSize == initialInputBufferSize &&
+        s.maxInputBufferSize == maxInputBufferSize &&
+        s.dispatcher == dispatcher &&
+        s.supervisionDecider == supervisionDecider &&
+        s.subscriptionTimeoutSettings == subscriptionTimeoutSettings &&
+        s.debugLogging == debugLogging &&
+        s.outputBurstLimit == outputBurstLimit &&
+        s.fuzzingMode == fuzzingMode &&
+        s.autoFusing == autoFusing
+    case _ ⇒ false
+  }
+
+  override def toString: String = s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize,$dispatcher,$supervisionDecider,$subscriptionTimeoutSettings,$debugLogging,$outputBurstLimit,$fuzzingMode,$autoFusing)"
 }
 
 object StreamSubscriptionTimeoutSettings {
   import akka.stream.StreamSubscriptionTimeoutTerminationMode._
 
+  /**
+   * Create settings from individual values (Java).
+   */
+  def create(mode: StreamSubscriptionTimeoutTerminationMode, timeout: FiniteDuration): StreamSubscriptionTimeoutSettings =
+    new StreamSubscriptionTimeoutSettings(mode, timeout)
+
+  /**
+   * Create settings from individual values (Scala).
+   */
   def apply(mode: StreamSubscriptionTimeoutTerminationMode, timeout: FiniteDuration): StreamSubscriptionTimeoutSettings =
     new StreamSubscriptionTimeoutSettings(mode, timeout)
 
-  /** Java API */
+  /**
+   * Create settings from a Config subsection (Java).
+   */
   def create(config: Config): StreamSubscriptionTimeoutSettings =
     apply(config)
 
+  /**
+   * Create settings from a Config subsection (Scala).
+   */
   def apply(config: Config): StreamSubscriptionTimeoutSettings = {
     val c = config.getConfig("subscription-timeout")
     StreamSubscriptionTimeoutSettings(
@@ -365,8 +443,22 @@ object StreamSubscriptionTimeoutSettings {
   }
 }
 
-final class StreamSubscriptionTimeoutSettings(val mode: StreamSubscriptionTimeoutTerminationMode, val timeout: FiniteDuration)
+/**
+ * Leaked publishers and subscribers are cleaned up when they are not used within a given
+ * deadline, configured by [[StreamSubscriptionTimeoutSettings]].
+ */
+final class StreamSubscriptionTimeoutSettings(val mode: StreamSubscriptionTimeoutTerminationMode, val timeout: FiniteDuration) {
+  override def equals(other: Any): Boolean = other match {
+    case s: StreamSubscriptionTimeoutSettings ⇒ s.mode == mode && s.timeout == timeout
+    case _                                    ⇒ false
+  }
+  override def toString: String = s"StreamSubscriptionTimeoutSettings($mode,$timeout)"
+}
 
+/**
+ * This mode describes what shall happen when the subscription timeout expires for
+ * substream Publishers created by operations like `prefixAndTail`.
+ */
 sealed abstract class StreamSubscriptionTimeoutTerminationMode
 
 object StreamSubscriptionTimeoutTerminationMode {
@@ -374,11 +466,19 @@ object StreamSubscriptionTimeoutTerminationMode {
   case object WarnTermination extends StreamSubscriptionTimeoutTerminationMode
   case object CancelTermination extends StreamSubscriptionTimeoutTerminationMode
 
-  /** Java API */
-  def noop = NoopTermination
-  /** Java API */
-  def warn = WarnTermination
-  /** Java API */
-  def cancel = CancelTermination
+  /**
+   * Do not do anything when timeout expires.
+   */
+  def noop: StreamSubscriptionTimeoutTerminationMode = NoopTermination
+
+  /**
+   * Log a warning when the timeout expires.
+   */
+  def warn: StreamSubscriptionTimeoutTerminationMode = WarnTermination
+
+  /**
+   * When the timeout expires attach a Subscriber that will immediately cancel its subscription.
+   */
+  def cancel: StreamSubscriptionTimeoutTerminationMode = CancelTermination
 
 }

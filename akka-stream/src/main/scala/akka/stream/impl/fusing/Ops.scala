@@ -523,6 +523,7 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
   private val in = Inlet[In]("in")
   private val out = Outlet[Out]("out")
 
+  override def initialAttributes = Attributes.name("MapAsync")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
@@ -600,6 +601,7 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
   private val in = Inlet[In]("in")
   private val out = Outlet[Out]("out")
 
+  override def initialAttributes = Attributes.name("MapAsyncUnordered")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
@@ -767,6 +769,7 @@ private[stream] object TimerKeys {
 private[stream] class GroupedWithin[T](n: Int, d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
   val in = Inlet[T]("in")
   val out = Outlet[immutable.Seq[T]]("out")
+  override def initialAttributes = Attributes.name("GroupedWithin")
   val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {

@@ -212,5 +212,5 @@ object BidiFlow {
    * the *joint* frequencies of the elements in both directions.
    */
   def bidirectionalIdleTimeout[I, O](timeout: FiniteDuration): BidiFlow[I, I, O, O, Unit] =
-    fromGraph(new Timers.IdleBidi(timeout))
+    fromGraph(new Timers.IdleTimeoutBidi(timeout))
 }

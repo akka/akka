@@ -100,11 +100,13 @@ private[stream] object Timers {
     override def toString = "IdleTimeout"
   }
 
-  final class IdleBidi[I, O](val timeout: FiniteDuration) extends GraphStage[BidiShape[I, I, O, O]] {
+  final class IdleTimeoutBidi[I, O](val timeout: FiniteDuration) extends GraphStage[BidiShape[I, I, O, O]] {
     val in1 = Inlet[I]("in1")
     val in2 = Inlet[O]("in2")
     val out1 = Outlet[I]("out1")
     val out2 = Outlet[O]("out2")
+
+    override def initialAttributes = Attributes.name("IdleTimeoutBidi")
     val shape = BidiShape(in1, out1, in2, out2)
 
     override def toString = "IdleTimeoutBidi"
@@ -151,6 +153,7 @@ private[stream] object Timers {
   final class DelayInitial[T](val delay: FiniteDuration) extends GraphStage[FlowShape[T, T]] {
     val in: Inlet[T] = Inlet("IdleInject.in")
     val out: Outlet[T] = Outlet("IdleInject.out")
+    override def initialAttributes = Attributes.name("DelayInitial")
     override val shape: FlowShape[T, T] = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
@@ -181,6 +184,7 @@ private[stream] object Timers {
   final class IdleInject[I, O >: I](val timeout: FiniteDuration, inject: () ⇒ O) extends GraphStage[FlowShape[I, O]] {
     val in: Inlet[I] = Inlet("IdleInject.in")
     val out: Outlet[O] = Outlet("IdleInject.out")
+    override def initialAttributes = Attributes.name("IdleInject")
     override val shape: FlowShape[I, O] = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {

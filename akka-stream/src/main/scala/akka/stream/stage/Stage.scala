@@ -167,16 +167,16 @@ private[stream] object AbstractStage {
     extends GraphStageWithMaterializedValue[FlowShape[In, Out], Mat] {
 
     val name = stageAttributes.nameOrDefault()
+    override def initialAttributes = stageAttributes
     val shape = FlowShape(Inlet[In](name + ".in"), Outlet[Out](name + ".out"))
 
     override def toString = name
 
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Mat) = {
-      val effectiveAttributes = inheritedAttributes and stageAttributes
-      val stageAndMat = factory(effectiveAttributes)
+      val stageAndMat = factory(inheritedAttributes)
       val stage: AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext] =
         stageAndMat._1.asInstanceOf[AbstractStage[In, Out, Directive, Directive, Context[Out], LifecycleContext]]
-      (new PushPullGraphLogic(shape, effectiveAttributes, stage), stageAndMat._2)
+      (new PushPullGraphLogic(shape, inheritedAttributes, stage), stageAndMat._2)
     }
   }
 

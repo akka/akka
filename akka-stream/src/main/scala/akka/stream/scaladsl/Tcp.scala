@@ -9,7 +9,7 @@ import akka.actor._
 import akka.io.Inet.SocketOption
 import akka.io.{ IO, Tcp ⇒ IoTcp }
 import akka.stream._
-import akka.stream.impl.fusing.GraphStages.Detacher
+import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.impl.io.{ ConnectionSourceStage, OutgoingConnectionStage }
 import akka.util.ByteString
 
@@ -166,7 +166,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       localAddress,
       options,
       halfClose,
-      connectTimeout)).via(new Detacher[ByteString]) // must read ahead for proper completions
+      connectTimeout)).via(detacher[ByteString]) // must read ahead for proper completions
 
     idleTimeout match {
       case d: FiniteDuration ⇒ tcpFlow.join(BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](d))
@@ -182,4 +182,3 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
     outgoingConnection(new InetSocketAddress(host, port))
 }
-

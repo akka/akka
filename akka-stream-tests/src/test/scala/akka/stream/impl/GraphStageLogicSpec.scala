@@ -68,7 +68,7 @@ class GraphStageLogicSpec extends AkkaSpec with GraphInterpreterSpecKit with Con
 
   class FusedGraph[S <: Shape](ga: GraphAssembly, s: S, a: Attributes = Attributes.none) extends Graph[S, Unit] {
     override def shape = s
-    override val module = GraphModule(ga, s, a)
+    override val module = GraphModule(ga, s, a, ga.stages.map(_.module))
     override def withAttributes(attr: Attributes) = new FusedGraph(ga, s, attr)
   }
 
