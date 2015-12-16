@@ -9,7 +9,7 @@ import akka.http.scaladsl.util.FastFuture._
 
 trait RouteConcatenation {
 
-  implicit def enhanceRouteWithConcatenation(route: Route) =
+  implicit def enhanceRouteWithConcatenation(route: Route): RouteConcatenation.RouteWithConcatenation =
     new RouteConcatenation.RouteWithConcatenation(route: Route)
 }
 

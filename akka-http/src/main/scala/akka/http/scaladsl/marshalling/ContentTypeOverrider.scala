@@ -18,18 +18,21 @@ object ContentTypeOverrider {
       value.withContentType(newContentType).asInstanceOf[T] // can't be expressed in types
   }
 
-  implicit def forHeadersAndEntity[T <: HttpEntity] = new ContentTypeOverrider[(immutable.Seq[HttpHeader], T)] {
-    def apply(value: (immutable.Seq[HttpHeader], T), newContentType: ContentType) =
-      value._1 -> value._2.withContentType(newContentType).asInstanceOf[T]
-  }
+  implicit def forHeadersAndEntity[T <: HttpEntity]: ContentTypeOverrider[(immutable.Seq[HttpHeader], T)] =
+    new ContentTypeOverrider[(immutable.Seq[HttpHeader], T)] {
+      def apply(value: (immutable.Seq[HttpHeader], T), newContentType: ContentType) =
+        value._1 -> value._2.withContentType(newContentType).asInstanceOf[T]
+    }
 
-  implicit val forResponse = new ContentTypeOverrider[HttpResponse] {
-    def apply(value: HttpResponse, newContentType: ContentType) =
-      value.mapEntity(forEntity(_: ResponseEntity, newContentType))
-  }
+  implicit val forResponse: ContentTypeOverrider[HttpResponse] =
+    new ContentTypeOverrider[HttpResponse] {
+      def apply(value: HttpResponse, newContentType: ContentType) =
+        value.mapEntity(forEntity(_: ResponseEntity, newContentType))
+    }
 
-  implicit val forRequest = new ContentTypeOverrider[HttpRequest] {
-    def apply(value: HttpRequest, newContentType: ContentType) =
-      value.mapEntity(forEntity(_: RequestEntity, newContentType))
-  }
+  implicit val forRequest: ContentTypeOverrider[HttpRequest] =
+    new ContentTypeOverrider[HttpRequest] {
+      def apply(value: HttpRequest, newContentType: ContentType) =
+        value.mapEntity(forEntity(_: RequestEntity, newContentType))
+    }
 }
