@@ -585,7 +585,13 @@ object MiMa extends AutoPlugin {
         FilterAnyProblem("akka.cluster.ddata.VersionVector"),
 
         // #19133 change in internal actor
-        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.gated")
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.gated"),
+
+        // debug logging in ReplayFilter, change of internal actor
+        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.ReplayFilter.this"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.AsyncWriteJournal.akka$persistence$journal$AsyncWriteJournal$_setter_$akka$persistence$journal$AsyncWriteJournal$$replayDebugEnabled_="),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.AsyncWriteJournal.akka$persistence$journal$AsyncWriteJournal$$replayDebugEnabled"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.ReplayFilter.props")
       )
     )
   }
