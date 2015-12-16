@@ -324,7 +324,9 @@ object Source {
    * It materializes a [[Future]] containing the number of bytes read from the source file upon completion.
    */
   def inputStream(in: function.Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, Future[java.lang.Long]] =
-    new Source(scaladsl.Source.inputStream(() ⇒ in.create(), chunkSize)).asInstanceOf[Source[ByteString, Future[java.lang.Long]]]
+    new Source(scaladsl.Source.inputStream(() ⇒ in.create(), chunkSize))
+      .withAttributes(Attributes.inputBuffer(initial = 1, max = 1))
+      .asInstanceOf[Source[ByteString, Future[java.lang.Long]]]
 
   /**
    * Creates a Source from an [[java.io.InputStream]] created by the given function.
