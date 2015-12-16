@@ -46,13 +46,13 @@ abstract class CodingDirectives extends CacheConditionDirectives {
    * Decodes the incoming request if it is encoded with one of the given
    * encoders. If the request encoding doesn't match one of the given encoders
    * the request is rejected with an `UnsupportedRequestEncodingRejection`.
-   * If no decoders are given the default encoders (``Gzip``, ``Deflate``, ``NoCoding``) are used.
+   * If no decoders are given the default encoders (`Gzip`, `Deflate`, `NoCoding`) are used.
    */
   @varargs def decodeRequestWith(decoders: Coder*): Directive =
     Directives.custom(RouteStructure.DecodeRequest(decoders.toList))
 
   /**
-   * Decompresses the incoming request if it is ``gzip`` or ``deflate`` compressed.
+   * Decompresses the incoming request if it is `gzip` or `deflate` compressed.
    * Uncompressed requests are passed through untouched.
    * If the request encoded with another encoding the request is rejected with an `UnsupportedRequestEncodingRejection`.
    */

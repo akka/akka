@@ -174,7 +174,7 @@ sealed trait UniversalEntity extends jm.UniversalEntity with MessageEntity with 
 
   /**
    * Transforms this' entities data bytes with a transformer that will produce exactly the number of bytes given as
-   * ``newContentLength``.
+   * `newContentLength`.
    */
   def transformDataBytes(newContentLength: Long, transformer: Flow[ByteString, ByteString, Any]): UniversalEntity
 }
@@ -410,8 +410,8 @@ object HttpEntity {
   }
   object Chunked {
     /**
-     * Returns a ``Chunked`` entity where one Chunk is produced for every non-empty ByteString produced by the given
-     * ``Source``.
+     * Returns a `Chunked` entity where one Chunk is produced for every non-empty ByteString produced by the given
+     * `Source`.
      */
     def fromData(contentType: ContentType, chunks: Source[ByteString, Any]): HttpEntity.Chunked =
       HttpEntity.Chunked(contentType, chunks.collect[ChunkStreamPart] {

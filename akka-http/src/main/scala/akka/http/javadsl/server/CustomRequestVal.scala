@@ -11,7 +11,7 @@ import akka.http.scaladsl.server.directives.BasicDirectives._
 import scala.reflect.ClassTag
 
 /**
- * Extend from this class and implement ``extractValue`` to create a custom request val.
+ * Extend from this class and implement `extractValue` to create a custom request val.
  */
 abstract class CustomRequestVal[T](clazz: Class[T]) extends StandaloneExtractionImpl[T]()(ClassTag(clazz)) {
   final def directive: Directive1[T] = extract(ctx ⇒ extractValue(RequestContextImpl(ctx)))

@@ -174,8 +174,8 @@ object MediaType {
   }
 
   /**
-   * Tries to parse a ``MediaType`` value from the given String.
-   * Returns ``Right(mediaType)`` if successful and ``Left(errors)`` otherwise.
+   * Tries to parse a `MediaType` value from the given String.
+   * Returns `Right(mediaType)` if successful and `Left(errors)` otherwise.
    */
   def parse(value: String): Either[List[ErrorInfo], MediaType] =
     ContentType.parse(value).right.map(_.mediaType)
