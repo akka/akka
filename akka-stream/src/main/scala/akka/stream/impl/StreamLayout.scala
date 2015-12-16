@@ -24,7 +24,7 @@ import akka.stream.impl.fusing.GraphModule
 /**
  * INTERNAL API
  */
-private[akka] object StreamLayout {
+object StreamLayout {
 
   // compile-time constant
   final val Debug = false
@@ -122,7 +122,7 @@ private[akka] object StreamLayout {
     override def toString: String = s"Combine($dep1,$dep2)"
   }
   case class Atomic(module: Module) extends MaterializedValueNode {
-    override def toString: String = s"Atomic(${module.attributes.nameOrDefault(module.getClass.getName)})"
+    override def toString: String = s"Atomic(${module.attributes.nameOrDefault(module.getClass.getName)}[${module.hashCode}])"
   }
   case class Transform(f: Any ⇒ Any, dep: MaterializedValueNode) extends MaterializedValueNode {
     override def toString: String = s"Transform($dep)"
@@ -148,6 +148,7 @@ private[akka] object StreamLayout {
     final def isBidiFlow: Boolean = (inPorts.size == 2) && (outPorts.size == 2)
     def isAtomic: Boolean = subModules.isEmpty
     def isCopied: Boolean = false
+    def isFused: Boolean = false
 
     /**
      * Fuses this Module to `that` Module by wiring together `from` and `to`,
@@ -192,7 +193,7 @@ private[akka] object StreamLayout {
         else s"The input port [$to] is not part of the underlying graph.")
 
       CompositeModule(
-        subModules,
+        if (isSealed) Set(this) else subModules,
         AmorphousShape(shape.inlets.filterNot(_ == to), shape.outlets.filterNot(_ == from)),
         downstreams.updated(from, to),
         upstreams.updated(to, from),
@@ -314,7 +315,7 @@ private[akka] object StreamLayout {
     }
 
     def subModules: Set[Module]
-    final def isSealed: Boolean = isAtomic || isCopied
+    final def isSealed: Boolean = isAtomic || isCopied || isFused
 
     def downstreams: Map[OutPort, InPort] = Map.empty
     def upstreams: Map[InPort, OutPort] = Map.empty
@@ -410,6 +411,8 @@ private[akka] object StreamLayout {
     override val materializedValueComputation: MaterializedValueNode,
     override val attributes: Attributes,
     info: Fusing.StructuralInfo) extends Module {
+
+    override def isFused: Boolean = true
 
     override def replaceShape(s: Shape): Module = {
       shape.requireSamePortsAs(s)
