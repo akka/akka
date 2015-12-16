@@ -485,7 +485,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Signals failure through the given port.
    */
-  final protected def fail[T](out: Outlet[T], ex: Throwable): Unit = interpreter.fail(conn(out), ex)
+  final protected def fail[T](out: Outlet[T], ex: Throwable): Unit = interpreter.fail(conn(out), ex, isInternal = false)
 
   /**
    * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
@@ -509,13 +509,21 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Automatically invokes [[cancel()]] or [[fail()]] on all the input or output ports that have been called,
    * then stops the stage, then [[postStop()]] is called.
    */
-  final def failStage(ex: Throwable): Unit = {
+  final def failStage(ex: Throwable): Unit = failStage(ex, isInternal = false)
+
+  /**
+   * INTERNAL API
+   *
+   * Used to signal errors caught by the interpreter itself. This method logs failures if the stage has been
+   * already closed if ``isInternal`` is set to true.
+   */
+  private[stream] final def failStage(ex: Throwable, isInternal: Boolean): Unit = {
     var i = 0
     while (i < portToConn.length) {
       if (i < inCount)
         interpreter.cancel(portToConn(i))
       else
-        interpreter.fail(portToConn(i), ex)
+        interpreter.fail(portToConn(i), ex, isInternal)
       i += 1
     }
     if (keepGoingAfterAllPortsClosed) interpreter.closeKeptAliveStageIfNeeded(stageId)

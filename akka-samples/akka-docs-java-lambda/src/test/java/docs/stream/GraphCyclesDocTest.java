@@ -49,7 +49,7 @@ public class GraphCyclesDocTest {
     RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final UniformFanInShape<Integer, Integer> merge = b.add(Merge.create(2));
       final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
-      final Outlet<Integer> src = b.add(source).outlet();
+      final Outlet<Integer> src = b.add(source).out();
       final FlowShape<Integer, Integer> printer = b.add(printFlow);
       final SinkShape<Integer> ignore = b.add(Sink.ignore());
       
@@ -72,7 +72,7 @@ public class GraphCyclesDocTest {
     RunnableGraph.fromGraph(GraphDSL.create(b -> {
       final MergePreferredShape<Integer> merge = b.add(MergePreferred.create(1));
       final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
-      final Outlet<Integer> src = b.add(source).outlet();
+      final Outlet<Integer> src = b.add(source).out();
       final FlowShape<Integer, Integer> printer = b.add(printFlow);
       final SinkShape<Integer> ignore = b.add(Sink.ignore());
       
@@ -96,7 +96,7 @@ public class GraphCyclesDocTest {
       final UniformFanOutShape<Integer, Integer> bcast = b.add(Broadcast.create(2));
       final FlowShape<Integer, Integer> droppyFlow = b.add(
         Flow.of(Integer.class).buffer(10, OverflowStrategy.dropHead()));
-      final Outlet<Integer> src = b.add(source).outlet();
+      final Outlet<Integer> src = b.add(source).out();
       final FlowShape<Integer, Integer> printer = b.add(printFlow);
       final SinkShape<Integer> ignore = b.add(Sink.ignore());
       

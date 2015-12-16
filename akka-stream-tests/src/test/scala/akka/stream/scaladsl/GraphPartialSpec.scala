@@ -29,9 +29,9 @@ class GraphPartialSpec extends AkkaSpec {
 
       val (_, _, result) = RunnableGraph.fromGraph(GraphDSL.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
-          Source(List(1, 2, 3)) ~> d1.inlet
-          d1.outlet ~> d2.inlet
-          d2.outlet.grouped(100) ~> sink.inlet
+          Source(List(1, 2, 3)) ~> d1.in
+          d1.out ~> d2.in
+          d2.out.grouped(100) ~> sink.in
           ClosedShape
       }).run()
 
@@ -46,15 +46,15 @@ class GraphPartialSpec extends AkkaSpec {
 
           bcast.out(0) ~> zip.in0
           bcast.out(1) ~> zip.in1
-          bcast.out(2).grouped(100) ~> sink.inlet
+          bcast.out(2).grouped(100) ~> sink.in
           FlowShape(bcast.in, zip.out)
       }
 
       val (sub1, sub2, result) = RunnableGraph.fromGraph(GraphDSL.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
-          Source(List(1, 2, 3)) ~> d1.inlet
-          d1.outlet ~> d2.inlet
-          d2.outlet.grouped(100) ~> sink.inlet
+          Source(List(1, 2, 3)) ~> d1.in
+          d1.out ~> d2.in
+          d2.out.grouped(100) ~> sink.in
           ClosedShape
       }).run()
 
@@ -74,19 +74,19 @@ class GraphPartialSpec extends AkkaSpec {
 
           bcast.out(0) ~> zip.in0
           bcast.out(1) ~> zip.in1
-          bcast.out(2) ~> s1.inlet
+          bcast.out(2) ~> s1.in
 
           zip.out ~> bcast2.in
-          bcast2.out(0) ~> s2.inlet
+          bcast2.out(0) ~> s2.in
 
           FlowShape(bcast.in, bcast2.out(1))
       }
 
       val (sub1, sub2, result) = RunnableGraph.fromGraph(GraphDSL.create(doubler, doubler, Sink.head[Seq[Int]])(Tuple3.apply) { implicit b ⇒
         (d1, d2, sink) ⇒
-          Source(List(1, 2, 3)) ~> d1.inlet
-          d1.outlet ~> d2.inlet
-          d2.outlet.grouped(100) ~> sink.inlet
+          Source(List(1, 2, 3)) ~> d1.in
+          d1.out ~> d2.in
+          d2.out.grouped(100) ~> sink.in
           ClosedShape
       }).run()
 
@@ -100,14 +100,14 @@ class GraphPartialSpec extends AkkaSpec {
     "be able to expose the ports of imported graphs" in {
       val p = GraphDSL.create(Flow[Int].map(_ + 1)) { implicit b ⇒
         flow ⇒
-          FlowShape(flow.inlet, flow.outlet)
+          FlowShape(flow.in, flow.out)
       }
 
       val fut = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Int], p)(Keep.left) { implicit b ⇒
         (sink, flow) ⇒
           import GraphDSL.Implicits._
-          Source.single(0) ~> flow.inlet
-          flow.outlet ~> sink.inlet
+          Source.single(0) ~> flow.in
+          flow.out ~> sink.in
           ClosedShape
       }).run()
 

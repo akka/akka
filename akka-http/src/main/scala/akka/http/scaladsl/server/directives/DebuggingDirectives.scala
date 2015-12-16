@@ -50,25 +50,25 @@ object DebuggingDirectives extends DebuggingDirectives
 case class LoggingMagnet[T](f: LoggingAdapter ⇒ T) // # logging-magnet
 
 object LoggingMagnet {
-  implicit def forMessageFromMarker[T](marker: String) = // # message-magnets
+  implicit def forMessageFromMarker[T](marker: String): LoggingMagnet[T ⇒ Unit] = // # message-magnets
     forMessageFromMarkerAndLevel[T](marker -> DebugLevel)
 
-  implicit def forMessageFromMarkerAndLevel[T](markerAndLevel: (String, LogLevel)) = // # message-magnets
+  implicit def forMessageFromMarkerAndLevel[T](markerAndLevel: (String, LogLevel)): LoggingMagnet[T ⇒ Unit] = // # message-magnets
     forMessageFromFullShow[T] {
       val (marker, level) = markerAndLevel
       Message ⇒ LogEntry(Message, marker, level)
     }
 
-  implicit def forMessageFromShow[T](show: T ⇒ String) = // # message-magnets
+  implicit def forMessageFromShow[T](show: T ⇒ String): LoggingMagnet[T ⇒ Unit] = // # message-magnets
     forMessageFromFullShow[T](msg ⇒ LogEntry(show(msg), DebugLevel))
 
   implicit def forMessageFromFullShow[T](show: T ⇒ LogEntry): LoggingMagnet[T ⇒ Unit] = // # message-magnets
     LoggingMagnet(log ⇒ show(_).logTo(log))
 
-  implicit def forRequestResponseFromMarker(marker: String) = // # request-response-magnets
+  implicit def forRequestResponseFromMarker(marker: String): LoggingMagnet[HttpRequest ⇒ RouteResult ⇒ Unit] = // # request-response-magnets
     forRequestResponseFromMarkerAndLevel(marker -> DebugLevel)
 
-  implicit def forRequestResponseFromMarkerAndLevel(markerAndLevel: (String, LogLevel)) = // # request-response-magnets
+  implicit def forRequestResponseFromMarkerAndLevel(markerAndLevel: (String, LogLevel)): LoggingMagnet[HttpRequest ⇒ RouteResult ⇒ Unit] = // # request-response-magnets
     forRequestResponseFromFullShow {
       val (marker, level) = markerAndLevel
       request ⇒ response ⇒ Some(

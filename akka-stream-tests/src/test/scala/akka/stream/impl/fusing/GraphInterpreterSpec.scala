@@ -72,8 +72,8 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       val sink = new DownstreamProbe[Int]("sink")
 
       builder(detach)
-        .connect(source, detach.shape.inlet)
-        .connect(detach.shape.outlet, sink)
+        .connect(source, detach.shape.in)
+        .connect(detach.shape.out, sink)
         .init()
 
       lastEvents() should ===(Set.empty)
@@ -313,8 +313,8 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
         .connect(source, merge.in(0))
         .connect(merge.out, balance.in)
         .connect(balance.out(0), sink)
-        .connect(balance.out(1), detach.shape.inlet)
-        .connect(detach.shape.outlet, merge.in(1))
+        .connect(balance.out(1), detach.shape.in)
+        .connect(detach.shape.out, merge.in(1))
         .init()
 
       lastEvents() should ===(Set.empty)
@@ -351,8 +351,8 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
         Attributes.none)
 
       builder(buffer)
-        .connect(source, buffer.shape.inlet)
-        .connect(buffer.shape.outlet, sink)
+        .connect(source, buffer.shape.in)
+        .connect(buffer.shape.out, sink)
         .init()
 
       stepAll()

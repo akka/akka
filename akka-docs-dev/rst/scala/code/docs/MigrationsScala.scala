@@ -181,7 +181,7 @@ class MigrationsScala extends AkkaSpec {
               // absorbTermination turns into the code below.
               // This emulates the behavior of the AsyncStage stage.
               private def absorbTermination(): Unit =
-                if (isAvailable(shape.outlet)) getHandler(out).onPull()
+                if (isAvailable(shape.out)) getHandler(out).onPull()
 
               // The line below emulates the behavior of the AsyncStage holdingDownstream
               private def holdingDownstream(): Boolean =

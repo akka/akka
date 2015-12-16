@@ -80,8 +80,8 @@ class FlowGraphDocSpec extends AkkaSpec {
       val broadcast = builder.add(Broadcast[Int](2))
       Source.single(1) ~> broadcast.in
 
-      broadcast.out(0) ~> sharedDoubler ~> topHS.inlet
-      broadcast.out(1) ~> sharedDoubler ~> bottomHS.inlet
+      broadcast.out(0) ~> sharedDoubler ~> topHS.in
+      broadcast.out(1) ~> sharedDoubler ~> bottomHS.in
       ClosedShape
     })
     //#flow-graph-reusing-a-flow
@@ -207,7 +207,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) {
       implicit builder ⇒
         fold ⇒
-          FlowShape(fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
+          FlowShape(fold.in, builder.materializedValue.mapAsync(4)(identity).outlet)
     })
     //#flow-graph-matvalue
 

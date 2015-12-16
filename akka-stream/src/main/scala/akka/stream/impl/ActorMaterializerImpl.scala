@@ -98,11 +98,11 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
         atomic match {
           case sink: SinkModule[_, _] ⇒
             val (sub, mat) = sink.create(newMaterializationContext())
-            assignPort(sink.shape.inlet, sub.asInstanceOf[Subscriber[Any]])
+            assignPort(sink.shape.in, sub.asInstanceOf[Subscriber[Any]])
             matVal.put(atomic, mat)
           case source: SourceModule[_, _] ⇒
             val (pub, mat) = source.create(newMaterializationContext())
-            assignPort(source.shape.outlet, pub.asInstanceOf[Publisher[Any]])
+            assignPort(source.shape.out, pub.asInstanceOf[Publisher[Any]])
             matVal.put(atomic, mat)
 
           // FIXME: Remove this, only stream-of-stream ops need it
@@ -277,7 +277,6 @@ private[akka] object ActorProcessorFactory {
     val settings = materializer.effectiveSettings(att)
     op match {
       case GroupBy(maxSubstreams, f, _) ⇒ (GroupByProcessorImpl.props(settings, maxSubstreams, f), ())
-      case PrefixAndTail(n, _)          ⇒ (PrefixAndTailImpl.props(settings, n), ())
       case Split(d, _)                  ⇒ (SplitWhereProcessorImpl.props(settings, d), ())
       case DirectProcessor(p, m)        ⇒ throw new AssertionError("DirectProcessor cannot end up in ActorProcessorFactory")
     }

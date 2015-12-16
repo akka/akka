@@ -558,7 +558,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       new InvalidAbsorbTermination)) {
       lastEvents() should be(Set.empty)
 
-      EventFilter.error("It is not allowed to call absorbTermination() from onDownstreamFinish.").intercept {
+      EventFilter[UnsupportedOperationException]("It is not allowed to call absorbTermination() from onDownstreamFinish.", occurrences = 1).intercept {
         downstream.cancel()
         lastEvents() should be(Set(Cancel))
       }

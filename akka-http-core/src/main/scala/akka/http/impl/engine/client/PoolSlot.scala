@@ -71,7 +71,7 @@ private object PoolSlot {
 
       slotProcessor ~> split.in
 
-      new FanOutShape2(slotProcessor.inlet,
+      new FanOutShape2(slotProcessor.in,
         split.out(0).collect { case ResponseDelivery(r) ⇒ r }.outlet,
         split.out(1).collect { case r: RawSlotEvent ⇒ r }.outlet)
     }

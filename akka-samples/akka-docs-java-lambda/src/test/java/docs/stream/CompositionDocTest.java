@@ -105,14 +105,14 @@ public class CompositionDocTest {
     //#complex-graph
     RunnableGraph.fromGraph(
       GraphDSL.create(builder -> {
-      final Outlet<Integer> A = builder.add(Source.single(0)).outlet();
+      final Outlet<Integer> A = builder.add(Source.single(0)).out();
       final UniformFanOutShape<Integer, Integer> B = builder.add(Broadcast.create(2));
       final UniformFanInShape<Integer, Integer> C = builder.add(Merge.create(2));
       final FlowShape<Integer, Integer> D =
         builder.add(Flow.of(Integer.class).map(i -> i + 1));
       final UniformFanOutShape<Integer, Integer> E = builder.add(Balance.create(2));
       final UniformFanInShape<Integer, Integer> F = builder.add(Merge.create(2));
-      final Inlet<Integer> G = builder.add(Sink.<Integer> foreach(System.out::println)).inlet();
+      final Inlet<Integer> G = builder.add(Sink.<Integer> foreach(System.out::println)).in();
 
       builder.from(F).toFanIn(C);
       builder.from(A).viaFanOut(B).viaFanIn(C).toFanIn(F);
