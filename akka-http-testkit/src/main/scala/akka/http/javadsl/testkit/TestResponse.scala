@@ -27,7 +27,7 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
   /**
    * Returns the strictified entity of the response. It will be strictified on first access.
    */
-  lazy val entity: HttpEntityStrict = _response.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost)
+  lazy val entity: HttpEntity.Strict = _response.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost)
 
   /**
    * Returns a copy of the underlying response with the strictified entity.
@@ -47,7 +47,7 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
   /**
    * Returns the bytes of the response entity
    */
-  def entityBytes: ByteString = entity.data()
+  def entityBytes: ByteString = entity.getData
 
   /**
    * Returns the entity of the response unmarshalled with the given ``Unmarshaller``.
@@ -60,7 +60,7 @@ abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration
   /**
    * Returns the entity of the response interpreted as an UTF-8 encoded string.
    */
-  def entityAsString: String = entity.data().utf8String
+  def entityAsString: String = entity.getData.utf8String
 
   /**
    * Returns the [[StatusCode]] of the response.

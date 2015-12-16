@@ -156,7 +156,7 @@ public class HttpServerExampleDocTest {
                     .via(failureDetection)
                     .map(request -> {
                       Source<ByteString, Object> bytes = request.entity().getDataBytes();
-                      HttpEntityChunked entity = HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, bytes);
+                      HttpEntity.Chunked entity = HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, bytes);
 
                       return HttpResponse.create()
                         .withEntity(entity);

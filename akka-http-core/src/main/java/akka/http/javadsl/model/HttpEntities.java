@@ -16,27 +16,27 @@ import akka.stream.javadsl.Source;
 public final class HttpEntities {
     private HttpEntities() {}
 
-    public static HttpEntityStrict create(String string) {
+    public static HttpEntity.Strict create(String string) {
         return HttpEntity$.MODULE$.apply(string);
     }
 
-    public static HttpEntityStrict create(byte[] bytes) {
+    public static HttpEntity.Strict create(byte[] bytes) {
         return HttpEntity$.MODULE$.apply(bytes);
     }
 
-    public static HttpEntityStrict create(ByteString bytes) {
+    public static HttpEntity.Strict create(ByteString bytes) {
         return HttpEntity$.MODULE$.apply(bytes);
     }
 
-    public static HttpEntityStrict create(ContentType.NonBinary contentType, String string) {
+    public static HttpEntity.Strict create(ContentType.NonBinary contentType, String string) {
         return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType.NonBinary) contentType, string);
     }
 
-    public static HttpEntityStrict create(ContentType contentType, byte[] bytes) {
+    public static HttpEntity.Strict create(ContentType contentType, byte[] bytes) {
         return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType) contentType, bytes);
     }
 
-    public static HttpEntityStrict create(ContentType contentType, ByteString bytes) {
+    public static HttpEntity.Strict create(ContentType contentType, ByteString bytes) {
         return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType) contentType, bytes);
     }
 
@@ -48,23 +48,23 @@ public final class HttpEntities {
         return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType) contentType, file, chunkSize);
     }
 
-    public static HttpEntityDefault create(ContentType contentType, long contentLength, Source<ByteString, Object> data) {
+    public static HttpEntity.Default create(ContentType contentType, long contentLength, Source<ByteString, Object> data) {
         return new akka.http.scaladsl.model.HttpEntity.Default((akka.http.scaladsl.model.ContentType) contentType, contentLength, data.asScala());
     }
 
-    public static HttpEntityChunked create(ContentType contentType, Source<ByteString, Object> data) {
+    public static HttpEntity.Chunked create(ContentType contentType, Source<ByteString, Object> data) {
         return HttpEntity.Chunked$.MODULE$.fromData((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
     }
 
-    public static HttpEntityCloseDelimited createCloseDelimited(ContentType contentType, Source<ByteString, Object> data) {
+    public static HttpEntity.CloseDelimited createCloseDelimited(ContentType contentType, Source<ByteString, Object> data) {
         return new akka.http.scaladsl.model.HttpEntity.CloseDelimited((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
     }
 
-    public static HttpEntityIndefiniteLength createIndefiniteLength(ContentType contentType, Source<ByteString, Object> data) {
+    public static HttpEntity.IndefiniteLength createIndefiniteLength(ContentType contentType, Source<ByteString, Object> data) {
         return new akka.http.scaladsl.model.HttpEntity.IndefiniteLength((akka.http.scaladsl.model.ContentType) contentType, data.asScala());
     }
 
-    public static HttpEntityChunked createChunked(ContentType contentType, Source<ByteString, Object> data) {
+    public static HttpEntity.Chunked createChunked(ContentType contentType, Source<ByteString, Object> data) {
         return akka.http.scaladsl.model.HttpEntity.Chunked$.MODULE$.fromData(
                 (akka.http.scaladsl.model.ContentType) contentType,
                 data.asScala());
