@@ -68,14 +68,14 @@ object StrictForm {
       def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer): Future[T]
     }
     object FieldUnmarshaller extends LowPrioImplicits {
-      implicit def fromBoth[T](implicit fsu: FromStringUnmarshaller[T], feu: FromEntityUnmarshaller[T]) =
+      implicit def fromBoth[T](implicit fsu: FromStringUnmarshaller[T], feu: FromEntityUnmarshaller[T]): FieldUnmarshaller[T] =
         new FieldUnmarshaller[T] {
           def unmarshalString(value: String)(implicit ec: ExecutionContext, mat: Materializer) = fsu(value)
           def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer) = feu(value.entity)
         }
     }
     sealed abstract class LowPrioImplicits {
-      implicit def fromFSU[T](implicit fsu: FromStringUnmarshaller[T]) =
+      implicit def fromFSU[T](implicit fsu: FromStringUnmarshaller[T]): FieldUnmarshaller[T] =
         new FieldUnmarshaller[T] {
           def unmarshalString(value: String)(implicit ec: ExecutionContext, mat: Materializer) = fsu(value)
           def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer) = {
@@ -83,7 +83,7 @@ object StrictForm {
             fsu(value.entity.data.decodeString(charsetName))
           }
         }
-      implicit def fromFEU[T](implicit feu: FromEntityUnmarshaller[T]) =
+      implicit def fromFEU[T](implicit feu: FromEntityUnmarshaller[T]): FieldUnmarshaller[T] =
         new FieldUnmarshaller[T] {
           def unmarshalString(value: String)(implicit ec: ExecutionContext, mat: Materializer) = feu(HttpEntity(value))
           def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer) = feu(value.entity)
