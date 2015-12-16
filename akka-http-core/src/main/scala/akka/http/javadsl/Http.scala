@@ -110,7 +110,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec)))
 
   /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -124,7 +124,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .map(new ServerBinding(_))(ec)
 
   /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -141,7 +141,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .map(new ServerBinding(_))(ec)
 
   /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -154,7 +154,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .map(new ServerBinding(_))(ec)
 
   /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -171,7 +171,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .map(new ServerBinding(_))(ec)
 
   /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -184,7 +184,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .map(new ServerBinding(_))(ec)
 
   /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -298,7 +298,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def newHostConnectionPool[T](host: String, port: Int, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.newHostConnectionPool[T](host, port)(materializer))
@@ -321,7 +321,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def newHostConnectionPool[T](host: String, port: Int,
                                settings: ConnectionPoolSettings,
@@ -353,7 +353,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def newHostConnectionPool[T](setup: HostConnectionPoolSetup, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.newHostConnectionPool[T](setup)(materializer))
@@ -373,7 +373,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def cachedHostConnectionPool[T](host: String, port: Int, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.cachedHostConnectionPool[T](host, port)(materializer))
@@ -399,7 +399,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def cachedHostConnectionPool[T](host: String, port: Int,
                                   settings: ConnectionPoolSettings,
@@ -434,7 +434,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.cachedHostConnectionPool[T](setup)(materializer))
@@ -449,7 +449,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def superPool[T](materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Unit] =
     adaptTupleFlow(delegate.superPool[T]()(materializer))
@@ -467,7 +467,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def superPool[T](settings: ConnectionPoolSettings,
                    httpsContext: Option[HttpsContext],

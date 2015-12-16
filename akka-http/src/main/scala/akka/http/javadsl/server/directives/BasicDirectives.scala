@@ -66,7 +66,7 @@ abstract class BasicDirectives extends BasicDirectivesBase {
   /**
    * Completes the request with redirection response of the given type to the given URI.
    *
-   * The ``redirectionType`` must be a StatusCode for which ``isRedirection`` returns true.
+   * The `redirectionType` must be a StatusCode for which `isRedirection` returns true.
    */
   def redirect(uri: Uri, redirectionType: StatusCode): Route = Redirect(uri, redirectionType)
 
