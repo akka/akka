@@ -53,7 +53,7 @@ trait OnSuccessMagnet {
 }
 
 object OnSuccessMagnet {
-  implicit def apply[T](future: ⇒ Future[T])(implicit tupler: Tupler[T]) =
+  implicit def apply[T](future: ⇒ Future[T])(implicit tupler: Tupler[T]): OnSuccessMagnet { type Out = tupler.Out } =
     new OnSuccessMagnet {
       type Out = tupler.Out
       val directive = Directive[tupler.Out] { inner ⇒ ctx ⇒
@@ -68,7 +68,7 @@ trait CompleteOrRecoverWithMagnet {
 }
 
 object CompleteOrRecoverWithMagnet {
-  implicit def apply[T](future: ⇒ Future[T])(implicit m: ToResponseMarshaller[T]) =
+  implicit def apply[T](future: ⇒ Future[T])(implicit m: ToResponseMarshaller[T]): CompleteOrRecoverWithMagnet =
     new CompleteOrRecoverWithMagnet {
       val directive = Directive[Tuple1[Throwable]] { inner ⇒ ctx ⇒
         import ctx.executionContext

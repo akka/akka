@@ -27,6 +27,6 @@ object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.rou
     c getIntBytes "decode-max-bytes-per-chunk",
     c getString "file-io-dispatcher")
 
-  implicit def default(implicit refFactory: ActorRefFactory) =
+  implicit def default(implicit refFactory: ActorRefFactory): RoutingSettings =
     apply(actorSystem)
 }

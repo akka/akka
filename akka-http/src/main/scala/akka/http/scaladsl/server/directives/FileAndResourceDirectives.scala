@@ -255,7 +255,7 @@ object ContentTypeResolver {
    * The default way of resolving a filename to a ContentType is by looking up the file extension in the
    * registry of all defined media-types. By default all non-binary file content is assumed to be UTF-8 encoded.
    */
-  implicit val Default = withDefaultCharset(HttpCharsets.`UTF-8`)
+  implicit val Default: ContentTypeResolver = withDefaultCharset(HttpCharsets.`UTF-8`)
 
   def withDefaultCharset(charset: HttpCharset): ContentTypeResolver =
     new ContentTypeResolver {
