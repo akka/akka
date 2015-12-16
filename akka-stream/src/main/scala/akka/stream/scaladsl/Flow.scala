@@ -910,7 +910,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels or substream cancels
    */
   def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, Unit])] =
-    deprecatedAndThen(PrefixAndTail(n))
+    via(new PrefixAndTail[Out](n))
 
   /**
    * This operation demultiplexes the incoming stream into separate output

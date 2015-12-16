@@ -214,6 +214,7 @@ private[stream] object ActorGraphInterpreter {
     private var downstreamCompleted = false
     // when upstream failed before we got the exposed publisher
     private var upstreamFailed: Option[Throwable] = None
+    private var upstreamCompleted: Boolean = false
 
     private def onNext(elem: Any): Unit = {
       downstreamDemand -= 1
@@ -221,21 +222,21 @@ private[stream] object ActorGraphInterpreter {
     }
 
     private def complete(): Unit = {
-      if (!downstreamCompleted) {
-        downstreamCompleted = true
+      // No need to complete if had already been cancelled, or we closed earlier
+      if (!(upstreamCompleted || downstreamCompleted)) {
+        upstreamCompleted = true
         if (exposedPublisher ne null) exposedPublisher.shutdown(None)
         if (subscriber ne null) tryOnComplete(subscriber)
       }
     }
 
     def fail(e: Throwable): Unit = {
-      if (!downstreamCompleted) {
-        downstreamCompleted = true
+      // No need to fail if had already been cancelled, or we closed earlier
+      if (!(downstreamCompleted || upstreamCompleted)) {
+        upstreamCompleted = true
+        upstreamFailed = Some(e)
         if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
         if ((subscriber ne null) && !e.isInstanceOf[SpecViolation]) tryOnError(subscriber, e)
-      } else if (exposedPublisher == null && upstreamFailed.isEmpty) {
-        // fail called before the exposed publisher arrived, we must store it and fail when we're first able to
-        upstreamFailed = Some(e)
       }
     }
 
@@ -258,6 +259,7 @@ private[stream] object ActorGraphInterpreter {
         if (subscriber eq null) {
           subscriber = sub
           tryOnSubscribe(subscriber, new BoundarySubscription(actor, id))
+          if (GraphInterpreter.Debug) println(s"${interpreter.Name}  subscribe subscriber=$sub")
         } else
           rejectAdditionalSubscriber(subscriber, s"${Logging.simpleName(this)}")
       }
@@ -267,7 +269,8 @@ private[stream] object ActorGraphInterpreter {
         case _: Some[_] ⇒
           publisher.shutdown(upstreamFailed)
         case _ ⇒
-          exposedPublisher = publisher
+          if (upstreamCompleted) publisher.shutdown(None)
+          else exposedPublisher = publisher
       }
     }
 
@@ -322,6 +325,7 @@ private[stream] class ActorGraphInterpreter(
   private val outputs = Array.tabulate(shape.outlets.size)(new ActorOutputBoundary(self, _))
 
   private var subscribesPending = inputs.length
+  private var publishersPending = outputs.length
 
   /*
    * Limits the number of events processed by the interpreter before scheduling
@@ -398,20 +402,27 @@ private[stream] class ActorGraphInterpreter(
     case SubscribePending(id: Int) ⇒
       outputs(id).subscribePending()
     case ExposedPublisher(id, publisher) ⇒
+      publishersPending -= 1
       outputs(id).exposedPublisher(publisher)
 
   }
 
   private def waitShutdown: Receive = {
+    case ExposedPublisher(id, publisher) ⇒
+      outputs(id).exposedPublisher(publisher)
+      publishersPending -= 1
+      if (canShutDown) context.stop(self)
     case OnSubscribe(_, sub) ⇒
       tryCancel(sub)
       subscribesPending -= 1
-      if (subscribesPending == 0) context.stop(self)
+      if (canShutDown) context.stop(self)
     case ReceiveTimeout ⇒
       tryAbort(new TimeoutException("Streaming actor has been already stopped processing (normally), but not all of its " +
-        s"inputs have been subscribed in [${settings.subscriptionTimeoutSettings.timeout}}]. Aborting actor now."))
+        s"inputs or outputs have been subscribed in [${settings.subscriptionTimeoutSettings.timeout}}]. Aborting actor now."))
     case _ ⇒ // Ignore, there is nothing to do anyway
   }
+
+  private def canShutDown: Boolean = subscribesPending + publishersPending == 0
 
   private def runBatch(): Unit = {
     try {
@@ -425,7 +436,7 @@ private[stream] class ActorGraphInterpreter(
       interpreter.execute(effectiveLimit)
       if (interpreter.isCompleted) {
         // Cannot stop right away if not completely subscribed
-        if (subscribesPending == 0) context.stop(self)
+        if (canShutDown) context.stop(self)
         else {
           context.become(waitShutdown)
           context.setReceiveTimeout(settings.subscriptionTimeoutSettings.timeout)
