@@ -26,8 +26,9 @@ import akka.testkit.EventFilter
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.concurrent.ScalaFutures
 
-class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR
@@ -37,6 +38,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
+  implicit val patience = PatienceConfig(3.seconds)
 
   val testConf2: Config =
     ConfigFactory.parseString("akka.stream.materializer.subscription-timeout.timeout = 1 s")
@@ -84,6 +86,17 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         // clean up
         Await.result(b2.unbind(), 1.second)
       }
+    }
+
+    "properly terminate client when server is not running" in Utils.assertAllStagesStopped {
+      for (i ← 1 to 100)
+        withClue(s"iterator $i: ") {
+          Source.single(HttpRequest(HttpMethods.POST, "/test", List.empty, HttpEntity(MediaTypes.`text/plain`.withCharset(HttpCharsets.`UTF-8`), "buh")))
+            .via(Http(actorSystem).outgoingConnection("localhost", 7777))
+            .runWith(Sink.head)
+            .failed
+            .futureValue shouldBe a[StreamTcpException]
+        }
     }
 
     "run with bindAndHandleSync" in {
