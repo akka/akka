@@ -350,7 +350,7 @@ private[http] object HttpServerBluePrint {
   /**
    * Ensures that the user handler
    *  - produces exactly one response per request
-   *  - has not more than ``pipeliningLimit`` responses outstanding
+   *  - has not more than `pipeliningLimit` responses outstanding
    */
   def userHandlerGuard(pipeliningLimit: Int): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Unit] =
     One2OneBidiFlow[HttpRequest, HttpResponse](pipeliningLimit).reversed

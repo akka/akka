@@ -112,7 +112,7 @@ object PathMatchers {
 
   /**
    * A PathMatcher that matches the given number of path segments (separated by slashes) as a List[String].
-   * If there are more than ``count`` segments present the remaining ones will be left unmatched.
+   * If there are more than `count` segments present the remaining ones will be left unmatched.
    * If the path has a trailing slash this slash will *not* be matched.
    */
   def segments(maxNumber: Int): PathMatcher[ju.List[String]] = matcher(_.Segments(maxNumber).map(_.asJava))

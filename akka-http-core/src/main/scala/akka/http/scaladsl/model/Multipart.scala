@@ -45,7 +45,7 @@ sealed trait Multipart extends jm.Multipart {
 
   /**
    * Converts this content into its strict counterpart.
-   * The given ``timeout`` denotes the max time that an individual part must be read in.
+   * The given `timeout` denotes the max time that an individual part must be read in.
    * The Future is failed with an TimeoutException if one part isn't read completely after the given timeout.
    */
   def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[Multipart.Strict]

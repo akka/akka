@@ -29,8 +29,8 @@ sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
   final def render[R <: Rendering](r: R): r.type = r ~~ nameBytes ~~ ':' ~~ ' '
 
   /**
-   * Parses the given value into a header of this type. Returns ``Right[T]`` if parsing
-   * was successful and ``Left(errors)`` otherwise.
+   * Parses the given value into a header of this type. Returns `Right[T]` if parsing
+   * was successful and `Left(errors)` otherwise.
    */
   def parseFromValueString(value: String): Either[List[ErrorInfo], T] =
     HttpHeader.parse(name, value) match {

@@ -16,7 +16,7 @@ import akka.util.ByteString
  */
 object Marshallers {
   /**
-   * A marshaller that marshals a String to a ``text/plain`` using a charset as negotiated with the
+   * A marshaller that marshals a String to a `text/plain` using a charset as negotiated with the
    * peer.
    */
   def String: Marshaller[String] = MarshallerImpl(implicit ctx ⇒ implicitly[ToResponseMarshaller[String]])
@@ -25,33 +25,33 @@ object Marshallers {
   import akka.http.impl.server.Util._
 
   /**
-   * Creates a marshaller by specifying a media type and conversion function from ``T`` to String.
+   * Creates a marshaller by specifying a media type and conversion function from `T` to String.
    * The charset for encoding the response will be negotiated with the client.
    */
   def toEntityString[T](mediaType: MediaType.WithOpenCharset, convert: function.Function[T, String]): Marshaller[T] =
     MarshallerImpl(_ ⇒ ScalaMarshaller.stringMarshaller(mediaType.asScala).compose[T](convert(_)))
 
   /**
-   * Creates a marshaller by specifying a media type and conversion function from ``T`` to String.
+   * Creates a marshaller by specifying a media type and conversion function from `T` to String.
    * The charset for encoding the response will be negotiated with the client.
    */
   def toEntityString[T](mediaType: MediaType.WithFixedCharset, convert: function.Function[T, String]): Marshaller[T] =
     MarshallerImpl(_ ⇒ ScalaMarshaller.stringMarshaller(mediaType.asScala).compose[T](convert(_)))
 
   /**
-   * Creates a marshaller from a ContentType and a conversion function from ``T`` to a ``Array[Byte]``.
+   * Creates a marshaller from a ContentType and a conversion function from `T` to a `Array[Byte]`.
    */
   def toEntityBytes[T](contentType: ContentType, convert: function.Function[T, Array[Byte]]): Marshaller[T] =
     toEntity(contentType, convert.andThen(scaladsl.model.HttpEntity(contentType.asScala, _)))
 
   /**
-   * Creates a marshaller from a ContentType and a conversion function from ``T`` to a ``ByteString``.
+   * Creates a marshaller from a ContentType and a conversion function from `T` to a `ByteString`.
    */
   def toEntityByteString[T](contentType: ContentType, convert: function.Function[T, ByteString]): Marshaller[T] =
     toEntity(contentType, convert.andThen(scaladsl.model.HttpEntity(contentType.asScala, _)))
 
   /**
-   * Creates a marshaller from a ContentType and a conversion function from ``T`` to a ``ResponseEntity``.
+   * Creates a marshaller from a ContentType and a conversion function from `T` to a `ResponseEntity`.
    */
   def toEntity[T](contentType: ContentType, convert: function.Function[T, ResponseEntity]): Marshaller[T] =
     MarshallerImpl { _ ⇒
@@ -60,7 +60,7 @@ object Marshallers {
     }
 
   /**
-   * Creates a marshaller from a ContentType and a conversion function from ``T`` to an ``HttpResponse``.
+   * Creates a marshaller from a ContentType and a conversion function from `T` to an `HttpResponse`.
    */
   def toResponse[T](contentType: ContentType, convert: function.Function[T, HttpResponse]): Marshaller[T] =
     MarshallerImpl { _ ⇒
