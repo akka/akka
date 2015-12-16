@@ -55,7 +55,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * If an [[HttpsContext]] is given it will be used for setting up TLS encryption on the binding.
    * Otherwise the binding will be unencrypted.
    *
-   * If no ``port`` is explicitly given (or the port value is negative) the protocol's default port will be used,
+   * If no `port` is explicitly given (or the port value is negative) the protocol's default port will be used,
    * which is 80 for HTTP and 443 for HTTPS.
    *
    * To configure additional settings for a server started using this method,
@@ -80,7 +80,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   }
 
   /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -121,7 +121,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   }
 
   /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -138,7 +138,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     bindAndHandle(Flow[HttpRequest].map(handler), interface, port, settings, httpsContext, log)
 
   /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given ``handler``
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -258,7 +258,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    *
    * To configure additional settings for the pool (and requests made using it),
    * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
@@ -299,7 +299,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
     implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
@@ -322,7 +322,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    *
    * To configure additional settings for the pool (and requests made using it),
    * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
@@ -368,7 +368,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup)(
     implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
@@ -386,7 +386,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
    * response for A.
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type ``T`` from the application which is emitted together with the corresponding response.
+   * object of type `T` from the application which is emitted together with the corresponding response.
    *
    * To configure additional settings for the pool (and requests made using it),
    * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
