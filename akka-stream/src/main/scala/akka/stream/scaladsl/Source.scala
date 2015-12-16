@@ -456,6 +456,7 @@ object Source {
    */
   def inputStream(in: () ⇒ InputStream, chunkSize: Int = 8192): Source[ByteString, Future[Long]] =
     new Source(new InputStreamSource(in, chunkSize, DefaultAttributes.inputStreamSource, shape("InputStreamSource")))
+      .withAttributes(Attributes.inputBuffer(initial = 1, max = 1))
 
   /**
    * Creates a Source which when materialized will return an [[OutputStream]] which it is possible
