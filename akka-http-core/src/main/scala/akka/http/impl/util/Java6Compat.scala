@@ -15,10 +15,17 @@ import scala.util.control.NonFatal
  * Enables accessing SslParameters even if compiled against Java 6.
  */
 private[http] object Java6Compat {
+
+  def isJava6: Boolean =
+    System.getProperty("java.version").take(4) match {
+      case "1.6." ⇒ true
+      case _      ⇒ false
+    }
+
   /**
    * Returns true if setting the algorithm was successful.
    */
-  def setEndpointIdentificationAlgorithm(parameters: SSLParameters, algorithm: String): Boolean =
+  def trySetEndpointIdentificationAlgorithm(parameters: SSLParameters, algorithm: String): Boolean =
     setEndpointIdentificationAlgorithmFunction(parameters, algorithm)
 
   private[this] val setEndpointIdentificationAlgorithmFunction: (SSLParameters, String) ⇒ Boolean = {

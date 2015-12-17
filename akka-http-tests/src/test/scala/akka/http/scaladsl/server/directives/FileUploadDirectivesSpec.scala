@@ -5,7 +5,6 @@
 package akka.http.scaladsl.server.directives
 
 import java.io.{ FileInputStream, File }
-import java.nio.charset.StandardCharsets
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{ MissingFormFieldRejection, RoutingSpec }
 import akka.util.ByteString
@@ -145,7 +144,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
     try {
       val buffer = new Array[Byte](1024)
       in.read(buffer)
-      new String(buffer, StandardCharsets.UTF_8)
+      new String(buffer, "UTF-8")
     } finally {
       in.close()
     }
