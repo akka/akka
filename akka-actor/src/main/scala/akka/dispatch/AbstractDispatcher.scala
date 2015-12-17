@@ -345,21 +345,27 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
 
   protected def createThreadPoolConfigBuilder(config: Config, prerequisites: DispatcherPrerequisites): ThreadPoolConfigBuilder = {
     import akka.util.Helpers.ConfigOps
-    ThreadPoolConfigBuilder(ThreadPoolConfig())
-      .setKeepAliveTime(config.getMillisDuration("keep-alive-time"))
-      .setAllowCoreThreadTimeout(config getBoolean "allow-core-timeout")
-      .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")
-      .setMaxPoolSizeFromFactor(config getInt "max-pool-size-min", config getDouble "max-pool-size-factor", config getInt "max-pool-size-max")
-      .configure(
-        Some(config getInt "task-queue-size") flatMap {
-          case size if size > 0 ⇒
-            Some(config getString "task-queue-type") map {
-              case "array"       ⇒ ThreadPoolConfig.arrayBlockingQueue(size, false) //TODO config fairness?
-              case "" | "linked" ⇒ ThreadPoolConfig.linkedBlockingQueue(size)
-              case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
-            } map { qf ⇒ (q: ThreadPoolConfigBuilder) ⇒ q.setQueueFactory(qf) }
-          case _ ⇒ None
-        })
+    val builder =
+      ThreadPoolConfigBuilder(ThreadPoolConfig())
+        .setKeepAliveTime(config.getMillisDuration("keep-alive-time"))
+        .setAllowCoreThreadTimeout(config getBoolean "allow-core-timeout")
+        .configure(
+          Some(config getInt "task-queue-size") flatMap {
+            case size if size > 0 ⇒
+              Some(config getString "task-queue-type") map {
+                case "array"       ⇒ ThreadPoolConfig.arrayBlockingQueue(size, false) //TODO config fairness?
+                case "" | "linked" ⇒ ThreadPoolConfig.linkedBlockingQueue(size)
+                case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
+              } map { qf ⇒ (q: ThreadPoolConfigBuilder) ⇒ q.setQueueFactory(qf) }
+            case _ ⇒ None
+          })
+
+    if (config.getString("fixed-pool-size") == "off")
+      builder
+        .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")
+        .setMaxPoolSizeFromFactor(config getInt "max-pool-size-min", config getDouble "max-pool-size-factor", config getInt "max-pool-size-max")
+    else
+      builder.setFixedPoolSize(config.getInt("fixed-pool-size"))
   }
 
   def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
@@ -435,9 +441,10 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
     }
 
     val asyncMode = config.getString("task-peeking-mode") match {
-      case "FIFO"      ⇒ true
-      case "LIFO"      ⇒ false
-      case unsupported ⇒ throw new IllegalArgumentException(s"""Cannot instantiate ForkJoinExecutorServiceFactory. "task-peeking-mode" in "fork-join-executor" section could only set to "FIFO" or "LIFO".""")
+      case "FIFO" ⇒ true
+      case "LIFO" ⇒ false
+      case unsupported ⇒ throw new IllegalArgumentException("Cannot instantiate ForkJoinExecutorServiceFactory. " +
+        """"task-peeking-mode" in "fork-join-executor" section could only set to "FIFO" or "LIFO".""")
     }
 
     new ForkJoinExecutorServiceFactory(
