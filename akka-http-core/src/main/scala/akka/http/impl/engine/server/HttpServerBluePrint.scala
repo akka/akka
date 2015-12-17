@@ -372,9 +372,9 @@ private[http] object HttpServerBluePrint {
       def websocketFlow: Flow[ByteString, ByteString, Any] = flow
 
       def installHandler(handlerFlow: Flow[FrameEvent, FrameEvent, Any])(implicit mat: Materializer): Unit =
-        Source(sinkCell.value)
+        Source.fromPublisher(sinkCell.value)
           .via(handlerFlow)
-          .to(Sink(sourceCell.value))
+          .to(Sink.fromSubscriber(sourceCell.value))
           .run()
     }
   }

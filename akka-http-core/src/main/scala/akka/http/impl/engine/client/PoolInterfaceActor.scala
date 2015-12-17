@@ -73,7 +73,7 @@ private class PoolInterfaceActor(hcps: HostConnectionPoolSetup,
       new InetSocketAddress(host, port), settings, setup.log)
       .named("PoolFlow")
 
-    Source(ActorPublisher(self)).via(poolFlow).runWith(Sink(ActorSubscriber[ResponseContext](self)))
+    Source.fromPublisher(ActorPublisher(self)).via(poolFlow).runWith(Sink.fromSubscriber(ActorSubscriber[ResponseContext](self)))
   }
 
   activateIdleTimeoutIfNecessary()
