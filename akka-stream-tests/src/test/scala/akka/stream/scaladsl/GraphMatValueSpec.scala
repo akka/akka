@@ -28,7 +28,7 @@ class GraphMatValueSpec extends AkkaSpec {
       val f = RunnableGraph.fromGraph(GraphDSL.create(foldSink) { implicit b ⇒
         fold ⇒
           Source(1 to 10) ~> fold
-          b.materializedValue.mapAsync(4)(identity) ~> Sink(sub)
+          b.materializedValue.mapAsync(4)(identity) ~> Sink.fromSubscriber(sub)
           ClosedShape
       }).run()
 
@@ -49,7 +49,7 @@ class GraphMatValueSpec extends AkkaSpec {
           b.materializedValue.mapAsync(4)(identity) ~> zip.in0
           b.materializedValue.mapAsync(4)(identity) ~> zip.in1
 
-          zip.out ~> Sink(sub)
+          zip.out ~> Sink.fromSubscriber(sub)
           ClosedShape
       }).run()
 

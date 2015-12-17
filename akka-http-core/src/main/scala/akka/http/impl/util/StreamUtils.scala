@@ -159,14 +159,14 @@ private[http] object StreamUtils {
       case Nil      ⇒ Nil
       case Seq(one) ⇒ Vector(input.via(one))
       case multiple ⇒
-        val (fanoutSub, fanoutPub) = Source.subscriber[ByteString].toMat(Sink.publisher(true))(Keep.both).run()
+        val (fanoutSub, fanoutPub) = Source.asSubscriber[ByteString].toMat(Sink.asPublisher(true))(Keep.both).run()
         val sources = transformers.map { flow ⇒
           // Doubly wrap to ensure that subscription to the running publisher happens before the final sources
           // are exposed, so there is no race
-          Source(Source(fanoutPub).viaMat(flow)(Keep.right).runWith(Sink.publisher(false)))
+          Source.fromPublisher(Source.fromPublisher(fanoutPub).viaMat(flow)(Keep.right).runWith(Sink.asPublisher(false)))
         }
         // The fanout publisher must be wired to the original source after all fanout subscribers have been subscribed
-        input.runWith(Sink(fanoutSub))
+        input.runWith(Sink.fromSubscriber(fanoutSub))
         sources
     }
 
@@ -315,7 +315,7 @@ private[http] object StreamUtils {
   object OneTimeValve {
     def apply(): OneTimeValve = new OneTimeValve {
       val promise = Promise[Unit]()
-      val _source = Source(promise.future).drop(1) // we are only interested in the completion event
+      val _source = Source.fromFuture(promise.future).drop(1) // we are only interested in the completion event
 
       def source[T]: Source[T, Unit] = _source.asInstanceOf[Source[T, Unit]] // safe, because source won't generate any elements
       def open(): Unit = promise.success(())

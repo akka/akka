@@ -51,7 +51,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     "properly bind a server" in {
       val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      val binding = Http().bind(hostname, port).toMat(Sink(probe))(Keep.left).run()
+      val binding = Http().bind(hostname, port).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       val address = Await.result(binding, 1.second).localAddress
       sub.cancel()
@@ -62,15 +62,15 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val binding = Http().bind(hostname, port)
       val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
-      val b1 = Await.result(binding.to(Sink(probe1)).run(), 3.seconds)
+      val b1 = Await.result(binding.to(Sink.fromSubscriber(probe1)).run(), 3.seconds)
       probe1.expectSubscription()
 
       val probe2 = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink(probe2)).run(), 3.seconds) }
+      an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink.fromSubscriber(probe2)).run(), 3.seconds) }
       probe2.expectSubscriptionAndError()
 
       val probe3 = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink(probe3)).run(), 3.seconds) }
+      an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink.fromSubscriber(probe3)).run(), 3.seconds) }
       probe3.expectSubscriptionAndError()
 
       // Now unbind the first
@@ -80,7 +80,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       if (!akka.util.Helpers.isWindows) {
         val probe4 = TestSubscriber.manualProbe[Http.IncomingConnection]()
         // Bind succeeded, we have a local address
-        val b2 = Await.result(binding.to(Sink(probe4)).run(), 3.seconds)
+        val b2 = Await.result(binding.to(Sink.fromSubscriber(probe4)).run(), 3.seconds)
         probe4.expectSubscription()
 
         // clean up
@@ -461,7 +461,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
       val connections = Http().bind(hostname, port, settings = settings)
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]
-      val binding = connections.toMat(Sink(probe))(Keep.left).run()
+      val binding = connections.toMat(Sink.fromSubscriber(probe))(Keep.left).run()
       (probe, binding)
     }
     val connSourceSub = connSource.expectSubscription()
@@ -470,9 +470,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val requestPublisherProbe = TestPublisher.manualProbe[HttpRequest]()
       val responseSubscriberProbe = TestSubscriber.manualProbe[HttpResponse]()
 
-      val connectionFuture = Source(requestPublisherProbe)
+      val connectionFuture = Source.fromPublisher(requestPublisherProbe)
         .viaMat(Http().outgoingConnection(hostname, port, settings = settings))(Keep.right)
-        .to(Sink(responseSubscriberProbe)).run()
+        .to(Sink.fromSubscriber(responseSubscriberProbe)).run()
 
       val connection = Await.result(connectionFuture, 3.seconds)
 
@@ -484,8 +484,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     def acceptConnection(): (TestSubscriber.ManualProbe[HttpRequest], TestPublisher.ManualProbe[HttpResponse]) = {
       connSourceSub.request(1)
       val incomingConnection = connSource.expectNext()
-      val sink = Sink.publisher[HttpRequest](false)
-      val source = Source.subscriber[HttpResponse]
+      val sink = Sink.asPublisher[HttpRequest](false)
+      val source = Source.asSubscriber[HttpResponse]
 
       val handler = Flow.fromSinkAndSourceMat(sink, source)(Keep.both)
 

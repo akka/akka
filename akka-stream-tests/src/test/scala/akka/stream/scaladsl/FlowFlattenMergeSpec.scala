@@ -19,7 +19,7 @@ class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionChe
   import system.dispatcher
 
   def src10(i: Int) = Source(i until (i + 10))
-  def blocked = Source(Promise[Int].future)
+  def blocked = Source.fromFuture(Promise[Int].future)
 
   val toSeq = Flow[Int].grouped(1000).toMat(Sink.head)(Keep.right)
   val toSet = toSeq.mapMaterializedValue(_.map(_.toSet))
@@ -98,7 +98,7 @@ class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionChe
       val p1, p2 = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
       val p = Promise[Source[Int, Unit]]
-      (Source(List(Source(p1), Source(p2))) ++ Source(p.future))
+      (Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2))) ++ Source.fromFuture(p.future))
         .flatMapMerge(5, identity)
         .runWith(Sink.head)
       p1.expectRequest()
@@ -112,7 +112,7 @@ class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionChe
       val p1, p2 = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
       val p = Promise[Int]
-      Source(List(Source(p1), Source(p2), Source(p.future)))
+      Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2), Source.fromFuture(p.future)))
         .flatMapMerge(5, identity)
         .runWith(Sink.head)
       p1.expectRequest()
@@ -128,8 +128,8 @@ class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionChe
       val latch = TestLatch()
       Source(1 to 3)
         .flatMapMerge(10, {
-          case 1 ⇒ Source(p1)
-          case 2 ⇒ Source(p2)
+          case 1 ⇒ Source.fromPublisher(p1)
+          case 2 ⇒ Source.fromPublisher(p2)
           case 3 ⇒
             Await.ready(latch, 3.seconds)
             throw ex
@@ -145,7 +145,7 @@ class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionChe
     "cancel substreams when being cancelled" in {
       val p1, p2 = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
-      val sink = Source(List(Source(p1), Source(p2)))
+      val sink = Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2)))
         .flatMapMerge(5, identity)
         .runWith(TestSink.probe)
       sink.request(1)

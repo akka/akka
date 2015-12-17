@@ -26,8 +26,8 @@ class GraphUnzipSpec extends AkkaSpec {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.out1 ~> Flow[String].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
-        unzip.out0 ~> Flow[Int].buffer(16, OverflowStrategy.backpressure).map(_ * 2) ~> Sink(c1)
+        unzip.out1 ~> Flow[String].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c2)
+        unzip.out0 ~> Flow[Int].buffer(16, OverflowStrategy.backpressure).map(_ * 2) ~> Sink.fromSubscriber(c1)
         ClosedShape
       }).run()
 
@@ -56,8 +56,8 @@ class GraphUnzipSpec extends AkkaSpec {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.out0 ~> Sink(c1)
-        unzip.out1 ~> Sink(c2)
+        unzip.out0 ~> Sink.fromSubscriber(c1)
+        unzip.out1 ~> Sink.fromSubscriber(c2)
         ClosedShape
       }).run()
 
@@ -78,8 +78,8 @@ class GraphUnzipSpec extends AkkaSpec {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.out0 ~> Sink(c1)
-        unzip.out1 ~> Sink(c2)
+        unzip.out0 ~> Sink.fromSubscriber(c1)
+        unzip.out1 ~> Sink.fromSubscriber(c2)
         ClosedShape
       }).run()
 
@@ -100,9 +100,9 @@ class GraphUnzipSpec extends AkkaSpec {
 
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val unzip = b.add(Unzip[Int, String]())
-        Source(p1.getPublisher) ~> unzip.in
-        unzip.out0 ~> Sink(c1)
-        unzip.out1 ~> Sink(c2)
+        Source.fromPublisher(p1.getPublisher) ~> unzip.in
+        unzip.out0 ~> Sink.fromSubscriber(c1)
+        unzip.out1 ~> Sink.fromSubscriber(c2)
         ClosedShape
       }).run()
 
@@ -131,7 +131,7 @@ class GraphUnzipSpec extends AkkaSpec {
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.out0 ~> zip.in0
         unzip.out1 ~> zip.in1
-        zip.out ~> Sink(c1)
+        zip.out ~> Sink.fromSubscriber(c1)
         ClosedShape
       }).run()
 

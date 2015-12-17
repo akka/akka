@@ -33,8 +33,8 @@ object Sink {
   /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
-  def create[In](subs: Subscriber[In]): Sink[In, Unit] =
-    new Sink(scaladsl.Sink(subs))
+  def fromSubscriber[In](subs: Subscriber[In]): Sink[In, Unit] =
+    new Sink(scaladsl.Sink.fromSubscriber(subs))
 
   /**
    * A `Sink` that immediately cancels its upstream after materialization.
@@ -59,8 +59,8 @@ object Sink {
    * If `fanout` is `false` then the materialized `Publisher` will only support a single `Subscriber` and
    * reject any additional `Subscriber`s.
    */
-  def publisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
-    new Sink(scaladsl.Sink.publisher(fanout))
+  def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
+    new Sink(scaladsl.Sink.asPublisher(fanout))
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized

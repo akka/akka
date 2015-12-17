@@ -34,7 +34,7 @@ class ReverseArrowSpec extends AkkaSpec with ConversionCheckedTripleEquals {
     "work from Sink" in {
       val sub = TestSubscriber.manualProbe[Int]
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        Sink(sub) <~ source
+        Sink.fromSubscriber(sub) <~ source
         ClosedShape
       }).run()
       sub.expectSubscription().request(10)

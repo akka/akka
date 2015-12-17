@@ -228,7 +228,7 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
    * @return A [[RunnableGraph]] that materializes to a Processor when run() is called on it.
    */
   def toProcessor: RunnableGraph[Processor[In @uncheckedVariance, Out @uncheckedVariance]] =
-    Source.subscriber[In].via(this).toMat(Sink.publisher[Out](false))(Keep.both[Subscriber[In], Publisher[Out]])
+    Source.asSubscriber[In].via(this).toMat(Sink.asPublisher[Out](false))(Keep.both[Subscriber[In], Publisher[Out]])
       .mapMaterializedValue {
         case (sub, pub) ⇒ new Processor[In, Out] {
           override def onError(t: Throwable): Unit = sub.onError(t)

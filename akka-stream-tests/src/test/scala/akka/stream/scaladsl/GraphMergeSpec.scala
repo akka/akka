@@ -39,7 +39,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
         source1 ~> m1.in(0)
         m1.out ~> Flow[Int].map(_ * 2) ~> m2.in(0)
-        m2.out ~> Flow[Int].map(_ / 2).map(_ + 1) ~> Sink(probe)
+        m2.out ~> Flow[Int].map(_ / 2).map(_ + 1) ~> Sink.fromSubscriber(probe)
         source2 ~> m1.in(1)
         source3 ~> m2.in(1)
 
@@ -77,7 +77,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
         source4 ~> merge.in(3)
         source5 ~> merge.in(4)
         source6 ~> merge.in(5)
-        merge.out ~> Sink(probe)
+        merge.out ~> Sink.fromSubscriber(probe)
 
         ClosedShape
       }).run()
@@ -151,15 +151,15 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val up2 = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[Int]()
 
-      val src1 = Source.subscriber[Int]
-      val src2 = Source.subscriber[Int]
+      val src1 = Source.asSubscriber[Int]
+      val src2 = Source.asSubscriber[Int]
 
       val (graphSubscriber1, graphSubscriber2) = RunnableGraph.fromGraph(GraphDSL.create(src1, src2)((_, _)) { implicit b ⇒
         (s1, s2) ⇒
           val merge = b.add(Merge[Int](2))
           s1.out ~> merge.in(0)
           s2.out ~> merge.in(1)
-          merge.out ~> Sink(down)
+          merge.out ~> Sink.fromSubscriber(down)
           ClosedShape
       }).run()
 

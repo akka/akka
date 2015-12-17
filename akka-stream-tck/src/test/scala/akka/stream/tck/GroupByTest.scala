@@ -24,7 +24,7 @@ class GroupByTest extends AkkaPublisherVerification[Int] {
           .concatSubstreams
           .runWith(Sink.head)
       val groupSource = Await.result(futureGroupSource, 3.seconds)
-      groupSource.runWith(Sink.publisher(false))
+      groupSource.runWith(Sink.asPublisher(false))
 
     }
 

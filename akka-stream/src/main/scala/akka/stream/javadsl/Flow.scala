@@ -229,7 +229,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
    *
    * The returned tuple contains the materialized values of the `Source` and `Sink`,
-   * e.g. the `Subscriber` of a `Source.subscriber` and `Publisher` of a `Sink.publisher`.
+   * e.g. the `Subscriber` of a `Source.asSubscriber` and `Publisher` of a `Sink.asPublisher`.
    *
    * @tparam T materialized type of given Source
    * @tparam U materialized type of given Sink

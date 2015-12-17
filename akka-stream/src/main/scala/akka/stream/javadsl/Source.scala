@@ -56,8 +56,8 @@ object Source {
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def from[O](publisher: Publisher[O]): javadsl.Source[O, Unit] =
-    new Source(scaladsl.Source.apply(publisher))
+  def fromPublisher[O](publisher: Publisher[O]): javadsl.Source[O, Unit] =
+    new Source(scaladsl.Source.fromPublisher(publisher))
 
   /**
    * Helper to create [[Source]] from `Iterator`.
@@ -78,7 +78,7 @@ object Source {
    * steps.
    */
   def fromIterator[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, Unit] =
-    new Source(scaladsl.Source(() ⇒ f.create().asScala))
+    new Source(scaladsl.Source.fromIterator(() ⇒ f.create().asScala))
 
   /**
    * Helper to create [[Source]] from `Iterable`.
@@ -145,8 +145,8 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
-  def from[O](future: Future[O]): javadsl.Source[O, Unit] =
-    new Source(scaladsl.Source(future))
+  def fromFuture[O](future: Future[O]): javadsl.Source[O, Unit] =
+    new Source(scaladsl.Source.fromFuture(future))
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -200,8 +200,8 @@ object Source {
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
-  def subscriber[T](): Source[T, Subscriber[T]] =
-    new Source(scaladsl.Source.subscriber)
+  def asSubscriber[T](): Source[T, Subscriber[T]] =
+    new Source(scaladsl.Source.asSubscriber)
 
   /**
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
@@ -469,7 +469,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
-   * of the `Sink`, e.g. the `Publisher` of a `Sink.publisher`.
+   * of the `Sink`, e.g. the `Publisher` of a `Sink.asPublisher`.
    */
   def runWith[M](sink: Graph[SinkShape[Out], M], materializer: Materializer): M =
     delegate.runWith(sink)(materializer)

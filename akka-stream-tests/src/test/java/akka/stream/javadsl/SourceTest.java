@@ -176,7 +176,7 @@ public class SourceTest extends StreamTest {
         })
         .grouped(10)
         .mergeSubstreams();
-    
+
     final Future<List<List<String>>> future =
         source.grouped(10).runWith(Sink.<List<List<String>>> head(), materializer);
     final Object[] result = Await.result(future, Duration.create(1, TimeUnit.SECONDS)).toArray();
@@ -478,7 +478,7 @@ public class SourceTest extends StreamTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
     Future<String> future1 = Source.from(input).runWith(Sink.<String>head(), materializer);
-    Future<String> future2 = Source.from(future1).runWith(Sink.<String>head(), materializer);
+    Future<String> future2 = Source.fromFuture(future1).runWith(Sink.<String>head(), materializer);
     String result = Await.result(future2, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
   }
@@ -579,7 +579,7 @@ public class SourceTest extends StreamTest {
     final ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
     final JavaTestKit probe = new JavaTestKit(system);
 
-    final Source<Integer, ?> source = Source.from(publisherProbe).map(
+    final Source<Integer, ?> source = Source.fromPublisher(publisherProbe).map(
             new Function<Integer, Integer>() {
               public Integer apply(Integer elem) {
                 if (elem == 1) throw new RuntimeException("ex");

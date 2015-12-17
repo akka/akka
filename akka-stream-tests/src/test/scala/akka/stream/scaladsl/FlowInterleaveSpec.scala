@@ -13,7 +13,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
 
   override def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
     val subscriber = TestSubscriber.probe[Outputs]()
-    Source(p1).interleave(Source(p2), 2).runWith(Sink(subscriber))
+    Source.fromPublisher(p1).interleave(Source.fromPublisher(p2), 2).runWith(Sink.fromSubscriber(subscriber))
     subscriber
   }
 
@@ -21,7 +21,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
 
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
-      Source(0 to 3).interleave(Source(4 to 6), 2).interleave(Source(7 to 11), 3).runWith(Sink(probe))
+      Source(0 to 3).interleave(Source(4 to 6), 2).interleave(Source(7 to 11), 3).runWith(Sink.fromSubscriber(probe))
 
       val subscription = probe.expectSubscription()
 
@@ -38,7 +38,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
     "work when segmentSize is not equal elements in stream" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      Source(0 to 2).interleave(Source(3 to 5), 2).runWith(Sink(probe))
+      Source(0 to 2).interleave(Source(3 to 5), 2).runWith(Sink.fromSubscriber(probe))
       probe.expectSubscription().request(10)
       probe.expectNext(0, 1, 3, 4, 2, 5)
       probe.expectComplete()
@@ -47,7 +47,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
     "work with segmentSize = 1" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      Source(0 to 2).interleave(Source(3 to 5), 1).runWith(Sink(probe))
+      Source(0 to 2).interleave(Source(3 to 5), 1).runWith(Sink.fromSubscriber(probe))
       probe.expectSubscription().request(10)
       probe.expectNext(0, 3, 1, 4, 2, 5)
       probe.expectComplete()
@@ -59,13 +59,13 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
 
     "not work when segmentSize > than stream elements" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
-      Source(0 to 2).interleave(Source(3 to 15), 10).runWith(Sink(probe))
+      Source(0 to 2).interleave(Source(3 to 15), 10).runWith(Sink.fromSubscriber(probe))
       probe.expectSubscription().request(25)
       (0 to 15).foreach(probe.expectNext)
       probe.expectComplete()
 
       val probe2 = TestSubscriber.manualProbe[Int]()
-      Source(1 to 20).interleave(Source(21 to 25), 10).runWith(Sink(probe2))
+      Source(1 to 20).interleave(Source(21 to 25), 10).runWith(Sink.fromSubscriber(probe2))
       probe2.expectSubscription().request(100)
       (1 to 10).foreach(probe2.expectNext)
       (21 to 25).foreach(probe2.expectNext)
@@ -126,8 +126,8 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       val up2 = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[Int]()
 
-      val (graphSubscriber1, graphSubscriber2) = Source.subscriber[Int]
-        .interleaveMat(Source.subscriber[Int], 2)((_, _)).toMat(Sink(down))(Keep.left).run
+      val (graphSubscriber1, graphSubscriber2) = Source.asSubscriber[Int]
+        .interleaveMat(Source.asSubscriber[Int], 2)((_, _)).toMat(Sink.fromSubscriber(down))(Keep.left).run
 
       val downstream = down.expectSubscription()
       downstream.cancel()

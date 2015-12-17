@@ -86,17 +86,17 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     impl ! ActorGraphInterpreter.ExposedPublisher(0, publisher)
 
-    Flow.fromSinkAndSource(Sink(subscriber), Source(publisher))
+    Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
   })
 
   val toPublisher: (Source[Any, _], ActorMaterializer) ⇒ Publisher[Any] =
-    (f, m) ⇒ f.runWith(Sink.publisher(false))(m)
+    (f, m) ⇒ f.runWith(Sink.asPublisher(false))(m)
 
   def toFanoutPublisher[In, Out](elasticity: Int): (Source[Out, _], ActorMaterializer) ⇒ Publisher[Out] =
-    (f, m) ⇒ f.runWith(Sink.publisher(true).withAttributes(Attributes.inputBuffer(elasticity, elasticity)))(m)
+    (f, m) ⇒ f.runWith(Sink.asPublisher(true).withAttributes(Attributes.inputBuffer(elasticity, elasticity)))(m)
 
   def materializeIntoSubscriberAndPublisher[In, Out](flow: Flow[In, Out, _]): (Subscriber[In], Publisher[Out]) = {
-    flow.runWith(Source.subscriber[In], Sink.publisher[Out](false))
+    flow.runWith(Source.asSubscriber[In], Sink.asPublisher[Out](false))
   }
 
   "A Flow" must {
@@ -177,7 +177,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val c1 = TestSubscriber.manualProbe[String]()
       flowOut.subscribe(c1)
 
-      val source: Publisher[String] = Source(List("1", "2", "3")).runWith(Sink.publisher(false))
+      val source: Publisher[String] = Source(List("1", "2", "3")).runWith(Sink.asPublisher(false))
       source.subscribe(flowIn)
 
       val sub1 = c1.expectSubscription()
@@ -198,7 +198,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       sub1.request(3)
       c1.expectNoMsg(200.millis)
 
-      val source: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.publisher(false))
+      val source: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.asPublisher(false))
       source.subscribe(flowIn)
 
       c1.expectNext("1")
@@ -217,7 +217,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       sub1.request(3)
       c1.expectNoMsg(200.millis)
 
-      val source: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.publisher(false))
+      val source: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.asPublisher(false))
       source.subscribe(flowIn)
 
       c1.expectNext("elem-1")
@@ -229,9 +229,9 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "subscribe Subscriber" in {
       val flow: Flow[String, String, _] = Flow[String]
       val c1 = TestSubscriber.manualProbe[String]()
-      val sink: Sink[String, _] = flow.to(Sink(c1))
-      val publisher: Publisher[String] = Source(List("1", "2", "3")).runWith(Sink.publisher(false))
-      Source(publisher).to(sink).run()
+      val sink: Sink[String, _] = flow.to(Sink.fromSubscriber(c1))
+      val publisher: Publisher[String] = Source(List("1", "2", "3")).runWith(Sink.asPublisher(false))
+      Source.fromPublisher(publisher).to(sink).run()
 
       val sub1 = c1.expectSubscription()
       sub1.request(3)
@@ -244,8 +244,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "perform transformation operation" in {
       val flow = Flow[Int].map(i ⇒ { testActor ! i.toString; i.toString })
 
-      val publisher = Source(List(1, 2, 3)).runWith(Sink.publisher(false))
-      Source(publisher).via(flow).to(Sink.ignore).run()
+      val publisher = Source(List(1, 2, 3)).runWith(Sink.asPublisher(false))
+      Source.fromPublisher(publisher).via(flow).to(Sink.ignore).run()
 
       expectMsg("1")
       expectMsg("2")
@@ -255,9 +255,9 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "perform transformation operation and subscribe Subscriber" in {
       val flow = Flow[Int].map(_.toString)
       val c1 = TestSubscriber.manualProbe[String]()
-      val sink: Sink[Int, _] = flow.to(Sink(c1))
-      val publisher: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.publisher(false))
-      Source(publisher).to(sink).run()
+      val sink: Sink[Int, _] = flow.to(Sink.fromSubscriber(c1))
+      val publisher: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.asPublisher(false))
+      Source.fromPublisher(publisher).to(sink).run()
 
       val sub1 = c1.expectSubscription()
       sub1.request(3)
@@ -269,8 +269,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "be materializable several times with fanout publisher" in assertAllStagesStopped {
       val flow = Source(List(1, 2, 3)).map(_.toString)
-      val p1 = flow.runWith(Sink.publisher(true))
-      val p2 = flow.runWith(Sink.publisher(true))
+      val p1 = flow.runWith(Sink.asPublisher(true))
+      val p2 = flow.runWith(Sink.asPublisher(true))
       val s1 = TestSubscriber.manualProbe[String]()
       val s2 = TestSubscriber.manualProbe[String]()
       val s3 = TestSubscriber.manualProbe[String]()
@@ -301,11 +301,11 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "be covariant" in {
-      val f1: Source[Fruit, _] = Source[Fruit](apples)
-      val p1: Publisher[Fruit] = Source[Fruit](apples).runWith(Sink.publisher(false))
-      val f2: SubFlow[Fruit, _, Source[Fruit, Unit]#Repr, _] = Source[Fruit](apples).splitWhen(_ ⇒ true)
-      val f3: SubFlow[Fruit, _, Source[Fruit, Unit]#Repr, _] = Source[Fruit](apples).groupBy(2, _ ⇒ true)
-      val f4: Source[(immutable.Seq[Fruit], Source[Fruit, _]), _] = Source[Fruit](apples).prefixAndTail(1)
+      val f1: Source[Fruit, _] = Source.fromIterator[Fruit](apples)
+      val p1: Publisher[Fruit] = Source.fromIterator[Fruit](apples).runWith(Sink.asPublisher(false))
+      val f2: SubFlow[Fruit, _, Source[Fruit, Unit]#Repr, _] = Source.fromIterator[Fruit](apples).splitWhen(_ ⇒ true)
+      val f3: SubFlow[Fruit, _, Source[Fruit, Unit]#Repr, _] = Source.fromIterator[Fruit](apples).groupBy(2, _ ⇒ true)
+      val f4: Source[(immutable.Seq[Fruit], Source[Fruit, _]), _] = Source.fromIterator[Fruit](apples).prefixAndTail(1)
       val d1: SubFlow[Fruit, _, Flow[String, Fruit, Unit]#Repr, _] = Flow[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
       val d2: SubFlow[Fruit, _, Flow[String, Fruit, Unit]#Repr, _] = Flow[String].map(_ ⇒ new Apple).groupBy(2, _ ⇒ true)
       val d3: Flow[String, (immutable.Seq[Apple], Source[Fruit, _]), _] = Flow[String].map(_ ⇒ new Apple).prefixAndTail(1)

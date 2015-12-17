@@ -180,7 +180,7 @@ class GraphStageTimersSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source(upstream).via(new TestStage2).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).via(new TestStage2).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(5)
       downstream.expectNext(1)
@@ -198,7 +198,7 @@ class GraphStageTimersSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source(upstream).via(new SimpleLinearGraphStage[Int] {
+      Source.fromPublisher(upstream).via(new SimpleLinearGraphStage[Int] {
         override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
           override def preStart(): Unit = scheduleOnce("tick", 100.millis)
 
@@ -212,7 +212,7 @@ class GraphStageTimersSpec extends AkkaSpec {
 
           override def onTimer(timerKey: Any) = throw exception
         }
-      }).runWith(Sink(downstream))
+      }).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(1)
       downstream.expectError(exception)

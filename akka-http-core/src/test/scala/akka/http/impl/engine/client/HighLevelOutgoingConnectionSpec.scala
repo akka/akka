@@ -24,7 +24,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         serverHostName, serverPort)
 
       val N = 100
-      val result = Source(() ⇒ Iterator.from(1))
+      val result = Source.fromIterator(() ⇒ Iterator.from(1))
         .take(N)
         .map(id ⇒ HttpRequest(uri = s"/r$id"))
         .via(Http().outgoingConnection(serverHostName, serverPort))
@@ -56,7 +56,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
       })
 
       val N = 100
-      val result = Source(() ⇒ Iterator.from(1))
+      val result = Source.fromIterator(() ⇒ Iterator.from(1))
         .take(N)
         .map(id ⇒ HttpRequest(uri = s"/r$id"))
         .via(doubleConnection)

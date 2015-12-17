@@ -38,7 +38,7 @@ class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
   def createPublisher(elements: Long): Publisher[ByteString] =
     Source.file(file, chunkSize = 512)
       .take(elements)
-      .runWith(Sink.publisher(false))
+      .runWith(Sink.asPublisher(false))
 
   @AfterClass
   def after = file.delete()
