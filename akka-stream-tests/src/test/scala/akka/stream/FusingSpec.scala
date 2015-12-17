@@ -11,11 +11,16 @@ import akka.stream.Attributes._
 import akka.stream.Fusing.FusedGraph
 import scala.annotation.tailrec
 import akka.stream.impl.StreamLayout.Module
+import org.scalatest.concurrent.ScalaFutures
+import scala.concurrent.duration._
+import akka.stream.impl.fusing.GraphInterpreter
+import akka.event.BusLogging
 
-class FusingSpec extends AkkaSpec with ConversionCheckedTripleEquals {
+class FusingSpec extends AkkaSpec with ScalaFutures with ConversionCheckedTripleEquals {
 
   final val Debug = false
   implicit val materializer = ActorMaterializer()
+  implicit val patience = PatienceConfig(1.second)
 
   def graph(async: Boolean) =
     Source.unfoldInf(1)(x ⇒ (x, x)).filter(_ % 2 == 1)
@@ -83,6 +88,40 @@ class FusingSpec extends AkkaSpec with ConversionCheckedTripleEquals {
       val src = Fusing.aggressive(graph(true))
       val fused = Fusing.aggressive(Source.fromGraph(src).to(Sink.head))
       verify(fused, modules = 2, downstreams = 6)
+    }
+
+  }
+
+  "SubFusingActorMaterializer" must {
+
+    "work with asynchronous boundaries in the subflows" in {
+      val async = Flow[Int].map(_ * 2).withAttributes(Attributes.asyncBoundary)
+      Source(0 to 9)
+        .map(_ * 10)
+        .flatMapMerge(5, i ⇒ Source(i to (i + 9)).via(async))
+        .grouped(1000)
+        .runWith(Sink.head)
+        .futureValue
+        .sorted should ===(0 to 198 by 2)
+    }
+
+    "use multiple actors when there are asynchronous boundaries in the subflows" in {
+      def ref = {
+        val bus = GraphInterpreter.currentInterpreter.log.asInstanceOf[BusLogging]
+        bus.logSource
+      }
+      val async = Flow[Int].map(x ⇒ { testActor ! ref; x }).withAttributes(Attributes.asyncBoundary)
+      Source(0 to 9)
+        .map(x ⇒ { testActor ! ref; x })
+        .flatMapMerge(5, i ⇒ Source.single(i).via(async))
+        .grouped(1000)
+        .runWith(Sink.head)
+        .futureValue
+        .sorted should ===(0 to 9)
+      val refs = receiveN(20)
+      withClue(s"refs=\n${refs.mkString("\n")}") {
+        refs.toSet.size should ===(11)
+      }
     }
 
   }

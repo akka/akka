@@ -150,7 +150,7 @@ private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: S
       fuzzingMode = false)
     interpreter.attachUpstreamBoundary(0, upstream)
     interpreter.attachDownstreamBoundary(ops.length, downstream)
-    interpreter.init()
+    interpreter.init(null)
   }
 
   init()
