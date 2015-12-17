@@ -47,6 +47,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   private def isReplayFilterEnabled: Boolean = replayFilterMode != ReplayFilter.Disabled
   private val replayFilterWindowSize: Int = config.getInt("replay-filter.window-size")
   private val replayFilterMaxOldWriters: Int = config.getInt("replay-filter.max-old-writers")
+  private val replayDebugEnabled: Boolean = config.getBoolean("replay-filter.debug")
 
   private val resequencer = context.actorOf(Props[Resequencer]())
   private var resequencerCounter = 1L
@@ -121,7 +122,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
     case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor) ⇒
       val replyTo =
         if (isReplayFilterEnabled) context.actorOf(ReplayFilter.props(persistentActor, replayFilterMode,
-          replayFilterWindowSize, replayFilterMaxOldWriters))
+          replayFilterWindowSize, replayFilterMaxOldWriters, replayDebugEnabled))
         else persistentActor
 
       val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)

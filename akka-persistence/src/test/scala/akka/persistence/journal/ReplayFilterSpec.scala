@@ -26,7 +26,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
   "ReplayFilter in RepairByDiscardOld mode" must {
     "pass on all replayed messages and then stop" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = RepairByDiscardOld, windowSize = 2, maxOldWriters = 10))
+        testActor, mode = RepairByDiscardOld, windowSize = 2, maxOldWriters = 10, debugEnabled = false))
       filter ! m1
       filter ! m2
       filter ! m3
@@ -43,7 +43,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
 
     "pass on all replayed messages when switching writer" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = RepairByDiscardOld, windowSize = 100, maxOldWriters = 10))
+        testActor, mode = RepairByDiscardOld, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
       filter ! m1
       filter ! m2
       val m32 = m3.copy(persistent = m3.persistent.update(writerUuid = writerB))
@@ -58,7 +58,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
 
     "discard message with same seqNo from old overlapping writer" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = RepairByDiscardOld, windowSize = 100, maxOldWriters = 10))
+        testActor, mode = RepairByDiscardOld, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
       EventFilter.warning(start = "Invalid replayed event", occurrences = 1) intercept {
         filter ! m1
         filter ! m2
@@ -76,7 +76,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
 
     "discard messages from old writer after switching writer" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = RepairByDiscardOld, windowSize = 100, maxOldWriters = 10))
+        testActor, mode = RepairByDiscardOld, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
       EventFilter.warning(start = "Invalid replayed event", occurrences = 2) intercept {
         filter ! m1
         filter ! m2
@@ -96,7 +96,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
 
     "discard messages from several old writers" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = RepairByDiscardOld, windowSize = 100, maxOldWriters = 10))
+        testActor, mode = RepairByDiscardOld, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
       EventFilter.warning(start = "Invalid replayed event", occurrences = 3) intercept {
         filter ! m1
         val m2b = m2.copy(persistent = m2.persistent.update(writerUuid = writerB))
@@ -124,7 +124,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
   "ReplayFilter in Fail mode" must {
     "fail when message with same seqNo from old overlapping writer" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = Fail, windowSize = 100, maxOldWriters = 10))
+        testActor, mode = Fail, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
       EventFilter.error(start = "Invalid replayed event", occurrences = 1) intercept {
         filter ! m1
         filter ! m2
@@ -139,7 +139,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
 
     "fail when messages from old writer after switching writer" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = Fail, windowSize = 100, maxOldWriters = 10))
+        testActor, mode = Fail, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
       EventFilter.error(start = "Invalid replayed event", occurrences = 1) intercept {
         filter ! m1
         filter ! m2
@@ -157,7 +157,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
   "ReplayFilter in Warn mode" must {
     "warn about message with same seqNo from old overlapping writer" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = Warn, windowSize = 100, maxOldWriters = 10))
+        testActor, mode = Warn, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
       EventFilter.warning(start = "Invalid replayed event", occurrences = 1) intercept {
         filter ! m1
         filter ! m2
@@ -176,7 +176,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
 
     "warn about messages from old writer after switching writer" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = Warn, windowSize = 100, maxOldWriters = 10))
+        testActor, mode = Warn, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
       EventFilter.warning(start = "Invalid replayed event", occurrences = 2) intercept {
         filter ! m1
         filter ! m2
@@ -197,7 +197,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
 
     "warn about messages from several old writers" in {
       val filter = system.actorOf(ReplayFilter.props(
-        testActor, mode = Warn, windowSize = 100, maxOldWriters = 10))
+        testActor, mode = Warn, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
       EventFilter.warning(start = "Invalid replayed event", occurrences = 3) intercept {
         filter ! m1
         val m2b = m2.copy(persistent = m2.persistent.update(writerUuid = writerB))
