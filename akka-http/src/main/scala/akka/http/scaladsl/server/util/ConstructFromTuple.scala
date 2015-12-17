@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server.util
 
 /**
- * Constructor for instances of type ``R`` which can be created from a tuple of type ``T``.
+ * Constructor for instances of type `R` which can be created from a tuple of type `T`.
  */
 trait ConstructFromTuple[T, R] extends (T ⇒ R)
 

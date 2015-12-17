@@ -48,32 +48,32 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
   def tflatMap[R: Tuple](f: L ⇒ Option[R]): PathMatcher[R] = transform(_.flatMap(f))
 
   /**
-   * Same as ``repeat(min = count, max = count)``.
+   * Same as `repeat(min = count, max = count)`.
    */
   def repeat(count: Int)(implicit lift: PathMatcher.Lift[L, List]): PathMatcher[lift.Out] =
     repeat(min = count, max = count)
 
   /**
-   * Same as ``repeat(min = count, max = count, separator = separator)``.
+   * Same as `repeat(min = count, max = count, separator = separator)`.
    */
   def repeat(count: Int, separator: PathMatcher0)(implicit lift: PathMatcher.Lift[L, List]): PathMatcher[lift.Out] =
     repeat(min = count, max = count, separator = separator)
 
   /**
-   * Turns this ``PathMatcher`` into one that matches a number of times (with the given separator)
-   * and potentially extracts a ``List`` of the underlying matcher's extractions.
-   * If less than ``min`` applications of the underlying matcher have succeeded the produced matcher fails,
-   * otherwise it matches up to the given ``max`` number of applications.
-   * Note that it won't fail even if more than ``max`` applications could succeed!
+   * Turns this `PathMatcher` into one that matches a number of times (with the given separator)
+   * and potentially extracts a `List` of the underlying matcher's extractions.
+   * If less than `min` applications of the underlying matcher have succeeded the produced matcher fails,
+   * otherwise it matches up to the given `max` number of applications.
+   * Note that it won't fail even if more than `max` applications could succeed!
    * The "surplus" path elements will simply be left unmatched.
    *
    * The result type depends on the type of the underlying matcher:
    *
    * <table>
-   * <th><td>If a ``matcher`` is of type</td><td>then ``matcher.repeat(...)`` is of type</td></th>
-   * <tr><td>``PathMatcher0``</td><td>``PathMatcher0``</td></tr>
-   * <tr><td>``PathMatcher1[T]``</td><td>``PathMatcher1[List[T]``</td></tr>
-   * <tr><td>``PathMatcher[L :Tuple]``</td><td>``PathMatcher[List[L]]``</td></tr>
+   * <th><td>If a `matcher` is of type</td><td>then `matcher.repeat(...)` is of type</td></th>
+   * <tr><td>`PathMatcher0`</td><td>`PathMatcher0`</td></tr>
+   * <tr><td>`PathMatcher1[T]`</td><td>`PathMatcher1[List[T]`</td></tr>
+   * <tr><td>`PathMatcher[L :Tuple]`</td><td>`PathMatcher[List[L]]`</td></tr>
    * </table>
    */
   def repeat(min: Int, max: Int, separator: PathMatcher0 = PathMatchers.Neutral)(implicit lift: PathMatcher.Lift[L, List]): PathMatcher[lift.Out] =
@@ -456,14 +456,14 @@ trait PathMatchers {
 
   /**
    * A PathMatcher that matches the given number of path segments (separated by slashes) as a List[String].
-   * If there are more than ``count`` segments present the remaining ones will be left unmatched.
+   * If there are more than `count` segments present the remaining ones will be left unmatched.
    * If the path has a trailing slash this slash will *not* be matched.
    */
   def Segments(count: Int): PathMatcher1[List[String]] = Segment.repeat(count, separator = Slash)
 
   /**
-   * A PathMatcher that matches between ``min`` and ``max`` (both inclusively) path segments (separated by slashes)
-   * as a List[String]. If there are more than ``count`` segments present the remaining ones will be left unmatched.
+   * A PathMatcher that matches between `min` and `max` (both inclusively) path segments (separated by slashes)
+   * as a List[String]. If there are more than `count` segments present the remaining ones will be left unmatched.
    * If the path has a trailing slash this slash will *not* be matched.
    */
   def Segments(min: Int, max: Int): PathMatcher1[List[String]] = Segment.repeat(min, max, separator = Slash)

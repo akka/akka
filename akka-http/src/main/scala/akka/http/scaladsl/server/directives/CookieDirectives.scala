@@ -22,7 +22,7 @@ trait CookieDirectives {
     headerValue(findCookie(name)) | reject(MissingCookieRejection(name))
 
   /**
-   * Extracts the [[HttpCookiePair]] with the given name as an ``Option[HttpCookiePair]``.
+   * Extracts the [[HttpCookiePair]] with the given name as an `Option[HttpCookiePair]`.
    * If the cookie is not present a value of `None` is extracted.
    */
   def optionalCookie(name: String): Directive1[Option[HttpCookiePair]] =

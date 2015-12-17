@@ -15,17 +15,17 @@ trait ParameterDirectives extends ToNameReceptacleEnhancements {
   import ParameterDirectives._
 
   /**
-   * Extracts the request's query parameters as a ``Map[String, String]``.
+   * Extracts the request's query parameters as a `Map[String, String]`.
    */
   def parameterMap: Directive1[Map[String, String]] = _parameterMap
 
   /**
-   * Extracts the request's query parameters as a ``Map[String, List[String]]``.
+   * Extracts the request's query parameters as a `Map[String, List[String]]`.
    */
   def parameterMultiMap: Directive1[Map[String, List[String]]] = _parameterMultiMap
 
   /**
-   * Extracts the request's query parameters as a ``Seq[(String, String)]``.
+   * Extracts the request's query parameters as a `Seq[(String, String)]`.
    */
   def parameterSeq: Directive1[immutable.Seq[(String, String)]] = _parameterSeq
 

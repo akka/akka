@@ -38,8 +38,8 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
   def &(magnet: ConjunctionMagnet[L]): magnet.Out = magnet(this)
 
   /**
-   * Converts this directive into one which, instead of a tuple of type ``L``, creates an
-   * instance of type ``A`` (which is usually a case class).
+   * Converts this directive into one which, instead of a tuple of type `L`, creates an
+   * instance of type `A` (which is usually a case class).
    */
   def as[A](constructor: ConstructFromTuple[L, A]): Directive1[A] = {
     def validatedMap[R](f: L ⇒ R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =

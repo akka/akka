@@ -16,10 +16,10 @@ import akka.http.scaladsl.model._
  */
 trait RequestContext {
 
-  /** The request this context represents. Modelled as a ``val`` so as to enable an ``import ctx.request._``. */
+  /** The request this context represents. Modelled as a `val` so as to enable an `import ctx.request._`. */
   val request: HttpRequest
 
-  /** The unmatched path of this context. Modelled as a ``val`` so as to enable an ``import ctx.unmatchedPath._``. */
+  /** The unmatched path of this context. Modelled as a `val` so as to enable an `import ctx.unmatchedPath._`. */
   val unmatchedPath: Uri.Path
 
   /**
@@ -63,7 +63,7 @@ trait RequestContext {
 
   /**
    * Bubbles the given error up the response chain where it is dealt with by the closest `handleExceptions`
-   * directive and its ``ExceptionHandler``, unless the error is a ``RejectionError``. In this case the
+   * directive and its `ExceptionHandler`, unless the error is a `RejectionError`. In this case the
    * wrapped rejection is unpacked and "executed".
    */
   def fail(error: Throwable): Future[RouteResult]
