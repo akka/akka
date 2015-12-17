@@ -93,6 +93,17 @@ object DispatcherDocSpec {
     }
     //#my-thread-pool-dispatcher-config
 
+    //#fixed-pool-size-dispatcher-config
+    blocking-io-dispatcher {
+      type = Dispatcher
+      executor = "thread-pool-executor"
+      thread-pool-executor {
+        fixed-pool-size = 32
+      }
+      throughput = 1
+    }
+    //#fixed-pool-size-dispatcher-config
+
     //#my-pinned-dispatcher-config
     my-pinned-dispatcher {
       executor = "thread-pool-executor"
@@ -268,11 +279,19 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     val dispatcher = system.dispatchers.lookup("my-dispatcher-bounded-queue")
   }
 
+  "defining fixed-pool-size dispatcher" in {
+    val context = system
+    //#defining-fixed-pool-size-dispatcher
+    val myActor =
+      context.actorOf(Props[MyActor].withDispatcher("blocking-io-dispatcher"), "myactor2")
+    //#defining-fixed-pool-size-dispatcher
+  }
+
   "defining pinned dispatcher" in {
     val context = system
     //#defining-pinned-dispatcher
     val myActor =
-      context.actorOf(Props[MyActor].withDispatcher("my-pinned-dispatcher"), "myactor2")
+      context.actorOf(Props[MyActor].withDispatcher("my-pinned-dispatcher"), "myactor3")
     //#defining-pinned-dispatcher
   }
 
