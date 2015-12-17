@@ -53,7 +53,7 @@ trait SecurityDirectives {
     optionalHeaderValueByType[Authorization](()).map(_.map(_.credentials))
 
   /**
-   * Wraps the inner route with Http Basic authentication support using a given ``Authenticator[T]``.
+   * Wraps the inner route with Http Basic authentication support using a given `Authenticator[T]`.
    * The given authenticator determines whether the credentials in the request are valid
    * and, if so, which user object to supply to the inner route.
    */
@@ -140,8 +140,8 @@ trait SecurityDirectives {
 
   /**
    * Lifts an authenticator function into a directive. The authenticator function gets passed in credentials from the
-   * [[Authorization]] header of the request. If the function returns ``Right(user)`` the user object is provided
-   * to the inner route. If the function returns ``Left(challenge)`` the request is rejected with an
+   * [[Authorization]] header of the request. If the function returns `Right(user)` the user object is provided
+   * to the inner route. If the function returns `Left(challenge)` the request is rejected with an
    * [[AuthenticationFailedRejection]] that contains this challenge to be added to the response.
    *
    */
@@ -158,7 +158,7 @@ trait SecurityDirectives {
     }
 
   /**
-   * Lifts an authenticator function into a directive. Same as ``authenticateOrRejectWithChallenge``
+   * Lifts an authenticator function into a directive. Same as `authenticateOrRejectWithChallenge`
    * but only applies the authenticator function with a certain type of credentials.
    */
   def authenticateOrRejectWithChallenge[C <: HttpCredentials: ClassTag, T](
@@ -180,7 +180,7 @@ trait SecurityDirectives {
       cancelRejection(AuthorizationFailedRejection)
 
   /**
-   * Creates a ``Basic`` [[HttpChallenge]] for the given realm.
+   * Creates a `Basic` [[HttpChallenge]] for the given realm.
    */
   def challengeFor(realm: String) = HttpChallenge(scheme = "Basic", realm = realm, params = Map.empty)
 }
@@ -232,8 +232,8 @@ trait AuthenticationDirective[T] extends Directive1[T] {
   import RouteDirectives._
 
   /**
-   * Returns a copy of this [[AuthenticationDirective]] that will provide ``Some(user)`` if credentials
-   * were supplied and otherwise ``None``.
+   * Returns a copy of this [[AuthenticationDirective]] that will provide `Some(user)` if credentials
+   * were supplied and otherwise `None`.
    */
   def optional: Directive1[Option[T]] =
     this.map(Some(_): Option[T]) recover {
