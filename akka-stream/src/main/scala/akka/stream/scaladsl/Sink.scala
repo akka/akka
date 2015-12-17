@@ -68,7 +68,7 @@ object Sink {
   /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
-  def apply[T](subscriber: Subscriber[T]): Sink[T, Unit] =
+  def fromSubscriber[T](subscriber: Subscriber[T]): Sink[T, Unit] =
     new Sink(new SubscriberSink(subscriber, DefaultAttributes.subscriberSink, shape("SubscriberSink")))
 
   /**
@@ -128,7 +128,7 @@ object Sink {
    * If `fanout` is `false` then the materialized `Publisher` will only support a single `Subscriber` and
    * reject any additional `Subscriber`s.
    */
-  def publisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
+  def asPublisher[T](fanout: Boolean): Sink[T, Publisher[T]] =
     new Sink(
       if (fanout) new FanoutPublisherSink[T](DefaultAttributes.fanoutPublisherSink, shape("FanoutPublisherSink"))
       else new PublisherSink[T](DefaultAttributes.publisherSink, shape("PublisherSink")))

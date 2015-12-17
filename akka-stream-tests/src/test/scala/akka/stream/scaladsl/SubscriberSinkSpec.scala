@@ -19,7 +19,7 @@ class SubscriberSinkSpec extends AkkaSpec {
 
     "publish elements to the subscriber" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()
-      Source(List(1, 2, 3)).to(Sink(c)).run()
+      Source(List(1, 2, 3)).to(Sink.fromSubscriber(c)).run()
       val s = c.expectSubscription()
       s.request(3)
       c.expectNext(1)

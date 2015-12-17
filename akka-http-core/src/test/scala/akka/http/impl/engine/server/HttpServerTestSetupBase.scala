@@ -38,10 +38,10 @@ abstract class HttpServerTestSetupBase {
     RunnableGraph.fromGraph(GraphDSL.create(HttpServerBluePrint(settings, remoteAddress = remoteAddress, log = NoLogging)) { implicit b ⇒
       server ⇒
         import GraphDSL.Implicits._
-        Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
+        Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
         server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x }.buffer(1, OverflowStrategy.backpressure) ~> netOut.sink
-        server.out2 ~> Sink(requests)
-        Source(responses) ~> server.in1
+        server.out2 ~> Sink.fromSubscriber(requests)
+        Source.fromPublisher(responses) ~> server.in1
         ClosedShape
     }).run()
 

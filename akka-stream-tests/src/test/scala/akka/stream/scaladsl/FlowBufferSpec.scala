@@ -51,7 +51,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.backpressure).to(Sink(subscriber)).run()
+      Source.fromPublisher(publisher).buffer(100, overflowStrategy = OverflowStrategy.backpressure).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
@@ -69,7 +69,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropHead).to(Sink(subscriber)).run()
+      Source.fromPublisher(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropHead).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
@@ -98,7 +98,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropTail).to(Sink(subscriber)).run()
+      Source.fromPublisher(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropTail).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
@@ -130,7 +130,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropBuffer).to(Sink(subscriber)).run()
+      Source.fromPublisher(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropBuffer).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
@@ -184,7 +184,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.fail).to(Sink(subscriber)).run()
+      Source.fromPublisher(publisher).buffer(100, overflowStrategy = OverflowStrategy.fail).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
@@ -211,7 +211,7 @@ class FlowBufferSpec extends AkkaSpec {
         val publisher = TestPublisher.probe[Int]()
         val subscriber = TestSubscriber.manualProbe[Int]()
 
-        Source(publisher).buffer(1, overflowStrategy = strategy).to(Sink(subscriber)).run()
+        Source.fromPublisher(publisher).buffer(1, overflowStrategy = strategy).to(Sink.fromSubscriber(subscriber)).run()
         val sub = subscriber.expectSubscription()
 
         // Fill up buffer

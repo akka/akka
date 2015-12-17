@@ -99,7 +99,7 @@ class FlowMapBenchmark {
       }
     }
 
-    flow = mkMaps(Source(syncTestPublisher), numberOfMapOps) {
+    flow = mkMaps(Source.fromPublisher(syncTestPublisher), numberOfMapOps) {
       if (UseGraphStageIdentity)
         GraphStages.identity[Int]
       else

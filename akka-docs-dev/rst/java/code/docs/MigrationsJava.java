@@ -1,18 +1,25 @@
 package docs;
 
+import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.http.javadsl.model.Uri;
+import akka.dispatch.Futures;
 import akka.japi.function.Creator;
 import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.stream.*;
 import akka.stream.javadsl.*;
+import akka.stream.testkit.TestPublisher;
+import akka.stream.testkit.TestSubscriber;
 import akka.util.ByteString;
 import scala.Option;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 import scala.concurrent.Promise;
 import scala.runtime.BoxedUnit;
+
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +32,7 @@ public class MigrationsJava {
 
     // This is compile-only code, no need for actually running anything.
     public static ActorMaterializer mat = null;
+    public static ActorSystem sys = null;
 
     public static class SomeInputStream extends InputStream {
       public SomeInputStream() {}
@@ -133,11 +141,33 @@ public class MigrationsJava {
         // Complete the promise with an empty option to emulate the old lazyEmpty
         promise.trySuccess(scala.Option.empty());
 
-        final Source<String, Cancellable> sourceUnderTest = Source.tick(
+        final Source<String, Cancellable> ticks = Source.tick(
           FiniteDuration.create(0, TimeUnit.MILLISECONDS),
           FiniteDuration.create(200, TimeUnit.MILLISECONDS),
           "tick");
+
+        final Source<Integer, BoxedUnit> pubSource =
+          Source.fromPublisher(TestPublisher.<Integer>manualProbe(true, sys));
+
+        final Source<Integer, BoxedUnit> futSource =
+          Source.fromFuture(Futures.successful(42));
+
+        final Source<Integer, Subscriber<Integer>> subSource =
+          Source.<Integer>asSubscriber();
         //#source-creators
+
+        //#sink-creators
+        final Sink<Integer, BoxedUnit> subSink =
+          Sink.fromSubscriber(TestSubscriber.<Integer>manualProbe(sys));
+        //#sink-creators
+
+        //#sink-as-publisher
+        final Sink<Integer, Publisher<Integer>> pubSink =
+          Sink.<Integer>asPublisher(false);
+
+        final Sink<Integer, Publisher<Integer>> pubSinkFanout =
+          Sink.<Integer>asPublisher(true);
+        //#sink-as-publisher
 
         //#empty-flow
         Flow<Integer, Integer, BoxedUnit> emptyFlow = Flow.<Integer>create();

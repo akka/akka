@@ -10,7 +10,7 @@ import akka.stream.scaladsl.{ Keep, Source, Sink }
 class MaybeSourceTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] = {
-    val (p, pub) = Source.maybe[Int].toMat(Sink.publisher(false))(Keep.both).run()
+    val (p, pub) = Source.maybe[Int].toMat(Sink.asPublisher(false))(Keep.both).run()
     p success Some(1)
     pub
   }

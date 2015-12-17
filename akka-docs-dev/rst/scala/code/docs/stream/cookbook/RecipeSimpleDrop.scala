@@ -22,8 +22,8 @@ class RecipeSimpleDrop extends RecipeSpec {
 
       val pub = TestPublisher.probe[Message]()
       val sub = TestSubscriber.manualProbe[Message]()
-      val messageSource = Source(pub)
-      val sink = Sink(sub)
+      val messageSource = Source.fromPublisher(pub)
+      val sink = Sink.fromSubscriber(sub)
 
       messageSource.via(realDroppyStream).to(sink).run()
 

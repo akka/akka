@@ -25,7 +25,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "invoke callback on normal completion" in assertAllStagesStopped {
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
-      Source(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
+      Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
@@ -37,7 +37,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "yield the first error" in assertAllStagesStopped {
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
-      Source(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
+      Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
       val proc = p.expectSubscription
       proc.expectRequest()
       val ex = new RuntimeException("ex") with NoStackTrace
@@ -49,7 +49,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "invoke callback for an empty stream" in assertAllStagesStopped {
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
-      Source(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
+      Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendComplete()
@@ -64,7 +64,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
       val foreachSink = Sink.foreach[Int] {
         x ⇒ onCompleteProbe.ref ! ("foreach-" + x)
       }
-      val future = Source(p).map { x ⇒
+      val future = Source.fromPublisher(p).map { x ⇒
         onCompleteProbe.ref ! ("map-" + x)
         x
       }.runWith(foreachSink)

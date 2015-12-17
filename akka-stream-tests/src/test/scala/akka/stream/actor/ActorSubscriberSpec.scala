@@ -125,7 +125,7 @@ class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
 
     "signal error" in {
       val e = new RuntimeException("simulated") with NoStackTrace
-      val ref = Source(() ⇒ throw e).runWith(Sink.actorSubscriber(manualSubscriberProps(testActor)))
+      val ref = Source.fromIterator(() ⇒ throw e).runWith(Sink.actorSubscriber(manualSubscriberProps(testActor)))
       ref ! "ready"
       expectMsg(OnError(e))
     }
@@ -133,7 +133,7 @@ class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
     "remember requested after restart" in {
       // creating actor with default supervision, because stream supervisor default strategy is to stop
       val ref = system.actorOf(manualSubscriberProps(testActor))
-      Source(1 to 7).runWith(Sink(ActorSubscriber[Int](ref)))
+      Source(1 to 7).runWith(Sink.fromSubscriber(ActorSubscriber[Int](ref)))
       ref ! "ready"
       expectMsg(OnNext(1))
       expectMsg(OnNext(2))

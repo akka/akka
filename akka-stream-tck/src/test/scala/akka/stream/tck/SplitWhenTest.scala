@@ -24,7 +24,7 @@ class SplitWhenTest extends AkkaPublisherVerification[Int] {
           .concatSubstreams
           .runWith(Sink.head)
       val source = Await.result(futureSource, 3.seconds)
-      source.runWith(Sink.publisher(false))
+      source.runWith(Sink.asPublisher(false))
     }
 
 }

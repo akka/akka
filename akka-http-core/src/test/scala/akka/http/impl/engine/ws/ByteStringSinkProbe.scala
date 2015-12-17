@@ -35,7 +35,7 @@ object ByteStringSinkProbe {
   def apply()(implicit system: ActorSystem): ByteStringSinkProbe =
     new ByteStringSinkProbe {
       val probe = TestSubscriber.probe[ByteString]()
-      val sink: Sink[ByteString, Unit] = Sink(probe)
+      val sink: Sink[ByteString, Unit] = Sink.fromSubscriber(probe)
 
       def expectNoBytes(): Unit = {
         probe.ensureSubscription()

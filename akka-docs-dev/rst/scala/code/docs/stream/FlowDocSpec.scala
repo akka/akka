@@ -100,7 +100,7 @@ class FlowDocSpec extends AkkaSpec {
     Source(List(1, 2, 3))
 
     // Create a source from a Future
-    Source(Future.successful("Hello Streams!"))
+    Source.fromFuture(Future.successful("Hello Streams!"))
 
     // Create a source from a single element
     Source.single("only one element")
