@@ -138,8 +138,16 @@ object GraphStageLogic {
     private[this] var behaviour = initialReceive
 
     /** INTERNAL API */
-    private[akka] def internalReceive(pack: (ActorRef, Any)): Unit =
-      behaviour(pack)
+    private[akka] def internalReceive(pack: (ActorRef, Any)): Unit = {
+      pack._2 match {
+        case Terminated(ref) ⇒
+          if (watching contains ref) {
+            watching -= ref
+            behaviour(pack)
+          }
+        case _ ⇒ behaviour(pack)
+      }
+    }
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
       message match {
@@ -167,6 +175,7 @@ object GraphStageLogic {
       behaviour = receive
     }
 
+    private[this] var watching = ActorCell.emptyActorRefSet
     private[this] val _watchedBy = new AtomicReference[Set[ActorRef]](ActorCell.emptyActorRefSet)
 
     override def isTerminated = _watchedBy.get() == StageTerminatedTombstone
@@ -174,15 +183,24 @@ object GraphStageLogic {
     //noinspection EmptyCheck
     protected def sendTerminated(): Unit = {
       val watchedBy = _watchedBy.getAndSet(StageTerminatedTombstone)
-      if (!(watchedBy == StageTerminatedTombstone) && !watchedBy.isEmpty) {
-
-        watchedBy foreach sendTerminated(ifLocal = false)
-        watchedBy foreach sendTerminated(ifLocal = true)
+      if (watchedBy != StageTerminatedTombstone) {
+        if (watchedBy.nonEmpty) {
+          watchedBy foreach sendTerminated(ifLocal = false)
+          watchedBy foreach sendTerminated(ifLocal = true)
+        }
+        if (watching.nonEmpty) {
+          watching foreach unwatchWatched
+          watching = Set.empty
+        }
       }
     }
+
     private def sendTerminated(ifLocal: Boolean)(watcher: ActorRef): Unit =
       if (watcher.asInstanceOf[ActorRefScope].isLocal == ifLocal)
         watcher.asInstanceOf[InternalActorRef].sendSystemMessage(DeathWatchNotification(this, existenceConfirmed = true, addressTerminated = false))
+
+    private def unwatchWatched(watched: ActorRef): Unit =
+      watched.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(watched, this))
 
     override def stop(): Unit = sendTerminated()
 
@@ -201,7 +219,7 @@ object GraphStageLogic {
               if (!_watchedBy.compareAndSet(watchedBy, watchedBy + watcher))
                 addWatcher(watchee, watcher) // try again
           } else if (!watcheeSelf && watcherSelf) {
-            watch(watchee)
+            log.warning("externally triggered watch from {} to {} is illegal on StageActorRef", watcher, watchee)
           } else {
             log.error("BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, this))
           }
@@ -219,18 +237,22 @@ object GraphStageLogic {
               if (!_watchedBy.compareAndSet(watchedBy, watchedBy - watcher))
                 remWatcher(watchee, watcher) // try again
           } else if (!watcheeSelf && watcherSelf) {
-            unwatch(watchee)
+            log.warning("externally triggered unwatch from {} to {} is illegal on StageActorRef", watcher, watchee)
           } else {
             log.error("BUG: illegal Unwatch(%s,%s) for %s".format(watchee, watcher, this))
           }
       }
     }
 
-    def watch(actorRef: ActorRef): Unit =
+    def watch(actorRef: ActorRef): Unit = {
+      watching += actorRef
       actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Watch(actorRef.asInstanceOf[InternalActorRef], this))
+    }
 
-    def unwatch(actorRef: ActorRef): Unit =
+    def unwatch(actorRef: ActorRef): Unit = {
+      watching -= actorRef
       actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(actorRef.asInstanceOf[InternalActorRef], this))
+    }
   }
   object StageActorRef {
     type Receive = ((ActorRef, Any)) ⇒ Unit
@@ -885,8 +907,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   // Internal hooks to avoid reliance on user calling super in postStop
   /** INTERNAL API */
   protected[stream] def afterPostStop(): Unit = {
-    if (_stageActorRef ne null) _stageActorRef.stop()
-    _stageActorRef = null
+    if (_stageActorRef ne null) {
+      _stageActorRef.stop()
+      _stageActorRef = null
+    }
   }
 
   /**
