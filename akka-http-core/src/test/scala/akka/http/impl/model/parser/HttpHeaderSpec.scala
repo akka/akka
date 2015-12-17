@@ -589,9 +589,10 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       parse("Foo", "ba\u0000r") shouldEqual ParsingResult.Error(ErrorInfo(
         "Illegal HTTP header value: Invalid input '\\u0000', expected field-value-char, FWS or 'EOI' (line 1, column 3)",
         "ba\u0000r\n  ^"))
-      parse("Flood-Resistant-Hammerdrill", "árvíztűrő ütvefúrógép") shouldEqual ParsingResult.Error(ErrorInfo(
-        "Illegal HTTP header value: Invalid input 'ű', expected field-value-char, FWS or 'EOI' (line 1, column 7)",
-        "árvíztűrő ütvefúrógép\n      ^"))
+    }
+    "allow UTF8 characters in RawHeaders" in {
+      parse("Flood-Resistant-Hammerdrill", "árvíztűrő ütvefúrógép") shouldEqual
+        ParsingResult.Ok(RawHeader("Flood-Resistant-Hammerdrill", "árvíztűrő ütvefúrógép"), Nil)
     }
     "compress value whitespace into single spaces and trim" in {
       parse("Foo", " b  a \tr\t") shouldEqual ParsingResult.Ok(RawHeader("Foo", "b a r"), Nil)
