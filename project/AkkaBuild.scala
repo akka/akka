@@ -1502,6 +1502,8 @@ object Dependencies {
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
     val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
 
+    val sslConfigVersion = System.getProperty("akka.build.typesafeSslConfig", "0.1.0")
+
     val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0")
 
     // also change pom.xml and build.sbt in akka-samples/akka-docs-java-lambda
@@ -1557,6 +1559,9 @@ object Dependencies {
 
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % "4.11"        // Common Public License 1.0
+
+    // ssl config
+    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % sslConfigVersion // ApacheV2
 
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
@@ -1648,6 +1653,7 @@ object Dependencies {
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
     "com.typesafe.akka" %% "akka-actor" % Versions.publishedAkkaVersion,
+    sslConfigAkka,
     reactiveStreams,
     Test.junitIntf,
     Test.scalatest)
