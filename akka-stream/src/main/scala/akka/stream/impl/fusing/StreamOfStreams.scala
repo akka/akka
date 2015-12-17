@@ -125,7 +125,7 @@ final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[
             if (localSource.elem == null) removeSource(localSource)
           case OnError(ex) ⇒
             failStage(ex)
-        }.invoke))(interpreter.materializer)
+        }.invoke))(interpreter.subFusingMaterializer)
       localSource.activate(subF)
     }
 
@@ -140,6 +140,8 @@ final class FlattenMerge[T, M](breadth: Int) extends GraphStage[FlowShape[Graph[
       sources.foreach(_.cancel())
     }
   }
+
+  override def toString: String = s"FlattenMerge($breadth)"
 }
 
 /**
@@ -285,8 +287,8 @@ object PrefixAndTail {
       override def completeSubstream(): Unit = onParentFinish.invoke(())
       override def failSubstream(ex: Throwable): Unit = onParentFailure.invoke(ex)
 
-      override def onPull(): Unit = pullParent()
-      override def onDownstreamFinish(): Unit = cancelParent()
+      override def onPull(): Unit = pullParent(())
+      override def onDownstreamFinish(): Unit = cancelParent(())
     }
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TailSourceLogic(shape)
@@ -413,4 +415,6 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
   }
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new PrefixAndTailLogic(shape)
+
+  override def toString: String = s"PrefixAndTail($n)"
 }
