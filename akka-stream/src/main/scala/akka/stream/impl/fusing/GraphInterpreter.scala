@@ -372,6 +372,9 @@ private[stream] final class GraphInterpreter(
     shape.inlets.size + shape.outlets.size + keepGoing
   }
 
+  private var _subFusingMaterializer: Materializer = _
+  def subFusingMaterializer: Materializer = _subFusingMaterializer
+
   // An event queue implemented as a circular buffer
   // FIXME: This calculates the maximum size ever needed, but most assemblies can run on a smaller queue
   private[this] val eventQueue = Array.ofDim[Int](1 << (32 - Integer.numberOfLeadingZeros(assembly.connectionCount - 1)))
@@ -445,9 +448,14 @@ private[stream] final class GraphInterpreter(
   def isCompleted: Boolean = runningStages == 0 && !isSuspended
 
   /**
-   * Initializes the states of all the stage logics by calling preStart()
+   * Initializes the states of all the stage logics by calling preStart().
+   * The passed-in materializer is intended to be a SubFusingActorMaterializer
+   * that avoids creating new Actors when stages materialize sub-flows. If no
+   * such materializer is available, passing in `null` will reuse the normal
+   * materializer for the GraphInterpreter—fusing is only an optimization.
    */
-  def init(): Unit = {
+  def init(subMat: Materializer): Unit = {
+    _subFusingMaterializer = if (subMat == null) materializer else subMat
     var i = 0
     while (i < logics.length) {
       val logic = logics(i)
