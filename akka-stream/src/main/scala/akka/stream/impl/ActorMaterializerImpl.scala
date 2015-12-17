@@ -20,6 +20,7 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
 import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
 import akka.stream.impl.fusing.Fusing
+import akka.stream.impl.fusing.GraphInterpreterShell
 
 /**
  * INTERNAL API
@@ -44,7 +45,7 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
 
   override def isShutdown: Boolean = haveShutDown.get()
 
-  override def withNamePrefix(name: String): Materializer = this.copy(flowNames = flowNames.copy(name))
+  override def withNamePrefix(name: String): ActorMaterializerImpl = this.copy(flowNames = flowNames.copy(name))
 
   private[this] def createFlowName(): String = flowNames.next()
 
@@ -73,7 +74,11 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
   override def scheduleOnce(delay: FiniteDuration, task: Runnable) =
     system.scheduler.scheduleOnce(delay, task)(executionContext)
 
-  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat = {
+  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
+    materialize(_runnableGraph, null)
+
+  private[stream] def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat],
+                                       subflowFuser: GraphInterpreterShell ⇒ ActorRef): Mat = {
     val runnableGraph =
       if (settings.autoFusing) Fusing.aggressive(_runnableGraph)
       else _runnableGraph
@@ -146,17 +151,24 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
         val calculatedSettings = effectiveSettings(effectiveAttributes)
         val (inHandlers, outHandlers, logics) = graph.assembly.materialize(effectiveAttributes, graph.matValIDs, matVal, registerSrc)
 
-        val props = ActorGraphInterpreter.props(
-          graph.assembly, inHandlers, outHandlers, logics, graph.shape, calculatedSettings, ActorMaterializerImpl.this)
+        val shell = new GraphInterpreterShell(graph.assembly, inHandlers, outHandlers, logics, graph.shape,
+          calculatedSettings, ActorMaterializerImpl.this)
 
-        val impl = actorOf(props, stageName(effectiveAttributes), calculatedSettings.dispatcher)
+        val impl =
+          if (subflowFuser != null && !effectiveAttributes.contains(Attributes.AsyncBoundary)) {
+            subflowFuser(shell)
+          } else {
+            val props = ActorGraphInterpreter.props(shell)
+            actorOf(props, stageName(effectiveAttributes), calculatedSettings.dispatcher)
+          }
+
         for ((inlet, i) ← graph.shape.inlets.iterator.zipWithIndex) {
-          val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, i)
+          val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, shell, i)
           assignPort(inlet, subscriber)
         }
         for ((outlet, i) ← graph.shape.outlets.iterator.zipWithIndex) {
-          val publisher = new ActorPublisher[Any](impl) { override val wakeUpMsg = ActorGraphInterpreter.SubscribePending(i) }
-          impl ! ActorGraphInterpreter.ExposedPublisher(i, publisher)
+          val publisher = new ActorGraphInterpreter.BoundaryPublisher(impl, shell, i)
+          impl ! ActorGraphInterpreter.ExposedPublisher(shell, i, publisher)
           assignPort(outlet, publisher)
         }
       }
@@ -205,6 +217,20 @@ private[akka] case class ActorMaterializerImpl(system: ActorSystem,
     }
   }
 
+}
+
+private[akka] class SubFusingActorMaterializerImpl(val delegate: ActorMaterializerImpl, registerShell: GraphInterpreterShell ⇒ ActorRef) extends Materializer {
+  override def executionContext: ExecutionContextExecutor = delegate.executionContext
+
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat = delegate.materialize(runnable, registerShell)
+
+  override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
+
+  override def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
+    delegate.schedulePeriodically(initialDelay, interval, task)
+
+  def withNamePrefix(name: String): SubFusingActorMaterializerImpl =
+    new SubFusingActorMaterializerImpl(delegate.withNamePrefix(name), registerShell)
 }
 
 /**

@@ -84,7 +84,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
           _interpreter.attachDownstreamBoundary(i + upstreams.size + connections.size, downstream._2)
         }
 
-        _interpreter.init()
+        _interpreter.init(null)
       }
     }
 
@@ -226,7 +226,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
     manualInit(assembly)
     interpreter.attachDownstreamBoundary(0, in)
     interpreter.attachUpstreamBoundary(0, out)
-    interpreter.init()
+    interpreter.init(null)
   }
 
   abstract class FailingStageSetup(initFailOnNextEvent: Boolean = false) extends TestSetup {
@@ -351,7 +351,7 @@ trait GraphInterpreterSpecKit extends AkkaSpec {
       interpreter.attachUpstreamBoundary(0, upstream)
       interpreter.attachDownstreamBoundary(ops.length, downstream)
 
-      interpreter.init()
+      interpreter.init(null)
 
     }
 

@@ -56,7 +56,7 @@ class GraphInterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
       manualInit(assembly)
       interpreter.attachDownstreamBoundary(2, sink)
       interpreter.attachUpstreamBoundary(0, source)
-      interpreter.init()
+      interpreter.init(null)
 
       lastEvents() should ===(Set.empty)
 

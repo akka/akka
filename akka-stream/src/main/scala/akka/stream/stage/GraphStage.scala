@@ -319,6 +319,19 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     else _interpreter
 
   /**
+   * The [[akka.stream.Materializer]] that has set this GraphStage in motion.
+   */
+  protected def materializer: Materializer = interpreter.materializer
+
+  /**
+   * An [[akka.stream.Materializer]] that may run fusable parts of the graphs
+   * that it materializes within the same actor as the current GraphStage (if
+   * fusing is available). This materializer must not be shared outside of the
+   * GraphStage.
+   */
+  protected def subFusingMaterializer: Materializer = interpreter.subFusingMaterializer
+
+  /**
    * Input handler that terminates the stage upon receiving completion.
    * The stage fails upon receiving a failure.
    */

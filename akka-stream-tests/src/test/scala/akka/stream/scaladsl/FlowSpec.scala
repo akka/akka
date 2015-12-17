@@ -22,6 +22,7 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import akka.stream.impl.fusing.GraphInterpreterShell
 
 object FlowSpec {
   class Fruit
@@ -41,22 +42,14 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
   val identity: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ in.map(e ⇒ e)
   val identity2: Flow[Any, Any, Unit] ⇒ Flow[Any, Any, Unit] = in ⇒ identity(in)
 
-  class BrokenActorInterpreter(
-    _assembly: GraphAssembly,
-    _inHandlers: Array[InHandler],
-    _outHandlers: Array[OutHandler],
-    _logics: Array[GraphStageLogic],
-    _shape: Shape,
-    _settings: ActorMaterializerSettings,
-    _materializer: Materializer,
-    brokenMessage: Any)
-    extends ActorGraphInterpreter(_assembly, _inHandlers, _outHandlers, _logics, _shape, _settings, _materializer) {
+  class BrokenActorInterpreter(_shell: GraphInterpreterShell, brokenMessage: Any)
+    extends ActorGraphInterpreter(_shell) {
 
     import akka.stream.actor.ActorSubscriberMessage._
 
     override protected[akka] def aroundReceive(receive: Receive, msg: Any) = {
       msg match {
-        case ActorGraphInterpreter.OnNext(0, m) if m == brokenMessage ⇒
+        case ActorGraphInterpreter.OnNext(_, 0, m) if m == brokenMessage ⇒
           throw new NullPointerException(s"I'm so broken [$m]")
         case _ ⇒ super.aroundReceive(receive, msg)
       }
@@ -77,14 +70,17 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     val (inHandlers, outHandlers, logics) =
       assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
 
-    val props = Props(new BrokenActorInterpreter(assembly, inHandlers, outHandlers, logics, stage.shape, settings, materializer, "a3"))
+    val shell = new GraphInterpreterShell(assembly, inHandlers, outHandlers, logics, stage.shape, settings,
+      materializer.asInstanceOf[ActorMaterializerImpl])
+
+    val props = Props(new BrokenActorInterpreter(shell, "a3"))
       .withDispatcher("akka.test.stream-dispatcher").withDeploy(Deploy.local)
     val impl = system.actorOf(props, "borken-stage-actor")
 
-    val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, 0)
-    val publisher = new ActorPublisher[Any](impl) { override val wakeUpMsg = ActorGraphInterpreter.SubscribePending(0) }
+    val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, shell, 0)
+    val publisher = new ActorPublisher[Any](impl) { override val wakeUpMsg = ActorGraphInterpreter.SubscribePending(shell, 0) }
 
-    impl ! ActorGraphInterpreter.ExposedPublisher(0, publisher)
+    impl ! ActorGraphInterpreter.ExposedPublisher(shell, 0, publisher)
 
     Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
   })
