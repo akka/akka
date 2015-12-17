@@ -78,7 +78,9 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     TestCase("Balance", scaladsl.Balance.getClass, javadsl.Balance.getClass),
     TestCase("Zip", scaladsl.Zip.getClass, javadsl.Zip.getClass),
     TestCase("UnZip", scaladsl.Unzip.getClass, javadsl.Unzip.getClass),
-    TestCase("Concat", scaladsl.Concat.getClass, javadsl.Concat.getClass))
+    TestCase("Concat", scaladsl.Concat.getClass, javadsl.Concat.getClass),
+    TestCase("FileIO", scaladsl.FileIO.getClass, javadsl.FileIO.getClass),
+    TestCase("StreamConverters", scaladsl.StreamConverters.getClass, javadsl.StreamConverters.getClass))
 
   "Java DSL" must provide {
     testCases foreach {

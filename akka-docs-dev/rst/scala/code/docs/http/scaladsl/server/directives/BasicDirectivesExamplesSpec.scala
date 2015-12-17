@@ -14,7 +14,7 @@ import akka.http.scaladsl.model.headers.{ Server, RawHeader }
 import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -174,7 +174,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       path("sample") {
         complete {
           // internally uses the configured fileIODispatcher:
-          val source = Source.file(new File("example.json"))
+          val source = FileIO.fromFile(new File("example.json"))
           HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, source))
         }
       }

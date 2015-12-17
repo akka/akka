@@ -7,6 +7,7 @@ import java.io.{ File, FileWriter }
 
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.stream.scaladsl.FileIO
 import akka.stream.scaladsl.{ Source, Sink }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -36,7 +37,7 @@ class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
   }
 
   def createPublisher(elements: Long): Publisher[ByteString] =
-    Source.file(file, chunkSize = 512)
+    FileIO.fromFile(file, chunkSize = 512)
       .take(elements)
       .runWith(Sink.asPublisher(false))
 

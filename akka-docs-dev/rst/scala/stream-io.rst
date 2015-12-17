@@ -110,7 +110,7 @@ on files.
   Once Akka is free to require JDK8 (from ``2.4.x``) these implementations will be updated to make use of the
   new NIO APIs (i.e. :class:`AsynchronousFileChannel`).
 
-Streaming data from a file is as easy as creating a `Source.file` given a target file, and an optional
+Streaming data from a file is as easy as creating a `FileIO.fromFile` given a target file, and an optional
 ``chunkSize`` which determines the buffer size determined as one "element" in such stream:
 
 .. includecode:: code/docs/stream/io/StreamFileDocSpec.scala#file-source
