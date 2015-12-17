@@ -481,41 +481,43 @@ object Partition {
  * Fan-out the stream to several streams. emitting an incoming upstream element to one downstream consumer according
  * to the partitioner function applied to the element
  *
- * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ * '''Emits when''' emits when an element is available from the input and the chosen output has demand
  *
- * '''Backpressures when''' one of the outputs backpressure
+ * '''Backpressures when''' the currently chosen output back-pressures
  *
- * '''Completes when''' upstream completes
+ * '''Completes when''' upstream completes and no output is pending
  *
  * '''Cancels when'''
- *   when one of the downstreams cancel
+ *   when all downstreams cancel
  */
 
-class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends GraphStage[UniformFanOutShape[T, T]] {
 
   val in: Inlet[T] = Inlet[T]("Partition.in")
   val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i))
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
-  private val outPulled = Array.fill[Boolean](outputPorts)(false)
-  private val outPending = mutable.Map.empty[Int, T]
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-    var downstreamRunning = outputPorts
+    private var outPending: Option[(Int, T)] = None
 
     setHandler(in, new InHandler {
       override def onPush() = {
         val elem = grab(in)
         val idx = partitioner(elem)
-        if (outPulled(idx)) {
+        if (isAvailable(out(idx))) {
           if (!isClosed(out(idx))) {
             push(out(idx), elem)
-            outPulled(idx) = false
-            if (outPulled.exists(x ⇒ x) && !hasBeenPulled(in))
+            if (out.exists(x ⇒ isAvailable(x)) && !hasBeenPulled(in))
               pull(in)
           }
         } else {
-          outPending.put(idx, elem)
+          outPending = Some(idx -> elem)
         }
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (!outPending.isDefined)
+          completeStage()
       }
     })
 
@@ -523,17 +525,14 @@ class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends GraphStage[
       case (o, idx) ⇒
         setHandler(o, new OutHandler {
           override def onPull() = {
-            outPending.get(idx) match {
-              case Some(elem) ⇒
-                if (!isClosed(o)) {
-                  push(o, elem)
-                }
-                outPending.remove(idx)
+            outPending match {
+              case Some((i, elem)) if (i == idx) ⇒
+                push(o, elem)
+                outPending = None
                 if (!hasBeenPulled(in)) {
                   pull(in)
                 }
               case None ⇒
-                outPulled(idx) = true
                 if (outPending.isEmpty && !hasBeenPulled(in)) {
                   pull(in)
                 }
@@ -541,13 +540,17 @@ class Partition[T](outputPorts: Int, partitioner: T ⇒ Int) extends GraphStage[
           }
 
           override def onDownstreamFinish(): Unit = {
-            completeStage()
+            if (out.forall(isClosed(_)))
+              completeStage()
+            else {
+              outPending.foreach { case (i, _) if (i == idx) ⇒ outPending = None }
+            }
           }
         })
     }
   }
 
-  override def toString = "Partition"
+  override def toString = s"Partition($outputPorts)"
 
 }
 
