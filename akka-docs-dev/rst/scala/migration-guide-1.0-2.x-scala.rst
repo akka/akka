@@ -609,15 +609,17 @@ should be replaced by:
 SynchronousFileSource and SynchronousFileSink
 =============================================
 
-Both have been replaced by ``Source.file(…)`` and ``Sink.file(…)`` due to discoverability issues
+
+``SynchronousFileSource`` and ``SynchronousFileSink``
+have been replaced by ``FileIO.read(…)`` and ``FileIO.write(…)`` due to discoverability issues
 paired with names which leaked internal implementation details.
 
 Update procedure
 ----------------
 
-Replace ``SynchronousFileSource(`` and ``SynchronousFileSource.apply(`` with ``Source.file(``
+Replace ``SynchronousFileSource(`` and ``SynchronousFileSource.apply(`` with ``FileIO.fromFile(``
 
-Replace ``SynchronousFileSink(`` and ``SynchronousFileSink.apply(`` with ``Sink.file(``
+Replace ``SynchronousFileSink(`` and ``SynchronousFileSink.apply(`` with ``FileIO.toFile(``
 
 Example
 ^^^^^^^
@@ -633,6 +635,7 @@ Example
       // This no longer works!
       val someFileSink = SynchronousFileSink(new File("."))
 
+
 should be replaced by
 
 .. includecode:: code/docs/MigrationsScala.scala#file-source-sink
@@ -640,14 +643,14 @@ should be replaced by
 InputStreamSource and OutputStreamSink
 ======================================
 
-Both have been replaced by ``Source.inputStream(…)`` and ``Sink.outputStream(…)`` due to discoverability issues.
+Both have been replaced by ``StreamConverters.fromInputStream(…)`` and ``StreamConverters.fromOutputStream(…)`` due to discoverability issues.
 
 Update procedure
 ----------------
 
-Replace ``InputStreamSource(`` and ``InputStreamSource.apply(`` with ``Source.inputStream(``
-
-Replace ``OutputStreamSink(`` and ``OutputStreamSink.apply(`` with ``Sink.outputStream(``
+Replace ``InputStreamSource(`` and ``InputStreamSource.apply(`` with ``StreamConverters.fromInputStream(``
+i
+Replace ``OutputStreamSink(`` and ``OutputStreamSink.apply(`` with ``StreamConverters.fromOutputStream(``
 
 Example
 ^^^^^^^
@@ -670,14 +673,14 @@ should be replaced by
 OutputStreamSource and InputStreamSink
 ======================================
 
-Both have been replaced by ``Source.outputStream(…)`` and ``Sink.inputStream(…)`` due to discoverability issues.
+Both have been replaced by ``StreamConverters.asOutputStream(…)`` and ``StreamConverters.asInputStream(…)`` due to discoverability issues.
 
 Update procedure
 ----------------
 
-Replace ``OutputStreamSource(`` and ``OutputStreamSource.apply(`` with ``Source.outputStream(``
+Replace ``OutputStreamSource(`` and ``OutputStreamSource.apply(`` with ``StreamConverters.asOutputStream(``
 
-Replace ``InputStreamSink(`` and ``InputStreamSink.apply(`` with ``Sink.inputStream(``
+Replace ``InputStreamSink(`` and ``InputStreamSink.apply(`` with ``StreamConverters.asInputStream(``
 
 Example
 ^^^^^^^
