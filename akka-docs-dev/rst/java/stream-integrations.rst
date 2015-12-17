@@ -8,7 +8,7 @@ Integrating with Actors
 =======================
 
 For piping the elements of a stream as messages to an ordinary actor you can use the
-``Sink.actorRef``. Messages can be sent to a stream via the :class:`ActorRef` that is 
+``Sink.actorRef``. Messages can be sent to a stream via the :class:`ActorRef` that is
 materialized by ``Source.actorRef``.
 
 For more advanced use cases the :class:`ActorPublisher` and :class:`ActorSubscriber` traits are
@@ -32,8 +32,8 @@ Akka Streams :class:`Source` or :class:`Sink`.
 Source.actorRef
 ^^^^^^^^^^^^^^^
 
-Messages sent to the actor that is materialized by ``Source.actorRef`` will be emitted to the 
-stream if there is demand from downstream, otherwise they will be buffered until request for 
+Messages sent to the actor that is materialized by ``Source.actorRef`` will be emitted to the
+stream if there is demand from downstream, otherwise they will be buffered until request for
 demand is received.
 
 Depending on the defined :class:`OverflowStrategy` it might drop elements if there is no space
@@ -44,7 +44,7 @@ actor interface.
 The stream can be completed successfully by sending ``akka.actor.PoisonPill`` or
 ``akka.actor.Status.Success`` to the actor reference.
 
-The stream can be completed with failure by sending ``akka.actor.Status.Failure`` to the 
+The stream can be completed with failure by sending ``akka.actor.Status.Failure`` to the
 actor reference.
 
 The actor will be stopped when the stream is completed, failed or cancelled from downstream,
@@ -108,12 +108,12 @@ This is how it can be used as input :class:`Source` to a :class:`Flow`:
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/ActorPublisherDocTest.java#actor-publisher-usage
 
 You can only attach one subscriber to this publisher. Use a ``Broadcast``-element or
-attach a ``Sink.publisher(true)`` to enable multiple subscribers.
+attach a ``Sink.asPublisher(true)`` to enable multiple subscribers.
 
 ActorSubscriber
 ^^^^^^^^^^^^^^^
 
-Extend :class:`akka.stream.actor.AbstractActorSubscriber` to make your class a stream subscriber with 
+Extend :class:`akka.stream.actor.AbstractActorSubscriber` to make your class a stream subscriber with
 full control of stream back pressure. It will receive
 ``ActorSubscriberMessage.OnNext``, ``ActorSubscriberMessage.OnComplete`` and ``ActorSubscriberMessage.OnError``
 messages from the stream. It can also receive other, non-stream messages, in the same way as any actor.
@@ -414,7 +414,7 @@ by using the Publisher-:class:`Sink`:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/ReactiveStreamsDocTest.java#source-publisher
 
-A publisher that is created with ``Sink.publisher(false)`` supports only a single subscription.
+A publisher that is created with ``Sink.asPublisher(false)`` supports only a single subscription.
 Additional subscription attempts will be rejected with an :class:`IllegalStateException`.
 
 A publisher that supports multiple subscribers using fan-out/broadcasting is created as follows:

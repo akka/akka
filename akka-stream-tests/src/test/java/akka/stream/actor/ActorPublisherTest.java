@@ -42,7 +42,7 @@ public class ActorPublisherTest extends StreamTest {
     final ActorRef ref = system
       .actorOf(Props.create(TestPublisher.class).withDispatcher("akka.test.stream-dispatcher"));
     final Publisher<Integer> publisher = UntypedActorPublisher.create(ref);
-    Source.from(publisher)
+    Source.fromPublisher(publisher)
       .runForeach(new akka.japi.function.Procedure<Integer>() {
         @Override
         public void apply(Integer elem) throws Exception {

@@ -27,7 +27,7 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
       implicit val materializer = ActorMaterializer(settings)
 
       val probe = TestSubscriber.manualProbe[Int]()
-      Source(List.fill(1000)(0) ::: List(1)).filter(_ != 0).runWith(Sink(probe))
+      Source(List.fill(1000)(0) ::: List(1)).filter(_ != 0).runWith(Sink.fromSubscriber(probe))
 
       val subscription = probe.expectSubscription()
       for (_ ← 1 to 10000) {

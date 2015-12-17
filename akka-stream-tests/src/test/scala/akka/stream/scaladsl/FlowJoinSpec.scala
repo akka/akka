@@ -32,7 +32,7 @@ class FlowJoinSpec extends AkkaSpec(ConfigFactory.parseString("akka.loglevel=INF
         val broadcast = b.add(Broadcast[Int](2))
         source ~> merge.in(0)
         merge.out ~> broadcast.in
-        broadcast.out(0).grouped(1000) ~> Sink(probe)
+        broadcast.out(0).grouped(1000) ~> Sink.fromSubscriber(probe)
 
         FlowShape(merge.in(1), broadcast.out(1))
       })

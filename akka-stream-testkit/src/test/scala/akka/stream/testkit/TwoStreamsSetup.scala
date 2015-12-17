@@ -23,9 +23,9 @@ abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
       import GraphDSL.Implicits._
       val f = fixture(b)
 
-      Source(p1) ~> f.left
-      Source(p2) ~> f.right
-      f.out ~> Sink(subscriber)
+      Source.fromPublisher(p1) ~> f.left
+      Source.fromPublisher(p2) ~> f.right
+      f.out ~> Sink.fromSubscriber(subscriber)
       ClosedShape
     }).run()
 

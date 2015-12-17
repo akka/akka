@@ -19,7 +19,7 @@ class PublisherSinkSpec extends AkkaSpec {
 
     "be unique when created twice" in assertAllStagesStopped {
 
-      val (pub1, pub2) = RunnableGraph.fromGraph(GraphDSL.create(Sink.publisher[Int](false), Sink.publisher[Int](false))(Keep.both) { implicit b ⇒
+      val (pub1, pub2) = RunnableGraph.fromGraph(GraphDSL.create(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) { implicit b ⇒
         (p1, p2) ⇒
           import GraphDSL.Implicits._
 
@@ -31,8 +31,8 @@ class PublisherSinkSpec extends AkkaSpec {
           ClosedShape
       }).run()
 
-      val f1 = Source(pub1).map(identity).runFold(0)(_ + _)
-      val f2 = Source(pub2).map(identity).runFold(0)(_ + _)
+      val f1 = Source.fromPublisher(pub1).map(identity).runFold(0)(_ + _)
+      val f2 = Source.fromPublisher(pub2).map(identity).runFold(0)(_ + _)
 
       Await.result(f1, 3.seconds) should be(30)
       Await.result(f2, 3.seconds) should be(15)
@@ -40,14 +40,14 @@ class PublisherSinkSpec extends AkkaSpec {
     }
 
     "work with SubscriberSource" in {
-      val (sub, pub) = Source.subscriber[Int].toMat(Sink.publisher(false))(Keep.both).run()
-      Source(1 to 100).to(Sink(sub)).run()
-      Await.result(Source(pub).grouped(1000).runWith(Sink.head), 3.seconds) should ===(1 to 100)
+      val (sub, pub) = Source.asSubscriber[Int].toMat(Sink.asPublisher(false))(Keep.both).run()
+      Source(1 to 100).to(Sink.fromSubscriber(sub)).run()
+      Await.result(Source.fromPublisher(pub).grouped(1000).runWith(Sink.head), 3.seconds) should ===(1 to 100)
     }
 
     "be able to use Publisher in materialized value transformation" in {
       val f = Source(1 to 3).runWith(
-        Sink.publisher[Int](false).mapMaterializedValue(p ⇒ Source(p).runFold(0)(_ + _)))
+        Sink.asPublisher[Int](false).mapMaterializedValue(p ⇒ Source.fromPublisher(p).runFold(0)(_ + _)))
 
       Await.result(f, 3.seconds) should be(6)
     }

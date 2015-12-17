@@ -6,11 +6,11 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl._
 import akka.stream._
 import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
-import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit.{ AkkaSpec, TestPublisher, TestSubscriber }
 
 import scala.concurrent.{ Future, ExecutionContext, Promise }
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Failure, Random, Success, Try }
 
 class MigrationsScala extends AkkaSpec {
 
@@ -110,7 +110,25 @@ class MigrationsScala extends AkkaSpec {
         promise.trySuccess(Some(()))
 
         val ticks = Source.tick(1.second, 3.seconds, "tick")
+
+        val pubSource = Source.fromPublisher(TestPublisher.manualProbe[Int]())
+
+        val itSource = Source.fromIterator(() => Iterator.continually(Random.nextGaussian))
+
+        val futSource = Source.fromFuture(Future.successful(42))
+
+        val subSource = Source.asSubscriber
         //#source-creators
+
+        //#sink-creators
+        val subSink = Sink.fromSubscriber(TestSubscriber.manualProbe[Int]())
+        //#sink-creators
+
+        //#sink-as-publisher
+        val pubSink = Sink.asPublisher(fanout = false)
+
+        val pubSinkFanout = Sink.asPublisher(fanout = true)
+        //#sink-as-publisher
 
         //#flatMapConcat
         Flow[Source[Int, Any]].flatMapConcat(identity)

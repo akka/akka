@@ -249,7 +249,7 @@ public class FlowTest extends StreamTest {
         })
         .grouped(10)
         .mergeSubstreams();
-    
+
     final Future<List<List<String>>> future =
         Source.from(input).via(flow).grouped(10).runWith(Sink.<List<List<String>>> head(), materializer);
     final Object[] result = Await.result(future, Duration.create(1, TimeUnit.SECONDS)).toArray();
@@ -335,7 +335,7 @@ public class FlowTest extends StreamTest {
     final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, BoxedUnit> in2 = Source.from(Arrays.asList("d", "e", "f"));
 
-    final Sink<String, Publisher<String>> publisher = Sink.publisher(false);
+    final Sink<String, Publisher<String>> publisher = Sink.asPublisher(false);
 
     final Source<String, BoxedUnit> source = Source.fromGraph(
             GraphDSL.create(new Function<GraphDSL.Builder<BoxedUnit>, SourceShape<String>>() {
@@ -350,7 +350,7 @@ public class FlowTest extends StreamTest {
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
+    final Future<List<String>> all = Source.fromPublisher(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
 
     final List<String> result = Await.result(all, Duration.apply(200, TimeUnit.MILLISECONDS));
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
@@ -443,7 +443,7 @@ public class FlowTest extends StreamTest {
 
     assertEquals(Arrays.asList(1, 2, 3, 4, 5), result);
   }
-  
+
   @Test
   public void mustBeAbleToUseFlatMapMerge() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
@@ -558,7 +558,7 @@ public class FlowTest extends StreamTest {
     final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
     final JavaTestKit probe = new JavaTestKit(system);
 
-    final Source<Integer, ?> source = Source.from(publisherProbe);
+    final Source<Integer, ?> source = Source.fromPublisher(publisherProbe);
     final Flow<Integer, Integer, ?> flow = Flow.of(Integer.class).map(
             new Function<Integer, Integer>() {
               public Integer apply(Integer elem) {

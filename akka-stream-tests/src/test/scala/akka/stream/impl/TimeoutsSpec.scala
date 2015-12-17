@@ -41,7 +41,7 @@ class TimeoutsSpec extends AkkaSpec {
       val downstreamProbe = TestSubscriber.probe[Int]()
       Source.maybe[Int]
         .initialTimeout(1.second)
-        .runWith(Sink(downstreamProbe))
+        .runWith(Sink.fromSubscriber(downstreamProbe))
 
       downstreamProbe.expectSubscription()
       downstreamProbe.expectNoMsg(500.millis)
@@ -73,9 +73,9 @@ class TimeoutsSpec extends AkkaSpec {
     "fail if not completed until timeout" in assertAllStagesStopped {
       val upstreamProbe = TestPublisher.probe[Int]()
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source(upstreamProbe)
+      Source.fromPublisher(upstreamProbe)
         .completionTimeout(2.seconds)
-        .runWith(Sink(downstreamProbe))
+        .runWith(Sink.fromSubscriber(downstreamProbe))
 
       upstreamProbe.sendNext(1)
       downstreamProbe.requestNext(1)
@@ -112,9 +112,9 @@ class TimeoutsSpec extends AkkaSpec {
     "fail if time between elements is too large" in assertAllStagesStopped {
       val upstreamProbe = TestPublisher.probe[Int]()
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source(upstreamProbe)
+      Source.fromPublisher(upstreamProbe)
         .idleTimeout(1.seconds)
-        .runWith(Sink(downstreamProbe))
+        .runWith(Sink.fromSubscriber(downstreamProbe))
 
       // Two seconds in overall, but won't timeout until time between elements is large enough
       // (i.e. this works differently from completionTimeout)
@@ -144,8 +144,8 @@ class TimeoutsSpec extends AkkaSpec {
       val upstreamWriter = TestPublisher.probe[Int]()
       val downstreamWriter = TestPublisher.probe[String]()
 
-      val upstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source(upstreamWriter))(Keep.left)
-      val downstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source(downstreamWriter))(Keep.left)
+      val upstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source.fromPublisher(upstreamWriter))(Keep.left)
+      val downstream = Flow.fromSinkAndSourceMat(Sink.ignore, Source.fromPublisher(downstreamWriter))(Keep.left)
 
       val assembly: RunnableGraph[(Future[Unit], Future[Unit])] = upstream
         .joinMat(BidiFlow.bidirectionalIdleTimeout[Int, String](2.seconds))(Keep.left)
@@ -177,10 +177,10 @@ class TimeoutsSpec extends AkkaSpec {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source(upWrite) ~> timeoutStage.in1;
-        timeoutStage.out1 ~> Sink(downRead)
-        Sink(upRead) <~ timeoutStage.out2;
-        timeoutStage.in2 <~ Source(downWrite)
+        Source.fromPublisher(upWrite) ~> timeoutStage.in1;
+        timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
+        Sink.fromSubscriber(upRead) <~ timeoutStage.out2;
+        timeoutStage.in2 <~ Source.fromPublisher(downWrite)
         ClosedShape
       }).run()
 
@@ -225,10 +225,10 @@ class TimeoutsSpec extends AkkaSpec {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source(upWrite) ~> timeoutStage.in1;
-        timeoutStage.out1 ~> Sink(downRead)
-        Sink(upRead) <~ timeoutStage.out2;
-        timeoutStage.in2 <~ Source(downWrite)
+        Source.fromPublisher(upWrite) ~> timeoutStage.in1;
+        timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
+        Sink.fromSubscriber(upRead) <~ timeoutStage.out2;
+        timeoutStage.in2 <~ Source.fromPublisher(downWrite)
         ClosedShape
       }).run()
 

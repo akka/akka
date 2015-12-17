@@ -51,9 +51,9 @@ class GraphUnzipWithSpec extends AkkaSpec {
     RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
       val f = fixture(b)
 
-      Source(p) ~> f.in
-      f.left ~> Sink(leftSubscriber)
-      f.right ~> Sink(rightSubscriber)
+      Source.fromPublisher(p) ~> f.in
+      f.left ~> Sink.fromSubscriber(leftSubscriber)
+      f.right ~> Sink.fromSubscriber(rightSubscriber)
 
       ClosedShape
     }).run()
@@ -101,8 +101,8 @@ class GraphUnzipWithSpec extends AkkaSpec {
         val unzip = b.add(UnzipWith(f))
         Source(1 to 4) ~> unzip.in
 
-        unzip.out0 ~> Flow[LeftOutput].buffer(4, OverflowStrategy.backpressure) ~> Sink(leftProbe)
-        unzip.out1 ~> Flow[RightOutput].buffer(4, OverflowStrategy.backpressure) ~> Sink(rightProbe)
+        unzip.out0 ~> Flow[LeftOutput].buffer(4, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(leftProbe)
+        unzip.out1 ~> Flow[RightOutput].buffer(4, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(rightProbe)
 
         ClosedShape
       }).run()
@@ -152,8 +152,8 @@ class GraphUnzipWithSpec extends AkkaSpec {
 
         Source(-2 to 2) ~> unzip.in
 
-        unzip.out0 ~> Sink(leftProbe)
-        unzip.out1 ~> Sink(rightProbe)
+        unzip.out0 ~> Sink.fromSubscriber(leftProbe)
+        unzip.out1 ~> Sink.fromSubscriber(rightProbe)
 
         ClosedShape
       }).run()
@@ -197,9 +197,9 @@ class GraphUnzipWithSpec extends AkkaSpec {
 
         Source.single(Person("Caplin", "Capybara", 3)) ~> unzip.in
 
-        unzip.out0 ~> Sink(probe0)
-        unzip.out1 ~> Sink(probe1)
-        unzip.out2 ~> Sink(probe2)
+        unzip.out0 ~> Sink.fromSubscriber(probe0)
+        unzip.out1 ~> Sink.fromSubscriber(probe1)
+        unzip.out2 ~> Sink.fromSubscriber(probe2)
 
         ClosedShape
       }).run()
@@ -248,32 +248,32 @@ class GraphUnzipWithSpec extends AkkaSpec {
         Source.single((0 to 19).toList) ~> unzip.in
 
         def createSink[T](o: Outlet[T]) =
-          o ~> Flow[T].buffer(1, OverflowStrategy.backpressure) ~> Sink(TestSubscriber.manualProbe[T]())
+          o ~> Flow[T].buffer(1, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(TestSubscriber.manualProbe[T]())
 
-        unzip.out0 ~> Sink(probe0)
+        unzip.out0 ~> Sink.fromSubscriber(probe0)
         createSink(unzip.out1)
         createSink(unzip.out2)
         createSink(unzip.out3)
         createSink(unzip.out4)
 
-        unzip.out5 ~> Sink(probe5)
+        unzip.out5 ~> Sink.fromSubscriber(probe5)
         createSink(unzip.out6)
         createSink(unzip.out7)
         createSink(unzip.out8)
         createSink(unzip.out9)
 
-        unzip.out10 ~> Sink(probe10)
+        unzip.out10 ~> Sink.fromSubscriber(probe10)
         createSink(unzip.out11)
         createSink(unzip.out12)
         createSink(unzip.out13)
         createSink(unzip.out14)
 
-        unzip.out15 ~> Sink(probe15)
+        unzip.out15 ~> Sink.fromSubscriber(probe15)
         createSink(unzip.out16)
         createSink(unzip.out17)
         createSink(unzip.out18)
 
-        unzip.out19 ~> Sink(probe19)
+        unzip.out19 ~> Sink.fromSubscriber(probe19)
 
         ClosedShape
       }).run()

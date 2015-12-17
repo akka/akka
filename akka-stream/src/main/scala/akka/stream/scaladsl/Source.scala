@@ -154,12 +154,12 @@ object Source {
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def apply[T](publisher: Publisher[T]): Source[T, Unit] =
+  def fromPublisher[T](publisher: Publisher[T]): Source[T, Unit] =
     new Source(new PublisherSource(publisher, DefaultAttributes.publisherSource, shape("PublisherSource")))
 
   /**
    * Helper to create [[Source]] from `Iterator`.
-   * Example usage: `Source(() => Iterator.from(0))`
+   * Example usage: `Source.fromIterator(() => Iterator.from(0))`
    *
    * Start a new `Source` from the given function that produces anIterator.
    * The produced stream of elements will continue until the iterator runs empty
@@ -167,7 +167,7 @@ object Source {
    * Elements are pulled out of the iterator in accordance with the demand coming
    * from the downstream transformation steps.
    */
-  def apply[T](f: () ⇒ Iterator[T]): Source[T, Unit] =
+  def fromIterator[T](f: () ⇒ Iterator[T]): Source[T, Unit] =
     apply(new immutable.Iterable[T] {
       override def iterator: Iterator[T] = f()
       override def toString: String = "() => Iterator"
@@ -201,7 +201,7 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
-  def apply[T](future: Future[T]): Source[T, Unit] =
+  def fromFuture[T](future: Future[T]): Source[T, Unit] =
     single(future).mapAsyncUnordered(1)(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.futureSource)
 
   /**
@@ -329,7 +329,7 @@ object Source {
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
-  def subscriber[T]: Source[T, Subscriber[T]] =
+  def asSubscriber[T]: Source[T, Subscriber[T]] =
     new Source(new SubscriberSource[T](DefaultAttributes.subscriberSource, shape("SubscriberSource")))
 
   /**

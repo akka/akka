@@ -37,7 +37,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec with ScalaFutures with Conversi
       val p = Source(1 to 4).mapAsyncUnordered(4)(n ⇒ Future {
         Await.ready(latch(n), 5.seconds)
         n
-      }).to(Sink(c)).run()
+      }).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(5)
       latch(2).countDown()
@@ -58,7 +58,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec with ScalaFutures with Conversi
       val p = Source(1 to 20).mapAsyncUnordered(4)(n ⇒ Future {
         probe.ref ! n
         n
-      }).to(Sink(c)).run()
+      }).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       c.expectNoMsg(200.millis)
       probe.expectNoMsg(Duration.Zero)
@@ -86,7 +86,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec with ScalaFutures with Conversi
           Await.ready(latch, 10.seconds)
           n
         }
-      }).to(Sink(c)).run()
+      }).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err1")
@@ -105,7 +105,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec with ScalaFutures with Conversi
             n
           }
         }).
-        to(Sink(c)).run()
+        to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err2")
@@ -166,7 +166,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec with ScalaFutures with Conversi
 
     "signal NPE when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b")).mapAsyncUnordered(4)(elem ⇒ Future.successful(null)).to(Sink(c)).run()
+      val p = Source(List("a", "b")).mapAsyncUnordered(4)(elem ⇒ Future.successful(null)).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
@@ -177,7 +177,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec with ScalaFutures with Conversi
       val p = Source(List("a", "b", "c"))
         .mapAsyncUnordered(4)(elem ⇒ if (elem == "b") Future.successful(null) else Future.successful(elem))
         .withAttributes(supervisionStrategy(resumingDecider))
-        .to(Sink(c)).run()
+        .to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectNextUnordered("a", "c")
@@ -188,7 +188,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec with ScalaFutures with Conversi
       val pub = TestPublisher.manualProbe[Int]()
       val sub = TestSubscriber.manualProbe[Int]()
 
-      Source(pub).mapAsyncUnordered(4)(Future.successful).runWith(Sink(sub))
+      Source.fromPublisher(pub).mapAsyncUnordered(4)(Future.successful).runWith(Sink.fromSubscriber(sub))
 
       val upstream = pub.expectSubscription()
       upstream.expectRequest()

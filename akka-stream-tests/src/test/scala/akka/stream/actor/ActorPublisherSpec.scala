@@ -345,9 +345,9 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val probe2 = TestProbe()
 
       val senderRef1 = system.actorOf(senderProps)
-      val source1 = Source(ActorPublisher[Int](senderRef1))
+      val source1 = Source.fromPublisher(ActorPublisher[Int](senderRef1))
 
-      val sink1 = Sink(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
+      val sink1 = Sink.fromSubscriber(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
       val sink2: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe2.ref))
 
       val senderRef2 = RunnableGraph.fromGraph(GraphDSL.create(Source.actorPublisher[Int](senderProps)) { implicit b ⇒
@@ -420,7 +420,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       implicit val materializer = ActorMaterializer(
         ActorMaterializerSettings(system).withDispatcher("my-dispatcher1"))
       val s = TestSubscriber.manualProbe[String]()
-      val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false)).to(Sink(s)).run()
+      val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false)).to(Sink.fromSubscriber(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
     }
@@ -430,7 +430,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false))
         .withAttributes(ActorAttributes.dispatcher("my-dispatcher1"))
-        .to(Sink(s)).run()
+        .to(Sink.fromSubscriber(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
     }
@@ -440,7 +440,7 @@ class ActorPublisherSpec extends AkkaSpec(ActorPublisherSpec.config) with Implic
       val s = TestSubscriber.manualProbe[String]()
       val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false).withDispatcher("my-dispatcher1"))
         .withAttributes(ActorAttributes.dispatcher("my-dispatcher2"))
-        .to(Sink(s)).run()
+        .to(Sink.fromSubscriber(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
     }

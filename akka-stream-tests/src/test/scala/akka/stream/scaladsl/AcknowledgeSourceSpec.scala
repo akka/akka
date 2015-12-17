@@ -22,7 +22,7 @@ class AcknowledgeSourceSpec extends AkkaSpec {
 
     "emit received messages to the stream" in {
       val s = TestSubscriber.manualProbe[Int]()
-      val queue = Source.queue(10, OverflowStrategy.fail).to(Sink(s)).run()
+      val queue = Source.queue(10, OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
       sub.request(2)
       assertSuccess(true, queue.offer(1))
@@ -35,7 +35,7 @@ class AcknowledgeSourceSpec extends AkkaSpec {
 
     "buffer when needed" in {
       val s = TestSubscriber.manualProbe[Int]()
-      val queue = Source.queue(100, OverflowStrategy.dropHead).to(Sink(s)).run()
+      val queue = Source.queue(100, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
       for (n ← 1 to 20) assertSuccess(true, queue.offer(n))
       sub.request(10)
@@ -51,7 +51,7 @@ class AcknowledgeSourceSpec extends AkkaSpec {
 
     "not fail when 0 buffer space and demand is signalled" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
-      val queue = Source.queue(0, OverflowStrategy.dropHead).to(Sink(s)).run()
+      val queue = Source.queue(0, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
       sub.request(1)
       assertSuccess(true, queue.offer(1))
@@ -61,7 +61,7 @@ class AcknowledgeSourceSpec extends AkkaSpec {
 
     "return false when can reject element to buffer" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
-      val queue = Source.queue(1, OverflowStrategy.dropNew).to(Sink(s)).run()
+      val queue = Source.queue(1, OverflowStrategy.dropNew).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
       assertSuccess(true, queue.offer(1))
       assertSuccess(false, queue.offer(2))
@@ -72,7 +72,7 @@ class AcknowledgeSourceSpec extends AkkaSpec {
 
     "wait when buffer is full and backpressure is on" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
-      val queue = Source.queue(2, OverflowStrategy.backpressure).to(Sink(s)).run()
+      val queue = Source.queue(2, OverflowStrategy.backpressure).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
       assertSuccess(true, queue.offer(1))
 
