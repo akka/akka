@@ -1022,7 +1022,7 @@ trait FlowOps[+Out, +Mat] {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
       override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
         via(Split.when(p))
-          .map(_.via(flow))
+          .map(_.buffer(16, OverflowStrategy.backpressure).via(flow))
           .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒

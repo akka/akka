@@ -198,7 +198,8 @@ private[http] object OutgoingConnectionBlueprint {
 
       val getNextData = () ⇒ {
         waitingForMethod = false
-        pull(dataInput)
+        if (!isClosed(dataInput)) pull(dataInput)
+        else completeStage()
       }
 
       @tailrec def drainParser(current: ResponseOutput, b: ListBuffer[ResponseOutput] = ListBuffer.empty): Unit = {
