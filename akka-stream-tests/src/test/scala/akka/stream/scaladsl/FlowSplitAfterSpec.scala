@@ -118,7 +118,9 @@ class FlowSplitAfterSpec extends AkkaSpec {
 
     "work with single elem splits" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 10).splitAfter(_ ⇒ true).lift.mapAsync(1)(_.runWith(Sink.head)).grouped(10).runWith(Sink.head),
+        Source(1 to 10).splitAfter(_ ⇒ true).lift
+          .mapAsync(1)(_.runWith(Sink.head)) // Please note that this line *also* implicitly asserts nonempty substreams
+          .grouped(10).runWith(Sink.head),
         3.second) should ===(1 to 10)
     }
 

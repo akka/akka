@@ -464,6 +464,7 @@ final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean) extends Gr
         if (substreamSource eq null) pull(in)
         else if (!substreamPushed) {
           push(out, Source.fromGraph(substreamSource))
+          scheduleOnce(SubscriptionTimer, timeout)
           substreamPushed = true
         }
       }
@@ -509,6 +510,7 @@ final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean) extends Gr
 
         if (isAvailable(out)) {
           push(out, Source.fromGraph(source))
+          scheduleOnce(SubscriptionTimer, timeout)
           substreamPushed = true
         } else substreamPushed = false
 

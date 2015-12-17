@@ -93,7 +93,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
         Source.empty[Int]
           .splitWhen(_ ⇒ true).lift
           .mapAsync(1)(_.runWith(Sink.headOption)).grouped(10).runWith(Sink.headOption),
-        3.seconds) should ===(None)
+        3.seconds) should ===(None) // rather tricky way of saying that no empty substream should be emitted (vs.  Some(None))
 
     }
 
@@ -249,18 +249,23 @@ class FlowSplitWhenSpec extends AkkaSpec {
 
     "work with single elem splits" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 100).splitWhen(_ ⇒ true).lift.mapAsync(1)(_.runWith(Sink.head)).grouped(200).runWith(Sink.head),
+        Source(1 to 100).splitWhen(_ ⇒ true).lift
+          .mapAsync(1)(_.runWith(Sink.head)) // Please note that this line *also* implicitly asserts nonempty substreams
+          .grouped(200).runWith(Sink.head),
         3.second) should ===(1 to 100)
     }
 
     "fail substream if materialized twice" in assertAllStagesStopped {
-      // TODO: I don't know how to test this
-      pending
+      an[IllegalStateException] mustBe thrownBy {
+        Await.result(
+          Source.single(1).splitWhen(_ ⇒ true).lift
+            .mapAsync(1) { src ⇒ src.runWith(Sink.ignore); src.runWith(Sink.ignore) } // Sink.ignore+mapAsync pipes error back
+            .runWith(Sink.ignore),
+          3.seconds)
+      }
     }
 
     "fail stream if substream not materialized in time" in assertAllStagesStopped {
-      // TODO: I don't know how to test this
-      pending
       val tightTimeoutMaterializer =
         ActorMaterializer(ActorMaterializerSettings(system)
           .withSubscriptionTimeoutSettings(
@@ -270,7 +275,10 @@ class FlowSplitWhenSpec extends AkkaSpec {
 
       a[SubscriptionTimeoutException] mustBe thrownBy {
         Await.result(
-          testSource.lift.runWith(Sink.ignore)(tightTimeoutMaterializer),
+          testSource.lift
+            .initialDelay(1.second)
+            .flatMapConcat(identity)
+            .runWith(Sink.ignore)(tightTimeoutMaterializer),
           3.seconds)
       }
     }
@@ -281,11 +289,11 @@ class FlowSplitWhenSpec extends AkkaSpec {
 
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
-      val publisher = Source(publisherProbeProbe)
+      val publisher = Source.fromPublisher(publisherProbeProbe)
         .splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
         .lift
         .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
-        .runWith(Sink.publisher(false))
+        .runWith(Sink.asPublisher(false))
       val subscriber = TestSubscriber.manualProbe[Source[Int, Unit]]()
       publisher.subscribe(subscriber)
 
@@ -297,7 +305,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
       upstreamSubscription.sendNext(1)
 
       val substream1 = subscriber.expectNext()
-      val substreamPuppet1 = StreamPuppet(substream1.runWith(Sink.publisher(false)))
+      val substreamPuppet1 = StreamPuppet(substream1.runWith(Sink.asPublisher(false)))
 
       substreamPuppet1.request(10)
       substreamPuppet1.expectNext(1)
@@ -315,7 +323,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
       upstreamSubscription.sendNext(6)
       substreamPuppet1.expectComplete()
       val substream2 = subscriber.expectNext()
-      val substreamPuppet2 = StreamPuppet(substream2.runWith(Sink.publisher(false)))
+      val substreamPuppet2 = StreamPuppet(substream2.runWith(Sink.asPublisher(false)))
       substreamPuppet2.request(10)
       substreamPuppet2.expectNext(6)
 
@@ -328,7 +336,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
       val up = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[Source[Int, Unit]]()
 
-      val flowSubscriber = Source.subscriber[Int].splitWhen(_ % 3 == 0).lift.to(Sink(down)).run()
+      val flowSubscriber = Source.asSubscriber[Int].splitWhen(_ % 3 == 0).lift.to(Sink.fromSubscriber(down)).run()
 
       val downstream = down.expectSubscription()
       downstream.cancel()
