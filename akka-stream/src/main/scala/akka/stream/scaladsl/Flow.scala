@@ -1023,7 +1023,7 @@ trait FlowOps[+Out, +Mat] {
       override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
         via(Split.when(p))
           .map(_.buffer(16, OverflowStrategy.backpressure).via(flow))
-          .via(new FlattenMerge(breadth))
+          .via(new FlattenMerge(breadth)).buffer(16, OverflowStrategy.backpressure).asInstanceOf[Repr[T]]
     }
     val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
       via(Split.when(p))
