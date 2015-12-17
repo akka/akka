@@ -261,7 +261,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                     |Content-Dispo""".stripMarginWithNewline("\r\n")
                 },
                 ByteString {
-                  """sition: form-data; name="userfile"; filename="test.dat"
+                  """sition: form-data; name="userfile"; filename="test€.dat"
                     |Content-Type: application/pdf
                     |Content-Transfer-Encoding: binary
                     |Content-Additional-1: anything
@@ -273,7 +273,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
             })
         }.to[Multipart.FormData].flatMap(_.toStrict(1.second)) should haveParts(
           Multipart.FormData.BodyPart.Strict("email", HttpEntity(`application/octet-stream`, ByteString("test@there.com"))),
-          Multipart.FormData.BodyPart.Strict("userfile", HttpEntity(`application/pdf`, ByteString("filecontent")), Map("filename" -> "test.dat"),
+          Multipart.FormData.BodyPart.Strict("userfile", HttpEntity(`application/pdf`, ByteString("filecontent")), Map("filename" -> "test€.dat"),
             List(
               RawHeader("Content-Transfer-Encoding", "binary"),
               RawHeader("Content-Additional-1", "anything"),
