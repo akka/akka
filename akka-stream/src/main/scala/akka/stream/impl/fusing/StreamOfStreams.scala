@@ -250,6 +250,7 @@ object SubSource {
   }
 
   final class SubSource[T](
+    name: String,
     timeout: FiniteDuration,
     register: SubSourceInterface[T] ⇒ Unit,
     pullParent: Unit ⇒ Unit,
@@ -291,6 +292,8 @@ object SubSource {
       override def onPull(): Unit = pullParent(())
       override def onDownstreamFinish(): Unit = cancelParent(())
     }
+
+    override def toString: String = name
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new SubSourceLogic(shape)
   }
@@ -343,7 +346,7 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
 
     private def openSubstream(): Source[T, Unit] = {
       val timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
-      tailSource = new SubSource[T](timeout, onSubstreamRegister.invoke, onSubstreamPull.invoke, onSubstreamFinish.invoke)
+      tailSource = new SubSource[T]("TailSource", timeout, onSubstreamRegister.invoke, onSubstreamPull.invoke, onSubstreamFinish.invoke)
       scheduleOnce(SubscriptionTimer, timeout)
       builder = null
       Source.fromGraph(tailSource)
@@ -500,6 +503,7 @@ final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean) extends Gr
       if (isClosed(out)) completeStage()
       else {
         val source = new SubSource[T](
+          "SplitSource",
           timeout,
           handler.onSubstreamRegister.invoke,
           handler.onSubstreamPull.invoke,

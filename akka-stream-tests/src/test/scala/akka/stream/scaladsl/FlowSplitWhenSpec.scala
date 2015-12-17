@@ -3,9 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.ActorAttributes
+import akka.stream._
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit.Utils._
@@ -13,8 +11,6 @@ import akka.stream.testkit._
 import org.reactivestreams.Publisher
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.stream.StreamSubscriptionTimeoutSettings
-import akka.stream.StreamSubscriptionTimeoutTerminationMode
 
 class FlowSplitWhenSpec extends AkkaSpec {
   import FlowSplitAfterSpec._
@@ -276,7 +272,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
       a[SubscriptionTimeoutException] mustBe thrownBy {
         Await.result(
           testSource.lift
-            .initialDelay(1.second)
+            .delay(1.second)
             .flatMapConcat(identity)
             .runWith(Sink.ignore)(tightTimeoutMaterializer),
           3.seconds)
