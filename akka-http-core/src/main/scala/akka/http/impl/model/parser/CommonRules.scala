@@ -42,7 +42,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def qdtext = rule { `qdtext-base` | `obs-text` }
 
-  def `obs-text` = rule { "\u0080" - "\u00FF" }
+  def `obs-text` = rule { "\u0080" - "\uFFFE" }
 
   def `quoted-pair` = rule { '\\' ~ (`quotable-base` | `obs-text`) ~ appendSB() }
 
