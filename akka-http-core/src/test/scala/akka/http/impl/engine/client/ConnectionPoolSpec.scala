@@ -89,7 +89,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
         case request @ HttpRequest(_, Uri.Path("/a"), _, _, _) ⇒
-          val entity = HttpEntity.Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source(responseEntityPub))
+          val entity = HttpEntity.Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(responseEntityPub))
           super.testServerHandler(connNr)(request) withEntity entity
         case x ⇒ super.testServerHandler(connNr)(x)
       }
@@ -99,7 +99,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       acceptIncomingConnection()
       val (Success(r1), 42) = responseOut.expectNext()
       val responseEntityProbe = TestSubscriber.probe[ByteString]()
-      r1.entity.dataBytes.runWith(Sink(responseEntityProbe))
+      r1.entity.dataBytes.runWith(Sink.fromSubscriber(responseEntityProbe))
       responseEntityProbe.expectSubscription().request(2)
       responseEntityPub.sendNext(ByteString("YEAH"))
       responseEntityProbe.expectNext(ByteString("YEAH"))
@@ -131,7 +131,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
 
       val N = 500
-      val requestIds = Source(() ⇒ Iterator.from(1)).take(N)
+      val requestIds = Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
       val idSum = requestIds.map(id ⇒ HttpRequest(uri = s"/r$id") -> id).via(poolFlow).map {
         case (Success(response), id) ⇒
           requestUri(response) should endWith(s"/r$id")
@@ -301,7 +301,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
         Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) ⇒ mapServerSideOutboundRawBytes(x) }
           .transform(StreamUtils.recover { case NoErrorComplete ⇒ ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))
-      val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink(incomingConnections)
+      val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink.fromSubscriber(incomingConnections)
       // TODO getHostString in Java7
       Tcp().bind(serverEndpoint.getHostName, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)
         .map { c ⇒
@@ -345,7 +345,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     def flowTestBench[T, Mat](poolFlow: Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat]) = {
       val requestIn = TestPublisher.probe[(HttpRequest, T)]()
       val responseOut = TestSubscriber.manualProbe[(Try[HttpResponse], T)]
-      val hcp = Source(requestIn).viaMat(poolFlow)(Keep.right).to(Sink(responseOut)).run()
+      val hcp = Source.fromPublisher(requestIn).viaMat(poolFlow)(Keep.right).to(Sink.fromSubscriber(responseOut)).run()
       val responseOutSub = responseOut.expectSubscription()
       (requestIn, responseOut, responseOutSub, hcp)
     }

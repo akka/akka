@@ -138,7 +138,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
         ByteString(Array.fill(size)(1.toByte))
 
       val sizesAfterRoundtrip =
-        Source(() ⇒ sizes.toIterator.map(createByteString))
+        Source.fromIterator(() ⇒ sizes.toIterator.map(createByteString))
           .via(Coder.encoderFlow)
           .via(Coder.decoderFlow)
           .runFold(Seq.empty[Int])(_ :+ _.size)
@@ -186,5 +186,5 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
     input.via(Coder.decoderFlow).join.awaitResult(3.seconds)
 
   def decodeFromIterator(iterator: () ⇒ Iterator[ByteString]): ByteString =
-    Await.result(Source(iterator).via(Coder.decoderFlow).join, 3.seconds)
+    Await.result(Source.fromIterator(iterator).via(Coder.decoderFlow).join, 3.seconds)
 }

@@ -315,7 +315,7 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
         RunnableGraph.fromGraph(GraphDSL.create(clientLayer) { implicit b ⇒
           client ⇒
             import GraphDSL.Implicits._
-            Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
+            Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
             client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> netOut.sink
             client.out2 ~> clientImplementation ~> client.in1
             ClosedShape
@@ -370,6 +370,6 @@ class WebsocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
     lazy val messagesIn = TestSubscriber.probe[Message]()
 
     override def clientImplementation: Flow[Message, Message, Unit] =
-      Flow.fromSinkAndSourceMat(Sink(messagesIn), Source(messagesOut))(Keep.none)
+      Flow.fromSinkAndSourceMat(Sink.fromSubscriber(messagesIn), Source.fromPublisher(messagesOut))(Keep.none)
   }
 }
