@@ -26,7 +26,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
         Source(1 to 4) ~> zip.in0
         Source(10 to 40 by 10) ~> zip.in1
 
-        zip.out ~> Sink(probe)
+        zip.out ~> Sink.fromSubscriber(probe)
 
         ClosedShape
       }).run()
@@ -54,7 +54,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
         Source(1 to 4) ~> zip.in0
         Source(-2 to 2) ~> zip.in1
 
-        zip.out ~> Sink(probe)
+        zip.out ~> Sink.fromSubscriber(probe)
 
         ClosedShape
       }).run()
@@ -118,7 +118,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
         Source.single("Capybara") ~> zip.in1
         Source.single(3) ~> zip.in2
 
-        zip.out ~> Sink(probe)
+        zip.out ~> Sink.fromSubscriber(probe)
 
         ClosedShape
       }).run()
@@ -164,7 +164,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
         Source.single(18).map(_.toString) ~> zip.in17
         Source.single(19) ~> zip.in18
 
-        zip.out ~> Sink(probe)
+        zip.out ~> Sink.fromSubscriber(probe)
 
         ClosedShape
       }).run()

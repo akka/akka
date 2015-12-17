@@ -37,7 +37,7 @@ class FlowInitialDelaySpec extends AkkaSpec {
 
     "properly ignore timer while backpressured" in Utils.assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
-      Source(1 to 10).initialDelay(0.5.second).runWith(Sink(probe))
+      Source(1 to 10).initialDelay(0.5.second).runWith(Sink.fromSubscriber(probe))
 
       probe.ensureSubscription()
       probe.expectNoMsg(1.5.second)

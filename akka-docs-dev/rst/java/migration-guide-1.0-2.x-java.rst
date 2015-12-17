@@ -224,13 +224,14 @@ should be replaced by
 Source constructor name changes
 ===============================
 
-``Source.lazyEmpty`` have been replaced by ``Source.maybe`` which returns a ``Promise`` that can be completed by one or
+``Source.lazyEmpty`` has been replaced by ``Source.maybe`` which returns a ``Promise`` that can be completed by one or
 zero elements by providing an ``Option``. This is different from ``lazyEmpty`` which only allowed completion to be
 sent, but no elements.
 
-The ``from()`` overload on ``Source`` that provide a tick source (``Source.from(delay,interval,tick)``)
-is replaced by the named method ``Source.tick()`` to reduce the number of overloads and to make the function more
-discoverable.
+The ``from()`` overload on ``Source`` has been refactored to separate methods to reduce the number of overloads and
+make source creation more discoverable.
+
+``Source.subscriber`` has been renamed to ``Source.asSubscriber``.
 
 Update procedure
 ----------------
@@ -238,6 +239,9 @@ Update procedure
 1. All uses of ``Source.lazyEmpty`` should be replaced by ``Source.maybe`` and the returned ``Promise`` completed with
    a ``None`` (an empty ``Option``)
 2. Replace all uses of ``Source.from(delay,interval,tick)`` with the method ``Source.tick(delay,interval,tick)``
+3. Replace all uses of ``Source.from(publisher)`` with the method ``Source.fromPublisher(publisher)``
+4. Replace all uses of ``Source.from(future)`` with the method ``Source.fromFuture(future))``
+5. Replace all uses of ``Source.subscriber`` with the method ``Source.asSubscriber``
 
 Example
 ^^^^^^^
@@ -250,14 +254,50 @@ Example
       promise.trySuccess(BoxedUnit.UNIT);
 
       // This no longer works!
-      final Source<String, Cancellable> sourceUnderTest = Source.from(
+      final Source<String, Cancellable> ticks = Source.from(
         FiniteDuration.create(0, TimeUnit.MILLISECONDS),
         FiniteDuration.create(200, TimeUnit.MILLISECONDS),
         "tick");
 
+      // This no longer works!
+      final Source<Integer, BoxedUnit> pubSource =
+        Source.from(TestPublisher.<Integer>manualProbe(true, sys));
+
+      // This no longer works!
+      final Source<Integer, BoxedUnit> futSource =
+        Source.from(Futures.successful(42));
+
+      // This no longer works!
+      final Source<Integer, Subscriber<Integer>> subSource =
+        Source.<Integer>subscriber();
+
 should be replaced by
 
 .. includecode:: code/docs/MigrationsJava.java#source-creators
+
+Sink constructor name changes
+=============================
+
+``Sink.create(subscriber)`` has been renamed to ``Sink.fromSubscriber(subscriber)`` to reduce the number of overloads and
+make sink creation more discoverable.
+
+Update procedure
+----------------
+
+1. Replace all uses of ``Sink.create(subscriber)`` with the method ``Sink.fromSubscriber(subscriber)``
+
+Example
+^^^^^^^
+
+::
+
+      // This no longer works!
+      final Sink<Integer, BoxedUnit> subSink =
+        Sink.create(TestSubscriber.<Integer>manualProbe(sys));
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsJava.java#sink-creators
 
 ``Flow.empty()`` have been removed
 ==================================
@@ -308,16 +348,30 @@ should be replaced by
 It was a common user mistake to use ``Sink.publisher`` and get into trouble since it would only support
 a single ``Subscriber``, and the discoverability of the apprpriate fix was non-obvious (Sink.fanoutPublisher).
 To make the decision whether to support fanout or not an active one, the aforementioned methods have been
-replaced with a single method: ``Sink.publisher(fanout: Boolean)``.
+replaced with a single method: ``Sink.asPublisher(fanout: Boolean)``.
 
 Update procedure
 ----------------
 
-1. Replace all occurences of ``Sink.publisher`` with ``Sink.publisher(false)``
-2. Replace all occurences of ``Sink.fanoutPublisher`` with ``Sink.publisher(true)``
+1. Replace all occurences of ``Sink.publisher`` with ``Sink.asPublisher(false)``
+2. Replace all occurences of ``Sink.fanoutPublisher`` with ``Sink.asPublisher(true)``
 
-TODO: code example
+Example
+^^^^^^^
 
+::
+
+   // This no longer works!
+   final Sink<Integer, Publisher<Integer>> pubSink =
+     Sink.<Integer>publisher();
+
+   // This no longer works!
+   final Sink<Integer, Publisher<Integer>> pubSink =
+     Sink.<Integer>fanoutPublisher(2, 8);
+
+should be replaced by
+
+.. includecode:: code/docs/MigrationsJava.java#sink-as-publisher
 
 FlexiMerge an FlexiRoute has been replaced by GraphStage
 ========================================================

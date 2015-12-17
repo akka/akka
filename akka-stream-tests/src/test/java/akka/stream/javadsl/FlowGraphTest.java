@@ -67,8 +67,8 @@ public class FlowGraphTest extends StreamTest {
     final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, BoxedUnit> in2 = Source.from(Arrays.asList("d", "e", "f"));
 
-    final Sink<String, Publisher<String>> publisher = Sink.publisher(false);
-    
+    final Sink<String, Publisher<String>> publisher = Sink.asPublisher(false);
+
     final Source<String, BoxedUnit> source = Source.fromGraph(
             GraphDSL.create(new Function<GraphDSL.Builder<BoxedUnit>, SourceShape<String>>() {
               @Override
@@ -82,7 +82,7 @@ public class FlowGraphTest extends StreamTest {
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
+    final Future<List<String>> all = Source.fromPublisher(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
 
     final List<String> result = Await.result(all, Duration.apply(200, TimeUnit.MILLISECONDS));
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
@@ -257,7 +257,7 @@ public class FlowGraphTest extends StreamTest {
           return l + r;
       }
     });
-    
+
     final Future<Integer> future = RunnableGraph.fromGraph(GraphDSL.create(Sink.<Integer>head(),
       new Function2<Builder<Future<Integer>>, SinkShape<Integer>, ClosedShape>() {
       @Override

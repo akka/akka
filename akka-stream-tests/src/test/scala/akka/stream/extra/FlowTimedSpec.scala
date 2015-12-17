@@ -79,7 +79,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       val flow: Flow[Int, Long, _] = Flow[Int].map(_.toLong).timedIntervalBetween(in ⇒ in % 2 == 1, d ⇒ probe.ref ! d)
 
       val c1 = TestSubscriber.manualProbe[Long]()
-      Source(List(1, 2, 3)).via(flow).runWith(Sink(c1))
+      Source(List(1, 2, 3)).via(flow).runWith(Sink.fromSubscriber(c1))
 
       val s = c1.expectSubscription()
       s.request(100)
@@ -104,12 +104,12 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
             map(_.toString), duration ⇒ probe.ref ! duration).
           map { s: String ⇒ s + "!" }
 
-      val (flowIn: Subscriber[Int], flowOut: Publisher[String]) = flow.runWith(Source.subscriber[Int], Sink.publisher[String](false))
+      val (flowIn: Subscriber[Int], flowOut: Publisher[String]) = flow.runWith(Source.asSubscriber[Int], Sink.asPublisher[String](false))
 
       val c1 = TestSubscriber.manualProbe[String]()
       val c2 = flowOut.subscribe(c1)
 
-      val p = Source(0 to 100).runWith(Sink.publisher(false))
+      val p = Source(0 to 100).runWith(Sink.asPublisher(false))
       p.subscribe(flowIn)
 
       val s = c1.expectSubscription()

@@ -63,7 +63,7 @@ public class ActorSubscriberTest extends StreamTest {
     final Subscriber<Integer> subscriber = UntypedActorSubscriber.create(ref);
     final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3);
 
-    Source.from(input).runWith(Sink.create(subscriber), materializer);
+    Source.from(input).runWith(Sink.fromSubscriber(subscriber), materializer);
 
     ref.tell("run", null);
     probe.expectMsgEquals(1);

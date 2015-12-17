@@ -33,7 +33,7 @@ class FlowThrottleSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source(upstream).throttle(1, 300.millis, 0, Shaping).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).throttle(1, 300.millis, 0, Shaping).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(20)
       upstream.sendNext(1)
@@ -51,7 +51,7 @@ class FlowThrottleSpec extends AkkaSpec {
     "not send downstream if upstream does not emit element" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
-      Source(upstream).throttle(1, 300.millis, 0, Shaping).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).throttle(1, 300.millis, 0, Shaping).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(2)
       upstream.sendNext(1)
@@ -66,7 +66,7 @@ class FlowThrottleSpec extends AkkaSpec {
 
     "cancel when downstream cancels" in Utils.assertAllStagesStopped {
       val downstream = TestSubscriber.probe[Int]()
-      Source(1 to 10).throttle(1, 300.millis, 0, Shaping).runWith(Sink(downstream))
+      Source(1 to 10).throttle(1, 300.millis, 0, Shaping).runWith(Sink.fromSubscriber(downstream))
       downstream.cancel()
     }
 
@@ -84,7 +84,7 @@ class FlowThrottleSpec extends AkkaSpec {
     "burst according to its maximum if enough time passed" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
-      Source(upstream).throttle(1, 200.millis, 5, Shaping).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).throttle(1, 200.millis, 5, Shaping).runWith(Sink.fromSubscriber(downstream))
       downstream.request(1)
       upstream.sendNext(1)
       downstream.expectNoMsg(100.millis)
@@ -99,7 +99,7 @@ class FlowThrottleSpec extends AkkaSpec {
     "burst some elements if have enough time" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
-      Source(upstream).throttle(1, 200.millis, 5, Shaping).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).throttle(1, 200.millis, 5, Shaping).runWith(Sink.fromSubscriber(downstream))
       downstream.request(1)
       upstream.sendNext(1)
       downstream.expectNoMsg(100.millis)
@@ -156,7 +156,7 @@ class FlowThrottleSpec extends AkkaSpec {
     "not send downstream if upstream does not emit element" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
-      Source(upstream).throttle(2, 300.millis, 0, identity, Shaping).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).throttle(2, 300.millis, 0, identity, Shaping).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(2)
       upstream.sendNext(1)
@@ -171,7 +171,7 @@ class FlowThrottleSpec extends AkkaSpec {
 
     "cancel when downstream cancels" in Utils.assertAllStagesStopped {
       val downstream = TestSubscriber.probe[Int]()
-      Source(1 to 10).throttle(2, 200.millis, 0, identity, Shaping).runWith(Sink(downstream))
+      Source(1 to 10).throttle(2, 200.millis, 0, identity, Shaping).runWith(Sink.fromSubscriber(downstream))
       downstream.cancel()
     }
 
@@ -189,7 +189,7 @@ class FlowThrottleSpec extends AkkaSpec {
     "burst according to its maximum if enough time passed" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
-      Source(upstream).throttle(2, 400.millis, 5, (_) ⇒ 1, Shaping).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).throttle(2, 400.millis, 5, (_) ⇒ 1, Shaping).runWith(Sink.fromSubscriber(downstream))
       downstream.request(1)
       upstream.sendNext(1)
       downstream.expectNoMsg(100.millis)
@@ -204,7 +204,7 @@ class FlowThrottleSpec extends AkkaSpec {
     "burst some elements if have enough time" in Utils.assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
-      Source(upstream).throttle(2, 400.millis, 5, (e) ⇒ if (e < 4) 1 else 20, Shaping).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).throttle(2, 400.millis, 5, (e) ⇒ if (e < 4) 1 else 20, Shaping).runWith(Sink.fromSubscriber(downstream))
       downstream.request(1)
       upstream.sendNext(1)
       downstream.expectNoMsg(100.millis)

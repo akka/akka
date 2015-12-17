@@ -45,7 +45,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
       "has a request with default entity" in new TestSetup {
         val probe = TestPublisher.manualProbe[ByteString]()
-        requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source(probe))))
+        requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source.fromPublisher(probe))))
         expectWireData(
           """PUT / HTTP/1.1
             |Host: example.com
@@ -90,7 +90,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         ct shouldEqual ContentTypes.`application/octet-stream`
 
         val probe = TestSubscriber.manualProbe[ChunkStreamPart]()
-        chunks.runWith(Sink(probe))
+        chunks.runWith(Sink.fromSubscriber(probe))
         val sub = probe.expectSubscription()
 
         sendWireData("3\nABC\n")
@@ -155,7 +155,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         val HttpResponse(_, _, HttpEntity.Chunked(ct, chunks), _) = expectResponse()
 
         val probe = TestSubscriber.manualProbe[ChunkStreamPart]()
-        chunks.runWith(Sink(probe))
+        chunks.runWith(Sink.fromSubscriber(probe))
         val sub = probe.expectSubscription()
 
         sendWireData("3\nABC\n")
@@ -196,7 +196,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
       "catch the request entity stream being shorter than the Content-Length" in new TestSetup {
         val probe = TestPublisher.manualProbe[ByteString]()
-        requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source(probe))))
+        requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source.fromPublisher(probe))))
         expectWireData(
           """PUT / HTTP/1.1
             |Host: example.com
@@ -222,7 +222,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
       "catch the request entity stream being longer than the Content-Length" in new TestSetup {
         val probe = TestPublisher.manualProbe[ByteString]()
-        requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source(probe))))
+        requestsSub.sendNext(HttpRequest(PUT, entity = HttpEntity(ContentTypes.`application/octet-stream`, 8, Source.fromPublisher(probe))))
         expectWireData(
           """PUT / HTTP/1.1
             |Host: example.com
@@ -274,7 +274,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         ct shouldEqual ContentTypes.`application/octet-stream`
 
         val probe = TestSubscriber.manualProbe[ChunkStreamPart]()
-        chunks.runWith(Sink(probe))
+        chunks.runWith(Sink.fromSubscriber(probe))
         val sub = probe.expectSubscription()
 
         sendWireData("3\nABC\n")
@@ -531,10 +531,10 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       RunnableGraph.fromGraph(GraphDSL.create(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒
         client ⇒
           import GraphDSL.Implicits._
-          Source(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
-          client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink(netOut)
-          Source(requests) ~> client.in1
-          client.out2 ~> Sink(responses)
+          Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
+          client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink.fromSubscriber(netOut)
+          Source.fromPublisher(requests) ~> client.in1
+          client.out2 ~> Sink.fromSubscriber(responses)
           ClosedShape
       }).run()
 

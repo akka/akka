@@ -68,7 +68,7 @@ class GraphFlowSpec extends AkkaSpec {
             FlowShape(partial.in, partial.out.map(_.toInt).outlet)
         })
 
-        source1.via(flow).to(Sink(probe)).run()
+        source1.via(flow).to(Sink.fromSubscriber(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -80,7 +80,7 @@ class GraphFlowSpec extends AkkaSpec {
           partial ⇒ FlowShape(partial.in, partial.out)
         })
 
-        source1.via(flow).map(_.toInt).to(Sink(probe)).run()
+        source1.via(flow).map(_.toInt).to(Sink.fromSubscriber(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -98,7 +98,7 @@ class GraphFlowSpec extends AkkaSpec {
             FlowShape(importFlow.in, importFlow.out)
         })
 
-        source1.via(flow1).via(flow2).to(Sink(probe)).run()
+        source1.via(flow1).via(flow2).to(Sink.fromSubscriber(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -112,7 +112,7 @@ class GraphFlowSpec extends AkkaSpec {
 
         RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
           import GraphDSL.Implicits._
-          Source(1 to 5) ~> flow ~> flow ~> Sink(probe)
+          Source(1 to 5) ~> flow ~> flow ~> Sink.fromSubscriber(probe)
           ClosedShape
         }).run()
 
@@ -131,16 +131,16 @@ class GraphFlowSpec extends AkkaSpec {
             SourceShape(partial.out.map(_.toInt).outlet)
         })
 
-        source.to(Sink(probe)).run()
+        source.to(Sink.fromSubscriber(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
 
       "work with a Sink when having KeyedSource inside" in {
         val probe = TestSubscriber.manualProbe[Int]()
-        val source = Source.subscriber[Int]
-        val mm: Subscriber[Int] = source.to(Sink(probe)).run()
-        source1.to(Sink(mm)).run()
+        val source = Source.asSubscriber[Int]
+        val mm: Subscriber[Int] = source.to(Sink.fromSubscriber(probe)).run()
+        source1.to(Sink.fromSubscriber(mm)).run()
 
         validateProbe(probe, 4, (0 to 3).toSet)
       }
@@ -156,7 +156,7 @@ class GraphFlowSpec extends AkkaSpec {
             SourceShape(partial.out)
         })
 
-        source.map(_.toInt).to(Sink(probe)).run()
+        source.map(_.toInt).to(Sink.fromSubscriber(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -176,7 +176,7 @@ class GraphFlowSpec extends AkkaSpec {
             FlowShape(importFlow.in, importFlow.out)
         })
 
-        source.via(flow).to(Sink(probe)).run()
+        source.via(flow).to(Sink.fromSubscriber(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -195,7 +195,7 @@ class GraphFlowSpec extends AkkaSpec {
             import GraphDSL.Implicits._
             val merge = b.add(Merge[Int](2))
             s1.out ~> merge.in(0)
-            merge.out ~> Sink(probe)
+            merge.out ~> Sink.fromSubscriber(probe)
             s2.out.map(_ * 10) ~> merge.in(1)
             ClosedShape
         }).run()
@@ -211,7 +211,7 @@ class GraphFlowSpec extends AkkaSpec {
         val sink = Sink.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
             import GraphDSL.Implicits._
-            partial.out.map(_.toInt) ~> Sink(probe)
+            partial.out.map(_.toInt) ~> Sink.fromSubscriber(probe)
             SinkShape(partial.in)
         })
 
@@ -222,14 +222,14 @@ class GraphFlowSpec extends AkkaSpec {
 
       "work with a Source when having KeyedSink inside" in {
         val probe = TestSubscriber.manualProbe[Int]()
-        val pubSink = Sink.publisher[Int](false)
+        val pubSink = Sink.asPublisher[Int](false)
 
         val sink = Sink.fromGraph(GraphDSL.create(pubSink) { implicit b ⇒
           p ⇒ SinkShape(p.in)
         })
 
         val mm = source1.runWith(sink)
-        Source(mm).to(Sink(probe)).run()
+        Source.fromPublisher(mm).to(Sink.fromSubscriber(probe)).run()
 
         validateProbe(probe, 4, (0 to 3).toSet)
       }
@@ -241,7 +241,7 @@ class GraphFlowSpec extends AkkaSpec {
           (partial, flow) ⇒
             import GraphDSL.Implicits._
             flow.out ~> partial.in
-            partial.out.map(_.toInt) ~> Sink(probe)
+            partial.out.map(_.toInt) ~> Sink.fromSubscriber(probe)
             SinkShape(flow.in)
         })
 
@@ -263,7 +263,7 @@ class GraphFlowSpec extends AkkaSpec {
         val sink = Sink.fromGraph(GraphDSL.create(Flow[String].map(_.toInt)) { implicit b ⇒
           flow ⇒
             import GraphDSL.Implicits._
-            flow.out ~> Sink(probe)
+            flow.out ~> Sink.fromSubscriber(probe)
             SinkShape(flow.in)
         })
 
@@ -276,8 +276,8 @@ class GraphFlowSpec extends AkkaSpec {
     "used together" should {
       "materialize properly" in {
         val probe = TestSubscriber.manualProbe[Int]()
-        val inSource = Source.subscriber[Int]
-        val outSink = Sink.publisher[Int](false)
+        val inSource = Source.asSubscriber[Int]
+        val outSink = Sink.asPublisher[Int](false)
 
         val flow = Flow.fromGraph(GraphDSL.create(partialGraph) { implicit b ⇒
           partial ⇒
@@ -309,7 +309,7 @@ class GraphFlowSpec extends AkkaSpec {
 
         val subscriber = m1
         val publisher = m3
-        source1.runWith(Sink.publisher(false)).subscribe(subscriber)
+        source1.runWith(Sink.asPublisher(false)).subscribe(subscriber)
         publisher.subscribe(probe)
 
         validateProbe(probe, stdRequests, stdResult)
@@ -317,8 +317,8 @@ class GraphFlowSpec extends AkkaSpec {
 
       "allow connecting source to sink directly" in {
         val probe = TestSubscriber.manualProbe[Int]()
-        val inSource = Source.subscriber[Int]
-        val outSink = Sink.publisher[Int](false)
+        val inSource = Source.asSubscriber[Int]
+        val outSink = Sink.asPublisher[Int](false)
 
         val source = Source.fromGraph(GraphDSL.create(inSource) { implicit b ⇒
           src ⇒
@@ -340,7 +340,7 @@ class GraphFlowSpec extends AkkaSpec {
         val subscriber = m1
         val publisher = m2
 
-        source1.runWith(Sink.publisher(false)).subscribe(subscriber)
+        source1.runWith(Sink.asPublisher(false)).subscribe(subscriber)
         publisher.subscribe(probe)
 
         validateProbe(probe, 4, (0 to 3).toSet)

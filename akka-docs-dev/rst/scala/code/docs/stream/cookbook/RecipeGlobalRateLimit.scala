@@ -94,15 +94,15 @@ class RecipeGlobalRateLimit extends RecipeSpec {
       // Use a large period and emulate the timer by hand instead
       val limiter = system.actorOf(Limiter.props(2, 100.days, 1), "limiter")
 
-      val source1 = Source(() => Iterator.continually("E1")).via(limitGlobal(limiter, 2.seconds))
-      val source2 = Source(() => Iterator.continually("E2")).via(limitGlobal(limiter, 2.seconds))
+      val source1 = Source.fromIterator(() => Iterator.continually("E1")).via(limitGlobal(limiter, 2.seconds))
+      val source2 = Source.fromIterator(() => Iterator.continually("E2")).via(limitGlobal(limiter, 2.seconds))
 
       val probe = TestSubscriber.manualProbe[String]()
 
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val merge = b.add(Merge[String](2))
-        source1 ~> merge ~> Sink(probe)
+        source1 ~> merge ~> Sink.fromSubscriber(probe)
         source2 ~> merge
         ClosedShape
       }).run()

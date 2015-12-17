@@ -23,7 +23,7 @@ class FlowRecoverSpec extends AkkaSpec {
 
       Source(1 to 4).map { a ⇒ if (a == 3) throw ex else a }
         .recover { case t: Throwable ⇒ 0 }
-        .runWith(Sink(subscriber))
+        .runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.requestNext(1)
       subscriber.requestNext(2)
@@ -40,7 +40,7 @@ class FlowRecoverSpec extends AkkaSpec {
 
       Source(1 to 3).map { a ⇒ if (a == 2) throw ex else a }
         .recover { case t: IndexOutOfBoundsException ⇒ 0 }
-        .runWith(Sink(subscriber))
+        .runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.requestNext(1)
       subscriber.request(1)
@@ -52,7 +52,7 @@ class FlowRecoverSpec extends AkkaSpec {
 
       val k = Source(1 to 3).map(identity)
         .recover { case t: Throwable ⇒ 0 }
-        .runWith(Sink(subscriber))
+        .runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.requestNext(1)
       subscriber.requestNext(2)
@@ -64,7 +64,7 @@ class FlowRecoverSpec extends AkkaSpec {
       val subscriber = TestSubscriber.probe[Int]()
       Source.empty.map(identity)
         .recover { case t: Throwable ⇒ 0 }
-        .runWith(Sink(subscriber))
+        .runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.request(1)
       subscriber.expectComplete()
