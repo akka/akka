@@ -9,7 +9,7 @@ class GraphCyclesSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
 
   "Cycle demonstration" must {
-    val source = Source(() => Iterator.from(0))
+    val source = Source.fromIterator(() => Iterator.from(0))
 
     "include a deadlocked cycle" in {
 

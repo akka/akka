@@ -32,11 +32,11 @@ The process of materialization will often create specific objects that are usefu
 Interoperation with other Reactive Streams implementations
 ----------------------------------------------------------
 
-Akka Streams fully implement the Reactive Streams specification and interoperate with all other conformant implementations. We chose to completely separate the Reactive Streams interfaces from the user-level API because we regard them to be an SPI that is not targeted at endusers. In order to obtain a :class:`Publisher` or :class:`Subscriber` from an Akka Stream topology, a corresponding ``Sink.publisher`` or ``Source.subscriber`` element must be used.
+Akka Streams fully implement the Reactive Streams specification and interoperate with all other conformant implementations. We chose to completely separate the Reactive Streams interfaces from the user-level API because we regard them to be an SPI that is not targeted at endusers. In order to obtain a :class:`Publisher` or :class:`Subscriber` from an Akka Stream topology, a corresponding ``Sink.asPublisher`` or ``Source.asSubscriber`` element must be used.
 
 All stream Processors produced by the default materialization of Akka Streams are restricted to having a single Subscriber, additional Subscribers will be rejected. The reason for this is that the stream topologies described using our DSL never require fan-out behavior from the Publisher sides of the elements, all fan-out is done using explicit elements like :class:`Broadcast[T]`.
 
-This means that ``Sink.publisher(true)`` (for enabling fan-out support) must be used where broadcast behavior is needed for interoperation with other Reactive Streams implementations.
+This means that ``Sink.asPublisher(true)`` (for enabling fan-out support) must be used where broadcast behavior is needed for interoperation with other Reactive Streams implementations.
 
 What shall users of streaming libraries expect?
 -----------------------------------------------
@@ -53,7 +53,7 @@ The second rule allows a library to additionally provide nice sugar for the comm
 .. note::
 
   One important consequence of this is that a reusable flow description cannot be bound to “live” resources, any connection to or allocation of such resources must be deferred until materialization time. Examples of “live” resources are already existing TCP connections, a multicast Publisher, etc.; a TickSource does not fall into this category if its timer is created only upon materialization (as is the case for our implementation).
-  
+
   Exceptions from this need to be well-justified and carefully documented.
 
 Resulting Implementation Constraints

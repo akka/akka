@@ -47,7 +47,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           pushInput(header ++ data1)
           val dataSource = expectBinaryMessage().dataStream
           val sub = TestSubscriber.manualProbe[ByteString]()
-          dataSource.runWith(Sink(sub))
+          dataSource.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(2)
           sub.expectNext(data1)
@@ -59,7 +59,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           pushInput(header)
           val dataSource = expectBinaryMessage().dataStream
           val sub = TestSubscriber.manualProbe[ByteString]()
-          dataSource.runWith(Sink(sub))
+          dataSource.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(2)
           pushInput(data1)
@@ -78,7 +78,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           pushInput(header1 ++ data1)
           val dataSource = expectBinaryMessage().dataStream
           val sub = TestSubscriber.manualProbe[ByteString]()
-          dataSource.runWith(Sink(sub))
+          dataSource.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(2)
           sub.expectNext(data1)
@@ -96,7 +96,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           pushInput(header1 ++ data1)
           val dataSource = expectBinaryMessage().dataStream
           val sub = TestSubscriber.manualProbe[ByteString]()
-          dataSource.runWith(Sink(sub))
+          dataSource.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(2)
           sub.expectNext(data1)
@@ -111,7 +111,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
           val dataSource2 = expectBinaryMessage().dataStream
           val sub2 = TestSubscriber.manualProbe[ByteString]()
-          dataSource2.runWith(Sink(sub2))
+          dataSource2.runWith(Sink.fromSubscriber(sub2))
           val s2 = sub2.expectSubscription()
           s2.request(2)
           sub2.expectNext(data3)
@@ -131,7 +131,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           pushInput(header ++ data1)
           val dataSource = expectBinaryMessage().dataStream
           val sub = TestSubscriber.manualProbe[ByteString]()
-          dataSource.runWith(Sink(sub))
+          dataSource.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(2)
           sub.expectNext(ByteString("abc", "ASCII"))
@@ -174,7 +174,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           pushInput(input)
           val parts = expectTextMessage().textStream
           val sub = TestSubscriber.manualProbe[String]()
-          parts.runWith(Sink(sub))
+          parts.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(4)
           sub.expectNext("b")
@@ -192,7 +192,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           pushInput(header0 ++ data0)
           val parts = expectTextMessage().textStream
           val sub = TestSubscriber.manualProbe[String]()
-          parts.runWith(Sink(sub))
+          parts.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(4)
           sub.expectNoMsg(100.millis)
@@ -211,7 +211,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           pushInput(header ++ data1)
           val dataSource = expectBinaryMessage().dataStream
           val sub = TestSubscriber.manualProbe[ByteString]()
-          dataSource.runWith(Sink(sub))
+          dataSource.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(2)
           sub.expectNext(ByteString("äb", "UTF-8"))
@@ -242,7 +242,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "for a streamed message" in new ServerTestSetup {
           val data = ByteString("abcdefg", "ASCII")
           val pub = TestPublisher.manualProbe[ByteString]()
-          val msg = BinaryMessage(Source(pub))
+          val msg = BinaryMessage(Source.fromPublisher(pub))
           pushMessage(msg)
           val sub = pub.expectSubscription()
 
@@ -264,7 +264,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "and mask input on the client side" in new ClientTestSetup {
           val data = ByteString("abcdefg", "ASCII")
           val pub = TestPublisher.manualProbe[ByteString]()
-          val msg = BinaryMessage(Source(pub))
+          val msg = BinaryMessage(Source.fromPublisher(pub))
           pushMessage(msg)
           val sub = pub.expectSubscription()
 
@@ -299,7 +299,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "for a streamed message" in new ServerTestSetup {
           val text = "äbcd€fg"
           val pub = TestPublisher.manualProbe[String]()
-          val msg = TextMessage(Source(pub))
+          val msg = TextMessage(Source.fromPublisher(pub))
           pushMessage(msg)
           val sub = pub.expectSubscription()
 
@@ -328,7 +328,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           val half2 = gclef.drop(1)
 
           val pub = TestPublisher.manualProbe[String]()
-          val msg = TextMessage(Source(pub))
+          val msg = TextMessage(Source.fromPublisher(pub))
 
           pushMessage(msg)
           val sub = pub.expectSubscription()
@@ -344,7 +344,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         "and mask input on the client side" in new ClientTestSetup {
           val text = "abcdefg"
           val pub = TestPublisher.manualProbe[String]()
-          val msg = TextMessage(Source(pub))
+          val msg = TextMessage(Source.fromPublisher(pub))
           pushMessage(msg)
           val sub = pub.expectSubscription()
 
@@ -394,13 +394,13 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
         val dataSource = expectBinaryMessage().dataStream
         val sub = TestSubscriber.manualProbe[ByteString]()
-        dataSource.runWith(Sink(sub))
+        dataSource.runWith(Sink.fromSubscriber(sub))
         val s = sub.expectSubscription()
         s.request(2)
         sub.expectNext(ByteString("123", "ASCII"))
 
         val outPub = TestPublisher.manualProbe[ByteString]()
-        val msg = BinaryMessage(Source(outPub))
+        val msg = BinaryMessage(Source.fromPublisher(outPub))
         pushMessage(msg)
 
         expectFrameHeaderOnNetwork(Opcode.Binary, 0, fin = false)
@@ -467,7 +467,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
         // sending another message is allowed before closing (inherently racy)
         val pub = TestPublisher.manualProbe[ByteString]()
-        val msg = BinaryMessage(Source(pub))
+        val msg = BinaryMessage(Source.fromPublisher(pub))
         pushMessage(msg)
         expectFrameOnNetwork(Opcode.Binary, ByteString.empty, fin = false)
 
@@ -487,7 +487,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         pushInput(frameHeader(Protocol.Opcode.Binary, 0, fin = false, mask = Some(Random.nextInt())))
         val dataSource = expectBinaryMessage().dataStream
         val inSubscriber = TestSubscriber.manualProbe[ByteString]()
-        dataSource.runWith(Sink(inSubscriber))
+        dataSource.runWith(Sink.fromSubscriber(inSubscriber))
         val inSub = inSubscriber.expectSubscription()
 
         val outData = ByteString("def", "ASCII")
@@ -508,7 +508,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         // sending another message is allowed before closing (inherently racy)
 
         val pub = TestPublisher.manualProbe[ByteString]()
-        val msg = BinaryMessage(Source(pub))
+        val msg = BinaryMessage(Source.fromPublisher(pub))
         pushMessage(msg)
         expectFrameOnNetwork(Opcode.Binary, ByteString.empty, fin = false)
 
@@ -572,7 +572,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
       "when user handler closes main stream and substream only afterwards" in new ServerTestSetup {
         // send half a message
         val pub = TestPublisher.manualProbe[ByteString]()
-        val msg = BinaryMessage(Source(pub))
+        val msg = BinaryMessage(Source.fromPublisher(pub))
         pushMessage(msg)
         expectFrameOnNetwork(Opcode.Binary, ByteString.empty, fin = false)
 
@@ -823,10 +823,10 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
     val messageHandler: Flow[Message, Message, Unit] =
       Flow.fromSinkAndSource(
-        Flow[Message].buffer(1, OverflowStrategy.backpressure).to(Sink(messageIn)), // alternatively need to request(1) before expectComplete
-        Source(messageOut))
+        Flow[Message].buffer(1, OverflowStrategy.backpressure).to(Sink.fromSubscriber(messageIn)), // alternatively need to request(1) before expectComplete
+        Source.fromPublisher(messageOut))
 
-    Source(netIn)
+    Source.fromPublisher(netIn)
       .via(printEvent("netIn"))
       .via(FrameEventParser)
       .via(Websocket

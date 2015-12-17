@@ -18,7 +18,7 @@ class SourceSpec extends AkkaSpec {
 
   "Single Source" must {
     "produce element" in {
-      val p = Source.single(1).runWith(Sink.publisher(false))
+      val p = Source.single(1).runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -28,7 +28,7 @@ class SourceSpec extends AkkaSpec {
     }
 
     "reject later subscriber" in {
-      val p = Source.single(1).runWith(Sink.publisher(false))
+      val p = Source.single(1).runWith(Sink.asPublisher(false))
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
       p.subscribe(c1)
@@ -46,7 +46,7 @@ class SourceSpec extends AkkaSpec {
 
   "Empty Source" must {
     "complete immediately" in {
-      val p = Source.empty.runWith(Sink.publisher(false))
+      val p = Source.empty.runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       c.expectSubscriptionAndComplete()
@@ -61,7 +61,7 @@ class SourceSpec extends AkkaSpec {
   "Failed Source" must {
     "emit error immediately" in {
       val ex = new RuntimeException with NoStackTrace
-      val p = Source.failed(ex).runWith(Sink.publisher(false))
+      val p = Source.failed(ex).runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
       c.expectSubscriptionAndError(ex)
@@ -76,7 +76,7 @@ class SourceSpec extends AkkaSpec {
   "Maybe Source" must {
     "complete materialized future with None when stream cancels" in Utils.assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
-      val pubSink = Sink.publisher[Int](false)
+      val pubSink = Sink.asPublisher[Int](false)
 
       val (f, neverPub) = neverSource.toMat(pubSink)(Keep.both).run()
 
@@ -134,7 +134,7 @@ class SourceSpec extends AkkaSpec {
   "Composite Source" must {
     "merge from many inputs" in {
       val probes = Seq.fill(5)(TestPublisher.manualProbe[Int]())
-      val source = Source.subscriber[Int]
+      val source = Source.asSubscriber[Int]
       val out = TestSubscriber.manualProbe[Int]
 
       val s = Source.fromGraph(GraphDSL.create(source, source, source, source, source)(Seq(_, _, _, _, _)) { implicit b ⇒
@@ -147,7 +147,7 @@ class SourceSpec extends AkkaSpec {
           i3.out ~> m.in(3)
           i4.out ~> m.in(4)
           SourceShape(m.out)
-      }).to(Sink(out)).run()
+      }).to(Sink.fromSubscriber(out)).run()
 
       for (i ← 0 to 4) probes(i).subscribe(s(i))
       val sub = out.expectSubscription()
@@ -167,10 +167,10 @@ class SourceSpec extends AkkaSpec {
 
     "combine from many inputs with simplified API" in {
       val probes = Seq.fill(3)(TestPublisher.manualProbe[Int]())
-      val source = for (i ← 0 to 2) yield Source(probes(i))
+      val source = for (i ← 0 to 2) yield Source.fromPublisher(probes(i))
       val out = TestSubscriber.manualProbe[Int]
 
-      Source.combine(source(0), source(1), source(2))(Merge(_)).to(Sink(out)).run()
+      Source.combine(source(0), source(1), source(2))(Merge(_)).to(Sink.fromSubscriber(out)).run()
 
       val sub = out.expectSubscription()
       sub.request(3)
@@ -189,10 +189,10 @@ class SourceSpec extends AkkaSpec {
 
     "combine from two inputs with simplified API" in {
       val probes = Seq.fill(2)(TestPublisher.manualProbe[Int]())
-      val source = Source(probes(0)) :: Source(probes(1)) :: Nil
+      val source = Source.fromPublisher(probes(0)) :: Source.fromPublisher(probes(1)) :: Nil
       val out = TestSubscriber.manualProbe[Int]
 
-      Source.combine(source(0), source(1))(Merge(_)).to(Sink(out)).run()
+      Source.combine(source(0), source(1))(Merge(_)).to(Sink.fromSubscriber(out)).run()
 
       val sub = out.expectSubscription()
       sub.request(3)
@@ -252,7 +252,7 @@ class SourceSpec extends AkkaSpec {
 
   "Iterator Source" must {
     "properly iterate" in {
-      val result = Await.result(Source(() ⇒ Iterator.iterate(false)(!_)).grouped(10).runWith(Sink.head), 1.second)
+      val result = Await.result(Source.fromIterator(() ⇒ Iterator.iterate(false)(!_)).grouped(10).runWith(Sink.head), 1.second)
       result should ===(Seq(false, true, false, true, false, true, false, true, false, true))
     }
   }

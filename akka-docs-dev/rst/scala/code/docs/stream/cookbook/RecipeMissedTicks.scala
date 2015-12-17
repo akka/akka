@@ -15,8 +15,8 @@ class RecipeMissedTicks extends RecipeSpec {
 
       val pub = TestPublisher.probe[Tick]()
       val sub = TestSubscriber.manualProbe[Int]()
-      val tickStream = Source(pub)
-      val sink = Sink(sub)
+      val tickStream = Source.fromPublisher(pub)
+      val sink = Sink.fromSubscriber(sub)
 
       //#missed-ticks
       val missedTicks: Flow[Tick, Int, Unit] =

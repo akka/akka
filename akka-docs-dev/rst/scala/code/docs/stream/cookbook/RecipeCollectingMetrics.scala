@@ -19,8 +19,8 @@ class RecipeCollectingMetrics extends RecipeSpec {
       //
       //      val loadPub = TestPublisher.manualProbe[Int]()
       //      val tickPub = TestPublisher.manualProbe[Tick]()
-      //      val reportTicks = Source(tickPub)
-      //      val loadUpdates = Source(loadPub)
+      //      val reportTicks = Source.fromPublisher(tickPub)
+      //      val loadUpdates = Source.fromPublisher(loadPub)
       //      val futureSink = Sink.head[immutable.Seq[String]]
       //      val sink = Flow[String].grouped(10).to(futureSink)
       //

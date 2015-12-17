@@ -33,7 +33,7 @@ class RateTransformationDocSpec extends AkkaSpec {
       }
     //#conflate-summarize
 
-    val fut = Source(() => Iterator.continually(Random.nextGaussian))
+    val fut = Source.fromIterator(() => Iterator.continually(Random.nextGaussian))
       .via(statsFlow)
       .grouped(10)
       .runWith(Sink.head)

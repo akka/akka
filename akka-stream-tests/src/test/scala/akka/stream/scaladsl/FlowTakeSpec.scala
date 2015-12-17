@@ -35,7 +35,7 @@ class FlowTakeSpec extends AkkaSpec with ScriptedTest {
 
     "not take anything for negative n" in {
       val probe = TestSubscriber.manualProbe[Int]()
-      Source(List(1, 2, 3)).take(-1).to(Sink(probe)).run()
+      Source(List(1, 2, 3)).take(-1).to(Sink.fromSubscriber(probe)).run()
       probe.expectSubscription().request(10)
       probe.expectComplete()
     }

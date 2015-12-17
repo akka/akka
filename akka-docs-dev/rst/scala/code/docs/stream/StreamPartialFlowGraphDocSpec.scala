@@ -57,7 +57,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
       // prepare graph elements
       val zip = b.add(Zip[Int, Int]())
-      def ints = Source(() => Iterator.from(1))
+      def ints = Source.fromIterator(() => Iterator.from(1))
 
       // connect the graph
       ints.filter(_ % 2 != 0) ~> zip.in0

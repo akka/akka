@@ -14,8 +14,8 @@ class RecipeManualTrigger extends RecipeSpec {
       val elements = Source(List("1", "2", "3", "4"))
       val pub = TestPublisher.probe[Trigger]()
       val sub = TestSubscriber.manualProbe[Message]()
-      val triggerSource = Source(pub)
-      val sink = Sink(sub)
+      val triggerSource = Source.fromPublisher(pub)
+      val sink = Sink.fromSubscriber(sub)
 
       //#manually-triggered-stream
       val graph = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
@@ -53,8 +53,8 @@ class RecipeManualTrigger extends RecipeSpec {
       val elements = Source(List("1", "2", "3", "4"))
       val pub = TestPublisher.probe[Trigger]()
       val sub = TestSubscriber.manualProbe[Message]()
-      val triggerSource = Source(pub)
-      val sink = Sink(sub)
+      val triggerSource = Source.fromPublisher(pub)
+      val sink = Sink.fromSubscriber(sub)
 
       //#manually-triggered-stream-zipwith
       val graph = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>

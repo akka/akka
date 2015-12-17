@@ -69,7 +69,7 @@ private[akka] class SplitWhereProcessorImpl(_settings: ActorMaterializerSettings
 
   private def openSubstream(andThen: SubstreamOutput ⇒ TransferPhase): TransferPhase = TransferPhase(primaryOutputs.NeedsDemand) { () ⇒
     val substreamOutput = createSubstreamOutput()
-    val substreamFlow = Source(substreamOutput) // substreamOutput is a Publisher
+    val substreamFlow = Source.fromPublisher(substreamOutput)
     primaryOutputs.enqueueOutputElement(substreamFlow)
     currentSubstream = substreamOutput
 

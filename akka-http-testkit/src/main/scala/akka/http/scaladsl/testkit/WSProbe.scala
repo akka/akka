@@ -104,7 +104,7 @@ object WSProbe {
       val subscriber = TestSubscriber.probe[Message]()
       val publisher = TestPublisher.probe[Message]()
 
-      def flow: Flow[Message, Message, Unit] = Flow.fromSinkAndSourceMat(Sink(subscriber), Source(publisher))(Keep.none)
+      def flow: Flow[Message, Message, Unit] = Flow.fromSinkAndSourceMat(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))(Keep.none)
 
       def sendMessage(message: Message): Unit = publisher.sendNext(message)
       def sendMessage(text: String): Unit = sendMessage(TextMessage(text))

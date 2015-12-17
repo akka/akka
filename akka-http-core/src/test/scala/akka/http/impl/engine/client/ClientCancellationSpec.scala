@@ -33,7 +33,7 @@ class ClientCancellationSpec extends AkkaSpec("""
     def testCase(connection: Flow[HttpRequest, HttpResponse, Any]): Unit = Utils.assertAllStagesStopped {
       val requests = TestPublisher.probe[HttpRequest]()
       val responses = TestSubscriber.probe[HttpResponse]()
-      Source(requests).via(connection).runWith(Sink(responses))
+      Source.fromPublisher(requests).via(connection).runWith(Sink.fromSubscriber(responses))
       responses.request(1)
       requests.sendNext(HttpRequest())
       responses.expectNext().entity.dataBytes.runWith(Sink.cancelled)

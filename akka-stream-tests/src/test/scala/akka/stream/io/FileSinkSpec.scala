@@ -98,7 +98,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         implicit val timeout = Timeout(3.seconds)
 
         try {
-          Source(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(Sink.file(f))(materializer)
+          Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(Sink.file(f))(materializer)
 
           materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
@@ -116,7 +116,7 @@ class FileSinkSpec extends AkkaSpec(UnboundedMailboxConfig) {
         implicit val timeout = Timeout(3.seconds)
 
         try {
-          Source(() ⇒ Iterator.continually(TestByteStrings.head))
+          Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head))
             .to(Sink.file(f))
             .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
             .run()(materializer)

@@ -484,7 +484,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         }
         .concatSubstreams
         .flatMapConcat { x ⇒
-          Source {
+          Source.fromFuture {
             x match {
               case Right(request) ⇒ compactEntity(request.entity).fast.map(x ⇒ Right(request.withEntity(x)))
               case Left(error)    ⇒ FastFuture.successful(Left(error))

@@ -11,7 +11,7 @@ import org.reactivestreams.Publisher
 class SingleElementSourceTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] =
-    Source.single(1).runWith(Sink.publisher(false))
+    Source.single(1).runWith(Sink.asPublisher(false))
 
   override def maxElementsFromPublisher(): Long = 1
 }

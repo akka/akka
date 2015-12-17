@@ -41,7 +41,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
   val impl = new Fixture {
     override def tweets: Publisher[Tweet] =
-      TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.publisher(false))
+      TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.asPublisher(false))
 
     override def storage = TestSubscriber.manualProbe[Author]
 
@@ -66,7 +66,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     val storage = impl.storage
 
     //#connect-all
-    Source(tweets).via(authors).to(Sink(storage)).run()
+    Source.fromPublisher(tweets).via(authors).to(Sink.fromSubscriber(storage)).run()
     //#connect-all
 
     assertResult(storage)
@@ -92,7 +92,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
     //#source-publisher
     val authorPublisher: Publisher[Author] =
-      Source(tweets).via(authors).runWith(Sink.publisher(fanout = false))
+      Source.fromPublisher(tweets).via(authors).runWith(Sink.asPublisher(fanout = false))
 
     authorPublisher.subscribe(storage)
     //#source-publisher
@@ -107,8 +107,8 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
     //#source-fanoutPublisher
     val authorPublisher: Publisher[Author] =
-      Source(tweets).via(authors)
-        .runWith(Sink.publisher(fanout = true))
+      Source.fromPublisher(tweets).via(authors)
+        .runWith(Sink.asPublisher(fanout = true))
 
     authorPublisher.subscribe(storage)
     authorPublisher.subscribe(alert)
@@ -125,7 +125,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
     //#sink-subscriber
     val tweetSubscriber: Subscriber[Tweet] =
-      authors.to(Sink(storage)).runWith(Source.subscriber[Tweet])
+      authors.to(Sink.fromSubscriber(storage)).runWith(Source.asSubscriber[Tweet])
 
     tweets.subscribe(tweetSubscriber)
     //#sink-subscriber

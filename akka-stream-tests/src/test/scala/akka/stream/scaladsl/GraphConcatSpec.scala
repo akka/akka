@@ -41,7 +41,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
         concat1.out ~> concat2.in(0)
         Source(5 to 10) ~> concat2.in(1)
 
-        concat2.out ~> Sink(probe)
+        concat2.out ~> Sink.fromSubscriber(probe)
         ClosedShape
       }).run()
 
@@ -136,8 +136,8 @@ class GraphConcatSpec extends TwoStreamsSetup {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val concat = b add Concat[Int]()
         Source(List(1, 2, 3)) ~> concat.in(0)
-        Source(promise.future) ~> concat.in(1)
-        concat.out ~> Sink(subscriber)
+        Source.fromFuture(promise.future) ~> concat.in(1)
+        concat.out ~> Sink.fromSubscriber(subscriber)
         ClosedShape
       }).run()
 

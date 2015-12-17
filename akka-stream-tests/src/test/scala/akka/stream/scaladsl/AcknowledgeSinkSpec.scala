@@ -34,7 +34,7 @@ class AcknowledgeSinkSpec extends AkkaSpec {
 
     "allow to have only one future waiting for result in each point of time" in assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source(probe).runWith(Sink.queue(3))
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(3))
       val sub = probe.expectSubscription()
       val future = queue.pull()
       val future2 = queue.pull()
@@ -49,7 +49,7 @@ class AcknowledgeSinkSpec extends AkkaSpec {
 
     "wait for next element from upstream" in assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source(probe).runWith(Sink.queue(3))
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(3))
       val sub = probe.expectSubscription()
 
       queue.pull().pipeTo(testActor)
@@ -62,7 +62,7 @@ class AcknowledgeSinkSpec extends AkkaSpec {
 
     "fail future on stream failure" in assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source(probe).runWith(Sink.queue(3))
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(3))
       val sub = probe.expectSubscription()
 
       queue.pull().pipeTo(testActor)
@@ -74,7 +74,7 @@ class AcknowledgeSinkSpec extends AkkaSpec {
 
     "fail future when stream failed" in assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source(probe).runWith(Sink.queue(3, 100.millis))
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(3, 100.millis))
       val sub = probe.expectSubscription()
       sub.sendError(ex) // potential race condition
 
@@ -83,7 +83,7 @@ class AcknowledgeSinkSpec extends AkkaSpec {
 
     "timeout future when stream cannot provide data" in assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source(probe).runWith(Sink.queue(3))
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(3))
       val sub = probe.expectSubscription()
 
       queue.pull().pipeTo(testActor)
@@ -96,7 +96,7 @@ class AcknowledgeSinkSpec extends AkkaSpec {
 
     "work when buffer is 0" in assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source(probe).runWith(Sink.queue(0))
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(0))
       val sub = probe.expectSubscription()
       sub.sendNext(1)
 

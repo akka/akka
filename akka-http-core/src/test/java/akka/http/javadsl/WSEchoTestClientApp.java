@@ -54,7 +54,7 @@ public class WSEchoTestClientApp {
                         TextMessage.create("abc"),
                         TextMessage.create("def"),
                         TextMessage.create("ghi")
-                )).concat(Source.from(delayedCompletion).drop(1));
+                )).concat(Source.fromFuture(delayedCompletion).drop(1));
 
             Sink<Message, Future<List<String>>> echoSink =
                 Flow.of(Message.class)

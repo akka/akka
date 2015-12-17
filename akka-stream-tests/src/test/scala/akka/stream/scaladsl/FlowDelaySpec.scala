@@ -49,7 +49,7 @@ class FlowDelaySpec extends AkkaSpec {
       val c = TestSubscriber.manualProbe[Int]()
       val p = TestPublisher.manualProbe[Int]()
 
-      Source(p).delay(300.millis).to(Sink(c)).run()
+      Source.fromPublisher(p).delay(300.millis).to(Sink.fromSubscriber(c)).run()
       val cSub = c.expectSubscription()
       val pSub = p.expectSubscription()
       cSub.request(100)
@@ -111,7 +111,7 @@ class FlowDelaySpec extends AkkaSpec {
       val c = TestSubscriber.manualProbe[Int]()
       val p = TestPublisher.manualProbe[Int]()
 
-      Source(p).delay(10.seconds, DelayOverflowStrategy.emitEarly).withAttributes(inputBuffer(16, 16)).to(Sink(c)).run()
+      Source.fromPublisher(p).delay(10.seconds, DelayOverflowStrategy.emitEarly).withAttributes(inputBuffer(16, 16)).to(Sink.fromSubscriber(c)).run()
       val cSub = c.expectSubscription()
       val pSub = p.expectSubscription()
       cSub.request(20)

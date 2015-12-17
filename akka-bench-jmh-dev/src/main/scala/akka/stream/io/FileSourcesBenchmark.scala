@@ -34,7 +34,7 @@ class FileSourcesBenchmark {
     val f = File.createTempFile(getClass.getName, ".bench.tmp")
     f.deleteOnExit()
 
-    val ft = Source(() ⇒ Iterator.continually(line))
+    val ft = Source.fromIterator(() ⇒ Iterator.continually(line))
       .take(10 * 39062) // adjust as needed
       .runWith(Sink.file(f))
     Await.result(ft, 30.seconds)
@@ -53,7 +53,7 @@ class FileSourcesBenchmark {
   def setup() {
     fileChannelSource = Source.file(file, bufSize)
     fileInputStreamSource = Source.inputStream(() ⇒ new FileInputStream(file), bufSize)
-    ioSourceLinesIterator = Source(() ⇒ scala.io.Source.fromFile(file).getLines()).map(ByteString(_))
+    ioSourceLinesIterator = Source.fromIterator(() ⇒ scala.io.Source.fromFile(file).getLines()).map(ByteString(_))
   }
 
   @TearDown

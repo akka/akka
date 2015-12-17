@@ -36,7 +36,7 @@ class FlowForeachSpec extends AkkaSpec {
 
     "yield the first error" in assertAllStagesStopped {
       val p = TestPublisher.manualProbe[Int]()
-      Source(p).runForeach(testActor ! _) onFailure {
+      Source.fromPublisher(p).runForeach(testActor ! _) onFailure {
         case ex ⇒ testActor ! ex
       }
       val proc = p.expectSubscription()

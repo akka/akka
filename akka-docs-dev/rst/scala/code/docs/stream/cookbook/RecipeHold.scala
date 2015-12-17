@@ -54,8 +54,8 @@ class RecipeHold extends RecipeSpec {
 
       val pub = TestPublisher.probe[Int]()
       val sub = TestSubscriber.manualProbe[Int]()
-      val source = Source(pub)
-      val sink = Sink(sub)
+      val source = Source.fromPublisher(pub)
+      val sink = Sink.fromSubscriber(sub)
 
       source.transform(() => new HoldWithInitial(0)).to(sink).run()
 
@@ -84,8 +84,8 @@ class RecipeHold extends RecipeSpec {
 
       val pub = TestPublisher.probe[Int]()
       val sub = TestSubscriber.manualProbe[Int]()
-      val source = Source(pub)
-      val sink = Sink(sub)
+      val source = Source.fromPublisher(pub)
+      val sink = Sink.fromSubscriber(sub)
 
       source.transform(() => new HoldWithWait).to(sink).run()
 

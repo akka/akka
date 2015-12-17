@@ -33,7 +33,7 @@ class FlowIdleInjectSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(1)
 
@@ -48,7 +48,7 @@ class FlowIdleInjectSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      (Source(1 to 10) ++ Source(upstream)).keepAlive(1.second, () ⇒ 0).runWith(Sink(downstream))
+      (Source(1 to 10) ++ Source.fromPublisher(upstream)).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(10)
       downstream.expectNextN(1 to 10)
@@ -66,7 +66,7 @@ class FlowIdleInjectSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.ensureSubscription()
       downstream.expectNoMsg(1.5.second)
@@ -81,7 +81,7 @@ class FlowIdleInjectSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      (Source(1 to 10) ++ Source(upstream)).keepAlive(1.second, () ⇒ 0).runWith(Sink(downstream))
+      (Source(1 to 10) ++ Source.fromPublisher(upstream)).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(10)
       downstream.expectNextN(1 to 10)
@@ -98,7 +98,7 @@ class FlowIdleInjectSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.ensureSubscription()
       downstream.expectNoMsg(1.5.second)
@@ -115,7 +115,7 @@ class FlowIdleInjectSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      (Source(1 to 10) ++ Source(upstream)).keepAlive(1.second, () ⇒ 0).runWith(Sink(downstream))
+      (Source(1 to 10) ++ Source.fromPublisher(upstream)).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(10)
       downstream.expectNextN(1 to 10)
@@ -134,7 +134,7 @@ class FlowIdleInjectSpec extends AkkaSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink(downstream))
+      Source.fromPublisher(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(2)
       downstream.expectNoMsg(500.millis)

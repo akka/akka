@@ -17,7 +17,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
 
   override def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
     val subscriber = TestSubscriber.probe[Outputs]()
-    Source(p1).concat(Source(p2)).runWith(Sink(subscriber))
+    Source.fromPublisher(p1).concat(Source.fromPublisher(p2)).runWith(Sink.fromSubscriber(subscriber))
     subscriber
   }
 
@@ -29,7 +29,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       val s2: Source[String, _] = Source(List(4, 5, 6)).map(_.toString + "-s")
 
       val subs = TestSubscriber.manualProbe[Any]()
-      val subSink = Sink.publisher[Any](false)
+      val subSink = Sink.asPublisher[Any](false)
 
       val (_, res) = f1.concat(s2).runWith(s1, subSink)
 
@@ -101,7 +101,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
     "correctly handle async errors in secondary upstream" in assertAllStagesStopped {
       val promise = Promise[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
-      Source(List(1, 2, 3)).concat(Source(promise.future)).runWith(Sink(subscriber))
+      Source(List(1, 2, 3)).concat(Source.fromFuture(promise.future)).runWith(Sink.fromSubscriber(subscriber))
 
       val subscription = subscriber.expectSubscription()
       subscription.request(4)
@@ -152,7 +152,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
     "subscribe at once to initial source and to one that it's concat to" in {
       val publisher1 = TestPublisher.probe[Int]()
       val publisher2 = TestPublisher.probe[Int]()
-      val probeSink = Source(publisher1).concat(Source(publisher2))
+      val probeSink = Source.fromPublisher(publisher1).concat(Source.fromPublisher(publisher2))
         .runWith(TestSink.probe[Int])
 
       val sub1 = publisher1.expectSubscription()

@@ -163,7 +163,7 @@ public class FlowDocTest {
         Source.from(list);
 
         // Create a source form a Future
-        Source.from(Futures.successful("Hello Streams!"));
+        Source.fromFuture(Futures.successful("Hello Streams!"));
 
         // Create a source from a single element
         Source.single("only one element");
