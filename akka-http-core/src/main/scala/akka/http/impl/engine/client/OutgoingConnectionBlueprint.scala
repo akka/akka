@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.client
 
+import akka.stream.impl.fusing.GraphInterpreter
+
 import language.existentials
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
@@ -69,11 +71,21 @@ private[http] object OutgoingConnectionBlueprint {
       .mapConcat(conforms)
       .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
       .prefixAndTail(1)
-      .collect {
+      .filter {
+        case (Seq(MessageEnd), remaining) ⇒
+          remaining.runWith(Sink.ignore)(GraphInterpreter.currentInterpreter.subFusingMaterializer)
+          false
+        case _ ⇒
+          true
+      }
+      .map {
         case (Seq(ResponseStart(statusCode, protocol, headers, createEntity, _)), entityParts) ⇒
           val entity = createEntity(entityParts) withSizeLimit parserSettings.maxContentLength
           HttpResponse(statusCode, headers, entity, protocol)
-        case (Seq(MessageStartError(_, info)), _) ⇒ throw IllegalResponseException(info)
+        case (Seq(MessageStartError(_, info)), tail) ⇒
+          // Tails can be empty, but still need one pull to figure that out -- never drop tails.
+          tail.runWith(Sink.ignore)(GraphInterpreter.currentInterpreter.subFusingMaterializer)
+          throw IllegalResponseException(info)
       }.concatSubstreams
 
     val core = BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒

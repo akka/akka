@@ -104,6 +104,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         sendWireData("0\n\n")
         sub.request(1)
         probe.expectNext(HttpEntity.LastChunk)
+        sub.request(1)
         probe.expectComplete()
 
         requestsSub.sendComplete()
@@ -165,6 +166,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         sendWireData("0\n\n")
         sub.request(1)
         probe.expectNext(HttpEntity.LastChunk)
+        sub.request(1)
         probe.expectComplete()
 
         // simulate that response is received before method bypass reaches response parser

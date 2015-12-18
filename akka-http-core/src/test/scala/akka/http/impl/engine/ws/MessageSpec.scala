@@ -777,7 +777,13 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         pushInput(frameHeader(Opcode.Text, 0, fin = false))
         pushInput(frameHeader(Opcode.Continuation, 3, fin = true) ++ data)
 
-        messageIn.requestNext()
+        // Kids, always drain your entities
+        messageIn.requestNext() match {
+          case b: TextMessage ⇒
+            b.textStream.runWith(Sink.ignore)
+          case _ ⇒
+        }
+
         expectError(messageIn)
 
         expectCloseCodeOnNetwork(Protocol.CloseCodes.InconsistentData)

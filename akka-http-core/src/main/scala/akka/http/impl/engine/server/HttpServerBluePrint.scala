@@ -6,6 +6,8 @@ package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
 import java.util.Random
+import akka.stream.impl.fusing.GraphInterpreter
+
 import scala.collection.immutable
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.util.control.NonFatal
@@ -115,7 +117,7 @@ private[http] object HttpServerBluePrint {
               push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
 
             case (wat, src) ⇒
-              src.runWith(Sink.ignore)
+              src.runWith(Sink.ignore)(GraphInterpreter.currentInterpreter.subFusingMaterializer)
               pull(in)
           }
         })
