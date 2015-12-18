@@ -10,7 +10,6 @@ import akka.stream.impl.io.InputStreamSinkStage._
 import akka.stream.stage._
 import akka.util.ByteString
 import scala.annotation.tailrec
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.{ Inlet, SinkShape, Attributes }
 
@@ -98,7 +97,6 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
   var isActive = true
   var isStageAlive = true
   val subscriberClosedException = new IOException("Reactive stream is terminated, no reads are possible")
-  var skipBytes = 0
   var detachedChunk: Option[ByteString] = None
 
   @scala.throws(classOf[IOException])
@@ -118,6 +116,11 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
 
   @scala.throws(classOf[IOException])
   override def read(a: Array[Byte], begin: Int, length: Int): Int = {
+    require(a.length > 0, "array size must be >= 0")
+    require(begin >= 0, "begin must be >= 0")
+    require(length > 0, "length must be > 0")
+    require(begin + length <= a.length, "begin + length must be smaller or equal to the array length")
+
     executeIfNotClosed(() ⇒
       if (isStageAlive) {
         detachedChunk match {
@@ -146,7 +149,7 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
 
   private[this] def readBytes(a: Array[Byte], begin: Int, length: Int): Int = {
     require(detachedChunk.nonEmpty, "Chunk must be pulled from shared buffer")
-    val availableInChunk = detachedChunk.get.size - skipBytes
+    val availableInChunk = detachedChunk.get.size
     val readBytes = getData(a, begin, length, 0)
     if (readBytes >= availableInChunk) sendToStage(ReadElementAcknowledgement)
     readBytes
@@ -166,18 +169,17 @@ private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapt
                             gotBytes: Int): Int = {
     grabDataChunk() match {
       case Some(data) ⇒
-        val size = data.size - skipBytes
-        if (size + gotBytes <= length) {
-          System.arraycopy(data.toArray, skipBytes, arr, begin, size)
-          skipBytes = 0
+        val size = data.size
+        if (size <= length) {
+          data.copyToArray(arr, begin, size)
           detachedChunk = None
-          if (length - size == 0)
+          if (size == length)
             gotBytes + size
           else
             getData(arr, begin + size, length - size, gotBytes + size)
         } else {
-          System.arraycopy(data.toArray, skipBytes, arr, begin, length)
-          skipBytes = length
+          data.copyToArray(arr, begin, length)
+          detachedChunk = Some(data.drop(length))
           gotBytes + length
         }
       case None ⇒ gotBytes
