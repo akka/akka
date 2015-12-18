@@ -21,7 +21,7 @@ import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
  *
  * (See the class for the documentation of the internals)
  */
-private[stream] object GraphInterpreter {
+private[akka] object GraphInterpreter {
   /**
    * Compile time constant, enable it for debug logging to the console.
    */
@@ -250,14 +250,14 @@ private[stream] object GraphInterpreter {
   /**
    * INTERNAL API
    */
-  private[stream] def currentInterpreter: GraphInterpreter =
+  private[akka] def currentInterpreter: GraphInterpreter =
     _currentInterpreter.get()(0).asInstanceOf[GraphInterpreter].nonNull
   // nonNull is just a debug helper to find nulls more timely
 
   /**
    * INTERNAL API
    */
-  private[stream] def currentInterpreterOrNull: GraphInterpreter =
+  private[akka] def currentInterpreterOrNull: GraphInterpreter =
     _currentInterpreter.get()(0).asInstanceOf[GraphInterpreter]
 
 }
@@ -704,4 +704,45 @@ private[stream] final class GraphInterpreter(
     if ((currentState & InClosed) == 0) completeConnection(assembly.inOwners(connection))
   }
 
+  /**
+   * Debug utility to dump the "waits-on" relationships in DOT format to the console for analysis of deadlocks.
+   *
+   * Only invoke this after the interpreter completely settled, otherwise the results might be off. This is a very
+   * simplistic tool, make sure you are understanding what you are doing and then it will serve you well.
+   */
+  def dumpWaits(): Unit = {
+    println("digraph waits {")
+
+    for (i ← assembly.stages.indices) {
+      println(s"""N$i [label="${assembly.stages(i)}"]""")
+    }
+
+    def nameIn(port: Int): String = {
+      val owner = assembly.inOwners(port)
+      if (owner == Boundary) "Out" + port
+      else "N" + owner
+    }
+
+    def nameOut(port: Int): String = {
+      val owner = assembly.outOwners(port)
+      if (owner == Boundary) "In" + port
+      else "N" + owner
+    }
+
+    for (i ← portStates.indices) {
+      portStates(i) match {
+        case InReady ⇒
+          println(s"""  ${nameIn(i)} -> ${nameOut(i)} [label="shouldPull"; color=blue]; """)
+        case OutReady ⇒
+          println(s"""  ${nameOut(i)} -> ${nameIn(i)} [label="shouldPush"; color=red]; """)
+        case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) ⇒
+          println(s"""  ${nameIn(i)} -> ${nameOut(i)} [style=dotted; label="closed" dir=both]; """)
+        case _ ⇒
+      }
+
+    }
+
+    println("}")
+
+  }
 }
