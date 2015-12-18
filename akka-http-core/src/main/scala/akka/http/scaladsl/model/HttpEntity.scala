@@ -195,13 +195,13 @@ object HttpEntity {
   def apply(contentType: ContentType, data: Source[ByteString, Any]): HttpEntity.Chunked =
     HttpEntity.Chunked.fromData(contentType, data)
 
-/**
-  * Returns either the empty entity, if the given file is empty, or a [[Default]] entity
-  * consisting of a stream of [[ByteString]] instances each containing `chunkSize` bytes
-  * (except for the final ByteString, which simply contains the remaining bytes).
-  *
-  * If the given `chunkSize` is -1 the default chunk size is used.
-  */
+  /**
+   * Returns either the empty entity, if the given file is empty, or a [[Default]] entity
+   * consisting of a stream of [[ByteString]] instances each containing `chunkSize` bytes
+   * (except for the final ByteString, which simply contains the remaining bytes).
+   *
+   * If the given `chunkSize` is -1 the default chunk size is used.
+   */
   def apply(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity = {
     val fileLength = file.length
     if (fileLength > 0)
