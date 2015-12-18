@@ -77,7 +77,7 @@ object ActorRef {
  *
  *     } else if (o instanceof Request3) {
  *       Msg msg = ((Request3) o).getMsg();
- *       pipe(ask(other, msg, 5000)).to(getSender());
+ *       pipe(ask(other, msg, 5000), context().dispatcher()).to(getSender());
  *       // the ask call will get a future from other's reply
  *       // when the future is complete, send its value to the original sender
  *
