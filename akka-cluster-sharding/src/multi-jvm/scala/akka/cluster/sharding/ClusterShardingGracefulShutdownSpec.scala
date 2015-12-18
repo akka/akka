@@ -3,6 +3,7 @@
  */
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
 import java.io.File
 
 import akka.actor._
@@ -49,8 +50,16 @@ object ClusterShardingGracefulShutdownSpec {
         region ! ShardRegion.GracefulShutdown
 
       case Terminated(`region`) ⇒
-        cluster.registerOnMemberRemoved(system.terminate())
+        cluster.registerOnMemberRemoved(self ! "member-removed")
         cluster.leave(cluster.selfAddress)
+
+      case "member-removed" ⇒
+        // Let singletons hand over gracefully before stopping the system
+        import context.dispatcher
+        system.scheduler.scheduleOnce(3.seconds, self, "stop-system")
+
+      case "stop-system" ⇒
+        system.terminate()
     }
   }
   //#graceful-shutdown
