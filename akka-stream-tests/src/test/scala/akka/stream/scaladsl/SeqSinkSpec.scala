@@ -5,7 +5,7 @@ import akka.stream.testkit.AkkaSpec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ToSeqSinkSpec extends AkkaSpec {
+class SeqSinkSpec extends AkkaSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -22,7 +22,7 @@ class ToSeqSinkSpec extends AkkaSpec {
 
     "return an empty Seq[T] from an empty Source" in {
       val input: Seq[Int] = Seq.empty
-      val future = Source(() ⇒ input.iterator).runWith(Sink.seq)
+      val future = Source.fromIterator(() ⇒ input.iterator).runWith(Sink.seq)
       val result = Await.result(future, 300.millis)
       result should be(Seq.empty: Seq[Int])
     }

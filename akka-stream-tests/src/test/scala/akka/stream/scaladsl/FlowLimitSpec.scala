@@ -13,6 +13,14 @@ class FlowLimitSpec extends AkkaSpec {
   implicit val mat = ActorMaterializer(settings)
 
   "Limit" must {
+    "produce empty sequence when source is empty and n = 0" in {
+      val input = Range(0, 0, 1)
+      val n = input.length
+      val future = Source(input).limit(n).grouped(Integer.MAX_VALUE).runWith(Sink.headOption)
+      val result = Await.result(future, 300.millis)
+      result should be(None)
+    }
+
     "produce output that is identical to the input when n = input.length" in {
       val input = (1 to 6)
       val n = input.length
