@@ -43,7 +43,7 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "work together with SplitWhen" in {
-      val subscriber = TestSubscriber.manualProbe[Int]()
+      val subscriber = TestSubscriber.probe[Int]()
       Source(1 to 10)
         .splitWhen(_ % 2 == 0)
         .prefixAndTail(0)
@@ -51,11 +51,11 @@ class FlowConcatAllSpec extends AkkaSpec {
         .concatSubstreams
         .flatMapConcat(ConstantFun.scalaIdentityFunction)
         .runWith(Sink.fromSubscriber(subscriber))
-      val subscription = subscriber.expectSubscription()
-      subscription.request(10)
-      for (i ← (1 to 10))
-        subscriber.expectNext() shouldBe i
-      subscription.request(1)
+
+      for (i ← 1 to 10)
+        subscriber.requestNext() shouldBe i
+
+      subscriber.request(1)
       subscriber.expectComplete()
     }
 

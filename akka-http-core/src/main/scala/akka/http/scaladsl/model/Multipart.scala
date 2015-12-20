@@ -16,7 +16,7 @@ import akka.event.{ NoLogging, LoggingAdapter }
 import akka.stream.impl.ConstantFun
 import akka.stream.Materializer
 import akka.stream.javadsl.{ Source ⇒ JSource }
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.engine.rendering.BodyPartRenderer
@@ -187,10 +187,7 @@ object Multipart {
 
   private def strictify[BP <: Multipart.BodyPart, BPS <: Multipart.BodyPart.Strict](parts: Source[BP, Any])(f: BP ⇒ Future[BPS])(implicit fm: Materializer): Future[Vector[BPS]] = {
     import fm.executionContext
-    // TODO: move to Vector `:+` when https://issues.scala-lang.org/browse/SI-8930 is fixed
-    parts.runFold(new VectorBuilder[Future[BPS]]) {
-      case (builder, part) ⇒ builder += f(part)
-    }.fast.flatMap(builder ⇒ FastFuture.sequence(builder.result()))
+    parts.mapAsync(Int.MaxValue)(f).runWith(Sink.seq).fast.map(_.toVector)
   }
 
   //////////////////////// CONCRETE multipart types /////////////////////////

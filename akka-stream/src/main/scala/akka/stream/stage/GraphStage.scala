@@ -3,21 +3,24 @@
  */
 package akka.stream.stage
 
-import java.util.concurrent.atomic.{ AtomicReference }
-
+import java.util
+import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicReference }
 import akka.actor._
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Unwatch, Watch }
 import akka.event.LoggingAdapter
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule }
+import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
+import akka.stream.impl.fusing.{ GraphInterpreter, GraphModule, GraphStageModule, SubSource, SubSink }
 import akka.stream.impl.{ ReactiveStreamsCompliance, SeqActorName }
-
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
+import akka.stream.impl.SubscriptionTimeoutException
+import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.actor.ActorPublisherMessage
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
@@ -508,6 +511,16 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   }
 
   /**
+   * Controls whether this stage shall shut down when all its ports are closed, which
+   * is the default. In order to have it keep going past that point this method needs
+   * to be called with a `true` argument before all ports are closed, and afterwards
+   * it will not be closed until this method is called with a `false` argument or the
+   * stage is terminated via `completeStage()` or `failStage()`.
+   */
+  final protected def setKeepGoing(enabled: Boolean): Unit =
+    interpreter.setKeepGoing(this, enabled)
+
+  /**
    * Signals that there will be no more elements emitted on the given port.
    */
   final protected def complete[T](out: Outlet[T]): Unit =
@@ -536,7 +549,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       }
       i += 1
     }
-    if (keepGoingAfterAllPortsClosed) interpreter.closeKeptAliveStageIfNeeded(stageId)
+    setKeepGoing(false)
   }
 
   /**
@@ -560,7 +573,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         interpreter.fail(portToConn(i), ex, isInternal)
       i += 1
     }
-    if (keepGoingAfterAllPortsClosed) interpreter.closeKeptAliveStageIfNeeded(stageId)
+    setKeepGoing(false)
   }
 
   /**
@@ -918,7 +931,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * This object can be cached and reused within the same [[GraphStageLogic]].
    */
-  final protected def getAsyncCallback[T](handler: T ⇒ Unit): AsyncCallback[T] = {
+  final def getAsyncCallback[T](handler: T ⇒ Unit): AsyncCallback[T] = {
     new AsyncCallback[T] {
       override def invoke(event: T): Unit =
         interpreter.onAsyncInput(GraphStageLogic.this, event, handler.asInstanceOf[Any ⇒ Unit])
@@ -999,10 +1012,156 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   def postStop(): Unit = ()
 
   /**
-   * If this method returns true when all ports had been closed then the stage is not stopped until
-   * completeStage() or failStage() are explicitly called
+   * INTERNAL API
+   *
+   * This allows the dynamic creation of an Inlet for a GraphStage which is
+   * connected to a Sink that is available for materialization (e.g. using
+   * the `subFusingMaterializer`). Care needs to be taken to cancel this Inlet
+   * when the stage shuts down lest the corresponding Sink be left hanging.
    */
-  def keepGoingAfterAllPortsClosed: Boolean = false
+  class SubSinkInlet[T](name: String) {
+    import ActorSubscriberMessage._
+
+    private var handler: InHandler = _
+    private var elem: T = null.asInstanceOf[T]
+    private var closed = false
+    private var pulled = false
+
+    private val _sink = new SubSink[T](name, getAsyncCallback[ActorSubscriberMessage] { msg ⇒
+      if (!closed) msg match {
+        case OnNext(e) ⇒
+          elem = e.asInstanceOf[T]
+          pulled = false
+          handler.onPush()
+        case OnComplete ⇒
+          closed = true
+          handler.onUpstreamFinish()
+        case OnError(ex) ⇒
+          closed = true
+          handler.onUpstreamFailure(ex)
+      }
+    }.invoke _)
+
+    def sink: Graph[SinkShape[T], Unit] = _sink
+
+    def setHandler(handler: InHandler): Unit = this.handler = handler
+
+    def isAvailable: Boolean = elem != null
+
+    def isClosed: Boolean = closed
+
+    def hasBeenPulled: Boolean = pulled && !isClosed
+
+    def grab(): T = {
+      require(elem != null, "cannot grab element from port when data have not yet arrived")
+      val ret = elem
+      elem = null.asInstanceOf[T]
+      ret
+    }
+
+    def pull(): Unit = {
+      require(!pulled, "cannot pull port twice")
+      require(!closed, "cannot pull closed port")
+      pulled = true
+      _sink.pullSubstream()
+    }
+
+    def cancel(): Unit = {
+      closed = true
+      _sink.cancelSubstream()
+    }
+  }
+
+  /**
+   * INTERNAL API
+   *
+   * This allows the dynamic creation of an Outlet for a GraphStage which is
+   * connected to a Source that is available for materialization (e.g. using
+   * the `subFusingMaterializer`). Care needs to be taken to complete this
+   * Outlet when the stage shuts down lest the corresponding Sink be left
+   * hanging. It is good practice to use the `timeout` method to cancel this
+   * Outlet in case the corresponding Source is not materialized within a
+   * given time limit, see e.g. ActorMaterializerSettings.
+   */
+  class SubSourceOutlet[T](name: String) {
+
+    private var handler: OutHandler = null
+    private var available = false
+    private var closed = false
+
+    private val callback = getAsyncCallback[ActorPublisherMessage] {
+      case SubSink.RequestOne ⇒
+        if (!closed) {
+          available = true
+          handler.onPull()
+        }
+      case ActorPublisherMessage.Cancel ⇒
+        if (!closed) {
+          available = false
+          closed = true
+          handler.onDownstreamFinish()
+        }
+    }
+
+    private val _source = new SubSource[T](name, callback)
+
+    /**
+     * Set the source into timed-out mode if it has not yet been materialized.
+     */
+    def timeout(d: FiniteDuration): Unit =
+      if (_source.timeout(d)) closed = true
+
+    /**
+     * Get the Source for this dynamic output port.
+     */
+    def source: Graph[SourceShape[T], Unit] = _source
+
+    /**
+     * Set OutHandler for this dynamic output port; this needs to be done before
+     * the first substream callback can arrive.
+     */
+    def setHandler(handler: OutHandler): Unit = this.handler = handler
+
+    /**
+     * Returns `true` if this output port can be pushed.
+     */
+    def isAvailable: Boolean = available
+
+    /**
+     * Returns `true` if this output port is closed, but caution
+     * THIS WORKS DIFFERENTLY THAN THE NORMAL isClosed(out).
+     * Due to possibly asynchronous shutdown it may not return
+     * `true` immediately after `complete()` or `fail()` have returned.
+     */
+    def isClosed: Boolean = closed
+
+    /**
+     * Push to this output port.
+     */
+    def push(elem: T): Unit = {
+      available = false
+      _source.pushSubstream(elem)
+    }
+
+    /**
+     * Complete this output port.
+     */
+    def complete(): Unit = {
+      available = false
+      closed = true
+      _source.completeSubstream()
+    }
+
+    /**
+     * Fail this output port.
+     */
+    def fail(ex: Throwable): Unit = {
+      available = false
+      closed = true
+      _source.failSubstream(ex)
+    }
+  }
+
 }
 
 /**
@@ -1034,10 +1193,11 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
 
   private def onInternalTimer(scheduled: Scheduled): Unit = {
     val Id = scheduled.timerId
-    keyToTimers.get(scheduled.timerKey) match {
+    val timerKey = scheduled.timerKey
+    keyToTimers.get(timerKey) match {
       case Some(Timer(Id, _)) ⇒
-        if (!scheduled.repeating) keyToTimers -= scheduled.timerKey
-        onTimer(scheduled.timerKey)
+        if (!scheduled.repeating) keyToTimers -= timerKey
+        onTimer(timerKey)
       case _ ⇒
     }
   }

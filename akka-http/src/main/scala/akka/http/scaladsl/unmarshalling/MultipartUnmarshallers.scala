@@ -8,7 +8,8 @@ import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import akka.util.ByteString
 import akka.event.{ NoLogging, LoggingAdapter }
-import akka.stream.impl.fusing.IteratorInterpreter
+import akka.stream.OverflowStrategy
+import akka.stream.impl.fusing.{ GraphInterpreter, IteratorInterpreter }
 import akka.stream.scaladsl._
 import akka.http.impl.engine.parsing.BodyPartParser
 import akka.http.impl.util._
@@ -17,6 +18,7 @@ import akka.http.scaladsl.util.FastFuture
 import MediaRanges._
 import MediaTypes._
 import HttpCharsets._
+import akka.stream.impl.fusing.SubSource
 
 trait MultipartUnmarshallers {
 
@@ -88,10 +90,14 @@ trait MultipartUnmarshallers {
                     val bodyParts = entity.dataBytes
                       .transform(() ⇒ parser)
                       .splitWhen(_.isInstanceOf[PartStart])
+                      .buffer(100, OverflowStrategy.backpressure) // FIXME remove (#19240)
                       .prefixAndTail(1)
                       .collect {
-                        case (Seq(BodyPartStart(headers, createEntity)), entityParts) ⇒ createBodyPart(createEntity(entityParts), headers)
-                        case (Seq(ParseError(errorInfo)), _)                          ⇒ throw ParsingException(errorInfo)
+                        case (Seq(BodyPartStart(headers, createEntity)), entityParts) ⇒
+                          createBodyPart(createEntity(entityParts), headers)
+                        case (Seq(ParseError(errorInfo)), rest) ⇒
+                          SubSource.kill(rest)
+                          throw ParsingException(errorInfo)
                       }
                       .concatSubstreams
                     createStreamed(entity.contentType.mediaType.asInstanceOf[MediaType.Multipart], bodyParts)

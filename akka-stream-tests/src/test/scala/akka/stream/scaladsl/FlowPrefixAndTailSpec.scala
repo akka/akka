@@ -101,7 +101,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
       val subscriber2 = TestSubscriber.probe[Int]()
       tail.to(Sink.fromSubscriber(subscriber2)).run()
-      subscriber2.expectSubscriptionAndError().getMessage should ===("Tail Source cannot be materialized more than once.")
+      subscriber2.expectSubscriptionAndError().getMessage should ===("Substream Source cannot be materialized more than once")
 
       subscriber1.requestNext(2).expectComplete()
 
@@ -122,7 +122,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       Thread.sleep(1000)
 
       tail.to(Sink.fromSubscriber(subscriber)).run()(tightTimeoutMaterializer)
-      subscriber.expectSubscriptionAndError().getMessage should ===("Tail Source has not been materialized in 500 milliseconds.")
+      subscriber.expectSubscriptionAndError().getMessage should ===("Substream Source has not been materialized in 500 milliseconds")
     }
 
     "shut down main stage if substream is empty, even when not subscribed" in assertAllStagesStopped {

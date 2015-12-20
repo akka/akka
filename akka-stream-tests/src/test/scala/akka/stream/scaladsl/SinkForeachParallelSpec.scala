@@ -84,7 +84,7 @@ class SinkForeachParallelSpec extends AkkaSpec {
       }).withAttributes(supervisionStrategy(resumingDecider)))
 
       latch.countDown()
-      probe.expectMsgAllOf(1, 2, 4)
+      probe.expectMsgAllOf(1, 2, 4, 5)
 
       Await.result(p, 5.seconds)
     }

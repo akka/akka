@@ -86,7 +86,7 @@ class FlowFlattenMergeSpec extends AkkaSpec with ScalaFutures with ConversionChe
 
     "bubble up substream exceptions" in {
       val ex = new Exception("buh")
-      intercept[TestFailedException] {
+      val result = intercept[TestFailedException] {
         Source(List(blocked, blocked, Source.failed(ex)))
           .flatMapMerge(10, identity)
           .runWith(Sink.head)
