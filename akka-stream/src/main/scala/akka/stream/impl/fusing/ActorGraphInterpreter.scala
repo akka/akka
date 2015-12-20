@@ -326,6 +326,8 @@ private[stream] final class GraphInterpreterShell(
   private var subscribesPending = inputs.length
   private var publishersPending = outputs.length
 
+  def dumpWaits(): Unit = interpreter.dumpWaits()
+
   /*
    * Limits the number of events processed by the interpreter before scheduling
    * a self-message for fairness with other actors. The basic assumption here is

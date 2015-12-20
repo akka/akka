@@ -17,6 +17,7 @@ import java.{ util ⇒ ju }
 import scala.collection.immutable
 import scala.concurrent._
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -232,7 +233,7 @@ private[fusing] object StreamOfStreams {
 /**
  * INTERNAL API
  */
-object PrefixAndTail {
+object SubSource {
 
   sealed trait MaterializationState
   case object NotMaterialized extends MaterializationState
@@ -242,31 +243,32 @@ object PrefixAndTail {
   case object NormalCompletion extends MaterializationState
   case class FailureCompletion(ex: Throwable) extends MaterializationState
 
-  trait TailInterface[T] {
+  trait SubSourceInterface[T] {
     def pushSubstream(elem: T): Unit
     def completeSubstream(): Unit
     def failSubstream(ex: Throwable)
   }
 
-  final class TailSource[T](
+  final class SubSource[T](
+    name: String,
     timeout: FiniteDuration,
-    register: TailInterface[T] ⇒ Unit,
+    register: SubSourceInterface[T] ⇒ Unit,
     pullParent: Unit ⇒ Unit,
     cancelParent: Unit ⇒ Unit) extends GraphStage[SourceShape[T]] {
     val out: Outlet[T] = Outlet("Tail.out")
     val materializationState = new AtomicReference[MaterializationState](NotMaterialized)
     override val shape: SourceShape[T] = SourceShape(out)
 
-    private final class TailSourceLogic(_shape: Shape) extends GraphStageLogic(_shape) with OutHandler with TailInterface[T] {
+    private final class SubSourceLogic(_shape: Shape) extends GraphStageLogic(_shape) with OutHandler with SubSourceInterface[T] {
       setHandler(out, this)
 
       override def preStart(): Unit = {
         materializationState.getAndSet(AlreadyMaterialized) match {
           case AlreadyMaterialized ⇒
-            failStage(new IllegalStateException("Tail Source cannot be materialized more than once."))
+            failStage(new IllegalStateException("Substream Source cannot be materialized more than once."))
           case TimedOut ⇒
             // Already detached from parent
-            failStage(new SubscriptionTimeoutException(s"Tail Source has not been materialized in $timeout."))
+            failStage(new SubscriptionTimeoutException(s"Substream Source has not been materialized in $timeout."))
           case NormalCompletion ⇒
             // Already detached from parent
             completeStage()
@@ -291,7 +293,9 @@ object PrefixAndTail {
       override def onDownstreamFinish(): Unit = cancelParent(())
     }
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TailSourceLogic(shape)
+    override def toString: String = name
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new SubSourceLogic(shape)
   }
 
 }
@@ -307,12 +311,12 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
   override def initialAttributes = Attributes.name("PrefixAndTail")
 
   private final class PrefixAndTailLogic(_shape: Shape) extends TimerGraphStageLogic(_shape) with OutHandler with InHandler {
-    import PrefixAndTail._
+    import SubSource._
 
     private var left = if (n < 0) 0 else n
     private var builder = Vector.newBuilder[T]
-    private var tailSource: TailSource[T] = null
-    private var tail: TailInterface[T] = null
+    private var tailSource: SubSource[T] = null
+    private var tail: SubSourceInterface[T] = null
     builder.sizeHint(left)
     private var pendingCompletion: MaterializationState = null
 
@@ -320,7 +324,7 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
 
     private val onSubstreamPull = getAsyncCallback[Unit](_ ⇒ pull(in))
     private val onSubstreamFinish = getAsyncCallback[Unit](_ ⇒ completeStage())
-    private val onSubstreamRegister = getAsyncCallback[TailInterface[T]] { tailIf ⇒
+    private val onSubstreamRegister = getAsyncCallback[SubSourceInterface[T]] { tailIf ⇒
       tail = tailIf
       cancelTimer(SubscriptionTimer)
       pendingCompletion match {
@@ -342,7 +346,7 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
 
     private def openSubstream(): Source[T, Unit] = {
       val timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
-      tailSource = new TailSource[T](timeout, onSubstreamRegister.invoke, onSubstreamPull.invoke, onSubstreamFinish.invoke)
+      tailSource = new SubSource[T]("TailSource", timeout, onSubstreamRegister.invoke, onSubstreamPull.invoke, onSubstreamFinish.invoke)
       scheduleOnce(SubscriptionTimer, timeout)
       builder = null
       Source.fromGraph(tailSource)
@@ -417,4 +421,229 @@ final class PrefixAndTail[T](n: Int) extends GraphStage[FlowShape[T, (immutable.
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new PrefixAndTailLogic(shape)
 
   override def toString: String = s"PrefixAndTail($n)"
+}
+
+/**
+ * INERNAL API
+ */
+object Split {
+  sealed abstract class SplitDecision
+
+  /** Splits before the current element. The current element will be the first element in the new substream. */
+  case object SplitBefore extends SplitDecision
+
+  /** Splits after the current element. The current element will be the last element in the current substream. */
+  case object SplitAfter extends SplitDecision
+
+  def when[T](p: T ⇒ Boolean): Graph[FlowShape[T, Source[T, Unit]], Unit] = new Split(Split.SplitBefore, p)
+  def after[T](p: T ⇒ Boolean): Graph[FlowShape[T, Source[T, Unit]], Unit] = new Split(Split.SplitAfter, p)
+}
+
+/**
+ * INERNAL API
+ */
+final class Split[T](decision: Split.SplitDecision, p: T ⇒ Boolean) extends GraphStage[FlowShape[T, Source[T, Unit]]] {
+  val in: Inlet[T] = Inlet("Split.in")
+  val out: Outlet[Source[T, Unit]] = Outlet("Split.out")
+  override val shape: FlowShape[T, Source[T, Unit]] = FlowShape(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+    import SubSource._
+    import Split._
+    private val SubscriptionTimer = "SubstreamSubscriptionTimer"
+    private var timeout: FiniteDuration = _
+    private var substreamSource: SubSource[T] = null
+    private var substreamPushed = false
+    private var substreamCancelled = false
+
+    override def preStart(): Unit = {
+      timeout = ActorMaterializer.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
+    }
+
+    override def keepGoingAfterAllPortsClosed: Boolean = true
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = {
+        if (substreamSource eq null) pull(in)
+        else if (!substreamPushed) {
+          push(out, Source.fromGraph(substreamSource))
+          scheduleOnce(SubscriptionTimer, timeout)
+          substreamPushed = true
+        }
+      }
+
+      override def onDownstreamFinish(): Unit = {
+        // If the substream is already cancelled or it has not been handed out, we can go away
+        if (!substreamPushed || substreamCancelled) completeStage()
+      }
+    })
+
+    // initial input handler
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = {
+        val handler = new SubstreamHandler
+        val elem = grab(in)
+
+        decision match {
+          case SplitAfter if p(elem) ⇒
+            push(out, Source.single(elem))
+          // Next pull will come from the next substream that we will open
+          case _ ⇒
+            handler.firstElem = elem
+        }
+
+        handOver(handler)
+      }
+
+      override def onUpstreamFinish(): Unit = completeStage()
+
+    })
+
+    private def handOver(handler: SubstreamHandler): Unit = {
+      if (isClosed(out)) completeStage()
+      else {
+        val source = new SubSource[T](
+          "SplitSource",
+          timeout,
+          handler.onSubstreamRegister.invoke,
+          handler.onSubstreamPull.invoke,
+          handler.onSubstreamFinish.invoke)
+        substreamSource = source
+        substreamCancelled = false
+        setHandler(in, handler)
+
+        if (isAvailable(out)) {
+          push(out, Source.fromGraph(source))
+          scheduleOnce(SubscriptionTimer, timeout)
+          substreamPushed = true
+        } else substreamPushed = false
+
+      }
+    }
+
+    override protected def onTimer(timerKey: Any): Unit =
+      if (substreamSource.materializationState.compareAndSet(NotMaterialized, TimedOut))
+        failStage(new SubscriptionTimeoutException(s"Substream Source has not been materialized in $timeout."))
+
+    private class SubstreamHandler extends InHandler {
+      var firstElem: T = null.asInstanceOf[T]
+      private var substream: SubSourceInterface[T] = null
+      private var pendingCompletion: MaterializationState = null
+      private var willCompleteAfterInitialElement = false
+      // The interpreter handles ignoring events for a port after it has been closed, but this is not a real
+      // port but an async side-channel. We need to ignore it ourselves.
+      private var ignoreAsync = false
+
+      private def waitingSubstreamRegistration: Boolean = substream eq null
+      private def hasInitialElement: Boolean = firstElem.asInstanceOf[AnyRef] ne null
+
+      // Substreams are always assumed to be pushable position when we enter this method
+      private def closeThis(handler: SubstreamHandler, currentElem: T): Unit = {
+        ignoreAsync = true
+        decision match {
+          case SplitAfter ⇒
+            if (!substreamCancelled) {
+              substream.pushSubstream(currentElem)
+              substream.completeSubstream()
+            }
+          case SplitBefore ⇒
+            handler.firstElem = currentElem
+            if (!substreamCancelled) substream.completeSubstream()
+        }
+      }
+
+      val onSubstreamPull = getAsyncCallback[Unit] { _ ⇒
+        if (!ignoreAsync) {
+          if (hasInitialElement) {
+            substream.pushSubstream(firstElem)
+            firstElem = null.asInstanceOf[T]
+            if (willCompleteAfterInitialElement) {
+              substream.completeSubstream()
+              ignoreAsync = true
+              completeStage()
+            }
+          } else pull(in)
+        }
+      }
+
+      val onSubstreamFinish = getAsyncCallback[Unit] { _ ⇒
+        if (!ignoreAsync) {
+          substreamCancelled = true
+          ignoreAsync = true
+          // Start draining
+          if (!hasBeenPulled(in)) pull(in)
+        }
+      }
+
+      val onSubstreamRegister = getAsyncCallback[SubSourceInterface[T]] { substreamIf ⇒
+        substream = substreamIf
+        cancelTimer(SubscriptionTimer)
+
+        // This is not set if willCompleteAfterInitialElement is true so we can close here safely
+        pendingCompletion match {
+          case NormalCompletion ⇒
+            substream.completeSubstream()
+            ignoreAsync = true
+            completeStage()
+          case FailureCompletion(ex) ⇒
+            substream.failSubstream(ex)
+            ignoreAsync = true
+            failStage(ex)
+          case _ ⇒
+        }
+      }
+
+      override def onPush(): Unit = {
+        val elem = grab(in)
+        try {
+          if (p(elem)) {
+            val handler = new SubstreamHandler
+            closeThis(handler, elem)
+            handOver(handler)
+          } else {
+            // Drain into the void
+            if (substreamCancelled) pull(in)
+            else substream.pushSubstream(elem)
+          }
+        } catch {
+          case NonFatal(ex) ⇒ onUpstreamFailure(ex)
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (hasInitialElement) willCompleteAfterInitialElement = true
+        else {
+          if (waitingSubstreamRegistration) {
+            // Detach if possible.
+            // This allows this stage to complete without waiting for the substream to be materialized, since that
+            // is empty anyway. If it is already being registered (state was not NotMaterialized) then we will be
+            // able to signal completion normally soon.
+            if (substreamSource.materializationState.compareAndSet(NotMaterialized, NormalCompletion)) completeStage()
+            else pendingCompletion = NormalCompletion
+          } else {
+            substream.completeSubstream()
+            ignoreAsync = true
+            completeStage()
+          }
+
+        }
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        if (waitingSubstreamRegistration) {
+          // Detach if possible.
+          // This allows this stage to complete without waiting for the substream to be materialized, since that
+          // is empty anyway. If it is already being registered (state was not NotMaterialized) then we will be
+          // able to signal completion normally soon.
+          if (substreamSource.materializationState.compareAndSet(NotMaterialized, FailureCompletion(ex))) failStage(ex)
+          else pendingCompletion = FailureCompletion(ex)
+        } else {
+          substream.failSubstream(ex)
+          ignoreAsync = true
+          failStage(ex)
+        }
+      }
+
+    }
+  }
 }

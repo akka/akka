@@ -8,7 +8,7 @@ import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import akka.util.ByteString
 import akka.event.{ NoLogging, LoggingAdapter }
-import akka.stream.impl.fusing.IteratorInterpreter
+import akka.stream.impl.fusing.{ GraphInterpreter, IteratorInterpreter }
 import akka.stream.scaladsl._
 import akka.http.impl.engine.parsing.BodyPartParser
 import akka.http.impl.util._
@@ -90,8 +90,11 @@ trait MultipartUnmarshallers {
                       .splitWhen(_.isInstanceOf[PartStart])
                       .prefixAndTail(1)
                       .collect {
-                        case (Seq(BodyPartStart(headers, createEntity)), entityParts) ⇒ createBodyPart(createEntity(entityParts), headers)
-                        case (Seq(ParseError(errorInfo)), _)                          ⇒ throw ParsingException(errorInfo)
+                        case (Seq(BodyPartStart(headers, createEntity)), entityParts) ⇒
+                          createBodyPart(createEntity(entityParts), headers)
+                        case (Seq(ParseError(errorInfo)), rest) ⇒
+                          rest.runWith(Sink.ignore)(GraphInterpreter.currentInterpreter.subFusingMaterializer)
+                          throw ParsingException(errorInfo)
                       }
                       .concatSubstreams
                     createStreamed(entity.contentType.mediaType.asInstanceOf[MediaType.Multipart], bodyParts)

@@ -5,11 +5,12 @@
 package akka.http.impl.engine.parsing
 
 import akka.http.ParserSettings
+import akka.stream.impl.fusing.GraphInterpreter
 
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage._
 import akka.util.ByteString
 import akka.http.scaladsl.model._
@@ -173,7 +174,11 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
                       emit(bytes)
                   },
                   emitFinalPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
-                    (headers, ct, bytes) ⇒ emit(BodyPartStart(headers, _ ⇒ HttpEntity.Strict(ct, bytes)))
+                    (headers, ct, bytes) ⇒
+                      emit(BodyPartStart(headers, { rest ⇒
+                        rest.runWith(Sink.ignore)(GraphInterpreter.currentInterpreter.subFusingMaterializer)
+                        HttpEntity.Strict(ct, bytes)
+                      }))
                   })(input: ByteString, offset: Int): StateResult =
     try {
       @tailrec def rec(index: Int): StateResult = {

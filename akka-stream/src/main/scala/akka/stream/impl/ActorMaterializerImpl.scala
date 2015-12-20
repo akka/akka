@@ -303,7 +303,6 @@ private[akka] object ActorProcessorFactory {
     val settings = materializer.effectiveSettings(att)
     op match {
       case GroupBy(maxSubstreams, f, _) ⇒ (GroupByProcessorImpl.props(settings, maxSubstreams, f), ())
-      case Split(d, _)                  ⇒ (SplitWhereProcessorImpl.props(settings, d), ())
       case DirectProcessor(p, m)        ⇒ throw new AssertionError("DirectProcessor cannot end up in ActorProcessorFactory")
     }
   }

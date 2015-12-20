@@ -7,6 +7,7 @@ package akka.http.impl.engine.ws
 import java.util.Random
 
 import akka.event.LoggingAdapter
+import akka.stream.impl.fusing.GraphInterpreter
 import akka.util.ByteString
 
 import scala.concurrent.duration._
@@ -91,6 +92,7 @@ private[http] object Websocket {
         .map {
           case (seq, remaining) ⇒ seq.head match {
             case TextMessagePart(text, true) ⇒
+              remaining.runWith(Sink.ignore)(GraphInterpreter.currentInterpreter.subFusingMaterializer)
               TextMessage.Strict(text)
             case first @ TextMessagePart(text, false) ⇒
               TextMessage(
@@ -99,6 +101,7 @@ private[http] object Websocket {
                     case t: TextMessagePart if t.data.nonEmpty ⇒ t.data
                   })
             case BinaryMessagePart(data, true) ⇒
+              remaining.runWith(Sink.ignore)(GraphInterpreter.currentInterpreter.subFusingMaterializer)
               BinaryMessage.Strict(data)
             case first @ BinaryMessagePart(data, false) ⇒
               BinaryMessage(

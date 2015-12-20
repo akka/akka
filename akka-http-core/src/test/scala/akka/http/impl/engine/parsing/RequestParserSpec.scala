@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.stream.impl.fusing.GraphInterpreter
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -23,7 +24,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.ActorMaterializer
+import akka.stream.{ OverflowStrategy, ActorMaterializer }
 import akka.stream.scaladsl._
 import akka.util.ByteString
 
@@ -480,7 +481,9 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           case (Seq(RequestStart(method, uri, protocol, headers, createEntity, _, close)), entityParts) ⇒
             closeAfterResponseCompletion :+= close
             Right(HttpRequest(method, uri, headers, createEntity(entityParts), protocol))
-          case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), _) ⇒ Left(x)
+          case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), rest) ⇒
+            rest.runWith(Sink.cancelled)
+            Left(x)
         }
         .concatSubstreams
         .flatMapConcat { x ⇒

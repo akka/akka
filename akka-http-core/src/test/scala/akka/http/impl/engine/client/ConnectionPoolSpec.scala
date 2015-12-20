@@ -26,6 +26,7 @@ import akka.http.scaladsl.model._
 class ConnectionPoolSpec extends AkkaSpec("""
     akka.loggers = []
     akka.loglevel = OFF
+    akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off""") {
   implicit val materializer = ActorMaterializer()
 
