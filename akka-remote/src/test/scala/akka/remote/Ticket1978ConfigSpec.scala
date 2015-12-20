@@ -23,7 +23,7 @@ class Ticket1978ConfigSpec extends AkkaSpec("""
       settings.SSLKeyPassword should ===(Some("changeme"))
       settings.SSLTrustStore should ===(Some("truststore"))
       settings.SSLTrustStorePassword should ===(Some("changeme"))
-      settings.SSLProtocol should ===(Some("TLSv1"))
+      settings.SSLProtocol should ===(Some("TLSv1.2"))
       settings.SSLEnabledAlgorithms should ===(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
       settings.SSLRandomNumberGenerator should ===(Some("AES128CounterSecureRNG"))
     }

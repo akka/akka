@@ -298,7 +298,7 @@ An example of setting up the default Netty based SSL driver as default::
         key-store-password = "changeme"
         key-password = "changeme"
         trust-store-password = "changeme"
-        protocol = "TLSv1"
+        protocol = "TLSv1.2"
         random-number-generator = "AES128CounterSecureRNG"
         enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
       }
