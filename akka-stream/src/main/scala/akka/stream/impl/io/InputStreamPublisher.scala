@@ -17,19 +17,17 @@ import scala.concurrent.Promise
 /** INTERNAL API */
 private[akka] object InputStreamPublisher {
 
-  def props(is: InputStream, completionPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int): Props = {
+  def props(is: InputStream, completionPromise: Promise[Long], chunkSize: Int): Props = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
-    require(initialBuffer > 0, s"initialBuffer must be > 0 (was $initialBuffer)")
-    require(maxBuffer >= initialBuffer, s"maxBuffer must be >= initialBuffer (was $maxBuffer)")
 
-    Props(classOf[InputStreamPublisher], is, completionPromise, chunkSize, initialBuffer, maxBuffer).withDeploy(Deploy.local)
+    Props(classOf[InputStreamPublisher], is, completionPromise, chunkSize).withDeploy(Deploy.local)
   }
 
   private final case object Continue extends DeadLetterSuppression
 }
 
 /** INTERNAL API */
-private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Promise[Long], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Promise[Long], chunkSize: Int)
   extends akka.stream.actor.ActorPublisher[ByteString]
   with ActorLogging {
 
@@ -37,81 +35,41 @@ private[akka] class InputStreamPublisher(is: InputStream, bytesReadPromise: Prom
 
   import InputStreamPublisher._
 
-  var eofReachedAtOffset = Long.MinValue
-
+  val arr = Array.ofDim[Byte](chunkSize)
   var readBytesTotal = 0L
-  var availableChunks: Vector[ByteString] = Vector.empty
-
-  override def preStart() = {
-    try {
-      readAndSignal(initialBuffer)
-    } catch {
-      case ex: Exception ⇒
-        onErrorThenStop(ex)
-    }
-
-    super.preStart()
-  }
 
   def receive = {
-    case ActorPublisherMessage.Request(elements) ⇒ readAndSignal(maxBuffer)
-    case Continue                                ⇒ readAndSignal(maxBuffer)
+    case ActorPublisherMessage.Request(elements) ⇒ readAndSignal()
+    case Continue                                ⇒ readAndSignal()
     case ActorPublisherMessage.Cancel            ⇒ context.stop(self)
   }
 
-  def readAndSignal(readAhead: Int): Unit =
+  def readAndSignal(): Unit =
     if (isActive) {
-      // signal from available buffer right away
-      signalOnNexts()
-
-      // read chunks until readAhead is fulfilled
-      while (availableChunks.length < readAhead && !eofEncountered && isActive)
-        loadChunk()
-
+      readAndEmit()
       if (totalDemand > 0) self ! Continue
-      else if (availableChunks.isEmpty) signalOnNexts()
     }
 
-  @tailrec private def signalOnNexts(): Unit =
-    if (availableChunks.nonEmpty) {
-      if (totalDemand > 0) {
-        val ready = availableChunks.head
-        availableChunks = availableChunks.tail
-
-        onNext(ready)
-
-        if (totalDemand > 0) signalOnNexts()
-      }
-    } else if (eofEncountered) onCompleteThenStop()
-
-  /** BLOCKING I/O READ */
-  def loadChunk() = try {
-
-    // this is used directly by ByteString1C, therefore create a new one every time
-    val arr = Array.ofDim[Byte](chunkSize)
-
+  def readAndEmit() = try {
     // blocking read
     val readBytes = is.read(arr)
 
     readBytes match {
       case -1 ⇒
         // had nothing to read into this chunk
-        eofReachedAtOffset = readBytes
-        log.debug("No more bytes available to read (got `-1` or `0` from `read`), marking final bytes of file @ " + eofReachedAtOffset)
+        log.debug("No more bytes available to read (got `-1` from `read`)")
+        onCompleteThenStop()
 
       case _ ⇒
         readBytesTotal += readBytes
-        if (readBytes == chunkSize) availableChunks :+= ByteString1C(arr)
-        else availableChunks :+= ByteString1C(arr).take(readBytes)
 
-      // valid read, continue
+        // emit immediately, as this is the only chance to do it before we might block again
+        onNext(ByteString.fromArray(arr, 0, readBytes))
     }
   } catch {
     case ex: Exception ⇒
       onErrorThenStop(ex)
   }
-
-  private final def eofEncountered: Boolean = eofReachedAtOffset != Long.MinValue
 
   override def postStop(): Unit = {
     super.postStop()
