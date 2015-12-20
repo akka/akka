@@ -22,8 +22,6 @@ class ActorMaterializerSpec extends AkkaSpec with ImplicitSender {
     }
 
     "properly shut down actors associated with it" in {
-      pending // FIXME disabled due to https://github.com/akka/akka/issues/17849
-
       val m = ActorMaterializer.create(system)
 
       val f = Source.maybe[Int].runFold(0)(_ + _)(m)
