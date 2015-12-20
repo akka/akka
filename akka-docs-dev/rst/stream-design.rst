@@ -22,6 +22,18 @@ From this follows that the principles implemented by Akka Streams are:
 
 This means that we provide all the tools necessary to express any stream processing topology, that we model all the essential aspects of this domain (back-pressure, buffering, transformations, failure recovery, etc.) and that whatever the user builds is reusable in a larger context.
 
+Akka Streams does not send dropped stream elements to the dead letter office
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+One important consequence of offering only features that can be relied upon is the restriction that Akka Streams cannot ensure that all objects sent through a processing topology will be processed. Elements can be dropped for a number of reasons:
+
+  * plain user code can consume one element in a `map(...)` stage and produce an entirely different one as its result
+  * common stream operators drop elements intentionally, e.g. take/drop/filter/conflate/buffer/…
+  * stream failure will tear down the stream without waiting for processing to finish, all elements that are in flight will be discarded
+  * stream cancellation will propagate upstream (e.g. from a `take` operator) leading to upstream processing steps being terminated without having processed all of their inputs
+
+This means that sending JVM objects into a stream that need to be cleaned up will require the user to ensure that this happens outside of the Akka Streams facilities (e.g. by cleaning them up after a timeout or when their results are observed on the stream output, or by using other means like finalizers etc.).
+
 Resulting Implementation Constraints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
