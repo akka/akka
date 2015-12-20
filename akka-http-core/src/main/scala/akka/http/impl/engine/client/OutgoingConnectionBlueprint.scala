@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.client
 
+import akka.stream.impl.fusing.GraphInterpreter
 import language.existentials
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
@@ -22,6 +23,7 @@ import akka.http.impl.util._
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
+import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API
@@ -69,11 +71,21 @@ private[http] object OutgoingConnectionBlueprint {
       .mapConcat(conforms)
       .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
       .prefixAndTail(1)
-      .collect {
+      .filter {
+        case (Seq(MessageEnd), remaining) ⇒
+          SubSource.kill(remaining)
+          false
+        case _ ⇒
+          true
+      }
+      .map {
         case (Seq(ResponseStart(statusCode, protocol, headers, createEntity, _)), entityParts) ⇒
           val entity = createEntity(entityParts) withSizeLimit parserSettings.maxContentLength
           HttpResponse(statusCode, headers, entity, protocol)
-        case (Seq(MessageStartError(_, info)), _) ⇒ throw IllegalResponseException(info)
+        case (Seq(MessageStartError(_, info)), tail) ⇒
+          // Tails can be empty, but still need one pull to figure that out -- never drop tails.
+          SubSource.kill(tail)
+          throw IllegalResponseException(info)
       }.concatSubstreams
 
     val core = BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒
@@ -198,7 +210,8 @@ private[http] object OutgoingConnectionBlueprint {
 
       val getNextData = () ⇒ {
         waitingForMethod = false
-        pull(dataInput)
+        if (!isClosed(dataInput)) pull(dataInput)
+        else completeStage()
       }
 
       @tailrec def drainParser(current: ResponseOutput, b: ListBuffer[ResponseOutput] = ListBuffer.empty): Unit = {

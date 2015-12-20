@@ -21,7 +21,7 @@ import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
  *
  * (See the class for the documentation of the internals)
  */
-private[stream] object GraphInterpreter {
+private[akka] object GraphInterpreter {
   /**
    * Compile time constant, enable it for debug logging to the console.
    */
@@ -43,6 +43,9 @@ private[stream] object GraphInterpreter {
   final val PullEndFlip = 10 // 1010
   final val PushStartFlip = 12 //1100
   final val PushEndFlip = 5 //0101
+
+  final val KeepGoingFlag = 0x4000000
+  final val KeepGoingMask = 0x3ffffff
 
   /**
    * Marker object that indicates that a port holds no element since it was already grabbed. The port is still pullable,
@@ -250,14 +253,14 @@ private[stream] object GraphInterpreter {
   /**
    * INTERNAL API
    */
-  private[stream] def currentInterpreter: GraphInterpreter =
+  private[akka] def currentInterpreter: GraphInterpreter =
     _currentInterpreter.get()(0).asInstanceOf[GraphInterpreter].nonNull
   // nonNull is just a debug helper to find nulls more timely
 
   /**
    * INTERNAL API
    */
-  private[stream] def currentInterpreterOrNull: GraphInterpreter =
+  private[akka] def currentInterpreterOrNull: GraphInterpreter =
     _currentInterpreter.get()(0).asInstanceOf[GraphInterpreter]
 
 }
@@ -368,8 +371,7 @@ private[stream] final class GraphInterpreter(
   // Counts how many active connections a stage has. Once it reaches zero, the stage is automatically stopped.
   private[this] val shutdownCounter = Array.tabulate(assembly.stages.length) { i ⇒
     val shape = assembly.stages(i).shape
-    val keepGoing = if (logics(i).keepGoingAfterAllPortsClosed) 1 else 0
-    shape.inlets.size + shape.outlets.size + keepGoing
+    shape.inlets.size + shape.outlets.size
   }
 
   private var _subFusingMaterializer: Materializer = _
@@ -512,12 +514,15 @@ private[stream] final class GraphInterpreter(
       case owner    ⇒ logics(owner).toString
     }
 
+  private def shutdownCounters: String =
+    shutdownCounter.map(x ⇒ if (x >= KeepGoingFlag) s"${x & KeepGoingMask}(KeepGoing)" else x.toString).mkString(",")
+
   /**
    * Executes pending events until the given limit is met. If there were remaining events, isSuspended will return
    * true.
    */
   def execute(eventLimit: Int): Unit = {
-    if (Debug) println(s"$Name ---------------- EXECUTE (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
+    if (Debug) println(s"$Name ---------------- EXECUTE $queueStatus (running=$runningStages, shutdown=$shutdownCounters)")
     val currentInterpreterHolder = _currentInterpreter.get()
     val previousInterpreter = currentInterpreterHolder(0)
     currentInterpreterHolder(0) = this
@@ -537,9 +542,25 @@ private[stream] final class GraphInterpreter(
     } finally {
       currentInterpreterHolder(0) = previousInterpreter
     }
-    if (Debug) println(s"$Name ---------------- $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
+    if (Debug) println(s"$Name ---------------- $queueStatus (running=$runningStages, shutdown=$shutdownCounters)")
     // TODO: deadlock detection
   }
+
+  def runAsyncInput(logic: GraphStageLogic, evt: Any, handler: (Any) ⇒ Unit): Unit =
+    if (!isStageCompleted(logic)) {
+      if (GraphInterpreter.Debug) println(s"$Name ASYNC $evt ($handler) [$logic]")
+      val currentInterpreterHolder = _currentInterpreter.get()
+      val previousInterpreter = currentInterpreterHolder(0)
+      currentInterpreterHolder(0) = this
+      try {
+        activeStage = logic
+        try handler(evt)
+        catch {
+          case NonFatal(ex) ⇒ logic.failStage(ex)
+        }
+        afterStageHasRun(logic)
+      } finally currentInterpreterHolder(0) = previousInterpreter
+    }
 
   // Decodes and processes a single event for the given connection
   private def processEvent(connection: Int): Unit = {
@@ -638,11 +659,9 @@ private[stream] final class GraphInterpreter(
     }
   }
 
-  // Call only for keep-alive stages
-  def closeKeptAliveStageIfNeeded(stageId: Int): Unit =
-    if (stageId != Boundary && shutdownCounter(stageId) == 1) {
-      shutdownCounter(stageId) = 0
-    }
+  private[stream] def setKeepGoing(logic: GraphStageLogic, enabled: Boolean): Unit =
+    if (enabled) shutdownCounter(logic.stageId) |= KeepGoingFlag
+    else shutdownCounter(logic.stageId) &= KeepGoingMask
 
   private def finalizeStage(logic: GraphStageLogic): Unit = {
     try {
@@ -675,7 +694,7 @@ private[stream] final class GraphInterpreter(
     val currentState = portStates(connection)
     if (Debug) println(s"$Name   complete($connection) [$currentState]")
     portStates(connection) = currentState | OutClosed
-    if ((currentState & (InClosed | Pushing | Pulling)) == 0) enqueue(connection)
+    if ((currentState & (InClosed | Pushing | Pulling | OutClosed)) == 0) enqueue(connection)
     if ((currentState & OutClosed) == 0) completeConnection(assembly.outOwners(connection))
   }
 
@@ -699,9 +718,50 @@ private[stream] final class GraphInterpreter(
     portStates(connection) = currentState | InClosed
     if ((currentState & OutClosed) == 0) {
       connectionSlots(connection) = Empty
-      if ((currentState & (Pulling | Pushing)) == 0) enqueue(connection)
+      if ((currentState & (Pulling | Pushing | InClosed)) == 0) enqueue(connection)
     }
     if ((currentState & InClosed) == 0) completeConnection(assembly.inOwners(connection))
   }
 
+  /**
+   * Debug utility to dump the "waits-on" relationships in DOT format to the console for analysis of deadlocks.
+   *
+   * Only invoke this after the interpreter completely settled, otherwise the results might be off. This is a very
+   * simplistic tool, make sure you are understanding what you are doing and then it will serve you well.
+   */
+  def dumpWaits(): Unit = {
+    println("digraph waits {")
+
+    for (i ← assembly.stages.indices) {
+      println(s"""N$i [label="${assembly.stages(i)}"]""")
+    }
+
+    def nameIn(port: Int): String = {
+      val owner = assembly.inOwners(port)
+      if (owner == Boundary) "Out" + port
+      else "N" + owner
+    }
+
+    def nameOut(port: Int): String = {
+      val owner = assembly.outOwners(port)
+      if (owner == Boundary) "In" + port
+      else "N" + owner
+    }
+
+    for (i ← portStates.indices) {
+      portStates(i) match {
+        case InReady ⇒
+          println(s"""  ${nameIn(i)} -> ${nameOut(i)} [label="shouldPull"; color=blue]; """)
+        case OutReady ⇒
+          println(s"""  ${nameOut(i)} -> ${nameIn(i)} [label="shouldPush"; color=red]; """)
+        case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) ⇒
+          println(s"""  ${nameIn(i)} -> ${nameOut(i)} [style=dotted; label="closed" dir=both]; """)
+        case _ ⇒
+      }
+
+    }
+
+    println("}")
+    println(s"// $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
+  }
 }

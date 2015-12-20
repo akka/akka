@@ -261,9 +261,9 @@ private[akka] class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkS
     var currentRequest: Option[Requested[T]] = None
 
     val stageLogic = new GraphStageLogic(shape) with RequestElementCallback[Requested[T]] {
-      override def keepGoingAfterAllPortsClosed = true
 
       override def preStart(): Unit = {
+        setKeepGoing(true)
         val list = requestElement.getAndSet(callback.invoke _).asInstanceOf[List[Requested[T]]]
         list.reverse.foreach(callback.invoke)
         pull(in)

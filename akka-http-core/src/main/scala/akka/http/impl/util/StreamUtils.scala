@@ -150,26 +150,6 @@ private[http] object StreamUtils {
         }
     }
 
-  /**
-   * Applies a sequence of transformers on one source and returns a sequence of sources with the result. The input source
-   * will only be traversed once.
-   */
-  def transformMultiple(input: Source[ByteString, Any], transformers: immutable.Seq[Flow[ByteString, ByteString, Any]])(implicit materializer: Materializer): immutable.Seq[Source[ByteString, Any]] =
-    transformers match {
-      case Nil      ⇒ Nil
-      case Seq(one) ⇒ Vector(input.via(one))
-      case multiple ⇒
-        val (fanoutSub, fanoutPub) = Source.asSubscriber[ByteString].toMat(Sink.asPublisher(true))(Keep.both).run()
-        val sources = transformers.map { flow ⇒
-          // Doubly wrap to ensure that subscription to the running publisher happens before the final sources
-          // are exposed, so there is no race
-          Source.fromPublisher(Source.fromPublisher(fanoutPub).viaMat(flow)(Keep.right).runWith(Sink.asPublisher(false)))
-        }
-        // The fanout publisher must be wired to the original source after all fanout subscribers have been subscribed
-        input.runWith(Sink.fromSubscriber(fanoutSub))
-        sources
-    }
-
   def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
     _.transformDataBytes(mapErrorTransformer(f))
 

@@ -25,11 +25,17 @@ object Utils {
         probe.expectMsg(StreamSupervisor.StoppedChildren)
         val result = block
         probe.within(5.seconds) {
-          probe.awaitAssert {
+          var children = Set.empty[ActorRef]
+          try probe.awaitAssert {
             impl.supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
-            val children = probe.expectMsgType[StreamSupervisor.Children].children
+            children = probe.expectMsgType[StreamSupervisor.Children].children
             assert(children.isEmpty,
               s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
+          }
+          catch {
+            case ex: Throwable ⇒
+              children.foreach(_ ! StreamSupervisor.PrintDebugDump)
+              throw ex
           }
         }
         result
