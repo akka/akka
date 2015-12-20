@@ -1404,6 +1404,20 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.throttle(cost, per, maximumBurst, costCalculation.apply, mode))
 
   /**
+   * Detaches upstream demand from downstream demand without detaching the
+   * stream rates; in other words acts like a buffer of size 1.
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def detach: javadsl.Flow[In, Out, Mat] = new Flow(delegate.detach)
+
+  /**
    * Delays the initial element by the specified duration.
    *
    * '''Emits when''' upstream emits an element if the initial delay already elapsed

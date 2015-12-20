@@ -78,13 +78,17 @@ object GraphStages {
             tryPull(in)
           }
         }
+        override def onUpstreamFinish(): Unit = {
+          if (!isAvailable(in)) completeStage()
+        }
       })
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = {
           if (isAvailable(in)) {
             push(out, grab(in))
-            tryPull(in)
+            if (isClosed(in)) completeStage()
+            else pull(in)
           }
         }
       })
