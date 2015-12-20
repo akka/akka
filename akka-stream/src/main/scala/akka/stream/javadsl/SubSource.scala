@@ -1012,6 +1012,20 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
     new SubSource(delegate.throttle(cost, per, maximumBurst, costCalculation.apply _, mode))
 
   /**
+   * Detaches upstream demand from downstream demand without detaching the
+   * stream rates; in other words acts like a buffer of size 1.
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def detach: javadsl.SubSource[Out, Mat] = new SubSource(delegate.detach)
+
+  /**
    * Delays the initial element by the specified duration.
    *
    * '''Emits when''' upstream emits an element if the initial delay already elapsed

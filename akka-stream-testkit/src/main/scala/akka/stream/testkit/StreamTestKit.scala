@@ -585,7 +585,10 @@ object TestSubscriber {
     private lazy val subscription = expectSubscription()
 
     /** Asserts that a subscription has been received or will be received */
-    def ensureSubscription(): Unit = subscription // initializes lazy val
+    def ensureSubscription(): Self = {
+      subscription // initializes lazy val
+      this
+    }
 
     def request(n: Long): Self = {
       subscription.request(n)
