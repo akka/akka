@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.event.LoggingAdapter
 import akka.stream.Attributes._
 import akka.stream._
-import akka.stream.impl.Stages.{ DirectProcessor, StageModule, SymbolicGraphStage }
+import akka.stream.impl.Stages.{ DirectProcessor, StageModule }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
 import akka.stream.impl._
 import akka.stream.impl.fusing._
@@ -1076,12 +1076,12 @@ trait FlowOps[+Out, +Mat] {
   def splitWhen(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
       override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
-        deprecatedAndThen[Source[Out, Unit]](Split.when(p.asInstanceOf[Any ⇒ Boolean]))
+        via(Split.when(p))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
-      deprecatedAndThen[Source[Out, Unit]](Split.when(p.asInstanceOf[Any ⇒ Boolean]))
+      via(Split.when(p))
         .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
     new SubFlowImpl(Flow[Out], merge, finish)
   }
@@ -1133,12 +1133,12 @@ trait FlowOps[+Out, +Mat] {
   def splitAfter(p: Out ⇒ Boolean): SubFlow[Out, Mat, Repr, Closed] = {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
       override def apply[T](flow: Flow[Out, T, Unit], breadth: Int): Repr[T] =
-        deprecatedAndThen[Source[Out, Unit]](Split.after(p.asInstanceOf[Any ⇒ Boolean]))
+        via(Split.after(p))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, Unit]) ⇒ Closed = s ⇒
-      deprecatedAndThen[Source[Out, Unit]](Split.after(p.asInstanceOf[Any ⇒ Boolean]))
+      via(Split.after(p))
         .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
     new SubFlowImpl(Flow[Out], merge, finish)
   }

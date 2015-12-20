@@ -8,7 +8,6 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes._
 import akka.stream.Supervision.Decider
 import akka.stream._
-import akka.stream.impl.SplitDecision.{ Continue, SplitAfter, SplitBefore, SplitDecision }
 import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl.Source
 import akka.stream.stage.AbstractStage.PushPullGraphStage
@@ -212,16 +211,6 @@ private[stream] object Stages {
 
   final case class GroupBy(maxSubstreams: Int, f: Any ⇒ Any, attributes: Attributes = groupBy) extends StageModule {
     override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-  }
-
-  final case class Split(p: Any ⇒ SplitDecision, attributes: Attributes = split) extends StageModule {
-    override def withAttributes(attributes: Attributes) = copy(attributes = attributes)
-  }
-
-  object Split {
-    def when(f: Any ⇒ Boolean) = Split(el ⇒ if (f(el)) SplitBefore else Continue, name("splitWhen"))
-
-    def after(f: Any ⇒ Boolean) = Split(el ⇒ if (f(el)) SplitAfter else Continue, name("splitAfter"))
   }
 
   final case class DirectProcessor(p: () ⇒ (Processor[Any, Any], Any), attributes: Attributes = processor) extends StageModule {

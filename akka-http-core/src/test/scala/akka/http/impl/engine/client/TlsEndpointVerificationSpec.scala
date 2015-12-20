@@ -26,7 +26,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
   val timeout = Timeout(Span(3, Seconds))
 
   "The client implementation" should {
-    "not accept certificates signed by unknown CA" in EventFilter[SSLException](occurrences = 1).intercept {
+    "not accept certificates signed by unknown CA" in {
       val pipe = pipeline(Http().defaultClientHttpsContext, hostname = "akka.example.org") // default context doesn't include custom CA
 
       whenReady(pipe(HttpRequest(uri = "https://akka.example.org/")).failed, timeout) { e ⇒
