@@ -66,6 +66,8 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
 
+      requests.request(1)
+
       expectResponseWithWipedDate(
         """HTTP/1.1 505 HTTP Version Not Supported
           |Server: akka-http/test
@@ -504,6 +506,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
           dataProbe.expectNoMsg(50.millis)
           send("0123456789ABCDEF")
           dataProbe.expectNext(ByteString("0123456789ABCDEF"))
+          dataSub.request(1)
           dataProbe.expectComplete()
           responses.sendNext(HttpResponse(entity = "Yeah"))
           expectResponseWithWipedDate(
@@ -545,6 +548,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
                  |""")
           dataProbe.expectNext(Chunk(ByteString("0123456789ABCDEF")))
           dataProbe.expectNext(LastChunk)
+          dataSub.request(1)
           dataProbe.expectComplete()
           responses.sendNext(HttpResponse(entity = "Yeah"))
           expectResponseWithWipedDate(
@@ -663,6 +667,8 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
              |
              |""")
 
+      requests.request(1)
+
       expectResponseWithWipedDate(
         """|HTTP/1.1 400 Bad Request
            |Server: akka-http/test
@@ -701,6 +707,7 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
 
       val HttpRequest(POST, _, _, entity, _) = expectRequest()
       responses.sendNext(HttpResponse(status = StatusCodes.InsufficientStorage))
+      entity.dataBytes.runWith(Sink.ignore)
 
       expectResponseWithWipedDate(
         """HTTP/1.1 507 Insufficient Storage
