@@ -591,7 +591,13 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.ReplayFilter.this"),
         ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.AsyncWriteJournal.akka$persistence$journal$AsyncWriteJournal$_setter_$akka$persistence$journal$AsyncWriteJournal$$replayDebugEnabled_="),
         ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.AsyncWriteJournal.akka$persistence$journal$AsyncWriteJournal$$replayDebugEnabled"),
-        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.ReplayFilter.props")
+        ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.ReplayFilter.props"),
+
+        // report invalid association events #18758
+        ProblemFilters.exclude[MissingTypesProblem]("akka.remote.InvalidAssociation$"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.apply"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.copy"),
+        ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.this")
       )
     )
   }
