@@ -3,16 +3,15 @@
  */
 package akka.stream.stage
 
-import java.util
-import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicReference }
+import java.util.concurrent.atomic.{ AtomicReference }
 
 import akka.actor._
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Unwatch, Watch }
 import akka.event.LoggingAdapter
+import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
-import akka.stream.impl.fusing.{ GraphInterpreter, GraphModule, GraphStageModule }
+import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule }
 import akka.stream.impl.{ ReactiveStreamsCompliance, SeqActorName }
 
 import scala.annotation.tailrec
@@ -613,6 +612,17 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
   /**
+   * Java API: Read a number of elements from the given inlet and continue with the given function,
+   * suspending execution if necessary. This action replaces the [[InHandler]]
+   * for the given inlet if suspension is needed and reinstalls the current
+   * handler upon receiving the last `onPush()` signal (before invoking the `andThen` function).
+   */
+  final protected def readN[T](in: Inlet[T], n: Int, andThen: Procedure[java.util.List[T]], onClose: Procedure[java.util.List[T]]): Unit = {
+    import collection.JavaConverters._
+    readN(in, n)(seq ⇒ andThen(seq.asJava), seq ⇒ onClose(seq.asJava))
+  }
+
+  /**
    * Read an element from the given inlet and continue with the given function,
    * suspending execution if necessary. This action replaces the [[InHandler]]
    * for the given inlet if suspension is needed and reinstalls the current
@@ -629,6 +639,16 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       if (!hasBeenPulled(in)) pull(in)
       setHandler(in, new Reading(in, 1, getHandler(in))(andThen, onClose))
     }
+  }
+
+  /**
+   * Java API: Read an element from the given inlet and continue with the given function,
+   * suspending execution if necessary. This action replaces the [[InHandler]]
+   * for the given inlet if suspension is needed and reinstalls the current
+   * handler upon receiving the `onPush()` signal (before invoking the `andThen` function).
+   */
+  final protected def read[T](in: Inlet[T], andThen: Procedure[T], onClose: Effect): Unit = {
+    read(in)(andThen.apply, onClose.apply)
   }
 
   /**
@@ -691,6 +711,32 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def emitMultiple[T](out: Outlet[T], elems: immutable.Iterable[T]): Unit = emitMultiple(out, elems, DoNothing)
 
   /**
+   * Java API
+   *
+   * Emit a sequence of elements through the given outlet, suspending execution if necessary.
+   * This action replaces the [[AbstractOutHandler]] for the given outlet if suspension
+   * is needed and reinstalls the current handler upon receiving an `onPull()`
+   * signal.
+   */
+  final protected def emitMultiple[T](out: Outlet[T], elems: java.util.Iterator[T]): Unit = {
+    import collection.JavaConverters._
+    emitMultiple(out, elems.asScala, DoNothing)
+  }
+
+  /**
+   * Java API
+   *
+   * Emit a sequence of elements through the given outlet, suspending execution if necessary.
+   * This action replaces the [[AbstractOutHandler]] for the given outlet if suspension
+   * is needed and reinstalls the current handler upon receiving an `onPull()`
+   * signal.
+   */
+  final protected def emitMultiple[T](out: Outlet[T], elems: java.util.Iterator[T], andThen: Effect): Unit = {
+    import collection.JavaConverters._
+    emitMultiple(out, elems.asScala, andThen.apply _)
+  }
+
+  /**
    * Emit a sequence of elements through the given outlet and continue with the given thunk
    * afterwards, suspending execution if necessary.
    * This action replaces the [[OutHandler]] for the given outlet if suspension
@@ -739,6 +785,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * signal.
    */
   final protected def emit[T](out: Outlet[T], elem: T): Unit = emit(out, elem, DoNothing)
+
+  final protected def emit[T](out: Outlet[T], elem: T, andThen: Effect): Unit = {
+    emit(out, elem, andThen.apply _)
+  }
 
   /**
    * Abort outstanding (suspended) emissions for the given outlet, if there are any.
@@ -875,6 +925,18 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
   }
 
+  /**
+   * Java API: Obtain a callback object that can be used asynchronously to re-enter the
+   * current [[GraphStage]] with an asynchronous notification. The [[invoke()]] method of the returned
+   * [[AsyncCallback]] is safe to be called from other threads and it will in the background thread-safely
+   * delegate to the passed callback function. I.e. [[invoke()]] will be called by the external world and
+   * the passed handler will be invoked eventually in a thread-safe way by the execution environment.
+   *
+   * This object can be cached and reused within the same [[GraphStageLogic]].
+   */
+  final protected def createAsyncCallback[T](handler: Procedure[T]): AsyncCallback[T] =
+    getAsyncCallback(handler.apply)
+
   private var _stageActorRef: StageActorRef = _
   final def stageActorRef: ActorRef = _stageActorRef match {
     case null ⇒ throw StageActorRefNotInitializedException()
@@ -982,6 +1044,7 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
 
   /**
    * Will be called when the scheduled timer is triggered.
+   *
    * @param timerKey key of the scheduled timer
    */
   protected def onTimer(timerKey: Any): Unit = ()
@@ -1029,6 +1092,7 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
 
   /**
    * Cancel timer, ensuring that the [[#onTimer]] is not subsequently called.
+   *
    * @param timerKey key of the timer to cancel
    */
   final protected def cancelTimer(timerKey: Any): Unit =
