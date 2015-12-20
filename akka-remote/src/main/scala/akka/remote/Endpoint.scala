@@ -129,8 +129,11 @@ private[remote] final case class ShutDownAssociation(localAddress: Address, remo
 /**
  * INTERNAL API
  */
-@SerialVersionUID(1L)
-private[remote] final case class InvalidAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
+@SerialVersionUID(2L)
+private[remote] final case class InvalidAssociation(localAddress: Address,
+                                                    remoteAddress: Address,
+                                                    cause: Throwable,
+                                                    disassociationInfo: Option[DisassociateInfo] = None)
   extends EndpointException("Invalid address: " + remoteAddress, cause) with AssociationProblem
 
 /**
@@ -1000,7 +1003,8 @@ private[remote] class EndpointReader(
         localAddress,
         remoteAddress,
         InvalidAssociationException("The remote system has quarantined this system. No further associations " +
-          "to the remote system are possible until this system is restarted."))
+          "to the remote system are possible until this system is restarted."),
+        Some(AssociationHandle.Quarantined))
   }
 
   private def deliverAndAck(): Unit = {
