@@ -4,11 +4,13 @@
 package akka.stream.io
 
 import java.io.InputStream
+import java.util.concurrent.CountDownLatch
 
-import akka.stream.scaladsl.StreamConverters
 import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.StreamConverters
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
@@ -36,6 +38,28 @@ class InputStreamSourceSpec extends AkkaSpec(UnboundedMailboxConfig) with ScalaF
         .runWith(Sink.head)
 
       f.futureValue should ===(ByteString("abc"))
+    }
+
+    "emit as soon as read" in assertAllStagesStopped {
+      val latch = new CountDownLatch(1)
+      val probe = StreamConverters.fromInputStream(() ⇒ new InputStream {
+        @volatile var emitted = false
+        override def read(): Int = {
+          if (!emitted) {
+            emitted = true
+            'M'.toInt
+          } else {
+            latch.await()
+            -1
+          }
+        }
+      }, chunkSize = 1)
+        .runWith(TestSink.probe)
+
+      probe.request(4)
+      probe.expectNext(ByteString("M"))
+      latch.countDown()
+      probe.expectComplete()
     }
   }
 

@@ -50,13 +50,12 @@ private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStrea
   extends SourceModule[ByteString, Future[Long]](shape) {
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializer.downcast(context.materializer)
-    val settings = materializer.effectiveSettings(context.effectiveAttributes)
     val bytesReadPromise = Promise[Long]()
 
     val pub = try {
       val is = createInputStream() // can throw, i.e. FileNotFound
 
-      val props = InputStreamPublisher.props(is, bytesReadPromise, chunkSize, settings.initialInputBufferSize, settings.maxInputBufferSize)
+      val props = InputStreamPublisher.props(is, bytesReadPromise, chunkSize)
 
       val ref = materializer.actorOf(context, props)
       akka.stream.actor.ActorPublisher[ByteString](ref)
