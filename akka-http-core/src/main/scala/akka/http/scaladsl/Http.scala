@@ -7,10 +7,10 @@ package akka.http.scaladsl
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{ Collection ⇒ JCollection }
-import javax.net.ssl.{ SSLContext, SSLParameters }
+import javax.net.ssl._
 
 import akka.actor._
-import akka.event.LoggingAdapter
+import akka.event.{ Logging, LoggingAdapter }
 import akka.http._
 import akka.http.impl.engine.HttpConnectionTimeoutException
 import akka.http.impl.engine.client._
@@ -26,15 +26,21 @@ import akka.stream.Materializer
 import akka.stream.io._
 import akka.stream.scaladsl._
 import com.typesafe.config.Config
+import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
+import com.typesafe.sslconfig.akka._
+import com.typesafe.sslconfig.ssl._
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise, TimeoutException }
 import scala.util.Try
 import scala.util.control.NonFatal
 
-class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.Extension {
+class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
+  with DefaultSSLContextCreation {
 
   import Http._
+
+  override val sslConfig = AkkaSSLConfig(system)
 
   // configured default HttpsContext for the client-side
   // SYNCHRONIZED ACCESS ONLY!
@@ -491,24 +497,12 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     synchronized {
       _defaultClientHttpsContext match {
         case null ⇒
-          val ctx = createDefaultClientHttpsContext
+          val ctx = createDefaultClientHttpsContext()
           _defaultClientHttpsContext = ctx
           ctx
         case ctx ⇒ ctx
       }
     }
-
-  private def createDefaultClientHttpsContext: HttpsContext = {
-    val defaultCtx = SSLContext.getDefault
-
-    val params = new SSLParameters
-    if (!Java6Compat.setEndpointIdentificationAlgorithm(params, "https"))
-      throw new ReadTheDocumentationException(
-        "Cannot enable HTTPS hostname verification on Java 6. See the " +
-          "\"Client-Side HTTPS Support\" section in the documentation")
-
-    HttpsContext(defaultCtx, sslParameters = Some(params))
-  }
 
   /**
    * Sets the default client-side [[HttpsContext]].
@@ -584,8 +578,10 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
 
   private[http] def sslTlsStage(httpsContext: Option[HttpsContext], role: Role, hostInfo: Option[(String, Int)] = None) =
     httpsContext match {
-      case Some(hctx) ⇒ SslTls(hctx.sslContext, hctx.firstSession, role, hostInfo = hostInfo)
-      case None       ⇒ SslTlsPlacebo.forScala
+      case Some(hctx) ⇒
+        SslTls(hctx.sslContext, hctx.firstSession, role, hostInfo = hostInfo)
+      case None ⇒
+        SslTlsPlacebo.forScala
     }
 }
 
@@ -724,17 +720,64 @@ final case class HttpsContext(sslContext: SSLContext,
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
   /** Java API */
-  def getSslContext: SSLContext = sslContext
+  override def getSslContext: SSLContext = sslContext
 
   /** Java API */
-  def getEnabledCipherSuites: japi.Option[JCollection[String]] = enabledCipherSuites.map(_.asJavaCollection)
+  override def getEnabledCipherSuites: japi.Option[JCollection[String]] = enabledCipherSuites.map(_.asJavaCollection)
 
   /** Java API */
-  def getEnabledProtocols: japi.Option[JCollection[String]] = enabledProtocols.map(_.asJavaCollection)
+  override def getEnabledProtocols: japi.Option[JCollection[String]] = enabledProtocols.map(_.asJavaCollection)
 
   /** Java API */
-  def getClientAuth: japi.Option[ClientAuth] = clientAuth
+  override def getClientAuth: japi.Option[ClientAuth] = clientAuth
 
   /** Java API */
-  def getSslParameters: japi.Option[SSLParameters] = sslParameters
+  override def getSslParameters: japi.Option[SSLParameters] = sslParameters
+}
+
+trait DefaultSSLContextCreation {
+
+  protected def system: ActorSystem
+  protected def sslConfig: AkkaSSLConfig
+
+  protected def createDefaultClientHttpsContext(): HttpsContext = {
+    val config = sslConfig.config
+
+    val log = Logging(system, getClass)
+    val mkLogger = new AkkaLoggerFactory(system)
+
+    // initial ssl context!
+    val sslContext = if (sslConfig.config.default) {
+      log.debug("buildSSLContext: ssl-config.default is true, using default SSLContext")
+      sslConfig.validateDefaultTrustManager(config)
+      SSLContext.getDefault
+    } else {
+      // break out the static methods as much as we can...
+      val keyManagerFactory = sslConfig.buildKeyManagerFactory(config)
+      val trustManagerFactory = sslConfig.buildTrustManagerFactory(config)
+      new ConfigSSLContextBuilder(mkLogger, config, keyManagerFactory, trustManagerFactory).build()
+    }
+
+    // protocols!
+    val defaultParams = sslContext.getDefaultSSLParameters
+    val defaultProtocols = defaultParams.getProtocols
+    val protocols = sslConfig.configureProtocols(defaultProtocols, config)
+    defaultParams.setProtocols(protocols)
+
+    // ciphers!
+    val defaultCiphers = defaultParams.getCipherSuites
+    val cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, config)
+    defaultParams.setCipherSuites(cipherSuites)
+
+    // hostname!
+    if (!Java6Compat.trySetEndpointIdentificationAlgorithm(defaultParams, "https")) {
+      log.info("Unable to use JDK built-in hostname verification, please consider upgrading your Java runtime to " +
+        "a more up to date version (JDK7+). Using Typesafe ssl-config hostname verification.")
+      // enabling the JDK7+ solution did not work, however this is fine since we do handle hostname
+      // verification directly in SslTlsCipherActor manually by applying an ssl-config provider verifier
+    }
+
+    HttpsContext(sslContext, sslParameters = Some(defaultParams))
+  }
+
 }
