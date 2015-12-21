@@ -78,7 +78,11 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     public final T poll() {
         final Node<T> next = pollNode();
         if (next == null) return null;
-        else return next.value;
+        else {
+          T value = next.value;
+          next.value = null;
+          return value;
+        }
     }
     
     /*
