@@ -5,8 +5,43 @@
 ############################
 
 The 2.0 release contains some structural changes that require some
-simple, mechanical source-level changes in client code.
+simple, mechanical source-level changes in client code. While these are detailed below,
+there is another change that may have an impact on the runtime behavior of your streams
+and which therefore is listed first.
 
+Operator Fusion is on by default
+================================
+
+Akka Streams 2.0 contains an initial version of stream operator fusion support. This means that
+the processing steps of a flow or stream graph can be executed within the same Actor and has three
+consequences:
+
+  * starting up a stream may take longer than before due to executing the fusion algorithm
+  * passing elements from one processing stage to the next is a lot faster between fused
+    stages due to avoiding the asynchronous messaging overhead
+  * fused stream processing stages do no longer run in parallel to each other, meaning that
+    only up to one CPU core is used for each fused part
+
+The first point can be countered by pre-fusing and then reusing a stream blueprint, see ``akka.stream.Fusing``.
+In order to balance the effects of the second and third bullet points you will have to insert asynchronous
+boundaries manually into your flows and graphs by way of adding ``Attributes.asyncBoundary`` to pieces that
+shall communicate with the rest of the graph in an asynchronous fashion.
+
+.. warning::
+
+  Without fusing (i.e. up to version 2.0-M2) each stream processing stage had an implicit input buffer
+  that holds a few elements for efficiency reasons. If your flow graphs contain cycles then these buffers
+  may have been crucial in order to avoid deadlocks. With fusing these implicit buffers are no longer
+  there, data elements are passed without buffering between fused stages. In those cases where buffering
+  is needed in order to allow the stream to run at all, you will have to insert explicit buffers with the
+  ``.buffer()`` combinator—typically a buffer of size 2 is enough to allow a feedback loop to function.
+
+The new fusing behavior can be disabled by setting the configuration parameter ``akka.stream.materializer.auto-fusing=off``.
+In that case you can still manually fuse those graphs which shall run on less Actors. Fusable elements are
+
+  * all GraphStages (this includes all built-in junctions apart from ``groupBy``)
+  * all Stages (this includes all built-in linear operators)
+  * TCP connections
 
 Introduced proper named constructor methods insted of ``wrap()``
 ================================================================
