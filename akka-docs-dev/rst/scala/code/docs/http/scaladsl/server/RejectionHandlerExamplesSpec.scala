@@ -25,6 +25,9 @@ object MyRejectionHandler {
       .handle { case AuthorizationFailedRejection ⇒
         complete((Forbidden, "You're out of your depth!"))
       }
+      .handle { case ValidationRejection(msg, _) ⇒
+        complete((InternalServerError, "That wasn't valid! " + msg))
+      }
       .handleAll[MethodRejection] { methodRejections ⇒
         val names = methodRejections.map(_.supported.name)
         complete((MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!"))
