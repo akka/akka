@@ -8,7 +8,7 @@ import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.DelayOverflowStrategy.EmitEarly
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ FixedSizeBuffer, ReactiveStreamsCompliance }
+import akka.stream.impl.{ FixedSizeBuffer, BoundedBuffer, ReactiveStreamsCompliance }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 import scala.annotation.tailrec
@@ -523,6 +523,7 @@ private[akka] final case class Expand[In, Out, Seed](seed: In ⇒ Seed, extrapol
  * INTERNAL API
  */
 private[akka] object MapAsync {
+  final class Holder[T](var elem: T)
   val NotYetThere = Failure(new Exception)
 }
 
@@ -547,38 +548,38 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
       inheritedAttributes.getAttribute(classOf[SupervisionStrategy])
         .map(_.decider).getOrElse(Supervision.stoppingDecider)
 
-    val buffer = FixedSizeBuffer[Try[Out]](parallelism)
+    val buffer = new BoundedBuffer[Holder[Try[Out]]](parallelism)
     def todo = buffer.used
 
     @tailrec private def pushOne(): Unit =
       if (buffer.isEmpty) {
         if (isClosed(in)) completeStage()
         else if (!hasBeenPulled(in)) pull(in)
-      } else if (buffer.peek == NotYetThere) {
+      } else if (buffer.peek.elem == NotYetThere) {
         if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
-      } else buffer.dequeue() match {
+      } else buffer.dequeue().elem match {
         case Failure(ex) ⇒ pushOne()
         case Success(elem) ⇒
           push(out, elem)
           if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
       }
 
-    def failOrPull(idx: Int, f: Failure[Out]) =
+    def failOrPull(holder: Holder[Try[Out]], f: Failure[Out]) =
       if (decider(f.exception) == Supervision.Stop) failStage(f.exception)
       else {
-        buffer.put(idx, f)
+        holder.elem = f
         if (isAvailable(out)) pushOne()
       }
 
     val futureCB =
-      getAsyncCallback[(Int, Try[Out])]({
-        case (idx, f: Failure[_]) ⇒ failOrPull(idx, f)
-        case (idx, s @ Success(elem)) ⇒
+      getAsyncCallback[(Holder[Try[Out]], Try[Out])]({
+        case (holder, f: Failure[_]) ⇒ failOrPull(holder, f)
+        case (holder, s @ Success(elem)) ⇒
           if (elem == null) {
             val ex = ReactiveStreamsCompliance.elementMustNotBeNullException
-            failOrPull(idx, Failure(ex))
+            failOrPull(holder, Failure(ex))
           } else {
-            buffer.put(idx, s)
+            holder.elem = s
             if (isAvailable(out)) pushOne()
           }
       })
@@ -587,8 +588,9 @@ private[akka] final case class MapAsync[In, Out](parallelism: Int, f: In ⇒ Fut
       override def onPush(): Unit = {
         try {
           val future = f(grab(in))
-          val idx = buffer.enqueue(NotYetThere)
-          future.onComplete(result ⇒ futureCB.invoke(idx -> result))(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          val holder = new Holder[Try[Out]](NotYetThere)
+          buffer.enqueue(holder)
+          future.onComplete(result ⇒ futureCB.invoke(holder -> result))(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         } catch {
           case NonFatal(ex) ⇒
             if (decider(ex) == Supervision.Stop) failStage(ex)
@@ -626,7 +628,7 @@ private[akka] final case class MapAsyncUnordered[In, Out](parallelism: Int, f: I
         .map(_.decider).getOrElse(Supervision.stoppingDecider)
 
     var inFlight = 0
-    val buffer = FixedSizeBuffer[Out](parallelism)
+    val buffer = new BoundedBuffer[Out](parallelism)
     def todo = inFlight + buffer.used
 
     def failOrPull(ex: Throwable) =

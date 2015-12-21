@@ -270,6 +270,8 @@ private[akka] object StreamSupervisor {
   case object StopChildren
   /** Testing purpose */
   case object StoppedChildren
+  /** Testing purpose */
+  case object PrintDebugDump
 }
 
 private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
@@ -303,7 +305,6 @@ private[akka] object ActorProcessorFactory {
     val settings = materializer.effectiveSettings(att)
     op match {
       case GroupBy(maxSubstreams, f, _) ⇒ (GroupByProcessorImpl.props(settings, maxSubstreams, f), ())
-      case Split(d, _)                  ⇒ (SplitWhereProcessorImpl.props(settings, d), ())
       case DirectProcessor(p, m)        ⇒ throw new AssertionError("DirectProcessor cannot end up in ActorProcessorFactory")
     }
   }

@@ -10,9 +10,11 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.impl.util._
-import akka.stream.scaladsl.Source
-
+import akka.stream.scaladsl._
 import scala.collection.immutable
+import akka.util.ByteString
+import akka.stream.SourceShape
+import akka.stream.OverflowStrategy
 
 trait RangeDirectives {
   import akka.http.scaladsl.server.directives.BasicDirectives._
@@ -73,12 +75,31 @@ trait RangeDirectives {
         // Therefore, ranges need to be sorted to prevent that some selected ranges already start to accumulate data
         // but cannot be sent out because another range is blocking the queue.
         val coalescedRanges = coalesceRanges(iRanges).sortBy(_.start)
-        val bodyPartTransformers = coalescedRanges.map(ir ⇒ StreamUtils.sliceBytesTransformer(ir.start, ir.length)).toVector
-        val bodyPartByteStreams = StreamUtils.transformMultiple(entity.dataBytes, bodyPartTransformers)
-        val bodyParts = (coalescedRanges, bodyPartByteStreams).zipped.map { (range, bytes) ⇒
-          Multipart.ByteRanges.BodyPart(range.contentRange(length), HttpEntity(entity.contentType, range.length, bytes))
+        val source = coalescedRanges.size match {
+          case 0 ⇒ Source.empty
+          case 1 ⇒
+            val range = coalescedRanges.head
+            val flow = StreamUtils.sliceBytesTransformer(range.start, range.length)
+            val bytes = entity.dataBytes.via(flow)
+            val part = Multipart.ByteRanges.BodyPart(range.contentRange(length), HttpEntity(entity.contentType, range.length, bytes))
+            Source.single(part)
+          case n ⇒
+            Source fromGraph GraphDSL.create() { implicit b ⇒
+              import GraphDSL.Implicits._
+              val bcast = b.add(Broadcast[ByteString](n))
+              val merge = b.add(Concat[Multipart.ByteRanges.BodyPart](n))
+              for (range ← coalescedRanges) {
+                val flow = StreamUtils.sliceBytesTransformer(range.start, range.length)
+                bcast ~> flow.buffer(16, OverflowStrategy.backpressure).prefixAndTail(0).map {
+                  case (_, bytes) ⇒
+                    Multipart.ByteRanges.BodyPart(range.contentRange(length), HttpEntity(entity.contentType, range.length, bytes))
+                } ~> merge
+              }
+              entity.dataBytes ~> bcast
+              SourceShape(merge.out)
+            }
         }
-        Multipart.ByteRanges(Source(bodyParts.toVector))
+        Multipart.ByteRanges(source)
       }
 
       def rangeResponse(range: ByteRange, entity: UniversalEntity, length: Long, headers: immutable.Seq[HttpHeader]) = {
@@ -133,4 +154,3 @@ object RangeDirectives extends RangeDirectives {
   private val respondWithAcceptByteRangesHeader: Directive0 =
     RespondWithDirectives.respondWithHeader(`Accept-Ranges`(RangeUnits.Bytes))
 }
-

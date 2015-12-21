@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 import scala.reflect.{ classTag, ClassTag }
 import akka.japi.function
 import akka.stream.impl.StreamLayout._
+import java.net.URLEncoder
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -142,11 +143,12 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
       if (i.hasNext)
         i.next() match {
           case Name(n) ⇒
-            if (buf ne null) concatNames(i, null, buf.append('-').append(n))
+            val nn = URLEncoder.encode(n, "UTF-8")
+            if (buf ne null) concatNames(i, null, buf.append('-').append(nn))
             else if (first ne null) {
-              val b = new StringBuilder((first.length() + n.length()) * 2)
-              concatNames(i, null, b.append(first).append('-').append(n))
-            } else concatNames(i, n, null)
+              val b = new StringBuilder((first.length() + nn.length()) * 2)
+              concatNames(i, null, b.append(first).append('-').append(nn))
+            } else concatNames(i, nn, null)
           case _ ⇒ concatNames(i, first, buf)
         }
       else if (buf eq null) first

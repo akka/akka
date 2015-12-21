@@ -31,7 +31,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
    * value of the current flow (ignoring the other BidiFlow’s value), use
    * [[BidiFlow#atopMat atopMat]] if a different strategy is needed.
    */
-  def atop[OO1, II2, Mat2](bidi: BidiFlow[O1, OO1, II2, I2, Mat2]): BidiFlow[I1, OO1, II2, O2, Mat] = atopMat(bidi)(Keep.left)
+  def atop[OO1, II2, Mat2](bidi: Graph[BidiShape[O1, OO1, II2, I2], Mat2]): BidiFlow[I1, OO1, II2, O2, Mat] = atopMat(bidi)(Keep.left)
 
   /**
    * Add the given BidiFlow as the next step in a bidirectional transformation
@@ -51,7 +51,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting BidiFlow.
    */
-  def atopMat[OO1, II2, Mat2, M](bidi: BidiFlow[O1, OO1, II2, I2, Mat2])(combine: (Mat, Mat2) ⇒ M): BidiFlow[I1, OO1, II2, O2, M] = {
+  def atopMat[OO1, II2, Mat2, M](bidi: Graph[BidiShape[O1, OO1, II2, I2], Mat2])(combine: (Mat, Mat2) ⇒ M): BidiFlow[I1, OO1, II2, O2, M] = {
     val copy = bidi.module.carbonCopy
     val ins = copy.shape.inlets
     val outs = copy.shape.outlets
@@ -81,7 +81,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
    * value of the current flow (ignoring the other Flow’s value), use
    * [[BidiFlow#joinMat joinMat]] if a different strategy is needed.
    */
-  def join[Mat2](flow: Flow[O1, I2, Mat2]): Flow[I1, O2, Mat] = joinMat(flow)(Keep.left)
+  def join[Mat2](flow: Graph[FlowShape[O1, I2], Mat2]): Flow[I1, O2, Mat] = joinMat(flow)(Keep.left)
 
   /**
    * Add the given Flow as the final step in a bidirectional transformation
@@ -101,7 +101,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](private[stream] override val modu
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting [[Flow]].
    */
-  def joinMat[Mat2, M](flow: Flow[O1, I2, Mat2])(combine: (Mat, Mat2) ⇒ M): Flow[I1, O2, M] = {
+  def joinMat[Mat2, M](flow: Graph[FlowShape[O1, I2], Mat2])(combine: (Mat, Mat2) ⇒ M): Flow[I1, O2, M] = {
     val copy = flow.module.carbonCopy
     val in = copy.shape.inlets.head
     val out = copy.shape.outlets.head

@@ -68,6 +68,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           val data2 = ByteString("def", "ASCII")
           pushInput(data2)
           sub.expectNext(data2)
+          s.request(1)
           sub.expectComplete()
         }
 
@@ -87,6 +88,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           val data2 = ByteString("defg", "ASCII")
           pushInput(header2 ++ data2)
           sub.expectNext(data2)
+          s.request(1)
           sub.expectComplete()
         }
         "for several messages" in new ClientTestSetup {
@@ -107,6 +109,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           val data3 = ByteString("h")
           pushInput(header2 ++ data2 ++ header3 ++ data3)
           sub.expectNext(data2)
+          s.request(1)
           sub.expectComplete()
 
           val dataSource2 = expectBinaryMessage().dataStream
@@ -119,6 +122,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           val data4 = ByteString("i")
           pushInput(data4)
           sub2.expectNext(data4)
+          s2.request(1)
           sub2.expectComplete()
         }
         "unmask masked input on the server side" in new ServerTestSetup {
@@ -138,6 +142,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
           pushInput(data2)
           sub.expectNext(ByteString("def", "ASCII"))
+          s.request(1)
           sub.expectComplete()
         }
         "unmask masked input on the server side for empty frame" in new ServerTestSetup {
@@ -218,6 +223,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
           pushInput(data2)
           sub.expectNext(ByteString("cdef€", "UTF-8"))
+          s.request(1)
           sub.expectComplete()
         }
         "unmask masked input on the server side for empty frame" in new ServerTestSetup {
@@ -430,6 +436,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         val input2 = frameHeader(Opcode.Continuation, 3, fin = true, mask = Some(mask2)) ++ maskedASCII("456", mask2)._1
         pushInput(input2)
         sub.expectNext(ByteString("456", "ASCII"))
+        s.request(1)
         sub.expectComplete()
       }
       "don't respond to unsolicited pong frames" in new ClientTestSetup {
@@ -770,6 +777,13 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
         pushInput(frameHeader(Opcode.Text, 0, fin = false))
         pushInput(frameHeader(Opcode.Continuation, 3, fin = true) ++ data)
 
+        // Kids, always drain your entities
+        messageIn.requestNext() match {
+          case b: TextMessage ⇒
+            b.textStream.runWith(Sink.ignore)
+          case _ ⇒
+        }
+
         expectError(messageIn)
 
         expectCloseCodeOnNetwork(Protocol.CloseCodes.InconsistentData)
@@ -927,10 +941,12 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
     def expectComplete[T](probe: TestSubscriber.Probe[T]): Unit = {
       probe.ensureSubscription()
+      probe.request(1)
       probe.expectComplete()
     }
     def expectError[T](probe: TestSubscriber.Probe[T]): Throwable = {
       probe.ensureSubscription()
+      probe.request(1)
       probe.expectError()
     }
   }

@@ -33,6 +33,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR
     akka.stdout-loglevel = ERROR
+    windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
   """)
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
@@ -89,7 +90,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "properly terminate client when server is not running" in Utils.assertAllStagesStopped {
-      for (i ← 1 to 100)
+      for (i ← 1 to 10)
         withClue(s"iterator $i: ") {
           Source.single(HttpRequest(HttpMethods.POST, "/test", List.empty, HttpEntity(MediaTypes.`text/plain`.withCharset(HttpCharsets.`UTF-8`), "buh")))
             .via(Http(actorSystem).outgoingConnection("localhost", 7777))
