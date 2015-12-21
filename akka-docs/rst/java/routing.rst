@@ -647,9 +647,9 @@ The memory usage is O(n) where n is the number of sizes you allow, i.e. upperBou
 
 Pool with ``OptimalSizeExploringResizer`` defined in configuration:
 
-.. includecode:: code/docs/routing/RouterDocSpec.scala#config-optimal-size-exploring-resize-pool
+.. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-optimal-size-exploring-resize-pool
 
-.. includecode:: code/docs/routing/RouterDocTest.java#optimal-size-exploring-resize-pool
+.. includecode:: code/docs/jrouting/RouterDocTest.java#optimal-size-exploring-resize-pool
 
 Several more configuration options are available and described in ``akka.actor.deployment.default.optimal-size-exploring-resizer``
 section of the reference :ref:`configuration`.

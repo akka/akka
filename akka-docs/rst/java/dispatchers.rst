@@ -116,6 +116,15 @@ There are 3 different types of message dispatchers:
 More dispatcher configuration examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Configuring a dispatcher with fixed thread pool size, e.g. for actors that perform blocking IO:
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#fixed-pool-size-dispatcher-config
+
+And then using it:
+
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#defining-fixed-pool-size-dispatcher
+
+
 Configuring a ``PinnedDispatcher``:
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-pinned-dispatcher-config

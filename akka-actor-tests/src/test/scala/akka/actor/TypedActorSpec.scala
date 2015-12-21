@@ -29,10 +29,7 @@ object TypedActorSpec {
       type = "akka.dispatch.BalancingDispatcherConfigurator"
       executor = "thread-pool-executor"
       thread-pool-executor {
-        core-pool-size-min = 60
-        core-pool-size-max = 60
-        max-pool-size-min = 60
-        max-pool-size-max = 60
+        fixed-pool-size = 60
       }
     }
     """

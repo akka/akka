@@ -272,7 +272,7 @@ When sending two commands to this ``PersistentActor``, the persist handlers will
 .. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#nested-persist-persist-caller
 
 First the "outer layer" of persist calls is issued and their callbacks are applied. After these have successfully completed,
- the inner callbacks will be invoked (once the events they are persisting have been confirmed to be persisted by the journal).
+the inner callbacks will be invoked (once the events they are persisting have been confirmed to be persisted by the journal).
 Only after all these handlers have been successfully invoked will the next command be delivered to the persistent Actor.
 In other words, the stashing of incoming commands that is guaranteed by initially calling ``persist()`` on the outer layer
 is extended until all nested ``persist`` callbacks have been handled.

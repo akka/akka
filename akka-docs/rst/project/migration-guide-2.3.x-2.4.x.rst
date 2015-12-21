@@ -673,7 +673,6 @@ Be careful to not do any operations on the ``Future[Terminated]`` using the ``sy
 as ``ExecutionContext`` as it will be shut down with the ``ActorSystem``, instead use for example
 the Scala standard library context from ``scala.concurrent.ExecutionContext.global``.
 
-
     // import system.dispatcher <- this would not work
     import scala.concurrent.ExecutionContext.Implicits.global
 
