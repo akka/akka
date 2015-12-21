@@ -69,7 +69,7 @@ public interface Multipart {
      * Basic model for multipart content as defined by http://tools.ietf.org/html/rfc2046.
      */
     interface General extends Multipart {
-        Source<? extends Multipart.General.BodyPart, Object> getParts();
+        Source<? extends Multipart.General.BodyPart, Object> getGeneralParts();
 
         Future<Multipart.General.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
@@ -92,7 +92,7 @@ public interface Multipart {
      * All parts must have distinct names. (This is not verified!)
      */
     interface FormData extends Multipart {
-        Source<? extends Multipart.FormData.BodyPart, Object> getParts();
+        Source<? extends Multipart.FormData.BodyPart, Object> getFormDataParts();
 
         Future<Multipart.FormData.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
@@ -120,7 +120,7 @@ public interface Multipart {
      * https://tools.ietf.org/html/rfc7233#section-5.4.1 and https://tools.ietf.org/html/rfc7233#appendix-A
      */
     interface ByteRanges extends Multipart {
-        Source<? extends Multipart.ByteRanges.BodyPart, Object> getParts();
+        Source<? extends Multipart.ByteRanges.BodyPart, Object> getByteRangeParts();
 
         Future<Multipart.ByteRanges.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
