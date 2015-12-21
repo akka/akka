@@ -95,7 +95,8 @@ public class TcpTest extends StreamTest {
           } catch (BindFailedException e) {
             // expected
           } catch (Exception e) {
-            throw new AssertionError("failed", e);
+            // throw new AssertionError("failed", e); // TODO: bring back once we're JDK7+
+            throw new RuntimeException("failed", e);
           }
           return null;
         }
