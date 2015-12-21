@@ -68,6 +68,15 @@ public class DispatcherDocTest {
 
   @SuppressWarnings("unused")
   @Test
+  public void defineFixedPoolSizeDispatcher() {
+    //#defining-fixed-pool-size-dispatcher
+    ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class)
+        .withDispatcher("blocking-io-dispatcher"));
+    //#defining-fixed-pool-size-dispatcher
+  }
+
+  @SuppressWarnings("unused")
+  @Test
   public void definePinnedDispatcher() {
     //#defining-pinned-dispatcher
     ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class)
