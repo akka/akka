@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model
 
 import java.io.File
-import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 import scala.collection.immutable
@@ -203,8 +202,13 @@ object Multipart {
       strictify(parts)(_.toStrict(timeout)).fast.map(General.Strict(mediaType, _))
     }
 
+    // TODO: bring back once JDK7+, overload resolution in JDK6 freaks out with getParts overriding with more specific generic param
+    //    /** Java API */
+    //    override def getParts: JSource[_ <: jm.Multipart.General.BodyPart, AnyRef] =
+    //      super.getParts.asInstanceOf[JSource[_ <: jm.Multipart.General.BodyPart, AnyRef]]
+
     /** Java API */
-    override def getParts: JSource[_ <: jm.Multipart.General.BodyPart, AnyRef] =
+    override def getGeneralParts: JSource[_ <: jm.Multipart.General.BodyPart, AnyRef] =
       super.getParts.asInstanceOf[JSource[_ <: jm.Multipart.General.BodyPart, AnyRef]]
 
     /** Java API */
@@ -216,8 +220,8 @@ object Multipart {
 
     def apply(_mediaType: MediaType.Multipart, _parts: Source[Multipart.General.BodyPart, Any]): Multipart.General =
       new Multipart.General {
-        def mediaType = _mediaType
-        def parts = _parts
+        override def mediaType = _mediaType
+        override def parts = _parts
         override def toString = s"General($mediaType, $parts)"
       }
 
@@ -229,7 +233,7 @@ object Multipart {
      */
     case class Strict(mediaType: MediaType.Multipart, strictParts: immutable.Seq[Multipart.General.BodyPart.Strict])
       extends Multipart.General with Multipart.Strict with jm.Multipart.General.Strict {
-      def parts: Source[Multipart.General.BodyPart.Strict, Any] = Source(strictParts)
+      override def parts: Source[Multipart.General.BodyPart.Strict, Any] = Source(strictParts)
       override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer) = FastFuture.successful(this)
       override def productPrefix = "General.Strict"
 
@@ -246,7 +250,7 @@ object Multipart {
      * Body part of the [[General]] model.
      */
     sealed abstract class BodyPart extends Multipart.BodyPart with jm.Multipart.General.BodyPart {
-      def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[Multipart.General.BodyPart.Strict] = {
+      override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[Multipart.General.BodyPart.Strict] = {
         import fm.executionContext
         entity.toStrict(timeout).map(BodyPart.Strict(_, headers))
       }
@@ -305,9 +309,9 @@ object Multipart {
    * All parts must have distinct names. (This is not verified!)
    */
   sealed abstract class FormData extends Multipart with jm.Multipart.FormData {
-    def mediaType = MediaTypes.`multipart/form-data`
+    override def mediaType = MediaTypes.`multipart/form-data`
 
-    def parts: Source[Multipart.FormData.BodyPart, Any]
+    override def parts: Source[Multipart.FormData.BodyPart, Any]
 
     def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[Multipart.FormData.Strict] = {
       import fm.executionContext
@@ -333,6 +337,8 @@ object Multipart {
     def apply(_parts: Source[Multipart.FormData.BodyPart, Any]): Multipart.FormData =
       new Multipart.FormData {
         def parts = _parts
+        override def getFormDataParts: JSource[jm.Multipart.FormData.BodyPart, AnyRef] =
+          parts.asJava.asInstanceOf[JSource[_ <: jm.Multipart.FormData.BodyPart, AnyRef]]
         override def toString = s"FormData($parts)"
       }
 
@@ -350,7 +356,9 @@ object Multipart {
      */
     case class Strict(strictParts: immutable.Seq[Multipart.FormData.BodyPart.Strict])
       extends FormData with Multipart.Strict with jm.Multipart.FormData.Strict {
-      def parts: Source[Multipart.FormData.BodyPart.Strict, Any] = Source(strictParts)
+      override def parts: Source[Multipart.FormData.BodyPart.Strict, Any] = Source(strictParts)
+      override def getFormDataParts: JSource[jm.Multipart.FormData.BodyPart, AnyRef] =
+        parts.asJava.asInstanceOf[JSource[_ <: jm.Multipart.FormData.BodyPart, AnyRef]]
       override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer) = FastFuture.successful(this)
       override def productPrefix = "FormData.Strict"
 
@@ -361,6 +369,7 @@ object Multipart {
       /** Java API */
       override def getStrictParts: java.lang.Iterable[jm.Multipart.FormData.BodyPart.Strict] =
         super.getStrictParts.asInstanceOf[java.lang.Iterable[jm.Multipart.FormData.BodyPart.Strict]]
+
     }
 
     /**
@@ -475,7 +484,9 @@ object Multipart {
 
     def apply(_parts: Source[Multipart.ByteRanges.BodyPart, Any]): Multipart.ByteRanges =
       new Multipart.ByteRanges {
-        def parts = _parts
+        override def parts = _parts
+        override def getByteRangeParts: JSource[jm.Multipart.ByteRanges.BodyPart, AnyRef] =
+          parts.asJava.asInstanceOf[JSource[jm.Multipart.ByteRanges.BodyPart, AnyRef]]
         override def toString = s"ByteRanges($parts)"
       }
 
@@ -484,7 +495,7 @@ object Multipart {
      */
     case class Strict(strictParts: immutable.Seq[Multipart.ByteRanges.BodyPart.Strict])
       extends Multipart.ByteRanges with Multipart.Strict with jm.Multipart.ByteRanges.Strict {
-      def parts: Source[Multipart.ByteRanges.BodyPart.Strict, Any] = Source(strictParts)
+      override def parts: Source[Multipart.ByteRanges.BodyPart.Strict, Any] = Source(strictParts)
       override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer) = FastFuture.successful(this)
       override def productPrefix = "ByteRanges.Strict"
 
@@ -495,6 +506,9 @@ object Multipart {
       /** Java API */
       override def getStrictParts: java.lang.Iterable[jm.Multipart.ByteRanges.BodyPart.Strict] =
         super.getStrictParts.asInstanceOf[java.lang.Iterable[jm.Multipart.ByteRanges.BodyPart.Strict]]
+
+      override def getByteRangeParts: JSource[jm.Multipart.ByteRanges.BodyPart, AnyRef] =
+        parts.asJava.asInstanceOf[JSource[jm.Multipart.ByteRanges.BodyPart.Strict, AnyRef]]
     }
 
     /**
