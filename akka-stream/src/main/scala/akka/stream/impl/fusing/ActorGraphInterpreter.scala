@@ -18,6 +18,8 @@ import scala.util.control.NonFatal
 import akka.event.LoggingAdapter
 import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.SubFusingActorMaterializerImpl
+import scala.annotation.tailrec
+import akka.stream.impl.StreamSupervisor
 
 /**
  * INTERNAL API
@@ -310,7 +312,7 @@ private[stream] final class GraphInterpreterShell(
   logics: Array[GraphStageLogic],
   shape: Shape,
   settings: ActorMaterializerSettings,
-  mat: ActorMaterializerImpl) {
+  val mat: ActorMaterializerImpl) {
 
   import ActorGraphInterpreter._
 
@@ -326,6 +328,8 @@ private[stream] final class GraphInterpreterShell(
   private var subscribesPending = inputs.length
   private var publishersPending = outputs.length
 
+  def dumpWaits(): Unit = interpreter.dumpWaits()
+
   /*
    * Limits the number of events processed by the interpreter before scheduling
    * a self-message for fairness with other actors. The basic assumption here is
@@ -339,7 +343,9 @@ private[stream] final class GraphInterpreterShell(
   private val abortLimit = eventLimit * 2
   private var resumeScheduled = false
 
-  def init(self: ActorRef, registerShell: GraphInterpreterShell ⇒ ActorRef): Unit = {
+  def isInitialized: Boolean = self != null
+
+  def init(self: ActorRef, subMat: SubFusingActorMaterializerImpl): Unit = {
     this.self = self
     var i = 0
     while (i < inputs.length) {
@@ -356,7 +362,7 @@ private[stream] final class GraphInterpreterShell(
       interpreter.attachDownstreamBoundary(i + offset, out)
       i += 1
     }
-    interpreter.init(new SubFusingActorMaterializerImpl(mat, registerShell))
+    interpreter.init(subMat)
     runBatch()
   }
 
@@ -390,14 +396,7 @@ private[stream] final class GraphInterpreterShell(
         resumeScheduled = false
         if (interpreter.isSuspended) runBatch()
       case AsyncInput(_, logic, event, handler) ⇒
-        if (GraphInterpreter.Debug) println(s"${interpreter.Name} ASYNC $event ($handler) [$logic]")
-        if (!interpreter.isStageCompleted(logic)) {
-          try handler(event)
-          catch {
-            case NonFatal(e) ⇒ logic.failStage(e)
-          }
-          interpreter.afterStageHasRun(logic)
-        }
+        interpreter.runAsyncInput(logic, event, handler)
         runBatch()
 
       // Initialization and completion messages
@@ -493,31 +492,75 @@ private[stream] final class GraphInterpreterShell(
 /**
  * INTERNAL API
  */
-private[stream] class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor {
+private[stream] class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
   import ActorGraphInterpreter._
 
-  var activeInterpreters = Set(_initial)
+  var activeInterpreters = Set.empty[GraphInterpreterShell]
+  var newShells: List[GraphInterpreterShell] = Nil
+  val subFusingMaterializerImpl = new SubFusingActorMaterializerImpl(_initial.mat, registerShell)
+
+  def tryInit(shell: GraphInterpreterShell): Boolean =
+    try {
+      shell.init(self, subFusingMaterializerImpl)
+      if (GraphInterpreter.Debug) println(s"registering new shell in ${_initial}\n  ${shell.toString.replace("\n", "\n  ")}")
+      if (shell.isTerminated) false
+      else {
+        activeInterpreters += shell
+        true
+      }
+    } catch {
+      case NonFatal(e) ⇒
+        log.error(e, "initialization of GraphInterpreterShell failed for {}", shell)
+        false
+    }
 
   def registerShell(shell: GraphInterpreterShell): ActorRef = {
-    shell.init(self, registerShell)
-    if (GraphInterpreter.Debug) println(s"registering new shell in ${_initial}\n  ${shell.toString.replace("\n", "\n  ")}")
-    activeInterpreters += shell
+    newShells ::= shell
+    self ! Resume
     self
   }
 
+  /*
+   * Avoid performing the initialization (which start the first runBatch())
+   * within registerShell in order to avoid unbounded recursion.
+   */
+  @tailrec private def finishShellRegistration(): Unit =
+    newShells match {
+      case Nil ⇒ if (activeInterpreters.isEmpty) context.stop(self)
+      case shell :: tail ⇒
+        newShells = tail
+        if (shell.isInitialized) {
+          // yes, this steals another shell’s Resume, but that’s okay because extra ones will just not do anything
+          finishShellRegistration()
+        } else tryInit(shell)
+    }
+
   override def preStart(): Unit = {
-    activeInterpreters.foreach(_.init(self, registerShell))
+    tryInit(_initial)
+    if (activeInterpreters.isEmpty) context.stop(self)
   }
 
   override def receive: Receive = {
     case b: BoundaryEvent ⇒
       val shell = b.shell
-      if (GraphInterpreter.Debug)
-        if (!activeInterpreters.contains(shell)) println(s"RECEIVED EVENT $b FOR UNKNOWN SHELL $shell")
-      shell.receive(b)
-      if (shell.isTerminated) {
-        activeInterpreters -= shell
-        if (activeInterpreters.isEmpty) context.stop(self)
+      if (!shell.isTerminated && (shell.isInitialized || tryInit(shell))) {
+        shell.receive(b)
+        if (shell.isTerminated) {
+          activeInterpreters -= shell
+          if (activeInterpreters.isEmpty && newShells.isEmpty) context.stop(self)
+        }
+      }
+    case Resume ⇒ finishShellRegistration()
+    case StreamSupervisor.PrintDebugDump ⇒
+      println(s"activeShells:")
+      activeInterpreters.foreach { shell ⇒
+        println("  " + shell.toString.replace("\n", "\n  "))
+        shell.interpreter.dumpWaits()
+      }
+      println(s"newShells:")
+      newShells.foreach { shell ⇒
+        println("  " + shell.toString.replace("\n", "\n  "))
+        shell.interpreter.dumpWaits()
       }
   }
 

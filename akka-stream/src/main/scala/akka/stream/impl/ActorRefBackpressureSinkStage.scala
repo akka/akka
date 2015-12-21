@@ -34,8 +34,6 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
       var acknowledgementReceived = false
       var completeReceived = false
 
-      override def keepGoingAfterAllPortsClosed: Boolean = true
-
       private def receive(evt: (ActorRef, Any)): Unit = {
         evt._2 match {
           case `ackMessage` ⇒
@@ -47,6 +45,7 @@ private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessa
       }
 
       override def preStart() = {
+        setKeepGoing(true)
         self = getStageActorRef(receive)
         self.watch(ref)
         ref ! onInitMessage

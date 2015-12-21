@@ -93,9 +93,6 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
         override def onDownstreamFinish(): Unit = tryUnbind()
       })
 
-      // because when we tryUnbind, we must wait for the Ubound signal before terminating
-      override def keepGoingAfterAllPortsClosed = true
-
       private def connectionFor(connected: Connected, connection: ActorRef): StreamTcp.IncomingConnection = {
         connectionFlowsAwaitingInitialization.incrementAndGet()
 
@@ -122,6 +119,7 @@ private[stream] class ConnectionSourceStage(val tcpManager: ActorRef,
       private def tryUnbind(): Unit = {
         if (listener ne null) {
           self.unwatch(listener)
+          setKeepGoing(true)
           listener ! Unbind
         }
       }
@@ -164,7 +162,7 @@ private[stream] object TcpConnectionStage {
   case class Inbound(connection: ActorRef, halfClose: Boolean) extends TcpRole
 
   /*
-   * This is a *non-deatched* design, i.e. this does not prefetch itself any of the inputs. It relies on downstream
+   * This is a *non-detached* design, i.e. this does not prefetch itself any of the inputs. It relies on downstream
    * stages to provide the necessary prefetch on `bytesOut` and the framework to do the proper prefetch in the buffer
    * backing `bytesIn`. If prefetch on `bytesOut` is required (i.e. user stages cannot be trusted) then it is better
    * to attach an extra, fused buffer to the end of this flow. Keeping this stage non-detached makes it much simpler and
@@ -182,18 +180,21 @@ private[stream] object TcpConnectionStage {
       override def onPull(): Unit = ()
     })
 
-    override def preStart(): Unit = role match {
-      case Inbound(conn, _) ⇒
-        setHandler(bytesOut, readHandler)
-        self = getStageActorRef(connected)
-        connection = conn
-        self.watch(connection)
-        connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
-        pull(bytesIn)
-      case ob @ Outbound(manager, cmd, _, _) ⇒
-        self = getStageActorRef(connecting(ob))
-        self.watch(manager)
-        manager ! cmd
+    override def preStart(): Unit = {
+      setKeepGoing(true)
+      role match {
+        case Inbound(conn, _) ⇒
+          setHandler(bytesOut, readHandler)
+          self = getStageActorRef(connected)
+          connection = conn
+          self.watch(connection)
+          connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
+          pull(bytesIn)
+        case ob @ Outbound(manager, cmd, _, _) ⇒
+          self = getStageActorRef(connecting(ob))
+          self.watch(manager)
+          manager ! cmd
+      }
     }
 
     private def connecting(ob: Outbound)(evt: (ActorRef, Any)): Unit = {
@@ -269,8 +270,6 @@ private[stream] object TcpConnectionStage {
         connection ! Abort
       }
     })
-
-    override def keepGoingAfterAllPortsClosed: Boolean = true
 
     override def postStop(): Unit = role match {
       case Outbound(_, _, localAddressPromise, _) ⇒

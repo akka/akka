@@ -25,7 +25,7 @@ private[akka] object FixedSizeBuffer {
     else if (((size - 1) & size) == 0) new PowerOfTwoFixedSizeBuffer(size)
     else new ModuloFixedSizeBuffer(size)
 
-  sealed abstract class FixedSizeBuffer[T](val size: Int) {
+  sealed abstract class FixedSizeBuffer[T](val size: Int) extends Buffer[T] {
     override def toString = s"Buffer($size, $readIdx, $writeIdx)(${(readIdx until writeIdx).map(get).mkString(", ")})"
     private val buffer = new Array[AnyRef](size)
 
@@ -35,12 +35,11 @@ private[akka] object FixedSizeBuffer {
 
     def isFull: Boolean = used == size
     def isEmpty: Boolean = used == 0
+    def nonEmpty: Boolean = used != 0
 
-    def enqueue(elem: T): Int = {
+    def enqueue(elem: T): Unit = {
       put(writeIdx, elem)
-      val ret = writeIdx
       writeIdx += 1
-      ret
     }
 
     protected def toOffset(idx: Int): Int

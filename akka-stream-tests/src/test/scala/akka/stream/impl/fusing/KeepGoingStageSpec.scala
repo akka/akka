@@ -48,6 +48,7 @@ class KeepGoingStageSpec extends AkkaSpec {
         private var listener: Option[ActorRef] = None
 
         override def preStart(): Unit = {
+          setKeepGoing(keepAlive)
           promise.trySuccess(PingRef(getAsyncCallback(onCommand)))
         }
 
@@ -72,8 +73,6 @@ class KeepGoingStageSpec extends AkkaSpec {
           // Ignore finish
           override def onUpstreamFinish(): Unit = listener.foreach(_ ! UpstreamCompleted)
         })
-
-        override def keepGoingAfterAllPortsClosed: Boolean = keepAlive
 
         override def postStop(): Unit = listener.foreach(_ ! PostStop)
       }

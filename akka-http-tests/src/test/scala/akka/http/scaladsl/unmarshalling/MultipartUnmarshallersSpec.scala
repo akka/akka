@@ -305,7 +305,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
       Await.result(x
         .fast.flatMap {
           _.parts
-            .mapAsync(1)(_ toStrict 1.second)
+            .mapAsync(Int.MaxValue)(_ toStrict 1.second)
             .grouped(100)
             .runWith(Sink.head)
         }

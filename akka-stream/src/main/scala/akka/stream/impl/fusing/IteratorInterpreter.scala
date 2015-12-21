@@ -23,7 +23,7 @@ private[akka] object IteratorInterpreter {
 
     setHandler(out, new OutHandler {
       override def onPull(): Unit = {
-        if (!hasNext) completeStage()
+        if (!hasNext) complete(out)
         else {
           val elem = input.next()
           hasNext = input.hasNext
@@ -34,7 +34,7 @@ private[akka] object IteratorInterpreter {
         }
       }
 
-      override def onDownstreamFinish(): Unit = completeStage()
+      override def onDownstreamFinish(): Unit = ()
     })
 
     override def toString = "IteratorUpstream"
@@ -57,13 +57,11 @@ private[akka] object IteratorInterpreter {
 
       override def onUpstreamFinish(): Unit = {
         done = true
-        completeStage()
       }
 
       override def onUpstreamFailure(cause: Throwable): Unit = {
         done = true
         lastFailure = cause
-        completeStage()
       }
     })
 
