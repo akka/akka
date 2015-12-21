@@ -32,11 +32,13 @@ class ExecutionDirectivesExamplesSpec extends RoutingSpec {
   "handleRejections" in {
     val totallyMissingHandler = RejectionHandler.newBuilder()
       .handleNotFound { complete((StatusCodes.NotFound, "Oh man, what you are looking for is long gone.")) }
+      .handle { case ValidationRejection(msg, _) => complete((StatusCodes.InternalServerError, msg)) }
       .result()
     val route =
       pathPrefix("handled") {
         handleRejections(totallyMissingHandler) {
-          path("existing")(complete("This path exists"))
+          path("existing")(complete("This path exists")) ~
+            path("boom")(reject(new ValidationRejection("This didn't work.")))
         }
       }
 
@@ -51,6 +53,10 @@ class ExecutionDirectivesExamplesSpec extends RoutingSpec {
     Get("/handled/missing") ~> route ~> check {
       status shouldEqual StatusCodes.NotFound
       responseAs[String] shouldEqual "Oh man, what you are looking for is long gone."
+    }
+    Get("/handled/boom") ~> route ~> check {
+      status shouldEqual StatusCodes.InternalServerError
+      responseAs[String] shouldEqual "This didn't work."
     }
   }
 }
